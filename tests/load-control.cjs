@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {create}=require('../portal_enterprise/load-control');
+const {create}=require('../hapi_enterprise/load-control');
 (async()=>{
  // Heap watermark set high so the level is driven deterministically by error rate.
  const lc=create({base:100,min:2,heapWatermark:1e9});

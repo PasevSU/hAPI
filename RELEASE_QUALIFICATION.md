@@ -6,7 +6,7 @@
 
 **Status: BLOCKED for production release.** The active source, test suite, Home Assistant
 integration and release builders are now present together in the repository. The single
-interactive Windows launcher is `START_hAPI_ENTERPRICE.bat`; old launcher entry points
+interactive Windows launcher is `START_hAPI_Enterprise.bat`; old launcher entry points
 were removed from the source and are excluded from generated packages.
 
 - The qualification build checks JavaScript and Python syntax and requires every test
@@ -84,7 +84,7 @@ New tests: `error-log.cjs`, `config-profiles.cjs`, `load-control.cjs`, `storage-
 Fixed a boot-breaking bug in the add-on `Dockerfile`: it omitted `rbac.js`, `error-log.js`, `config-profiles.js`, `storage-check.js`, and `load-control.js`, all required by `server.js`. Added `build-platforms.cjs` producing a Windows package (`-Windows.zip`) and a Supervisor-ready Home Assistant package (`-HA.zip`). `docker-runtime.cjs` now verifies the complete module manifest in the `COPY` instruction.
 
 ## v0.46.1 — repository URLs resolved (final)
-`repository.yaml` `url` and `custom_components/portal_enterprise/manifest.json` `documentation` now resolve to `https://pasev.asuscomm.com/`, removing the last concrete placeholder. All other gates are environment-only (real HA Supervisor/NAS runtime qualification).
+`repository.yaml` `url` and `custom_components/hapi_enterprise/manifest.json` `documentation` now resolve to `https://pasev.asuscomm.com/`, removing the last concrete placeholder. All other gates are environment-only (real HA Supervisor/NAS runtime qualification).
 
 ## v0.46.0 — desktop GUI full backend coverage
 The `ui/` desktop GUI is now feature-complete against the admin API: bulk file policies with dry-run preview, load control, HTML project publish/register/unregister, QR artifact generation, config-profile create/apply/delete, API/file access key create+revoke, signed URLs + signing-key rotation, notes and attachments CRUD, taxonomy/metadata editing, settings write, and per-portal integrity scan/verify. Composite file-id parsing fixed so portal-scoped file actions target the correct file.
@@ -97,7 +97,7 @@ Local suite: 43 PASS / 0 FAIL / 5 pre-existing Windows symlink `EPERM` failures 
 One package running on the edge between Home Assistant and Windows:
 - **`download_portal/standalone.js`** bootstraps the *same* `server.js` on a desktop: resolves a `node:sqlite`-capable runtime, creates a local data directory, generates/persists a unique admin token (`admin-token`), and boots with loopback-only binding (`ADMIN_BIND_HOST=127.0.0.1`, `PUBLIC_BIND_HOST=127.0.0.1`).
 - **`server.js`** admin listener bind host is now configurable via `ADMIN_BIND_HOST` (default `0.0.0.0` unchanged for HA ingress).
-- **`START_hAPI_ENTERPRICE.bat`** is the single interactive Windows launcher for the desktop GUI, browser admin panel, and backend-only mode.
+- **`START_hAPI_Enterprise.bat`** is the single interactive Windows launcher for the desktop GUI, browser admin panel, and backend-only mode.
 - New test `edge-runtime.cjs` verifies token reuse, env resolution, standalone boot, admin GUI serving, `whoami` role resolution and public-listener isolation. The HA add-on and the demo `ui/` GUI are unchanged.
 
 Local suite: 43 PASS / 0 FAIL / 5 pre-existing Windows symlink `EPERM` failures (network-storage, sqlite-snapshot-safety, storage-migrate, storage-paths, storage) unrelated to this work.

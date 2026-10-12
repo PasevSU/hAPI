@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
-const {create}=require('../portal_enterprise/rbac');
+const {create}=require('../hapi_enterprise/rbac');
 (async()=>{
  // Unit: ingress identity → role mapping (no bearer token).
  const rbac=create({adminToken:'a'.repeat(32),operatorToken:'b'.repeat(32),viewerToken:'c'.repeat(32),
@@ -17,7 +17,7 @@ const {create}=require('../portal_enterprise/rbac');
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'portal-rbac-sso-'));
  const port=28000+Math.floor(Math.random()*5000),adminPort=port+1;
  const admin='sso-admin-token-0123456789ABCDEF';
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,
    DATA_DIR:root,PORT:String(port),ADMIN_PORT:String(adminPort),INGRESS_MODE:'true',ADMIN_TOKEN:admin,
    USER_ROLES:JSON.stringify({alice:'admin',bob:'operator'}),GROUP_ROLES:JSON.stringify({sre:'viewer'})},stdio:'ignore'});
  const h=u=>({'X-Remote-User':u});

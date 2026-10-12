@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {check}=require('../portal_enterprise/storage-preflight');
+const {check}=require('../hapi_enterprise/storage-preflight');
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'portal-storage-'));
 try{
  for(const kind of ['addon_config','media','share'])fs.mkdirSync(path.join(tmp,kind));

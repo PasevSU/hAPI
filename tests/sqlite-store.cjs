@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {DatabaseSync}=require('node:sqlite');const {open}=require('../portal_enterprise/sqlite-store');
+const {DatabaseSync}=require('node:sqlite');const {open}=require('../hapi_enterprise/sqlite-store');
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-sqlite-'));const file=path.join(dir,'database','db.json');
 try{
  fs.mkdirSync(path.dirname(file),{recursive:true});

@@ -1,14 +1,14 @@
 'use strict';
 const { stopChild } = require('./helpers.cjs');
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
-const rc=require('../portal_enterprise/runtime-config.js');
+const rc=require('../hapi_enterprise/runtime-config.js');
 (async()=>{
  assert.deepEqual(rc.validate({}).data,{conflictPolicy:'queue',strictTaxonomy:false,defaultCategory:'',defaultGroup:'',maxTags:30});
  for(const bad of [{conflictPolicy:'x'},{strictTaxonomy:'yes'},{maxTags:0},{maxTags:101},{nope:1},{defaultCategory:'a'.repeat(121)}])assert.throws(()=>rc.validate({data:bad}));
 
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-dat-'));
  const token='data-test-admin-secret-2026-k5',pub=18323,B=`http://127.0.0.1:${pub}`;
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub)},stdio:'pipe'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub)},stdio:'pipe'});
  try{
   let ready=false;for(let i=0;i<70;i++){try{if((await fetch(B+'/health')).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,70))}
   assert(ready);
