@@ -1,0 +1,14 @@
+# Нормализиране на края на редовете: LF навсякъде (Docker/Linux съвместимост)
+* text=auto eol=lf
+
+# Бинарни файлове — без конверсия
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.7z binary
+*.zip binary
