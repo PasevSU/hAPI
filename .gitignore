@@ -35,3 +35,6 @@ dist/
 # IDE
 .vscode/
 .idea/
+
+# Dev dashboard (local)
+dashboard-commands.json
