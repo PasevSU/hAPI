@@ -20,7 +20,7 @@ function validateRetention(r){if(r===undefined||r===null)r={};if(typeof r!=='obj
  const out={enabled:!!r.enabled,fileDays:null,auditDays:null,fileAction:r.fileAction==='delete'?'delete':'disable'};
  const days=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(v);if(!Number.isInteger(n)||n<1||n>36500)throw Error('Invalid retention days');return n};
  out.fileDays=days(r.fileDays);out.auditDays=days(r.auditDays);
- if(!['disable','delete'].includes(r.fileAction))throw Error('Invalid fileAction');
+ if(r.fileAction!==undefined&&!['disable','delete'].includes(r.fileAction))throw Error('Invalid fileAction');
  return out}
 function validatePreview(p){if(p===undefined||p===null)p={};if(typeof p!=='object'||Array.isArray(p))throw Error('Invalid preview settings');
  const out={enabled:p.enabled!==false,thumbnails:p.thumbnails!==false};

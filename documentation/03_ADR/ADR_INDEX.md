@@ -30,3 +30,5 @@ Single authoritative ADR registry for hAPI Enterprise.
 | 0021 | multi-tenancy-zero-trust | Accepted | 2026-10 |
 | 0022 | flexibility-checklist | Accepted | 2026-10 |
 | 0023 | phase-4-features | Accepted | 2026-10 |
+| 0024 | phase-5-notification-center | Accepted | 2026-10 |
+| 0025 | phase-6-migration-pipeline | Accepted | 2026-10 |

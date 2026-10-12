@@ -9,7 +9,8 @@ const path = require('node:path');
 // `resolveHandler(type, params)` so work can be rebuilt after a restart.
 class PauseRequestedError extends Error { constructor(){ super('Job paused'); this.name='PauseRequestedError'; } }
 
-function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolveHandler } = {}) {
+function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolveHandler, events } = {}) {
+  const emit = (event, payload) => { try { if (typeof events === 'function') events(event, payload); } catch {} };
   const hasDir = typeof dir === 'string' && dir.length > 0;
   if (hasDir) {
     fs.mkdirSync(dir, { recursive: true });
@@ -32,8 +33,10 @@ function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolv
     fs.renameSync(tmp, fileFor(j.id));
   }
   function record(j, patch) {
+    const prevStatus = j.status;
     Object.assign(j, patch);
     try { persist(j); } catch (e) { console.error('job persist failed', e.code || e.message); }
+    if (patch.status && patch.status !== prevStatus) emit('job.' + patch.status, { job: view(j) });
   }
 
   const view = j => ({

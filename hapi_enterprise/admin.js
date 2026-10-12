@@ -302,8 +302,25 @@ load=async function(){await bulkPreviousLoad();const {portals}=await api('/admin
 const LIM={'lim-upload':['maxUploadMb',e=>Math.round(e.maxUploadBytes/1048576)],'lim-streams':['maxDownloadStreams',e=>e.maxDownloadStreams],'lim-jobs':['maxJobs',e=>e.maxJobs],'lim-check':['storageCheckMinutes',e=>Math.round(e.storageCheckIntervalMs/60000)],'lim-url':['publicBaseUrl',e=>e.publicBaseUrl],'lim-cors':['corsOrigin',e=>e.corsOrigin]};
 function fillLimits(r){const l=r.settings.limits||{},e=r.effective||{};for(const [id,[k,f]] of Object.entries(LIM)){const el=$(id);el.value=l[k]===null||l[k]===undefined?'':l[k];el.placeholder=e&&e.maxUploadBytes!==undefined?String(f(e)):el.placeholder}for(const [id,k] of [['lim-token','requirePortalToken'],['lim-ip','storeRawIp']])$(id).value=l[k]===null||l[k]===undefined?'':String(l[k])}
 function readLimits(){const o={};for(const [id,[k]] of Object.entries(LIM)){const v=$(id).value.trim();o[k]=v===''?(k==='publicBaseUrl'||k==='corsOrigin'?'':null):(k==='publicBaseUrl'||k==='corsOrigin'?v:Number(v))}for(const [id,k] of [['lim-token','requirePortalToken'],['lim-ip','storeRawIp']]){const v=$(id).value;o[k]=v===''?null:v==='true'}return o}
-$('settings-load').onclick=()=>action(async()=>{const r=await api('/admin/api/settings');$('artifact-directory').value=r.settings.artifactDirectory;$('database-file').value=r.settings.databaseFile;$('database-directory').value=r.settings.databaseDirectory||'.';fillLimits(r);$('settings-status').textContent=t('Настройки заредени')});
-$('settings-save').onclick=()=>action(async()=>{const r=await api('/admin/api/settings','PATCH',{artifactDirectory:$('artifact-directory').value,databaseFile:$('database-file').value,databaseDirectory:$('database-directory').value,limits:readLimits()});fillLimits(r);$('settings-status').textContent=r.restartRequired?t('Запазено. Някои промени се прилагат след рестарт на add-on-а.'):t('Настройките са запазени.')});
+function fillSettings(r){const s=r.settings;
+ $('artifact-directory').value=s.artifactDirectory;$('database-file').value=s.databaseFile;$('database-directory').value=s.databaseDirectory||'.';
+ $('set-org').value=s.organization||'';$('set-project').value=s.project||'';$('set-campaign').value=s.campaign||'';
+ fillLimits(r);
+ const d=s.data||{};$('set-conflict').value=d.conflictPolicy||'queue';$('set-strict').checked=!!d.strictTaxonomy;$('set-category').value=d.defaultCategory||'';$('set-group').value=d.defaultGroup||'';$('set-tags').value=d.maxTags??30;
+ const ret=s.retention||{};$('ret-enabled').checked=!!ret.enabled;$('ret-file-days').value=ret.fileDays==null?'':ret.fileDays;$('ret-audit-days').value=ret.auditDays==null?'':ret.auditDays;$('ret-action').value=ret.fileAction==='delete'?'delete':'disable';
+ const pv=s.preview||{};$('preview-enabled').checked=pv.enabled!==false;$('preview-thumbs').checked=pv.thumbnails!==false;
+}
+function readSettings(){const num=(id)=>{const v=$(id).value.trim();return v===''?null:Number(v)};
+ return {
+  artifactDirectory:$('artifact-directory').value,databaseFile:$('database-file').value,databaseDirectory:$('database-directory').value,
+  organization:$('set-org').value,project:$('set-project').value,campaign:$('set-campaign').value,
+  limits:readLimits(),
+  data:{conflictPolicy:$('set-conflict').value,strictTaxonomy:$('set-strict').checked,defaultCategory:$('set-category').value,defaultGroup:$('set-group').value,maxTags:Number($('set-tags').value)},
+  retention:{enabled:$('ret-enabled').checked,fileDays:num('ret-file-days'),auditDays:num('ret-audit-days'),fileAction:$('ret-action').value},
+  preview:{enabled:$('preview-enabled').checked,thumbnails:$('preview-thumbs').checked}
+ };}
+$('settings-load').onclick=()=>action(async()=>{const r=await api('/admin/api/settings');fillSettings(r);$('settings-status').textContent=t('Настройки заредени')});
+$('settings-save').onclick=()=>action(async()=>{const r=await api('/admin/api/settings','PATCH',readSettings());fillSettings(r);$('settings-status').textContent=r.restartRequired?t('Запазено. Някои промени се прилагат след рестарт на add-on-а.'):t('Настройките са запазени.')});
 
 // HTML projects are registered from DATA_DIR/html-projects/<folder> with index.html.
 const htmlProjectLoad=load;
@@ -894,5 +911,52 @@ _languageRefreshers.push(async()=>{if(_currentPanel==='hierarchy')await loadHier
 
 Object.assign(ADMIN_DIC.en,{'Йерархия':'Hierarchy','Търсене':'Search','Групи (йерархия)':'Groups (hierarchy)','Профили (схема)':'Profiles (schema)','Създай група':'Create group','Няма профили':'No profiles','Няма групи':'No groups','Няма записи':'No records','Няма резултати':'No results','Префикс':'Prefix','Профил':'Profile','Полета':'Fields','Група':'Group','Записи':'Records','Описание':'Description','Действия':'Actions','Преименувай':'Rename','Ново име':'New name','Изтриване на ':'Delete ','Нов запис':'New record','ID':'ID','Редактирай':'Edit','Изтриване на запис ':'Delete record ','Запази':'Save','Редактиране на запис':'Edit record','Съвпадение':'Match'});
 Object.assign(ADMIN_DIC.de,{'Йерархия':'Hierarchie','Търсене':'Suche','Групи (йерархия)':'Gruppen (Hierarchie)','Профили (схема)':'Profile (Schema)','Създай група':'Gruppe erstellen','Няма профили':'Keine Profile','Няма групи':'Keine Gruppen','Няма записи':'Keine Einträge','Няма резултати':'Keine Ergebnisse','Префикс':'Präfix','Профил':'Profil','Полета':'Felder','Група':'Gruppe','Записи':'Einträge','Описание':'Beschreibung','Действия':'Aktionen','Преименувай':'Umbenennen','Ново име':'Neuer Name','Изтриване на ':'Löschen ','Нов запис':'Neuer Eintrag','ID':'ID','Редактирай':'Bearbeiten','Изтриване на запис ':'Eintrag löschen ','Запази':'Speichern','Редактиране на запис':'Eintrag bearbeiten','Съвпадение':'Treffer'});
+
+// ===== Notification Center (Phase 5) =====
+const _evtToggle=$('events-toggle'),_evtDrawer=$('events-drawer'),_evtBackdrop=$('events-backdrop'),_evtList=$('events-list'),_evtOnlyFailed=$('events-only-failed'),_evtBadgeEl=$('events-badge');
+let _evtTimer=null;
+function _evtIcon(e){if(e.status==='running')return '⏳';if(e.status==='failed')return '❌';if(e.status==='cancelled')return '⏹';if(e.status==='succeeded'||e.status==='done')return e.level==='error'?'❌':'✅';if(e.level==='warn')return '⚠️';if(e.level==='error')return '❌';return 'ℹ️'}
+function _evtCard(e){
+ const card=node('div','');card.className='event-card level-'+(e.level||'info');
+ const head=node('div','');head.className='event-head';
+ head.append(node('span',_evtIcon(e)),node('strong',e.title||e.kind||''));
+ const time=node('span',timeAgo(e.at));time.className='event-time';head.append(time);
+ card.append(head);
+ if(e.progress&&typeof e.progress.done==='number'&&typeof e.progress.total==='number'&&e.progress.total>0){
+  const pct=Math.min(100,Math.round(e.progress.done/e.progress.total*100));
+  const bar=node('div','');bar.className='progress';const fill=node('div','');fill.className='progress-fill';fill.style.width=pct+'%';bar.append(fill);card.append(bar);
+  card.append(node('small',e.progress.done+' / '+e.progress.total));
+ }
+ if(e.message)card.append(node('p',e.message));
+ return card;
+}
+function _evtRender(events){
+ _evtList.replaceChildren();
+ if(!events.length){_evtList.append(node('p',t('Няма уведомления')));return}
+ const active=events.filter(e=>e.status==='running'),rest=events.filter(e=>e.status!=='running');
+ if(active.length){_evtList.append(node('h4',t('Активни')));for(const e of active)_evtList.append(_evtCard(e))}
+ if(rest.length){_evtList.append(node('h4',t('История')));for(const e of rest)_evtList.append(_evtCard(e))}
+}
+function _evtSetBadge(stats){const n=(stats?stats.active+stats.failed:0);_evtBadgeEl.hidden=!n;_evtBadgeEl.textContent=String(n);_evtBadgeEl.classList.toggle('danger',!!(stats&&stats.failed))}
+async function _evtLoad(){
+ const qs=new URLSearchParams({limit:'200'});if(_evtOnlyFailed.checked)qs.set('level','error');
+ const d=await api('/admin/api/events?'+qs.toString());
+ _evtRender(d.events||[]);_evtSetBadge(d.stats);
+}
+function _evtOpen(open){
+ _evtDrawer.hidden=!open;_evtBackdrop.hidden=!open;
+ if(_evtTimer){clearInterval(_evtTimer);_evtTimer=null}
+ if(open){action(_evtLoad);_evtTimer=setInterval(()=>action(_evtLoad),3000)}
+}
+_evtToggle.onclick=()=>_evtOpen(_evtDrawer.hidden);
+$('events-close').onclick=()=>_evtOpen(false);
+_evtBackdrop.onclick=()=>_evtOpen(false);
+_evtOnlyFailed.onchange=()=>action(_evtLoad);
+$('events-clear').onclick=()=>action(async()=>{await api('/admin/api/events/clear','POST');await _evtLoad()});
+setInterval(()=>{if(!$('token').value)return;fetch(adminPath('/admin/api/events?limit=1'),{headers:{Authorization:'Bearer '+$('token').value}}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>_evtSetBadge(d.stats)).catch(()=>{})},5000);
+
+Object.assign(ADMIN_DIC.en,{'Настройки на добавката':'Add-on settings','Запази промените с бутона отдолу. Промените, изискващи рестарт, са отбелязани в статуса.':'Save changes with the button below. Changes requiring a restart are noted in the status.','Бранд и организация':'Brand & organization','Организация':'Organization','Проект':'Project','Кампания':'Campaign','Имената, вписвани в QR манифестите и справките.':'Names recorded in QR manifests and reports.','Данни и таксономия':'Data & taxonomy','Политика при конфликт':'Conflict policy','Опашка (преименуване)':'Queue (rename)','Първият печели':'First wins','Пропусни':'Skip','Максимум тагове':'Maximum tags','Категория по подразбиране':'Default category','Група по подразбиране':'Default group','Строга таксономия (само предварително дефинирани категории/групи)':'Strict taxonomy (only predefined categories/groups)','Съхранение на документи':'Document retention','Празно поле = без срок (без автоматично изтичане).':'Empty field = no expiry (no automatic expiration).','Дни за файловете':'Days for files','Дни за одитните записи':'Days for audit records','Действие при изтичане':'Action on expiry','Деактивирай (запази файла)':'Disable (keep the file)','Изтрий файла':'Delete the file','Автоматично прилагане на срока':'Apply retention automatically','Преглед':'Preview','Разреши преглед на документи':'Enable document preview','Генерирай миниатюри':'Generate thumbnails','Център за уведомления':'Notification center','Само неуспешни':'Only failed','Изчисти':'Clear','Затвори':'Close','Активни':'Active','История':'History','Няма уведомления':'No notifications'});
+Object.assign(ADMIN_DIC.de,{'Настройки на добавката':'Add-on-Einstellungen','Запази промените с бутона отдолу. Промените, изискващи рестарт, са отбелязани в статуса.':'Änderungen mit der Schaltfläche unten speichern. Neustartpflichtige Änderungen werden im Status vermerkt.','Бранд и организация':'Marke & Organisation','Организация':'Organisation','Проект':'Projekt','Кампания':'Kampagne','Имената, вписвани в QR манифестите и справките.':'Namen, die in QR-Manifesten und Berichten erfasst werden.','Данни и таксономия':'Daten & Taxonomie','Политика при конфликт':'Konfliktrichtlinie','Опашка (преименуване)':'Warteschlange (umbenennen)','Първият печели':'Der Erste gewinnt','Пропусни':'Überspringen','Максимум тагове':'Maximale Tags','Категория по подразбиране':'Standardkategorie','Група по подразбиране':'Standardgruppe','Строга таксономия (само предварително дефинирани категории/групи)':'Strikte Taxonomie (nur vordefinierte Kategorien/Gruppen)','Съхранение на документи':'Dokumentaufbewahrung','Празно поле = без срок (без автоматично изтичане).':'Leeres Feld = kein Ablauf (keine automatische Löschung).','Дни за файловете':'Tage für Dateien','Дни за одитните записи':'Tage für Audit-Einträge','Действие при изтичане':'Aktion bei Ablauf','Деактивирай (запази файла)':'Deaktivieren (Datei behalten)','Изтрий файла':'Datei löschen','Автоматично прилагане на срока':'Aufbewahrung automatisch anwenden','Преглед':'Vorschau','Разреши преглед на документи':'Dokumentvorschau aktivieren','Генерирай миниатюри':'Miniaturansichten erzeugen','Център за уведомления':'Benachrichtigungszentrum','Само неуспешни':'Nur fehlgeschlagene','Изчисти':'Löschen','Затвори':'Schließen','Активни':'Aktiv','История':'Verlauf','Няма уведомления':'Keine Benachrichtigungen'});
+
 applyAdminLang();
 action(loadOverview);

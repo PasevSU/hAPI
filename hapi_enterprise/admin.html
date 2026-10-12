@@ -246,6 +246,38 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
 .toast-success{border-left-color:var(--success)}
 .toast-close{background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:16px;line-height:1;padding:0}
 @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* Notification center */
+.events-toggle{position:relative;display:inline-flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 10px;height:38px;color:var(--text);cursor:pointer}
+.events-toggle svg{width:18px;height:18px}
+.events-badge{position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;border-radius:999px;min-width:17px;height:17px;font-size:10px;font-weight:700;line-height:17px;text-align:center;padding:0 4px}
+.events-badge.danger{background:var(--danger)}
+.events-badge[hidden]{display:none}
+.events-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:140}
+.events-backdrop[hidden]{display:none}
+.events-drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,94vw);background:var(--surface);border-left:1px solid var(--border-strong);box-shadow:var(--shadow);z-index:150;display:flex;flex-direction:column;transform:translateX(0);animation:drawerIn .2s ease}
+@keyframes drawerIn{from{transform:translateX(100%)}to{transform:none}}
+.events-drawer[hidden]{display:none}
+.events-drawer .drawer-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.events-drawer .drawer-head h2{margin:0;font-size:18px;flex:1}
+.events-drawer .drawer-body{flex:1;overflow-y:auto;padding:14px 18px}
+.events-drawer .drawer-body h4{color:var(--text-faint)}
+.event-card{background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px}
+.event-card.level-success{border-left-color:var(--success)}
+.event-card.level-warn{border-left-color:var(--warning)}
+.event-card.level-error{border-left-color:var(--danger)}
+.event-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.event-head strong{flex:1;min-width:0}
+.event-time{color:var(--text-faint);font-size:12px}
+.event-card p{margin:6px 0 0;color:var(--text-dim);font-size:13px}
+.progress{height:6px;background:var(--border);border-radius:999px;overflow:hidden;margin:8px 0 4px}
+.progress-fill{height:100%;background:var(--accent);border-radius:999px;transition:width .3s ease}
+/* Settings sections */
+.settings-section{border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;background:var(--surface)}
+.settings-section>h3{margin:0 0 4px;font-size:15px;color:var(--accent)}
+.settings-section .hint{margin:0 0 10px}
+.field-check{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.field-check input{width:auto}
 </style>
 </head>
 <body>
@@ -344,6 +376,10 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
           <option value="de">Deutsch</option>
         </select>
       </label>
+      <button class="events-toggle" id="events-toggle" type="button" aria-label="Notifications" title="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <span class="events-badge" id="events-badge" hidden>0</span>
+      </button>
       <span id="status" role="status" class="status"></span>
     </header>
 
@@ -592,27 +628,84 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
       <section class="panel" id="panel-settings">
         <section class="card">
           <div class="card-head">
-            <h2 data-i18n="Настройки · база данни и QR артефакти">Настройки · база данни и QR артефакти</h2>
-            <span class="hint" data-i18n="Промяната на името на базата изисква спиране, копиране на текущата база и рестарт. Не се извършва автоматично преместване.">Промяната на името на базата изисква спиране, копиране на текущата база и рестарт. Не се извършва автоматично преместване.</span>
+            <h2 data-i18n="Настройки на добавката">Настройки на добавката</h2>
+            <span class="hint" data-i18n="Запази промените с бутона отдолу. Промените, изискващи рестарт, са отбелязани в статуса.">Запази промените с бутона отдолу. Промените, изискващи рестарт, са отбелязани в статуса.</span>
           </div>
           <div class="card-body">
-            <div class="form-grid">
-              <div class="field"><label><span data-i18n="Папка за QR записи (отделна от базата)">Папка за QR записи (отделна от базата)</span> <input id="artifact-directory" value="qr-records"></label></div>
-              <div class="field"><label><span data-i18n="Папка на базата">Папка на базата</span> <input id="database-directory" value="."></label></div>
-              <div class="field"><label><span data-i18n="Файл на базата">Файл на базата</span> <input id="database-file" value="db.json"></label></div>
+            <div class="settings-section">
+              <h3 data-i18n="Бранд и организация">Бранд и организация</h3>
+              <p class="hint" data-i18n="Имената, вписвани в QR манифестите и справките.">Имената, вписвани в QR манифестите и справките.</p>
+              <div class="form-grid">
+                <div class="field"><label><span data-i18n="Организация">Организация</span> <input id="set-org"></label></div>
+                <div class="field"><label><span data-i18n="Проект">Проект</span> <input id="set-project"></label></div>
+                <div class="field"><label><span data-i18n="Кампания">Кампания</span> <input id="set-campaign"></label></div>
+              </div>
             </div>
-            <h4 data-i18n="Лимити и достъп">Лимити и достъп</h4>
-            <p class="hint" data-i18n="Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).">Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).</p>
-            <div class="form-grid">
-              <div class="field"><label><span data-i18n="Макс. размер на качване (MB)">Макс. размер на качване (MB)</span> <input id="lim-upload" type="number" min="1" max="2048"></label></div>
-              <div class="field"><label><span data-i18n="Едновременни изтегляния">Едновременни изтегляния</span> <input id="lim-streams" type="number" min="1" max="1024"></label></div>
-              <div class="field"><label><span data-i18n="Паралелни задачи">Паралелни задачи</span> <input id="lim-jobs" type="number" min="1" max="4"></label></div>
-              <div class="field"><label><span data-i18n="Проверка на хранилищата (мин, 0 = изкл.)">Проверка на хранилищата (мин, 0 = изкл.)</span> <input id="lim-check" type="number" min="0" max="10080"></label></div>
-              <div class="field"><label><span data-i18n="Публичен адрес">Публичен адрес</span> <input id="lim-url" placeholder="https://portal.example.com"></label></div>
-              <div class="field"><label><span data-i18n="CORS адрес">CORS адрес</span> <input id="lim-cors" placeholder="https://example.com"></label></div>
-              <div class="field"><label><span data-i18n="Ключ за портал">Ключ за портал</span> <select id="lim-token"><option value="" data-i18n="Автоматично">Автоматично</option><option value="true" data-i18n="Задължителен">Задължителен</option><option value="false" data-i18n="Не е задължителен">Не е задължителен</option></select></label></div>
-              <div class="field"><label><span data-i18n="Пълен IP в телеметрията">Пълен IP в телеметрията</span> <select id="lim-ip"><option value="" data-i18n="Автоматично">Автоматично</option><option value="false" data-i18n="Не (препоръчително)">Не (препоръчително)</option><option value="true" data-i18n="Да">Да</option></select></label></div>
+
+            <div class="settings-section">
+              <h3 data-i18n="Съхранение">Съхранение</h3>
+              <p class="hint" data-i18n="Промяната на името на базата изисква спиране, копиране на текущата база и рестарт. Не се извършва автоматично преместване.">Промяната на името на базата изисква спиране, копиране на текущата база и рестарт. Не се извършва автоматично преместване.</p>
+              <div class="form-grid">
+                <div class="field"><label><span data-i18n="Папка за QR записи (отделна от базата)">Папка за QR записи (отделна от базата)</span> <input id="artifact-directory" value="qr-records"></label></div>
+                <div class="field"><label><span data-i18n="Папка на базата">Папка на базата</span> <input id="database-directory" value="."></label></div>
+                <div class="field"><label><span data-i18n="Файл на базата">Файл на базата</span> <input id="database-file" value="db.json"></label></div>
+              </div>
             </div>
+
+            <div class="settings-section">
+              <h3 data-i18n="Лимити и достъп">Лимити и достъп</h3>
+              <p class="hint" data-i18n="Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).">Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).</p>
+              <div class="form-grid">
+                <div class="field"><label><span data-i18n="Макс. размер на качване (MB)">Макс. размер на качване (MB)</span> <input id="lim-upload" type="number" min="1" max="2048"></label></div>
+                <div class="field"><label><span data-i18n="Едновременни изтегляния">Едновременни изтегляния</span> <input id="lim-streams" type="number" min="1" max="1024"></label></div>
+                <div class="field"><label><span data-i18n="Паралелни задачи">Паралелни задачи</span> <input id="lim-jobs" type="number" min="1" max="4"></label></div>
+                <div class="field"><label><span data-i18n="Проверка на хранилищата (мин, 0 = изкл.)">Проверка на хранилищата (мин, 0 = изкл.)</span> <input id="lim-check" type="number" min="0" max="10080"></label></div>
+                <div class="field"><label><span data-i18n="Публичен адрес">Публичен адрес</span> <input id="lim-url" placeholder="https://portal.example.com"></label></div>
+                <div class="field"><label><span data-i18n="CORS адрес">CORS адрес</span> <input id="lim-cors" placeholder="https://example.com"></label></div>
+                <div class="field"><label><span data-i18n="Ключ за портал">Ключ за портал</span> <select id="lim-token"><option value="" data-i18n="Автоматично">Автоматично</option><option value="true" data-i18n="Задължителен">Задължителен</option><option value="false" data-i18n="Не е задължителен">Не е задължителен</option></select></label></div>
+                <div class="field"><label><span data-i18n="Пълен IP в телеметрията">Пълен IP в телеметрията</span> <select id="lim-ip"><option value="" data-i18n="Автоматично">Автоматично</option><option value="false" data-i18n="Не (препоръчително)">Не (препоръчително)</option><option value="true" data-i18n="Да">Да</option></select></label></div>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h3 data-i18n="Данни и таксономия">Данни и таксономия</h3>
+              <div class="form-grid">
+                <div class="field"><label><span data-i18n="Политика при конфликт">Политика при конфликт</span>
+                  <select id="set-conflict">
+                    <option value="queue" data-i18n="Опашка (преименуване)">Опашка (преименуване)</option>
+                    <option value="first" data-i18n="Първият печели">Първият печели</option>
+                    <option value="skip" data-i18n="Пропусни">Пропусни</option>
+                  </select></label></div>
+                <div class="field"><label><span data-i18n="Максимум тагове">Максимум тагове</span> <input id="set-tags" type="number" min="1" max="100" value="30"></label></div>
+                <div class="field"><label><span data-i18n="Категория по подразбиране">Категория по подразбиране</span> <input id="set-category"></label></div>
+                <div class="field"><label><span data-i18n="Група по подразбиране">Група по подразбиране</span> <input id="set-group"></label></div>
+              </div>
+              <label class="field-check"><input type="checkbox" id="set-strict"> <span data-i18n="Строга таксономия (само предварително дефинирани категории/групи)">Строга таксономия (само предварително дефинирани категории/групи)</span></label>
+            </div>
+
+            <div class="settings-section">
+              <h3 data-i18n="Съхранение на документи">Съхранение на документи</h3>
+              <p class="hint" data-i18n="Празно поле = без срок (без автоматично изтичане).">Празно поле = без срок (без автоматично изтичане).</p>
+              <div class="form-grid">
+                <div class="field"><label><span data-i18n="Дни за файловете">Дни за файловете</span> <input id="ret-file-days" type="number" min="1" max="36500"></label></div>
+                <div class="field"><label><span data-i18n="Дни за одитните записи">Дни за одитните записи</span> <input id="ret-audit-days" type="number" min="1" max="36500"></label></div>
+                <div class="field"><label><span data-i18n="Действие при изтичане">Действие при изтичане</span>
+                  <select id="ret-action">
+                    <option value="disable" data-i18n="Деактивирай (запази файла)">Деактивирай (запази файла)</option>
+                    <option value="delete" data-i18n="Изтрий файла">Изтрий файла</option>
+                  </select></label></div>
+              </div>
+              <label class="field-check"><input type="checkbox" id="ret-enabled"> <span data-i18n="Автоматично прилагане на срока">Автоматично прилагане на срока</span></label>
+            </div>
+
+            <div class="settings-section">
+              <h3 data-i18n="Преглед">Преглед</h3>
+              <div class="form-grid">
+                <label class="field-check"><input type="checkbox" id="preview-enabled"> <span data-i18n="Разреши преглед на документи">Разреши преглед на документи</span></label>
+                <label class="field-check"><input type="checkbox" id="preview-thumbs"> <span data-i18n="Генерирай миниатюри">Генерирай миниатюри</span></label>
+              </div>
+            </div>
+
             <div class="form-row" style="margin-top:14px">
               <button id="settings-load" type="button" data-i18n="Зареди настройки">Зареди настройки</button>
               <button id="settings-save" class="btn-primary" type="button" data-i18n="Запази настройки">Запази настройки</button>
@@ -649,6 +742,18 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
     </main>
   </div>
 </div>
+
+<div class="events-backdrop" id="events-backdrop" hidden></div>
+<aside class="events-drawer" id="events-drawer" role="dialog" aria-label="Notifications" aria-modal="true" hidden>
+  <div class="drawer-head">
+    <h2 data-i18n="Център за уведомления">Център за уведомления</h2>
+    <label class="field-check" style="margin:0"><input type="checkbox" id="events-only-failed"> <span data-i18n="Само неуспешни">Само неуспешни</span></label>
+    <button id="events-clear" type="button" data-i18n="Изчисти">Изчисти</button>
+    <button id="events-close" type="button" data-i18n="Затвори">Затвори</button>
+  </div>
+  <div class="drawer-body" id="events-list" aria-live="polite"></div>
+</aside>
+
 <script src="admin.js" defer></script>
 </body>
 </html>

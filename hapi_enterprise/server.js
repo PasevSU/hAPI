@@ -6,7 +6,18 @@ const runtime=require('./runtime-config').create(root);const eff=runtime.effecti
 const publicHost=process.env.PUBLIC_BIND_HOST||'127.0.0.1';
 const corsOrigin=eff.corsOrigin;
 if(!adminToken||adminToken.length<24||adminToken==='CHANGE_TO_RANDOM_SECRET_AT_LEAST_24_CHARACTERS'||/^(.{1,8})\1{3,}$/.test(adminToken)) {console.error('ADMIN_TOKEN must be a unique random secret (at least 24 characters), not the default placeholder');process.exit(1)}
-const jobManager=require('./job-manager').create({dir:path.join(root,'jobs'),concurrency:eff.maxJobs,resolveHandler:(type,params)=>{
+const eventBus=require('./event-bus').create();
+const migration=require('./migration-pipeline').create();
+const jobManager=require('./job-manager').create({dir:path.join(root,'jobs'),concurrency:eff.maxJobs,events:(event,payload)=>eventBus.emit(event,payload),resolveHandler:(type,params)=>{
+ if(type==='migration'){
+  const source=params&&params.source,destination=params&&params.destination;
+  return async ctx=>{
+   const report=await migration.run({source,destination,conflictPolicy:params&&params.conflictPolicy,method:params&&params.method,ctx});
+   void audit('migrate.completed',{source,destination,method:report.method,files:report.files,copied:report.copied});
+   void eventBus.emit('migrate.completed',{destination,method:report.method,files:report.files});
+   return report;
+  };
+ }
  if(type!=='integrity-scan')throw Error('Unknown job type');
  const portalId=params&&params.portalId;
  return async ctx=>{const current=db.portals.find(x=>x.id===portalId);if(!current)throw Object.assign(new Error('Portal removed'),{status:404});const out=await verifyPortalFiles(current,ctx);if(!ctx.signal.aborted)void audit('integrity.verify',{portalId,summary:out.summary,job:true});return out};
@@ -23,6 +34,10 @@ const fileCrypto=require('./file-crypto');
 const preview=require('./preview').create();
 const versioning=require('./versioning').create();
 const notify=require('./notify').create();
+const notificationCenter=require('./notification-center').create({dir:path.join(root,'notifications')});
+notificationCenter.subscribe(eventBus);
+const portalAuth=require('./portal-auth').create({secret:adminToken});
+const evidenceStore=require('./evidence-store').create({dir:path.join(root,'evidence'),secret:adminToken});
 async function verifyPortalFiles(p,ctx){
  const results=[];ctx.setTotal(p.files.length);
  for(const f of [...p.files]){
@@ -284,6 +299,7 @@ async function runStorageCheck(reason){
  lastStorageCheck=result;lastStorageCheckTime=Date.now();
  for(const loc of result.locations){if(!loc.available||!loc.writable)void errorLog.append('error','storage-check',loc.error||'UNAVAILABLE',{location:loc.name})}
  if(!result.healthy)void audit('storage.check.failed',{reason,locations:result.locations});
+ if(!result.healthy)void eventBus.emit('storage.warning',{reason,message:'Storage check reported a problem'});
  return result;
 }
 async function handler(req,res){try{if(req.url.startsWith('//'))req.url=req.url.replace(/^\/{2,}/,'/');const url=new URL(req.url,'http://localhost');
@@ -383,7 +399,23 @@ if(url.pathname==='/admin/api/settings'&&method==='PATCH'){
  const data=await parse(req);let saved;try{saved=await runtime.save(data)}catch(e){return fail(res,400,String(e.message||'Invalid settings').slice(0,160))}
  applyBackupSchedule();
  await audit('settings_changed',{keys:Object.keys(data)});
+ void eventBus.emit('settings_changed',{keys:Object.keys(data)});
  const now=runtime.effective(),startupKeys=['maxDownloadStreams','maxJobs','storageCheckIntervalMs','corsOrigin','requirePortalToken','storeRawIp'];return json(res,200,{settings:saved,effective:now,restartRequired:path.join(saved.databaseDirectory,saved.databaseFile)!==runtime.databaseRelative||startupKeys.some(k=>now[k]!==eff[k])});
+}
+if(url.pathname==='/admin/api/events'&&method==='GET'){
+ if(!adminGate(req,res,'settings',method))return;
+ const limitRaw=url.searchParams.get('limit')||'100';
+ if(!/^[0-9]{1,4}$/.test(limitRaw)||Number(limitRaw)<1||Number(limitRaw)>500)return fail(res,400,'Invalid limit');
+ const level=url.searchParams.get('level'),kind=url.searchParams.get('kind'),status=url.searchParams.get('status');
+ if(level&&!['info','success','warn','error'].includes(level))return fail(res,400,'Invalid level');
+ const events=notificationCenter.list({since:url.searchParams.get('since')||undefined,limit:Number(limitRaw),level:level||undefined,kind:kind||undefined,status:status||undefined});
+ return json(res,200,{events,count:events.length,stats:notificationCenter.stats(),order:'newest-first'});
+}
+if(url.pathname==='/admin/api/events/clear'&&method==='POST'){
+ if(!adminGate(req,res,'settings',method))return;
+ const cleared=notificationCenter.clear({finishedOnly:url.searchParams.get('all')!=='true'});
+ await audit('notifications.clear',{cleared});
+ return json(res,200,{cleared});
 }
 if(url.pathname==='/admin/api/qr-artifacts'&&method==='POST'){
  if(!adminGate(req,res,'qr',method))return;
@@ -448,6 +480,7 @@ if(url.pathname==='/admin/api/database/backup'&&method==='POST'){
  if(!adminGate(req,res,'backup',method))return;
  const result=await updateBackup();
  await audit('database_backup_created',{name:result.name,bytes:result.bytes,sha256:result.sha256});
+ void eventBus.emit('backup.created',{name:result.name,bytes:result.bytes,sha256:result.sha256});
  return json(res,201,{backup:result});
 }
 if(url.pathname==='/admin/api/jobs'&&method==='GET'){if(!adminGate(req,res,'jobs',method))return;return json(res,200,{jobs:jobManager.list(),...jobManager.stats()})}
@@ -462,6 +495,47 @@ if(url.pathname==='/admin/api/jobs'&&method==='GET'){if(!adminGate(req,res,'jobs
   if(!adminGate(req,res,'jobs',method))return;
   const job=jobManager.get(m[1]);
   return job?json(res,200,job):fail(res,404,'Job not found');
+ }}
+if(url.pathname==='/admin/api/migrate/preflight'&&method==='POST'){
+ if(!adminGate(req,res,'migrate',method))return;
+ const b=await parse(req);
+ const out=await migration.preflight(b||{});
+ void eventBus.emit('migrate.preflight',{ok:out.ok,source:out.source,blockers:out.blockers});
+ return json(res,200,out);
+}
+if(url.pathname==='/admin/api/migrate/plan'&&method==='POST'){
+ if(!adminGate(req,res,'migrate',method))return;
+ const b=await parse(req);
+ const out=await migration.plan(b||{});
+ void eventBus.emit('migrate.plan',{source:out.source,destination:out.destination,files:out.totalFiles});
+ return json(res,200,out);
+}
+if(url.pathname==='/admin/api/migrate/run'&&method==='POST'){
+ if(!adminGate(req,res,'migrate',method))return;
+ const b=await parse(req);
+ if(!b||typeof b.source!=='string'||!b.source.trim()||typeof b.destination!=='string'||!b.destination.trim())return fail(res,400,'source and destination are required');
+ const job=jobManager.submit('migration',{source:b.source.trim(),destination:b.destination.trim(),conflictPolicy:b.conflictPolicy||'queue',method:b.method||'copy'});
+ void audit('migrate.run',{planId:job.id,source:b.source,destination:b.destination,conflictPolicy:b.conflictPolicy,method:b.method});
+ return json(res,202,{planId:job.id,job});
+}
+{const m=/^\/admin\/api\/migrate\/([0-9a-f-]{36})$/.exec(url.pathname);
+ if(m&&method==='GET'){
+  if(!adminGate(req,res,'migrate',method))return;
+  const job=jobManager.get(m[1]);
+  return job?json(res,200,job):fail(res,404,'Migration plan not found');
+ }}
+{const m=/^\/admin\/api\/migrate\/([0-9a-f-]{36})\/(cancel|rollback)$/.exec(url.pathname);
+ if(m&&method==='POST'){
+  if(!adminGate(req,res,'migrate',method))return;
+  const id=m[1];
+  if(m[2]==='cancel'){const job=jobManager.cancel(id);return job?json(res,200,job):fail(res,404,'Migration plan not found')}
+  const job=jobManager.get(id);
+  if(!job)return fail(res,404,'Migration plan not found');
+  if(job.status!=='succeeded'||!job.result||!job.result.backup)return fail(res,409,'No backup available for rollback');
+  const out=await migration.rollback({destination:job.result.destination});
+  void audit('migrate.rollback',{planId:id,destination:out.destination,rolledBackTo:out.rolledBackTo});
+  void eventBus.emit('migrate.rollback',{planId:id,destination:out.destination});
+  return json(res,200,out);
  }}
 if(url.pathname==='/admin/api/diagnostics'&&method==='GET'){
  if(!adminGate(req,res,'diagnostics',method))return;
@@ -489,6 +563,7 @@ if(url.pathname==='/admin/api/config-profiles'&&method==='POST'){
  const settings=data&&data.settings&&typeof data.settings==='object'&&!Array.isArray(data.settings)?data.settings:runtime.settings;
  const profile=await configProfiles.save(name,settings);
  await audit('config.profile.saved',{profile:name});
+ void eventBus.emit('config.profile.saved',{profile:name});
  return json(res,201,{profile});
 }
 {const m=/^\/admin\/api\/config-profiles\/([a-z0-9][a-z0-9_-]{0,63})\/apply$/.exec(url.pathname);
@@ -498,6 +573,7 @@ if(url.pathname==='/admin/api/config-profiles'&&method==='POST'){
   const saved=await runtime.save(profile.settings);
   const restartRequired=path.join(saved.databaseDirectory,saved.databaseFile)!==runtime.databaseRelative;
   await audit('config.profile.applied',{profile:m[1],restartRequired});
+  void eventBus.emit('config.profile.applied',{profile:m[1],restartRequired});
   return json(res,200,{profile:m[1],settings:saved,restartRequired});
  }}
 {const m=/^\/admin\/api\/config-profiles\/([a-z0-9][a-z0-9_-]{0,63})$/.exec(url.pathname);
@@ -559,7 +635,7 @@ if(url.pathname==='/admin/api/storage/check'&&method==='POST'){
 }
 if(url.pathname==='/admin/api/whoami'&&method==='GET'){if(!adminGate(req,res,'whoami',method))return;return json(res,200,{role:rbac.role(req),ingress:req.ingress===true})}
 if(url.pathname==='/health'&&method==='GET')return json(res,200,{status:'ok'});if(url.pathname==='/admin/api/metrics'&&method==='GET'){if(!adminGate(req,res,'metrics',method))return;return json(res,200,{...counters,portals:db.portals.length})}
-if(url.pathname==='/admin/api/audit/verify'&&method==='GET'){if(!adminGate(req,res,'audit',method))return;const result=await auditChain.verify();return json(res,result.valid?200:409,{...result,integrity:result.valid?'HASH_CHAIN_VALID':'FAILED',note:'Hash chaining detects changes but is not externally anchored or tamper-proof against an administrator who can rewrite the entire chain.'})}
+if(url.pathname==='/admin/api/audit/verify'&&method==='GET'){if(!adminGate(req,res,'audit',method))return;const result=await auditChain.verify();void eventBus.emit('integrity.verified',{valid:result.valid});return json(res,result.valid?200:409,{...result,integrity:result.valid?'HASH_CHAIN_VALID':'FAILED',note:'Hash chaining detects changes but is not externally anchored or tamper-proof against an administrator who can rewrite the entire chain.'})}
 if(url.pathname==='/admin/api/audit'&&method==='GET'){
  if(!adminGate(req,res,'audit',method))return;
  const limitRaw=url.searchParams.get('limit')||'100';
@@ -662,6 +738,59 @@ if(url.pathname==='/portal.css'&&method==='GET'){
  return res.end(fs.readFileSync(path.join(__dirname,'portal.css')));
 }
 if(parts[0]==='api'&&parts[1]==='v1'&&parts[2]==='portals'&&parts.length===3&&method==='GET')return requirePortalToken?fail(res,404,'Not found'):json(res,200,{portals:db.portals.filter(p=>p.visibility==='public').map(publicPortal)});
+// --- Phase 7: evidence portal (WORM store + portal roles) ---
+// Portal credentials are HMAC-signed, role-bearing, per-case-scoped tokens issued
+// out-of-band (OIDC/PKCE in production). They are a separate plane from ADMIN_TOKEN.
+if(parts[0]==='api'&&parts[1]==='v1'&&parts[2]==='p'&&parts[4]==='evidence'){
+ const p=getPortal(parts[3]);if(!p)return fail(res,404,'Not found');
+ const cred=portalAuth.verify(bearerToken(req)||url.searchParams.get('portal_credential'));
+ if(!cred)return fail(res,401,'Portal credential required');
+ const tail=parts.slice(5);
+ const caseParam=clean(url.searchParams.get('case')||'');
+ const roleCaseOk=caseId=>!['investigator','expert'].includes(cred.role)||!cred.caseIds.length||cred.caseIds.includes(caseId);
+ const need=(action,caseId)=>{if(!portalAuth.can(cred.role,action))return fail(res,403,'Insufficient portal role');if(caseId&&!roleCaseOk(caseId))return fail(res,403,'Case not assigned to this role');return true};
+ const recFor=async id=>{const r=await evidenceStore.get(id);if(!r||!roleCaseOk(r.caseId))return fail(res,404,'Not found');return r};
+ const shaped=r=>({fileId:r.fileId,caseId:r.caseId,name:r.name,size:r.size,sha256:r.sha256,sha512:r.sha512,uploadedBy:r.uploadedBy,uploadedAt:r.uploadedAt,classification:r.classification,tags:r.tags});
+ if(!tail.length&&method==='POST'){
+  if(!need('upload'))return;
+  const name=fileNameHeader(req);if(!name)return fail(res,400,'Missing X-File-Name');
+  const caseId=clean(req.headers['x-case-id']||'');if(!caseId)return fail(res,400,'Missing X-Case-Id');
+  if(!roleCaseOk(caseId))return fail(res,403,'Case not assigned to this role');
+  const classification=clean(req.headers['x-classification']||'EVIDENCE').toUpperCase();
+  const tags=String(req.headers['x-tags']||'').split(',').map(t=>t.trim()).filter(Boolean);
+  let data;try{data=await body(req,runtime.effective().maxUploadBytes||10*1024*1024)}catch(e){if(e.status===413)return fail(res,413,e.message);throw e}
+  if(!data.length)return fail(res,400,'Empty payload');
+  try{const receipt=await evidenceStore.store({caseId,name,data,uploadedBy:cred.sub,classification,tags});void audit('evidence.upload',{portalId:p.id,fileId:receipt.fileId,caseId,name,role:cred.role,size:receipt.size});void eventBus.emit('evidence.uploaded',{portalId:p.id,fileId:receipt.fileId,caseId});return json(res,201,{receipt})}
+  catch(e){if(e.status)return fail(res,e.status,e.message);throw e}
+ }
+ if(!tail.length&&method==='GET'){
+  if(!need('read'))return;
+  const rows=(await evidenceStore.list(caseParam?{caseId:caseParam}:{})).filter(r=>roleCaseOk(r.caseId)).map(shaped);
+  return json(res,200,{evidence:rows,total:rows.length});
+ }
+ if(tail.length===1&&method==='GET'){
+  if(!need('read'))return;
+  const r=await recFor(tail[0]);return json(res,200,{evidence:shaped(r)});
+ }
+ if(tail.length===2&&tail[1]==='verify'&&method==='GET'){
+  const r=await recFor(tail[0]);if(!need('verify',r.caseId))return;
+  const v=await evidenceStore.verify(tail[0]);void audit('evidence.verify',{portalId:p.id,fileId:r.fileId,valid:v.valid,reason:v.reason,role:cred.role});return json(res,200,v);
+ }
+ if(tail.length===2&&tail[1]==='chain'&&method==='GET'){
+  const r=await recFor(tail[0]);if(!(cred.role==='judge'||cred.role==='prosecutor'))return fail(res,403,'Chain of custody requires judge or prosecutor role');
+  return json(res,200,await evidenceStore.custodyChain(tail[0]));
+ }
+ if(tail.length===2&&tail[1]==='download'&&method==='GET'){
+  const r=await recFor(tail[0]);if(!need('download',r.caseId))return;
+  const {data}=await evidenceStore.read(tail[0]);void audit('evidence.download',{portalId:p.id,fileId:r.fileId,role:cred.role});
+  res.writeHead(200,{'Content-Type':r.mimeType||'application/octet-stream','Content-Length':data.length,'Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(r.name.replace(/[\r\n]/g,'')),'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});return res.end(data);
+ }
+ if(tail.length===2&&tail[1]==='package'&&method==='GET'){
+  const r=await recFor(tail[0]);if(!need('read',r.caseId))return;
+  const [chain,v]=await Promise.all([evidenceStore.custodyChain(tail[0]),evidenceStore.verify(tail[0])]);return json(res,200,{receipt:shaped(r),chain,verification:v});
+ }
+ return fail(res,404,'Not found');
+}
 if(parts[0]==='api'&&parts[1]==='v1'&&parts[2]==='p'){
 const p=getPortal(parts[3]);if(!p)return fail(res,404,'Not found');const tail=parts.slice(4);const downloadRoute=tail[0]==='files'&&tail[2]==='download';const fileForSigned=downloadRoute?p.files.find(f=>f.id===tail[1]):null;const signed=!!(fileForSigned&&fileMode(fileForSigned)==='FREE'&&signedValid(url,p,fileForSigned));if((requirePortalToken||p.visibility!=='public')&&(!signed||requirePortalToken)&&!portalAuthorized(req,p,downloadRoute?'download':'read',url))return fail(res,404,'Not found');
 if(!tail.length&&method==='GET'){void recordTelemetry('visit',req,p,null,url);return json(res,200,publicPortal(p));}

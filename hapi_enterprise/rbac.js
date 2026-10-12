@@ -24,6 +24,7 @@ const CAPABILITIES={
  profiles:{admin:true},
  storage:{admin:true,operator:true,viewer:'read'},
  retention:{admin:true,operator:true,viewer:'read'},
+ migrate:{admin:true},
  load:{admin:true,operator:'read',viewer:'read'},
  whoami:{admin:true,operator:'read',viewer:'read'},
  users:{admin:true}
