@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
-const {check,checkLocation}=require('../portal_enterprise/storage-check');
+const {check,checkLocation}=require('../hapi_enterprise/storage-check');
 (async()=>{
  // Unit: directory writable, file is not a directory, missing path
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-storage-'));
@@ -12,7 +12,7 @@ const {check,checkLocation}=require('../portal_enterprise/storage-check');
  // API: status + on-demand check are admin-gated and healthy in a fresh data dir
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'portal-storage-api-'));
  const port=26000+Math.floor(Math.random()*10000),token='storage-test-admin-token-1234567890';
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:root,PORT:String(port),ADMIN_TOKEN:token,STORAGE_CHECK_INTERVAL_MS:'0'},stdio:'ignore'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:root,PORT:String(port),ADMIN_TOKEN:token,STORAGE_CHECK_INTERVAL_MS:'0'},stdio:'ignore'});
  const call=async(route,method='GET')=>{const x=await fetch(`http://127.0.0.1:${port}${route}`,{method,headers:{Authorization:'Bearer '+token}});return {status:x.status,data:await x.json()}};
  try{
   let ready=false;for(let i=0;i<100;i++){try{if((await fetch(`http://127.0.0.1:${port}/health`)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}assert(ready,'server did not start');

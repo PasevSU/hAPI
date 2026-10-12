@@ -3,8 +3,8 @@
 Версия: 2.0
 Дата: 2026-10-12
 Статус: Draft за одобрение
-База: v0.49 (съществуващ код на \\192.168.50.4\addons\portal_enterprise)
-Работно копие: files\portal_enterprise-ux\
+База: v0.49 (съществуващ код на \\192.168.50.4\addons\hapi_enterprise)
+Работно копие: files\hapi_enterprise-ux\
 
 0. Изходна точка – какво вече съществува
 Преди да планирам, фиксирам реалното състояние на проекта, за да не дублираме работа.
@@ -15,7 +15,7 @@
 Данни	SQLite + атомични backup-и (VACUUM INTO), signed URL-и (HMAC + expires)
 Документи	pdf-writer.js, ooxml.js (docx параграфи), directory.js (променливи)
 QR	qrcode.js генерира SVG (per-portal)
-HA интеграция	custom_components/portal_enterprise проксира API-то
+HA интеграция	custom_components/hapi_enterprise проксира API-то
 UI	admin.html + admin.js (13 панела, базова структура)
 0.2 Вече реализирано в работното копие (v0.49-ux)
 ✅ Табло „Обзор" (KPI карти, таблица портали, системен статус)
@@ -160,7 +160,7 @@ Blockchain anchor (само HA entity anchor)
 4.13	Persistent ratings dedup	db migration	Средна
 4. Детайлна структура на папките (целева)
 text
-portal_enterprise/
+hapi_enterprise/
 ├── config.yaml                    ← разширена схема
 ├── Dockerfile                     ← + tesseract-ocr, poppler-utils
 ├── CHANGELOG.md                   ← НОВО
@@ -238,7 +238,7 @@ portal_enterprise/
 │       └── verify.test.js
 │
 └── custom_components/
-    └── portal_enterprise/
+    └── hapi_enterprise/
         ├── __init__.py
         ├── sensor.py              ← НОВО
         ├── notify.py              ← НОВО
@@ -619,7 +619,7 @@ async function createFullBackup() {
 yaml
 name: "Portal Enterprise"
 version: "2.0.0"
-slug: "portal_enterprise"
+slug: "hapi_enterprise"
 description: "Професионален портал за документи с QR верификация"
 arch: [amd64, aarch64, armv7]
 url: "https://github.com/..."

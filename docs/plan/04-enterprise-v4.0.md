@@ -5,7 +5,7 @@ DOCFLOW Enterprise v4.0
 Кодово име: DOCFLOW‑E
 Дата: 2026-10-12
 Статус: Strategic Blueprint – за одобрение от Technical Steering Committee
-База: DOCFLOW v3.0 + portal_enterprise v0.49
+База: DOCFLOW v3.0 + hapi_enterprise v0.49
 Класификация: Internal – Confidential
 
 0. Executive Summary

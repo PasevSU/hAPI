@@ -4,12 +4,12 @@
 
 | Version  | Supported          |
 | -------- | ------------------ |
-| 0.47.x   | :white_check_mark: |
-| < 0.47   | :x:                |
+| 0.50.x   | :white_check_mark: |
+| < 0.50   | :x:                |
 
 ## Security Model
 
-hAPI ENTERPRICE runs one shared Node.js backend (`download_portal/server.js`) on the
+hAPI Enterprise runs one shared Node.js backend (`hapi_enterprise/server.js`) on the
 edge between Home Assistant and Windows. Security is enforced by design:
 
 - **Fail-open token bootstrap** — the add-on no longer hard-fails on a placeholder

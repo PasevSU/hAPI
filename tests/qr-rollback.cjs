@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {create}=require('../portal_enterprise/runtime-config');
+const {create}=require('../hapi_enterprise/runtime-config');
 (async()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'qr-rollback-'));try{
  const runtime=create(root);const artifact=await runtime.createArtifacts({qrId:'QR_A'});
  assert(fs.existsSync(path.join(root,artifact.relativeDirectory,'manifest.json')));

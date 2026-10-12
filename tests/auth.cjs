@@ -5,7 +5,7 @@ const {spawn}=require('node:child_process'),fs=require('node:fs'),os=require('no
 const req=async(route,method='GET',data,headers={})=>{const r=await fetch(`http://127.0.0.1:${port}${route}`,{method,headers,...(data===undefined?{}:{body:data})});let v;try{v=await r.json()}catch{v=null}return {status:r.status,value:v}};
 const json=(r,m,d)=>req(r,m,JSON.stringify(d),{'Content-Type':'application/json'});
 const admin=(r,m,d)=>req(r,m,d===undefined?undefined:JSON.stringify(d),{Authorization:'Bearer '+token,'Content-Type':'application/json'});
-const boot=async()=>{child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});for(let i=0;i<80;i++){try{if((await req('/health')).status===200)return}catch{}await new Promise(r=>setTimeout(r,50))}throw Error('Startup failed')};
+const boot=async()=>{child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});for(let i=0;i<80;i++){try{if((await req('/health')).status===200)return}catch{}await new Promise(r=>setTimeout(r,50))}throw Error('Startup failed')};
 try{
 await boot();
 // user management requires admin auth

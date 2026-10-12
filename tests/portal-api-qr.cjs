@@ -4,7 +4,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('nod
 (async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-apiqr-'));
  const token='apiqr-test-admin-secret-2026-b7c3',pub=18297;
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub),PUBLIC_BASE_URL:'https://example.test'},stdio:'pipe'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub),PUBLIC_BASE_URL:'https://example.test'},stdio:'pipe'});
  try{
   let ready=false;
   for(let i=0;i<70;i++){try{if((await fetch(`http://127.0.0.1:${pub}/health`)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,70))}

@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'portal-sqlite-size-'));
 try{
- const store=require('../portal_enterprise/sqlite-store.js').open(path.join(root,'db.json'));
+ const store=require('../hapi_enterprise/sqlite-store.js').open(path.join(root,'db.json'));
  try{
   store.load();const s=store.stats();
   assert.equal(s.engine,'sqlite');

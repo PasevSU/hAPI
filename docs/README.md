@@ -15,6 +15,12 @@ Ordered from the original core requirement to the latest consolidated master pla
 | `06-multi-tenancy-v4.2.md`    | Multi-tenancy architecture                                         |
 | `07-security-v4.3.md`         | Security — Zero Trust                                              |
 | `08-master-plan-v5.0.md`      | **Consolidated master plan** (canonical source of truth)           |
+| `09-execution-plan.md`        | Phased execution plan (Phase 1 → 2 → 3 → 4)                        |
+| `10-phase-4-gap-closure.md`   | Phase 4 scope — document processing + QR sharing                   |
+| `11-phase-4-flexibility-checklist.md` | §9.1 flexibility matrix for all Phase 4 features             |
+| `12-phase-5-settings-and-progress.md` | Phase 5 plan — settings UI + progress/status popup          |
+| `13-phase-6-migration-architecture.md` | Phase 6 plan — zero-damage folder/document migration     |
+| `14-phase-7-evidence-portal.md`   | Phase 7 plan — evidence portal (judges/prosecutors, cryptographic proof) |
 
 > **Note:** `07-security-v4.3.md` contains an appended copy of `06-multi-tenancy-v4.2.md`
 > (the file was concatenated by mistake). The master plan (`08`) is the canonical source

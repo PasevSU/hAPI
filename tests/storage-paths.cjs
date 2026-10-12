@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {create,validate}=require('../portal_enterprise/runtime-config');
+const {create,validate}=require('../hapi_enterprise/runtime-config');
 (async()=>{const root=fs.mkdtempSync(path.join(os.tmpdir(),'portal-storage-'));try{
 const rt=create(root);assert.equal(rt.databaseRelative,'db.json');
 await rt.save({databaseDirectory:'database',databaseFile:'metadata.json',artifactDirectory:'qr-archive'});
