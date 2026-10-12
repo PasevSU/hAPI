@@ -65,7 +65,8 @@ function parseEnv(envStr) {
   const extra = {};
   for (const tok of String(envStr || '').split(/\s+/)) {
     const i = tok.indexOf('=');
-    if (i > 0) extra[tok.slice(0, i)] = tok.slice(i + 1);
+    const key = tok.slice(0, i);
+    if (i > 0 && key !== '__proto__' && key !== 'constructor' && key !== 'prototype' && !key.startsWith('NODE_OPTIONS')) extra[key] = tok.slice(i + 1);
   }
   return extra;
 }
@@ -107,6 +108,12 @@ function readBody(req) {
 const server = http.createServer(async (req, res) => {
   try {
     const u = new URL(req.url, 'http://x');
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      const origin = req.headers['origin'] || '';
+      const site = req.headers['sec-fetch-site'] || '';
+      const own = origin === 'http://' + HOST + ':' + PORT || origin === 'http://localhost:' + PORT;
+      if ((origin && !own) || site === 'cross-site') { json(res, 403, { error: 'forbidden origin' }); return; }
+    }
     if (u.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(PAGE); return; }
     if (u.pathname === '/api/tree') { json(res, 200, buildTree(ROOT, 0)); return; }
     if (u.pathname === '/api/commands' && req.method === 'GET') { json(res, 200, commands); return; }
@@ -130,7 +137,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (jm && req.method === 'POST') { json(res, 200, { stopped: stopCommand(jm[1]) }); return; }
     json(res, 404, { error: 'not found' });
-  } catch (e) { json(res, 500, { error: String((e && e.message) || e) }); }
+  } catch (e) { console.error(e); json(res, 500, { error: 'server error' }); }
 });
 server.listen(PORT, HOST, () => console.log('hAPI Dev Табло: http://' + HOST + ':' + PORT));
 
