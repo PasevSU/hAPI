@@ -924,7 +924,8 @@ if(parts[4]==='credentials'&&parts.length===5&&method==='POST'){
  let credential;try{credential=portalAuth.issue(opts)}catch(e){return fail(res,e.status||400,e.message)}
  const payload=JSON.parse(Buffer.from(credential.split('.')[0],'base64url').toString('utf8'));
  void audit('portal.credential.issued',{portalId:p.id,sub,role,caseIds:payload.caseIds,expiresAt:new Date(payload.exp*1000).toISOString()});
- return json(res,201,{credential,sub:payload.sub,role:payload.role,caseIds:payload.caseIds,expiresAt:new Date(payload.exp*1000).toISOString()});
+ const landing=portalLandingUrl(p,baseUrl(req))+'?portal_credential='+encodeURIComponent(credential);
+ return json(res,201,{credential,url:landing,qr:qrSvg(landing),sub:payload.sub,role:payload.role,caseIds:payload.caseIds,expiresAt:new Date(payload.exp*1000).toISOString()});
 }
 // Batch policy workflow: validate entire request before applying any changes.
 // Preview is read-only and returns the exact affected files; apply is one metadata update.

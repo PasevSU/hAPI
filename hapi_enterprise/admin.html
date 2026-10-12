@@ -304,6 +304,10 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span data-i18n="Портали">Портали</span>
       </button>
+      <button class="nav-item" data-panel="qr">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M21 14v3"/><path d="M14 21h3"/><path d="M21 18h1"/></svg>
+        <span data-i18n="QR артефакти">QR артефакти</span>
+      </button>
       <button class="nav-item" data-panel="hierarchy">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M6 9v6"/><path d="M18 9v6"/></svg>
         <span data-i18n="Йерархия">Йерархия</span>
@@ -336,6 +340,10 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         <span data-i18n="Съхранение">Съхранение</span>
       </button>
+      <button class="nav-item" data-panel="migration">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <span data-i18n="Миграция">Миграция</span>
+      </button>
       <button class="nav-item" data-panel="backups">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
         <span data-i18n="Резервни копия">Резервни копия</span>
@@ -343,6 +351,10 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
       <button class="nav-item" data-panel="logs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         <span data-i18n="Журнал">Журнал</span>
+      </button>
+      <button class="nav-item" data-panel="audit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+        <span data-i18n="Одитен журнал">Одитен журнал</span>
       </button>
       <button class="nav-item" data-panel="api">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
@@ -622,6 +634,74 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
       <section class="panel" id="panel-api">
         <section class="card">
           <div class="card-body" id="api-users"></div>
+        </section>
+      </section>
+
+      <section class="panel" id="panel-qr">
+        <section class="card">
+          <div class="card-head">
+            <h2 data-i18n="QR артефакти">QR артефакти</h2>
+            <span class="hint" data-i18n="Създава защитена папка с манифест, лог и справка за всеки QR код, който води към официални документи или доказателства.">Създава защитена папка с манифест, лог и справка за всеки QR код, който води към официални документи или доказателства.</span>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <label><span data-i18n="QR идентификатор">QR идентификатор</span> <input id="qr-new-id" placeholder="napr. case-2024-001"></label>
+              <button id="qr-create" type="button" data-i18n="Създай артефакт">Създай артефакт</button>
+              <button id="qr-refresh" type="button" data-i18n="Опресни">Опресни</button>
+            </div>
+            <div id="qr-list" class="data-table-wrap"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel" id="panel-migration">
+        <section class="card">
+          <div class="card-head">
+            <h2 data-i18n="Миграция на документи">Миграция на документи</h2>
+            <span class="hint" data-i18n="Безопасно преместване на папка с документи и указатели с проверка SHA-256, резервно копие и възможност за отмяна (rollback).">Безопасно преместване на папка с документи и указатели с проверка SHA-256, резервно копие и възможност за отмяна (rollback).</span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="field"><label><span data-i18n="Източник (път)">Източник (път)</span> <input id="mig-source" placeholder="/config/documents"></label></div>
+              <div class="field"><label><span data-i18n="Дестинация (път)">Дестинация (път)</span> <input id="mig-dest" placeholder="/share/evidence"></label></div>
+              <div class="field"><label><span data-i18n="Мин. свободно място (MB)">Мин. свободно място (MB)</span> <input id="mig-minfree" type="number" value="500" min="0"></label></div>
+            </div>
+            <div class="form-grid">
+              <div class="field"><label><span data-i18n="Политика при конфликт">Политика при конфликт</span>
+                <select id="mig-policy"><option value="queue" data-i18n="Нареди след съществуващите">Нареди след съществуващите</option><option value="first" data-i18n="Запази първия">Запази първия</option><option value="skip" data-i18n="Пропусни конфликтите">Пропусни конфликтите</option></select></label></div>
+              <div class="field"><label><span data-i18n="Метод">Метод</span>
+                <select id="mig-method"><option value="copy" data-i18n="Копиране (най-безопасно)">Копиране (най-безопасно)</option><option value="hardlink" data-i18n="Твърда връзка">Твърда връзка</option><option value="reference" data-i18n="Само указател (reference)">Само указател (reference)</option></select></label></div>
+            </div>
+            <div class="form-row">
+              <button id="mig-preflight" type="button" data-i18n="Проверка (preflight)">Проверка (preflight)</button>
+              <button id="mig-plan" type="button" data-i18n="Планирай">Планирай</button>
+              <button id="mig-run" type="button" data-i18n="Изпълни">Изпълни</button>
+              <button id="mig-cancel" type="button" data-i18n="Откажи задачата" hidden>Откажи задачата</button>
+              <button id="mig-rollback" type="button" data-i18n="Отмени миграцията (rollback)" hidden>Отмени миграцията (rollback)</button>
+            </div>
+            <div id="mig-result" aria-live="polite"></div>
+            <div id="mig-progress" aria-live="polite"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel" id="panel-audit">
+        <section class="card">
+          <div class="card-head">
+            <h2 data-i18n="Одитен журнал">Одитен журнал</h2>
+            <span class="hint" data-i18n="Неизтриваем, свързан с хеш верига запис на всяко действие — проверка, издадени пълномощия, качвания и изтегляния.">Неизтриваем, свързан с хеш верига запис на всяко действие — проверка, издадени пълномощия, качвания и изтегляния.</span>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <label><span data-i18n="Портал ID (по избор)">Портал ID (по избор)</span> <input id="audit-portal" placeholder="24-знаков идентификатор"></label>
+              <label><span data-i18n="Лимит">Лимит</span> <input id="audit-limit" type="number" value="200" min="1" max="500"></label>
+              <button id="audit-refresh" type="button" data-i18n="Зареди">Зареди</button>
+              <button id="audit-verify" type="button" data-i18n="Провери целостта">Провери целостта</button>
+              <button id="audit-export-json" type="button" data-i18n="Експорт JSON">Експорт JSON</button>
+              <button id="audit-export-csv" type="button" data-i18n="Експорт CSV">Експорт CSV</button>
+            </div>
+            <div id="audit-result" aria-live="polite"></div>
+          </div>
         </section>
       </section>
 

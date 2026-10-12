@@ -18,7 +18,7 @@ const CAPABILITIES={
  directory:{admin:true,operator:true,viewer:'read'},
  core:{admin:true,operator:true,viewer:'read'},
  settings:{admin:true},
- qr:{admin:true},
+ qr:{admin:true,operator:true},
  backup:{admin:true},
  errors:{admin:true,operator:'read',viewer:'read'},
  profiles:{admin:true},

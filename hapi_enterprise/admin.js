@@ -960,3 +960,169 @@ Object.assign(ADMIN_DIC.de,{'Настройки на добавката':'Add-on
 
 applyAdminLang();
 action(loadOverview);
+
+// ===== V2.0: съдебни пълномощия, миграция, QR артефакти, одитен журнал =====
+
+// 1) Издаване на съдебни пълномощия (QR достъп) към всеки портал.
+const PORTAL_ROLES=[['judge',t('Съдия')],['prosecutor',t('Прокурор')],['clerk',t('Деловодител')],['investigator',t('Разследващ')],['expert',t('Вещо лице')],['public',t('Публичен')]];
+const _credPrevLoad=load;
+load=async function(){await _credPrevLoad();await renderCredentialSections()};
+async function renderCredentialSections(){
+ let portals=[];try{portals=(await api('/admin/api/portals')).portals}catch{return}
+ const articles=[...$('portals').querySelectorAll('article')];
+ for(let i=0;i<portals.length;i++){
+  const p=portals[i],box=articles[i];if(!box)continue;
+  const section=node('section','');section.append(node('h4',t('Съдебни пълномощия (QR достъп)')));
+  const role=node('select','');role.setAttribute('aria-label',t('Роля'));for(const [v,l]of PORTAL_ROLES){const o=node('option',l);o.value=v;role.append(o)}
+  const sub=node('input','');sub.placeholder=t('Субект (имейл/име)');sub.setAttribute('aria-label',t('Субект'));
+  const caseIds=node('input','');caseIds.placeholder=t('Дела (caseIds, със запетая) — за разследващ/вещо лице');caseIds.setAttribute('aria-label',t('Дела'));
+  const ttl=node('select','');ttl.setAttribute('aria-label',t('Валидност'));for(const [v,l]of [['900',t('15 минути')],['3600',t('1 час')],['28800',t('8 часа')],['86400',t('24 часа')]]){const o=node('option',l);o.value=v;ttl.append(o)}ttl.value='3600';
+  const issueBtn=node('button',t('Издай пълномощие'));issueBtn.type='button';
+  issueBtn.onclick=()=>action(async()=>{
+   const body={sub:sub.value.trim()||('user@example.org'),role:role.value,ttlSeconds:Number(ttl.value)};
+   const ids=caseIds.value.split(',').map(x=>x.trim()).filter(Boolean);if(ids.length)body.caseIds=ids;
+   const r=await api('/admin/api/portals/'+p.id+'/credentials','POST',body);
+   showCredential(r,p);
+  });
+  section.append(role,sub,caseIds,ttl,issueBtn);
+  box.append(section);
+ }
+}
+function showCredential(r,p){
+ const body=document.createElement('div');
+ const img=document.createElement('img');const url=URL.createObjectURL(new Blob([r.qr],{type:'image/svg+xml'}));img.src=url;img.alt='QR';img.style.cssText='width:220px;height:220px;background:#fff;padding:8px;border-radius:8px;display:block;margin:0 auto 12px';
+ const info=document.createElement('div');info.className='muted';info.style.fontSize='12px';
+ info.append(node('p',t('Роля')+': '+r.role+' · '+t('Субект')+': '+r.sub+' · '+t('Изтича')+': '+fmtDate(r.expiresAt)+(r.caseIds&&r.caseIds.length?' · '+t('Дела')+': '+r.caseIds.join(', '):'')));
+ const code=node('code',r.credential);code.style.wordBreak='break-all';
+ const urlLine=node('code',r.url);urlLine.style.wordBreak='break-all';
+ const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;margin:8px 0;flex-wrap:wrap';
+ const copyTok=node('button',t('Копирай пълномощието'));copyTok.type='button';copyTok.onclick=()=>copyText(r.credential);
+ const copyUrl=node('button',t('Копирай линк'));copyUrl.type='button';copyUrl.onclick=()=>copyText(r.url);
+ const dl=node('button',t('Изтегли QR'));dl.type='button';dl.onclick=()=>{const a=document.createElement('a');a.href=url;a.download=(p.slug||'portal')+'-credential-qr.svg';a.click()};
+ row.append(copyTok,copyUrl,dl);
+ body.append(img,info,node('p',t('Пълномощие (еднократно видимо):')),code,node('p',t('Линк за сканиране:')),urlLine,row);
+ const d=dialog(t('Издадено пълномощие')+' · '+(p.title||p.slug),body);d.addEventListener('close',()=>URL.revokeObjectURL(url));
+}
+
+// 2) Миграция на документи.
+const _migInputs=()=>({source:$('mig-source').value.trim(),destination:$('mig-dest').value.trim(),minFreeMb:Number($('mig-minfree').value)||0,conflictPolicy:$('mig-policy').value,method:$('mig-method').value});
+let _migTimer=null,_migPlanId=null;
+function _migStatus(msg,cls){const el=$('mig-result');el.replaceChildren();const p=node('p',msg);if(cls)p.className=cls;el.append(p)}
+function _migProgress(msg){const el=$('mig-progress');el.replaceChildren();el.append(node('p',msg))}
+$('mig-preflight').onclick=()=>action(async()=>{
+ const b=_migInputs();if(!b.source||!b.destination)throw Error(t('Въведи източник и дестинация'));
+ _migStatus(t('Проверка…'));_migProgress('');
+ const out=await api('/admin/api/migrate/preflight','POST',b);
+ const el=$('mig-result');el.replaceChildren();
+ el.append(node('p',(out.ok?t('✔ Готово за миграция'):t('✖ Блокирано'))+' · '+t('Източник')+': '+out.source+' · '+t('Дестинация')+': '+out.destination));
+ if(out.blockers&&out.blockers.length){const list=node('ul','');for(const x of out.blockers)list.append(node('li',x));el.append(list)}
+ else el.append(node('p',t('Свободно място при източника')+': '+fmtBytes(out.freeBytesSource||0)+' · '+t('Свободно място при дестинацията')+': '+fmtBytes(out.freeBytesDestination||0)));
+});
+$('mig-plan').onclick=()=>action(async()=>{
+ const b=_migInputs();if(!b.source||!b.destination)throw Error(t('Въведи източник и дестинация'));
+ _migStatus(t('Планиране…'));_migProgress('');
+ const out=await api('/admin/api/migrate/plan','POST',b);
+ const el=$('mig-result');el.replaceChildren();
+ const head=node('p',t('План')+': '+out.totalFiles+' '+t('файла')+' ('+fmtBytes(out.totalBytes)+') · '+out.conflictCount+' '+t('конфликта')+(out.sufficient?' · '+t('мястото е достатъчно'):' · '+t('⚠ недостатъчно място')));
+ head.className=out.sufficient?'ok':'err';el.append(head);
+ if(out.conflicts&&out.conflicts.length){const list=node('ul','');for(const x of out.conflicts.slice(0,50))list.append(node('li',x));el.append(node('p',t('Конфликтни файлове (първите 50):')),list)}
+});
+$('mig-run').onclick=()=>action(async()=>{
+ const b=_migInputs();if(!b.source||!b.destination)throw Error(t('Въведи източник и дестинация'));
+ if(!confirm(t('Стартиране на миграция от ')+b.source+t(' към ')+b.destination+'?'))return;
+ _migStatus(t('Стартиране…'));_migProgress('');
+ const out=await api('/admin/api/migrate/run','POST',b);
+ _migPlanId=out.planId;
+ $('mig-cancel').hidden=false;$('mig-rollback').hidden=true;
+ _migPoll();
+});
+function _migPoll(){
+ clearInterval(_migTimer);
+ const tick=async()=>{
+  try{
+   const job=await api('/admin/api/migrate/'+_migPlanId);
+   const total=job.total||0,done=job.done||0,pct=total?Math.round(done/total*100):0;
+   _migProgress(job.status+' · '+done+'/'+total+' ('+pct+'%)'+(job.error?' · '+job.error:''));
+   if(['queued','running','paused'].includes(job.status))return;
+   clearInterval(_migTimer);
+   if(job.status==='succeeded'){
+    const r=job.result||{};
+    _migStatus(t('✔ Миграцията е успешна: ')+r.files+' '+t('файла')+' · '+t('копирани')+': '+r.copied,'ok');
+    if(r.backup){$('mig-rollback').hidden=false}
+   } else if(job.status==='failed'||job.status==='interrupted'){
+    _migStatus(t('✖ Миграцията не успя: ')+(job.error||job.errorCode||''),'err');
+   } else if(job.status==='cancelled'){
+    _migStatus(t('Миграцията е отменена'));
+   }
+   $('mig-cancel').hidden=true;
+  }catch(e){clearInterval(_migTimer);$('mig-cancel').hidden=true;_migStatus(t('Грешка: ')+e.message,'err')}
+ };
+ tick();_migTimer=setInterval(tick,1200);
+}
+$('mig-cancel').onclick=()=>action(async()=>{if(!_migPlanId)return;await api('/admin/api/migrate/'+_migPlanId+'/cancel','POST');clearInterval(_migTimer);$('mig-cancel').hidden=true;_migStatus(t('Миграцията е отменена'))});
+$('mig-rollback').onclick=()=>action(async()=>{if(!_migPlanId)return;if(!confirm(t('Отмяна на миграцията и възстановяване на предишното състояние?')))return;const out=await api('/admin/api/migrate/'+_migPlanId+'/rollback','POST');_migStatus(t('✔ Възстановено от: ')+out.rolledBackTo,'ok');$('mig-rollback').hidden=true});
+
+// 3) QR артефакти.
+const _qrLoad=async()=>{
+ const el=$('qr-list');el.replaceChildren();
+ const data=await api('/admin/api/qr-artifacts');
+ const artifacts=data.artifacts||[];
+ if(!artifacts.length){el.append(node('p',t('Няма създадени QR артефакти.')));return}
+ const tbl=document.createElement('table');tbl.className='data-table';
+ const thead=document.createElement('thead');const hr=document.createElement('tr');for(const h of [t('QR ID'),t('Създаден'),t('Директория'),t('Действия')]){const th=document.createElement('th');th.textContent=h;hr.append(th)}thead.append(hr);
+ const tb=document.createElement('tbody');
+ for(const a of artifacts){const tr=document.createElement('tr');
+  const idTd=document.createElement('td');idTd.append(node('code',a.qrId));
+  const dTd=document.createElement('td');dTd.textContent=fmtDate(a.createdAt);
+  const dirTd=document.createElement('td');dirTd.append(node('code',a.relativeDirectory));
+  const actTd=document.createElement('td');const open=node('button',t('Отвори'));open.type='button';open.onclick=()=>{window.open(adminPath('/qr/'+encodeURIComponent(a.qrId)),'_blank')};
+  const revoke=node('button',t('Отмени'));revoke.type='button';revoke.className='danger';revoke.onclick=()=>action(async()=>{if(!confirm(t('Отмяна на QR артефакт ')+a.qrId+'?'))return;await api('/admin/api/qr-artifacts/'+encodeURIComponent(a.qrId),'DELETE');toast(t('Артефактът е отменен'),'success');await _qrLoad()});
+  actTd.append(open,revoke);tr.append(idTd,dTd,dirTd,actTd);tb.append(tr)}
+ tbl.append(thead,tb);el.append(tbl);
+};
+$('qr-refresh').onclick=()=>action(_qrLoad);
+$('qr-create').onclick=()=>action(async()=>{const qrId=$('qr-new-id').value.trim();if(!/^[A-Za-z0-9_-]{1,64}$/.test(qrId))throw Error(t('Невалиден QR идентификатор (букви, цифри, - и _)'));await api('/admin/api/qr-artifacts','POST',{qrId});$('qr-new-id').value='';toast(t('Артефактът е създаден'),'success');await _qrLoad()});
+
+// 4) Одитен журнал.
+const _auditRender=async()=>{
+ const el=$('audit-result');el.replaceChildren();
+ const portalId=$('audit-portal').value.trim();
+ const limit=Math.max(1,Math.min(500,Number($('audit-limit').value)||200));
+ const qs=new URLSearchParams({limit:String(limit)});if(portalId)qs.set('portalId',portalId);
+ const data=await api('/admin/api/audit?'+qs);
+ const events=data.events||[];
+ if(!events.length){el.append(node('p',t('Няма записи.')));return}
+ const tbl=document.createElement('table');tbl.className='data-table';
+ const thead=document.createElement('thead');const hr=document.createElement('tr');for(const h of [t('Време'),t('Събитие'),t('Портал'),t('Файл'),t('Актьор'),t('Детайли')]){const th=document.createElement('th');th.textContent=h;hr.append(th)}thead.append(hr);
+ const tb=document.createElement('tbody');
+ for(const e of events){const tr=document.createElement('tr');
+  const at=document.createElement('td');at.textContent=fmtDate(e.at);
+  const ev=document.createElement('td');ev.append(node('code',e.event));
+  const pid=document.createElement('td');pid.append(node('code',(e.portalId||'').slice(0,8)||'—'));
+  const fid=document.createElement('td');fid.append(node('code',(e.fileId||'').slice(0,8)||'—'));
+  const actor=document.createElement('td');actor.textContent=e.actor||e.ip||'—';
+  const det=document.createElement('td');det.textContent=e.details&&typeof e.details==='object'?JSON.stringify(e.details):String(e.details||'');
+  tr.append(at,ev,pid,fid,actor,det);tb.append(tr)}
+ tbl.append(thead,tb);el.append(tbl);
+ el.append(node('p',t('Показани')+': '+data.count+' · '+t('Ред на записите')+': '+data.order));
+};
+$('audit-refresh').onclick=()=>action(_auditRender);
+$('audit-verify').onclick=()=>action(async()=>{const r=await api('/admin/api/audit/verify');toast(r.valid?t('✔ Веригата е валидна'):t('✖ Веригата е нарушена'),r.valid?'success':'error');$('audit-result').replaceChildren(node('pre',JSON.stringify(r,null,2)))});
+const _auditExport=async(format)=>{const portalId=$('audit-portal').value.trim();const qs=new URLSearchParams({format});if(portalId)qs.set('portalId',portalId);const r=await fetch(adminPath('/admin/api/audit/export?'+qs),{headers:{Authorization:'Bearer '+$('token').value}});if(!r.ok)throw Error((await r.json().catch(()=>({}))).error||'HTTP '+r.status);const blob=await r.blob();const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=format==='csv'?'audit-export.csv':'audit-export.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$('audit-export-json').onclick=()=>action(()=>_auditExport('json'));
+$('audit-export-csv').onclick=()=>action(()=>_auditExport('csv'));
+
+// Превод на новите V2.0 етикети.
+Object.assign(ADMIN_DIC.en,{
+ 'QR артефакти':'QR artifacts','Създава защитена папка с манифест, лог и справка за всеки QR код, който води към официални документи или доказателства.':'Creates a protected folder with a manifest, log and report for each QR code that points to official documents or evidence.','QR идентификатор':'QR identifier','Създай артефакт':'Create artifact','Опресни':'Refresh','Няма създадени QR артефакти.':'No QR artifacts created.','QR ID':'QR ID','Създаден':'Created','Директория':'Directory','Действия':'Actions','Отвори':'Open','Отмени':'Revoke','Отмяна на QR артефакт ':'Revoke QR artifact ','Невалиден QR идентификатор (букви, цифри, - и _)':'Invalid QR identifier (letters, digits, - and _)','Артефактът е създаден':'Artifact created','Артефактът е отменен':'Artifact revoked',
+ 'Миграция на документи':'Document migration','Безопасно преместване на папка с документи и указатели с проверка SHA-256, резервно копие и възможност за отмяна (rollback).':'Safe migration of a document/index folder with SHA-256 verification, backup and rollback.','Източник (път)':'Source (path)','Дестинация (път)':'Destination (path)','Мин. свободно място (MB)':'Min. free space (MB)','Метод':'Method','Проверка (preflight)':'Check (preflight)','Планирай':'Plan','Изпълни':'Run','Откажи задачата':'Cancel job','Отмени миграцията (rollback)':'Rollback migration','Въведи източник и дестинация':'Enter source and destination','Проверка…':'Checking…','Планиране…':'Planning…','Стартиране…':'Starting…','✔ Готово за миграция':'✔ Ready for migration','✖ Блокирано':'✖ Blocked','Източник':'Source','Дестинация':'Destination','Свободно място при източника':'Free space at source','Свободно място при дестинацията':'Free space at destination','План':'Plan','файла':'files','конфликта':'conflicts','мястото е достатъчно':'space is sufficient','⚠ недостатъчно място':'⚠ insufficient space','Конфликтни файлове (първите 50):':'Conflicting files (first 50):','Стартиране на миграция от ':'Start migration from ',' към ':' to ','✔ Миграцията е успешна: ':'✔ Migration succeeded: ','копирани':'copied','✖ Миграцията не успя: ':'✖ Migration failed: ','Миграцията е отменена':'Migration cancelled','Грешка: ':'Error: ','Отмяна на миграцията и възстановяване на предишното състояние?':'Roll back the migration and restore the previous state?','✔ Възстановено от: ':'✔ Restored from: ',
+ 'Одитен журнал':'Audit journal','Неизтриваем, свързан с хеш верига запис на всяко действие — проверка, издадени пълномощия, качвания и изтегляния.':'Append-only, hash-chain-linked record of every action — verification, issued credentials, uploads and downloads.','Портал ID (по избор)':'Portal ID (optional)','Лимит':'Limit','Зареди':'Load','Провери целостта':'Verify integrity','Експорт JSON':'Export JSON','Експорт CSV':'Export CSV','Няма записи.':'No records.','Време':'Time','Събитие':'Event','Портал':'Portal','Файл':'File','Актьор':'Actor','Детайли':'Details','Показани':'Shown','Ред на записите':'Record order','✔ Веригата е валидна':'✔ Chain is valid','✖ Веригата е нарушена':'✖ Chain is broken',
+ 'Съдебни пълномощия (QR достъп)':'Judicial credentials (QR access)','Роля':'Role','Субект':'Subject','Субект (имейл/име)':'Subject (email/name)','Дела':'Cases','Дела (caseIds, със запетая) — за разследващ/вещо лице':'Cases (caseIds, comma-separated) — for investigator/expert','Валидност':'Validity','15 минути':'15 minutes','1 час':'1 hour','8 часа':'8 hours','24 часа':'24 hours','Издай пълномощие':'Issue credential','Издадено пълномощие':'Credential issued','Копирай пълномощието':'Copy credential','Копирай линк':'Copy link','Изтегли QR':'Download QR','Пълномощие (еднократно видимо):':'Credential (shown once):','Линк за сканиране:':'Link to scan:','Изтича':'Expires','Съдия':'Judge','Прокурор':'Prosecutor','Деловодител':'Clerk','Разследващ':'Investigator','Вещо лице':'Expert','Публичен':'Public'
+});
+Object.assign(ADMIN_DIC.de,{
+ 'QR артефакти':'QR-Artefakte','Създава защитена папка с манифест, лог и справка за всеки QR код, който води към официални документи или доказателства.':'Erstellt einen geschützten Ordner mit Manifest, Log und Bericht für jeden QR-Code, der auf offizielle Dokumente oder Beweise verweist.','QR идентификатор':'QR-Kennung','Създай артефакт':'Artefakt erstellen','Опресни':'Aktualisieren','Няма създадени QR артефакти.':'Keine QR-Artefakte erstellt.','QR ID':'QR-ID','Създаден':'Erstellt','Директория':'Verzeichnis','Действия':'Aktionen','Отвори':'Öffnen','Отмени':'Widerrufen','Отмяна на QR артефакт ':'QR-Artefakt widerrufen ','Невалиден QR идентификатор (букви, цифри, - и _)':'Ungültige QR-Kennung (Buchstaben, Ziffern, - und _)','Артефактът е създаден':'Artefakt erstellt','Артефактът е отменен':'Artefakt widerrufen',
+ 'Миграция на документи':'Dokumentmigration','Безопасно преместване на папка с документи и указатели с проверка SHA-256, резервно копие и възможност за отмяна (rollback).':'Sichere Migration eines Dokument-/Indexordners mit SHA-256-Prüfung, Backup und Rollback.','Източник (път)':'Quelle (Pfad)','Дестинация (път)':'Ziel (Pfad)','Мин. свободно място (MB)':'Min. freier Speicher (MB)','Метод':'Methode','Проверка (preflight)':'Prüfung (preflight)','Планирай':'Planen','Изпълни':'Ausführen','Откажи задачата':'Job abbrechen','Отмени миграцията (rollback)':'Migration zurücksetzen (rollback)','Въведи източник и дестинация':'Quelle und Ziel eingeben','Проверка…':'Prüfung…','Планиране…':'Planung…','Стартиране…':'Start…','✔ Готово за миграция':'✔ Bereit für Migration','✖ Блокирано':'✖ Blockiert','Източник':'Quelle','Дестинация':'Ziel','Свободно място при източника':'Freier Speicher an der Quelle','Свободно място при дестинацията':'Freier Speicher am Ziel','План':'Plan','файла':'Dateien','конфликта':'Konflikte','мястото е достатъчно':'Speicher ausreichend','⚠ недостатъчно място':'⚠ nicht genug Speicher','Конфликтни файлове (първите 50):':'Konfliktdateien (erste 50):','Стартиране на миграция от ':'Migration starten von ',' към ':' nach ','✔ Миграцията е успешна: ':'✔ Migration erfolgreich: ','копирани':'kopiert','✖ Миграцията не успя: ':'✖ Migration fehlgeschlagen: ','Миграцията е отменена':'Migration abgebrochen','Грешка: ':'Fehler: ','Отмяна на миграцията и възстановяване на предишното състояние?':'Migration zurücksetzen und vorherigen Zustand wiederherstellen?','✔ Възстановено от: ':'✔ Wiederhergestellt von: ',
+ 'Одитен журнал':'Audit-Journal','Неизтриваем, свързан с хеш верига запис на всяко действие — проверка, издадени пълномощия, качвания и изтегляния.':'Anfügen-nur, Hash-Ketten-verknüpfter Datensatz jeder Aktion — Prüfung, ausgestellte Berechtigungen, Uploads und Downloads.','Портал ID (по избор)':'Portal-ID (optional)','Лимит':'Limit','Зареди':'Laden','Провери целостта':'Integrität prüfen','Експорт JSON':'JSON exportieren','Експорт CSV':'CSV exportieren','Няма записи.':'Keine Datensätze.','Време':'Zeit','Събитие':'Ereignis','Портал':'Portal','Файл':'Datei','Актьор':'Akteur','Детайли':'Details','Показани':'Angezeigt','Ред на записите':'Datensatzreihenfolge','✔ Веригата е валидна':'✔ Kette gültig','✖ Веригата е нарушена':'✖ Kette beschädigt',
+ 'Съдебни пълномощия (QR достъп)':'Justizielle Berechtigungen (QR-Zugriff)','Роля':'Rolle','Субект':'Subjekt','Субект (имейл/име)':'Subjekt (E-Mail/Name)','Дела':'Fälle','Дела (caseIds, със запетая) — за разследващ/вещо лице':'Fälle (caseIds, kommagetrennt) — für Ermittler/Sachverständige','Валидност':'Gültigkeit','15 минути':'15 Minuten','1 час':'1 Stunde','8 часа':'8 Stunden','24 часа':'24 Stunden','Издай пълномощие':'Berechtigung ausstellen','Издадено пълномощие':'Berechtigung ausgestellt','Копирай пълномощието':'Berechtigung kopieren','Копирай линк':'Link kopieren','Изтегли QR':'QR herunterladen','Пълномощие (еднократно видимо):':'Berechtigung (einmalig sichtbar):','Линк за сканиране:':'Link zum Scannen:','Изтича':'Läuft ab','Съдия':'Richter','Прокурор':'Staatsanwalt','Деловодител':'Geschäftsstellenbeamter','Разследващ':'Ermittler','Вещо лице':'Sachverständiger','Публичен':'Öffentlich'
+});
+applyAdminLang();
