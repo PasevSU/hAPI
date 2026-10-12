@@ -32,3 +32,4 @@ Single authoritative ADR registry for hAPI Enterprise.
 | 0023 | phase-4-features | Accepted | 2026-10 |
 | 0024 | phase-5-notification-center | Accepted | 2026-10 |
 | 0025 | phase-6-migration-pipeline | Accepted | 2026-10 |
+| 0026 | phase-7-evidence-portal | Accepted | 2026-10 |
