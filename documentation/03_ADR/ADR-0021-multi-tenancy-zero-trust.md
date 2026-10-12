@@ -1,4 +1,4 @@
-# ADR-009: Multi-tenancy и Zero Trust — architecture-ready
+# ADR-0021: Multi-tenancy и Zero Trust — architecture-ready
 
 - **Status:** Accepted
 - **Дата:** 2026-10-12

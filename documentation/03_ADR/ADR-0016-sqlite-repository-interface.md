@@ -1,4 +1,4 @@
-# ADR-004: SQLite + Repository interface (смяна по-късно)
+# ADR-0016: SQLite + Repository interface (смяна по-късно)
 
 - **Status:** Accepted
 - **Дата:** 2026-10-12

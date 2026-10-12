@@ -1,8 +1,10 @@
 # ADR — Architecture Decision Records
 
-This folder holds the **enterprise governance ADRs** (0001–0012). They complement
-the implementation-level ADRs already in `docs/adr/` (which track the Phases 1–4
-build-out). See `ADR_INDEX.md` for the full numbered list.
+Single authoritative ADR registry for hAPI Enterprise.
+
+- `ADR-0001` … `ADR-0012` — enterprise governance, security, and release decisions.
+- `ADR-0013` … `ADR-0023` — implementation-level decisions for Phases 1–4 (merged
+  from the former `docs/adr/` tree).
 
 Each record follows `ADR_TEMPLATE.md` and captures a decision that materially affects
-architecture, security, or release readiness.
+architecture, security, or release readiness. See `ADR_INDEX.md` for the full numbered list.

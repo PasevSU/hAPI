@@ -1,4 +1,4 @@
-# ADR-001: Variable store с композитен ключ е ядрото (не JSONB)
+# ADR-0013: Variable store с композитен ключ е ядрото (не JSONB)
 
 - **Status:** Accepted
 - **Дата:** 2026-10-12

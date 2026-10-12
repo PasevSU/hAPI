@@ -1,4 +1,4 @@
-# ADR-008: Версиониране: schema/API/data/UI
+# ADR-0020: Версиониране: schema/API/data/UI
 
 - **Status:** Accepted
 - **Дата:** 2026-10-12

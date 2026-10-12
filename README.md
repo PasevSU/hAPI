@@ -140,7 +140,7 @@ the **evidence portal** for judges and prosecutors
 ## Quick links
 
 - [Documentation](docs/)
-- [Architecture decisions (ADR)](docs/adr/)
+- [Architecture decisions (ADR)](documentation/03_ADR/)
 - [Evidence portal plan (Phase 7)](docs/plan/14-phase-7-evidence-portal.md)
 - [Security policy](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

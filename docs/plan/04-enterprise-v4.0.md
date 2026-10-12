@@ -786,7 +786,7 @@ Feature Branch → PR → Review → CI → Merge
 13.1 Documentation Types
 Type	Audience	Location
 Architecture	Engineers	docs/architecture/
-ADR	Engineers	docs/adr/
+ADR	Engineers	documentation/03_ADR/
 API	Developers	OpenAPI + docs/api/
 User Guide	End users	docs/user/
 Admin Guide	Admins	docs/admin/

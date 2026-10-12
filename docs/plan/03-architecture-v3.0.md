@@ -828,7 +828,7 @@ SQLite като default, но с абстракция (Repository pattern),
 Repository pattern + config за смяна.
 ```
 
-**Правило:** Всяко важно решение → ADR в `docs/adr/`.
+**Правило:** Всяко важно решение → ADR в `documentation/03_ADR/`.
 
 ---
 

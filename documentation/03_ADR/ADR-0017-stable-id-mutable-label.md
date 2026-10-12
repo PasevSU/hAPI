@@ -1,4 +1,4 @@
-# ADR-005: `id_gruppe` стабилен, `name_folder` mutable label
+# ADR-0017: `id_gruppe` стабилен, `name_folder` mutable label
 
 - **Status:** Accepted
 - **Дата:** 2026-10-12

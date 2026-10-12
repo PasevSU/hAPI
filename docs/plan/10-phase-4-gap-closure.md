@@ -14,7 +14,7 @@
 - Версии: унифициране на `config.yaml` / `manifest.json` / `.dev`.
 
 ### 4.1 Довършване на собствения DoD на Master Plan
-- ADR документация (ADR-01…ADR-10) в `docs/adr/`.
+- ADR документация (ADR-0013…ADR-0023) в `documentation/03_ADR/`.
 - Формално прилагане на §9.1 checklist към всеки feature.
 - Тест за търсене (FTS5, §8.6).
 - Acceptance тест за admin йерархията (§8.7).

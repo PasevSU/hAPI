@@ -25,3 +25,8 @@ Ordered from the original core requirement to the latest consolidated master pla
 > **Note:** `07-security-v4.3.md` contains an appended copy of `06-multi-tenancy-v4.2.md`
 > (the file was concatenated by mistake). The master plan (`08`) is the canonical source
 > of truth and supersedes the earlier versions.
+
+## ADRs
+
+Architecture Decision Records live in [`documentation/03_ADR/`](../documentation/03_ADR/)
+— a single registry (ADR-0001 … ADR-0023). The former `docs/adr/` tree was merged there.

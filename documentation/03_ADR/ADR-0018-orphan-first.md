@@ -1,4 +1,4 @@
-# ADR-006: Orphan-first, асоцииране по-късно
+# ADR-0018: Orphan-first, асоцииране по-късно
 
 - **Status:** Accepted
 - **Дата:** 2026-10-12
