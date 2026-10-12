@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   security-events: write
 
 jobs:
@@ -34,3 +35,4 @@ jobs:
 
       - name: Perform analysis
         uses: github/codeql-action/analyze@v3
+
