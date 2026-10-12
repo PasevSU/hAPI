@@ -1,0 +1,37 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+desktop.ini
+
+# Secrets / runtime state
+.env
+.env.*
+*.local
+ADMIN_TOKEN.txt
+/data/
+.first-run-done
+
+# Build artifacts & releases
+release/
+build/
+dist/
+*.zip
+*.7z
+*.exe
+*.ico
+*.tar.gz
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,54 @@
+изграждане на йерархична структура за целият проект обвързана с променливите.
+1. при създаването на папка  за документи се изграждат автоматично следните профили 
+като всички от тях по отношение на променливите се завеждат под общо ид но разгделящи ги
+с различни префикси а това което ги обединява е "{{Name_folder-ИД_група_профили}}" за всеки профил ето примери:
+Папка за документи DEW21:
+
+
+{{id_gruppe}}
+    - профил указател:
+    {{ИД_група_профили/prefix 1000}}
+        {{ name {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder-ИД_група_профили}}-{{name}} }}
+        {{ adresse {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder}}-{{adresse}} }}
+        {{ ulica {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder}}-{{ulica}} }}
+        {{ postenski kod {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder}}-{{postenski kod}} }}
+        {{ telefon {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder}}-{{telefon}} }}
+        {{ grad {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder}}-{{grad}} }}
+        {{ notice {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder}}-{{notice}} }}
+        {{ email {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder}}-{{email}} }}
+        {{ country {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder}}-{{country}} }}
+        {{ website {{profilen nomer 1000}}-{{ID_db}}-{{Name_folder}}-{{website}} }}
+            - служител:
+            {{ name {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{name}} }}
+            {{ позиция {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{позиция}} }}
+            {{ adresse {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{adresse}} }}
+            {{ ulica {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{ulica}} }}
+            {{ postenski kod {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{postenski kod}} }}
+            {{ telefon {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{telefon}} }}
+            {{ grad {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{grad}} }}
+            {{ notice {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{notice}} }}
+            {{ email {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{email}} }}
+            {{ country {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{country}} }}
+            {{ website {{profilen nomer 1001}}-{{ID_db}}-{{Name_folder}}-{{website}} }}
+    - профил картотека:
+    тук логиката продължава но давам само един пример който конкретизира
+    {{ИД_група_профили/prefix 2000}}
+    - профил portali
+    тук логиката продължава но давам само един пример който конкретизира
+    {{ИД_група_профили/prefix 3000}}
+    - профил за записване на стандартни текстове
+    {{ИД_група_профили/prefix 4000}}
+    - профил за шаблони
+    {{ИД_група_профили/prefix 5000}}
+
+
+- по този начин програмата ще има цялостната комуникация или информация във всички блокове важното 
+е да се зададе като правило че при създаване на който и да е профил примерно указател
+, не е задължително да програмата да създава папка но запазва всички данни за бъдещ профил с
+папка. Това трябва да е така понеже създаденият контакт може да е част от вече същестуващ
+профил и тук идва и логиката че при създаване на който и да е профил трябва да има падащо меню
+което исписва само {{Name_folder}} което означава че е част от организация ако тя бъде зададена
+автоматично става част от останалите профили.
+След като стане част от профил {{Name_folder}} се извеждат послета с останалите автоматично
+зададени профили с възможност за премахване или задаване на друг такъв. Ако профила бъде премахнат
+то програмата следва логиката на изграждане

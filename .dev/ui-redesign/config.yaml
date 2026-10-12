@@ -1,0 +1,38 @@
+name: "hAPI ENTERPRICE"
+version: "0.49.2"
+slug: "portal_enterprise"
+description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 8098
+ingress_entry: /admin
+ports:
+  8099/tcp: null
+ports_description:
+  8099/tcp: "Internal-only API; do not expose host port"
+options:
+  username: ""
+  password: ""
+  token: ""
+  db_name: ""
+  backup_folder: ""
+schema:
+  username: str?
+  password: password?
+  token: password?
+  db_name: str?
+  backup_folder: str?
+map:
+  - addon_config:rw
+  - media:rw
+  - share:rw
+environment:
+  DATA_DIR: /config
+  PORT: "8099"
+
+# The public API is intended to be exposed through the optional HA custom integration.
