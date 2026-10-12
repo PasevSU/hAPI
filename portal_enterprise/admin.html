@@ -191,6 +191,61 @@ button:disabled{opacity:.5;cursor:not-allowed}
   .panel{padding:16px}
   .foot{padding:0 16px 24px}
 }
+
+/* ===== UX redesign additions ===== */
+
+/* Dark theme */
+html[data-theme=dark]{--bg:#0b1520;--surface:#122031;--surface-2:#0e1927;--border:#22374a;--border-strong:#2e4860;--text:#e6eef7;--text-dim:#a9bfd4;--text-faint:#74879c;--accent:#3b9df5;--accent-strong:#2f85d8;--accent-ink:#071220;--accent-soft:#13283d;--success:#34d399;--warning:#fbbf24;--danger:#f87171;--danger-soft:#2a1a1e;--shadow:0 2px 12px rgba(0,0,0,.4)}
+html[data-theme=dark] .sidebar,html[data-theme=dark] .topbar{--surface-2:#102d48;--border:#174769;--border-strong:#285371;--text:#fff;--text-dim:#cbdced;--text-faint:#77bfff;--accent:#77bfff}
+html[data-theme=dark] .menu{background:#122031}
+html[data-theme=dark] th{background:#0e1927}
+html[data-theme=dark] .conf{background:#1c2410;border-color:#a16207}
+html[data-theme=dark] .banner{background:#13283d;border-color:#1d4ed8}
+
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 10px;height:38px;color:var(--text);cursor:pointer}
+.theme-toggle svg{width:16px;height:16px}
+
+/* KPI cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi .kpi-label{color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.kpi .kpi-value{font-size:26px;font-weight:700;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi .kpi-sub{color:var(--text-faint);font-size:12px}
+
+/* Badges & pills */
+.badge-ok{background:var(--success);color:#fff}
+.badge-warn{background:var(--warning);color:#3a2a00}
+.badge-danger{background:var(--danger);color:#fff}
+.badge-muted{background:var(--surface-2);color:var(--text-dim);border:1px solid var(--border)}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.02em;border:1px solid var(--border-strong);color:var(--text-dim);background:var(--surface-2);white-space:nowrap;margin-left:8px}
+.pill.public{color:var(--success);border-color:var(--success);background:transparent}
+.pill.private{color:var(--warning);border-color:var(--warning);background:transparent}
+
+/* Data tables */
+.data-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin:10px 0}
+table.data-table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+table.data-table th,table.data-table td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.data-table tr:last-child td{border-bottom:none}
+table.data-table tbody tr:hover{background:var(--surface-2)}
+table.data-table code.mono{font-family:var(--mono);font-size:12px;color:var(--text-faint)}
+table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.muted{color:var(--text-faint)}
+.empty{padding:24px;text-align:center;color:var(--text-dim)}
+
+/* Portal card head */
+#portals article h3{font-size:16px}
+#portals article .meta-line{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;color:var(--text-dim);font-size:13px;margin:4px 0 10px}
+#portals article .meta-line code{background:transparent;border:none;padding:0;font-size:12px;color:var(--text-faint)}
+#portals article .meta-line button{padding:5px 9px;font-size:12px}
+.icon-btn{display:inline-flex;align-items:center;gap:5px}
+
+/* Toast */
+#toast-stack{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:200;max-width:340px}
+.toast{background:var(--surface);color:var(--text);border:1px solid var(--border-strong);border-left:4px solid var(--accent);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:10px 12px;display:flex;align-items:center;gap:10px;animation:toastIn .18s ease}
+.toast-error{border-left-color:var(--danger)}
+.toast-success{border-left-color:var(--success)}
+.toast-close{background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:16px;line-height:1;padding:0}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -209,7 +264,11 @@ button:disabled{opacity:.5;cursor:not-allowed}
       </div>
     </div>
     <nav class="nav" aria-label="Main navigation">
-      <button class="nav-item active" data-panel="portals">
+      <button class="nav-item active" data-panel="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        <span data-i18n="Обзор">Обзор</span>
+      </button>
+      <button class="nav-item" data-panel="portals">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span data-i18n="Портали">Портали</span>
       </button>
@@ -270,6 +329,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
       <div class="topbar-spacer"></div>
       <input id="token" type="password" autocomplete="off" placeholder="Admin token" aria-label="Admin token">
       <button id="load" class="btn-primary" type="button" data-i18n="Зареди портали">Зареди портали</button>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Theme" title="Theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
       <label class="lang-group" title="Language">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/></svg>
         <select id="admin-lang" aria-label="Language">
@@ -283,7 +345,20 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
     <main class="content">
 
-      <section class="panel active" id="panel-portals">
+      <section class="panel active" id="panel-overview">
+        <div class="banner" data-i18n="Общ преглед на порталите, файловете, посещенията, изтеглянията и състоянието на системата.">Общ преглед на порталите, файловете, посещенията, изтеглянията и състоянието на системата.</div>
+        <div class="kpi-grid" id="overview-kpis"></div>
+        <section class="card">
+          <div class="card-head"><h2 data-i18n="Портали накратко">Портали накратко</h2><button id="overview-refresh" class="btn-ghost" type="button" data-i18n="Обнови">Обнови</button></div>
+          <div class="card-body" id="overview-portals"></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2 data-i18n="Състояние на системата">Състояние на системата</h2></div>
+          <div class="card-body" id="overview-system"></div>
+        </section>
+      </section>
+
+      <section class="panel" id="panel-portals">
         <div class="banner" data-i18n="Административният токен остава само в паметта на текущия раздел и не се записва в браузъра.">Административният токен остава само в паметта на текущия раздел и не се записва в браузъра.</div>
 
         <section class="card">
@@ -492,17 +567,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
               <div class="field"><label><span data-i18n="Ключ за портал">Ключ за портал</span> <select id="lim-token"><option value="" data-i18n="Автоматично">Автоматично</option><option value="true" data-i18n="Задължителен">Задължителен</option><option value="false" data-i18n="Не е задължителен">Не е задължителен</option></select></label></div>
               <div class="field"><label><span data-i18n="Пълен IP в телеметрията">Пълен IP в телеметрията</span> <select id="lim-ip"><option value="" data-i18n="Автоматично">Автоматично</option><option value="false" data-i18n="Не (препоръчително)">Не (препоръчително)</option><option value="true" data-i18n="Да">Да</option></select></label></div>
             </div>
-            <h4 data-i18n="Данни и организация">Данни и организация</h4>
-            <p class="hint" data-i18n="Променливи, указател, категории и групи.">Променливи, указател, категории и групи.</p>
-            <div class="form-grid">
-              <div class="field"><label><span data-i18n="При няколко възможни стойности">При няколко възможни стойности</span> <select id="dat-policy"><option value="queue" data-i18n="Към конфликти (ръчно решение)">Към конфликти (ръчно решение)</option><option value="first" data-i18n="Автоматично първата">Автоматично първата</option><option value="skip" data-i18n="Пропусни">Пропусни</option></select></label></div>
-              <div class="field"><label><span data-i18n="Категории и групи">Категории и групи</span> <select id="dat-strict"><option value="false" data-i18n="Свободен избор">Свободен избор</option><option value="true" data-i18n="Само от списъка">Само от списъка</option></select></label></div>
-              <div class="field"><label><span data-i18n="Категория по подразбиране">Категория по подразбиране</span> <input id="dat-cat" maxlength="120"></label></div>
-              <div class="field"><label><span data-i18n="Група по подразбиране">Група по подразбиране</span> <input id="dat-grp" maxlength="120"></label></div>
-              <div class="field"><label><span data-i18n="Макс. етикети на файл">Макс. етикети на файл</span> <input id="dat-tags" type="number" min="1" max="100"></label></div>
-            </div>
             <div class="form-row" style="margin-top:14px">
-              <button id="settings-load"  type="button" data-i18n="Зареди настройки">Зареди настройки</button>
+              <button id="settings-load" type="button" data-i18n="Зареди настройки">Зареди настройки</button>
               <button id="settings-save" class="btn-primary" type="button" data-i18n="Запази настройки">Запази настройки</button>
             </div>
             <pre id="settings-status"></pre>

@@ -145,19 +145,35 @@ async function action(fn){try{$('status').textContent='';await fn()}catch(e){$('
 const closeMenus=()=>document.querySelectorAll('.menu').forEach(m=>m.hidden=true);
 document.addEventListener('click',closeMenus);
 const menu=(label,items)=>{const wrap=node('span','');wrap.className='menu-wrap';const btn=node('button',label);btn.type='button';const list=node('div','');list.className='menu';list.hidden=true;for(const it of items){const b=node('button',it.label);b.type='button';if(it.danger)b.className='danger';b.onclick=e=>{e.stopPropagation();closeMenus();action(it.run)};list.append(b)}btn.onclick=e=>{e.stopPropagation();const show=list.hidden;closeMenus();list.hidden=!show};wrap.append(btn,list);return wrap};
-async function load(){const data=await api('/admin/api/portals');const holder=$('portals');holder.replaceChildren();if(!data.portals.length){holder.append(node('p',t('Няма създадени портали. Създай първия портал във формуляра по-горе.')));$('status').textContent=t('Удостоверяването е успешно. Няма създадени портали.');return}for(const p of data.portals){const box=node('article','');box.append(node('h3',p.title+' ('+p.slug+')'),node('small',p.id+' · '+p.visibility+' · '+p.files.length+' '+t('файла')));
- box.append(node('p',''),node('code','/api/v1/p/'+p.slug));
+async function load(){const data=await api('/admin/api/portals');const holder=$('portals');holder.replaceChildren();if(!data.portals.length){holder.append(node('p',t('Няма създадени портали. Създай първия портал във формуляра по-горе.')));$('status').textContent=t('Удостоверяването е успешно. Няма създадени портали.');return}for(const p of data.portals){const box=node('article','');const publicUrl='/api/v1/p/'+encodeURIComponent(p.slug);
+ const head=node('h3','');head.append(node('span',p.title));const slug=node('span',' '+p.slug);slug.className='muted';slug.style.fontSize='12px';head.append(slug);
+ const pill=document.createElement('span');pill.className='pill '+(p.visibility==='public'?'public':'private');pill.textContent=p.visibility==='public'?t('Публичен'):t('Частен');head.append(pill);box.append(head);
+ const meta=document.createElement('div');meta.className='meta-line';
+ meta.append(node('span',p.files.length+' '+t('файла')),node('span',fmtBytes(p.files.reduce((n,f)=>n+f.size,0))),node('span',t('Създаден')+': '+fmtDate(p.createdAt)),node('code',publicUrl));
+ const copyLink=node('button',t('Копирай линк'));copyLink.type='button';copyLink.onclick=()=>action(async()=>{const info=await api('/admin/api/portals/'+p.id+'/api-info');await copyText(info.apiUrl)});meta.append(copyLink);
+ const qr=node('button',t('QR код'));qr.type='button';qr.className='btn-primary';qr.onclick=()=>action(async()=>{const info=await api('/admin/api/portals/'+p.id+'/api-info');showQr(info,p)});meta.append(qr);box.append(meta);
  const fileInput=document.createElement('input');fileInput.type='file';fileInput.hidden=true;fileInput.setAttribute('aria-label',t('Качи файл в ')+p.title);
  const htmlInput=document.createElement('input');htmlInput.type='file';htmlInput.accept='.html,.htm,text/html';htmlInput.hidden=true;htmlInput.setAttribute('aria-label',t('Избери HTML за ')+p.title);
- box.append(node('p',''),fileInput,htmlInput,menu(t('Действия'),[
+ box.append(fileInput,htmlInput,menu(t('Действия'),[
   {label:t(p.visibility==='public'?'Направи частен':'Направи публичен'),run:async()=>{await api('/admin/api/portals/'+p.id,'PATCH',{visibility:p.visibility==='public'?'private':'public'});await load()}},
   {label:t('Качи файл'),run:()=>{fileInput.click()}},
   {label:t('Качи HTML чрез API'),run:()=>{htmlInput.click()}},
   {label:t('Изтрий портал'),danger:true,run:async()=>{if(!confirm(t('Изтриване на портал ')+p.title+t(' и всички файлове?')))return;await api('/admin/api/portals/'+p.id,'DELETE');await load()}}
  ]));
  fileInput.onchange=()=>action(async()=>{const f=fileInput.files[0];if(!f)return;const r=await fetch(adminPath('/admin/api/portals/'+p.id+'/files'),{method:'POST',headers:{Authorization:'Bearer '+$('token').value,'X-File-Name':f.name},body:f});if(!r.ok)throw Error((await r.json()).error);await load()});
- htmlInput.onchange=()=>action(async()=>{const f=htmlInput.files[0];if(!f)return;if(!/\.html?$/i.test(f.name))throw Error(t('Разрешени са .html и .htm'));const r=await fetch(adminPath('/admin/api/portals/'+p.id+'/html'),{method:'POST',headers:{Authorization:'Bearer '+$('token').value,'X-File-Name':f.name,'Content-Type':'text/html'},body:f});const d=await r.json();if(!r.ok)throw Error(d.error||'HTTP '+r.status);alert(t('HTML е съхранен. Достъп: KEY_REQUIRED; скрит от каталога. Настрой правата и ключовете преди публикуване.'));await load()});
- p.files.forEach((f,i)=>{const ms=Date.parse(f.uploadedAt||f.createdAt||'');const line=node('p','#'+(i+1)+' · ID '+f.id+' · '+f.name+' · '+f.size+' bytes · SHA256 '+f.sha256+' · '+t('Качен на (ms)')+': '+(Number.isFinite(ms)?ms:'—')+' ');const del=node('button',t('Изтрий файл'));del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+f.name+'?'))return;await api('/admin/api/portals/'+p.id+'/files/'+f.id,'DELETE');await load()});line.append(del);box.append(line)});
+ htmlInput.onchange=()=>action(async()=>{const f=htmlInput.files[0];if(!f)return;if(!/\.html?$/i.test(f.name))throw Error(t('Разрешени са .html и .htm'));const r=await fetch(adminPath('/admin/api/portals/'+p.id+'/html'),{method:'POST',headers:{Authorization:'Bearer '+$('token').value,'X-File-Name':f.name,'Content-Type':'text/html'},body:f});const d=await r.json();if(!r.ok)throw Error(d.error||'HTTP '+r.status);toast(t('HTML е съхранен. Достъп: KEY_REQUIRED; скрит от каталога. Настрой правата и ключовете преди публикуване.'),'success');await load()});
+ const table=document.createElement('div');table.className='data-table-wrap';const tbl=document.createElement('table');tbl.className='data-table';
+ const thead=document.createElement('thead');const hr=document.createElement('tr');for(const label of [t('Файл'),t('Размер'),t('Качен'),t('SHA-256'),t('Действия')]){const th=document.createElement('th');th.textContent=label;hr.append(th)}thead.append(hr);tbl.append(thead);
+ const tbody=document.createElement('tbody');
+ if(!p.files.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=5;td.className='empty';td.textContent=t('Няма файлове');tr.append(td);tbody.append(tr)}
+ for(const f of p.files){const tr=document.createElement('tr');tr.dataset.fileId=f.id;tr.dataset.portalId=p.id;
+  const nameTd=document.createElement('td');nameTd.append(node('strong',f.name));const sub=document.createElement('div');sub.className='muted';sub.textContent=(f.accessMode||'FREE')+(f.listed===false?' · '+t('скрит'):'');nameTd.append(sub);
+  const sizeTd=document.createElement('td');sizeTd.className='num';sizeTd.textContent=fmtSize(f.size);
+  const dateTd=document.createElement('td');dateTd.textContent=timeAgo(f.uploadedAt||f.createdAt);dateTd.title=fmtDate(f.uploadedAt||f.createdAt);
+  const shaTd=document.createElement('td');const sha=document.createElement('code');sha.className='mono';sha.textContent=(f.sha256||'').slice(0,12)+'…';sha.title=f.sha256||'';shaTd.append(sha);
+  const actTd=document.createElement('td');const link=node('button',t('Линк'));link.type='button';link.onclick=()=>copyText(publicUrl+'/files/'+encodeURIComponent(f.id)+'/download');const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+f.name+'?'))return;await api('/admin/api/portals/'+p.id+'/files/'+f.id,'DELETE');await load()});actTd.append(link,del);
+  tr.append(nameTd,sizeTd,dateTd,shaTd,actTd);tbody.append(tr)}
+ tbl.append(tbody);table.append(tbl);box.append(table);
  holder.append(box)}$('status').textContent=t('Удостоверяването е успешно. Заредени портали: ')+data.portals.length}
 $('load').onclick=()=>action(load);$('token').addEventListener('keydown',event=>{if(event.key==='Enter')action(load)});$('create').onclick=()=>action(async()=>{await api('/admin/api/portals','POST',{slug:$('slug').value,title:$('title').value});await load()});
 
@@ -271,11 +287,9 @@ load=async function(){await bulkPreviousLoad();const {portals}=await api('/admin
 // Runtime settings are stored in config/settings.json, not configuration.yaml.
 const LIM={'lim-upload':['maxUploadMb',e=>Math.round(e.maxUploadBytes/1048576)],'lim-streams':['maxDownloadStreams',e=>e.maxDownloadStreams],'lim-jobs':['maxJobs',e=>e.maxJobs],'lim-check':['storageCheckMinutes',e=>Math.round(e.storageCheckIntervalMs/60000)],'lim-url':['publicBaseUrl',e=>e.publicBaseUrl],'lim-cors':['corsOrigin',e=>e.corsOrigin]};
 function fillLimits(r){const l=r.settings.limits||{},e=r.effective||{};for(const [id,[k,f]] of Object.entries(LIM)){const el=$(id);el.value=l[k]===null||l[k]===undefined?'':l[k];el.placeholder=e&&e.maxUploadBytes!==undefined?String(f(e)):el.placeholder}for(const [id,k] of [['lim-token','requirePortalToken'],['lim-ip','storeRawIp']])$(id).value=l[k]===null||l[k]===undefined?'':String(l[k])}
-function fillData(r){const d=r.settings.data||{};$('dat-policy').value=d.conflictPolicy||'queue';$('dat-strict').value=String(!!d.strictTaxonomy);$('dat-cat').value=d.defaultCategory||'';$('dat-grp').value=d.defaultGroup||'';$('dat-tags').value=d.maxTags||30}
-function readData(){return {conflictPolicy:$('dat-policy').value,strictTaxonomy:$('dat-strict').value==='true',defaultCategory:$('dat-cat').value.trim(),defaultGroup:$('dat-grp').value.trim(),maxTags:Number($('dat-tags').value)||30}}
 function readLimits(){const o={};for(const [id,[k]] of Object.entries(LIM)){const v=$(id).value.trim();o[k]=v===''?(k==='publicBaseUrl'||k==='corsOrigin'?'':null):(k==='publicBaseUrl'||k==='corsOrigin'?v:Number(v))}for(const [id,k] of [['lim-token','requirePortalToken'],['lim-ip','storeRawIp']]){const v=$(id).value;o[k]=v===''?null:v==='true'}return o}
-$('settings-load').onclick=()=>action(async()=>{const r=await api('/admin/api/settings');$('artifact-directory').value=r.settings.artifactDirectory;$('database-file').value=r.settings.databaseFile;$('database-directory').value=r.settings.databaseDirectory||'.';fillLimits(r);fillData(r);$('settings-status').textContent=t('Настройки заредени')});
-$('settings-save').onclick=()=>action(async()=>{const r=await api('/admin/api/settings','PATCH',{artifactDirectory:$('artifact-directory').value,databaseFile:$('database-file').value,databaseDirectory:$('database-directory').value,limits:readLimits(),data:readData()});fillLimits(r);fillData(r);$('settings-status').textContent=r.restartRequired?t('Запазено. Някои промени се прилагат след рестарт на add-on-а.'):t('Настройките са запазени.')});
+$('settings-load').onclick=()=>action(async()=>{const r=await api('/admin/api/settings');$('artifact-directory').value=r.settings.artifactDirectory;$('database-file').value=r.settings.databaseFile;$('database-directory').value=r.settings.databaseDirectory||'.';fillLimits(r);$('settings-status').textContent=t('Настройки заредени')});
+$('settings-save').onclick=()=>action(async()=>{const r=await api('/admin/api/settings','PATCH',{artifactDirectory:$('artifact-directory').value,databaseFile:$('database-file').value,databaseDirectory:$('database-directory').value,limits:readLimits()});fillLimits(r);$('settings-status').textContent=r.restartRequired?t('Запазено. Някои промени се прилагат след рестарт на add-on-а.'):t('Настройките са запазени.')});
 
 // HTML projects are registered from DATA_DIR/html-projects/<folder> with index.html.
 const htmlProjectLoad=load;
@@ -426,6 +440,11 @@ Object.assign(ADMIN_DIC.de,{'Опции':'Optionen','Качи':'Hochladen','Пр
 const authHeader=()=>({Authorization:'Bearer '+$('token').value});
 const dialog=(title,content,buttons=[])=>{const d=document.createElement('dialog');d.style.cssText='background:var(--surface);color:var(--text);border:1px solid var(--border-strong);border-radius:10px;padding:20px;max-width:min(92vw,520px)';const h=node('h3',title);h.style.marginTop='0';const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;justify-content:flex-end;margin-top:16px';for(const b of buttons)row.append(b);const close=node('button',t('Затвори'));close.type='button';close.onclick=()=>d.close();row.append(close);d.append(h,content,row);d.addEventListener('close',()=>d.remove());document.body.append(d);d.showModal();return d};
 const fmtSize=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
+const fmtBytes=n=>{n=Number(n)||0;if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';if(n<1073741824)return (n/1048576).toFixed(1)+' MB';return (n/1073741824).toFixed(2)+' GB'};
+const fmtDate=s=>{const ms=Date.parse(s);return Number.isFinite(ms)?new Date(ms).toLocaleString():'—'};
+const timeAgo=s=>{const ms=Date.parse(s);if(!Number.isFinite(ms))return '—';const sec=Math.floor((Date.now()-ms)/1000);if(sec<60)return t('току-що');if(sec<3600)return Math.floor(sec/60)+' '+t('мин');if(sec<86400)return Math.floor(sec/3600)+' '+t('ч');if(sec<2592000)return Math.floor(sec/86400)+' '+t('дни');return fmtDate(s)};
+const toast=(msg,type='info')=>{let stack=$('toast-stack');if(!stack){stack=document.createElement('div');stack.id='toast-stack';document.body.append(stack)}const el=document.createElement('div');el.className='toast'+(type==='error'?' toast-error':type==='success'?' toast-success':'');el.append(node('span',msg));const close=node('button','×');close.className='toast-close';close.type='button';close.onclick=()=>el.remove();el.append(close);stack.append(el);setTimeout(()=>el.remove(),4200)};
+const copyText=async text=>{const done=()=>toast(t('Копирано в клипборда'),'success');try{await navigator.clipboard.writeText(text);done()}catch{try{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';document.body.append(ta);ta.select();document.execCommand('copy');ta.remove();done()}catch{toast(t('Копирането не успя'),'error')}}};
 
 // Categories and groups: created once here, chosen from dropdowns elsewhere.
 async function loadTaxonomy(){
@@ -583,13 +602,11 @@ $('dir-rule-form').addEventListener('submit',e=>{e.preventDefault();action(async
 // Language switcher + initial translation.
 const _langSel=document.getElementById('admin-lang');
 if(_langSel){_langSel.value=adminLang;_langSel.addEventListener('change',()=>setAdminLang(_langSel.value))}
-Object.assign(ADMIN_DIC.en,{'Данни и организация':'Data and organization','Променливи, указател, категории и групи.':'Variables, directory, categories and groups.','При няколко възможни стойности':'When several values are possible','Към конфликти (ръчно решение)':'To conflicts (manual decision)','Автоматично първата':'Automatically the first','Пропусни':'Skip','Категории и групи':'Categories and groups','Свободен избор':'Free choice','Само от списъка':'Only from the list','Категория по подразбиране':'Default category','Група по подразбиране':'Default group','Макс. етикети на файл':'Max tags per file'});
-Object.assign(ADMIN_DIC.de,{'Данни и организация':'Daten und Organisation','Променливи, указател, категории и групи.':'Variablen, Verzeichnis, Kategorien und Gruppen.','При няколко възможни стойности':'Bei mehreren möglichen Werten','Към конфликти (ръчно решение)':'In Konflikte (manuell)','Автоматично първата':'Automatisch den ersten','Пропусни':'Überspringen','Категории и групи':'Kategorien und Gruppen','Свободен избор':'Freie Wahl','Само от списъка':'Nur aus der Liste','Категория по подразбиране':'Standardkategorie','Група по подразбиране':'Standardgruppe','Макс. етикети на файл':'Max. Tags pro Datei'});
 applyAdminLang();
 
 // Sidebar navigation (panel switching) for the redesigned layout.
 const _navItems=[...document.querySelectorAll('.nav-item[data-panel]')];
-let _currentPanel='portals';
+let _currentPanel='overview';
 const _topbarTitle=document.getElementById('topbar-title');
 const _navLabelKey=item=>{const s=item.querySelector('[data-i18n]');return s?s.getAttribute('data-i18n'):item.textContent.trim()};
 const _setPanel=name=>{
@@ -616,8 +633,96 @@ applyAdminLang=function(){
 _setPanel(_currentPanel);
 
 // Auto-login: the Home Assistant Ingress session (or loopback standalone) already authenticates the operator.
-(async()=>{try{const r=await fetch(adminPath('/admin/api/ingress-login'),{cache:'no-store'});if(!r.ok)return;const d=await r.json();if(d&&d.token&&!$('token').value){$('token').value=d.token;$('token').type='password';await action(load)}}catch{}})();
+(async()=>{try{const r=await fetch(adminPath('/admin/api/ingress-login'),{cache:'no-store'});if(!r.ok)return;const d=await r.json();if(d&&d.token&&!$('token').value){$('token').value=d.token;$('token').type='password';await action(load);await action(loadOverview)}}catch{}})();
 
 Object.assign(ADMIN_DIC.en,{'Лимити и достъп':'Limits and access','Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).':'Empty field = automatic default (the current value is shown in the field).','Макс. размер на качване (MB)':'Max upload size (MB)','Едновременни изтегляния':'Concurrent downloads','Паралелни задачи':'Parallel jobs','Проверка на хранилищата (мин, 0 = изкл.)':'Storage check (min, 0 = off)','Публичен адрес':'Public address','CORS адрес':'CORS origin','Ключ за портал':'Portal key','Пълен IP в телеметрията':'Full IP in telemetry','Автоматично':'Automatic','Задължителен':'Required','Не е задължителен':'Not required','Не (препоръчително)':'No (recommended)','Да':'Yes','Запазено. Някои промени се прилагат след рестарт на add-on-а.':'Saved. Some changes apply after the add-on restarts.'});
 Object.assign(ADMIN_DIC.de,{'Лимити и достъп':'Limits und Zugriff','Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).':'Leeres Feld = automatischer Standard (aktueller Wert im Feld).','Макс. размер на качване (MB)':'Max. Upload-Größe (MB)','Едновременни изтегляния':'Gleichzeitige Downloads','Паралелни задачи':'Parallele Jobs','Проверка на хранилищата (мин, 0 = изкл.)':'Speicherprüfung (Min., 0 = aus)','Публичен адрес':'Öffentliche Adresse','CORS адрес':'CORS-Origin','Ключ за портал':'Portalschlüssel','Пълен IP в телеметрията':'Volle IP in Telemetrie','Автоматично':'Automatisch','Задължителен':'Erforderlich','Не е задължителен':'Nicht erforderlich','Не (препоръчително)':'Nein (empfohlen)','Да':'Ja','Запазено. Някои промени се прилагат след рестарт на add-on-а.':'Gespeichert. Einige Änderungen gelten nach Neustart des Add-ons.'});
 applyAdminLang();
+
+// ===== UX redesign: QR modal, dashboard, theme, i18n =====
+function showQr(info,p){
+ const body=document.createElement('div');
+ const img=document.createElement('img');const url=URL.createObjectURL(new Blob([info.qr],{type:'image/svg+xml'}));img.src=url;img.alt='QR';img.style.cssText='width:220px;height:220px;background:#fff;padding:8px;border-radius:8px;display:block;margin:0 auto 12px';
+ const code=node('code',info.apiUrl);code.style.wordBreak='break-all';
+ const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;margin:8px 0;flex-wrap:wrap';
+ const copy=node('button',t('Копирай'));copy.type='button';copy.onclick=()=>copyText(info.apiUrl);
+ const dl=node('button',t('Изтегли QR'));dl.type='button';dl.onclick=()=>{const a=document.createElement('a');a.href=url;a.download=(p.slug||'portal')+'-qr.svg';a.click()};
+ row.append(copy,dl);
+ body.append(img,node('p',''),code,node('p',t('Директория')+': '+info.directory),row);
+ const d=dialog('QR · '+(p.title||p.slug),body);d.addEventListener('close',()=>URL.revokeObjectURL(url));
+}
+const kpi=(label,value,sub)=>{const el=document.createElement('div');el.className='kpi';const l=document.createElement('div');l.className='kpi-label';l.textContent=label;const v=document.createElement('div');v.className='kpi-value';v.textContent=value;el.append(l,v);if(sub){const s=document.createElement('div');s.className='kpi-sub';s.textContent=sub;el.append(s)}return el};
+const fmtUptime=s=>{s=Number(s)||0;const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return (d?d+'д ':'')+h+'ч '+m+'мин'};
+const kvRows=rows=>{const wrap=document.createElement('div');wrap.className='data-table-wrap';const tbl=document.createElement('table');tbl.className='data-table';const tb=document.createElement('tbody');for(const r of rows){const tr=document.createElement('tr');const td1=document.createElement('td');td1.className='muted';td1.textContent=r[0];const td2=document.createElement('td');if(r[1] instanceof Node)td2.append(r[1]);else td2.textContent=String(r[1]);if(r[2])td2.className=r[2];tr.append(td1,td2);tb.append(tr)}tbl.append(tb);wrap.append(tbl);return wrap};
+async function loadOverview(){
+ const kpis=$('overview-kpis'),ports=$('overview-portals'),sys=$('overview-system');
+ if(!kpis)return;
+ let sensors=null,diag=null;
+ try{sensors=await api('/admin/api/sensors')}catch{}
+ try{diag=await api('/admin/api/diagnostics')}catch{}
+ const pc=sensors&&Array.isArray(sensors.portals)?sensors.portals.length:(diag&&diag.catalog?diag.catalog.portals:0);
+ const fc=sensors&&sensors.files!=null?sensors.files:(diag&&diag.catalog?diag.catalog.files:0);
+ const fb=sensors&&sensors.fileBytes!=null?sensors.fileBytes:0;
+ const visits=sensors&&sensors.visits!=null?sensors.visits:0;
+ const downloads=sensors&&sensors.downloads!=null?sensors.downloads:0;
+ const dbBytes=sensors&&sensors.databaseBytes!=null?sensors.databaseBytes:0;
+ const teleBytes=sensors&&sensors.telemetryBytes!=null?sensors.telemetryBytes:0;
+ kpis.replaceChildren();
+ kpis.append(
+  kpi(t('Портали'),String(pc)),
+  kpi(t('Файлове'),String(fc),fmtBytes(fb)),
+  kpi(t('Посещения'),String(visits)),
+  kpi(t('Изтегляния'),String(downloads)),
+  kpi(t('База данни'),fmtBytes(dbBytes)),
+  kpi(t('Телеметрия'),fmtBytes(teleBytes))
+ );
+ ports.replaceChildren();
+ const pwrap=document.createElement('div');pwrap.className='data-table-wrap';
+ const pt=document.createElement('table');pt.className='data-table';
+ const thead=document.createElement('thead');const htr=document.createElement('tr');
+ for(const h of [t('Портал'),t('Файлове'),t('Посещения'),t('Изтегляния'),t('Данни')]){const th=document.createElement('th');th.textContent=h;htr.append(th)}
+ thead.append(htr);pt.append(thead);
+ const tbody=document.createElement('tbody');
+ const sp=sensors&&Array.isArray(sensors.portals)?sensors.portals:[];
+ if(!sp.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=5;td.className='empty';td.textContent=t('Няма данни');tr.append(td);tbody.append(tr)}
+ for(const p of sp){const tr=document.createElement('tr');
+  const t1=document.createElement('td');t1.append(node('strong',p.slug));
+  const t2=document.createElement('td');t2.className='num';t2.textContent=String(p.files||0);
+  const t3=document.createElement('td');t3.className='num';t3.textContent=String(p.visits||0);
+  const t4=document.createElement('td');t4.className='num';t4.textContent=String(p.downloads||0);
+  const t5=document.createElement('td');t5.className='num';t5.textContent=fmtBytes(p.bytes||0);
+  tr.append(t1,t2,t3,t4,t5);tbody.append(tr)}
+ pt.append(tbody);pwrap.append(pt);ports.append(pwrap);
+ sys.replaceChildren();
+ const rows=[];
+ if(diag){
+  rows.push([t('Node.js'),diag.runtime&&diag.runtime.node?diag.runtime.node:'—']);
+  rows.push([t('Време на работа'),fmtUptime(diag.uptimeSeconds)]);
+  rows.push([t('Памет (RSS)'),fmtBytes(diag.runtime&&diag.runtime.rssBytes)]);
+  rows.push([t('Памет (Heap)'),(diag.runtime?fmtBytes(diag.runtime.heapUsedBytes)+' / '+fmtBytes(diag.runtime.heapTotalBytes):'—')]);
+  const tr=diag.traffic||{};
+  rows.push([t('Заявки'),String(tr.requests!=null?tr.requests:'—')]);
+  rows.push([t('Изтегляния'),String(tr.downloads!=null?tr.downloads:'—')]);
+  rows.push([t('Активни изтегляния'),String(tr.activeDownloadStreams!=null?tr.activeDownloadStreams:'—')]);
+  if(diag.storage&&Array.isArray(diag.storage)){for(const st of diag.storage){const badge=document.createElement('span');badge.className='pill '+(st.available&&st.writable?'public':'private');badge.textContent=st.available?(st.writable?t('Достъпно'):t('Само за четене')):t('Недостъпно');rows.push([t('Хранилище')+' · '+st.name,badge])}}
+ } else {
+  rows.push([t('Състояние'),t('Няма данни')]);
+ }
+ if(sensors)rows.push([t('Режим на IP'),sensors.ipMode==='raw'?t('Пълен'):t('Хеширан')]);
+ sys.append(kvRows(rows));
+}
+const _overviewItem=_navItems.find(i=>i.getAttribute('data-panel')==='overview');
+if(_overviewItem)_overviewItem.addEventListener('click',()=>action(loadOverview));
+const _overviewRefresh=$('overview-refresh');
+if(_overviewRefresh)_overviewRefresh.onclick=()=>action(loadOverview);
+
+const _themeToggle=$('theme-toggle');
+const _applyTheme=()=>{let dark=false;try{dark=localStorage.getItem('portal-theme')==='dark'}catch{}document.documentElement.setAttribute('data-theme',dark?'dark':'light');if(_themeToggle)_themeToggle.setAttribute('aria-pressed',String(dark))};
+try{if(localStorage.getItem('portal-theme')==null)localStorage.setItem('portal-theme',(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light')}catch{}
+_applyTheme();
+if(_themeToggle)_themeToggle.onclick=()=>{try{localStorage.setItem('portal-theme',localStorage.getItem('portal-theme')==='dark'?'light':'dark')}catch{}_applyTheme()};
+
+Object.assign(ADMIN_DIC.en,{'Обзор':'Overview','Портали накратко':'Portals at a glance','Обнови':'Refresh','Състояние на системата':'System status','Публичен':'Public','Частен':'Private','Копирай линк':'Copy link','QR код':'QR code','Копирай':'Copy','Изтегли QR':'Download QR','Директория':'Directory','Линк':'Link','Изтрий':'Delete','скрит':'hidden','Няма файлове':'No files','Файл':'File','Размер':'Size','Качен':'Uploaded','Действия':'Actions','Файлове':'Files','Посещения':'Visits','Изтегляния':'Downloads','База данни':'Database','Телеметрия':'Telemetry','Време на работа':'Uptime','Памет (RSS)':'Memory (RSS)','Памет (Heap)':'Memory (Heap)','Заявки':'Requests','Активни изтегляния':'Active downloads','Хранилище':'Storage','Достъпно':'Available','Само за четене':'Read-only','Недостъпно':'Unavailable','Режим на IP':'IP mode','Пълен':'Full','Хеширан':'Hashed','Няма данни':'No data','Копирано в клипборда':'Copied to clipboard','Копирането не успя':'Copy failed','току-що':'just now','мин':'min','ч':'h','дни':'days','Създаден':'Created','файла':'files','Състояние':'Status','Портал':'Portal','Данни':'Data'});
+Object.assign(ADMIN_DIC.de,{'Обзор':'Übersicht','Портали накратко':'Portale im Überblick','Обнови':'Aktualisieren','Състояние на системата':'Systemstatus','Публичен':'Öffentlich','Частен':'Privat','Копирай линк':'Link kopieren','QR код':'QR-Code','Копирай':'Kopieren','Изтегли QR':'QR herunterladen','Директория':'Verzeichnis','Линк':'Link','Изтрий':'Löschen','скрит':'versteckt','Няма файлове':'Keine Dateien','Файл':'Datei','Размер':'Größe','Качен':'Hochgeladen','Действия':'Aktionen','Файлове':'Dateien','Посещения':'Besuche','Изтегляния':'Downloads','База данни':'Datenbank','Телеметрия':'Telemetrie','Време на работа':'Laufzeit','Памет (RSS)':'Speicher (RSS)','Памет (Heap)':'Speicher (Heap)','Заявки':'Anfragen','Активни изтегляния':'Aktive Downloads','Хранилище':'Speicher','Достъпно':'Verfügbar','Само за четене':'Schreibgeschützt','Недостъпно':'Nicht verfügbar','Режим на IP':'IP-Modus','Пълен':'Voll','Хеширан':'Gehasht','Няма данни':'Keine Daten','Копирано в клипборда':'In die Zwischenablage kopiert','Копирането не успя':'Kopieren fehlgeschlagen','току-що':'gerade eben','мин':'Min','ч':'Std','дни':'Tage','Създаден':'Erstellt','файла':'Dateien','Състояние':'Status','Портал':'Portal','Данни':'Daten'});
+applyAdminLang();
+action(loadOverview);
