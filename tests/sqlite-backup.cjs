@@ -1,7 +1,7 @@
 
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {DatabaseSync}=require('node:sqlite');const {open}=require('../portal_enterprise/sqlite-store');
+const {DatabaseSync}=require('node:sqlite');const {open}=require('../hapi_enterprise/sqlite-store');
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'portal-backup-'));
 try {
  const dbPath=path.join(root,'db.json');const store=open(dbPath);store.load();

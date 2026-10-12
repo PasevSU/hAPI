@@ -2,7 +2,7 @@ const {spawn}=require('node:child_process');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pe-security-'));
- const script=path.join(__dirname,'../portal_enterprise/server.js');
+ const script=path.join(__dirname,'../hapi_enterprise/server.js');
  const run=(token)=>new Promise((resolve,reject)=>{
    const child=spawn(process.execPath,[script],{env:{...process.env,DATA_DIR:tmp,PORT:'0',ADMIN_TOKEN:token},stdio:['ignore','pipe','pipe']});
    let err='';child.stderr.on('data',b=>err+=b.toString());

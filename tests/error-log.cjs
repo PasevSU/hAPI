@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
-const {create}=require('../portal_enterprise/error-log');
+const {create}=require('../hapi_enterprise/error-log');
 (async()=>{
  // Unit: append/list ordering, level + source filters, size/count pruning
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-errlog-'));
@@ -18,7 +18,7 @@ const {create}=require('../portal_enterprise/error-log');
  // API: errors require auth; a failed restore is recorded centrally
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'portal-errlog-api-'));
  const port=24000+Math.floor(Math.random()*10000),token='error-log-test-admin-token-123456789';
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:root,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:root,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
  const call=async(route,method='GET',data,headers={})=>{const x=await fetch(`http://127.0.0.1:${port}${route}`,{method,headers:{Authorization:'Bearer '+token,...headers}});return {status:x.status,data:await x.json()}};
  try{
   let ready=false;for(let i=0;i<100;i++){try{if((await fetch(`http://127.0.0.1:${port}/health`)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}assert(ready,'server did not start');

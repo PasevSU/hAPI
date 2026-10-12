@@ -5,22 +5,48 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  test:
-    name: Integration test suite
+  test-ubuntu:
+    name: Integration tests (Ubuntu · Node 22)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Run test suite
+      - name: Run full test suite
+        shell: bash
         run: |
+          failed=0
           for f in tests/*.cjs; do
             echo "== $f =="
-            node "$f" || exit 1
+            node "$f" || failed=1
           done
+          exit $failed
+        env:
+          CI: "true"
+
+  test-windows:
+    name: Smoke + edge runtime (Windows · Node 22)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Smoke test
+        run: node tests/smoke.cjs
+        env:
+          CI: "true"
+
+      - name: Windows edge runtime test
+        run: node tests/edge-runtime.cjs
         env:
           CI: "true"

@@ -1,7 +1,7 @@
 'use strict';
 const { stopChild } = require('./helpers.cjs');
 const assert=require('node:assert/strict'),{spawn}=require('node:child_process'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-(async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-taxonomy-')),port=22000+Math.floor(Math.random()*20000),token='taxonomy-test-token-with-32-characters';const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});const base=`http://127.0.0.1:${port}`;
+(async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-taxonomy-')),port=22000+Math.floor(Math.random()*20000),token='taxonomy-test-token-with-32-characters';const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});const base=`http://127.0.0.1:${port}`;
 async function call(route,method='GET',data){const r=await fetch(base+route,{method,headers:{Authorization:'Bearer '+token,...(data!==undefined?{'Content-Type':'application/json'}:{})},body:data!==undefined?JSON.stringify(data):undefined});return {status:r.status,data:await r.json()}}
 try{let ready=false;for(let i=0;i<60;i++){try{const r=await fetch(base+'/health');if(r.ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}assert.ok(ready,'server starts');
 const p=(await call('/admin/api/portals','POST',{slug:'taxonomy',title:'Taxonomy'})).data;assert.ok(p.id);

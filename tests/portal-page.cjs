@@ -1,7 +1,7 @@
 'use strict';
 const { stopChild } = require('./helpers.cjs');
 const {spawn}=require('node:child_process'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict');
-(async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-page-')),port=31000+Math.floor(Math.random()*2000),adminPort=34000+Math.floor(Math.random()*2000),secret='test-admin-token-long-enough-123456';const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_PORT:String(adminPort),INGRESS_MODE:'true',ADMIN_TOKEN:secret},stdio:'pipe'});
+(async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-page-')),port=31000+Math.floor(Math.random()*2000),adminPort=34000+Math.floor(Math.random()*2000),secret='test-admin-token-long-enough-123456';const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_PORT:String(adminPort),INGRESS_MODE:'true',ADMIN_TOKEN:secret},stdio:'pipe'});
 const call=(p,opts={},admin=false)=>fetch(`http://127.0.0.1:${admin?adminPort:port}${p}`,opts);
 const json=async(p,method,body)=>{const r=await call(p,{method,headers:{Authorization:'Bearer '+secret,'Content-Type':'application/json'},body:JSON.stringify(body)},true);assert(r.ok,`${method} ${p} ${r.status}`);return r.json()};
 try{let ok=false;for(let i=0;i<100;i++){try{await call('/');ok=true;break}catch{await new Promise(r=>setTimeout(r,30))}}assert(ok);

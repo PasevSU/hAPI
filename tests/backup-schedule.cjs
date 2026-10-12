@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('nod
 (async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-backup-sched-'));
  const port=25000+Math.floor(Math.random()*10000),token='backup-sched-admin-token-123456789';
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
  try{
   let ready=false;for(let i=0;i<100;i++){try{if((await fetch(`http://127.0.0.1:${port}/health`)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}assert(ready,'server did not start');
   const base=`http://127.0.0.1:${port}/admin/api/database/backup-schedule`;

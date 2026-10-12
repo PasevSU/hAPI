@@ -1,7 +1,7 @@
 'use strict';
 const { stopChild } = require('./helpers.cjs');
 const {spawn}=require('node:child_process'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict');
-(async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-policy-'));const port=25000+Math.floor(Math.random()*2000),admin='test-admin-secret-1234567890123456';const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:admin},stdio:'pipe'});
+(async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-policy-'));const port=25000+Math.floor(Math.random()*2000),admin='test-admin-secret-1234567890123456';const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:admin},stdio:'pipe'});
 const call=async(p,method='GET',data,auth=false,headers={})=>{const r=await fetch(`http://127.0.0.1:${port}${p}`,{method,headers:{...(auth?{Authorization:'Bearer '+admin}:{}),...headers},body:data});let v;try{v=await r.json()}catch{v=null}return {status:r.status,v}};
 const j=(p,m,d)=>call(p,m,JSON.stringify(d),true,{'Content-Type':'application/json'});
 try{let ready=false;for(let i=0;i<100;i++){try{if((await call('/health')).status===200){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,30))}assert(ready);

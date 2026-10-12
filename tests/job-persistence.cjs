@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {create}=require('../portal_enterprise/job-manager');
+const {create}=require('../hapi_enterprise/job-manager');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
  const tmpdirs=[];

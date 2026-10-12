@@ -8,7 +8,7 @@ const ingress='/api/hassio_ingress/test-token_123';
  const projectFolder=path.join(dir,'html-projects','ingress-site');
  fs.mkdirSync(projectFolder,{recursive:true});
  fs.writeFileSync(path.join(projectFolder,'index.html'),'<h1>Ingress site works</h1>');
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub),ADMIN_PORT:String(adm),INGRESS_MODE:'true'},stdio:'pipe'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub),ADMIN_PORT:String(adm),INGRESS_MODE:'true'},stdio:'pipe'});
  try{
   let ready=false;
   for(let i=0;i<70;i++){try{if((await fetch(`http://127.0.0.1:${pub}/health`)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,70))}
@@ -29,8 +29,8 @@ const ingress='/api/hassio_ingress/test-token_123';
   const adminPage=await get(adm,ingress+'/admin',ingressHeaders);
   assert.equal(adminPage.status,200);
   const adminHtml=await adminPage.text();
-  assert(adminHtml.includes('<title>hAPI ENTERPRICE · Admin</title>'));
-  assert(adminHtml.includes('<span class="brand-name">hAPI ENTERPRICE</span>'));
+  assert(adminHtml.includes('<title>hAPI Enterprise · Admin</title>'));
+  assert(adminHtml.includes('<span class="brand-name">hAPI Enterprise</span>'));
   const adminScript=await get(adm,ingress+'/admin.js',ingressHeaders);
   assert.equal(adminScript.status,200);
   const adminJs=await adminScript.text();
