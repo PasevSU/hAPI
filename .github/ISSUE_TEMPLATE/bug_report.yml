@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a defect in hAPI Enterprise
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Do **not** report security vulnerabilities here — see `SECURITY.md`.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: hAPI Enterprise version (see `api-version.js` or the add-on info)
+      placeholder: e.g. 0.50.0
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Home Assistant add-on
+        - Windows standalone
+        - Both
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug and the expected vs. actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / output
+      description: Paste any error-log output (remove secrets and absolute paths first).
+      render: text

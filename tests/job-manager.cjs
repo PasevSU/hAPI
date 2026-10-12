@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
-const {create}=require('../portal_enterprise/job-manager');
+const {create}=require('../hapi_enterprise/job-manager');
 (async()=>{
  // Unit: FIFO, concurrency, cancel queued/running, queue bound
  const m=create({concurrency:1,maxQueued:2});
@@ -22,7 +22,7 @@ const {create}=require('../portal_enterprise/job-manager');
  // API
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-jobs-'));
  const port=23000+Math.floor(Math.random()*10000),token='job-manager-test-admin-token-123456789';
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
  const call=async(route,method='GET',data,headers={})=>{const x=await fetch(`http://127.0.0.1:${port}${route}`,{method,headers:{Authorization:`Bearer ${token}`,...headers},body:data});return {status:x.status,data:await x.json()}};
  try{
   let ready=false;for(let i=0;i<100;i++){try{if((await fetch(`http://127.0.0.1:${port}/health`)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}assert(ready,'server did not start');

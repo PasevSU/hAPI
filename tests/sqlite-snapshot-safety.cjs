@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {open}=require('../portal_enterprise/sqlite-store');
+const {open}=require('../hapi_enterprise/sqlite-store');
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'portal-snapshot-safety-'));
 let store=null;
 try{

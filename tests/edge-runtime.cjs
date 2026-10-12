@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const edge=require('../portal_enterprise/standalone');
+const edge=require('../hapi_enterprise/standalone');
 (async()=>{
  // Unit: token generation and reuse across restarts.
  const dataDir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-edge-'));
@@ -27,7 +27,7 @@ const edge=require('../portal_enterprise/standalone');
   assert(await edge.waitForHealth(port,20000),'server did not become healthy on the public listener');
   const admin=await fetch(`http://127.0.0.1:${adminPort}/admin`);
   assert.equal(admin.status,200,'/admin must serve the admin GUI');
-  assert((await admin.text()).includes('hAPI ENTERPRICE'),'admin GUI branding missing');
+  assert((await admin.text()).includes('hAPI Enterprise'),'admin GUI branding missing');
   const who=await fetch(`http://127.0.0.1:${adminPort}/admin/api/whoami`,{headers:{Authorization:'Bearer '+t1}});
   assert.equal(who.status,200,'whoami must resolve the admin role');
   assert.deepEqual(await who.json(),{role:'admin',ingress:true});

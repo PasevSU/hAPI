@@ -4,7 +4,7 @@ const {spawn}=require('node:child_process'),fs=require('node:fs'),os=require('no
 (async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-integrity-'));
  const port=23000+Math.floor(Math.random()*2000),token='integration-test-secret-at-least-24-chars';
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
  const call=async(route,method='GET',data,headers={})=>{const r=await fetch(`http://127.0.0.1:${port}${route}`,{method,headers:{Authorization:`Bearer ${token}`,...headers},body:data});return {status:r.status,data:await r.json()}};
  try{
  let ready=false;for(let i=0;i<100;i++){try{if((await call('/health')).status===200){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,30))}assert(ready);

@@ -6,7 +6,7 @@ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-sensors-')),port=31000+Ma
 let child;const base=`http://127.0.0.1:${port}`;
 const request=async(url,method='GET',body,headers={})=>{const r=await fetch(base+url,{method,headers,body});let v;try{v=await r.json()}catch{v=null}return {status:r.status,value:v}};
 const adminHeaders={Authorization:'Bearer '+admin,'Content-Type':'application/json'};
-const boot=async()=>{child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:admin},stdio:'ignore'});for(let i=0;i<100;i++){try{if((await request('/health')).status===200)return}catch{}await new Promise(r=>setTimeout(r,30))}throw Error('not ready')};
+const boot=async()=>{child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:admin},stdio:'ignore'});for(let i=0;i<100;i++){try{if((await request('/health')).status===200)return}catch{}await new Promise(r=>setTimeout(r,30))}throw Error('not ready')};
 try{
 await boot();assert.equal((await request('/admin/api/sensors')).status,401);
 const created=await request('/admin/api/portals','POST',JSON.stringify({title:'Sensors',slug:'sensors'}),adminHeaders);assert.equal(created.status,201);const pid=created.value.id;

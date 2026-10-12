@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const root=path.join(__dirname,'../portal_enterprise');
+const root=path.join(__dirname,'../hapi_enterprise');
 const docker=fs.readFileSync(path.join(root,'Dockerfile'),'utf8');
 const run=fs.readFileSync(path.join(root,'run.sh'),'utf8');
 assert.match(docker,/^FROM node:22\.16\.0-alpine3\.21$/m);

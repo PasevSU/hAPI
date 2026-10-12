@@ -6,7 +6,7 @@
 **Версия:** 3.0
 **Дата:** 2026-10-12
 **Статус:** Draft за одобрение
-**База:** DOCFLOW v2.0 + portal_enterprise v0.49
+**База:** DOCFLOW v2.0 + hapi_enterprise v0.49
 **Философия:** *"Нищо не е фиксирано, освен принципите"*
 
 ---
@@ -828,7 +828,7 @@ SQLite като default, но с абстракция (Repository pattern),
 Repository pattern + config за смяна.
 ```
 
-**Правило:** Всяко важно решение → ADR в `docs/adr/`.
+**Правило:** Всяко важно решение → ADR в `documentation/03_ADR/`.
 
 ---
 
@@ -914,12 +914,12 @@ docs/
 
 ---
 
-## 11. Миграция от portal_enterprise v0.49
+## 11. Миграция от hapi_enterprise v0.49
 
 ### 11.1 Стратегия
 
 ```
-portal_enterprise v0.49 (работещ)
+hapi_enterprise v0.49 (работещ)
     │
     │ 1. Backup (db + files)
     │ 2. Install DOCFLOW v3.0 в паралелна папка
@@ -935,7 +935,7 @@ DOCFLOW v3.0 (нов)
 
 ### 11.2 Mapping
 
-| portal_enterprise       | DOCFLOW v3.0                        |
+| hapi_enterprise       | DOCFLOW v3.0                        |
 | ----------------------- | ----------------------------------- |
 | `portals`             | `groups` + `records` (3000)     |
 | `files`               | `records` (2000) + storage        |

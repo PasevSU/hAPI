@@ -5,7 +5,7 @@ const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),http
 (async()=>{
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'pe-throttle-'));
  const port=20000+Math.floor(Math.random()*20000),secret='admin-'+require('node:crypto').randomBytes(24).toString('hex');
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:tmp,PORT:String(port),ADMIN_TOKEN:secret},stdio:['ignore','pipe','pipe']});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:tmp,PORT:String(port),ADMIN_TOKEN:secret},stdio:['ignore','pipe','pipe']});
  const request=(route,token)=>new Promise((resolve,reject)=>{const req=http.get({hostname:'127.0.0.1',port,path:route,headers:token?{Authorization:'Bearer '+token}:{}},res=>{res.resume();res.on('end',()=>resolve({status:res.statusCode,retry:res.headers['retry-after']}))});req.on('error',reject)});
  try{
   let ready=false;for(let i=0;i<60;i++){if(child.exitCode!==null)throw Error('server exited');try{if((await request('/health')).status===200){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,40))}assert.ok(ready,'server readiness');

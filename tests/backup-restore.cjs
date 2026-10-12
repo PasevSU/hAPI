@@ -4,7 +4,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('nod
  // API: backup list, create, restore (restore replaces metadata with the backup snapshot)
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'portal-restore-api-'));
  const port=28000+Math.floor(Math.random()*10000),token='restore-test-admin-token-1234567890';
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:root,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:root,PORT:String(port),ADMIN_TOKEN:token},stdio:'ignore'});
  const call=async(route,method='GET',data)=>{const x=await fetch(`http://127.0.0.1:${port}${route}`,{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:data});return {status:x.status,data:await x.json()}};
  try{
   let ready=false;for(let i=0;i<100;i++){try{if((await fetch(`http://127.0.0.1:${port}/health`)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}assert(ready,'server did not start');
