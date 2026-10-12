@@ -1,1 +1,91 @@
-<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Download Portal</title><link rel="stylesheet" href="/portal.css"></head><body><main><h1 id="title">Download Portal</h1><p id="description"></p><p id="status" role="status"></p><section id="files" aria-label="Файлове"></section></main><script src="/portal.js" defer></script></body></html>
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evidence Portal</title>
+<link rel="stylesheet" href="/portal.css">
+</head>
+<body>
+<header id="topbar" hidden>
+  <div class="brand">
+    <img id="brand-logo" alt="" hidden>
+    <div class="brand-text">
+      <h1 id="brand-title"></h1>
+      <p id="brand-sub"></p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <label class="lang-wrap"><span class="sr-only" id="lang-label"></span>
+      <select id="lang" aria-labelledby="lang-label"></select>
+    </label>
+    <div id="session" class="session" hidden>
+      <span id="role-badge" class="badge"></span>
+      <span id="session-subject" title=""></span>
+      <button id="logout" type="button" class="btn ghost"></button>
+    </div>
+  </div>
+</header>
+
+<main id="app">
+  <section id="view-landing" class="view" hidden>
+    <div class="landing-card">
+      <img id="landing-logo" alt="" hidden>
+      <h1 id="landing-title"></h1>
+      <p id="landing-desc"></p>
+      <dl id="landing-meta" class="meta-grid"></dl>
+      <p id="landing-legal" class="legal"></p>
+      <form id="login-form" class="login" novalidate>
+        <label for="credential" id="login-label"></label>
+        <textarea id="credential" rows="3" autocomplete="off" autocapitalize="off" spellcheck="false" required></textarea>
+        <button type="submit" class="btn" id="login-btn"></button>
+      </form>
+      <p id="login-error" class="error" role="alert" hidden></p>
+    </div>
+  </section>
+
+  <section id="view-dashboard" class="view" hidden>
+    <div class="toolbar">
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-view="dashboard" role="tab" id="tab-dashboard"></button>
+        <button type="button" class="tab" data-view="upload" role="tab" id="tab-upload" hidden></button>
+      </div>
+      <input id="filter" type="search" placeholder="" aria-label="">
+      <select id="case-filter" aria-label=""></select>
+    </div>
+    <p id="summary" class="summary"></p>
+    <ul id="evidence-list" class="evidence-list"></ul>
+    <p id="empty" class="empty" hidden></p>
+  </section>
+
+  <section id="view-details" class="view" hidden>
+    <button id="back" type="button" class="btn ghost back"></button>
+    <div id="details" class="details"></div>
+  </section>
+
+  <section id="view-upload" class="view" hidden>
+    <h1 id="upload-title"></h1>
+    <form id="upload-form" class="upload" novalidate>
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="">
+        <input id="file-input" type="file" hidden>
+        <p id="dropzone-text"></p>
+        <p id="file-chosen" class="chosen" hidden></p>
+      </div>
+      <label for="upload-case" id="upload-case-label"></label>
+      <input id="upload-case" type="text" required>
+      <label for="upload-classification" id="upload-classification-label"></label>
+      <select id="upload-classification"></select>
+      <label for="upload-tags" id="upload-tags-label"></label>
+      <input id="upload-tags" type="text" placeholder="">
+      <div id="client-hash" class="hash-line" hidden></div>
+      <button type="submit" class="btn" id="upload-btn"></button>
+      <p id="upload-status" role="status"></p>
+    </form>
+    <div id="receipt" class="receipt" hidden></div>
+  </section>
+</main>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<script src="/portal.js" defer></script>
+</body>
+</html>

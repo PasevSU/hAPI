@@ -726,7 +726,7 @@ if(parts[0]==='p'&&parts.length===2&&method==='GET'){
  const portal=getPortal(parts[1]);if(!portal)return fail(res,404,'Not found');
  if((requirePortalToken||portal.visibility!=='public')&&!portalAuthorized(req,portal,'read',url))return fail(res,404,'Not found');
  const html=fs.readFileSync(path.join(__dirname,'portal.html'));
- res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'",'Referrer-Policy':'no-referrer'});
+ res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: https:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",'Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'});
  return res.end(html);
 }
 if(url.pathname==='/portal.js'&&method==='GET'){
@@ -757,7 +757,7 @@ if(parts[0]==='api'&&parts[1]==='v1'&&parts[2]==='p'&&parts[4]==='evidence'){
   const caseId=clean(req.headers['x-case-id']||'');if(!caseId)return fail(res,400,'Missing X-Case-Id');
   if(!roleCaseOk(caseId))return fail(res,403,'Case not assigned to this role');
   const classification=clean(req.headers['x-classification']||'EVIDENCE').toUpperCase();
-  const tags=String(req.headers['x-tags']||'').split(',').map(t=>t.trim()).filter(Boolean);
+  const tags=String(req.headers['x-tags']||'').split(',').map(t=>{const s=t.trim();try{return decodeURIComponent(s)}catch{return s}}).filter(Boolean);
   let data;try{data=await body(req,runtime.effective().maxUploadBytes||10*1024*1024)}catch(e){if(e.status===413)return fail(res,413,e.message);throw e}
   if(!data.length)return fail(res,400,'Empty payload');
   try{const receipt=await evidenceStore.store({caseId,name,data,uploadedBy:cred.sub,classification,tags});void audit('evidence.upload',{portalId:p.id,fileId:receipt.fileId,caseId,name,role:cred.role,size:receipt.size});void eventBus.emit('evidence.uploaded',{portalId:p.id,fileId:receipt.fileId,caseId});return json(res,201,{receipt})}
@@ -911,6 +911,21 @@ if(parts[3]==='merge'&&parts.length===4&&method==='POST'){
 }const p=db.portals.find(x=>x.id===parts[3]);if(!p)return fail(res,404,'Portal not found');
 if(parts.length===4&&method==='GET')return json(res,200,adminPortal(p));
 if(parts[4]==='api-info'&&parts.length===5&&method==='GET'){const apiUrl=portalApiUrl(p,baseUrl(req));return json(res,200,{apiUrl,directory:'api/'+p.slug,qr:qrSvg(apiUrl)})}
+// Phase 7 — issue a scoped judicial credential (judge/prosecutor/clerk/…).
+// This is the interim issuer (admin acts as the trusted authority) until the
+// OIDC/PKCE IdP layer from the Phase 7 plan is implemented. The credential is
+// HMAC-signed, short-lived and, for investigator/expert, per-case scoped.
+if(parts[4]==='credentials'&&parts.length===5&&method==='POST'){
+ const b=await parse(req);if(!b||typeof b!=='object'||Array.isArray(b))return fail(res,400,'Invalid request');
+ const sub=clean(b.sub),role=clean(b.role);
+ if(b.caseIds!==undefined&&!Array.isArray(b.caseIds))return fail(res,400,'Invalid caseIds');
+ const caseIds=Array.isArray(b.caseIds)?b.caseIds.map(x=>typeof x==='string'?clean(x):''):[];
+ const ttl=Number(b.ttlSeconds);const opts={sub,role,caseIds};if(Number.isInteger(ttl))opts.ttlSeconds=ttl;
+ let credential;try{credential=portalAuth.issue(opts)}catch(e){return fail(res,e.status||400,e.message)}
+ const payload=JSON.parse(Buffer.from(credential.split('.')[0],'base64url').toString('utf8'));
+ void audit('portal.credential.issued',{portalId:p.id,sub,role,caseIds:payload.caseIds,expiresAt:new Date(payload.exp*1000).toISOString()});
+ return json(res,201,{credential,sub:payload.sub,role:payload.role,caseIds:payload.caseIds,expiresAt:new Date(payload.exp*1000).toISOString()});
+}
 // Batch policy workflow: validate entire request before applying any changes.
 // Preview is read-only and returns the exact affected files; apply is one metadata update.
 if(parts[4]==='files'&&parts[5]==='bulk-access'&&parts.length===6&&method==='POST'){
