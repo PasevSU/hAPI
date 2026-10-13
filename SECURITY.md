@@ -20,8 +20,11 @@ edge between Home Assistant and Windows. Security is enforced by design:
   `OPERATOR_TOKEN`, `VIEWER_TOKEN`) resolve admin/operator/viewer roles; every
   administrative route is tagged with a capability.
 - **Ingress SSO (Home Assistant)** — `X-Remote-User` / `X-Remote-Groups` headers are
-  trusted **only** on the ingress/admin listener. The public listener never trusts
-  SSO headers and never serves `/admin`.
+  trusted **only** on the ingress/admin listener and map to admin/operator/viewer roles
+  via the `user_roles` / `group_roles` add-on options (JSON maps). The public listener
+  never trusts SSO headers and never serves `/admin`. The admin console is role-aware:
+  viewer is read-only, operator can write, admin has full access — and no bearer token is
+  required in Ingress mode.
 - **Loopback isolation (Windows)** — the standalone runtime binds the admin listener
   to `127.0.0.1` only.
 - **No secret leakage** — the diagnostics API requires administrative authentication

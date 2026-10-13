@@ -28,7 +28,7 @@ const {create}=require('../portal_enterprise/rbac');
   // Public listener never trusts SSO headers and never serves /admin.
   assert.equal((await fetch(`http://127.0.0.1:${port}/admin/api/whoami`,{headers:{'X-Remote-User':'alice'}})).status,404);
   // Admin listener: identity maps to role.
-  assert.deepEqual((await call(adminPort,'/admin/api/whoami',h('alice'))).data,{role:'admin',ingress:true});
+  assert.deepEqual((await call(adminPort,'/admin/api/whoami',h('alice'))).data,{role:'admin',ingress:true,user:'alice'});
   assert.equal((await call(adminPort,'/admin/api/whoami',h('bob'))).data.role,'operator');
   assert.equal((await call(adminPort,'/admin/api/whoami',hg('sre'))).data.role,'viewer');
   assert.equal((await call(adminPort,'/admin/api/whoami',h('nobody'))).status,401);

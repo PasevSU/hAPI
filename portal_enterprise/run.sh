@@ -7,6 +7,10 @@ export ADMIN_TOKEN
 BACKUP_DIR="$(node -e 'try{const v=JSON.parse(require("fs").readFileSync("/data/options.json","utf8")).backup_folder;if(typeof v==="string")process.stdout.write(v.trim())}catch{}')"
 export BACKUP_DIR
 export INGRESS_MODE=true
+USER_ROLES="$(node -e 'try{const v=JSON.parse(require("fs").readFileSync("/data/options.json","utf8")).user_roles;process.stdout.write(typeof v==="string"?v:(v&&typeof v==="object"?JSON.stringify(v):"{}"))}catch(e){process.stdout.write("{}")}')"
+export USER_ROLES
+GROUP_ROLES="$(node -e 'try{const v=JSON.parse(require("fs").readFileSync("/data/options.json","utf8")).group_roles;process.stdout.write(typeof v==="string"?v:(v&&typeof v==="object"?JSON.stringify(v):"{}"))}catch(e){process.stdout.write("{}")}')"
+export GROUP_ROLES
 export HAPI_FIRST_RUN_SEED=1
 export REQUIRE_PORTAL_TOKEN=true
 export PUBLIC_BIND_HOST=0.0.0.0

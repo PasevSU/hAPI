@@ -151,7 +151,12 @@ Das Browser-Admin-Panel ist eine separate Oberfläche von der vollständigen Des
    `repository.yaml` hinzufügen.
 3. In der Add-on-**Konfiguration** ein eindeutiges Admin-Token mit mindestens 24 Zeichen
    festlegen und speichern; anschließend das Add-on **hAPI ENTERPRICE** installieren/starten.
-4. Die **Ingress**-Oberfläche öffnen und das konfigurierte Admin-Token in der Admin-Konsole eingeben.
+4. Die **Ingress**-Oberfläche öffnen — die Admin-Konsole authentifiziert sich automatisch
+   über den aktuellen Home-Assistant-Benutzer. Die Rolle ergibt sich aus `user_roles` /
+   `group_roles` in der Add-on-Konfiguration (JSON-Maps, z. B.
+   `{"pasev":"admin","reception":"viewer"}`): admin hat Vollzugriff, operator schreibt,
+   viewer ist schreibgeschützt. Ohne zugeordnete Rolle bleibt die Konsole gesperrt; das
+   Admin-Token funktioniert weiterhin als Fallback.
 
 Links zu veröffentlichten HTML-Projekten aus der Admin-Konsole verwenden die aktuelle
 Ingress-Route und sind nur für authentifizierte Home-Assistant-Benutzer verfügbar.

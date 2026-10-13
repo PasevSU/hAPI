@@ -21,12 +21,21 @@ options:
   token: ""
   db_name: ""
   backup_folder: ""
+  # JSON maps for Ingress SSO role mapping. Map a Home Assistant
+  # username (user_roles) or group (group_roles) to one of
+  # admin | operator | viewer. Example:
+  #   user_roles: '{"pasev":"admin","reception":"viewer"}'
+  #   group_roles: '{"Administrators":"admin","Operators":"operator"}'
+  user_roles: "{}"
+  group_roles: "{}"
 schema:
   username: str?
   password: password?
   token: password?
   db_name: str?
   backup_folder: str?
+  user_roles: str?
+  group_roles: str?
 map:
   - addon_config:rw
   - media:rw

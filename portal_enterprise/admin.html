@@ -76,6 +76,8 @@ a{color:var(--accent)}
 .topbar-title{font-weight:700;font-size:18px;white-space:nowrap}
 .topbar-spacer{flex:1}
 #token{width:260px;max-width:100%}
+.auth-badge{font-size:13px;font-weight:600;color:var(--text);background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.auth-badge[hidden]{display:none}
 .lang-group{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 8px;height:38px;margin:0}
 .lang-group svg{width:16px;height:16px;color:var(--text-faint)}
 .lang-group select{border:none;background:transparent;padding:0;height:auto;width:auto;color:var(--text);cursor:pointer}
@@ -327,6 +329,7 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
       </button>
       <div class="topbar-title" id="topbar-title">Admin panel</div>
       <div class="topbar-spacer"></div>
+      <span id="auth-badge" class="auth-badge" hidden></span>
       <input id="token" type="password" autocomplete="off" placeholder="Admin token" aria-label="Admin token">
       <button id="load" class="btn-primary" type="button" data-i18n="Зареди портали">Зареди портали</button>
       <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Theme" title="Theme">
@@ -361,7 +364,7 @@ table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
       <section class="panel" id="panel-portals">
         <div class="banner" data-i18n="Административният токен остава само в паметта на текущия раздел и не се записва в браузъра.">Административният токен остава само в паметта на текущия раздел и не се записва в браузъра.</div>
 
-        <section class="card">
+        <section class="card" id="create-portal-card">
           <div class="card-head"><h2 data-i18n="Нов портал">Нов портал</h2></div>
           <div class="card-body">
             <div class="form-grid">
