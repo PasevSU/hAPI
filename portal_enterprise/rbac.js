@@ -35,6 +35,11 @@ function create({adminToken,operatorToken,viewerToken,userRoles={},groupRoles={}
   const user=String(req.headers['x-remote-user']||'').trim();
   return roleForUser(user)||roleForGroups(groups);
  }
+ function identity(req){
+  const user=String(req.headers['x-remote-user']||'').trim();
+  const groups=String(req.headers['x-remote-groups']||'').split(',').map(s=>s.trim()).filter(Boolean);
+  return {user:user||null,groups,role:resolveIngress(req)};
+ }
  function resolve(req){
   const given=(req.headers.authorization||'').replace(/^Bearer /i,'');
   if(safeEqual(given,adminToken))return 'admin';
@@ -52,6 +57,6 @@ function create({adminToken,operatorToken,viewerToken,userRoles={},groupRoles={}
   if(v==='read')return method==='GET';
   return false;
  }
- return {resolve,allowed,role:resolve};
+ return {resolve,allowed,role:resolve,identity};
 }
 module.exports={create,CAPABILITIES};

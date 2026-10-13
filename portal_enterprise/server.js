@@ -274,12 +274,12 @@ if(isAdminListener){
 if(isAdminListener&&corsOrigin){res.setHeader('Access-Control-Allow-Origin',corsOrigin);res.setHeader('Access-Control-Allow-Methods','GET,POST,PATCH,DELETE,OPTIONS');res.setHeader('Access-Control-Allow-Headers','Authorization,Content-Type,X-File-Name');res.setHeader('Access-Control-Max-Age','600');res.setHeader('Vary','Origin')}
 if(ingressMode){const adminPath=url.pathname==='/admin'||url.pathname==='/admin.js'||url.pathname.startsWith('/admin/')||url.pathname==='/'||(hasIngressPath&&url.pathname.startsWith('/site/'));if(isAdminListener&&!adminPath)return fail(res,404,'Not found');if(!isAdminListener&&adminPath)return fail(res,404,'Not found');if(isAdminListener&&url.pathname==='/'){url.pathname='/admin';req.url=url.pathname+url.search;}}
 if(isAdminListener&&url.pathname==='/admin/api/ingress-login'&&req.method==='GET'){
- const peer=String(req.socket.remoteAddress||'').replace(/^::ffff:/,'');
- const fromSupervisor=peer==='172.30.32.2'&&typeof req.headers['x-ingress-path']==='string';
- const localOnly=['127.0.0.1','::1'].includes(peer)&&['127.0.0.1','::1','localhost'].includes(adminBindHost);
- if(!fromSupervisor&&!localOnly)return fail(res,403,'Forbidden');
+ // Home Assistant Ingress SSO: report the resolved identity/role from X-Remote-User /
+ // X-Remote-Groups. The admin token is never returned; it stays server-side only.
+ const identity=rbac.identity(req);
  res.setHeader('Cache-Control','no-store');
- return json(res,200,{token:adminToken});
+ if(!identity||!identity.role)return fail(res,401,'SSO identity not recognized');
+ return json(res,200,{role:identity.role,user:identity.user,groups:identity.groups,ingress:true});
 }
 if(req.method==='OPTIONS'){res.writeHead(isAdminListener&&corsOrigin?204:404,{'Content-Length':'0'});return res.end()}
 const parts=url.pathname.split('/').filter(Boolean);const method=req.method;counters.requests++;res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');if(!isAdminListener)res.setHeader('X-Frame-Options','DENY');
@@ -486,7 +486,7 @@ if(url.pathname==='/admin/api/storage/check'&&method==='POST'){
  if(!adminGate(req,res,'storage',method))return;
  return json(res,200,await runStorageCheck('manual'));
 }
-if(url.pathname==='/admin/api/whoami'&&method==='GET'){if(!adminGate(req,res,'whoami',method))return;return json(res,200,{role:rbac.role(req),ingress:req.ingress===true})}
+if(url.pathname==='/admin/api/whoami'&&method==='GET'){if(!adminGate(req,res,'whoami',method))return;return json(res,200,{role:rbac.role(req),ingress:req.ingress===true,user:rbac.identity(req).user})}
 if(url.pathname==='/health'&&method==='GET')return json(res,200,{status:'ok'});if(url.pathname==='/admin/api/metrics'&&method==='GET'){if(!adminGate(req,res,'metrics',method))return;return json(res,200,{...counters,portals:db.portals.length})}
 if(url.pathname==='/admin/api/audit/verify'&&method==='GET'){if(!adminGate(req,res,'audit',method))return;const result=await auditChain.verify();return json(res,result.valid?200:409,{...result,integrity:result.valid?'HASH_CHAIN_VALID':'FAILED',note:'Hash chaining detects changes but is not externally anchored or tamper-proof against an administrator who can rewrite the entire chain.'})}
 if(url.pathname==='/admin/api/audit'&&method==='GET'){

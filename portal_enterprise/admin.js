@@ -134,13 +134,20 @@ function refreshOnLanguageChange(buttonId,resultId,render){
  $(buttonId).addEventListener('click',()=>action(refresh));
  _languageRefreshers.push(async()=>{if(result.dataset.languageLoaded==='true')await refresh()});
 }
-function setAdminLang(l){if(['bg','en','de'].includes(l))adminLang=l;applyAdminLang();if($('token').value)action(async()=>{await load();for(const refresh of _languageRefreshers)await refresh()})}
+function setAdminLang(l){if(['bg','en','de'].includes(l))adminLang=l;applyAdminLang();if($('token').value||auth.role)action(async()=>{await load();for(const refresh of _languageRefreshers)await refresh()})}
 function applyAdminLang(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'))});const sel=document.getElementById('admin-lang');if(sel)sel.value=adminLang}
 const $=id=>document.getElementById(id);
 const ingressBase=(()=>{const p=location.pathname;return p.endsWith('/admin')?p.slice(0,-6):p.endsWith('/')?p.slice(0,-1):''})();
 const adminPath=p=>ingressBase+p;
 const node=(tag,text)=>{const e=document.createElement(tag);e.textContent=text;return e};
-async function api(path,method='GET',value,extra={}){const headers={Authorization:'Bearer '+$('token').value,...extra};let body;if(value!==undefined){headers['Content-Type']='application/json';body=JSON.stringify(value)}const r=await fetch(adminPath(path),{method,headers,body});const data=await r.json();if(!r.ok)throw Error(data.error||`HTTP ${r.status}`);return data}
+const auth={role:null,user:null,ingress:false};
+const roleRank={viewer:1,operator:2,admin:3};
+const panelMinRole={backups:'admin',api:'admin',settings:'admin'};
+const canWrite=()=>auth.role===null||auth.role==='admin'||auth.role==='operator';
+const canAdmin=()=>auth.role===null||auth.role==='admin';
+const canAccessPanel=name=>auth.role===null||(roleRank[auth.role]||0)>=(roleRank[panelMinRole[name]]||1);
+const authHeaders=()=>$('token').value?{Authorization:'Bearer '+$('token').value}:{};
+async function api(path,method='GET',value,extra={}){const headers={...authHeaders(),...extra};let body;if(value!==undefined){headers['Content-Type']='application/json';body=JSON.stringify(value)}const r=await fetch(adminPath(path),{method,headers,body});const data=await r.json();if(!r.ok)throw Error(data.error||`HTTP ${r.status}`);return data}
 async function action(fn){try{$('status').textContent='';await fn()}catch(e){$('status').textContent=e.message}}
 const closeMenus=()=>document.querySelectorAll('.menu').forEach(m=>m.hidden=true);
 document.addEventListener('click',closeMenus);
@@ -154,14 +161,14 @@ async function load(){const data=await api('/admin/api/portals');const holder=$(
  const qr=node('button',t('QR код'));qr.type='button';qr.onclick=()=>action(async()=>{const info=await api('/admin/api/portals/'+p.id+'/api-info');showQr(info,p)});meta.append(qr);box.append(meta);
  const fileInput=document.createElement('input');fileInput.type='file';fileInput.hidden=true;fileInput.setAttribute('aria-label',t('Качи файл в ')+p.title);
  const htmlInput=document.createElement('input');htmlInput.type='file';htmlInput.accept='.html,.htm,text/html';htmlInput.hidden=true;htmlInput.setAttribute('aria-label',t('Избери HTML за ')+p.title);
- box.append(fileInput,htmlInput,menu(t('Действия'),[
+ if(canWrite())box.append(fileInput,htmlInput,menu(t('Действия'),[
   {label:t(p.visibility==='public'?'Направи частен':'Направи публичен'),run:async()=>{await api('/admin/api/portals/'+p.id,'PATCH',{visibility:p.visibility==='public'?'private':'public'});await load()}},
   {label:t('Качи файл'),run:()=>{fileInput.click()}},
   {label:t('Качи HTML чрез API'),run:()=>{htmlInput.click()}},
   {label:t('Изтрий портал'),danger:true,run:async()=>{if(!confirm(t('Изтриване на портал ')+p.title+t(' и всички файлове?')))return;await api('/admin/api/portals/'+p.id,'DELETE');await load()}}
  ]));
- fileInput.onchange=()=>action(async()=>{const f=fileInput.files[0];if(!f)return;const r=await fetch(adminPath('/admin/api/portals/'+p.id+'/files'),{method:'POST',headers:{Authorization:'Bearer '+$('token').value,'X-File-Name':f.name},body:f});if(!r.ok)throw Error((await r.json()).error);await load()});
- htmlInput.onchange=()=>action(async()=>{const f=htmlInput.files[0];if(!f)return;if(!/\.html?$/i.test(f.name))throw Error(t('Разрешени са .html и .htm'));const r=await fetch(adminPath('/admin/api/portals/'+p.id+'/html'),{method:'POST',headers:{Authorization:'Bearer '+$('token').value,'X-File-Name':f.name,'Content-Type':'text/html'},body:f});const d=await r.json();if(!r.ok)throw Error(d.error||'HTTP '+r.status);toast(t('HTML е съхранен. Достъп: KEY_REQUIRED; скрит от каталога. Настрой правата и ключовете преди публикуване.'),'success');await load()});
+ fileInput.onchange=()=>action(async()=>{const f=fileInput.files[0];if(!f)return;const r=await fetch(adminPath('/admin/api/portals/'+p.id+'/files'),{method:'POST',headers:{...authHeaders(),'X-File-Name':f.name},body:f});if(!r.ok)throw Error((await r.json()).error);await load()});
+ htmlInput.onchange=()=>action(async()=>{const f=htmlInput.files[0];if(!f)return;if(!/\.html?$/i.test(f.name))throw Error(t('Разрешени са .html и .htm'));const r=await fetch(adminPath('/admin/api/portals/'+p.id+'/html'),{method:'POST',headers:{...authHeaders(),'X-File-Name':f.name,'Content-Type':'text/html'},body:f});const d=await r.json();if(!r.ok)throw Error(d.error||'HTTP '+r.status);toast(t('HTML е съхранен. Достъп: KEY_REQUIRED; скрит от каталога. Настрой правата и ключовете преди публикуване.'),'success');await load()});
  const table=document.createElement('div');table.className='data-table-wrap';const tbl=document.createElement('table');tbl.className='data-table';
  const thead=document.createElement('thead');const hr=document.createElement('tr');for(const label of [t('Файл'),t('Размер'),t('Качен'),t('SHA-256'),t('Действия')]){const th=document.createElement('th');th.textContent=label;hr.append(th)}thead.append(hr);tbl.append(thead);
  const tbody=document.createElement('tbody');
@@ -171,7 +178,7 @@ async function load(){const data=await api('/admin/api/portals');const holder=$(
   const sizeTd=document.createElement('td');sizeTd.className='num';sizeTd.textContent=fmtSize(f.size);
   const dateTd=document.createElement('td');dateTd.textContent=timeAgo(f.uploadedAt||f.createdAt);dateTd.title=fmtDate(f.uploadedAt||f.createdAt);
   const shaTd=document.createElement('td');const sha=document.createElement('code');sha.className='mono';sha.textContent=(f.sha256||'').slice(0,12)+'…';sha.title=f.sha256||'';shaTd.append(sha);
-  const actTd=document.createElement('td');const link=node('button',t('Линк'));link.type='button';link.onclick=()=>copyText(publicUrl+'/files/'+encodeURIComponent(f.id)+'/download');const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+f.name+'?'))return;await api('/admin/api/portals/'+p.id+'/files/'+f.id,'DELETE');await load()});actTd.append(link,del);
+  const actTd=document.createElement('td');const link=node('button',t('Линк'));link.type='button';link.onclick=()=>copyText(publicUrl+'/files/'+encodeURIComponent(f.id)+'/download');const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+f.name+'?'))return;await api('/admin/api/portals/'+p.id+'/files/'+f.id,'DELETE');await load()});actTd.append(link);if(canWrite())actTd.append(del);
   tr.append(nameTd,sizeTd,dateTd,shaTd,actTd);tbody.append(tr)}
  tbl.append(tbody);table.append(tbl);box.append(table);
  holder.append(box)}$('status').textContent=t('Удостоверяването е успешно. Заредени портали: ')+data.portals.length}
@@ -192,32 +199,34 @@ load=async function(){await originalLoad();taxCache=await api('/admin/api/taxono
   const page=await api('/admin/api/portals/'+p.id+'/files?'+qs);results.replaceChildren(node('p',`${t('Намерени: ')}${page.total}${t(' · показани: ')}${page.files.length}`));
   for(const f of page.files)results.append(node('p',`${f.name} · ${f.topic||'—'} / ${f.category||'—'} / ${(f.tags||[]).join(', ')||'—'} / ${f.group||'—'}`));
  });section.append(search,results);
- const heading=node('h4',t('Метаданни на файловете'));section.append(heading);
- for(const f of p.files){const line=node('div','');line.append(node('strong',f.name+' '));const fields={};for(const key of ['topic','category','tags','group']){
-  let input;if(key==='category'||key==='group')input=taxSelect(key,f[key]||'',key==='category'?t('Категория'):t('Група'));else{input=node('input','');input.placeholder=key==='tags'?t('Етикети, разделени със запетая'):t('Тема');input.value=key==='tags'?(f.tags||[]).join(', '):f[key]||''}input.setAttribute('aria-label',key+' за '+f.name);fields[key]=input;line.append(input);
- }
- const save=node('button',t('Запази метаданни'));save.onclick=()=>action(async()=>{await api('/admin/api/portals/'+p.id+'/files/'+f.id+'/metadata','PATCH',{
-  topic:fields.topic.value,category:fields.category.value,group:fields.group.value,tags:fields.tags.value.split(',').map(x=>x.trim()).filter(Boolean)
- });await load()});line.append(save);section.append(line);
+ if(canWrite()){
+  const heading=node('h4',t('Метаданни на файловете'));section.append(heading);
+  for(const f of p.files){const line=node('div','');line.append(node('strong',f.name+' '));const fields={};for(const key of ['topic','category','tags','group']){
+   let input;if(key==='category'||key==='group')input=taxSelect(key,f[key]||'',key==='category'?t('Категория'):t('Група'));else{input=node('input','');input.placeholder=key==='tags'?t('Етикети, разделени със запетая'):t('Тема');input.value=key==='tags'?(f.tags||[]).join(', '):f[key]||''}input.setAttribute('aria-label',key+' за '+f.name);fields[key]=input;line.append(input);
+  }
+  const save=node('button',t('Запази метаданни'));save.onclick=()=>action(async()=>{await api('/admin/api/portals/'+p.id+'/files/'+f.id+'/metadata','PATCH',{
+   topic:fields.topic.value,category:fields.category.value,group:fields.group.value,tags:fields.tags.value.split(',').map(x=>x.trim()).filter(Boolean)
+  });await load()});line.append(save);section.append(line);
+  }
  }
  box.append(section);
  }};
 
 // Admin-only notes and internal attachments; never exposed by the public portal API.
 const taxonomyLoad=load;
-load=async function(){await taxonomyLoad();const {portals}=await api('/admin/api/portals');const articles=[...$('portals').querySelectorAll('article')];for(let i=0;i<portals.length;i++){
+load=async function(){await taxonomyLoad();if(!canWrite())return;const {portals}=await api('/admin/api/portals');const articles=[...$('portals').querySelectorAll('article')];for(let i=0;i<portals.length;i++){
  const p=portals[i],box=articles[i];if(!box)continue;const base='/admin/api/portals/'+p.id;
  const section=node('section','');section.append(node('h4',t('Вътрешни бележки и приложения (само администратор)')));
  const title=node('input','');title.placeholder=t('Заглавие на бележка');const content=node('textarea','');content.placeholder=t('Текст на бележката');
  const add=node('button',t('Добави бележка'));add.onclick=()=>action(async()=>{await api(base+'/notes','POST',{title:title.value,content:content.value});await load()});section.append(title,content,add);
  const notes=await api(base+'/notes');for(const n of notes.notes){const line=node('div','');line.append(node('strong',n.title),node('p',n.content));const edit=node('button',t('Редактирай'));edit.onclick=()=>action(async()=>{const newTitle=prompt(t('Заглавие'),n.title);if(newTitle===null)return;const newContent=prompt(t('Бележка'),n.content);if(newContent===null)return;await api(base+'/notes/'+n.id,'PATCH',{title:newTitle,content:newContent});await load()});const del=node('button',t('Изтрий бележка'));del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на бележката?')))return;await api(base+'/notes/'+n.id,'DELETE');await load()});line.append(edit,del);section.append(line)}
- const fileInput=node('input','');fileInput.type='file';const upload=node('button',t('Качи вътрешен файл'));upload.onclick=()=>action(async()=>{const f=fileInput.files[0];if(!f)throw Error(t('Избери файл'));const r=await fetch(adminPath(base+'/attachments'),{method:'POST',headers:{Authorization:'Bearer '+$('token').value,'X-File-Name':f.name},body:f});if(!r.ok)throw Error((await r.json()).error);await load()});section.append(fileInput,upload);
- const attachments=await api(base+'/attachments');for(const f of attachments.attachments){const line=node('div',f.name+' ('+f.size+' bytes) ');const download=node('button',t('Изтегли'));download.onclick=()=>action(async()=>{const r=await fetch(adminPath(base+'/attachments/'+f.id+'/download'),{headers:{Authorization:'Bearer '+$('token').value}});if(!r.ok)throw Error('Download failed');const blob=await r.blob(),u=URL.createObjectURL(blob),link=document.createElement('a');link.href=u;link.download=f.name;link.click();setTimeout(()=>URL.revokeObjectURL(u),1000)});const del=node('button',t('Изтрий'));del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на приложението?')))return;await api(base+'/attachments/'+f.id,'DELETE');await load()});line.append(download,del);section.append(line)}box.append(section);
+ const fileInput=node('input','');fileInput.type='file';const upload=node('button',t('Качи вътрешен файл'));upload.onclick=()=>action(async()=>{const f=fileInput.files[0];if(!f)throw Error(t('Избери файл'));const r=await fetch(adminPath(base+'/attachments'),{method:'POST',headers:{...authHeaders(),'X-File-Name':f.name},body:f});if(!r.ok)throw Error((await r.json()).error);await load()});section.append(fileInput,upload);
+ const attachments=await api(base+'/attachments');for(const f of attachments.attachments){const line=node('div',f.name+' ('+f.size+' bytes) ');const download=node('button',t('Изтегли'));download.onclick=()=>action(async()=>{const r=await fetch(adminPath(base+'/attachments/'+f.id+'/download'),{headers:authHeaders()});if(!r.ok)throw Error('Download failed');const blob=await r.blob(),u=URL.createObjectURL(blob),link=document.createElement('a');link.href=u;link.download=f.name;link.click();setTimeout(()=>URL.revokeObjectURL(u),1000)});const del=node('button',t('Изтрий'));del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на приложението?')))return;await api(base+'/attachments/'+f.id,'DELETE');await load()});line.append(download,del);section.append(line)}box.append(section);
  }};
 
 // Per-file access policies. Secrets are shown once and are never written to localStorage.
 const previousLoad=load;
-load=async function(){await previousLoad();const {portals}=await api('/admin/api/portals');const articles=[...$('portals').querySelectorAll('article')];for(let i=0;i<portals.length;i++){
+load=async function(){await previousLoad();if(!canWrite())return;const {portals}=await api('/admin/api/portals');const articles=[...$('portals').querySelectorAll('article')];for(let i=0;i<portals.length;i++){
  const p=portals[i],box=articles[i];if(!box)continue;
  const section=node('section','');section.append(node('h4',t('Права за изтегляне на файловете')));
  for(const f of p.files){
@@ -273,7 +282,7 @@ refreshOnLanguageChange('diagnostics-refresh','diagnostics-result',async()=>{
 
 // Batch policy editor with explicit preview and confirmation.
 const bulkPreviousLoad=load;
-load=async function(){await bulkPreviousLoad();const {portals}=await api('/admin/api/portals');const articles=[...$('portals').querySelectorAll('article')];for(let i=0;i<portals.length;i++){
+load=async function(){await bulkPreviousLoad();if(!canWrite())return;const {portals}=await api('/admin/api/portals');const articles=[...$('portals').querySelectorAll('article')];for(let i=0;i<portals.length;i++){
  const p=portals[i],box=articles[i];if(!box||!p.files.length)continue;
  const section=node('section','');section.append(node('h4',t('Групово управление на достъпа')));
  const choices=[];for(const f of p.files){const label=node('label','');const check=node('input','');check.type='checkbox';check.setAttribute('aria-label',t('Избери ')+f.name);label.append(check,node('span',' '+f.name));section.append(label);choices.push({check,id:f.id})}
@@ -293,11 +302,11 @@ $('settings-save').onclick=()=>action(async()=>{const r=await api('/admin/api/se
 
 // HTML projects are registered from DATA_DIR/html-projects/<folder> with index.html.
 const htmlProjectLoad=load;
-load=async function(){await htmlProjectLoad();const {portals}=await api('/admin/api/portals');const articles=[...$('portals').querySelectorAll('article')];for(let i=0;i<portals.length;i++){const p=portals[i],box=articles[i];if(!box)continue;const section=node('section','');section.append(node('h4',t('HTML проекти · автоматичен index.html')));const folder=node('input','');folder.placeholder=t('Папка в html-projects (напр. landing)');const title=node('input','');title.placeholder=t('Име на проекта');const add=node('button',t('Публикувай проект'));add.onclick=()=>action(async()=>{await api('/admin/api/portals/'+p.id+'/html-projects','POST',{folder:folder.value,title:title.value});await load()});section.append(folder,title,add);for(const pr of p.htmlProjects||[]){const line=node('p',pr.title+' · '+pr.folder+' ');const link=node('a',t('Отвори'));link.href=adminPath('/site/'+encodeURIComponent(p.slug)+'/'+pr.id+'/');link.target='_blank';link.rel='noopener';const del=node('button',t('Премахни публикуването'));del.onclick=()=>action(async()=>{await api('/admin/api/portals/'+p.id+'/html-projects/'+pr.id,'DELETE');await load()});line.append(link,del);section.append(line)}box.append(section)}};
+load=async function(){await htmlProjectLoad();if(!canWrite())return;const {portals}=await api('/admin/api/portals');const articles=[...$('portals').querySelectorAll('article')];for(let i=0;i<portals.length;i++){const p=portals[i],box=articles[i];if(!box)continue;const section=node('section','');section.append(node('h4',t('HTML проекти · автоматичен index.html')));const folder=node('input','');folder.placeholder=t('Папка в html-projects (напр. landing)');const title=node('input','');title.placeholder=t('Име на проекта');const add=node('button',t('Публикувай проект'));add.onclick=()=>action(async()=>{await api('/admin/api/portals/'+p.id+'/html-projects','POST',{folder:folder.value,title:title.value});await load()});section.append(folder,title,add);for(const pr of p.htmlProjects||[]){const line=node('p',pr.title+' · '+pr.folder+' ');const link=node('a',t('Отвори'));link.href=adminPath('/site/'+encodeURIComponent(p.slug)+'/'+pr.id+'/');link.target='_blank';link.rel='noopener';const del=node('button',t('Премахни публикуването'));del.onclick=()=>action(async()=>{await api('/admin/api/portals/'+p.id+'/html-projects/'+pr.id,'DELETE');await load()});line.append(link,del);section.append(line)}box.append(section)}};
 
 // API users + REST endpoints for external access (e.g. Home Assistant).
 const apiAccessLoad=load;
-load=async function(){await apiAccessLoad();const pub='http://<host>:8099';
+load=async function(){await apiAccessLoad();if(!canAdmin())return;const pub='http://<host>:8099';
  let box=$('api-users');
  if(!box){box=node('section','');box.id='api-users';const portals=$('portals');portals.insertBefore(box,portals.firstChild)}
  box.replaceChildren();
@@ -432,12 +441,12 @@ $('sched-save').addEventListener('click',()=>action(async()=>{
  _schedNext.textContent=t('Следващо изпълнение')+': '+(d.nextRunAt||'—');
  $('status').textContent=t('Графикът е запазен');
 }));
-{const previousLoad=load;load=async function(){await previousLoad();await loadSchedule()}}
+{const previousLoad=load;load=async function(){await previousLoad();if(canAdmin())await loadSchedule()}}
 
 Object.assign(ADMIN_DIC.en,{'Опции':'Options','Качи':'Upload','Преглед':'Review','Скрий прегледа':'Hide review','Обедини с други портали…':'Merge with other portals…','API адрес и QR код':'API address and QR code','Обединяване на портали':'Merge portals','Избери порталите, които да се вмъкнат в':'Select the portals to merge into','Файловете, приложенията и бележките им се преместват тук. Техните API-та и директории се изтриват.':'Their files, attachments and notes move here. Their APIs and directories are deleted.','Няма други портали.':'There are no other portals.','Обедини':'Merge','Затвори':'Close','Обединено. Преместени портали: ':'Merged. Portals moved: ','Копирай':'Copy','Директория':'Directory','Картотека':'Filing cabinet','Категории и групи':'Categories and groups','Категории':'Categories','Групи':'Groups','Добави':'Add','Изтрий':'Delete','Създай ги тук веднъж, после ги избираш от падащо меню при всеки файл.':'Create them here once, then pick them from a dropdown on every file.','Нова папка':'New folder','Създай':'Create','Word документ':'Word document','Excel таблица':'Excel spreadsheet','Текстов файл':'Text file','Markdown файл':'Markdown file','Име':'Name','Преименувай':'Rename','Изтегли':'Download','Отвори':'Open','Отвори на компютъра':'Open on this computer','Преобразувай в PDF':'Convert to PDF','Папката е празна.':'This folder is empty.','Запази':'Save','Запазено.':'Saved.','Преобразувано: ':'Converted: ','Изтриване на ':'Delete ','Затвори прегледа':'Close preview','Файлът няма преглед. Изтегли го или го отвори на компютъра.':'No preview for this file. Download it or open it on this computer.','Категория':'Category','Група':'Group'});
 Object.assign(ADMIN_DIC.de,{'Опции':'Optionen','Качи':'Hochladen','Преглед':'Übersicht','Скрий прегледа':'Übersicht ausblenden','Обедини с други портали…':'Mit anderen Portalen zusammenführen…','API адрес и QR код':'API-Adresse und QR-Code','Обединяване на портали':'Portale zusammenführen','Избери порталите, които да се вмъкнат в':'Portale wählen, die zusammengeführt werden in','Файловете, приложенията и бележките им се преместват тук. Техните API-та и директории се изтриват.':'Ihre Dateien, Anhänge und Notizen werden hierher verschoben. Ihre APIs und Verzeichnisse werden gelöscht.','Няма други портали.':'Keine anderen Portale.','Обедини':'Zusammenführen','Затвори':'Schließen','Обединено. Преместени портали: ':'Zusammengeführt. Portale: ','Копирай':'Kopieren','Директория':'Verzeichnis','Картотека':'Ablage','Категории и групи':'Kategorien und Gruppen','Категории':'Kategorien','Групи':'Gruppen','Добави':'Hinzufügen','Изтрий':'Löschen','Създай ги тук веднъж, после ги избираш от падащо меню при всеки файл.':'Hier einmal anlegen, dann bei jeder Datei per Dropdown wählen.','Нова папка':'Neuer Ordner','Създай':'Erstellen','Word документ':'Word-Dokument','Excel таблица':'Excel-Tabelle','Текстов файл':'Textdatei','Markdown файл':'Markdown-Datei','Име':'Name','Преименувай':'Umbenennen','Изтегли':'Herunterladen','Отвори':'Öffnen','Отвори на компютъра':'Auf diesem Computer öffnen','Преобразувай в PDF':'In PDF umwandeln','Папката е празна.':'Dieser Ordner ist leer.','Запази':'Speichern','Запазено.':'Gespeichert.','Преобразувано: ':'Umgewandelt: ','Изтриване на ':'Löschen: ','Затвори прегледа':'Vorschau schließen','Файлът няма преглед. Изтегли го или го отвори на компютъра.':'Keine Vorschau. Herunterladen oder auf diesem Computer öffnen.','Категория':'Kategorie','Група':'Gruppe'});
 
-const authHeader=()=>({Authorization:'Bearer '+$('token').value});
+const authHeader=()=>authHeaders();
 const dialog=(title,content,buttons=[])=>{const d=document.createElement('dialog');d.style.cssText='background:var(--surface);color:var(--text);border:1px solid var(--border-strong);border-radius:10px;padding:20px;max-width:min(92vw,520px)';const h=node('h3',title);h.style.marginTop='0';const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;justify-content:flex-end;margin-top:16px';for(const b of buttons)row.append(b);const close=node('button',t('Затвори'));close.type='button';close.onclick=()=>d.close();row.append(close);d.append(h,content,row);d.addEventListener('close',()=>d.remove());document.body.append(d);d.showModal();return d};
 const fmtSize=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
 const fmtBytes=n=>{n=Number(n)||0;if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';if(n<1073741824)return (n/1048576).toFixed(1)+' MB';return (n/1073741824).toFixed(2)+' GB'};
@@ -451,7 +460,7 @@ async function loadTaxonomy(){
  taxCache=await api('/admin/api/taxonomy');
  for(const kind of ['category','group']){
   const ul=$('tax-list-'+kind);ul.replaceChildren();
-  for(const name of taxCache[kind==='category'?'categories':'groups']){const li=document.createElement('li');li.append(node('span',name));const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+name+'?'))return;await api('/admin/api/taxonomy?kind='+kind+'&name='+encodeURIComponent(name),'DELETE');await loadTaxonomy()});li.append(del);ul.append(li)}
+  for(const name of taxCache[kind==='category'?'categories':'groups']){const li=document.createElement('li');li.append(node('span',name));if(canWrite()){const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+name+'?'))return;await api('/admin/api/taxonomy?kind='+kind+'&name='+encodeURIComponent(name),'DELETE');await loadTaxonomy()});li.append(del)}ul.append(li)}
  }
 }
 for(const kind of ['category','group'])$('tax-form-'+kind).addEventListener('submit',e=>{e.preventDefault();action(async()=>{const input=$('tax-new-'+kind);if(!input.value.trim())return;await api('/admin/api/taxonomy','POST',{kind,name:input.value});input.value='';await loadTaxonomy()})});
@@ -529,15 +538,16 @@ async function cabList(){
   const items=[];
   if(it.type==='file'){items.push({label:t('Отвори'),run:()=>cabOpen(it)});
    if(cab.info.localOpen)items.push({label:t('Отвори на компютъра'),run:()=>cabJson('open',{method:'POST',json:{path:cabRel(it.name)}})});
-   if((cab.info.convert[it.ext]||[]).includes('pdf'))items.push({label:t('Преобразувай в PDF'),run:async()=>{const o=await cabJson('convert',{method:'POST',json:{path:cabRel(it.name),to:'pdf'}});await cabList();$('status').textContent=t('Преобразувано: ')+o.name}});
+   if(canWrite()&&(cab.info.convert[it.ext]||[]).includes('pdf'))items.push({label:t('Преобразувай в PDF'),run:async()=>{const o=await cabJson('convert',{method:'POST',json:{path:cabRel(it.name),to:'pdf'}});await cabList();$('status').textContent=t('Преобразувано: ')+o.name}});
    items.push({label:t('Изтегли'),run:()=>cabDownload(it)})}
-  items.push({label:t('Преименувай'),run:async()=>{const n=prompt(t('Име'),it.name);if(!n||n===it.name)return;await cabJson('rename',{method:'POST',json:{path:cabRel(it.name),name:n}});cabCloseViewer();await cabList()}});
-  items.push({label:t('Изтрий'),danger:true,run:async()=>{if(!confirm(t('Изтриване на ')+it.name+'?'))return;await cabJson('entry',{method:'DELETE',query:cabQ(cabRel(it.name))});cabCloseViewer();await cabList()}});
-  row.append(menu(t('Опции'),items));list.append(row);
+  if(canWrite())items.push({label:t('Преименувай'),run:async()=>{const n=prompt(t('Име'),it.name);if(!n||n===it.name)return;await cabJson('rename',{method:'POST',json:{path:cabRel(it.name),name:n}});cabCloseViewer();await cabList()}});
+  if(canWrite())items.push({label:t('Изтрий'),danger:true,run:async()=>{if(!confirm(t('Изтриване на ')+it.name+'?'))return;await cabJson('entry',{method:'DELETE',query:cabQ(cabRel(it.name))});cabCloseViewer();await cabList()}});
+  if(items.length)row.append(menu(t('Опции'),items));list.append(row);
  }
 }
 function cabBuildTools(){
  const tools=$('cab-tools');tools.replaceChildren();
+ if(!canWrite())return;
  const folder=node('button',t('Нова папка'));folder.type='button';folder.onclick=()=>action(async()=>{const n=prompt(t('Име'));if(!n)return;await cabJson('folder',{method:'POST',json:{path:cab.path,name:n}});await cabList()});
  const up=node('button',t('Качи'));up.type='button';up.className='btn-primary';up.onclick=()=>$('cab-file').click();
  const labels={docx:t('Word документ'),xlsx:t('Excel таблица'),txt:t('Текстов файл'),md:t('Markdown файл')};
@@ -557,40 +567,53 @@ async function loadVariables(){
  const d=await api('/admin/api/variables');dirState.variables=d.variables;dirState.types=d.types;
  const sel=$('var-type');if(!sel.options.length)for(const ty of d.types){const o=document.createElement('option');o.value=ty;o.textContent=ty;sel.append(o)}
  const list=$('var-list');list.replaceChildren();
+ $('var-form').hidden=!canWrite();
  for(const v of d.variables){
   const row=document.createElement('div');row.className='var-row';
-  const input=document.createElement('input');input.value=v.value||'';input.placeholder=t('Стойност');input.setAttribute('aria-label',v.key);
-  const save=node('button',t('Запази'));save.type='button';save.onclick=()=>action(async()=>{await api('/admin/api/variables/'+v.key,'PATCH',{value:input.value});await loadVariables();$('status').textContent=t('Запазено.')});
-  row.append(node('code','{{'+v.key+'}}'),node('span',v.label+' · '+v.type+(v.field?' · '+t('Поле на контакт'):'')),input,save);
-  if(!v.system){const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+v.key+'?'))return;await api('/admin/api/variables/'+v.key,'DELETE');await loadVariables();await loadDirectory()});row.append(del)}
+  row.append(node('code','{{'+v.key+'}}'),node('span',v.label+' · '+v.type+(v.field?' · '+t('Поле на контакт'):'')));
+  if(canWrite()){
+   const input=document.createElement('input');input.value=v.value||'';input.placeholder=t('Стойност');input.setAttribute('aria-label',v.key);
+   const save=node('button',t('Запази'));save.type='button';save.onclick=()=>action(async()=>{await api('/admin/api/variables/'+v.key,'PATCH',{value:input.value});await loadVariables();$('status').textContent=t('Запазено.')});
+   row.append(input,save);
+   if(!v.system){const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+v.key+'?'))return;await api('/admin/api/variables/'+v.key,'DELETE');await loadVariables();await loadDirectory()});row.append(del)}
+  }else{
+   row.append(node('code',v.value||''));
+  }
   list.append(row);
  }
 }
 $('var-form').addEventListener('submit',e=>{e.preventDefault();action(async()=>{await api('/admin/api/variables','POST',{key:$('var-key').value,label:$('var-label').value,type:$('var-type').value,field:$('var-field').checked});$('var-key').value='';$('var-label').value='';await loadVariables();await loadDirectory()})});
 async function loadDirectory(){
  const d=await api('/admin/api/directory');dirState.fields=d.fields;
+ $('dir-ingest').hidden=!canWrite();$('dir-rule-form').hidden=!canWrite();
  const badge=$('dir-badge');badge.hidden=!d.conflicts.length;badge.textContent=d.conflicts.length;
  $('dir-conflicts-card').hidden=!d.conflicts.length;const cbox=$('dir-conflicts');cbox.replaceChildren();
  const label=k=>(d.fields.find(f=>f.key===k)||{label:k}).label;
  for(const c of d.conflicts){
   const el=document.createElement('div');el.className='conf';el.append(node('strong',c.email+' · '+label(c.field)));
-  const opts=document.createElement('div');opts.className='opts';
-  const resolve=value=>action(async()=>{await api('/admin/api/directory/conflicts/'+c.id+'/resolve','POST',{value});await loadDirectory()});
-  for(const o of c.candidates){const b=node('button',o.value+' ('+o.source+')');b.type='button';b.onclick=()=>resolve(o.value);opts.append(b)}
-  const own=document.createElement('input');own.placeholder=t('Своя стойност');const ok=node('button',t('Реши'));ok.type='button';ok.className='btn-primary';ok.onclick=()=>own.value.trim()&&resolve(own.value);opts.append(own,ok);el.append(opts);cbox.append(el);
+  if(canWrite()){
+   const opts=document.createElement('div');opts.className='opts';
+   const resolve=value=>action(async()=>{await api('/admin/api/directory/conflicts/'+c.id+'/resolve','POST',{value});await loadDirectory()});
+   for(const o of c.candidates){const b=node('button',o.value+' ('+o.source+')');b.type='button';b.onclick=()=>resolve(o.value);opts.append(b)}
+   const own=document.createElement('input');own.placeholder=t('Своя стойност');const ok=node('button',t('Реши'));ok.type='button';ok.className='btn-primary';ok.onclick=()=>own.value.trim()&&resolve(own.value);opts.append(own,ok);el.append(opts);
+  }
+  cbox.append(el);
  }
  const rules=$('dir-rules');rules.replaceChildren();if(!d.rules.length)rules.append(node('p',t('Няма правила.')));
  for(const r of d.rules){const row=document.createElement('div');row.className='dir-row';row.append(node('strong',r.pattern),node('span',Object.entries(r.defaults).map(([k,v])=>label(k)+': '+v).join(' · ')));
-  const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{await api('/admin/api/directory/rules/'+r.id,'DELETE');await loadDirectory()});row.append(del);rules.append(row)}
+  if(canWrite()){const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{await api('/admin/api/directory/rules/'+r.id,'DELETE');await loadDirectory()});row.append(del)}rules.append(row)}
  const rf=$('dir-rule-fields');if(rf.dataset.n!==String(d.fields.length)){rf.replaceChildren();rf.dataset.n=d.fields.length;for(const f of d.fields){if(f.key==='name')continue;const i=document.createElement('input');i.dataset.key=f.key;i.placeholder=f.label;i.setAttribute('aria-label',f.label);rf.append(i)}}
  const box=$('dir-contacts');box.replaceChildren();if(!d.contacts.length)box.append(node('p',t('Няма контакти.')));
  for(const c of d.contacts){
   const row=document.createElement('div');row.className='dir-row';row.append(node('strong',(c.fields.name||'—')+' '),node('code',c.email));
   const info=Object.entries(c.fields).filter(([k])=>k!=='name').map(([k,v])=>label(k)+': '+v).join(' · ');row.append(node('span',info));
-  const edit=node('button',t('Редактирай'));edit.type='button';edit.onclick=()=>{const body=document.createElement('div');const ins={};for(const f of d.fields){const l=document.createElement('label');l.style.cssText='display:block;margin:6px 0';l.append(node('span',f.label+' '));const i=document.createElement('input');i.value=c.fields[f.key]||'';ins[f.key]=i;l.append(i);body.append(l)}
-   const sv=node('button',t('Запази'));sv.type='button';sv.className='btn-primary';const dlg=dialog(c.email,body,[sv]);sv.onclick=()=>action(async()=>{const fields={};for(const [k,i] of Object.entries(ins))if(i.value!==(c.fields[k]||''))fields[k]=i.value;if(Object.keys(fields).length)await api('/admin/api/directory/contacts/'+c.id,'PATCH',{fields});dlg.close();await loadDirectory()})};
-  const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+c.email+'?'))return;await api('/admin/api/directory/contacts/'+c.id,'DELETE');await loadDirectory()});
-  row.append(edit,del);box.append(row);
+  if(canWrite()){
+   const edit=node('button',t('Редактирай'));edit.type='button';edit.onclick=()=>{const body=document.createElement('div');const ins={};for(const f of d.fields){const l=document.createElement('label');l.style.cssText='display:block;margin:6px 0';l.append(node('span',f.label+' '));const i=document.createElement('input');i.value=c.fields[f.key]||'';ins[f.key]=i;l.append(i);body.append(l)}
+    const sv=node('button',t('Запази'));sv.type='button';sv.className='btn-primary';const dlg=dialog(c.email,body,[sv]);sv.onclick=()=>action(async()=>{const fields={};for(const [k,i] of Object.entries(ins))if(i.value!==(c.fields[k]||''))fields[k]=i.value;if(Object.keys(fields).length)await api('/admin/api/directory/contacts/'+c.id,'PATCH',{fields});dlg.close();await loadDirectory()})};
+   const del=node('button',t('Изтрий'));del.type='button';del.className='danger';del.onclick=()=>action(async()=>{if(!confirm(t('Изтриване на ')+c.email+'?'))return;await api('/admin/api/directory/contacts/'+c.id,'DELETE');await loadDirectory()});
+   row.append(edit,del);
+  }
+  box.append(row);
  }
 }
 $('dir-ingest').addEventListener('submit',e=>{e.preventDefault();action(async()=>{const r=await api('/admin/api/directory/ingest','POST',{emails:$('dir-emails').value});$('dir-emails').value='';
@@ -621,7 +644,18 @@ const _setPanel=name=>{
   if(_topbarTitle&&activeItem)_topbarTitle.textContent=t(_navLabelKey(activeItem));
   document.body.classList.remove('sidebar-open');
 };
-for(const item of _navItems)item.addEventListener('click',()=>_setPanel(item.getAttribute('data-panel')));
+const _applyRoleGate=()=>{
+  for(const item of _navItems)item.hidden=!canAccessPanel(item.getAttribute('data-panel'));
+  const tokenEl=$('token');if(tokenEl)tokenEl.hidden=auth.role!==null;
+  const createCard=$('create-portal-card');if(createCard)createCard.hidden=!canWrite();
+  for(const id of ['tax-form-category','tax-form-group']){const el=$(id);if(el)el.hidden=!canWrite()}
+  const badge=$('auth-badge');
+  if(badge){
+    if(auth.role){badge.hidden=false;badge.textContent=(auth.user?auth.user+' · ':'')+auth.role;badge.title='Home Assistant '+(auth.user?auth.user+' · ':'')+auth.role;}
+    else{badge.hidden=true}
+  }
+};
+for(const item of _navItems)item.addEventListener('click',()=>{const panel=item.getAttribute('data-panel');if(canAccessPanel(panel))_setPanel(panel)});
 const _navToggle=document.getElementById('nav-toggle');
 if(_navToggle)_navToggle.addEventListener('click',()=>document.body.classList.toggle('sidebar-open'));
 const _applyAdminLangOriginal=applyAdminLang;
@@ -630,10 +664,12 @@ applyAdminLang=function(){
   const activeItem=_navItems.find(i=>i.getAttribute('data-panel')===_currentPanel);
   if(_topbarTitle&&activeItem)_topbarTitle.textContent=t(_navLabelKey(activeItem));
 };
+_applyRoleGate();
 _setPanel(_currentPanel);
 
-// Auto-login: the Home Assistant Ingress session (or loopback standalone) already authenticates the operator.
-(async()=>{try{const r=await fetch(adminPath('/admin/api/ingress-login'),{cache:'no-store'});if(!r.ok)return;const d=await r.json();if(d&&d.token&&!$('token').value){$('token').value=d.token;$('token').type='password';await action(load);await action(loadOverview)}}catch{}})();
+// Auto-login: resolve the Home Assistant Ingress identity (role + user via SSO headers).
+// Standalone (no SSO) keeps the manual admin-token flow unchanged.
+(async()=>{try{const r=await fetch(adminPath('/admin/api/whoami'),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.role){auth.role=d.role;auth.user=d.user||null;auth.ingress=d.ingress===true}}_applyRoleGate();if(auth.role){await action(load);await action(loadOverview)}}catch{}})();
 
 Object.assign(ADMIN_DIC.en,{'Лимити и достъп':'Limits and access','Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).':'Empty field = automatic default (the current value is shown in the field).','Макс. размер на качване (MB)':'Max upload size (MB)','Едновременни изтегляния':'Concurrent downloads','Паралелни задачи':'Parallel jobs','Проверка на хранилищата (мин, 0 = изкл.)':'Storage check (min, 0 = off)','Публичен адрес':'Public address','CORS адрес':'CORS origin','Ключ за портал':'Portal key','Пълен IP в телеметрията':'Full IP in telemetry','Автоматично':'Automatic','Задължителен':'Required','Не е задължителен':'Not required','Не (препоръчително)':'No (recommended)','Да':'Yes','Запазено. Някои промени се прилагат след рестарт на add-on-а.':'Saved. Some changes apply after the add-on restarts.'});
 Object.assign(ADMIN_DIC.de,{'Лимити и достъп':'Limits und Zugriff','Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).':'Leeres Feld = automatischer Standard (aktueller Wert im Feld).','Макс. размер на качване (MB)':'Max. Upload-Größe (MB)','Едновременни изтегляния':'Gleichzeitige Downloads','Паралелни задачи':'Parallele Jobs','Проверка на хранилищата (мин, 0 = изкл.)':'Speicherprüfung (Min., 0 = aus)','Публичен адрес':'Öffentliche Adresse','CORS адрес':'CORS-Origin','Ключ за портал':'Portalschlüssel','Пълен IP в телеметрията':'Volle IP in Telemetrie','Автоматично':'Automatisch','Задължителен':'Erforderlich','Не е задължителен':'Nicht erforderlich','Не (препоръчително)':'Nein (empfohlen)','Да':'Ja','Запазено. Някои промени се прилагат след рестарт на add-on-а.':'Gespeichert. Einige Änderungen gelten nach Neustart des Add-ons.'});

@@ -2,6 +2,25 @@
 
 **Status: BLOCKED / NOT PRODUCTION RELEASE.** Scope frozen: no new feature families.
 
+## v0.50.0 — Home Assistant user roles in the admin console
+
+**Status: BLOCKED for production release.** The Ingress SSO bridge is now end-to-end:
+the admin console resolves the Home Assistant user's role and enforces it in the UI.
+
+- `/admin/api/ingress-login` no longer returns an admin token to arbitrary Ingress users;
+  it now returns the SSO identity (`role`/`user`/`groups`) or 401.
+- `/admin/api/whoami` reports `{role, ingress, user}`; the front-end auto-logs-in from it
+  and applies role-aware gating: viewer is read-only, operator can write, admin has full
+  access. The manual bearer-token flow still works in standalone/Windows mode.
+- Add-on options `user_roles` and `group_roles` (JSON maps) map Home Assistant usernames
+  and groups to admin/operator/viewer; `run.sh` exports them as `USER_ROLES`/`GROUP_ROLES`.
+- Tests updated: `ingress-isolation` (ingress-login 401), `rbac-sso` and `edge-runtime`
+  (`whoami.user`). Full suite 55 PASS / 0 FAIL.
+
+**Remaining production gates:** unchanged — no real Home Assistant Supervisor build,
+Ingress browser session, custom-integration runtime, NAS/network-storage disconnection,
+cross-filesystem recovery drill, or independent security review.
+
 ## v0.47.0 — synchronized source and package qualification (2026-10-11)
 
 **Status: BLOCKED for production release.** The active source, test suite, Home Assistant
@@ -39,7 +58,7 @@ are not the current v0.47.0 qualification result above.
 
 ## Unverified or incomplete — release blockers
 - No real Home Assistant Supervisor build, ingress/browser session, 8123 public bridge or network storage mount integration test.
-- Administrator still enters a separate bearer token; HA Ingress identity is not integrated with a complete RBAC model.
+- HA Ingress SSO is role-mapped (admin/operator/viewer) and the admin console is role-aware; a real Supervisor browser session to validate it end-to-end is still pending.
 - Enterprise Job Manager, pause/resume/recovery and full RBAC are not implemented.
 - SQLite transactions protect metadata, but not cross-filesystem atomicity with NAS, QR artifacts, uploads or audit events.
 - Node.js 22.16.0 is pinned in Dockerfile; actual Supervisor build and runtime remain unverified.

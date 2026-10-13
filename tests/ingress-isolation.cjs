@@ -22,7 +22,7 @@ const ingress='/api/hassio_ingress/test-token_123';
   assert.equal(await status(adm,'/admin'),200);
   assert.equal(await status(adm,'/admin.js'),200);
   assert.equal(await status(adm,'/admin/api/portals'),401);
-  assert.equal(await status(adm,'/admin/api/ingress-login'),403);
+  assert.equal(await status(adm,'/admin/api/ingress-login'),401);
   assert.equal(await status(pub,'/admin/api/ingress-login'),404);
   assert.equal(await status(adm,'/admin/api/portals',{Authorization:'Bearer '+token}),200);
   const ingressHeaders={'X-Ingress-Path':ingress};

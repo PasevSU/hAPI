@@ -30,7 +30,7 @@ const edge=require('../portal_enterprise/standalone');
   assert((await admin.text()).includes('hAPI ENTERPRICE'),'admin GUI branding missing');
   const who=await fetch(`http://127.0.0.1:${adminPort}/admin/api/whoami`,{headers:{Authorization:'Bearer '+t1}});
   assert.equal(who.status,200,'whoami must resolve the admin role');
-  assert.deepEqual(await who.json(),{role:'admin',ingress:true});
+  assert.deepEqual(await who.json(),{role:'admin',ingress:true,user:null});
 
   // Admin API surface used by the live desktop GUI (contract for ui/live.js).
   const H={Authorization:'Bearer '+t1};
