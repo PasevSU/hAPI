@@ -1,20 +1,41 @@
-"""Opt-in Home Assistant HTTP bridge for token-protected portal APIs.
+"""hAPI Enterprise Home Assistant integration.
 
-Configuration.yaml example:
-portal_enterprise:
-  backend_url: http://<addon-hostname>:8099
+Provides two opt-in features:
 
-Only portal-scoped read and download requests are forwarded. Admin APIs are never proxied.
+1. A fail-closed HTTP bridge for token-protected portal APIs (YAML configured):
+   portal_enterprise:
+     backend_url: http://<addon-hostname>:8099
+   Only portal-scoped read and download requests are forwarded. Admin APIs are
+   never proxied by this bridge.
+
+2. Telemetry sensors configured through the UI (config/options flow), polling
+   the add-on admin API with a user-supplied admin token.
 """
 from __future__ import annotations
+
+import logging
 import re
+from datetime import timedelta
 from pathlib import Path
-from urllib.parse import quote
+
 from aiohttp import ClientError, web
 from homeassistant.components.http import HomeAssistantView
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-DOMAIN = "portal_enterprise"
+from .const import (
+    CONF_BACKEND_URL,
+    CONF_SCAN_INTERVAL,
+    CONF_TOKEN,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    PLATFORMS,
+)
+from .coordinator import PortalEnterpriseCoordinator
+
+_LOGGER = logging.getLogger(__name__)
+
 _ALLOWED = re.compile(r"^p/([a-z0-9][a-z0-9-]{0,62})(?:/(?:files(?:/[a-f0-9]{24}(?:/download)?)?|manifest|openapi\.json))?$")
 
 async def async_setup(hass, config):
@@ -22,7 +43,14 @@ async def async_setup(hass, config):
     backend = settings.get("backend_url", "")
     # Fail closed: never proxy to an arbitrary host from a user request.
     if not isinstance(backend, str) or not re.fullmatch(r"http://[a-zA-Z0-9_.-]+:[0-9]{2,5}", backend):
-        return False
+        if isinstance(backend, str) and backend.strip():
+            _LOGGER.warning(
+                "Ignoring invalid portal_enterprise backend_url in "
+                "configuration.yaml; configure the integration from the UI instead"
+            )
+        # Returning True keeps UI-driven (config flow) setup working even when
+        # no legacy YAML bridge is configured.
+        return True
 
     class PortalAPI(HomeAssistantView):
         url = "/api/portal_enterprise/v1/{tail:.*}"
@@ -106,3 +134,44 @@ async def async_setup(hass, config):
     hass.http.register_view(PortalAsset())
     hass.http.register_view(PortalAPI())
     return True
+
+
+def _entry_settings(entry: ConfigEntry) -> tuple[str, str, int]:
+    """Resolve effective settings, with options overriding data."""
+    settings = {**entry.data, **entry.options}
+    backend_url = str(settings.get(CONF_BACKEND_URL, "")).strip().rstrip("/")
+    token = str(settings.get(CONF_TOKEN, "")).strip()
+    try:
+        scan_interval = int(settings.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
+    except (TypeError, ValueError):
+        scan_interval = DEFAULT_SCAN_INTERVAL
+    return backend_url, token, scan_interval
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up the integration from a config entry."""
+    backend_url, token, scan_interval = _entry_settings(entry)
+    coordinator = PortalEnterpriseCoordinator(hass, backend_url, token, scan_interval)
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    await coordinator.async_config_entry_first_refresh()
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+    return unload_ok
+
+
+async def async_update_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle an options update by refreshing the coordinator in place."""
+    backend_url, token, scan_interval = _entry_settings(entry)
+    data = hass.data.setdefault(DOMAIN, {}).get(entry.entry_id)
+    if not isinstance(data, PortalEnterpriseCoordinator):
+        return
+    data.backend_url = backend_url
+    data.token = token
+    data.update_interval = timedelta(seconds=scan_interval)
+    await data.async_request_refresh()
