@@ -1,0 +1,53 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "hAPI Enterprise",
+        "description": "Свържи се към административния API на добавката hAPI Enterprise, за да изложиш телеметрични сензори.",
+        "data": {
+          "backend_url": "URL на админ API (http://<име-на-добавката>:8098)",
+          "token": "Админ токен",
+          "scan_interval": "Интервал на обновяване (секунди)"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Въведи валиден http(s) URL.",
+      "token_required": "Токен е задължителен при първоначална настройка.",
+      "token_too_short": "Токенът е твърде кратък (минимум 24 знака).",
+      "invalid_scan_interval": "Интервалът трябва да е между 10 и 86400 секунди."
+    },
+    "abort": {
+      "already_configured": "Този backend вече е конфигуриран."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Настройки на hAPI Enterprise",
+        "description": "Обнови връзката към админ API. Остави токена празен, за да запазиш текущата стойност.",
+        "data": {
+          "backend_url": "URL на админ API (http://<име-на-добавката>:8098)",
+          "token": "Админ токен",
+          "scan_interval": "Интервал на обновяване (секунди)"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "Въведи валиден http(s) URL.",
+      "token_too_short": "Токенът е твърде кратък (минимум 24 знака).",
+      "invalid_scan_interval": "Интервалът трябва да е между 10 и 86400 секунди."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "visits": { "name": "Посещения" },
+      "downloads": { "name": "Сваляния" },
+      "files": { "name": "Файлове" },
+      "portal_count": { "name": "Портали" },
+      "file_bytes": { "name": "Файлово пространство" },
+      "database_bytes": { "name": "Размер на базата данни" },
+      "telemetry_bytes": { "name": "Размер на телеметрията" }
+    }
+  }
+}
