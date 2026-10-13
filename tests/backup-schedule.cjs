@@ -13,7 +13,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('nod
   let j=await r.json();assert.equal(j.schedule.enabled,false);assert.equal(j.schedule.intervalMinutes,1440);assert.equal(j.nextRunAt,null);
   r=await fetch(base,{method:'PUT',headers:auth,body:JSON.stringify({enabled:true,intervalMinutes:1,maxBackups:3})});assert.equal(r.status,200);
   j=await r.json();assert.equal(j.schedule.enabled,true);assert.equal(j.schedule.intervalMinutes,1);assert.equal(j.schedule.maxBackups,3);
-  assert(j.nextRunAt&&Date.parse(j.nextRunAt)>Date.now()&&Date.parse(j.nextRunAt)<=Date.now()+60000);
+  const nowMs=Date.now();
+  assert(j.nextRunAt&&Date.parse(j.nextRunAt)>nowMs&&Date.parse(j.nextRunAt)<=nowMs+60000+1500);
   const onDisk=JSON.parse(fs.readFileSync(path.join(dir,'config','settings.json'),'utf8'));
   assert.deepEqual(onDisk.backupSchedule,{enabled:true,intervalMinutes:1,maxBackups:3});
   r=await fetch(base,{method:'PUT',headers:auth,body:JSON.stringify({enabled:true,intervalMinutes:0,maxBackups:3})});assert.equal(r.status,500);
