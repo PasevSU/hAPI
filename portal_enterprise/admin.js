@@ -151,7 +151,7 @@ async function load(){const data=await api('/admin/api/portals');const holder=$(
  const meta=document.createElement('div');meta.className='meta-line';
  meta.append(node('span',p.files.length+' '+t('файла')),node('span',fmtBytes(p.files.reduce((n,f)=>n+f.size,0))),node('span',t('Създаден')+': '+fmtDate(p.createdAt)),node('code',publicUrl));
  const copyLink=node('button',t('Копирай линк'));copyLink.type='button';copyLink.onclick=()=>action(async()=>{const info=await api('/admin/api/portals/'+p.id+'/api-info');await copyText(info.apiUrl)});meta.append(copyLink);
- const qr=node('button',t('QR код'));qr.type='button';qr.className='btn-primary';qr.onclick=()=>action(async()=>{const info=await api('/admin/api/portals/'+p.id+'/api-info');showQr(info,p)});meta.append(qr);box.append(meta);
+ const qr=node('button',t('QR код'));qr.type='button';qr.onclick=()=>action(async()=>{const info=await api('/admin/api/portals/'+p.id+'/api-info');showQr(info,p)});meta.append(qr);box.append(meta);
  const fileInput=document.createElement('input');fileInput.type='file';fileInput.hidden=true;fileInput.setAttribute('aria-label',t('Качи файл в ')+p.title);
  const htmlInput=document.createElement('input');htmlInput.type='file';htmlInput.accept='.html,.htm,text/html';htmlInput.hidden=true;htmlInput.setAttribute('aria-label',t('Избери HTML за ')+p.title);
  box.append(fileInput,htmlInput,menu(t('Действия'),[
