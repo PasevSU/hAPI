@@ -152,12 +152,13 @@ async function action(fn){try{$('status').textContent='';await fn()}catch(e){$('
 const closeMenus=()=>document.querySelectorAll('.menu').forEach(m=>m.hidden=true);
 document.addEventListener('click',closeMenus);
 const menu=(label,items)=>{const wrap=node('span','');wrap.className='menu-wrap';const btn=node('button',label);btn.type='button';const list=node('div','');list.className='menu';list.hidden=true;for(const it of items){const b=node('button',it.label);b.type='button';if(it.danger)b.className='danger';b.onclick=e=>{e.stopPropagation();closeMenus();action(it.run)};list.append(b)}btn.onclick=e=>{e.stopPropagation();const show=list.hidden;closeMenus();list.hidden=!show};wrap.append(btn,list);return wrap};
-async function load(){const data=await api('/admin/api/portals');const holder=$('portals');holder.replaceChildren();if(!data.portals.length){holder.append(node('p',t('Няма създадени портали. Създай първия портал във формуляра по-горе.')));$('status').textContent=t('Удостоверяването е успешно. Няма създадени портали.');return}for(const p of data.portals){const box=node('article','');const publicUrl='/api/v1/p/'+encodeURIComponent(p.slug);
+async function load(){const data=await api('/admin/api/portals');const holder=$('portals');holder.replaceChildren();if(!data.portals.length){holder.append(node('p',t('Няма създадени портали. Създай първия портал във формуляра по-горе.')));$('status').textContent=t('Удостоверяването е успешно. Няма създадени портали.');return}for(const p of data.portals){const box=node('article','');let info=null;try{info=await api('/admin/api/portals/'+p.id+'/api-info')}catch{}const publicUrl=info&&info.apiUrl||('/api/v1/p/'+encodeURIComponent(p.slug));const portalUrl=info&&info.portalUrl||'';
  const head=node('h3','');head.append(node('span',p.title));const slug=node('span',' '+p.slug);slug.className='muted';slug.style.fontSize='12px';head.append(slug);
  const pill=document.createElement('span');pill.className='pill '+(p.visibility==='public'?'public':'private');pill.textContent=p.visibility==='public'?t('Публичен'):t('Частен');head.append(pill);box.append(head);
  const meta=document.createElement('div');meta.className='meta-line';
  meta.append(node('span',p.files.length+' '+t('файла')),node('span',fmtBytes(p.files.reduce((n,f)=>n+f.size,0))),node('span',t('Създаден')+': '+fmtDate(p.createdAt)),node('code',publicUrl));
- const copyLink=node('button',t('Копирай линк'));copyLink.type='button';copyLink.onclick=()=>action(async()=>{const info=await api('/admin/api/portals/'+p.id+'/api-info');await copyText(info.apiUrl)});meta.append(copyLink);
+ if(portalUrl){const pl=node('a',t('Портал страница'));pl.href=portalUrl;pl.target='_blank';pl.rel='noopener';meta.append(pl)}
+ const copyLink=node('button',t('Копирай линк'));copyLink.type='button';copyLink.onclick=()=>action(async()=>{await copyText(publicUrl)});meta.append(copyLink);
  const qr=node('button',t('QR код'));qr.type='button';qr.onclick=()=>action(async()=>{const info=await api('/admin/api/portals/'+p.id+'/api-info');showQr(info,p)});meta.append(qr);box.append(meta);
  const fileInput=document.createElement('input');fileInput.type='file';fileInput.hidden=true;fileInput.setAttribute('aria-label',t('Качи файл в ')+p.title);
  const htmlInput=document.createElement('input');htmlInput.type='file';htmlInput.accept='.html,.htm,text/html';htmlInput.hidden=true;htmlInput.setAttribute('aria-label',t('Избери HTML за ')+p.title);
@@ -294,9 +295,9 @@ load=async function(){await bulkPreviousLoad();if(!canWrite())return;const {port
 }};
 
 // Runtime settings are stored in config/settings.json, not configuration.yaml.
-const LIM={'lim-upload':['maxUploadMb',e=>Math.round(e.maxUploadBytes/1048576)],'lim-streams':['maxDownloadStreams',e=>e.maxDownloadStreams],'lim-jobs':['maxJobs',e=>e.maxJobs],'lim-check':['storageCheckMinutes',e=>Math.round(e.storageCheckIntervalMs/60000)],'lim-url':['publicBaseUrl',e=>e.publicBaseUrl],'lim-cors':['corsOrigin',e=>e.corsOrigin]};
+const LIM={'lim-upload':['maxUploadMb',e=>Math.round(e.maxUploadBytes/1048576)],'lim-streams':['maxDownloadStreams',e=>e.maxDownloadStreams],'lim-jobs':['maxJobs',e=>e.maxJobs],'lim-check':['storageCheckMinutes',e=>Math.round(e.storageCheckIntervalMs/60000)],'lim-url':['publicBaseUrl',e=>e.publicBaseUrl],'lim-api-base':['publicApiBase',e=>e.publicApiBase],'lim-cors':['corsOrigin',e=>e.corsOrigin]};
 function fillLimits(r){const l=r.settings.limits||{},e=r.effective||{};for(const [id,[k,f]] of Object.entries(LIM)){const el=$(id);el.value=l[k]===null||l[k]===undefined?'':l[k];el.placeholder=e&&e.maxUploadBytes!==undefined?String(f(e)):el.placeholder}for(const [id,k] of [['lim-token','requirePortalToken'],['lim-ip','storeRawIp']])$(id).value=l[k]===null||l[k]===undefined?'':String(l[k])}
-function readLimits(){const o={};for(const [id,[k]] of Object.entries(LIM)){const v=$(id).value.trim();o[k]=v===''?(k==='publicBaseUrl'||k==='corsOrigin'?'':null):(k==='publicBaseUrl'||k==='corsOrigin'?v:Number(v))}for(const [id,k] of [['lim-token','requirePortalToken'],['lim-ip','storeRawIp']]){const v=$(id).value;o[k]=v===''?null:v==='true'}return o}
+function readLimits(){const o={};for(const [id,[k]] of Object.entries(LIM)){const v=$(id).value.trim();o[k]=v===''?(k==='publicBaseUrl'||k==='publicApiBase'||k==='corsOrigin'?'':null):(k==='publicBaseUrl'||k==='publicApiBase'||k==='corsOrigin'?v:Number(v))}for(const [id,k] of [['lim-token','requirePortalToken'],['lim-ip','storeRawIp']]){const v=$(id).value;o[k]=v===''?null:v==='true'}return o}
 $('settings-load').onclick=()=>action(async()=>{const r=await api('/admin/api/settings');$('artifact-directory').value=r.settings.artifactDirectory;$('database-file').value=r.settings.databaseFile;$('database-directory').value=r.settings.databaseDirectory||'.';fillLimits(r);$('settings-status').textContent=t('Настройки заредени')});
 $('settings-save').onclick=()=>action(async()=>{const r=await api('/admin/api/settings','PATCH',{artifactDirectory:$('artifact-directory').value,databaseFile:$('database-file').value,databaseDirectory:$('database-directory').value,limits:readLimits()});fillLimits(r);$('settings-status').textContent=r.restartRequired?t('Запазено. Някои промени се прилагат след рестарт на add-on-а.'):t('Настройките са запазени.')});
 
@@ -306,7 +307,7 @@ load=async function(){await htmlProjectLoad();if(!canWrite())return;const {porta
 
 // API users + REST endpoints for external access (e.g. Home Assistant).
 const apiAccessLoad=load;
-load=async function(){await apiAccessLoad();if(!canAdmin())return;const pub='http://<host>:8099';
+load=async function(){await apiAccessLoad();if(!canAdmin())return;let apiBase='/api/v1';try{const r=await api('/admin/api/settings');const e=r.effective||{};apiBase=e.publicApiBase||((e.publicBaseUrl||'')+'/api/v1')}catch{}
  let box=$('api-users');
  if(!box){box=node('section','');box.id='api-users';const portals=$('portals');portals.insertBefore(box,portals.firstChild)}
  box.replaceChildren();
@@ -335,19 +336,19 @@ load=async function(){await apiAccessLoad();if(!canAdmin())return;const pub='htt
  if(!list.length)users.append(node('p',t('Няма API потребители')));
  box.append(users);
  const endpoints=[
-  ['POST '+t('Вписване (login)'),pub+'/api/v1/auth/login'],
-  ['POST '+t('Изход (logout)'),pub+'/api/v1/auth/logout'],
-  ['GET '+t('Текущ потребител (me)'),pub+'/api/v1/auth/me'],
-  ['GET '+t('Списък с портали'),pub+'/api/v1/portals'],
-  ['GET '+t('Метаданни на портал'),pub+'/api/v1/p/{slug}'],
-  ['GET '+t('Файлове'),pub+'/api/v1/p/{slug}/files'],
-  ['GET '+t('Изтегляне на файл'),pub+'/api/v1/p/{slug}/files/{fileId}/download'],
-  ['GET '+t('OpenAPI спецификация'),pub+'/api/v1/p/{slug}/openapi.json']
+  ['POST '+t('Вписване (login)'),apiBase+'/auth/login'],
+  ['POST '+t('Изход (logout)'),apiBase+'/auth/logout'],
+  ['GET '+t('Текущ потребител (me)'),apiBase+'/auth/me'],
+  ['GET '+t('Списък с портали'),apiBase+'/portals'],
+  ['GET '+t('Метаданни на портал'),apiBase+'/p/{slug}'],
+  ['GET '+t('Файлове'),apiBase+'/p/{slug}/files'],
+  ['GET '+t('Изтегляне на файл'),apiBase+'/p/{slug}/files/{fileId}/download'],
+  ['GET '+t('OpenAPI спецификация'),apiBase+'/p/{slug}/openapi.json']
  ];
  box.append(node('p',t('REST endpoint-и')));
  const epList=node('div','');for(const [name,url] of endpoints){const line=node('div','');line.append(node('code',name+'  '+url+' '));const copy=node('button',t('Копирай'));copy.onclick=()=>navigator.clipboard?.writeText(url);line.append(copy);epList.append(line)}
  box.append(epList);
- const curl=node('pre','TOKEN=$(curl -s -X POST -H "Content-Type: application/json" -d \'{"username":"user","password":"pass"}\' "'+(pub||'')+'/api/v1/auth/login")\ncurl -H "Authorization: Bearer $TOKEN" "'+(pub||'')+'/api/v1/portals"');
+ const curl=node('pre','TOKEN=$(curl -s -X POST -H "Content-Type: application/json" -d \'{"username":"user","password":"pass"}\' "'+apiBase+'/auth/login")\ncurl -H "Authorization: Bearer $TOKEN" "'+apiBase+'/portals"');
  box.append(node('p',t('Пример (curl)')),curl);
 };
 
@@ -671,8 +672,8 @@ _setPanel(_currentPanel);
 // Standalone (no SSO) keeps the manual admin-token flow unchanged.
 (async()=>{try{const r=await fetch(adminPath('/admin/api/whoami'),{cache:'no-store'});if(r.ok){const d=await r.json();if(d&&d.role){auth.role=d.role;auth.user=d.user||null;auth.ingress=d.ingress===true}}_applyRoleGate();if(auth.role){await action(load);await action(loadOverview)}}catch{}})();
 
-Object.assign(ADMIN_DIC.en,{'Лимити и достъп':'Limits and access','Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).':'Empty field = automatic default (the current value is shown in the field).','Макс. размер на качване (MB)':'Max upload size (MB)','Едновременни изтегляния':'Concurrent downloads','Паралелни задачи':'Parallel jobs','Проверка на хранилищата (мин, 0 = изкл.)':'Storage check (min, 0 = off)','Публичен адрес':'Public address','CORS адрес':'CORS origin','Ключ за портал':'Portal key','Пълен IP в телеметрията':'Full IP in telemetry','Автоматично':'Automatic','Задължителен':'Required','Не е задължителен':'Not required','Не (препоръчително)':'No (recommended)','Да':'Yes','Запазено. Някои промени се прилагат след рестарт на add-on-а.':'Saved. Some changes apply after the add-on restarts.'});
-Object.assign(ADMIN_DIC.de,{'Лимити и достъп':'Limits und Zugriff','Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).':'Leeres Feld = automatischer Standard (aktueller Wert im Feld).','Макс. размер на качване (MB)':'Max. Upload-Größe (MB)','Едновременни изтегляния':'Gleichzeitige Downloads','Паралелни задачи':'Parallele Jobs','Проверка на хранилищата (мин, 0 = изкл.)':'Speicherprüfung (Min., 0 = aus)','Публичен адрес':'Öffentliche Adresse','CORS адрес':'CORS-Origin','Ключ за портал':'Portalschlüssel','Пълен IP в телеметрията':'Volle IP in Telemetrie','Автоматично':'Automatisch','Задължителен':'Erforderlich','Не е задължителен':'Nicht erforderlich','Не (препоръчително)':'Nein (empfohlen)','Да':'Ja','Запазено. Някои промени се прилагат след рестарт на add-on-а.':'Gespeichert. Einige Änderungen gelten nach Neustart des Add-ons.'});
+Object.assign(ADMIN_DIC.en,{'Лимити и достъп':'Limits and access','Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).':'Empty field = automatic default (the current value is shown in the field).','Макс. размер на качване (MB)':'Max upload size (MB)','Едновременни изтегляния':'Concurrent downloads','Паралелни задачи':'Parallel jobs','Проверка на хранилищата (мин, 0 = изкл.)':'Storage check (min, 0 = off)','Публичен адрес':'Public address','Публичен API адрес':'Public API address','Портал страница':'Portal page','CORS адрес':'CORS origin','Ключ за портал':'Portal key','Пълен IP в телеметрията':'Full IP in telemetry','Автоматично':'Automatic','Задължителен':'Required','Не е задължителен':'Not required','Не (препоръчително)':'No (recommended)','Да':'Yes','Запазено. Някои промени се прилагат след рестарт на add-on-а.':'Saved. Some changes apply after the add-on restarts.'});
+Object.assign(ADMIN_DIC.de,{'Лимити и достъп':'Limits und Zugriff','Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).':'Leeres Feld = automatischer Standard (aktueller Wert im Feld).','Макс. размер на качване (MB)':'Max. Upload-Größe (MB)','Едновременни изтегляния':'Gleichzeitige Downloads','Паралелни задачи':'Parallele Jobs','Проверка на хранилищата (мин, 0 = изкл.)':'Speicherprüfung (Min., 0 = aus)','Публичен адрес':'Öffentliche Adresse','Публичен API адрес':'Öffentliche API-Adresse','Портал страница':'Portal-Seite','CORS адрес':'CORS-Origin','Ключ за портал':'Portalschlüssel','Пълен IP в телеметрията':'Volle IP in Telemetrie','Автоматично':'Automatisch','Задължителен':'Erforderlich','Не е задължителен':'Nicht erforderlich','Не (препоръчително)':'Nein (empfohlen)','Да':'Ja','Запазено. Някои промени се прилагат след рестарт на add-on-а.':'Gespeichert. Einige Änderungen gelten nach Neustart des Add-ons.'});
 applyAdminLang();
 
 // ===== UX redesign: QR modal, dashboard, theme, i18n =====
