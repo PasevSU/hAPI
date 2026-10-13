@@ -27,6 +27,7 @@ class PortalSensorEntityDescription(SensorEntityDescription):
     """Describe a hAPI Enterprise sensor entity."""
 
     key: str
+    payload_key: str | None = None
     suggested_display_precision: int = 0
 
 
@@ -44,7 +45,7 @@ _TOTAL_SENSORS: tuple[PortalSensorEntityDescription, ...] = (
     PortalSensorEntityDescription(
         key="files",
         translation_key="files",
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     PortalSensorEntityDescription(
         key="portal_count",
@@ -53,6 +54,7 @@ _TOTAL_SENSORS: tuple[PortalSensorEntityDescription, ...] = (
     ),
     PortalSensorEntityDescription(
         key="file_bytes",
+        payload_key="fileBytes",
         translation_key="file_bytes",
         native_unit_of_measurement=UnitOfInformation.BYTES,
         device_class=SensorDeviceClass.DATA_SIZE,
@@ -61,6 +63,7 @@ _TOTAL_SENSORS: tuple[PortalSensorEntityDescription, ...] = (
     ),
     PortalSensorEntityDescription(
         key="database_bytes",
+        payload_key="databaseBytes",
         translation_key="database_bytes",
         native_unit_of_measurement=UnitOfInformation.BYTES,
         device_class=SensorDeviceClass.DATA_SIZE,
@@ -69,6 +72,7 @@ _TOTAL_SENSORS: tuple[PortalSensorEntityDescription, ...] = (
     ),
     PortalSensorEntityDescription(
         key="telemetry_bytes",
+        payload_key="telemetryBytes",
         translation_key="telemetry_bytes",
         native_unit_of_measurement=UnitOfInformation.BYTES,
         device_class=SensorDeviceClass.DATA_SIZE,
@@ -139,7 +143,8 @@ class PortalEnterpriseTotalSensor(SensorEntity):
             if isinstance(portals, list):
                 return len(portals)
             return None
-        return _to_int(self.coordinator.data.get(self.entity_description.key))
+        payload_key = self.entity_description.payload_key or self.entity_description.key
+        return _to_int(self.coordinator.data.get(payload_key))
 
     @property
     def should_poll(self) -> bool:
