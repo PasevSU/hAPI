@@ -45,11 +45,11 @@ const assert = require('node:assert/strict');
     // 1. Папка с подпапки на диска (скрит файл не бива да влиза в дървото).
     fs.mkdirSync(path.join(storageDir, 'sub', 'deep'), { recursive: true });
     fs.mkdirSync(path.join(storageDir, 'docs'), { recursive: true });
-    fs.writeFileSync(path.join(storageDir, 'readme.txt'), 'hello');
-    fs.writeFileSync(path.join(storageDir, 'docs', 'a.pdf'), 'PDF-A');
-    fs.writeFileSync(path.join(storageDir, 'sub', 'notes.md'), '# notes');
-    fs.writeFileSync(path.join(storageDir, 'sub', 'deep', 'data.csv'), 'a,b\n1,2');
-    fs.writeFileSync(path.join(storageDir, '.hidden'), 'скрит');
+    fs.writeFileSync(path.join(storageDir, 'readme.txt'), 'hello', { flag: 'wx', mode: 0o600 });
+    fs.writeFileSync(path.join(storageDir, 'docs', 'a.pdf'), 'PDF-A', { flag: 'wx', mode: 0o600 });
+    fs.writeFileSync(path.join(storageDir, 'sub', 'notes.md'), '# notes', { flag: 'wx', mode: 0o600 });
+    fs.writeFileSync(path.join(storageDir, 'sub', 'deep', 'data.csv'), 'a,b\n1,2', { flag: 'wx', mode: 0o600 });
+    fs.writeFileSync(path.join(storageDir, '.hidden'), 'скрит', { flag: 'wx', mode: 0o600 });
     const storageRoot = '/share/' + path.basename(storageDir);
 
     const portal = (await call('/admin/api/portals', 'POST', JSON.stringify({ slug: 'tree', title: 'Дърво', storage_root: storageRoot }), true, json)).value;
