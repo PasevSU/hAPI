@@ -1,3 +1,5 @@
+![hAPI Enterprise](https://raw.githubusercontent.com/PasevSU/hAPI/main/hapi_enterprise/logo.png)
+
 # hAPI Enterprise — Home Assistant add-on
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg)](https://www.apache.org/licenses/LICENSE-2.0)
