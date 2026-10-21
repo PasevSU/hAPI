@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.65.0-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.66.0-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
@@ -42,10 +42,12 @@ account.
   the portal from the Companion app. The console shows the tag id and a ready-to-paste
   automation for the `tag_scanned` event.
 - **Share a secret — zero-knowledge** — the console encrypts the text in your browser
-  (AES-GCM 256) and the add-on stores only the ciphertext and its `iv`; the key never
-  leaves the link fragment (`/secret/<id>#<key>`), so it is not in logs, proxies or the
-  audit trail. One view and 24 hours by default; the record is deleted after the last view
-  or when it expires.
+  (AES-GCM 256) and the add-on stores only an opaque envelope. The whole link lives in the
+  fragment — `/secret#<id><key>` — so the path carries no identifier and the server is sent
+  only `sha256(id)`: it cannot tell which record you open and cannot rebuild the link. One
+  view and 24 hours by default; the record is deleted after the last view or when it
+  expires. An optional **second password** wraps the envelope in another AES-GCM layer
+  (PBKDF2-SHA256, 600 000 iterations) — without it even the full link is not enough.
 - **Proof, not promises** — each upload is fingerprinted, sealed and timestamped, and the
   audit trail is hash-chained, so tampering is detectable.
 - **One backend, two worlds** — the same Node.js service runs as a Home Assistant add-on
@@ -292,13 +294,19 @@ database references documents by path.
   `/api/hapi_enterprise/public/v1/files/<id>/download`. No additional port is opened;
   `/api/public/v1/...` remains as a deprecated alias.
 - **`/health`** — unauthenticated liveness probe on 8099, used by the watchdog.
-- **`/secret/<id>`** — public page for a shared secret. It is an empty shell plus
-  `/secret-view.js`: the ciphertext is fetched from
-  `POST /api/v2/secrets/<id>/reveal`, decrypted in the browser and the key is removed from
-  the address bar. The admin side is `GET`/`POST /admin/api/v2/secrets` (list and create —
-  the body carries `ciphertext`, `iv`, optional `hint`, `expires_in`, `max_views`) and
-  `DELETE /admin/api/v2/secrets/<id>` to revoke. Records live in `<data>/secrets/` with mode
-  `0600`; the list never returns ciphertext, only metadata and a `sha256` fingerprint.
+- **`/secret`** — public page for a shared secret, modelled on scrt.link v2. The whole
+  link is the fragment (`/secret#<id><key>`, 22 + 43 chars); `/secret/<anything>` serves the
+  same shell so a truncated or old link is not a 404. The page is an empty shell plus
+  `/secret-view.js`: the viewer computes `sha256(id)` in the browser, asks
+  `GET /api/v2/secrets/<sha256(id)>` what to expect (remaining views, expiry, hint, whether
+  a password is needed — **without spending a view**), then `POST /api/v2/secrets/<sha256(id)>
+  /reveal` for the envelope and decrypts it locally. With a password the envelope is
+  encrypted twice and the request carries `{proof: sha256(PBKDF2(password))}`; a wrong
+  proof is `403` and does **not** use up a view. The admin side is
+  `GET`/`POST /admin/api/v2/secrets` (create takes `envelope`, `idHash`, `hint`,
+  `expires_in`, `max_views` and returns a `receipt`) and `DELETE /admin/api/v2/secrets/<sha256(id)>`
+  to revoke. Records live in `<data>/secrets/<sha256(id)>.json` with mode `0600`; neither the
+  identifier nor the key is ever written there, and the list returns metadata only.
 - **`/ready`** — readiness probe: write access to the storage, a `PRAGMA quick_check` on
   the database and loaded rules. `checks` stays a stable boolean contract
   (`storage`, `db`, `rules`); the database state is reported separately as

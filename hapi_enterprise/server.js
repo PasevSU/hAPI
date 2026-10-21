@@ -1199,31 +1199,70 @@ async function handler(req, res) {
       }
       return fail(res, 404, 'Not found');
     }
-    // ── Тайни връзки (zero-knowledge): черупка + издаване на шифротекста ────────
-    // Ключът идва във фрагмента на адреса и НЕ стига до тук: сървърът дава само
-    // шифротекста, а AES-GCM се отваря в браузъра (`/secret-view.js`).
-    if (parts[0] === 'secret' && parts.length === 2 && method === 'GET') {
-      if (!secretLinks.isValidId(parts[1])) return fail(res, 404, 'Not found');
+    // ── Тайни връзки (zero-knowledge, модел като scrt.link v2) ────────────────
+    // ЦЯЛАТА информация е във фрагмента (`/secret#<id><ключ>`), който браузърът не
+    // изпраща. Затова в пътя няма идентификатор: сървърът вижда само `sha256(id)`
+    // в API заявката и пази непрозрачен плик с шифротекст.
+    // `/secret/<нещо>` се сервира със същата черупка, за да не дава 404 на
+    // подрязан или стар линк — идентификаторът и без това идва само от фрагмента.
+    if (parts[0] === 'secret' && parts.length <= 2 && method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': SECRET_CSP, 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'X-Robots-Tag': 'noindex, nofollow' });
-      return res.end(secretPage.secretPageHtml(parts[1]));
+      return res.end(secretPage.secretPageHtml());
+    }
+    // Проба: казва колко прегледа остават и дали трябва парола, БЕЗ да отваря тайната
+    // и без да брои преглед. Така получателят знае какво го чака, преди да го изразходва.
+    if (parts[0] === 'api' && parts[1] === 'v2' && parts[2] === 'secrets' && parts.length === 4 && method === 'GET') {
+      if (!secretLinks.isValidHash(parts[3])) return fail(res, 404, 'Secret not found');
+      const rec = await secretLinks.read(root, parts[3]);
+      const state = secretLinks.inspectRecord(rec);
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('Referrer-Policy', 'no-referrer');
+      if (!state.ok) {
+        if (rec) await secretLinks.remove(root, rec.idHash).catch(() => { });
+        return fail(res, state.reason === 'missing' ? 404 : 410, state.reason === 'missing' ? 'Secret not found' : 'Secret is gone (' + state.reason + ')');
+      }
+      return json(res, 200, {
+        remainingViews: Math.max(0, Number(rec.maxViews || 0) - Number(rec.views || 0)),
+        maxViews: Number(rec.maxViews || 0),
+        expiresAt: rec.expiresAt || null,
+        requiresPassword: Boolean(rec.requiresPassword),
+        // Само параметрите на KDF — `check` НЕ се дава: той е за сравнение при reveal.
+        pwd: rec.requiresPassword && rec.envelope && rec.envelope.pwd
+          ? { alg: rec.envelope.pwd.alg, iterations: rec.envelope.pwd.iterations, salt: rec.envelope.pwd.salt }
+          : null,
+        hint: rec.hint || '',
+      });
     }
     if (parts[0] === 'api' && parts[1] === 'v2' && parts[2] === 'secrets' && parts.length === 5 && parts[4] === 'reveal' && method === 'POST') {
+      if (!secretLinks.isValidHash(parts[3])) return fail(res, 404, 'Secret not found');
+      const body = await parse(req).catch(() => ({}));
       const out = await withSecretLock(parts[3], async () => {
         const rec = await secretLinks.read(root, parts[3]);
         const state = secretLinks.inspectRecord(rec);
         if (!state.ok) {
           // Изтекло/прегледано/отменено: файлът се маха, за да не остане шифротекст.
-          if (rec) await secretLinks.remove(root, rec.id).catch(() => { });
+          if (rec) await secretLinks.remove(root, rec.idHash).catch(() => { });
           return { code: state.reason === 'missing' ? 404 : 410, reason: state.reason };
+        }
+        // Паролата се проверява по `sha256(ключ от паролата)`, изчислен В БРАУЗЪРА. Сгрешен
+        // proof НЕ изразходва преглед — иначе една сгрешена парола „изяжда“ тайната.
+        if (rec.requiresPassword) {
+          const expected = String((rec.envelope && rec.envelope.pwd && rec.envelope.pwd.check) || '');
+          if (!expected || !safeEqual(String(body.proof || ''), expected)) return { code: 403, reason: 'password' };
         }
         rec.views = Number(rec.views || 0) + 1;
         rec.lastViewAt = new Date().toISOString();
         const left = Math.max(0, Number(rec.maxViews || 0) - rec.views);
-        if (left <= 0) await secretLinks.remove(root, rec.id);
+        if (left <= 0) await secretLinks.remove(root, rec.idHash);
         else await secretLinks.save(root, rec);
-        void audit('secret.reveal', { id: rec.id, views: rec.views, maxViews: rec.maxViews });
-        return { code: 200, body: { ciphertext: rec.ciphertext, iv: rec.iv, hint: rec.hint || '', viewsLeft: left } };
+        void audit('secret.reveal', { receipt: rec.receipt || null, idHash: String(rec.idHash).slice(0, 12), views: rec.views, maxViews: rec.maxViews });
+        // `check` остава на сървъра: той е само за проверка на паролата и не бива да излиза
+        // към получателя (иначе е офлайн оракул за паролата, без да е нужен ключът от линка).
+        const envelope = rec.envelope ? { v: rec.envelope.v, iv: rec.envelope.iv, ct: rec.envelope.ct } : null;
+        if (rec.envelope && rec.envelope.pwd) envelope.pwd = { alg: rec.envelope.pwd.alg, iterations: rec.envelope.pwd.iterations, salt: rec.envelope.pwd.salt };
+        return { code: 200, body: { envelope, hint: rec.hint || '', viewsLeft: left, expiresAt: rec.expiresAt || null } };
       });
+      if (out.code === 403) return fail(res, 403, 'Password required or wrong');
       if (out.code !== 200) return fail(res, out.code, out.reason === 'missing' ? 'Secret not found' : 'Secret is gone (' + out.reason + ')');
       res.setHeader('Cache-Control', 'no-store');
       res.setHeader('Referrer-Policy', 'no-referrer');
@@ -1642,8 +1681,9 @@ async function handler(req, res) {
     if (parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'v2') {
       if (!adminGate(req, res, 'core', method)) return;
       const { registry, store } = coreReady();
-      // Тайни връзки: администраторът качва САМО шифротекст (ключът се ражда и остава
-      // в браузъра му), вижда кога изтича и колко прегледа остават, и може да отмени.
+      // Тайни връзки: администраторът качва САМО плика (ключът и идентификаторът се
+      // раждат и остават в браузъра му), вижда кога изтича и колко прегледа остават, и
+      // може да отмени по `sha256(id)` или по чека.
       if (parts[3] === 'secrets') {
         if (parts.length === 4 && method === 'GET') {
           await secretLinks.sweep(root).catch(() => { });
@@ -1651,17 +1691,23 @@ async function handler(req, res) {
         }
         if (parts.length === 4 && method === 'POST') {
           const b = await parse(req);
-          const created = secretLinks.createRecord({ ciphertext: b.ciphertext, iv: b.iv, hint: b.hint, expiresIn: b.expires_in, maxViews: b.max_views });
+          // `idHash` идва от браузъра: идентификаторът и ключът се раждат ТАМ и сървърът
+          // никога не ги вижда — нито за да създаде записа, нито след това.
+          const created = secretLinks.createRecord({ envelope: b.envelope, idHash: b.idHash, hint: b.hint, expiresIn: b.expires_in, maxViews: b.max_views });
           if (created.error) return fail(res, 400, created.error);
           await secretLinks.save(root, created.record);
           void secretLinks.sweep(root).catch(() => { });
-          void audit('secret.create', { id: created.record.id, maxViews: created.record.maxViews, expiresAt: created.record.expiresAt });
+          void audit('secret.create', { receipt: created.record.receipt, idHash: String(created.record.idHash).slice(0, 12), maxViews: created.record.maxViews, requiresPassword: created.record.requiresPassword, expiresAt: created.record.expiresAt });
+          // Линкът се сглобява от браузъра: тоя отговор не съдържа нито идентификатор,
+          // нито ключ, защото сървърът не ги знае.
           return json(res, 201, secretLinks.adminView(created.record));
         }
         if (parts.length === 5 && method === 'DELETE') {
-          if (!(await secretLinks.remove(root, parts[4]))) return fail(res, 404, 'Secret not found');
-          void audit('secret.revoke', { id: parts[4] });
-          return json(res, 200, { deleted: parts[4] });
+          const key = String(parts[4] || '');
+          if (!secretLinks.isValidHash(key)) return fail(res, 404, 'Secret not found');
+          if (!(await secretLinks.remove(root, key))) return fail(res, 404, 'Secret not found');
+          void audit('secret.revoke', { idHash: key.slice(0, 12) });
+          return json(res, 200, { deleted: key });
         }
       }
       if (parts[3] === 'profiles' && parts.length === 4 && method === 'GET') return json(res, 200, { profiles: registry.listProfiles() });

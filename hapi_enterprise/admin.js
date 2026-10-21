@@ -205,11 +205,18 @@ Object.assign(ADMIN_DIC.en, {
   'Брой прегледи': 'Views',
   'Създай линк': 'Create link',
   'Тайна връзка': 'Secret link',
+  'Парола (по избор)': 'Password (optional)',
+  'Втора парола — подателят я дава отделно от линка': 'Second password — the sender passes it separately',
+  'Паролата е втори слой шифроване: без нея дори целият линк не е достатъчен. Сървърът пази само отпечатък, за да не изгори преглед при сгрешена парола.': 'The password is a second encryption layer: without it even the whole link is not enough. The server keeps only a fingerprint, so a mistyped password does not burn a view.',
+  'Чек': 'Receipt',
+  'Покажи': 'Show',
+  'Скрий': 'Hide',
+  'с парола': 'with a password',
   'Няма какво да се сподели': 'Nothing to share',
   'Този браузър не поддържа WebCrypto': 'This browser has no WebCrypto support',
   'Текстът, който искаш да споделиш (парола, IBAN, ключ…)': 'The text to share (password, IBAN, key…)',
   'Подсказка — открит текст, който сървърът вижда (по избор)': 'Hint — plain text the server can see (optional)',
-  'Ключът остава в линка след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.': 'The key stays in the link after “#” and is never sent to the server: it stores only ciphertext and deletes it after the last view or the expiry.',
+  'Целият линк е след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.': 'The whole link lives after “#” and is never sent to the server: it stores only ciphertext and deletes it after the last view or the expiry.',
   'Линкът е копиран. Валиден до ': 'The link is copied. Valid until ',
   ', прегледи: ': ', views: ',
   '1 час': '1 hour',
@@ -225,11 +232,18 @@ Object.assign(ADMIN_DIC.de, {
   'Брой прегледи': 'Aufrufe',
   'Създай линк': 'Link erstellen',
   'Тайна връзка': 'Geheimer Link',
+  'Парола (по избор)': 'Passwort (optional)',
+  'Втора парола — подателят я дава отделно от линка': 'Zweites Passwort — der Absender gibt es getrennt vom Link weiter',
+  'Паролата е втори слой шифроване: без нея дори целият линк не е достатъчен. Сървърът пази само отпечатък, за да не изгори преглед при сгрешена парола.': 'Das Passwort ist eine zweite Verschlüsselungsschicht: ohne es genügt nicht einmal der ganze Link. Der Server speichert nur einen Fingerabdruck, damit ein Tippfehler keinen Aufruf verbraucht.',
+  'Чек': 'Beleg',
+  'Покажи': 'Anzeigen',
+  'Скрий': 'Verbergen',
+  'с парола': 'mit Passwort',
   'Няма какво да се сподели': 'Nichts zu teilen',
   'Този браузър не поддържа WebCrypto': 'Dieser Browser unterstützt kein WebCrypto',
   'Текстът, който искаш да споделиш (парола, IBAN, ключ…)': 'Der Text zum Teilen (Passwort, IBAN, Schlüssel…)',
   'Подсказка — открит текст, който сървърът вижда (по избор)': 'Hinweis — Klartext, den der Server sieht (optional)',
-  'Ключът остава в линка след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.': 'Der Schlüssel bleibt nach „#“ im Link und wird nie an den Server gesendet: er speichert nur Chiffrat und löscht es nach dem letzten Aufruf oder nach Ablauf.',
+  'Целият линк е след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.': 'Der ganze Link steht nach „#“ und wird nie an den Server gesendet: er speichert nur Chiffrat und löscht es nach dem letzten Aufruf oder nach Ablauf.',
   'Линкът е копиран. Валиден до ': 'Der Link ist kopiert. Gültig bis ',
   ', прегледи: ': ', Aufrufe: ',
   '1 час': '1 Stunde',
@@ -276,10 +290,38 @@ function openSecretDialog() {
     views.append(option);
   }
   views.value = '1';
-  const note = node('p', t('Ключът остава в линка след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.'));
+  // Втора парола (по избор): още един слой AES-GCM ОТВЪН слоя с ключа от линка.
+  // Без паролата дори целият линк не е достатъчен — а сървърът пази само PBKDF2 отпечатък.
+  const password = document.createElement('input');
+  password.type = 'password';
+  password.autocomplete = 'new-password';
+  password.placeholder = t('Втора парола — подателят я дава отделно от линка');
+  password.style.cssText = inputStyle + ';flex:1 1 auto';
+  const passwordToggle = node('button', t('Покажи'));
+  passwordToggle.type = 'button';
+  passwordToggle.style.cssText = 'padding:8px 12px;border-radius:8px;border:1px solid var(--border-strong,#cfd5e6);background:#fff;cursor:pointer;white-space:nowrap';
+  passwordToggle.onclick = () => {
+    const hidden = password.type === 'password';
+    password.type = hidden ? 'text' : 'password';
+    passwordToggle.textContent = t(hidden ? 'Скрий' : 'Покажи');
+  };
+  const passwordRow = document.createElement('div');
+  passwordRow.style.cssText = 'display:flex;gap:8px;align-items:center';
+  passwordRow.append(password, passwordToggle);
+  const note = node('p', t('Целият линк е след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.'));
   note.style.cssText = 'font-size:12px;color:var(--muted,#67708c);margin:12px 0 0;line-height:1.5';
+  const pwdNote = node('p', t('Паролата е втори слой шифроване: без нея дори целият линк не е достатъчен. Сървърът пази само отпечатък, за да не изгори преглед при сгрешена парола.'));
+  pwdNote.style.cssText = note.style.cssText;
   const body = document.createElement('div');
-  body.append(secretField(t('Тайна'), area), secretField(t('Подсказка'), hint), secretField(t('Валидна до'), ttl), secretField(t('Брой прегледи'), views), note);
+  body.append(
+    secretField(t('Тайна'), area),
+    secretField(t('Подсказка'), hint),
+    secretField(t('Парола (по избор)'), passwordRow),
+    secretField(t('Валидна до'), ttl),
+    secretField(t('Брой прегледи'), views),
+    note,
+    pwdNote,
+  );
   const make = node('button', t('Създай линк'));
   make.type = 'button';
   make.className = 'btn-primary';
@@ -288,18 +330,43 @@ function openSecretDialog() {
     const text = area.value;
     if (!text.trim()) { toast(t('Няма какво да се сподели'), 'error'); return }
     if (!(window.crypto && crypto.subtle)) { toast(t('Този браузър не поддържа WebCrypto'), 'error'); return }
-    const keyBytes = crypto.getRandomValues(new Uint8Array(32));
-    const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']);
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+    const enc = new TextEncoder();
+    // Слой 1: ключът от линка (32 байта) шифрова текста.
+    const linkKeyBytes = crypto.getRandomValues(new Uint8Array(32));
+    const linkKey = await crypto.subtle.importKey('raw', linkKeyBytes, { name: 'AES-GCM' }, false, ['encrypt']);
+    const innerIv = crypto.getRandomValues(new Uint8Array(12));
+    const innerCt = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: innerIv }, linkKey, enc.encode(text));
+    let envelope = { v: 2, iv: bytesToB64u(innerIv), ct: bytesToB64u(innerCt) };
+    // Слой 2 (по избор): паролата шифрова плика отвън. `check` е само за проверка на
+    // паролата от сървъра — ключът от линка НЕ влиза в него.
+    if (password.value) {
+      const iterations = 600000;
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const material = await crypto.subtle.importKey('raw', enc.encode(password.value), 'PBKDF2', false, ['deriveBits']);
+      const pwdBits = new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, material, 256));
+      const pwdKey = await crypto.subtle.importKey('raw', pwdBits, { name: 'AES-GCM' }, false, ['encrypt']);
+      const check = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', pwdBits)), (b) => b.toString(16).padStart(2, '0')).join('');
+      const outerIv = crypto.getRandomValues(new Uint8Array(12));
+      const outerCt = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: outerIv }, pwdKey, enc.encode(JSON.stringify(envelope)));
+      envelope = { v: 2, iv: bytesToB64u(outerIv), ct: bytesToB64u(outerCt), pwd: { alg: 'PBKDF2-SHA256', iterations, salt: bytesToB64u(salt), check } };
+    }
+    // Идентификаторът и ключът се раждат ТУК и не напускат браузъра: сървърът получава само
+    // `sha256(id)`, по който после намира записа. Затова и линкът не може да бъде възстановен.
+    const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    const idBytes = crypto.getRandomValues(new Uint8Array(22));
+    let secretId = '';
+    for (let i = 0; i < 22; i++) secretId += ALPHABET[idBytes[i] % ALPHABET.length];
+    const idHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(secretId))), (b) => b.toString(16).padStart(2, '0')).join('');
     const created = await api('/admin/api/v2/secrets', 'POST', {
-      ciphertext: bytesToB64u(ciphertext),
-      iv: bytesToB64u(iv),
+      envelope,
+      idHash,
       hint: hint.value,
       expires_in: Number(ttl.value),
       max_views: Number(views.value),
     });
-    const link = location.origin + created.path + '#' + bytesToB64u(keyBytes);
+    // Във ingress администрацията живее под префикс; линкът трябва да е в същия префикс.
+    const base = location.pathname.replace(/\/admin\/?$/, '');
+    const link = location.origin + base + created.path + '#' + secretId + bytesToB64u(linkKeyBytes);
     d.close();
     const out = document.createElement('div');
     const code = node('code', link);
@@ -309,7 +376,9 @@ function openSecretDialog() {
     copy.onclick = () => copyText(link);
     const meta = node('p', t('Линкът е копиран. Валиден до ') + new Date(created.expiresAt).toLocaleString() + t(', прегледи: ') + created.maxViews + '.');
     meta.style.cssText = 'font-size:13px;color:var(--muted,#67708c)';
-    out.append(meta, code, copy);
+    const receipt = node('p', t('Чек') + ': ' + (created.receipt || '—') + (created.requiresPassword ? ' · ' + t('с парола') : ''));
+    receipt.style.cssText = meta.style.cssText;
+    out.append(meta, code, copy, receipt);
     dialog(t('Тайна връзка'), out);
     void copyText(link);
   });

@@ -17,7 +17,7 @@
 # hAPI Enterprise — Home Assistant add-on
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.65.0-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.66.0-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.13-blue?logo=nodedotjs)](https://nodejs.org)
 [![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-informational)](hapi_enterprise/README.md#raspberry-pi-and-small-boards)
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -95,8 +95,9 @@ trusting a server.
   Assistant or on a Windows PC.
 - **Zero Trust.** RBAC, Home Assistant Ingress SSO, AES-256-GCM encryption at rest,
   timing-safe token comparison.
-- **Nothing to leak.** Shared secrets are encrypted in the browser; the add-on stores only
-  ciphertext, the key stays in the link fragment and the record is gone after the last view.
+- **Nothing to leak.** Shared secrets are encrypted in the browser and the whole link lives
+  after `#`; the add-on is sent only `sha256(id)` and stores an opaque envelope, so it can
+  neither read the secret nor tell which record a visitor opened.
 - **Configurable core, not a template.** DOCFLOW's variable hierarchy means new profiles
   are *data*, not new code.
 - **Real features, real tests.** Every feature ships a backend handler and an automated
