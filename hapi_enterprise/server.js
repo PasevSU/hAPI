@@ -61,6 +61,20 @@ const pgp = require('./pgp');
 const packager = require('./packager').create({ root });
 const fileCrypto = require('./file-crypto');
 const sendLite = require('./send');
+// Тайни връзки (zero-knowledge): сървърът пази само шифротекст, ключът е във фрагмента.
+const secretLinks = require('./secret-links');
+const secretPage = require('./secret-page');
+// Последователен достъп на тайна по id: два едновременни прегледа не бива да минат
+// и двата покрай лимита за прегледи (add-on-ът е един процес, значи това е достатъчно).
+const secretLocks = new Map();
+const withSecretLock = async (id, fn) => {
+  const previous = secretLocks.get(id) || Promise.resolve();
+  let release;
+  const current = new Promise((resolve) => { release = resolve });
+  secretLocks.set(id, previous.then(() => current));
+  await previous;
+  try { return await fn() } finally { release(); if (secretLocks.get(id) === current) secretLocks.delete(id) }
+};
 const preview = require('./preview').create();
 const versioning = require('./versioning').create();
 const notify = require('./notify').create();
@@ -557,6 +571,9 @@ function sendLandingHtml({ file, send }) {
     '</main></body></html>';
 }
 const SEND_CSP = "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; img-src 'none'";
+// Страницата на тайна връзка пуска само собствения си скрипт (декриптирането е в
+// браузъра), затова `script-src 'self'` и нищо външно.
+const SECRET_CSP = "default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; img-src 'none'";
 function qrSvg(text) { const q = require('./qrcode')(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 8, margin: 4, scalable: true }) }
 // Единствен записвач на api/<slug>/: api-registry (атомарен запис, сериализиран по slug).
 // QR кодът сочи към публичната страница на портала, не към JSON API-то.
@@ -1074,6 +1091,9 @@ async function handler(req, res) {
       const files = { '/ui': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/index.html': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/styles.css': ['ui/styles.css', 'text/css; charset=utf-8'], '/ui/manifest.example.json': ['ui/manifest.example.json', 'application/json; charset=utf-8'] };
       for (const f of ['bootstrap.js', 'app.js', 'icons.js', 'data.js', 'report-objects.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'settings-panel.js', 'export-center.js', 'public-gateway.js']) files['/ui/' + f] = ['ui/' + f, 'text/javascript; charset=utf-8'];
       for (const f of ['report-manifest.js', 'api-spec.js', 'virtual-storage.js', 'storage-tree.js', 'export-rules.js', 'export-manager.js', 'download-access.js', 'public-gateway.js', 'qrcode.js']) files['/hapi_enterprise/' + f] = ['hapi_enterprise/' + f, 'text/javascript; charset=utf-8'];
+      // Публичната страница на тайна връзка отваря този скрипт от корена: `/hapi_enterprise/`
+      // е достъпен само на административния listener (ingress), а прегледът е публичен.
+      files['/secret-view.js'] = ['secret-view.js', 'text/javascript; charset=utf-8'];
       return files;
     })();
     // Статиката се търси първо до server.js (така е в контейнера: /app/ui, /app/*.js),
@@ -1178,6 +1198,36 @@ async function handler(req, res) {
         return fail(res, 404, 'Not found');
       }
       return fail(res, 404, 'Not found');
+    }
+    // ── Тайни връзки (zero-knowledge): черупка + издаване на шифротекста ────────
+    // Ключът идва във фрагмента на адреса и НЕ стига до тук: сървърът дава само
+    // шифротекста, а AES-GCM се отваря в браузъра (`/secret-view.js`).
+    if (parts[0] === 'secret' && parts.length === 2 && method === 'GET') {
+      if (!secretLinks.isValidId(parts[1])) return fail(res, 404, 'Not found');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': SECRET_CSP, 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'X-Robots-Tag': 'noindex, nofollow' });
+      return res.end(secretPage.secretPageHtml(parts[1]));
+    }
+    if (parts[0] === 'api' && parts[1] === 'v2' && parts[2] === 'secrets' && parts.length === 5 && parts[4] === 'reveal' && method === 'POST') {
+      const out = await withSecretLock(parts[3], async () => {
+        const rec = await secretLinks.read(root, parts[3]);
+        const state = secretLinks.inspectRecord(rec);
+        if (!state.ok) {
+          // Изтекло/прегледано/отменено: файлът се маха, за да не остане шифротекст.
+          if (rec) await secretLinks.remove(root, rec.id).catch(() => { });
+          return { code: state.reason === 'missing' ? 404 : 410, reason: state.reason };
+        }
+        rec.views = Number(rec.views || 0) + 1;
+        rec.lastViewAt = new Date().toISOString();
+        const left = Math.max(0, Number(rec.maxViews || 0) - rec.views);
+        if (left <= 0) await secretLinks.remove(root, rec.id);
+        else await secretLinks.save(root, rec);
+        void audit('secret.reveal', { id: rec.id, views: rec.views, maxViews: rec.maxViews });
+        return { code: 200, body: { ciphertext: rec.ciphertext, iv: rec.iv, hint: rec.hint || '', viewsLeft: left } };
+      });
+      if (out.code !== 200) return fail(res, out.code, out.reason === 'missing' ? 'Secret not found' : 'Secret is gone (' + out.reason + ')');
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('Referrer-Policy', 'no-referrer');
+      return json(res, 200, out.body);
     }
     // ── „Бърз линк“ (Send-lite): публичен канал без портал, акаунт и ключ ──────
     if (parts[0] === 's' && parts.length === 2 && method === 'GET') {
@@ -1592,6 +1642,28 @@ async function handler(req, res) {
     if (parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'v2') {
       if (!adminGate(req, res, 'core', method)) return;
       const { registry, store } = coreReady();
+      // Тайни връзки: администраторът качва САМО шифротекст (ключът се ражда и остава
+      // в браузъра му), вижда кога изтича и колко прегледа остават, и може да отмени.
+      if (parts[3] === 'secrets') {
+        if (parts.length === 4 && method === 'GET') {
+          await secretLinks.sweep(root).catch(() => { });
+          return json(res, 200, { secrets: await secretLinks.list(root) });
+        }
+        if (parts.length === 4 && method === 'POST') {
+          const b = await parse(req);
+          const created = secretLinks.createRecord({ ciphertext: b.ciphertext, iv: b.iv, hint: b.hint, expiresIn: b.expires_in, maxViews: b.max_views });
+          if (created.error) return fail(res, 400, created.error);
+          await secretLinks.save(root, created.record);
+          void secretLinks.sweep(root).catch(() => { });
+          void audit('secret.create', { id: created.record.id, maxViews: created.record.maxViews, expiresAt: created.record.expiresAt });
+          return json(res, 201, secretLinks.adminView(created.record));
+        }
+        if (parts.length === 5 && method === 'DELETE') {
+          if (!(await secretLinks.remove(root, parts[4]))) return fail(res, 404, 'Secret not found');
+          void audit('secret.revoke', { id: parts[4] });
+          return json(res, 200, { deleted: parts[4] });
+        }
+      }
       if (parts[3] === 'profiles' && parts.length === 4 && method === 'GET') return json(res, 200, { profiles: registry.listProfiles() });
       if (parts[3] === 'groups') {
         if (parts.length === 4 && method === 'GET') { return json(res, 200, { groups: store.listGroups().map(g => ({ ...g, recordCount: store.listRecords(g.id).length })) }) }

@@ -195,6 +195,128 @@ async function load() {
   } $('status').textContent = t('Удостоверяването е успешно. Заредени портали: ') + data.portals.length
 }
 $('load').onclick = () => action(load); $('create').onclick = () => action(async () => { await api('/admin/api/portals', 'POST', { slug: $('slug').value, title: $('title').value }); await load() });
+// „Сподели тайна“: криптирането се случва ТУК, в браузъра. Сървърът получава само
+// шифротекста, а ключът остава след „#“ в линка и не се изпраща по мрежата.
+Object.assign(ADMIN_DIC.en, {
+  'Сподели тайна': 'Share a secret',
+  'Тайна': 'Secret',
+  'Подсказка': 'Hint',
+  'Валидна до': 'Valid until',
+  'Брой прегледи': 'Views',
+  'Създай линк': 'Create link',
+  'Тайна връзка': 'Secret link',
+  'Няма какво да се сподели': 'Nothing to share',
+  'Този браузър не поддържа WebCrypto': 'This browser has no WebCrypto support',
+  'Текстът, който искаш да споделиш (парола, IBAN, ключ…)': 'The text to share (password, IBAN, key…)',
+  'Подсказка — открит текст, който сървърът вижда (по избор)': 'Hint — plain text the server can see (optional)',
+  'Ключът остава в линка след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.': 'The key stays in the link after “#” and is never sent to the server: it stores only ciphertext and deletes it after the last view or the expiry.',
+  'Линкът е копиран. Валиден до ': 'The link is copied. Valid until ',
+  ', прегледи: ': ', views: ',
+  '1 час': '1 hour',
+  '24 часа': '24 hours',
+  '7 дни': '7 days',
+  '30 дни': '30 days',
+});
+Object.assign(ADMIN_DIC.de, {
+  'Сподели тайна': 'Geheimnis teilen',
+  'Тайна': 'Geheimnis',
+  'Подсказка': 'Hinweis',
+  'Валидна до': 'Gültig bis',
+  'Брой прегледи': 'Aufrufe',
+  'Създай линк': 'Link erstellen',
+  'Тайна връзка': 'Geheimer Link',
+  'Няма какво да се сподели': 'Nichts zu teilen',
+  'Този браузър не поддържа WebCrypto': 'Dieser Browser unterstützt kein WebCrypto',
+  'Текстът, който искаш да споделиш (парола, IBAN, ключ…)': 'Der Text zum Teilen (Passwort, IBAN, Schlüssel…)',
+  'Подсказка — открит текст, който сървърът вижда (по избор)': 'Hinweis — Klartext, den der Server sieht (optional)',
+  'Ключът остава в линка след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.': 'Der Schlüssel bleibt nach „#“ im Link und wird nie an den Server gesendet: er speichert nur Chiffrat und löscht es nach dem letzten Aufruf oder nach Ablauf.',
+  'Линкът е копиран. Валиден до ': 'Der Link ist kopiert. Gültig bis ',
+  ', прегледи: ': ', Aufrufe: ',
+  '1 час': '1 Stunde',
+  '24 часа': '24 Stunden',
+  '7 дни': '7 Tage',
+  '30 дни': '30 Tage',
+});
+const bytesToB64u = (bytes) => btoa(Array.from(new Uint8Array(bytes), (b) => String.fromCharCode(b)).join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+function secretField(label, control) {
+  const wrap = document.createElement('label');
+  wrap.style.cssText = 'display:block;margin:12px 0 0;font-size:13px';
+  const caption = document.createElement('span');
+  caption.textContent = label;
+  caption.style.cssText = 'display:block;margin:0 0 4px;color:var(--muted,#67708c)';
+  wrap.append(caption, control);
+  return wrap;
+}
+function openSecretDialog() {
+  const inputStyle = 'width:100%;box-sizing:border-box;font:inherit;padding:8px;border-radius:8px;border:1px solid var(--border-strong,#cfd5e6)';
+  const area = document.createElement('textarea');
+  area.rows = 6;
+  area.placeholder = t('Текстът, който искаш да споделиш (парола, IBAN, ключ…)');
+  area.style.cssText = inputStyle.replace('font:inherit', 'font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace') + ';resize:vertical';
+  const hint = document.createElement('input');
+  hint.type = 'text';
+  hint.maxLength = 200;
+  hint.placeholder = t('Подсказка — открит текст, който сървърът вижда (по избор)');
+  hint.style.cssText = inputStyle;
+  const ttl = document.createElement('select');
+  ttl.style.cssText = inputStyle;
+  for (const [value, label] of [['3600', '1 час'], ['86400', '24 часа'], ['604800', '7 дни'], ['2592000', '30 дни']]) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = t(label);
+    ttl.append(option);
+  }
+  ttl.value = '86400';
+  const views = document.createElement('select');
+  views.style.cssText = inputStyle;
+  for (const value of ['1', '2', '3', '5', '10']) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = value;
+    views.append(option);
+  }
+  views.value = '1';
+  const note = node('p', t('Ключът остава в линка след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.'));
+  note.style.cssText = 'font-size:12px;color:var(--muted,#67708c);margin:12px 0 0;line-height:1.5';
+  const body = document.createElement('div');
+  body.append(secretField(t('Тайна'), area), secretField(t('Подсказка'), hint), secretField(t('Валидна до'), ttl), secretField(t('Брой прегледи'), views), note);
+  const make = node('button', t('Създай линк'));
+  make.type = 'button';
+  make.className = 'btn-primary';
+  const d = dialog(t('Сподели тайна'), body, [make]);
+  make.onclick = () => action(async () => {
+    const text = area.value;
+    if (!text.trim()) { toast(t('Няма какво да се сподели'), 'error'); return }
+    if (!(window.crypto && crypto.subtle)) { toast(t('Този браузър не поддържа WebCrypto'), 'error'); return }
+    const keyBytes = crypto.getRandomValues(new Uint8Array(32));
+    const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+    const created = await api('/admin/api/v2/secrets', 'POST', {
+      ciphertext: bytesToB64u(ciphertext),
+      iv: bytesToB64u(iv),
+      hint: hint.value,
+      expires_in: Number(ttl.value),
+      max_views: Number(views.value),
+    });
+    const link = location.origin + created.path + '#' + bytesToB64u(keyBytes);
+    d.close();
+    const out = document.createElement('div');
+    const code = node('code', link);
+    code.style.cssText = 'display:block;word-break:break-all;font:13px ui-monospace,Menlo,monospace;background:var(--surface-2,#f8fafc);padding:10px;border-radius:8px';
+    const copy = node('button', t('Копирай'));
+    copy.type = 'button';
+    copy.onclick = () => copyText(link);
+    const meta = node('p', t('Линкът е копиран. Валиден до ') + new Date(created.expiresAt).toLocaleString() + t(', прегледи: ') + created.maxViews + '.');
+    meta.style.cssText = 'font-size:13px;color:var(--muted,#67708c)';
+    out.append(meta, code, copy);
+    dialog(t('Тайна връзка'), out);
+    void copyText(link);
+  });
+  area.focus();
+}
+const secretShare = $('secret-share');
+if (secretShare) secretShare.onclick = () => action(openSecretDialog);
 // Enter в полетата за нов портал = създай (няма поле за токен, така че клавиатурният
 // поток трябва да живее във формата, а не в лентата за удостоверяване).
 for (const field of ['slug', 'title']) { const el = $(field); if (el) el.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); $('create').click() } }) }
