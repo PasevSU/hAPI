@@ -139,14 +139,27 @@ assert.ok(text.includes('$script:RetryLimit'), 'повторните опити 
 const pwsh = process.env.PWSH || 'pwsh';
 const probe = spawnSync(pwsh, ['-NoProfile', '-NoLogo', '-Command', '$PSVersionTable.PSVersion.Major'], { encoding: 'utf8' });
 let parsed = false;
-if (probe.status === 0) {
-  const escaped = file.replace(/'/g, "''");
+const syntaxVerdict = (target) => {
+  const escaped = target.replace(/'/g, "''");
   const command = `$t=$null;$e=$null;[void][System.Management.Automation.Language.Parser]::ParseFile('${escaped}',[ref]$t,[ref]$e); if($e.Count){ $e[0].Message } else { 'OK' }`;
   const result = spawnSync(pwsh, ['-NoProfile', '-NoLogo', '-Command', command], { encoding: 'utf8' });
   assert.equal(result.status, 0, 'PowerShell парсерът се провали: ' + (result.stderr || '').trim());
-  const verdict = (result.stdout || '').trim();
-  assert.equal(verdict, 'OK', 'синтактична грешка в publish-release.ps1: ' + verdict);
+  return (result.stdout || '').trim();
+};
+if (probe.status === 0) {
+  assert.equal(syntaxVerdict(file), 'OK', 'синтактична грешка в publish-release.ps1');
   parsed = true;
+
+  // 10б. HACS публикаторът: HACS приема САМО публични хранилища, затова private трябва да е
+  // ясна грешка още преди push, а не провален `hacs/action` след него.
+  const haoss = path.join(__dirname, '..', 'scripts', 'publish-haoss.ps1');
+  assert.ok(fs.existsSync(haoss), 'липсва scripts/publish-haoss.ps1');
+  const haossText = fs.readFileSync(haoss, 'utf8');
+  assert.ok(haossText.includes("gh repo view $fullName --json visibility"), 'пита GitHub за видимостта преди push');
+  assert.ok(haossText.includes("$visibility -ne 'PUBLIC'"), 'разпознава private хранилище');
+  assert.ok(haossText.includes('--visibility public'), 'казва точно как се оправя');
+  assert.ok(haossText.includes('$ForcePrivate'), 'има съзнателен изход -ForcePrivate');
+  assert.equal(syntaxVerdict(haoss), 'OK', 'синтактична грешка в publish-haoss.ps1');
 }
 else {
   console.log('publish-script: pwsh липсва — проверката на синтаксиса е пропусната');

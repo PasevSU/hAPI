@@ -133,6 +133,13 @@ It never force-pushes; a rejected push is resolved with `pull --rebase` (aborted
 conflict, so nothing is lost). `-Yes` accepts the safe defaults, `-AllowDelete` is needed
 for deletion in that mode, `-Reuse` keeps the existing clone.
 
+**The HACS repository must be public.** `npm run publish:haoss` pushes the integration tree
+to `PasevSU/hapi-enterprise-integration`, and HACS can only validate public repositories
+(`hacs/action` answers "… is private, the HACS action can only validate public
+repositories"). The script now checks visibility before pushing and stops with the exact
+`gh repo edit … --visibility public` command instead of letting `Validate` fail afterwards;
+`-ForcePrivate` overrides it deliberately.
+
 ## Code Style
 
 - JavaScript: plain CommonJS, Node built-ins only (no runtime npm dependencies).

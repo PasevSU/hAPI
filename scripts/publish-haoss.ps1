@@ -26,6 +26,7 @@ param(
     [string]$Version,
     [switch]$SkipBuild,
     [switch]$InPlace,
+    [switch]$ForcePrivate,
     [switch]$Execute
 )
 
@@ -86,15 +87,25 @@ if ($Execute) {
 
 # ── 1. Издание ──────────────────────────────────────────────────────────────
 Write-Step '1/5  Строене на изданието'
+# При реално публикуване строим НАПРАВО в git папката (или в отделна временна), а не в
+# `release/haoss`: манифестът носи адреса на ПУБЛИКУВАНОТО хранилище и ако пишехме там,
+# дървото в работното копие щеше да се разминава с източника (хваща го `haoss-in-sync`).
+$buildOut = if ($Execute -and -not $InPlace) { Join-Path $env:TEMP "haoss-build-$Version" } else { $repoDir }
+if ($Execute -and -not $SkipBuild -and -not $InPlace) {
+    if (Test-Path -LiteralPath $buildOut) { Remove-Item -LiteralPath $buildOut -Recurse -Force }
+}
 if ($SkipBuild) {
     Write-Host '  пропуснато (-SkipBuild)'
 }
 else {
-    $buildArgs = if ($Execute) { "--repo-url $repoUrl" } else { '' }
-    Invoke-Command-Step -Text 'build' -Command "node scripts/build-haoss.cjs $buildArgs".Trim() | Out-Null
+    $buildArgs = @()
+    if ($Execute) { $buildArgs += "--repo-url $repoUrl" }
+    if ($Execute -and -not $InPlace) { $buildArgs += "--out `"$buildOut`" --no-versioned" }
+    Invoke-Command-Step -Text 'build' -Command ("node scripts/build-haoss.cjs " + ($buildArgs -join ' ')).Trim() | Out-Null
 }
-if (-not (Test-Path (Join-Path $repoDir 'hacs.json'))) {
-    if ($Execute) { throw "липсва $repoDir/hacs.json — изданието не е построено" }
+$sourceDir = if ($Execute -and -not $InPlace) { $buildOut } else { $repoDir }
+if (-not (Test-Path (Join-Path $sourceDir 'hacs.json'))) {
+    if ($Execute) { throw "липсва $sourceDir/hacs.json — изданието не е построено" }
 }
 
 # ── 2. Git хранилище ────────────────────────────────────────────────────────
@@ -120,7 +131,7 @@ if (-not $InPlace) {
         else {
             New-Item -ItemType Directory -Path $gitDir -Force | Out-Null
         }
-        Get-ChildItem -LiteralPath $repoDir -Force |
+        Get-ChildItem -LiteralPath $sourceDir -Force |
         Where-Object { $_.Name -ne '.git' } |
         ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $gitDir -Recurse -Force }
         Write-Host ('  копирани файлове: ' + (Get-ChildItem -LiteralPath $gitDir -Recurse -File -Force).Count)
@@ -196,6 +207,18 @@ if (-not $repoExists) {
     Invoke-Command-Step -Text 'create' -Command "gh repo create $fullName --public --source . --remote origin --push --description `"$Description`"" -WorkDir $gitDir | Out-Null
 }
 else {
+    # HACS приема САМО публични хранилища: `hacs/action` отказва private с
+    # „… is private, the HACS action can only validate public repositories“.
+    # Без тази проверка push-ът минава, а Validate пада чак след това.
+    $visibilityRaw = gh repo view $fullName --json visibility --jq '.visibility' 2>$null
+    $visibility = "$visibilityRaw".Trim().ToUpperInvariant()
+    if ($visibility -and $visibility -ne 'PUBLIC') {
+        Write-Host "  ! хранилището е $visibility — HACS приема само PUBLIC, затова Validate ще падне" -ForegroundColor Yellow
+        Write-Host "  оправи го с: gh repo edit $fullName --visibility public --accept-visibility-change-consequences" -ForegroundColor Yellow
+        if ($Execute -and -not $ForcePrivate) {
+            throw "HACS хранилището е $visibility. Направи го публично (или подай -ForcePrivate, ако знаеш какво правиш)."
+        }
+    }
     Write-Host "  хранилището съществува — push към origin (без force)"
     Invoke-Command-Step -Text 'push' -Command 'git push origin HEAD:main' -WorkDir $gitDir | Out-Null
 }
