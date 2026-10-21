@@ -95,6 +95,8 @@ trusting a server.
   Assistant or on a Windows PC.
 - **Zero Trust.** RBAC, Home Assistant Ingress SSO, AES-256-GCM encryption at rest,
   timing-safe token comparison.
+- **Nothing to leak.** Shared secrets are encrypted in the browser; the add-on stores only
+  ciphertext, the key stays in the link fragment and the record is gone after the last view.
 - **Configurable core, not a template.** DOCFLOW's variable hierarchy means new profiles
   are *data*, not new code.
 - **Real features, real tests.** Every feature ships a backend handler and an automated
@@ -113,14 +115,14 @@ composite key `{prefix}-{ID_db}-{id_gruppe}-{field}`, grouped under a stable `id
 Profiles are generated automatically when a folder (group) is created; records can exist
 without a folder (orphan) and be associated later.
 
-| Layer          | What it provides                                                                                               |
-| -------------- | -------------------------------------------------------------------------------------------------------------- |
-| **Core**       | DI container, Event Bus, metadata-driven Registry, groups/profiles/records/variables                           |
-| **Data**       | Transactional SQLite store (`node:sqlite` `DatabaseSync`) behind a Repository interface                        |
-| **Documents**  | Preview, thumbnails, versioning, PDF watermarks, PDF images + tables, xlsx/pptx extraction                     |
-| **Sharing**    | QR artifacts, branded landing page, QR revocation, dispatch via Home Assistant notify                          |
-| **Security**   | RBAC + HA Ingress SSO, AES-256-GCM encryption at rest, retention + audit export                                |
-| **Operations** | Backup/restore, job queue with progress, load control, storage checks, diagnostics, error log, config profiles |
+| Layer          | What it provides                                                                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Core**       | DI container, Event Bus, metadata-driven Registry, groups/profiles/records/variables                                                                                    |
+| **Data**       | Transactional SQLite store (`node:sqlite` `DatabaseSync`) behind a Repository interface                                                                                 |
+| **Documents**  | Preview, thumbnails, versioning, PDF watermarks, PDF images + tables, xlsx/pptx extraction                                                                              |
+| **Sharing**    | QR artifacts, branded landing page, QR revocation, dispatch via Home Assistant notify, NFC/QR tag and universal link for the Companion app, zero-knowledge secret links |
+| **Security**   | RBAC + HA Ingress SSO, AES-256-GCM encryption at rest, retention + audit export                                                                                         |
+| **Operations** | Backup/restore, job queue with progress, load control, storage checks, diagnostics, error log, config profiles                                                          |
 
 Every feature ships with a real backend handler and an automated test — never just a UI
 button. Architecture decisions are recorded as ADRs and every feature passes the §9.1

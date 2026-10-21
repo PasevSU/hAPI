@@ -36,6 +36,16 @@ account.
   hierarchy instead of a flat folder of loose files.
 - **QR sharing** — every case or document gets a QR code that opens a branded portal on
   your Home Assistant address. The recipient can view the document and verify it.
+- **Tags for the phone** — each portal also gets a Home Assistant tag
+  (`https://www.home-assistant.io/tag/<id>`) and a universal link
+  (`https://www.home-assistant.io/ios/nfc/?url=<…>`), so an NFC sticker or a printed QR opens
+  the portal from the Companion app. The console shows the tag id and a ready-to-paste
+  automation for the `tag_scanned` event.
+- **Share a secret — zero-knowledge** — the console encrypts the text in your browser
+  (AES-GCM 256) and the add-on stores only the ciphertext and its `iv`; the key never
+  leaves the link fragment (`/secret/<id>#<key>`), so it is not in logs, proxies or the
+  audit trail. One view and 24 hours by default; the record is deleted after the last view
+  or when it expires.
 - **Proof, not promises** — each upload is fingerprinted, sealed and timestamped, and the
   audit trail is hash-chained, so tampering is detectable.
 - **One backend, two worlds** — the same Node.js service runs as a Home Assistant add-on
@@ -270,6 +280,10 @@ database references documents by path.
 - **Ingress** — `/admin` (console), `/p/<portal>` (portal pages), `/api/v1/...`.
   `ingress_stream: true` streams large uploads through the Supervisor instead of
   buffering them in its memory.
+- **`/admin/api/portals/<id>/api-info`** returns the portal's landing/API addresses, the QR
+  SVG and `links`: the Home Assistant tag id and URL, the universal link, what to write on
+  an NFC sticker and a `tag_scanned` automation. `tests/share-links.cjs` pins the two URL
+  formats to the Companion documentation.
 - **8099/tcp** — internal API only; do not publish it on the host.
 - **8088/tcp** — the add-on's own public gateway, only when `public_gateway: true`.
 - **Home Assistant port (8123)** — with the optional integration the public channel is
@@ -278,6 +292,13 @@ database references documents by path.
   `/api/hapi_enterprise/public/v1/files/<id>/download`. No additional port is opened;
   `/api/public/v1/...` remains as a deprecated alias.
 - **`/health`** — unauthenticated liveness probe on 8099, used by the watchdog.
+- **`/secret/<id>`** — public page for a shared secret. It is an empty shell plus
+  `/secret-view.js`: the ciphertext is fetched from
+  `POST /api/v2/secrets/<id>/reveal`, decrypted in the browser and the key is removed from
+  the address bar. The admin side is `GET`/`POST /admin/api/v2/secrets` (list and create —
+  the body carries `ciphertext`, `iv`, optional `hint`, `expires_in`, `max_views`) and
+  `DELETE /admin/api/v2/secrets/<id>` to revoke. Records live in `<data>/secrets/` with mode
+  `0600`; the list never returns ciphertext, only metadata and a `sha256` fingerprint.
 - **`/ready`** — readiness probe: write access to the storage, a `PRAGMA quick_check` on
   the database and loaded rules. `checks` stays a stable boolean contract
   (`storage`, `db`, `rules`); the database state is reported separately as
@@ -291,12 +312,15 @@ database references documents by path.
   signing key no longer exists, package signing falls back to the available key and
   records `signingFallback` in the package metadata and the audit trail.
 - **One instance per data directory** — the add-on takes
-  `<storage>/.hapi-instance.json` (id, pid, host, heartbeat) at start. A second process
-  on the same data directory exits with code `1` and names the holder instead of
-  corrupting metadata, the audit chain or the TSA archive. A lock left by a dead process
-  (no live pid, or a heartbeat older than two minutes) is taken over automatically;
-  `INSTANCE_ID` names the instance and `INSTANCE_STRICT=0` downgrades the refusal to a
-  warning. `/ready` reports `instance.id`, so a load balancer can tell replicas apart.
+  `<storage>/.hapi-instance.json` (id, pid, `pidStart`, host, heartbeat) at start. A second
+  process on the same data directory exits with code `1` and names the holder instead of
+  corrupting metadata, the audit chain or the TSA archive. A lock left by a dead process is
+  taken over automatically: a different `pidStart` (`/proc/<pid>/stat`, field 22) means the
+  pid was reused by a newer process, and without `/proc` the decision falls back to
+  `startedAt` plus heartbeat freshness. `INSTANCE_ID` names the instance and
+  `INSTANCE_STRICT=0` downgrades the refusal to a warning. `/ready` reports `instance.id`,
+  so a load balancer can tell replicas apart. If a lock is ever left behind, the refusal
+  message names the file to delete.
 
 ## Sensors and monitoring
 
