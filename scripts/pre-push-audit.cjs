@@ -5,20 +5,7 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', '__pycache__', '.pytest_cache']);
-const TEXT = /\.(js|cjs|mjs|json|md|txt|yml|yaml|sh|py|html|css|bat|gitignore|gitattributes|prettierrc)$/i;
-const SECRETS = [
-  // Истински JWT има три части (header.payload.signature); тестовите fixture-и са само header.
-  [/eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{20,}/, 'JWT с подпис'],
-  [/BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY/, 'частен ключ'],
-  // Само ЦЯЛ блок с ключов материал е тайна; изразът „BEGIN PGP PRIVATE KEY BLOCK"
-  // се среща и като текст в UI/тестове и не бива да дава фалшиви сигнали.
-  [/-----BEGIN PGP PRIVATE KEY BLOCK-----[\s\S]{100,}?-----END PGP PRIVATE KEY BLOCK-----/, 'PGP частен ключ'],
-  [/SUPERVISOR_TOKEN\s*=\s*\S+/, 'Supervisor токен'],
-  [/(?:^|\s)(?:ghp|gho|github_pat)_[A-Za-z0-9_]{20,}/, 'GitHub токен'],
-  [/AKIA[0-9A-Z]{16}/, 'AWS ключ'],
-];
-// Ключовите пакети съдържат private.asc — не влизат в хранилището по никакъв начин.
-const WEIRD = [/^\.env/, /^admin-token$/, /\.pem$/, /\.key$/i, /\.pfx$/i, /^id_rsa/, /(^|\/)private\.asc$/i, /(^|\/)PGP_CryptoSAK_keys-/];
+const { TEXT_EXT: TEXT, SECRETS, WEIRD_NAME: WEIRD } = require('./secret-patterns.cjs');
 
 // Одитът проверява какво реално би влязло в хранилището, затова спазва .gitignore.
 // Иначе локални артефакти (.venv, *.7z архиви) дават фалшиви сигнали при всеки push.

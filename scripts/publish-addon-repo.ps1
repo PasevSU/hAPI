@@ -35,6 +35,8 @@ $mode = if ($Execute) { 'ПУБЛИКУВАНЕ' } else { 'DRY RUN (нищо н�
 # Копираме само това, което Git би проследил: без кешове, среди и артефакти.
 $excludeDirs = @('.git', '.venv', 'node_modules', 'release', 'dist', '__pycache__', '.pytest_cache', 'coverage', 'PGP_CryptoSAK_keys-*')
 $excludeFiles = @('*.pyc', '*.log', '*.7z', '*.zip', '*.tar.gz', 'private.asc', '*.pem', '*.pfx', 'id_rsa*')
+# Изключванията се прилагат от scripts/export-tracked.cjs (.gitignore + правила за тайни),
+# не от robocopy; списъците остават за справка и за пълен пропуск към стария режим.
 
 $version = (Select-String -Path (Join-Path $root 'hapi_enterprise/config.yaml') -Pattern '^version:\s*"([^"]+)"' |
     Select-Object -First 1).Matches[0].Groups[1].Value
@@ -86,19 +88,18 @@ if ($Execute) {
     if ($LASTEXITCODE -ne 0) { throw 'git clone се провали' }
 }
 
-# ── 3. Огледално копиране на локалното дърво ────────────────────────────────
+# ── 3. Експорт на файловете, които биха влезли в git ────────────────────────
 Write-Host ''
-Write-Host '▸ 3/4  Копиране на локалното дърво върху клона (robocopy /MIR)' -ForegroundColor Cyan
-$robocopyArgs = @($root, $workDir, '/MIR', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/R:2', '/W:2') +
-@('/XD') + $excludeDirs + @('/XF') + $excludeFiles
-Write-Host "  $ robocopy $($robocopyArgs -join ' ')"
+Write-Host '▸ 3/4  Експорт на проследяваното дърво (спазва .gitignore)' -ForegroundColor Cyan
+# robocopy /MIR копираше и файлове, които никога не бива да напускат диска (така веднъж
+# изтекоха частни PGP ключове). export-tracked обхожда спазвайки .gitignore и отказва
+# подозрителни имена и файлове с тайни.
+Write-Host "  $ node scripts/export-tracked.cjs --to $workDir --clean"
 if ($Execute) {
-    & robocopy @robocopyArgs | Out-Null
-    if ($LASTEXITCODE -ge 8) { throw "robocopy се провали ($LASTEXITCODE)" }
-    # robocopy обновява mtime на всичко, затова тук числата са „докоснати“, не „различни“.
-    # Дали има истинска промяна показва `git add` (нормализира CRLF→LF по .gitattributes).
+    & node scripts/export-tracked.cjs --to $workDir --clean
+    if ($LASTEXITCODE -ne 0) { throw "export-tracked отказа ($LASTEXITCODE) — виж списъка по-горе" }
     $touched = (git -C $workDir status --porcelain | Measure-Object -Line).Lines
-    Write-Host "  докоснати файлове: $touched (git решава след 'git add' дали има реална промяна)"
+    Write-Host "  променени файлове: $touched (git решава след 'git add' дали има реална промяна)"
 }
 
 # ── 4. Commit и push ────────────────────────────────────────────────────────
