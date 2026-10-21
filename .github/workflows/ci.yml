@@ -13,7 +13,7 @@ jobs:
     name: Integration tests (Ubuntu · Node 22)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -43,7 +43,7 @@ jobs:
     name: Smoke + edge runtime (Windows · Node 22)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -63,7 +63,7 @@ jobs:
     name: Add-on image (всички обявени архитектури)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # `home-assistant/builder` е обявен за deprecated и подава невалиден таг
       # (`/ghcr.io/<owner>/...` — с воден наклон), затова образът се строи направо
