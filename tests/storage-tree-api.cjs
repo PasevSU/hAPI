@@ -15,7 +15,15 @@ const assert = require('node:assert/strict');
   // storage_root винаги е под /share — в теста това е <root>/share/<уникална>.
   const shareBase = path.join(path.parse(os.tmpdir()).root, 'share');
   // mkdtempSync изисква родителската папка да съществува (на Linux/macOS /share липсва).
-  fs.mkdirSync(shareBase, { recursive: true });
+  // Ако средата не позволява създаването й (не сме root, read-only /), тестът казва
+  // защо пропуска — вместо да падне с неразбираем EACCES. В CI папката се създава
+  // предварително (ci.yml и release.yml), така че там проверката наистина върви.
+  try {
+    fs.mkdirSync(shareBase, { recursive: true });
+  } catch (e) {
+    console.log(`SKIP storage-tree-api: ${shareBase} не може да се създаде (${e.code || e.message}) — липсва /share`);
+    process.exit(0);
+  }
   const storageDir = fs.mkdtempSync(path.join(shareBase, 'hapi-tree-'));
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: { ...process.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },

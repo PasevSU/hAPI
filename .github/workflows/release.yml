@@ -23,6 +23,11 @@ jobs:
         with:
           node-version: "22"
 
+      # S20 пуска целия тестов пакет, а `tests/storage-tree-api.cjs` пише в `/share`
+      # (истинският път в add-on-а). Без тази папка проверката пада с EACCES.
+      - name: Prepare /share (тестовете за пътя на порталите го изискват)
+        run: sudo mkdir -p /share /media && sudo chown "$USER" /share /media
+
       - name: Build release (includes full test suite)
         shell: bash
         run: |
