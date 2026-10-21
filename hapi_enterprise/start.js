@@ -72,11 +72,9 @@ function isWeakToken(token) {
 }
 
 function resolveAdminToken() {
-  const fromOptions = String(options.token || options.admin_token || '').trim();
-  if (!isWeakToken(fromOptions)) return fromOptions;
-
-  // Токенът живее в /data/admin-token (mode 0600) — оцелява рестарт и не влиза
-  // в логовете. Options-ът е публичен (видим в Configuration таба).
+  // Няма потребителски токен. Ключът е ВЪТРЕШЕН мастер ключ (AES-256-GCM,
+  // HMAC на подписаните URL-и, PGP материал, одит верига): генерира се веднъж и
+  // не се показва никъде. Хората влизат през Ingress с HA самоличност.
   const tokenFile = path.join(ADDON_DATA_DIR, 'admin-token');
   try {
     const saved = fs.readFileSync(tokenFile, 'utf8').trim();
@@ -90,9 +88,8 @@ function resolveAdminToken() {
     fs.mkdirSync(ADDON_DATA_DIR, { recursive: true });
     fs.writeFileSync(tokenFile, generated, { mode: 0o600 });
   } catch (e) {
-    fail('Cannot persist admin token in ' + tokenFile + ': ' + e.message);
+    fail('Cannot persist the internal key in ' + tokenFile + ': ' + e.message);
   }
-  console.error('hAPI: no valid token in the add-on options; generated one in ' + tokenFile);
   return generated;
 }
 

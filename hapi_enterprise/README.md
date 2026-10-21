@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.61.4-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.62.0-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
@@ -63,11 +63,11 @@ Manual path:
 1. **Settings → Add-ons → Add-on Store → ⋮ → Repositories**, add
    `https://github.com/PasevSU/hAPI`.
 2. Install **hAPI Enterprise**.
-3. Open the **Configuration** tab and set `token` (at least 24 characters) — the rest of
-   the values in [Recommended settings](#recommended-settings-before-you-install) are a
+3. **Start** the add-on and open the console from the sidebar or via **Open Web UI**.
+   The console lives at `/admin` behind Ingress. There is nothing to paste: the panel is
+   an ordinary sidebar button and signs you in with your Home Assistant account.
+   The values in [Recommended settings](#recommended-settings-before-you-install) are a
    safe starting point.
-4. **Start** the add-on and open the console from the sidebar or via **Open Web UI**.
-   The console lives at `/admin` behind Ingress.
 
 Optional: the Home Assistant integration (public API bridge, portal page and telemetry
 sensors) is installed through HACS from the same repository — see
@@ -77,9 +77,9 @@ sensors) is installed through HACS from the same repository — see
 
 - Home Assistant OS or Home Assistant Supervised (the add-on needs the Supervisor).
 - Architecture `amd64` or `aarch64`.
-- An admin token of **at least 24 characters** — it is the only credential the console
-  and the API accept. A weak or empty token is never accepted: the add-on generates one
-  once and stores it in `/data/admin-token`.
+- No credential to prepare: the console authenticates with the Home Assistant user who
+  opens it. There is no admin token in the options — the encryption and signing key is
+  generated once, stored in `/data/admin-token` and never shown.
 
 ## Recommended settings before you install
 
@@ -95,9 +95,9 @@ Five minutes of preparation avoids almost every first-start surprise.
 3. **For network storage**, create the mount in Settings → System → Storage **before**
    starting the add-on. With `storage_mode: ha_network` the add-on refuses to start when
    the mount is inactive instead of silently writing to the boot disk.
-4. **Generate the admin token** and keep it in a password manager — it never expires.
-   On Linux/macOS `openssl rand -hex 32`; on Windows
-   `-join ((1..32) | ForEach-Object { '{0:x2}' -f (Get-Random -Maximum 256) })`.
+4. **Decide who is admin.** The user who installs the add-on is an administrator; every
+   other Home Assistant user is `admin` as well unless you map them in `user_roles` or
+   `group_roles`. No token is generated, copied or stored by hand.
    Do not reuse a human password.
 5. **Decide the public address.** With the HACS integration the public channel runs on
    the Home Assistant address itself (`public_same_origin: true`, `public_gateway: false`).
@@ -113,7 +113,6 @@ Five minutes of preparation avoids almost every first-start surprise.
 ### Starting point (copy into the Configuration tab, YAML mode)
 
 ```yaml
-token: "REPLACE_WITH_64_HEX_CHARS"
 storage_location: addon_config
 storage_subdirectory: hapi_enterprise
 storage_mode: local
@@ -137,32 +136,31 @@ tls_cert: ""
 tls_key: ""
 ```
 
-| Option                 | Recommended                | Why                                                                    |
-| ---------------------- | -------------------------- | ---------------------------------------------------------------------- |
-| `token`                | 64 random hex characters   | Required; the only credential, so make it long and machine-generated.   |
-| `storage_location`     | `addon_config`             | Isolated by default; switch to `share` only for cross-add-on access.    |
-| `storage_subdirectory` | `hapi_enterprise`          | One predictable folder under the chosen location.                       |
-| `storage_mode`         | `local`                    | `ha_network` only with an active mount, otherwise startup fails.        |
-| `min_free_mb`          | `200` (500+ for scans)     | Fails closed before a half-written upload fills the disk.               |
-| `log_level`            | `info`                     | `debug` writes one line per request — use it only while diagnosing.     |
-| `public_domain`        | your external host         | QR codes are absolute URLs; empty domain = LAN-only portals.            |
-| `public_same_origin`   | `true`                     | The integration serves the public API on HA's own host and port.        |
-| `public_gateway`       | `false`                    | Avoids publishing an extra port; enable only with your own proxy.       |
-| `user_roles`           | *(empty → admin)*          | Optional: demote individual HA users, e.g. `{"guest": "viewer"}`.  |
-| `backup_folder`        | *(empty)*                  | Empty → `<storage>/backups`, inside the tree you already back up.       |
-| `backup_mirror`        | *(empty)*                  | Optional second copy target; every copy is verified with SHA-256.       |
-| `storage_mirror`       | *(empty)*                  | Optional second copy of every uploaded file; verified and repairable.   |
-| `memory_limit_mb`      | `0` (Node default)         | Heap cap (`--max-old-space-size`); `256`–`384` on a Raspberry Pi.       |
-| `config_dir`           | *(empty)*                  | Empty → `/config/rules`, editable over Samba/SSH without a restart.     |
-| `db_id`                | `1`                        | Change only for a second, independent database.                         |
-| `profiles`             | *(empty)*                  | Add later from the console; invalid JSON is ignored at startup.         |
-| `tsa_enabled`          | `true`                     | Real RFC 3161 tokens for START/STOP; `false` disables the endpoint.     |
-| `tsa_start_url`        | DFN                        | START TSA for the manifest hash; any RFC 3161 http(s) endpoint.         |
-| `tsa_stop_url`         | DigiCert                   | STOP TSA for the closing digest of the report scope.                    |
-| `sign_packages`        | `false` until a key exists | Signs every package; enable only after attaching a private key.         |
-| `signing_key`          | *(empty)*                  | Fingerprint/key ID; empty = the key selected in the console.            |
-| `encrypt_files`        | `true`                     | Uploads are encrypted at rest (AES-256-GCM) unless a header says no.    |
-| `tls_cert` / `tls_key` | *(empty)*                  | Set both to serve the add-on's own listeners over HTTPS.                |
+| Option                 | Recommended                | Why                                                                   |
+| ---------------------- | -------------------------- | --------------------------------------------------------------------- |
+| `storage_location`     | `addon_config`             | Isolated by default; switch to `share` only for cross-add-on access.  |
+| `storage_subdirectory` | `hapi_enterprise`          | One predictable folder under the chosen location.                     |
+| `storage_mode`         | `local`                    | `ha_network` only with an active mount, otherwise startup fails.      |
+| `min_free_mb`          | `200` (500+ for scans)     | Fails closed before a half-written upload fills the disk.             |
+| `log_level`            | `info`                     | `debug` writes one line per request — use it only while diagnosing.   |
+| `public_domain`        | your external host         | QR codes are absolute URLs; empty domain = LAN-only portals.          |
+| `public_same_origin`   | `true`                     | The integration serves the public API on HA's own host and port.      |
+| `public_gateway`       | `false`                    | Avoids publishing an extra port; enable only with your own proxy.     |
+| `user_roles`           | *(empty → admin)*          | Optional: demote individual HA users, e.g. `{"guest": "viewer"}`.     |
+| `backup_folder`        | *(empty)*                  | Empty → `<storage>/backups`, inside the tree you already back up.     |
+| `backup_mirror`        | *(empty)*                  | Optional second copy target; every copy is verified with SHA-256.     |
+| `storage_mirror`       | *(empty)*                  | Optional second copy of every uploaded file; verified and repairable. |
+| `memory_limit_mb`      | `0` (Node default)         | Heap cap (`--max-old-space-size`); `256`–`384` on a Raspberry Pi.     |
+| `config_dir`           | *(empty)*                  | Empty → `/config/rules`, editable over Samba/SSH without a restart.   |
+| `db_id`                | `1`                        | Change only for a second, independent database.                       |
+| `profiles`             | *(empty)*                  | Add later from the console; invalid JSON is ignored at startup.       |
+| `tsa_enabled`          | `true`                     | Real RFC 3161 tokens for START/STOP; `false` disables the endpoint.   |
+| `tsa_start_url`        | DFN                        | START TSA for the manifest hash; any RFC 3161 http(s) endpoint.       |
+| `tsa_stop_url`         | DigiCert                   | STOP TSA for the closing digest of the report scope.                  |
+| `sign_packages`        | `false` until a key exists | Signs every package; enable only after attaching a private key.       |
+| `signing_key`          | *(empty)*                  | Fingerprint/key ID; empty = the key selected in the console.          |
+| `encrypt_files`        | `true`                     | Uploads are encrypted at rest (AES-256-GCM) unless a header says no.  |
+| `tls_cert` / `tls_key` | *(empty)*                  | Set both to serve the add-on's own listeners over HTTPS.              |
 
 ### First two minutes after start
 
@@ -175,21 +173,20 @@ tls_key: ""
 
 ## Configuration
 
-All options are optional except `token`. Options apply on add-on restart.
+All options are optional. Options apply on add-on restart.
 
 ### Access and console
 
 | Option        | Default   | Meaning                                                                 |
 | ------------- | --------- | ----------------------------------------------------------------------- |
-| `token`       | *(empty)* | Admin token for the console and the API (≥ 24 characters). **Required.** |
-| `username`    | *(empty)* | Optional console user name stored next to the token.                    |
-| `password`    | *(empty)* | Optional console password; leave empty to rely on the token only.       |
-| `user_roles`  | *(empty)* | Optional JSON map of HA user → role, e.g. `{"guest": "viewer"}`.       |
+| `username`    | *(empty)* | Optional console user name for standalone deployments.                  |
+| `password`    | *(empty)* | Optional console password for standalone deployments.                   |
+| `user_roles`  | *(empty)* | Optional JSON map of HA user → role, e.g. `{"guest": "viewer"}`.        |
 | `group_roles` | *(empty)* | Optional JSON map of HA group → role, when roles are assigned by group. |
 
 Roles are `admin`, `operator` and `viewer`. **Admin is the default:** every Home
-Assistant user who reaches the Ingress listener is treated as `admin` and gets the
-console token automatically, so a fresh installation needs no role configuration.
+Assistant user who reaches the Ingress listener is treated as `admin`, so a fresh
+installation needs no role configuration.
 `user_roles` / `group_roles` are *optional overrides* — a mapped identity uses exactly
 that role, which means an explicit mapping can also demote (`bob` → `operator` → writes
 allowed, admin-only routes → `403`). A user or group that is not mapped always falls back
@@ -228,40 +225,40 @@ reports `primary` / `mirror` state (`ok`, `mismatch`, `missing`).
 
 ### Public channel
 
-| Option               | Default   | Meaning                                                                       |
-| -------------------- | --------- | ----------------------------------------------------------------------------- |
+| Option               | Default   | Meaning                                                                            |
+| -------------------- | --------- | ---------------------------------------------------------------------------------- |
 | `public_gateway`     | `false`   | Enable the add-on's own public gateway on port `8088` (reverse-proxy it yourself). |
-| `public_same_origin` | `false`   | Emit relative URLs — the API answers on the same host/port as Home Assistant.  |
-| `public_domain`      | *(empty)* | External domain for portals and QR codes, e.g. `pasev.asuscomm.com`.           |
+| `public_same_origin` | `false`   | Emit relative URLs — the API answers on the same host/port as Home Assistant.      |
+| `public_domain`      | *(empty)* | External domain for portals and QR codes, e.g. `pasev.asuscomm.com`.               |
 
 ### Diagnostics and advanced
 
-| Option       | Default   | Meaning                                                                      |
-| ------------ | --------- | ---------------------------------------------------------------------------- |
+| Option       | Default   | Meaning                                                                         |
+| ------------ | --------- | ------------------------------------------------------------------------------- |
 | `log_level`  | `info`    | `error`, `warn`, `info`, `debug` or `trace`. `debug` logs one line per request. |
-| `config_dir` | *(empty)* | Folder with the access/export rule files. Empty → `/config/rules`.            |
-| `profiles`   | *(empty)* | Path or JSON with configuration profiles (folders/groups/fields definitions). |
+| `config_dir` | *(empty)* | Folder with the access/export rule files. Empty → `/config/rules`.              |
+| `profiles`   | *(empty)* | Path or JSON with configuration profiles (folders/groups/fields definitions).   |
 
 ### Cryptography
 
-| Option          | Default                         | Meaning                                                              |
-| --------------- | ------------------------------- | -------------------------------------------------------------------- |
+| Option          | Default                         | Meaning                                                                |
+| --------------- | ------------------------------- | ---------------------------------------------------------------------- |
 | `tsa_enabled`   | `false`                         | RFC 3161 START/STOP endpoint; `false` answers `409`, nothing is faked. |
-| `tsa_start_url` | `https://zeitstempel.dfn.de/`   | TSA for the START boundary (manifest hash).                          |
-| `tsa_stop_url`  | `http://timestamp.digicert.com` | TSA for the STOP boundary (closing digest).                          |
-| `sign_packages` | `false`                         | Sign export packages by default — needs an attached private key.     |
-| `signing_key`   | *(empty)*                       | Fingerprint or key ID for signing; empty = the console selection.    |
-| `encrypt_files` | `false`                         | Encrypt new uploads at rest by default (`X-File-Encrypt` still wins). |
-| `tls_cert`      | *(empty)*                       | PEM certificate for the add-on's own listeners.                      |
-| `tls_key`       | *(empty)*                       | Matching PEM private key — both or neither, else startup fails.      |
+| `tsa_start_url` | `https://zeitstempel.dfn.de/`   | TSA for the START boundary (manifest hash).                            |
+| `tsa_stop_url`  | `http://timestamp.digicert.com` | TSA for the STOP boundary (closing digest).                            |
+| `sign_packages` | `false`                         | Sign export packages by default — needs an attached private key.       |
+| `signing_key`   | *(empty)*                       | Fingerprint or key ID for signing; empty = the console selection.      |
+| `encrypt_files` | `false`                         | Encrypt new uploads at rest by default (`X-File-Encrypt` still wins).  |
+| `tls_cert`      | *(empty)*                       | PEM certificate for the add-on's own listeners.                        |
+| `tls_key`       | *(empty)*                       | Matching PEM private key — both or neither, else startup fails.        |
 
 ## Storage layout
 
-| Path      | Access | Used for                                                                 |
-| --------- | ------ | ------------------------------------------------------------------------ |
+| Path      | Access | Used for                                                                                              |
+| --------- | ------ | ----------------------------------------------------------------------------------------------------- |
 | `/config` | `rw`   | Add-on folder (`app_configs/<slug>` on the host): SQLite database, receipts, audit chain, rules, logs |
-| `/share`  | `rw`   | Documents and portal folders (`storage_root`)                            |
-| `/media`  | `rw`   | Optional media/documents folder (`storage_location: media`)              |
+| `/share`  | `rw`   | Documents and portal folders (`storage_root`)                                                         |
+| `/media`  | `rw`   | Optional media/documents folder (`storage_location: media`)                                           |
 
 The add-on folder comes from `map: app_config:rw`; there is no `/addon_config` mount.
 The database, documents and logs live under `/config/<storage_subdirectory>`
@@ -306,14 +303,14 @@ database references documents by path.
 `GET /admin/api/sensors` returns the classic per-portal counters plus an `observer`
 aggregate built by `hapi_enterprise/observer.js`:
 
-| Group         | What it answers                                                             |
-| ------------- | --------------------------------------------------------------------------- |
-| `http`        | requests per listener (`public`/`admin`/`gateway`), status classes, in/out bytes, latency (avg, p50, p95, max) |
-| `routes`      | calls per **route template** (`GET /admin/api/portals/:id`), errors, avg/max ms, bytes out |
-| `files`       | uploads, uploaded bytes, encrypted uploads, deletions, mirror write failures |
-| `downloads`   | successful downloads and bytes, refused attempts                             |
-| `visits`      | portal page visits, QR scans, visits per portal                              |
-| `system`      | restarts, start time, uptime                                                 |
+| Group       | What it answers                                                                                                |
+| ----------- | -------------------------------------------------------------------------------------------------------------- |
+| `http`      | requests per listener (`public`/`admin`/`gateway`), status classes, in/out bytes, latency (avg, p50, p95, max) |
+| `routes`    | calls per **route template** (`GET /admin/api/portals/:id`), errors, avg/max ms, bytes out                     |
+| `files`     | uploads, uploaded bytes, encrypted uploads, deletions, mirror write failures                                   |
+| `downloads` | successful downloads and bytes, refused attempts                                                               |
+| `visits`    | portal page visits, QR scans, visits per portal                                                                |
+| `system`    | restarts, start time, uptime                                                                                   |
 
 Everything is an aggregate: no IP addresses, tokens or file names are stored, and route
 templates replace 24-hex ids, UUIDs and slugs, so cardinality stays bounded (200 routes,
@@ -336,7 +333,9 @@ Scrape example (Home Assistant or any Prometheus-compatible agent):
   metrics_path: /admin/api/sensors/prometheus
   authorization:
     type: Bearer
-    credentials: !secret hapi_admin_token
+    # The add-on has no user-facing token. This is the internal key, generated once:
+    # host path /mnt/data/supervisor/addons/data/hapi_enterprise/admin-token
+    credentials: !secret hapi_internal_key
   static_configs:
     - targets: ['homeassistant.local:8099']
 ```
@@ -348,12 +347,12 @@ The add-on builds from `node:22.16.0-alpine3.21`, an official multi-architecture
 package and no `npm install`: every dependency is a Node built-in, so the same
 `Dockerfile` produces a working image on each architecture.
 
-| Board / OS                                | `arch`    | Notes                                             |
-| ----------------------------------------- | --------- | ------------------------------------------------- |
-| Raspberry Pi 4/5, 64-bit Raspberry Pi OS   | `aarch64` | Recommended — most RAM, best throughput.          |
-| Raspberry Pi 3/4/5, 32-bit Raspberry Pi OS | `armv7`   | Works; keep the heap cap and portals modest.      |
-| Raspberry Pi 2 with 32-bit Raspberry Pi OS | `armv7`   | Works, but 1 GB RAM: set `memory_limit_mb: 256`.  |
-| Raspberry Pi Zero / Pi 1 (`armhf`, armv6)  | —         | **Not supported**: Node 22 has no armv6 build.    |
+| Board / OS                                 | `arch`    | Notes                                            |
+| ------------------------------------------ | --------- | ------------------------------------------------ |
+| Raspberry Pi 4/5, 64-bit Raspberry Pi OS   | `aarch64` | Recommended — most RAM, best throughput.         |
+| Raspberry Pi 3/4/5, 32-bit Raspberry Pi OS | `armv7`   | Works; keep the heap cap and portals modest.     |
+| Raspberry Pi 2 with 32-bit Raspberry Pi OS | `armv7`   | Works, but 1 GB RAM: set `memory_limit_mb: 256`. |
+| Raspberry Pi Zero / Pi 1 (`armhf`, armv6)  | —         | **Not supported**: Node 22 has no armv6 build.   |
 
 Recommendations for a Pi installation:
 
@@ -399,24 +398,40 @@ Public access and export decisions come from JSON rule files, resolved in this o
 On first start the built-in files are copied into `/config/rules` and are **never
 overwritten**, so you can edit them in place. A file that is missing everywhere falls
 back to the built-in default and is reported in the add-on log (`rules.defaults`) and by
-`GET /admin/api/rules` (admin token). Apply edits without a restart with
+`GET /admin/api/rules` (admin role or the internal key). Apply edits without a restart with
 `POST /admin/api/rules/reload`.
 
 ## Keys and cryptography
 
 Four independent controls, each with its own option:
 
-| Concern                      | Option(s)                        | What actually happens                                                     |
-| ---------------------------- | -------------------------------- | ------------------------------------------------------------------------- |
-| Signing replies and packages | `sign_packages`, `signing_key`   | Detached OpenPGP signature (`.asc`) created by `pgp.js` (RFC 4880 + RFC 9580). |
-| Timestamping                 | `tsa_enabled`, `tsa_start_url`, `tsa_stop_url` | RFC 3161 TSQ/TSR; the token is stored as `.tsr`, never invented. |
-| Encryption at rest           | `encrypt_files`                  | AES-256-GCM with a key derived from the admin token; plaintext is served only to authorised reads. |
-| Communication encryption     | `tls_cert`, `tls_key`            | The add-on's own listeners (8099/8098/8088) switch to HTTPS. HA Ingress keeps its own TLS. |
+| Concern                      | Option(s)                                      | What actually happens                                                                          |
+| ---------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Signing replies and packages | `sign_packages`, `signing_key`                 | Detached OpenPGP signature (`.asc`) created by `pgp.js` (RFC 4880 + RFC 9580).                 |
+| Timestamping                 | `tsa_enabled`, `tsa_start_url`, `tsa_stop_url` | RFC 3161 TSQ/TSR; the token is stored as `.tsr`, never invented.                               |
+| Encryption at rest           | `encrypt_files`                                | AES-256-GCM with an internal auto-generated key; plaintext is served only to authorised reads. |
+| Communication encryption     | `tls_cert`, `tls_key`                          | The add-on's own listeners (8099/8098/8088) switch to HTTPS. HA Ingress keeps its own TLS.     |
 
 Keys are **never** stored in the add-on options. Attach a key in the console
 (**Settings → PGP keys**) as an ASCII-armored `PRIVATE KEY BLOCK`: the server keeps the
 secret part encrypted with the admin key, exposes only the fingerprint and signs with it.
 `signing_key` then selects that key by fingerprint or key ID.
+
+### OpenPGP v6 (RFC 9580)
+
+| Capability                                                                       | Status                                                               |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| v6 keys: Ed25519 (algo 27), Ed448 (algo 28), SHA-256 fingerprints, 64-bit key ID | supported — `pgp.js` parses, generates and describes them            |
+| v6 signatures (salted, issuer-fingerprint subpacket, raw Ed25519)                | supported — used for package signing; verified in `tests/pgp-v6.cjs` |
+| v4 keys and v4 signatures                                                        | still supported (backward compatibility)                             |
+| v6 **encryption** (PKESK v6 + SEIPD v2 AEAD)                                     | **not implemented** — deliberately                                   |
+
+Encryption at rest cannot use a v6 key: asymmetric encryption keeps the service from
+reading its own files, and storing the private key next to the data gains nothing. At
+rest the add-on therefore uses AES-256-GCM with the internal key. Encrypting *to a
+recipient* with SEIPD v2 will be added only when the output can be validated against an
+RFC 9580 implementation — GnuPG 2.5 offers v4 and the RFC 4880bis draft only, so a
+hand-written implementation would ship unverified crypto.
 
 A key bundle in the CryptoSAK layout is used as-is:
 
@@ -473,8 +488,9 @@ boundaries into real tokens — the interface never invents one.
 
 ## Security notes
 
-- The console and the admin API accept only the admin token (≥ 24 characters); weak,
-  default or repeated values are rejected at startup.
+- The console and the admin API accept only a Home Assistant identity from the Ingress
+  listener: any other peer is refused, and the RBAC role decides what the identity may do.
+  There is no admin token to leak, guess or reuse.
 - Administrative routes are reachable only on the Ingress listener. The public listener
   never serves `/admin`.
 - Public access is fail-closed: an unauthorised portal answers `404`, so the existence of
@@ -486,13 +502,13 @@ boundaries into real tokens — the interface never invents one.
 
 ## Troubleshooting
 
-| Symptom | Check |
-| ------- | ----- |
-| Add-on stops right after start | The log states the reason — most often a missing or weak `token`, or an unavailable storage mount. |
-| Console shows 403 | The HA user (or one of their groups) is explicitly mapped to `operator`/`viewer`, or `DEFAULT_ROLE` is set to a non-admin role. |
-| QR code opens a blank page | `public_domain` is empty or the portal has no reachable address; set the external domain. |
-| Large upload fails | Uploads go through Ingress; check free space (`min_free_mb`) and the Supervisor log. |
-| Rules seem ignored | `GET /admin/api/rules` shows which file was used; missing files fall back to defaults. |
+| Symptom                        | Check                                                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Add-on stops right after start | The log states the reason — most often an unavailable storage mount or an unwritable `/data`.                                   |
+| Console shows 403              | The HA user (or one of their groups) is explicitly mapped to `operator`/`viewer`, or `DEFAULT_ROLE` is set to a non-admin role. |
+| QR code opens a blank page     | `public_domain` is empty or the portal has no reachable address; set the external domain.                                       |
+| Large upload fails             | Uploads go through Ingress; check free space (`min_free_mb`) and the Supervisor log.                                            |
+| Rules seem ignored             | `GET /admin/api/rules` shows which file was used; missing files fall back to defaults.                                          |
 
 ## Support
 

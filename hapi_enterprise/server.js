@@ -60,6 +60,7 @@ const signer = require('./signer');
 const pgp = require('./pgp');
 const packager = require('./packager').create({ root });
 const fileCrypto = require('./file-crypto');
+const sendLite = require('./send');
 const preview = require('./preview').create();
 const versioning = require('./versioning').create();
 const notify = require('./notify').create();
@@ -103,6 +104,23 @@ const htmlProjectsRoot = path.join(root, 'html-projects');
 const accessModes = ['FREE', 'KEY_REQUIRED', 'DISABLED'];
 const fileMode = f => f.accessMode || 'FREE';
 const validExpiry = v => v === null || typeof v === 'string' && Number.isFinite(Date.parse(v)) && Date.parse(v) > Date.now();
+// „Бърз линк“ (Send-lite): използваните билети живеят само докато не изтекат, а
+// опитите с грешна парола се броят на двойка (линк, отсрещна страна).
+const usedSendTickets = new Map(), sendFailures = new Map();
+const SEND_MAX_FAILURES = 5, SEND_WINDOW_MS = 15 * 60 * 1000;
+function sendGate(sendId, req) {
+  const peer = req.socket.remoteAddress || 'unknown', key = sendId + '|' + peer, now = Date.now(), s = sendFailures.get(key);
+  if (!s || now - s.since >= SEND_WINDOW_MS) return true;
+  return s.count < SEND_MAX_FAILURES;
+}
+function registerSendFailure(sendId, req) {
+  const peer = req.socket.remoteAddress || 'unknown', key = sendId + '|' + peer, now = Date.now();
+  let s = sendFailures.get(key);
+  if (!s || now - s.since >= SEND_WINDOW_MS) { s = { since: now, count: 0 }; sendFailures.set(key, s) }
+  s.count++;
+  if (sendFailures.size > 2048) sendFailures.delete(sendFailures.keys().next().value);
+}
+const pruneSendTickets = () => { const now = Date.now(); for (const [k, exp] of usedSendTickets) if (exp <= now) usedSendTickets.delete(k) };
 const tokenMatch = (items, secret) => { if (!secret) return false; const digest = keyDigest(secret); return (items || []).some(k => safeEqual(k.hash, digest) && (!k.expiresAt || Date.parse(k.expiresAt) > Date.now())); };
 const auditPath = path.join(root, 'audit.jsonl');
 const retention = require('./retention').create({ filesRoot, auditPath, getSettings: () => runtime.settings });
@@ -464,7 +482,7 @@ const getPortal = s => db.portals.find(p => p.slug === s);
 // Публичните адреси приемат и slug, и id: `/p/<id>` е каноничният адрес на QR кода,
 // а `/p/<slug>` остава валиден (стари връзки и познаваеми адреси).
 const resolvePortal = key => { const k = String(key || ''); if (!k) return null; return db.portals.find(p => p.slug === k) || db.portals.find(p => p.id === k) || null };
-const adminPortal = p => ({ ...publicPortal(p), contactId: p.contactId || '', contact: contactById(db, p.contactId), caseId: p.caseId || '', case: require('./cases').caseView(db, p.caseId), htmlProjects: (p.htmlProjects || []).map(x => ({ ...x })), files: p.files.map(f => ({ ...publicFile(f), accessKeys: (f.accessKeys || []).map(k => ({ id: k.id, createdAt: k.createdAt, expiresAt: k.expiresAt || null })) })) });
+const adminPortal = p => ({ ...publicPortal(p), contactId: p.contactId || '', contact: contactById(db, p.contactId), caseId: p.caseId || '', case: require('./cases').caseView(db, p.caseId), htmlProjects: (p.htmlProjects || []).map(x => ({ ...x })), files: p.files.map(f => ({ ...publicFile(f), accessKeys: (f.accessKeys || []).map(k => ({ id: k.id, createdAt: k.createdAt, expiresAt: k.expiresAt || null })), sends: (f.sends || []).map(s => sendLite.adminView(s)) })) });
 const bearerToken = req => ((req.headers.authorization || '').replace(/^Bearer\s+/i, '')).trim();
 const resolveSession = (req, url) => { const token = bearerToken(req) || ((url && url.searchParams.get('portal_token')) || ''); if (!token) return null; return metadataStore.getSession(keyDigest(token)) };
 const portalAuthorized = (req, p, scope = 'read', url) => { const s = resolveSession(req, url); return !!(s && (s.scopes || []).includes(scope)) };
@@ -477,6 +495,47 @@ function portalApiUrl(p, base) { return (base || '') + '/api/v1/p/' + encodeURIC
 // QR кодът не издава „говорещото“ име, а и връзката остава валидна при смяна на slug.
 function portalLandingUrl(p, base) { return (base || '') + '/p/' + encodeURIComponent(p.id || p.slug) }
 function fileDownloadUrl(p, f, base) { return portalApiUrl(p, base) + '/files/' + encodeURIComponent(f.id) + '/download' }
+// Търсене на „Бърз линк“ по id без значение от портала и файла.
+const findSend = sendId => {
+  for (const p of (db && db.portals ? db.portals : [])) {
+    for (const f of p.files) {
+      const s = (f.sends || []).find(x => x.id === sendId);
+      if (s) return { portal: p, file: f, send: s };
+    }
+  }
+  return null;
+};
+const humanBytes = n => { const b = Number(n) || 0; if (b < 1024) return b + ' B'; if (b < 1048576) return (b / 1024).toFixed(1) + ' KB'; if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB'; return (b / 1073741824).toFixed(2) + ' GB' };
+// Публичната страница на един „Бърз линк“. Без JS и без външни ресурси, за да
+// работи под строга CSP; паролата (ако има) се подава с обикновена форма.
+function sendLandingHtml({ file, send }) {
+  const protectedLink = sendLite.isProtected(send);
+  const left = Number(send.maxAccess) > 0 ? Math.max(0, Number(send.maxAccess) - Number(send.accessCount || 0)) : null;
+  const meta = [
+    humanBytes(file.size),
+    send.expiresAt ? 'Валиден до ' + String(send.expiresAt).slice(0, 10) : 'Безсрочна връзка',
+    left === null ? 'Без ограничение на свалянията' : 'Оставащи сваляния: ' + left,
+  ].join(' · ');
+  return '<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Споделен файл · hAPI Enterprise</title><style>' +
+    ':root{color-scheme:light}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5f6fa;color:#151a2d;display:grid;place-items:center;min-height:100vh}' +
+    'main{width:min(92vw,460px);background:#fff;border:1px solid #e2e5f0;border-radius:16px;padding:28px;box-shadow:0 10px 30px rgba(20,25,60,.08)}' +
+    '.brand{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#7c8299;margin-bottom:14px}' +
+    'h1{font-size:20px;margin:0 0 6px}.file{font-size:16px;font-weight:600;margin:0 0 4px;word-break:break-all}' +
+    '.meta{font-size:13px;color:#67708c;margin:0 0 18px}' +
+    'label{display:block;font-size:13px;color:#39415e;margin:0 0 6px}' +
+    'input[type=password]{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d5dae8;border-radius:10px;font-size:15px;margin-bottom:14px}' +
+    'button{width:100%;padding:12px 14px;border:0;border-radius:10px;background:#2f5bea;color:#fff;font-size:15px;font-weight:600;cursor:pointer}' +
+    'button:hover{background:#2449c4}.note{margin:16px 0 0;font-size:12px;color:#8a90a6;line-height:1.5}' +
+    '</style></head><body><main><div class="brand">hAPI Enterprise</div><h1>Споделен файл</h1>' +
+    '<p class="file">' + htmlEsc(file.name) + '</p><p class="meta">' + htmlEsc(meta) + '</p>' +
+    '<form method="POST" action="/api/v1/sends/' + encodeURIComponent(send.id) + '/access">' +
+    (protectedLink ? '<label for="p">Парола за достъп</label><input id="p" name="passphrase" type="password" autocomplete="off" required>' : '') +
+    '<button type="submit">Изтегли файла</button></form>' +
+    '<p class="note">Връзката е лична и не показва кой я е споделил. Ако не очаквате този файл, затворете страницата.</p>' +
+    '</main></body></html>';
+}
+const SEND_CSP = "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; img-src 'none'";
 function qrSvg(text) { const q = require('./qrcode')(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 8, margin: 4, scalable: true }) }
 // Единствен записвач на api/<slug>/: api-registry (атомарен запис, сериализиран по slug).
 // QR кодът сочи към публичната страница на портала, не към JSON API-то.
@@ -541,12 +600,25 @@ async function handler(req, res) {
       const fromSupervisor = supervisorPeers.has(peer) && typeof req.headers['x-ingress-path'] === 'string';
       const localOnly = ['127.0.0.1', '::1'].includes(peer) && ['127.0.0.1', '::1', 'localhost'].includes(adminBindHost);
       if (!fromSupervisor && !localOnly) return fail(res, 403, 'Forbidden');
-      // Admin is the default: any Ingress identity receives the admin token unless it is
-      // explicitly mapped (user_roles/group_roles) to operator/viewer, or DEFAULT_ROLE
-      // lowers the fallback for the whole installation.
-      if (rbac.role(req) !== 'admin') return fail(res, 403, 'Ingress identity is mapped to a non-admin role');
       res.setHeader('Cache-Control', 'no-store');
-      return json(res, 200, { token: adminToken });
+      // Под Home Assistant Ingress НЯМА токен за хора: самоличността идва от HA
+      // (X-Remote-User-*) и ролята се определя от user_roles/group_roles, а ако няма
+      // съответствие — от default_role (по подразбиране admin, т.е. този, който е
+      // инсталирал add-on-а, е администратор). Заявката връща само сесия, не ключ.
+      if (req.ingress === true) {
+        const role = rbac.role(req);
+        if (!role) return fail(res, 403, 'No Home Assistant identity — open the panel through the ingress link');
+        return json(res, 200, {
+          role,
+          ingress: true,
+          user: String(req.headers['x-remote-user-display-name'] || req.headers['x-remote-user-name'] || req.headers['x-remote-user'] || '').trim(),
+          defaultRole: rbac.defaultRole,
+          mapped: rbac.configured
+        });
+      }
+      // Standalone (Docker без Supervisor) няма HA самоличност — там ключът остава
+      // единственият начин за достъп и се дава само на loopback.
+      return json(res, 200, { role: 'admin', ingress: false, user: '', defaultRole: rbac.defaultRole, mapped: rbac.configured, token: adminToken });
     }
     if (req.method === 'OPTIONS') { res.writeHead(isAdminListener && corsOrigin ? 204 : 404, { 'Content-Length': '0' }); return res.end() }
     const parts = url.pathname.split('/').filter(Boolean); const method = req.method; counters.requests++; if (req.hapiPublicOnly && (parts[0] === 'admin' || parts[0] === 'ui')) return fail(res, 404, 'Not found'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'no-referrer'); if (!isAdminListener) res.setHeader('X-Frame-Options', 'DENY');
@@ -1085,6 +1157,68 @@ async function handler(req, res) {
         return fail(res, 404, 'Not found');
       }
       return fail(res, 404, 'Not found');
+    }
+    // ── „Бърз линк“ (Send-lite): публичен канал без портал, акаунт и ключ ──────
+    if (parts[0] === 's' && parts.length === 2 && method === 'GET') {
+      const hit = findSend(parts[1]);
+      if (!hit || !sendLite.canAccess(hit.send).ok) return fail(res, 404, 'Link not found or expired');
+      void recordTelemetry('visit', req, hit.portal, hit.file, url);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': SEND_CSP, 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'X-Robots-Tag': 'noindex, nofollow' });
+      return res.end(sendLandingHtml(hit));
+    }
+    if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'sends' && parts.length === 5 && parts[4] === 'access' && method === 'POST') {
+      const sendId = parts[3];
+      const wantsJson = String(req.headers['content-type'] || '').includes('application/json') || String(req.headers.accept || '').includes('application/json');
+      const deny = (code, message) => {
+        if (wantsJson) return fail(res, code, message);
+        res.writeHead(code, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+        return res.end(message);
+      };
+      const hit = findSend(sendId);
+      if (!hit || !sendLite.canAccess(hit.send).ok) return deny(404, 'Link not found or expired');
+      if (!sendGate(sendId, req)) return deny(429, 'Too many attempts');
+      let payload = {};
+      try {
+        if (String(req.headers['content-type'] || '').includes('application/json')) payload = await parse(req);
+        else { const raw = (await body(req, 8192)).toString('utf8'); payload = Object.fromEntries(new URLSearchParams(raw)) }
+      } catch (e) { return deny(e && e.status ? e.status : 400, 'Invalid request') }
+      if (!sendLite.verifyPassphrase(payload.passphrase, hit.send)) {
+        registerSendFailure(sendId, req);
+        void audit('file.send.denied', { portalId: hit.portal.id, fileId: hit.file.id, sendId });
+        return deny(403, 'Wrong passphrase');
+      }
+      // Броячът се вдига при успешен достъп (както при Vaultwarden), преди билета.
+      const consumed = await update(() => {
+        const current = findSend(sendId);
+        if (!current || !sendLite.canAccess(current.send).ok) return null;
+        current.send.accessCount = Number(current.send.accessCount || 0) + 1;
+        current.send.lastAccessAt = new Date().toISOString();
+        void audit('file.send.access', { portalId: current.portal.id, fileId: current.file.id, sendId, accessCount: current.send.accessCount });
+        return current;
+      });
+      if (!consumed) return deny(404, 'Link not found or expired');
+      const minted = sendLite.mintTicket({ sendId, fileId: consumed.file.id, secret: adminToken });
+      const target = '/api/v1/sends/' + encodeURIComponent(sendId) + '/file?ticket=' + encodeURIComponent(minted.ticket);
+      if (wantsJson) return json(res, 200, { ticket: minted.ticket, url: target, expiresAt: minted.expiresAt });
+      res.writeHead(303, { Location: target, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+      return res.end();
+    }
+    if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'sends' && parts.length === 5 && parts[4] === 'file' && method === 'GET') {
+      pruneSendTickets();
+      const claims = sendLite.verifyTicket(url.searchParams.get('ticket') || '', adminToken);
+      if (!claims || claims.sendId !== parts[3]) return fail(res, 404, 'Link not found or expired');
+      const nonceKey = claims.nonce || claims.sendId;
+      if (usedSendTickets.has(nonceKey)) return fail(res, 404, 'Link not found or expired');
+      usedSendTickets.set(nonceKey, claims.expiresAt);
+      const hit = findSend(claims.sendId);
+      if (!hit || hit.file.id !== claims.fileId || hit.send.disabled || sendLite.isExpired(hit.send)) return fail(res, 404, 'File unavailable');
+      const fp = path.join(filesRoot, hit.portal.id, hit.file.id);
+      let stat; try { stat = await fsp.lstat(fp) } catch { return fail(res, 404, 'File unavailable') }
+      if (!stat.isFile()) return fail(res, 404, 'File unavailable');
+      res.setHeader('Referrer-Policy', 'no-referrer'); res.setHeader('Cache-Control', 'no-store');
+      const onDownload = () => { counters.downloads++; observer.download({ ok: true, bytes: hit.file.size || 0 }); void recordTelemetry('download', req, hit.portal, hit.file, url); void audit('file.send.download', { portalId: hit.portal.id, fileId: hit.file.id, sendId: claims.sendId }) };
+      if (hit.file.encrypted) return serveEncryptedFile(req, res, fp, hit.file, onDownload);
+      return streamDownload(req, res, fp, stat, hit.file.name, onDownload);
     }
     if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'p') {
       const p = resolvePortal(parts[3]); if (!p) return fail(res, 404, 'Not found'); const tail = parts.slice(4); const downloadRoute = tail[0] === 'files' && tail[2] === 'download'; const fileForSigned = downloadRoute ? p.files.find(f => f.id === tail[1]) : null; const signed = !!(fileForSigned && fileMode(fileForSigned) === 'FREE' && signedValid(url, p, fileForSigned)); if ((requirePortalToken || p.visibility !== 'public') && (!signed || requirePortalToken) && !portalAuthorized(req, p, downloadRoute ? 'download' : 'read', url)) return fail(res, 404, 'Not found');
@@ -1788,6 +1922,34 @@ async function handler(req, res) {
         if (parts[4] === 'files' && parts.length === 8 && parts[6] === 'access-keys' && method === 'DELETE') {
           const f = p.files.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'File not found');
           return json(res, 200, await update(() => { const n = (f.accessKeys || []).length; f.accessKeys = (f.accessKeys || []).filter(k => k.id !== parts[7]); if (f.accessKeys.length === n) throw Object.assign(new Error('Key not found'), { status: 404 }); void audit('file.key.revoke', { portalId: p.id, fileId: f.id, keyId: parts[7] }); return { revoked: parts[7] } }));
+        }
+        // ── „Бърз линк“ (Send-lite): публичен достъп до един файл ────────────────
+        // Безсрочен по подразбиране. `expiresAt` (незадължителен), `maxAccess`
+        // (0 = неограничено) и `passphrase` (по избор) се задават при създаването.
+        if (parts[4] === 'files' && parts[6] === 'sends' && parts.length === 7 && method === 'POST') {
+          const f = p.files.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'File not found');
+          if (fileMode(f) === 'DISABLED') return fail(res, 409, 'File is disabled');
+          const b = await parse(req);
+          if (!validExpiry(b.expiresAt === undefined ? null : b.expiresAt)) return fail(res, 400, 'Invalid expiry');
+          if (b.passphrase !== undefined && b.passphrase !== null && (typeof b.passphrase !== 'string' || b.passphrase.length > 200)) return fail(res, 400, 'Invalid passphrase');
+          if (b.maxAccess !== undefined && (!Number.isInteger(Number(b.maxAccess)) || Number(b.maxAccess) < 0 || Number(b.maxAccess) > 10000)) return fail(res, 400, 'Invalid max access');
+          const rec = await update(() => {
+            const created = sendLite.createRecord({ expiresAt: b.expiresAt || null, maxAccess: b.maxAccess || 0, passphrase: b.passphrase || '' });
+            f.sends ??= []; f.sends.push(created);
+            void audit('file.send.create', { portalId: p.id, fileId: f.id, sendId: created.id, expiresAt: created.expiresAt, maxAccess: created.maxAccess, protected: Boolean(created.pass) });
+            return created;
+          });
+          const base = String(runtime.effective().publicBaseUrl || baseUrl(req)).replace(/\/+$/, '');
+          return json(res, 201, { ...sendLite.adminView(rec), url: base + '/s/' + rec.id });
+        }
+        if (parts[4] === 'files' && parts[6] === 'sends' && parts.length === 7 && method === 'GET') {
+          const f = p.files.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'File not found');
+          const base = String(runtime.effective().publicBaseUrl || baseUrl(req)).replace(/\/+$/, '');
+          return json(res, 200, { sends: (f.sends || []).map(s => ({ ...sendLite.adminView(s), url: base + '/s/' + s.id })) });
+        }
+        if (parts[4] === 'files' && parts[6] === 'sends' && parts.length === 8 && method === 'DELETE') {
+          const f = p.files.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'File not found');
+          return json(res, 200, await update(() => { const n = (f.sends || []).length; f.sends = (f.sends || []).filter(s => s.id !== parts[7]); if (f.sends.length === n) throw Object.assign(new Error('Link not found'), { status: 404 }); void audit('file.send.revoke', { portalId: p.id, fileId: f.id, sendId: parts[7] }); return { revoked: parts[7] } }));
         }
         if (parts[4] === 'signing-key' && parts.length === 5 && method === 'POST') { return json(res, 200, await update(() => { p.signingSecret = crypto.randomBytes(32).toString('hex'); void audit('url.revoke-all', { portalId: p.id }); return { revokedAllSignedUrls: true } })) }
         if (parts[4] === 'files' && parts[6] === 'signed-url' && parts.length === 7 && method === 'POST') { const f = p.files.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'File not found'); if (fileMode(f) !== 'FREE') return fail(res, 403, 'Signed URL forbidden for protected file'); const b = await parse(req); const ttl = Number(b.ttlSeconds || 300); if (!Number.isInteger(ttl) || ttl < 1 || ttl > 86400) return fail(res, 400, 'Invalid TTL'); const expires = Math.floor(Date.now() / 1000) + ttl; const sig = crypto.createHmac('sha256', p.signingSecret || adminToken).update(`${p.id}:${f.id}:${expires}`).digest('hex'); void audit('url.sign', { portalId: p.id, fileId: f.id }); return json(res, 201, { path: `/api/v1/p/${encodeURIComponent(p.slug)}/files/${f.id}/download?expires=${expires}&sig=${sig}`, expires }); }

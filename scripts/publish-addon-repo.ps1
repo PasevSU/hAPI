@@ -33,8 +33,8 @@ $repoUrl = "https://github.com/$Repo"
 $mode = if ($Execute) { 'ПУБЛИКУВАНЕ' } else { 'DRY RUN (нищо не се качва)' }
 
 # Копираме само това, което Git би проследил: без кешове, среди и артефакти.
-$excludeDirs = @('.git', '.venv', 'node_modules', 'release', 'dist', '__pycache__', '.pytest_cache', 'coverage')
-$excludeFiles = @('*.pyc', '*.log', '*.7z', '*.zip', '*.tar.gz')
+$excludeDirs = @('.git', '.venv', 'node_modules', 'release', 'dist', '__pycache__', '.pytest_cache', 'coverage', 'PGP_CryptoSAK_keys-*')
+$excludeFiles = @('*.pyc', '*.log', '*.7z', '*.zip', '*.tar.gz', 'private.asc', '*.pem', '*.pfx', 'id_rsa*')
 
 $version = (Select-String -Path (Join-Path $root 'hapi_enterprise/config.yaml') -Pattern '^version:\s*"([^"]+)"' |
     Select-Object -First 1).Matches[0].Groups[1].Value
@@ -95,8 +95,10 @@ Write-Host "  $ robocopy $($robocopyArgs -join ' ')"
 if ($Execute) {
     & robocopy @robocopyArgs | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "robocopy се провали ($LASTEXITCODE)" }
-    $changed = (git -C $workDir status --porcelain | Measure-Object -Line).Lines
-    Write-Host "  променени файлове: $changed"
+    # robocopy обновява mtime на всичко, затова тук числата са „докоснати“, не „различни“.
+    # Дали има истинска промяна показва `git add` (нормализира CRLF→LF по .gitattributes).
+    $touched = (git -C $workDir status --porcelain | Measure-Object -Line).Lines
+    Write-Host "  докоснати файлове: $touched (git решава след 'git add' дали има реална промяна)"
 }
 
 # ── 4. Commit и push ────────────────────────────────────────────────────────

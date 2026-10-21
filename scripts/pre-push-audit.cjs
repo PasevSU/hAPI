@@ -10,11 +10,13 @@ const SECRETS = [
   // Истински JWT има три части (header.payload.signature); тестовите fixture-и са само header.
   [/eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{20,}/, 'JWT с подпис'],
   [/BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY/, 'частен ключ'],
+  [/BEGIN PGP PRIVATE KEY BLOCK/, 'PGP частен ключ'],
   [/SUPERVISOR_TOKEN\s*=\s*\S+/, 'Supervisor токен'],
   [/(?:^|\s)(?:ghp|gho|github_pat)_[A-Za-z0-9_]{20,}/, 'GitHub токен'],
   [/AKIA[0-9A-Z]{16}/, 'AWS ключ'],
 ];
-const WEIRD = [/^\.env/, /^admin-token$/, /\.pem$/, /\.key$/i, /\.pfx$/i, /^id_rsa/];
+// Ключовите пакети съдържат private.asc — не влизат в хранилището по никакъв начин.
+const WEIRD = [/^\.env/, /^admin-token$/, /\.pem$/, /\.key$/i, /\.pfx$/i, /^id_rsa/, /(^|\/)private\.asc$/i, /(^|\/)PGP_CryptoSAK_keys-/];
 
 // Одитът проверява какво реално би влязло в хранилището, затова спазва .gitignore.
 // Иначе локални артефакти (.venv, *.7z архиви) дават фалшиви сигнали при всеки push.

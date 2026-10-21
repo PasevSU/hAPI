@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.61.4"
+version: "0.62.0"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
@@ -26,7 +26,10 @@ ingress_entry: /admin
 ingress_stream: true
 panel_title: "hAPI Enterprise"
 panel_icon: mdi:file-document-multiple
-panel_admin: true
+# Обикновен бутон в страничната лента за ВСЕКИ потребител на Home Assistant.
+# Достъпът до съдържанието се решава от RBAC по HA самоличност (user_roles /
+# group_roles), а не от видимостта на бутона.
+panel_admin: false
 # SQLite runs in WAL mode; a hot backup can capture a torn database. Cold backup
 # stops the add-on for the duration of the Supervisor snapshot.
 backup: cold
@@ -40,7 +43,6 @@ ports_description:
 options:
   username: ""
   password: ""
-  token: ""
   db_name: ""
   backup_folder: ""
   backup_mirror: ""
@@ -71,7 +73,6 @@ options:
 schema:
   username: str?
   password: password?
-  token: password?
   db_name: str?
   backup_folder: str?
   backup_mirror: str?

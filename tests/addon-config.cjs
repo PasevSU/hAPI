@@ -79,7 +79,7 @@ for (const line of block.split('\n')) {
 }
 assert.ok(Object.keys(recommended).length >= 10, 'README: очакват се поне 10 препоръчани опции');
 for (const key of Object.keys(recommended)) assert.ok(options.includes(key), 'README: „' + key + '“ не е add-on опция');
-for (const key of ['token', 'storage_location', 'storage_mode', 'min_free_mb', 'log_level', 'public_same_origin', 'public_gateway', 'user_roles']) {
+for (const key of ['storage_location', 'storage_mode', 'min_free_mb', 'log_level', 'public_same_origin', 'public_gateway', 'user_roles']) {
   assert.ok(key in recommended, 'README: липсва препоръка за ' + key);
 }
 assert.ok(['addon_config', 'media', 'share'].includes(recommended.storage_location), 'README: невалиден storage_location');

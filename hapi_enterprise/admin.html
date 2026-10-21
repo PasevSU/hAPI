@@ -1,658 +1,1961 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>hAPI Enterprise · Admin</title>
-<style>
-:root{
-  --bg:#f3f7fb;
-  --sidebar:#061b30;
-  --topbar:#071e35;
-  --surface:#ffffff;
-  --surface-2:#edf3f8;
-  --border:#d9e3ed;
-  --border-strong:#c8d7e7;
-  --text:#14283e;
-  --text-dim:#476179;
-  --text-faint:#718398;
-  --accent:#086ce9;
-  --accent-strong:#0759ba;
-  --accent-ink:#ffffff;
-  --accent-soft:#e4f0ff;
-  --success:#096644;
-  --warning:#895300;
-  --danger:#c0392b;
-  --danger-soft:#fdecea;
-  --radius:8px;
-  --radius-sm:5px;
-  --shadow:0 2px 9px rgba(12,41,64,.06);
-  --font:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
-  --mono:ui-monospace,"Cascadia Code","SFMono-Regular",Consolas,"Liberation Mono",monospace;
-}
-.sidebar,.topbar{--surface-2:#102d48;--border:#174769;--border-strong:#285371;--text:#ffffff;--text-dim:#cbdced;--text-faint:#77bfff;--accent:#77bfff}
-.sidebar,.topbar{color:#fff}
-.topbar{background:var(--topbar)}
-.topbar .status{color:#ffd37a}
-.sidebar .nav-item.active{background:#0868dc;color:#fff}
-.sidebar .nav-item:hover{background:#0b3a63;color:#fff}
-.sidebar .brand-mark{color:#77bfff}
-.topbar input,.topbar select{color:#fff;border-color:#285371}
-.topbar .btn-primary{background:#086ce9;border-color:#086ce9;color:#fff}
-.menu{background:#fff}
-.menu button:hover{background:var(--accent-soft)}
-.banner{border-color:#b9d6f7}
-.status{color:var(--warning)}
-th{background:var(--surface-2);color:var(--text-dim)}
-.conf{border-color:#e0a100;background:#fff8e6}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;box-shadow:none}
-.danger,button.danger{border-color:#e6b0aa}
-.cab-row:hover,.var-row:hover,.dir-row:hover{background:#f2f7ff}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{font-family:var(--font);font-size:14px;line-height:1.55;background:var(--bg);color:var(--text);min-height:100vh}
-button,input,select,textarea{font:inherit;color:inherit}
-a{color:var(--accent)}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>hAPI Enterprise · Admin</title>
+  <style>
+    :root {
+      --bg: #f3f7fb;
+      --sidebar: #061b30;
+      --topbar: #071e35;
+      --surface: #ffffff;
+      --surface-2: #edf3f8;
+      --border: #d9e3ed;
+      --border-strong: #c8d7e7;
+      --text: #14283e;
+      --text-dim: #476179;
+      --text-faint: #718398;
+      --accent: #086ce9;
+      --accent-strong: #0759ba;
+      --accent-ink: #ffffff;
+      --accent-soft: #e4f0ff;
+      --success: #096644;
+      --warning: #895300;
+      --danger: #c0392b;
+      --danger-soft: #fdecea;
+      --radius: 8px;
+      --radius-sm: 5px;
+      --shadow: 0 2px 9px rgba(12, 41, 64, .06);
+      --font: Inter, "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+      --mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
 
-/* Layout */
-.app{display:grid;grid-template-columns:256px 1fr;min-height:100vh}
-.sidebar{background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
-.brand{display:flex;align-items:center;gap:12px;padding:20px 18px;border-bottom:1px solid var(--border)}
-.brand-mark{width:38px;height:38px;flex:0 0 auto;color:var(--accent);display:grid;place-items:center}
-.brand-mark svg{width:38px;height:38px}
-.brand-name{font-weight:700;font-size:18px;letter-spacing:.2px;display:block;line-height:1.2}
-.brand-sub{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.09em;display:block;margin-top:2px}
-.nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:2px}
-.nav-item{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--text-dim);cursor:pointer;text-align:left;font-weight:500;transition:background .15s,color .15s}
-.nav-item svg{width:19px;height:19px;flex:0 0 auto;opacity:.85}
-.nav-item:hover{background:var(--surface-2);color:var(--text)}
-.nav-item.active{background:var(--accent-soft);color:var(--accent)}
-.sidebar-foot{padding:14px 18px;border-top:1px solid var(--border);color:var(--text-faint);font-size:11px;line-height:1.5}
+    .sidebar,
+    .topbar {
+      --surface-2: #102d48;
+      --border: #174769;
+      --border-strong: #285371;
+      --text: #ffffff;
+      --text-dim: #cbdced;
+      --text-faint: #77bfff;
+      --accent: #77bfff
+    }
 
-.main{display:flex;flex-direction:column;min-width:0}
-.topbar{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--sidebar);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;flex-wrap:wrap}
-.nav-toggle{display:none;background:transparent;border:1px solid var(--border-strong);border-radius:var(--radius-sm);color:var(--text);padding:8px;cursor:pointer}
-.nav-toggle svg{width:20px;height:20px;display:block}
-.topbar-title{font-weight:700;font-size:18px;white-space:nowrap}
-.topbar-spacer{flex:1}
-#token{width:260px;max-width:100%}
-.lang-group{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 8px;height:38px}
-.lang-group svg{width:16px;height:16px;color:var(--text-faint)}
-.lang-group select{border:none;background:transparent;padding:0;height:auto;width:auto;color:var(--text);cursor:pointer}
-.status{font-size:14px;color:var(--warning)}
-.status:empty{display:none}
+    .sidebar,
+    .topbar {
+      color: #fff
+    }
 
-.content{flex:1}
-.panel{display:none;padding:22px;max-width:1180px;margin:0 auto;width:100%}
-.panel.active{display:block}
+    .topbar {
+      background: var(--topbar)
+    }
 
-/* Cards */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
-.card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.card-head h2{margin:0;font-size:23px;font-weight:700;letter-spacing:-.01em}
-.card-head .hint{color:var(--text-faint);font-size:14px;flex-basis:100%}
-.card-body{padding:18px}
+    .topbar .status {
+      color: #ffd37a
+    }
 
-.banner{background:var(--accent-soft);border:1px solid rgba(56,189,248,.3);border-radius:var(--radius-sm);padding:12px 14px;color:var(--text-dim);margin-bottom:18px;font-size:14px}
+    .sidebar .nav-item.active {
+      background: #0868dc;
+      color: #fff
+    }
 
-/* Typography */
-h1,h2,h3,h4{margin:0 0 .5em;font-weight:600;line-height:1.25}
-h3{font-size:18px;font-weight:600}
-h4{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px}
-small{color:var(--text-faint)}
-pre{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;overflow:auto;font-family:var(--mono);font-size:14px;line-height:1.55;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere}
-code{font-family:var(--mono);font-size:14px;background:var(--surface-2);padding:1px 5px;border-radius:5px;border:1px solid var(--border)}
+    .sidebar .nav-item:hover {
+      background: #0b3a63;
+      color: #fff
+    }
 
-/* Forms */
-label{display:block;margin:0 0 10px;font-size:14px;color:var(--text-dim)}
-input,select,textarea{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text);min-width:0}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-input[type=checkbox]{width:auto;accent-color:var(--accent)}
-.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;align-items:end}
-.form-grid .field{min-width:0}
-.form-grid .field input,.form-grid .field select,.form-grid .field textarea{width:100%}
-.form-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+    .sidebar .brand-mark {
+      color: #77bfff
+    }
 
-/* Buttons */
-button{cursor:pointer;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);padding:9px 14px;border-radius:var(--radius-sm);font-weight:500;transition:background .15s,border-color .15s,color .15s;white-space:nowrap}
-button:hover{border-color:var(--accent);color:var(--text)}
-button:disabled{opacity:.5;cursor:not-allowed}
-.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
-.btn-primary:hover{background:var(--accent-strong);border-color:var(--accent-strong);color:var(--accent-ink)}
-.danger,button.danger{background:var(--danger-soft);border-color:rgba(248,113,113,.4);color:var(--danger)}
-.danger:hover,button.danger:hover{background:rgba(248,113,113,.22);border-color:var(--danger);color:var(--danger)}
-.btn-ghost{background:transparent;border-color:transparent;color:var(--text-dim)}
-.btn-ghost:hover{background:var(--surface-2);border-color:transparent;color:var(--text)}
+    .topbar input,
+    .topbar select {
+      color: #fff;
+      border-color: #285371
+    }
 
-/* Dynamic portal content */
-#portals article{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:14px;transition:border-color .15s}
-#portals article:hover{border-color:var(--border-strong)}
-#portals article h3{margin-top:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-#portals article h3::before{content:"";width:8px;height:8px;flex:0 0 auto;background:var(--accent);border-radius:2px}
-#portals article section{border-top:1px solid var(--border);margin-top:14px;padding-top:14px}
-#portals article p{margin:6px 0}
-#portals article input,#portals article select,#portals article textarea{max-width:100%}
-#portals article section h4{color:var(--accent)}
+    .topbar .btn-primary {
+      background: #086ce9;
+      border-color: #086ce9;
+      color: #fff
+    }
 
-.menu-wrap{position:relative;display:inline-block;vertical-align:middle}
-.menu{position:absolute;left:0;top:100%;z-index:50;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);min-width:200px;padding:5px;display:flex;flex-direction:column;box-shadow:var(--shadow)}
-.menu[hidden]{display:none}
-.menu button{text-align:left;border:none;background:transparent;color:var(--text);padding:9px 12px;border-radius:6px;width:100%}
-.menu button:hover{background:var(--surface);border-color:transparent}
-.menu button.danger{color:var(--danger)}
+    .menu {
+      background: #fff
+    }
 
-.file-policy{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);margin:8px 0;background:var(--surface)}
-.file-policy strong{min-width:120px}
-.secret-output{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
-.secret-output code{word-break:break-all}
-.api-user-create{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
-.api-user-create input{min-width:170px}
+    .menu button:hover {
+      background: var(--accent-soft)
+    }
 
-.portal-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-.portal-actions .menu-wrap>button,.portal-actions>button{min-height:38px}
-.review{margin-top:10px}
-.review[hidden]{display:none}
-.tax-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
-.tax-add{display:flex;gap:8px;margin-bottom:10px}.tax-add input{flex:1}
-.tax-list{list-style:none;margin:0;padding:0}.tax-list li{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px}
-.hint{color:var(--text-dim)}
-.cab-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
-.cab-crumbs{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.cab-crumbs button{padding:5px 9px}
-.cab-tools{display:flex;gap:8px;flex-wrap:wrap}
-.cab-split{display:grid;grid-template-columns:minmax(260px,1fr);gap:16px}
-.cab-split.has-viewer{grid-template-columns:minmax(260px,360px) 1fr}
-.cab-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;background:var(--surface)}
-.cab-row:hover{border-color:var(--border-strong)}
-.cab-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;background:transparent;border:none;color:var(--text);padding:4px}
-.cab-name:hover{color:var(--accent)}
-.cab-meta{color:var(--text-faint);font-size:12px;white-space:nowrap}
-.cab-viewer{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;background:var(--surface);min-height:420px;display:flex;flex-direction:column;gap:8px}
-.cab-viewer iframe{flex:1;width:100%;min-height:70vh;border:0;background:#fff;border-radius:6px}
-.cab-viewer img{max-width:100%;max-height:70vh;object-fit:contain;align-self:center}
-.cab-viewer textarea{flex:1;min-height:60vh;width:100%;font-family:ui-monospace,Consolas,monospace}
-.cab-empty{color:var(--text-dim);padding:24px;text-align:center}
-@media (max-width:900px){.cab-split.has-viewer{grid-template-columns:1fr}}
+    .banner {
+      border-color: #b9d6f7
+    }
 
-.badge{margin-left:auto;background:var(--danger);color:#fff;border-radius:10px;padding:0 7px;font-size:12px}
-.var-row,.dir-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;background:var(--surface)}
-.var-row code{min-width:130px}.var-row input{flex:1;min-width:140px}
-.conf{border:1px solid var(--warn,#f59e0b);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px}.conf .opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.foot{max-width:1180px;margin:0 auto;padding:0 22px 30px}
-.foot small{display:block;color:var(--text-faint)}
+    .status {
+      color: var(--warning)
+    }
 
-@media (max-width:900px){
-  .app{grid-template-columns:1fr}
-  .sidebar{position:fixed;left:0;top:0;bottom:0;width:256px;transform:translateX(-100%);transition:transform .2s;z-index:60;height:100vh}
-  body.sidebar-open .sidebar{transform:translateX(0)}
-  body.sidebar-open::after{content:"";position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:55}
-  .nav-toggle{display:block}
-  .topbar-title{display:none}
-  #token{width:150px}
-  .panel{padding:16px}
-  .foot{padding:0 16px 24px}
-}
+    th {
+      background: var(--surface-2);
+      color: var(--text-dim)
+    }
 
-/* ===== UX redesign additions ===== */
+    .conf {
+      border-color: #e0a100;
+      background: #fff8e6
+    }
 
-/* Dark theme */
-html[data-theme=dark]{--bg:#0b1520;--surface:#122031;--surface-2:#0e1927;--border:#22374a;--border-strong:#2e4860;--text:#e6eef7;--text-dim:#a9bfd4;--text-faint:#74879c;--accent:#3b9df5;--accent-strong:#2f85d8;--accent-ink:#071220;--accent-soft:#13283d;--success:#34d399;--warning:#fbbf24;--danger:#f87171;--danger-soft:#2a1a1e;--shadow:0 2px 12px rgba(0,0,0,.4)}
-html[data-theme=dark] .sidebar,html[data-theme=dark] .topbar{--surface-2:#102d48;--border:#174769;--border-strong:#285371;--text:#fff;--text-dim:#cbdced;--text-faint:#77bfff;--accent:#77bfff}
-html[data-theme=dark] .menu{background:#122031}
-html[data-theme=dark] th{background:#0e1927}
-html[data-theme=dark] .conf{background:#1c2410;border-color:#a16207}
-html[data-theme=dark] .banner{background:#13283d;border-color:#1d4ed8}
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+      box-shadow: none
+    }
 
-.theme-toggle{display:inline-flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 10px;height:38px;color:var(--text);cursor:pointer}
-.theme-toggle svg{width:16px;height:16px}
+    .danger,
+    button.danger {
+      border-color: #e6b0aa
+    }
 
-/* KPI cards */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.kpi .kpi-label{color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
-.kpi .kpi-value{font-size:26px;font-weight:700;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.kpi .kpi-sub{color:var(--text-faint);font-size:12px}
+    .cab-row:hover,
+    .var-row:hover,
+    .dir-row:hover {
+      background: #f2f7ff
+    }
 
-/* Badges & pills */
-.badge-ok{background:var(--success);color:#fff}
-.badge-warn{background:var(--warning);color:#3a2a00}
-.badge-danger{background:var(--danger);color:#fff}
-.badge-muted{background:var(--surface-2);color:var(--text-dim);border:1px solid var(--border)}
-.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.02em;border:1px solid var(--border-strong);color:var(--text-dim);background:var(--surface-2);white-space:nowrap;margin-left:8px}
-.pill.public{color:var(--success);border-color:var(--success);background:transparent}
-.pill.private{color:var(--warning);border-color:var(--warning);background:transparent}
+    * {
+      box-sizing: border-box
+    }
 
-/* Data tables */
-.data-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin:10px 0}
-table.data-table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
-table.data-table th,table.data-table td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
-table.data-table tr:last-child td{border-bottom:none}
-table.data-table tbody tr:hover{background:var(--surface-2)}
-table.data-table code.mono{font-family:var(--mono);font-size:12px;color:var(--text-faint)}
-table.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
-.muted{color:var(--text-faint)}
-.empty{padding:24px;text-align:center;color:var(--text-dim)}
+    html,
+    body {
+      margin: 0;
+      padding: 0
+    }
 
-/* Portal card head */
-#portals article h3{font-size:16px}
-#portals article .meta-line{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;color:var(--text-dim);font-size:13px;margin:4px 0 10px}
-#portals article .meta-line code{background:transparent;border:none;padding:0;font-size:12px;color:var(--text-faint)}
-#portals article .meta-line button{padding:5px 9px;font-size:12px}
-.icon-btn{display:inline-flex;align-items:center;gap:5px}
+    body {
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.55;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh
+    }
 
-/* Toast */
-#toast-stack{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:200;max-width:340px}
-.toast{background:var(--surface);color:var(--text);border:1px solid var(--border-strong);border-left:4px solid var(--accent);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:10px 12px;display:flex;align-items:center;gap:10px;animation:toastIn .18s ease}
-.toast-error{border-left-color:var(--danger)}
-.toast-success{border-left-color:var(--success)}
-.toast-close{background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:16px;line-height:1;padding:0}
-@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-</style>
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: inherit
+    }
+
+    a {
+      color: var(--accent)
+    }
+
+    /* Layout */
+    .app {
+      display: grid;
+      grid-template-columns: 256px 1fr;
+      min-height: 100vh
+    }
+
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 18px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 auto;
+      color: var(--accent);
+      display: grid;
+      place-items: center
+    }
+
+    .brand-mark svg {
+      width: 38px;
+      height: 38px
+    }
+
+    .brand-name {
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: .2px;
+      display: block;
+      line-height: 1.2
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      display: block;
+      margin-top: 2px
+    }
+
+    .nav {
+      flex: 1;
+      padding: 14px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 10px 12px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      text-align: left;
+      font-weight: 500;
+      transition: background .15s, color .15s
+    }
+
+    .nav-item svg {
+      width: 19px;
+      height: 19px;
+      flex: 0 0 auto;
+      opacity: .85
+    }
+
+    .nav-item:hover {
+      background: var(--surface-2);
+      color: var(--text)
+    }
+
+    .nav-item.active {
+      background: var(--accent-soft);
+      color: var(--accent)
+    }
+
+    .sidebar-foot {
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      color: var(--text-faint);
+      font-size: 11px;
+      line-height: 1.5
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      background: var(--sidebar);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      flex-wrap: wrap
+    }
+
+    .nav-toggle {
+      display: none;
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 8px;
+      cursor: pointer
+    }
+
+    .nav-toggle svg {
+      width: 20px;
+      height: 20px;
+      display: block
+    }
+
+    .topbar-title {
+      font-weight: 700;
+      font-size: 18px;
+      white-space: nowrap
+    }
+
+    .topbar-spacer {
+      flex: 1
+    }
+
+    .session-role {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--text-faint);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 10px
+    }
+
+    .lang-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 8px;
+      height: 38px
+    }
+
+    .lang-group svg {
+      width: 16px;
+      height: 16px;
+      color: var(--text-faint)
+    }
+
+    .lang-group select {
+      border: none;
+      background: transparent;
+      padding: 0;
+      height: auto;
+      width: auto;
+      color: var(--text);
+      cursor: pointer
+    }
+
+    .status {
+      font-size: 14px;
+      color: var(--warning)
+    }
+
+    .status:empty {
+      display: none
+    }
+
+    .content {
+      flex: 1
+    }
+
+    .panel {
+      display: none;
+      padding: 22px;
+      max-width: 1180px;
+      margin: 0 auto;
+      width: 100%
+    }
+
+    .panel.active {
+      display: block
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+      overflow: hidden
+    }
+
+    .card-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .card-head h2 {
+      margin: 0;
+      font-size: 23px;
+      font-weight: 700;
+      letter-spacing: -.01em
+    }
+
+    .card-head .hint {
+      color: var(--text-faint);
+      font-size: 14px;
+      flex-basis: 100%
+    }
+
+    .card-body {
+      padding: 18px
+    }
+
+    .banner {
+      background: var(--accent-soft);
+      border: 1px solid rgba(56, 189, 248, .3);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      color: var(--text-dim);
+      margin-bottom: 18px;
+      font-size: 14px
+    }
+
+    /* Typography */
+    h1,
+    h2,
+    h3,
+    h4 {
+      margin: 0 0 .5em;
+      font-weight: 600;
+      line-height: 1.25
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600
+    }
+
+    h4 {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 16px 0 8px
+    }
+
+    small {
+      color: var(--text-faint)
+    }
+
+    pre {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      overflow: auto;
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.55;
+      margin: 10px 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 14px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 5px;
+      border: 1px solid var(--border)
+    }
+
+    /* Forms */
+    label {
+      display: block;
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: var(--text-dim)
+    }
+
+    input,
+    select,
+    textarea {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      color: var(--text);
+      min-width: 0
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft)
+    }
+
+    input[type=checkbox] {
+      width: auto;
+      accent-color: var(--accent)
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      align-items: end
+    }
+
+    .form-grid .field {
+      min-width: 0
+    }
+
+    .form-grid .field input,
+    .form-grid .field select,
+    .form-grid .field textarea {
+      width: 100%
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end
+    }
+
+    /* Buttons */
+    button {
+      cursor: pointer;
+      border: 1px solid var(--border-strong);
+      background: var(--surface-2);
+      color: var(--text);
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      transition: background .15s, border-color .15s, color .15s;
+      white-space: nowrap
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      color: var(--text)
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 600
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-strong);
+      border-color: var(--accent-strong);
+      color: var(--accent-ink)
+    }
+
+    .danger,
+    button.danger {
+      background: var(--danger-soft);
+      border-color: rgba(248, 113, 113, .4);
+      color: var(--danger)
+    }
+
+    .danger:hover,
+    button.danger:hover {
+      background: rgba(248, 113, 113, .22);
+      border-color: var(--danger);
+      color: var(--danger)
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: transparent;
+      color: var(--text-dim)
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface-2);
+      border-color: transparent;
+      color: var(--text)
+    }
+
+    /* Dynamic portal content */
+    #portals article {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-bottom: 14px;
+      transition: border-color .15s
+    }
+
+    #portals article:hover {
+      border-color: var(--border-strong)
+    }
+
+    #portals article h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    #portals article h3::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      background: var(--accent);
+      border-radius: 2px
+    }
+
+    #portals article section {
+      border-top: 1px solid var(--border);
+      margin-top: 14px;
+      padding-top: 14px
+    }
+
+    #portals article p {
+      margin: 6px 0
+    }
+
+    #portals article input,
+    #portals article select,
+    #portals article textarea {
+      max-width: 100%
+    }
+
+    #portals article section h4 {
+      color: var(--accent)
+    }
+
+    .menu-wrap {
+      position: relative;
+      display: inline-block;
+      vertical-align: middle
+    }
+
+    .menu {
+      position: absolute;
+      left: 0;
+      top: 100%;
+      z-index: 50;
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      min-width: 200px;
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow)
+    }
+
+    .menu[hidden] {
+      display: none
+    }
+
+    .menu button {
+      text-align: left;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 6px;
+      width: 100%
+    }
+
+    .menu button:hover {
+      background: var(--surface);
+      border-color: transparent
+    }
+
+    .menu button.danger {
+      color: var(--danger)
+    }
+
+    .file-policy {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin: 8px 0;
+      background: var(--surface)
+    }
+
+    .file-policy strong {
+      min-width: 120px
+    }
+
+    .secret-output {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      flex-wrap: wrap
+    }
+
+    .secret-output code {
+      word-break: break-all
+    }
+
+    .api-user-create {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px
+    }
+
+    .api-user-create input {
+      min-width: 170px
+    }
+
+    .portal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0
+    }
+
+    .portal-actions .menu-wrap>button,
+    .portal-actions>button {
+      min-height: 38px
+    }
+
+    .review {
+      margin-top: 10px
+    }
+
+    .review[hidden] {
+      display: none
+    }
+
+    .tax-cols {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px
+    }
+
+    .tax-add {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px
+    }
+
+    .tax-add input {
+      flex: 1
+    }
+
+    .tax-list {
+      list-style: none;
+      margin: 0;
+      padding: 0
+    }
+
+    .tax-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px
+    }
+
+    .hint {
+      color: var(--text-dim)
+    }
+
+    .cab-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px
+    }
+
+    .cab-crumbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center
+    }
+
+    .cab-crumbs button {
+      padding: 5px 9px
+    }
+
+    .cab-tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .cab-split {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr);
+      gap: 16px
+    }
+
+    .cab-split.has-viewer {
+      grid-template-columns: minmax(260px, 360px) 1fr
+    }
+
+    .cab-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      background: var(--surface)
+    }
+
+    .cab-row:hover {
+      border-color: var(--border-strong)
+    }
+
+    .cab-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 4px
+    }
+
+    .cab-name:hover {
+      color: var(--accent)
+    }
+
+    .cab-meta {
+      color: var(--text-faint);
+      font-size: 12px;
+      white-space: nowrap
+    }
+
+    .cab-viewer {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      background: var(--surface);
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .cab-viewer iframe {
+      flex: 1;
+      width: 100%;
+      min-height: 70vh;
+      border: 0;
+      background: #fff;
+      border-radius: 6px
+    }
+
+    .cab-viewer img {
+      max-width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      align-self: center
+    }
+
+    .cab-viewer textarea {
+      flex: 1;
+      min-height: 60vh;
+      width: 100%;
+      font-family: ui-monospace, Consolas, monospace
+    }
+
+    .cab-empty {
+      color: var(--text-dim);
+      padding: 24px;
+      text-align: center
+    }
+
+    @media (max-width:900px) {
+      .cab-split.has-viewer {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .badge {
+      margin-left: auto;
+      background: var(--danger);
+      color: #fff;
+      border-radius: 10px;
+      padding: 0 7px;
+      font-size: 12px
+    }
+
+    .var-row,
+    .dir-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      background: var(--surface)
+    }
+
+    .var-row code {
+      min-width: 130px
+    }
+
+    .var-row input {
+      flex: 1;
+      min-width: 140px
+    }
+
+    .conf {
+      border: 1px solid var(--warn, #f59e0b);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      margin-bottom: 8px
+    }
+
+    .conf .opts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px
+    }
+
+    .foot {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 22px 30px
+    }
+
+    .foot small {
+      display: block;
+      color: var(--text-faint)
+    }
+
+    @media (max-width:900px) {
+      .app {
+        grid-template-columns: 1fr
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 256px;
+        transform: translateX(-100%);
+        transition: transform .2s;
+        z-index: 60;
+        height: 100vh
+      }
+
+      body.sidebar-open .sidebar {
+        transform: translateX(0)
+      }
+
+      body.sidebar-open::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .55);
+        z-index: 55
+      }
+
+      .nav-toggle {
+        display: block
+      }
+
+      .topbar-title {
+        display: none
+      }
+
+      .session-role {
+        display: none
+      }
+
+      .panel {
+        padding: 16px
+      }
+
+      .foot {
+        padding: 0 16px 24px
+      }
+    }
+
+    /* ===== UX redesign additions ===== */
+
+    /* Dark theme */
+    html[data-theme=dark] {
+      --bg: #0b1520;
+      --surface: #122031;
+      --surface-2: #0e1927;
+      --border: #22374a;
+      --border-strong: #2e4860;
+      --text: #e6eef7;
+      --text-dim: #a9bfd4;
+      --text-faint: #74879c;
+      --accent: #3b9df5;
+      --accent-strong: #2f85d8;
+      --accent-ink: #071220;
+      --accent-soft: #13283d;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --danger-soft: #2a1a1e;
+      --shadow: 0 2px 12px rgba(0, 0, 0, .4)
+    }
+
+    html[data-theme=dark] .sidebar,
+    html[data-theme=dark] .topbar {
+      --surface-2: #102d48;
+      --border: #174769;
+      --border-strong: #285371;
+      --text: #fff;
+      --text-dim: #cbdced;
+      --text-faint: #77bfff;
+      --accent: #77bfff
+    }
+
+    html[data-theme=dark] .menu {
+      background: #122031
+    }
+
+    html[data-theme=dark] th {
+      background: #0e1927
+    }
+
+    html[data-theme=dark] .conf {
+      background: #1c2410;
+      border-color: #a16207
+    }
+
+    html[data-theme=dark] .banner {
+      background: #13283d;
+      border-color: #1d4ed8
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 10px;
+      height: 38px;
+      color: var(--text);
+      cursor: pointer
+    }
+
+    .theme-toggle svg {
+      width: 16px;
+      height: 16px
+    }
+
+    /* KPI cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px
+    }
+
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0
+    }
+
+    .kpi .kpi-label {
+      color: var(--text-dim);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-weight: 600
+    }
+
+    .kpi .kpi-value {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .kpi .kpi-sub {
+      color: var(--text-faint);
+      font-size: 12px
+    }
+
+    /* Badges & pills */
+    .badge-ok {
+      background: var(--success);
+      color: #fff
+    }
+
+    .badge-warn {
+      background: var(--warning);
+      color: #3a2a00
+    }
+
+    .badge-danger {
+      background: var(--danger);
+      color: #fff
+    }
+
+    .badge-muted {
+      background: var(--surface-2);
+      color: var(--text-dim);
+      border: 1px solid var(--border)
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 1px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      border: 1px solid var(--border-strong);
+      color: var(--text-dim);
+      background: var(--surface-2);
+      white-space: nowrap;
+      margin-left: 8px
+    }
+
+    .pill.public {
+      color: var(--success);
+      border-color: var(--success);
+      background: transparent
+    }
+
+    .pill.private {
+      color: var(--warning);
+      border-color: var(--warning);
+      background: transparent
+    }
+
+    /* Data tables */
+    .data-table-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin: 10px 0
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 560px
+    }
+
+    table.data-table th,
+    table.data-table td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle
+    }
+
+    table.data-table tr:last-child td {
+      border-bottom: none
+    }
+
+    table.data-table tbody tr:hover {
+      background: var(--surface-2)
+    }
+
+    table.data-table code.mono {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-faint)
+    }
+
+    table.data-table .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums
+    }
+
+    .muted {
+      color: var(--text-faint)
+    }
+
+    .empty {
+      padding: 24px;
+      text-align: center;
+      color: var(--text-dim)
+    }
+
+    /* Portal card head */
+    #portals article h3 {
+      font-size: 16px
+    }
+
+    #portals article .meta-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      align-items: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      margin: 4px 0 10px
+    }
+
+    #portals article .meta-line code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: 12px;
+      color: var(--text-faint)
+    }
+
+    #portals article .meta-line button {
+      padding: 5px 9px;
+      font-size: 12px
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px
+    }
+
+    /* Toast */
+    #toast-stack {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 200;
+      max-width: 340px
+    }
+
+    .toast {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastIn .18s ease
+    }
+
+    .toast-error {
+      border-left-color: var(--danger)
+    }
+
+    .toast-success {
+      border-left-color: var(--success)
+    }
+
+    .toast-close {
+      background: transparent;
+      border: none;
+      color: var(--text-faint);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div class="app">
-  <aside class="sidebar" id="sidebar">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" fill="currentColor"/>
-          <path d="M12 7.4l3.6 2v4.2L12 15.6l-3.6-2V9.4L12 7.4z" fill="var(--sidebar)"/>
-        </svg>
-      </span>
-      <div>
-        <span class="brand-name">hAPI Enterprise</span>
-        <span class="brand-sub" data-i18n="Административен панел">Административен панел</span>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" fill="currentColor" />
+            <path d="M12 7.4l3.6 2v4.2L12 15.6l-3.6-2V9.4L12 7.4z" fill="var(--sidebar)" />
+          </svg>
+        </span>
+        <div>
+          <span class="brand-name">hAPI Enterprise</span>
+          <span class="brand-sub" data-i18n="Административен панел">Административен панел</span>
+        </div>
       </div>
+      <nav class="nav" aria-label="Main navigation">
+        <button class="nav-item active" data-panel="overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9" />
+            <rect x="14" y="3" width="7" height="5" />
+            <rect x="14" y="12" width="7" height="9" />
+            <rect x="3" y="16" width="7" height="5" />
+          </svg>
+          <span data-i18n="Обзор">Обзор</span>
+        </button>
+        <button class="nav-item" data-panel="portals">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2" />
+            <polyline points="2 17 12 22 22 17" />
+            <polyline points="2 12 12 17 22 12" />
+          </svg>
+          <span data-i18n="Портали">Портали</span>
+        </button>
+        <button class="nav-item" data-panel="hierarchy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M3 21h18" />
+            <rect x="3" y="3" width="6" height="6" rx="1" />
+            <rect x="3" y="15" width="6" height="6" rx="1" />
+            <rect x="15" y="3" width="6" height="6" rx="1" />
+            <rect x="15" y="15" width="6" height="6" rx="1" />
+            <path d="M6 9v6" />
+            <path d="M18 9v6" />
+          </svg>
+          <span data-i18n="Йерархия">Йерархия</span>
+        </button>
+        <button class="nav-item" data-panel="cabinet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </svg>
+          <span data-i18n="Картотека">Картотека</span>
+        </button>
+        <button class="nav-item" data-panel="taxonomy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z" />
+            <circle cx="7" cy="7" r="1.5" />
+          </svg>
+          <span data-i18n="Категории и групи">Категории и групи</span>
+        </button>
+        <button class="nav-item" data-panel="directory">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span data-i18n="Указател">Указател</span><span class="badge" id="dir-badge" hidden></span>
+        </button>
+        <button class="nav-item" data-panel="variables">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1" />
+            <path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1" />
+          </svg>
+          <span data-i18n="Променливи">Променливи</span>
+        </button>
+        <button class="nav-item" data-panel="diagnostics">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span data-i18n="Диагностика">Диагностика</span>
+        </button>
+        <button class="nav-item" data-panel="jobs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" />
+            <line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
+          <span data-i18n="Задачи">Задачи</span>
+        </button>
+        <button class="nav-item" data-panel="storage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3" />
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+          </svg>
+          <span data-i18n="Съхранение">Съхранение</span>
+        </button>
+        <button class="nav-item" data-panel="backups">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8" />
+            <rect x="1" y="3" width="22" height="5" />
+            <line x1="10" y1="12" x2="14" y2="12" />
+          </svg>
+          <span data-i18n="Резервни копия">Резервни копия</span>
+        </button>
+        <button class="nav-item" data-panel="logs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+          <span data-i18n="Журнал">Журнал</span>
+        </button>
+        <button class="nav-item" data-panel="api">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5" />
+            <line x1="12" y1="19" x2="20" y2="19" />
+          </svg>
+          <span data-i18n="API достъп">API достъп</span>
+        </button>
+        <button class="nav-item" data-panel="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14" />
+            <line x1="4" y1="10" x2="4" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12" y2="3" />
+            <line x1="20" y1="21" x2="20" y2="16" />
+            <line x1="20" y1="12" x2="20" y2="3" />
+            <line x1="1" y1="14" x2="7" y2="14" />
+            <line x1="9" y1="8" x2="15" y2="8" />
+            <line x1="17" y1="16" x2="23" y2="16" />
+          </svg>
+          <span data-i18n="Настройки">Настройки</span>
+        </button>
+        <a class="nav-item" href="ui/index.html"
+          title="Enterprise Control Center (Report Studio, файлове, gateway, експорт)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+          <span data-i18n="Enterprise GUI">Enterprise GUI</span>
+        </a>
+      </nav>
+      <div class="sidebar-foot">PasevSU DEV<br>NO TRUST Cybersecurity</div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+        <div class="topbar-title" id="topbar-title">Admin panel</div>
+        <div class="topbar-spacer"></div>
+        <span class="session-role" id="session-role" title=""></span>
+        <button id="load" class="btn-primary" type="button" data-i18n="Зареди портали">Зареди портали</button>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Theme" title="Theme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+          </svg>
+        </button>
+        <label class="lang-group" title="Language">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z" />
+          </svg>
+          <select id="admin-lang" aria-label="Language">
+            <option value="bg">Български</option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+          </select>
+        </label>
+        <span id="status" role="status" class="status"></span>
+      </header>
+
+      <main class="content">
+
+        <section class="panel active" id="panel-overview">
+          <div class="banner"
+            data-i18n="Общ преглед на порталите, файловете, посещенията, изтеглянията и състоянието на системата.">Общ
+            преглед на порталите, файловете, посещенията, изтеглянията и състоянието на системата.</div>
+          <div class="kpi-grid" id="overview-kpis"></div>
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Портали накратко">Портали накратко</h2><button id="overview-refresh" class="btn-ghost"
+                type="button" data-i18n="Обнови">Обнови</button>
+            </div>
+            <div class="card-body" id="overview-portals"></div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Състояние на системата">Състояние на системата</h2>
+            </div>
+            <div class="card-body" id="overview-system"></div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-portals">
+          <div class="banner"
+            data-i18n="Административният токен остава само в паметта на текущия раздел и не се записва в браузъра.">
+            Административният токен остава само в паметта на текущия раздел и не се записва в браузъра.</div>
+
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Нов портал">Нов портал</h2>
+            </div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="field"><label>Slug <input id="slug" placeholder="my-portal"></label></div>
+                <div class="field"><label><span data-i18n="Заглавие">Заглавие</span> <input id="title"
+                      placeholder="My portal"></label></div>
+                <div class="field"><button id="create" class="btn-primary" type="button"
+                    data-i18n="Създай">Създай</button></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Портали">Портали</h2>
+            </div>
+            <div class="card-body" id="portals"></div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-hierarchy">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Търсене">Търсене</h2>
+            </div>
+            <div class="card-body">
+              <input id="hier-search" placeholder="Търси в записите…" aria-label="Търсене" style="width:100%">
+              <div id="hier-search-results"></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Групи (йерархия)">Групи (йерархия)</h2>
+            </div>
+            <div class="card-body">
+              <form class="cab-bar" id="hier-group-form">
+                <input id="hier-group-name" placeholder="Име на групата" maxlength="80" aria-label="Име на групата">
+                <input id="hier-group-desc" placeholder="Описание" maxlength="200" aria-label="Описание">
+                <button class="btn-primary" type="submit" data-i18n="Създай група">Създай група</button>
+              </form>
+              <div id="hier-groups"></div>
+            </div>
+          </section>
+
+          <section class="card" id="hier-records-card" hidden>
+            <div class="card-head">
+              <h2 id="hier-records-title" data-i18n="Записи">Записи</h2><span class="cab-tools"
+                id="hier-records-tools"></span>
+            </div>
+            <div class="card-body" id="hier-records"></div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Профили (схема)">Профили (схема)</h2>
+            </div>
+            <div class="card-body" id="hier-profiles"></div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-taxonomy">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Категории и групи">Категории и групи</h2>
+            </div>
+            <div class="card-body">
+              <p class="hint" data-i18n="Създай ги тук веднъж, после ги избираш от падащо меню при всеки файл.">Създай
+                ги тук веднъж, после ги избираш от падащо меню при всеки файл.</p>
+              <div class="tax-cols">
+                <div>
+                  <h3 data-i18n="Категории">Категории</h3>
+                  <form class="tax-add" id="tax-form-category"><input id="tax-new-category" maxlength="80"
+                      aria-label="Категория"><button class="btn-primary" type="submit"
+                      data-i18n="Добави">Добави</button></form>
+                  <ul class="tax-list" id="tax-list-category"></ul>
+                </div>
+                <div>
+                  <h3 data-i18n="Групи">Групи</h3>
+                  <form class="tax-add" id="tax-form-group"><input id="tax-new-group" maxlength="80"
+                      aria-label="Група"><button class="btn-primary" type="submit" data-i18n="Добави">Добави</button>
+                  </form>
+                  <ul class="tax-list" id="tax-list-group"></ul>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-cabinet">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Картотека">Картотека</h2>
+            </div>
+            <div class="card-body">
+              <div class="cab-bar">
+                <nav class="cab-crumbs" id="cab-crumbs" aria-label="Path"></nav>
+                <span class="cab-tools" id="cab-tools"></span>
+              </div>
+              <input type="file" id="cab-file" multiple hidden>
+              <div class="cab-split">
+                <div id="cab-list" class="cab-list"></div>
+                <div id="cab-viewer" class="cab-viewer" hidden></div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-directory">
+          <section class="card" id="dir-conflicts-card" hidden>
+            <div class="card-head">
+              <h2 data-i18n="Конфликти">Конфликти</h2>
+            </div>
+            <div class="card-body">
+              <p class="hint" data-i18n="Данните не съвпадат. Избери стойност или въведи своя.">Данните не съвпадат.
+                Избери стойност или въведи своя.</p>
+              <div id="dir-conflicts"></div>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Добави имейл адреси">Добави имейл адреси</h2>
+            </div>
+            <div class="card-body">
+              <p class="hint" data-i18n="Въведи един или повече адреса. Останалото се попълва от правилата за домейни.">
+                Въведи един или повече адреса. Останалото се попълва от правилата за домейни.</p>
+              <form class="tax-add" id="dir-ingest"><input id="dir-emails" aria-label="Email"
+                  placeholder="max.mustermann@martinswerk.de, …"><button class="btn-primary" type="submit"
+                  data-i18n="Добави">Добави</button></form>
+              <div id="dir-result" class="hint"></div>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Правила за домейни">Правила за домейни</h2>
+            </div>
+            <div class="card-body">
+              <p class="hint"
+                data-i18n="Въвеждаш данните веднъж за домейн, напр. @martinswerk.de. Можеш да ползваш {{променлива}}.">
+                Въвеждаш данните веднъж за домейн, напр. @martinswerk.de. Можеш да ползваш {{променлива}}.</p>
+              <div id="dir-rules"></div>
+              <form id="dir-rule-form" class="cab-bar"><input id="dir-rule-pattern" placeholder="@martinswerk.de"
+                  aria-label="Domain"><span id="dir-rule-fields" class="cab-tools"></span><button class="btn-primary"
+                  type="submit" data-i18n="Добави правило">Добави правило</button></form>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Контакти">Контакти</h2>
+            </div>
+            <div class="card-body">
+              <div id="dir-contacts"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-variables">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Променливи">Променливи</h2>
+            </div>
+            <div class="card-body">
+              <p class="hint"
+                data-i18n="Всеки вид данни е променлива. Липсваща се създава тук и веднага се появява в указателя.">
+                Всеки вид данни е променлива. Липсваща се създава тук и веднага се появява в указателя.</p>
+              <div id="var-list"></div>
+              <form id="var-form" class="cab-bar"><input id="var-key" placeholder="vat_id" aria-label="Key"
+                  maxlength="40"><input id="var-label" placeholder="Етикет" aria-label="Label" maxlength="80"><select
+                  id="var-type" aria-label="Type"></select><label><input type="checkbox" id="var-field" checked> <span
+                    data-i18n="Поле на контакт">Поле на контакт</span></label><button class="btn-primary" type="submit"
+                  data-i18n="Създай">Създай</button></form>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-diagnostics">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Диагностика и натоварване">Диагностика и натоварване</h2>
+            </div>
+            <div class="card-body">
+              <button id="diagnostics-refresh" type="button" data-i18n="Обнови диагностиката">Обнови
+                диагностиката</button>
+              <pre id="diagnostics-result" aria-live="polite">No data loaded</pre>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Интелигентен контрол на натоварването">Интелигентен контрол на натоварването</h2>
+              <span class="hint"
+                data-i18n="Адаптивният лимит на изтеглянията намалява натоварването при високо използване на heap или повишен процент грешки.">Адаптивният
+                лимит на изтеглянията намалява натоварването при високо използване на heap или повишен процент
+                грешки.</span>
+            </div>
+            <div class="card-body">
+              <button id="load-refresh" type="button" data-i18n="Обнови натоварването">Обнови натоварването</button>
+              <pre id="load-result" aria-live="polite">No data loaded</pre>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Проверка на hash-chain">Проверка на hash-chain</h2>
+              <span class="hint"
+                data-i18n="Проверява непрекъснатостта и целостта на одитния журнал. Открива промени в записите, но не е външно закотвен (не защитава срещу администратор, който пренаписва цялата верига).">Проверява
+                непрекъснатостта и целостта на одитния журнал. Открива промени в записите, но не е външно закотвен (не
+                защитава срещу администратор, който пренаписва цялата верига).</span>
+            </div>
+            <div class="card-body">
+              <button id="audit-verify" type="button" data-i18n="Провери целостта">Провери целостта</button>
+              <pre id="audit-verify-result" aria-live="polite">No data loaded</pre>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-jobs">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Фонови задачи">Фонови задачи</h2>
+              <span class="hint"
+                data-i18n="Проверките на цялост се изпълняват в опашка с прогрес и възможност за отказ.">Проверките на
+                цялост се изпълняват в опашка с прогрес и възможност за отказ.</span>
+            </div>
+            <div class="card-body">
+              <button id="jobs-refresh" type="button" data-i18n="Обнови задачите">Обнови задачите</button>
+              <pre id="jobs-result" aria-live="polite">No data loaded</pre>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-storage">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Съхранение">Съхранение</h2>
+              <span class="hint"
+                data-i18n="Проверка за наличност и възможност за запис на всяко хранилище. Автоматичната проверка се изпълнява на интервал.">Проверка
+                за наличност и възможност за запис на всяко хранилище. Автоматичната проверка се изпълнява на
+                интервал.</span>
+            </div>
+            <div class="card-body">
+              <button id="storage-check" type="button" data-i18n="Провери хранилищата">Провери хранилищата</button>
+              <pre id="storage-result" aria-live="polite">No data loaded</pre>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-backups">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Резервно копие на SQLite">Резервно копие на SQLite</h2>
+              <span class="hint"
+                data-i18n="Създава консистентно копие в защитената папка backups/ на приложението.">Създава консистентно
+                копие в защитената папка backups/ на приложението.</span>
+            </div>
+            <div class="card-body">
+              <button id="database-backup" class="btn-primary" type="button" data-i18n="Създай резервно копие">Създай
+                резервно копие</button>
+              <pre id="database-backup-status" aria-live="polite"></pre>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Резервни копия и възстановяване">Резервни копия и възстановяване</h2>
+            </div>
+            <div class="card-body">
+              <button id="backup-list" type="button" data-i18n="Списък с резервни копия">Списък с резервни
+                копия</button>
+              <div id="backup-list-result" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Шедулер за резервни копия">Шедулер за резервни копия</h2>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <label><input type="checkbox" id="sched-enabled"> <span data-i18n="Активно">Активно</span></label>
+                <label><span data-i18n="Интервал (минути)">Интервал (минути)</span> <input type="number"
+                    id="sched-interval" min="5" value="1440" style="width:110px"></label>
+                <label><span data-i18n="Максимален брой">Максимален брой</span> <input type="number" id="sched-max"
+                    min="1" value="10" style="width:80px"></label>
+                <button id="sched-load" type="button" data-i18n="Зареди график">Зареди график</button>
+                <button id="sched-save" class="btn-primary" type="button" data-i18n="Запази график">Запази
+                  график</button>
+              </div>
+              <p><small id="sched-next"></small></p>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-logs">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Централизиран журнал за грешки">Централизиран журнал за грешки</h2>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <label><span data-i18n="Ниво">Ниво</span> <select id="error-level">
+                    <option value="" data-i18n="Всички">Всички</option>
+                    <option value="error">error</option>
+                    <option value="warn">warn</option>
+                    <option value="info">info</option>
+                  </select></label>
+                <button id="errors-refresh" type="button" data-i18n="Зареди журнала">Зареди журнала</button>
+              </div>
+              <pre id="errors-result" aria-live="polite">No data loaded</pre>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-api">
+          <section class="card">
+            <div class="card-body" id="api-users"></div>
+          </section>
+        </section>
+
+        <section class="panel" id="panel-settings">
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Настройки · база данни и QR артефакти">Настройки · база данни и QR артефакти</h2>
+              <span class="hint"
+                data-i18n="Промяната на името на базата изисква спиране, копиране на текущата база и рестарт. Не се извършва автоматично преместване.">Промяната
+                на името на базата изисква спиране, копиране на текущата база и рестарт. Не се извършва автоматично
+                преместване.</span>
+            </div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="field"><label><span data-i18n="Папка за QR записи (отделна от базата)">Папка за QR записи
+                      (отделна от базата)</span> <input id="artifact-directory" value="qr-records"></label></div>
+                <div class="field"><label><span data-i18n="Папка на базата">Папка на базата</span> <input
+                      id="database-directory" value="."></label></div>
+                <div class="field"><label><span data-i18n="Файл на базата">Файл на базата</span> <input
+                      id="database-file" value="db.json"></label></div>
+              </div>
+              <h4 data-i18n="Лимити и достъп">Лимити и достъп</h4>
+              <p class="hint"
+                data-i18n="Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).">Празно
+                поле = автоматична стойност по подразбиране (в полето е показана текущата).</p>
+              <div class="form-grid">
+                <div class="field"><label><span data-i18n="Макс. размер на качване (MB)">Макс. размер на качване
+                      (MB)</span> <input id="lim-upload" type="number" min="1" max="2048"></label></div>
+                <div class="field"><label><span data-i18n="Едновременни изтегляния">Едновременни изтегляния</span>
+                    <input id="lim-streams" type="number" min="1" max="1024"></label></div>
+                <div class="field"><label><span data-i18n="Паралелни задачи">Паралелни задачи</span> <input
+                      id="lim-jobs" type="number" min="1" max="4"></label></div>
+                <div class="field"><label><span data-i18n="Проверка на хранилищата (мин, 0 = изкл.)">Проверка на
+                      хранилищата (мин, 0 = изкл.)</span> <input id="lim-check" type="number" min="0"
+                      max="10080"></label></div>
+                <div class="field"><label><span data-i18n="Публичен адрес">Публичен адрес</span> <input id="lim-url"
+                      placeholder="https://portal.example.com"></label></div>
+                <div class="field"><label><span data-i18n="CORS адрес">CORS адрес</span> <input id="lim-cors"
+                      placeholder="https://example.com"></label></div>
+                <div class="field"><label><span data-i18n="Ключ за портал">Ключ за портал</span> <select id="lim-token">
+                      <option value="" data-i18n="Автоматично">Автоматично</option>
+                      <option value="true" data-i18n="Задължителен">Задължителен</option>
+                      <option value="false" data-i18n="Не е задължителен">Не е задължителен</option>
+                    </select></label></div>
+                <div class="field"><label><span data-i18n="Пълен IP в телеметрията">Пълен IP в телеметрията</span>
+                    <select id="lim-ip">
+                      <option value="" data-i18n="Автоматично">Автоматично</option>
+                      <option value="false" data-i18n="Не (препоръчително)">Не (препоръчително)</option>
+                      <option value="true" data-i18n="Да">Да</option>
+                    </select></label></div>
+              </div>
+              <div class="form-row" style="margin-top:14px">
+                <button id="settings-load" type="button" data-i18n="Зареди настройки">Зареди настройки</button>
+                <button id="settings-save" class="btn-primary" type="button" data-i18n="Запази настройки">Запази
+                  настройки</button>
+              </div>
+              <pre id="settings-status"></pre>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Профили за конфигурация">Профили за конфигурация</h2>
+              <span class="hint" data-i18n="Записвай и прилагай наименувани профили на настройките.">Записвай и прилагай
+                наименувани профили на настройките.</span>
+            </div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="field"><label><span data-i18n="Име">Име</span> <input id="profile-name"
+                      placeholder="production"></label></div>
+                <div class="field"><label><span data-i18n="Настройки (JSON, по избор)">Настройки (JSON, по избор)</span>
+                    <textarea id="profile-settings" rows="3" placeholder='{"organization":"Acme"}'></textarea></label>
+                </div>
+              </div>
+              <div class="form-row" style="margin-top:14px">
+                <button id="profile-save" class="btn-primary" type="button" data-i18n="Запази профил">Запази
+                  профил</button>
+                <button id="profile-list" type="button" data-i18n="Списък">Списък</button>
+                <button id="profile-apply" type="button" data-i18n="Приложи">Приложи</button>
+                <button id="profile-delete" class="btn-ghost" type="button" data-i18n="Изтрий">Изтрий</button>
+              </div>
+              <div id="profiles-result" aria-live="polite"></div>
+            </div>
+          </section>
+        </section>
+
+        <footer class="foot">
+          <small
+            data-i18n="Създадено от PasevSU DEV · Home Assistant Projects · част от доброволческата кампания NO TRUST Cybersecurity. Лиценз: виж LICENSE файла.">Създадено
+            от PasevSU DEV · Home Assistant Projects · част от доброволческата кампания NO TRUST Cybersecurity. Лиценз:
+            виж LICENSE файла.</small>
+        </footer>
+
+      </main>
     </div>
-    <nav class="nav" aria-label="Main navigation">
-      <button class="nav-item active" data-panel="overview">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-        <span data-i18n="Обзор">Обзор</span>
-      </button>
-      <button class="nav-item" data-panel="portals">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-        <span data-i18n="Портали">Портали</span>
-      </button>
-      <button class="nav-item" data-panel="hierarchy">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M6 9v6"/><path d="M18 9v6"/></svg>
-        <span data-i18n="Йерархия">Йерархия</span>
-      </button>
-      <button class="nav-item" data-panel="cabinet">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        <span data-i18n="Картотека">Картотека</span>
-      </button>
-      <button class="nav-item" data-panel="taxonomy">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.5"/></svg>
-        <span data-i18n="Категории и групи">Категории и групи</span>
-      </button>
-      <button class="nav-item" data-panel="directory">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span data-i18n="Указател">Указател</span><span class="badge" id="dir-badge" hidden></span>
-      </button>
-      <button class="nav-item" data-panel="variables">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/><path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/></svg>
-        <span data-i18n="Променливи">Променливи</span>
-      </button>
-      <button class="nav-item" data-panel="diagnostics">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        <span data-i18n="Диагностика">Диагностика</span>
-      </button>
-      <button class="nav-item" data-panel="jobs">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        <span data-i18n="Задачи">Задачи</span>
-      </button>
-      <button class="nav-item" data-panel="storage">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-        <span data-i18n="Съхранение">Съхранение</span>
-      </button>
-      <button class="nav-item" data-panel="backups">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-        <span data-i18n="Резервни копия">Резервни копия</span>
-      </button>
-      <button class="nav-item" data-panel="logs">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        <span data-i18n="Журнал">Журнал</span>
-      </button>
-      <button class="nav-item" data-panel="api">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-        <span data-i18n="API достъп">API достъп</span>
-      </button>
-      <button class="nav-item" data-panel="settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-        <span data-i18n="Настройки">Настройки</span>
-      </button>
-      <a class="nav-item" href="ui/index.html" title="Enterprise Control Center (Report Studio, файлове, gateway, експорт)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        <span data-i18n="Enterprise GUI">Enterprise GUI</span>
-      </a>
-    </nav>
-    <div class="sidebar-foot">PasevSU DEV<br>NO TRUST Cybersecurity</div>
-  </aside>
-
-  <div class="main">
-    <header class="topbar">
-      <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <div class="topbar-title" id="topbar-title">Admin panel</div>
-      <div class="topbar-spacer"></div>
-      <input id="token" type="password" autocomplete="off" placeholder="Admin token" aria-label="Admin token">
-      <button id="load" class="btn-primary" type="button" data-i18n="Зареди портали">Зареди портали</button>
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Theme" title="Theme">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      </button>
-      <label class="lang-group" title="Language">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/></svg>
-        <select id="admin-lang" aria-label="Language">
-          <option value="bg">Български</option>
-          <option value="en">English</option>
-          <option value="de">Deutsch</option>
-        </select>
-      </label>
-      <span id="status" role="status" class="status"></span>
-    </header>
-
-    <main class="content">
-
-      <section class="panel active" id="panel-overview">
-        <div class="banner" data-i18n="Общ преглед на порталите, файловете, посещенията, изтеглянията и състоянието на системата.">Общ преглед на порталите, файловете, посещенията, изтеглянията и състоянието на системата.</div>
-        <div class="kpi-grid" id="overview-kpis"></div>
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Портали накратко">Портали накратко</h2><button id="overview-refresh" class="btn-ghost" type="button" data-i18n="Обнови">Обнови</button></div>
-          <div class="card-body" id="overview-portals"></div>
-        </section>
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Състояние на системата">Състояние на системата</h2></div>
-          <div class="card-body" id="overview-system"></div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-portals">
-        <div class="banner" data-i18n="Административният токен остава само в паметта на текущия раздел и не се записва в браузъра.">Административният токен остава само в паметта на текущия раздел и не се записва в браузъра.</div>
-
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Нов портал">Нов портал</h2></div>
-          <div class="card-body">
-            <div class="form-grid">
-              <div class="field"><label>Slug <input id="slug" placeholder="my-portal"></label></div>
-              <div class="field"><label><span data-i18n="Заглавие">Заглавие</span> <input id="title" placeholder="My portal"></label></div>
-              <div class="field"><button id="create" class="btn-primary" type="button" data-i18n="Създай">Създай</button></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Портали">Портали</h2></div>
-          <div class="card-body" id="portals"></div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-hierarchy">
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Търсене">Търсене</h2></div>
-          <div class="card-body">
-            <input id="hier-search" placeholder="Търси в записите…" aria-label="Търсене" style="width:100%">
-            <div id="hier-search-results"></div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Групи (йерархия)">Групи (йерархия)</h2></div>
-          <div class="card-body">
-            <form class="cab-bar" id="hier-group-form">
-              <input id="hier-group-name" placeholder="Име на групата" maxlength="80" aria-label="Име на групата">
-              <input id="hier-group-desc" placeholder="Описание" maxlength="200" aria-label="Описание">
-              <button class="btn-primary" type="submit" data-i18n="Създай група">Създай група</button>
-            </form>
-            <div id="hier-groups"></div>
-          </div>
-        </section>
-
-        <section class="card" id="hier-records-card" hidden>
-          <div class="card-head"><h2 id="hier-records-title" data-i18n="Записи">Записи</h2><span class="cab-tools" id="hier-records-tools"></span></div>
-          <div class="card-body" id="hier-records"></div>
-        </section>
-
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Профили (схема)">Профили (схема)</h2></div>
-          <div class="card-body" id="hier-profiles"></div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-taxonomy">
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Категории и групи">Категории и групи</h2></div>
-          <div class="card-body">
-            <p class="hint" data-i18n="Създай ги тук веднъж, после ги избираш от падащо меню при всеки файл.">Създай ги тук веднъж, после ги избираш от падащо меню при всеки файл.</p>
-            <div class="tax-cols">
-              <div><h3 data-i18n="Категории">Категории</h3><form class="tax-add" id="tax-form-category"><input id="tax-new-category" maxlength="80" aria-label="Категория"><button class="btn-primary" type="submit" data-i18n="Добави">Добави</button></form><ul class="tax-list" id="tax-list-category"></ul></div>
-              <div><h3 data-i18n="Групи">Групи</h3><form class="tax-add" id="tax-form-group"><input id="tax-new-group" maxlength="80" aria-label="Група"><button class="btn-primary" type="submit" data-i18n="Добави">Добави</button></form><ul class="tax-list" id="tax-list-group"></ul></div>
-            </div>
-          </div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-cabinet">
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Картотека">Картотека</h2></div>
-          <div class="card-body">
-            <div class="cab-bar">
-              <nav class="cab-crumbs" id="cab-crumbs" aria-label="Path"></nav>
-              <span class="cab-tools" id="cab-tools"></span>
-            </div>
-            <input type="file" id="cab-file" multiple hidden>
-            <div class="cab-split"><div id="cab-list" class="cab-list"></div><div id="cab-viewer" class="cab-viewer" hidden></div></div>
-          </div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-directory">
-        <section class="card" id="dir-conflicts-card" hidden>
-          <div class="card-head"><h2 data-i18n="Конфликти">Конфликти</h2></div>
-          <div class="card-body"><p class="hint" data-i18n="Данните не съвпадат. Избери стойност или въведи своя.">Данните не съвпадат. Избери стойност или въведи своя.</p><div id="dir-conflicts"></div></div>
-        </section>
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Добави имейл адреси">Добави имейл адреси</h2></div>
-          <div class="card-body">
-            <p class="hint" data-i18n="Въведи един или повече адреса. Останалото се попълва от правилата за домейни.">Въведи един или повече адреса. Останалото се попълва от правилата за домейни.</p>
-            <form class="tax-add" id="dir-ingest"><input id="dir-emails" aria-label="Email" placeholder="max.mustermann@martinswerk.de, …"><button class="btn-primary" type="submit" data-i18n="Добави">Добави</button></form>
-            <div id="dir-result" class="hint"></div>
-          </div>
-        </section>
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Правила за домейни">Правила за домейни</h2></div>
-          <div class="card-body">
-            <p class="hint" data-i18n="Въвеждаш данните веднъж за домейн, напр. @martinswerk.de. Можеш да ползваш {{променлива}}.">Въвеждаш данните веднъж за домейн, напр. @martinswerk.de. Можеш да ползваш {{променлива}}.</p>
-            <div id="dir-rules"></div>
-            <form id="dir-rule-form" class="cab-bar"><input id="dir-rule-pattern" placeholder="@martinswerk.de" aria-label="Domain"><span id="dir-rule-fields" class="cab-tools"></span><button class="btn-primary" type="submit" data-i18n="Добави правило">Добави правило</button></form>
-          </div>
-        </section>
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Контакти">Контакти</h2></div>
-          <div class="card-body"><div id="dir-contacts"></div></div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-variables">
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Променливи">Променливи</h2></div>
-          <div class="card-body">
-            <p class="hint" data-i18n="Всеки вид данни е променлива. Липсваща се създава тук и веднага се появява в указателя.">Всеки вид данни е променлива. Липсваща се създава тук и веднага се появява в указателя.</p>
-            <div id="var-list"></div>
-            <form id="var-form" class="cab-bar"><input id="var-key" placeholder="vat_id" aria-label="Key" maxlength="40"><input id="var-label" placeholder="Етикет" aria-label="Label" maxlength="80"><select id="var-type" aria-label="Type"></select><label><input type="checkbox" id="var-field" checked> <span data-i18n="Поле на контакт">Поле на контакт</span></label><button class="btn-primary" type="submit" data-i18n="Създай">Създай</button></form>
-          </div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-diagnostics">
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Диагностика и натоварване">Диагностика и натоварване</h2></div>
-          <div class="card-body">
-            <button id="diagnostics-refresh" type="button" data-i18n="Обнови диагностиката">Обнови диагностиката</button>
-            <pre id="diagnostics-result" aria-live="polite">No data loaded</pre>
-          </div>
-        </section>
-        <section class="card">
-          <div class="card-head">
-            <h2 data-i18n="Интелигентен контрол на натоварването">Интелигентен контрол на натоварването</h2>
-            <span class="hint" data-i18n="Адаптивният лимит на изтеглянията намалява натоварването при високо използване на heap или повишен процент грешки.">Адаптивният лимит на изтеглянията намалява натоварването при високо използване на heap или повишен процент грешки.</span>
-          </div>
-          <div class="card-body">
-            <button id="load-refresh" type="button" data-i18n="Обнови натоварването">Обнови натоварването</button>
-            <pre id="load-result" aria-live="polite">No data loaded</pre>
-          </div>
-        </section>
-        <section class="card">
-          <div class="card-head">
-            <h2 data-i18n="Проверка на hash-chain">Проверка на hash-chain</h2>
-            <span class="hint" data-i18n="Проверява непрекъснатостта и целостта на одитния журнал. Открива промени в записите, но не е външно закотвен (не защитава срещу администратор, който пренаписва цялата верига).">Проверява непрекъснатостта и целостта на одитния журнал. Открива промени в записите, но не е външно закотвен (не защитава срещу администратор, който пренаписва цялата верига).</span>
-          </div>
-          <div class="card-body">
-            <button id="audit-verify" type="button" data-i18n="Провери целостта">Провери целостта</button>
-            <pre id="audit-verify-result" aria-live="polite">No data loaded</pre>
-          </div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-jobs">
-        <section class="card">
-          <div class="card-head">
-            <h2 data-i18n="Фонови задачи">Фонови задачи</h2>
-            <span class="hint" data-i18n="Проверките на цялост се изпълняват в опашка с прогрес и възможност за отказ.">Проверките на цялост се изпълняват в опашка с прогрес и възможност за отказ.</span>
-          </div>
-          <div class="card-body">
-            <button id="jobs-refresh" type="button" data-i18n="Обнови задачите">Обнови задачите</button>
-            <pre id="jobs-result" aria-live="polite">No data loaded</pre>
-          </div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-storage">
-        <section class="card">
-          <div class="card-head">
-            <h2 data-i18n="Съхранение">Съхранение</h2>
-            <span class="hint" data-i18n="Проверка за наличност и възможност за запис на всяко хранилище. Автоматичната проверка се изпълнява на интервал.">Проверка за наличност и възможност за запис на всяко хранилище. Автоматичната проверка се изпълнява на интервал.</span>
-          </div>
-          <div class="card-body">
-            <button id="storage-check" type="button" data-i18n="Провери хранилищата">Провери хранилищата</button>
-            <pre id="storage-result" aria-live="polite">No data loaded</pre>
-          </div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-backups">
-        <section class="card">
-          <div class="card-head">
-            <h2 data-i18n="Резервно копие на SQLite">Резервно копие на SQLite</h2>
-            <span class="hint" data-i18n="Създава консистентно копие в защитената папка backups/ на приложението.">Създава консистентно копие в защитената папка backups/ на приложението.</span>
-          </div>
-          <div class="card-body">
-            <button id="database-backup" class="btn-primary" type="button" data-i18n="Създай резервно копие">Създай резервно копие</button>
-            <pre id="database-backup-status" aria-live="polite"></pre>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Резервни копия и възстановяване">Резервни копия и възстановяване</h2></div>
-          <div class="card-body">
-            <button id="backup-list" type="button" data-i18n="Списък с резервни копия">Списък с резервни копия</button>
-            <div id="backup-list-result" aria-live="polite"></div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Шедулер за резервни копия">Шедулер за резервни копия</h2></div>
-          <div class="card-body">
-            <div class="form-row">
-              <label><input type="checkbox" id="sched-enabled"> <span data-i18n="Активно">Активно</span></label>
-              <label><span data-i18n="Интервал (минути)">Интервал (минути)</span> <input type="number" id="sched-interval" min="5" value="1440" style="width:110px"></label>
-              <label><span data-i18n="Максимален брой">Максимален брой</span> <input type="number" id="sched-max" min="1" value="10" style="width:80px"></label>
-              <button id="sched-load" type="button" data-i18n="Зареди график">Зареди график</button>
-              <button id="sched-save" class="btn-primary" type="button" data-i18n="Запази график">Запази график</button>
-            </div>
-            <p><small id="sched-next"></small></p>
-          </div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-logs">
-        <section class="card">
-          <div class="card-head"><h2 data-i18n="Централизиран журнал за грешки">Централизиран журнал за грешки</h2></div>
-          <div class="card-body">
-            <div class="form-row">
-              <label><span data-i18n="Ниво">Ниво</span> <select id="error-level"><option value="" data-i18n="Всички">Всички</option><option value="error">error</option><option value="warn">warn</option><option value="info">info</option></select></label>
-              <button id="errors-refresh" type="button" data-i18n="Зареди журнала">Зареди журнала</button>
-            </div>
-            <pre id="errors-result" aria-live="polite">No data loaded</pre>
-          </div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-api">
-        <section class="card">
-          <div class="card-body" id="api-users"></div>
-        </section>
-      </section>
-
-      <section class="panel" id="panel-settings">
-        <section class="card">
-          <div class="card-head">
-            <h2 data-i18n="Настройки · база данни и QR артефакти">Настройки · база данни и QR артефакти</h2>
-            <span class="hint" data-i18n="Промяната на името на базата изисква спиране, копиране на текущата база и рестарт. Не се извършва автоматично преместване.">Промяната на името на базата изисква спиране, копиране на текущата база и рестарт. Не се извършва автоматично преместване.</span>
-          </div>
-          <div class="card-body">
-            <div class="form-grid">
-              <div class="field"><label><span data-i18n="Папка за QR записи (отделна от базата)">Папка за QR записи (отделна от базата)</span> <input id="artifact-directory" value="qr-records"></label></div>
-              <div class="field"><label><span data-i18n="Папка на базата">Папка на базата</span> <input id="database-directory" value="."></label></div>
-              <div class="field"><label><span data-i18n="Файл на базата">Файл на базата</span> <input id="database-file" value="db.json"></label></div>
-            </div>
-            <h4 data-i18n="Лимити и достъп">Лимити и достъп</h4>
-            <p class="hint" data-i18n="Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).">Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).</p>
-            <div class="form-grid">
-              <div class="field"><label><span data-i18n="Макс. размер на качване (MB)">Макс. размер на качване (MB)</span> <input id="lim-upload" type="number" min="1" max="2048"></label></div>
-              <div class="field"><label><span data-i18n="Едновременни изтегляния">Едновременни изтегляния</span> <input id="lim-streams" type="number" min="1" max="1024"></label></div>
-              <div class="field"><label><span data-i18n="Паралелни задачи">Паралелни задачи</span> <input id="lim-jobs" type="number" min="1" max="4"></label></div>
-              <div class="field"><label><span data-i18n="Проверка на хранилищата (мин, 0 = изкл.)">Проверка на хранилищата (мин, 0 = изкл.)</span> <input id="lim-check" type="number" min="0" max="10080"></label></div>
-              <div class="field"><label><span data-i18n="Публичен адрес">Публичен адрес</span> <input id="lim-url" placeholder="https://portal.example.com"></label></div>
-              <div class="field"><label><span data-i18n="CORS адрес">CORS адрес</span> <input id="lim-cors" placeholder="https://example.com"></label></div>
-              <div class="field"><label><span data-i18n="Ключ за портал">Ключ за портал</span> <select id="lim-token"><option value="" data-i18n="Автоматично">Автоматично</option><option value="true" data-i18n="Задължителен">Задължителен</option><option value="false" data-i18n="Не е задължителен">Не е задължителен</option></select></label></div>
-              <div class="field"><label><span data-i18n="Пълен IP в телеметрията">Пълен IP в телеметрията</span> <select id="lim-ip"><option value="" data-i18n="Автоматично">Автоматично</option><option value="false" data-i18n="Не (препоръчително)">Не (препоръчително)</option><option value="true" data-i18n="Да">Да</option></select></label></div>
-            </div>
-            <div class="form-row" style="margin-top:14px">
-              <button id="settings-load" type="button" data-i18n="Зареди настройки">Зареди настройки</button>
-              <button id="settings-save" class="btn-primary" type="button" data-i18n="Запази настройки">Запази настройки</button>
-            </div>
-            <pre id="settings-status"></pre>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head">
-            <h2 data-i18n="Профили за конфигурация">Профили за конфигурация</h2>
-            <span class="hint" data-i18n="Записвай и прилагай наименувани профили на настройките.">Записвай и прилагай наименувани профили на настройките.</span>
-          </div>
-          <div class="card-body">
-            <div class="form-grid">
-              <div class="field"><label><span data-i18n="Име">Име</span> <input id="profile-name" placeholder="production"></label></div>
-              <div class="field"><label><span data-i18n="Настройки (JSON, по избор)">Настройки (JSON, по избор)</span> <textarea id="profile-settings" rows="3" placeholder='{"organization":"Acme"}'></textarea></label></div>
-            </div>
-            <div class="form-row" style="margin-top:14px">
-              <button id="profile-save" class="btn-primary" type="button" data-i18n="Запази профил">Запази профил</button>
-              <button id="profile-list" type="button" data-i18n="Списък">Списък</button>
-              <button id="profile-apply" type="button" data-i18n="Приложи">Приложи</button>
-              <button id="profile-delete" class="btn-ghost" type="button" data-i18n="Изтрий">Изтрий</button>
-            </div>
-            <div id="profiles-result" aria-live="polite"></div>
-          </div>
-        </section>
-      </section>
-
-      <footer class="foot">
-        <small data-i18n="Създадено от PasevSU DEV · Home Assistant Projects · част от доброволческата кампания NO TRUST Cybersecurity. Лиценз: виж LICENSE файла.">Създадено от PasevSU DEV · Home Assistant Projects · част от доброволческата кампания NO TRUST Cybersecurity. Лиценз: виж LICENSE файла.</small>
-      </footer>
-
-    </main>
   </div>
-</div>
-<script src="admin.js" defer></script>
+  <script src="admin.js" defer></script>
 </body>
+
 </html>

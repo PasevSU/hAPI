@@ -24,6 +24,13 @@ ADMIN_TOKEN.txt
 /data/
 .first-run-done
 
+# PGP ключови пакети — private.asc е частният ключ, не влиза в git
+PGP_CryptoSAK_keys-*/
+**/private.asc
+id_rsa*
+*.pem
+*.pfx
+
 # Build artifacts & releases
 release/
 build/

@@ -356,8 +356,9 @@ check('S11', 'Сигурност: няма тайни и вътрешни адр
     }
   }
   assert(offenders.length === 0, 'намерени тайни:\n  ' + offenders.join('\n  '));
-  // Празните стойности по подразбиране в options са задължителни.
-  assert(addonConfig.options.token === null || addonConfig.options.token === '', 'options.token трябва да е празен по подразбиране');
+  // Празните стойности по подразбиране в options са задължителни. Админ токен вече
+  // няма — ключът е вътрешен и се генерира при първи старт.
+  assert(!Object.prototype.hasOwnProperty.call(addonConfig.options, 'token'), 'options.token трябва да е премахнат (вътрешен ключ)');
   assert(addonConfig.options.password === null || addonConfig.options.password === '', 'options.password трябва да е празен по подразбиране');
   return 'няма частни ключове, JWT, токени и ключове';
 });

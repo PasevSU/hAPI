@@ -208,9 +208,15 @@ Invoke-Command-Step -Text 'meta' -Command "gh repo edit $fullName --description 
 Write-Step "4/5  Таг $tag"
 # Таг се вдига само веднъж за дадена версия: ако вече сочи друг commit, не го местим
 # (това е подмяна на издадено издание) — вместо това се вдига версията.
-$remoteTagSha = if ($Execute) { (gh api "repos/$fullName/git/ref/tags/$tag" --jq .object.sha 2>$null) } else { $null }
-Push-Location $gitDir
-try { $headSha = if ($Execute) { git rev-parse HEAD } else { '' } } finally { Pop-Location }
+$remoteTagSha = $null
+if ($Execute) {
+    # 404 при липсващ таг също връща текст в stdout при някои версии на gh — затова
+    # гледаме кода на изхода, а не само дали има стойност.
+    $probe = gh api "repos/$fullName/git/ref/tags/$tag" --jq .object.sha 2>$null
+    if ($LASTEXITCODE -eq 0 -and $probe) { $remoteTagSha = ("$probe").Trim() }
+}
+# В dry run git папката в %TEMP% още не съществува — не влизаме в нея.
+$headSha = if ($Execute) { Push-Location $gitDir; try { (git rev-parse HEAD).Trim() } finally { Pop-Location } } else { '' }
 
 if ($Execute -and $remoteTagSha) {
     if ($remoteTagSha -eq $headSha) {

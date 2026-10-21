@@ -1,15 +1,10 @@
 configuration:
   username:
     name: Console user name
-    description: Optional user name stored next to the admin token.
+    description: Optional user name for the standalone console login (not needed under Home Assistant Ingress).
   password:
     name: Console password
-    description: Optional console password; leave empty to rely on the token only.
-  token:
-    name: Admin token
-    description: >-
-      Secret for the console and the API, at least 24 characters. When empty, a random
-      token is generated once and kept in /data/admin-token.
+    description: Optional console password for standalone deployments; Home Assistant users sign in with their own account.
   db_name:
     name: Database and portal name
     description: Name used for the first portal and for the database file.
