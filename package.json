@@ -1,0 +1,28 @@
+{
+  "name": "hapi-enterprise",
+  "version": "1.0.0",
+  "private": true,
+  "description": "hAPI Enterprise — документи и портали между Home Assistant и Windows",
+  "scripts": {
+    "test": "node scripts/run-tests.cjs",
+    "dashboard": "node scripts/dev-dashboard.cjs",
+    "release": "node scripts/build-release.cjs --with-tests && node scripts/verify-release.cjs",
+    "release:build": "node scripts/build-release.cjs",
+    "release:verify": "node scripts/verify-release.cjs --with-tests",
+    "release:export": "node scripts/export-release.cjs",
+    "audit": "node scripts/pre-push-audit.cjs",
+    "lint": "eslint hapi_enterprise tests custom_components scripts",
+    "lint:fix": "eslint hapi_enterprise tests custom_components scripts --fix",
+    "format": "prettier --write \"**/*.{js,cjs,mjs,json,css,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{js,cjs,mjs,json,css,yml,yaml}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10"
+  }
+}
+
+

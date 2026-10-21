@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "defaults": { "per_hour": 60, "concurrent": 2, "burst": 10, "block_minutes": 15 },
+  "overrides": [
+    { "scope": "portal", "id": "public-notices", "per_hour": 300, "concurrent": 5 },
+    { "scope": "portal", "id": "forensic-2026-114", "per_hour": 20, "concurrent": 1 }
+  ]
+}

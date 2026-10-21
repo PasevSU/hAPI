@@ -1,0 +1,40 @@
+# Release Checklist — hAPI Enterprise
+
+## Pre-flight
+
+- [ ] Version bumped (`node scripts/build-release.cjs --version X.Y.Z` — пише в
+      `hapi_enterprise/config.yaml` и `custom_components/hapi_enterprise/manifest.json`).
+- [ ] `CHANGELOG.md` има запис за версията.
+- [ ] Change-control record for all included changes.
+- [ ] Dependencies pinned/audited.
+
+## Build & test
+
+- [ ] `npm test` (пълен набор `tests/*.cjs`) зелен.
+- [ ] `node scripts/build-release.cjs` — строи `dist/`.
+- [ ] `node scripts/verify-release.cjs --with-tests` — 21/21 сценария зелени (вкл. HACS структурата).
+- [ ] `npm run audit` — без тайни и файлове над 5 MB в дървото.
+- [ ] `node tests/hacs-structure.cjs` — HACS структурата е валидна.
+- [ ] Security + crypto + interop + GUI E2E pass.
+
+## Artifacts
+
+- [ ] `dist/hapi_enterprise-<v>.tar.gz` — add-on архивът е валиден.
+- [ ] `dist/hapi_enterprise-integration-<v>.zip` — интеграцията е валидна.
+- [ ] `dist/SHA256SUMS.txt` проверен след трансфер.
+- [ ] Brand banners (`img/banner.png`, etc.) correct (tank-with-wings v2).
+- [ ] Public portal assets deployed.
+
+## Docs
+
+- [ ] README.md / BG.md / DE.md updated.
+- [ ] `documentation/` tree current (00–08).
+- [ ] Changelog entry added.
+
+## Release
+
+- [ ] Tag `v<версия>` created (Actions `Release` строи и качва артефактите).
+- [ ] Release notes published.
+- [ ] `RELEASE_DECISION.md` signed with date + approver.
+
+> Пълното описание на артефактите, сценариите и командите е в `RELEASE_BUILD.md`.

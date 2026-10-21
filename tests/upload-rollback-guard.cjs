@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../portal_enterprise/server.js'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'../hapi_enterprise/server.js'),'utf8');
 const start=source.indexOf("if(parts[4]==='files'&&parts.length===5&&method==='POST')");
 const end=source.indexOf("if(parts[4]==='files'&&parts[5])",start);
 assert(start>=0&&end>start,'upload handler must exist');

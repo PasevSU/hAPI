@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hapi-enterprise.local/schemas/package_manifest.schema.json",
+  "title": "PACKAGE_INDEX.json",
+  "description": "Индекс на експортния пакет: по един запис за всеки файл с относителен път, размер, SHA-256, тип, източник и резултат от проверката.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "package_id", "created_at", "mode", "complete", "entries"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "package_id": { "type": "string", "pattern": "^RPT-[0-9]{8}-[0-9]{6}-[A-Z0-9]{1,24}$" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "mode": {
+      "enum": ["single", "selected", "report", "evidence", "manifest", "certificates", "pdf", "template", "backup", "audit", "bulk", "verified"]
+    },
+    "complete": {
+      "type": "boolean",
+      "description": "false = диагностичен/непълен пакет (напр. липсва START или STOP)."
+    },
+    "notes": { "type": "string" },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "size", "sha256", "kind", "source", "verified"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240,
+            "not": { "pattern": "(^/|^[A-Za-z]:|^//|(^|/)\\.\\.(/|$))" }
+          },
+          "size": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "kind": {
+            "enum": ["pdf", "manifest", "hashes", "timestamps", "originals", "audit", "certificates", "templates", "index", "folder"]
+          },
+          "source": { "type": "string" },
+          "verified": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

@@ -8,7 +8,7 @@ const ingress='/api/hassio_ingress/test-token_123';
  const projectFolder=path.join(dir,'html-projects','ingress-site');
  fs.mkdirSync(projectFolder,{recursive:true});
  fs.writeFileSync(path.join(projectFolder,'index.html'),'<h1>Ingress site works</h1>');
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub),ADMIN_PORT:String(adm),INGRESS_MODE:'true'},stdio:'pipe'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub),ADMIN_PORT:String(adm),INGRESS_MODE:'true'},stdio:'pipe'});
  try{
   let ready=false;
   for(let i=0;i<70;i++){try{if((await fetch(`http://127.0.0.1:${pub}/health`)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,70))}
@@ -22,15 +22,15 @@ const ingress='/api/hassio_ingress/test-token_123';
   assert.equal(await status(adm,'/admin'),200);
   assert.equal(await status(adm,'/admin.js'),200);
   assert.equal(await status(adm,'/admin/api/portals'),401);
-  assert.equal(await status(adm,'/admin/api/ingress-login'),401);
+  assert.equal(await status(adm,'/admin/api/ingress-login'),403);
   assert.equal(await status(pub,'/admin/api/ingress-login'),404);
   assert.equal(await status(adm,'/admin/api/portals',{Authorization:'Bearer '+token}),200);
   const ingressHeaders={'X-Ingress-Path':ingress};
   const adminPage=await get(adm,ingress+'/admin',ingressHeaders);
   assert.equal(adminPage.status,200);
   const adminHtml=await adminPage.text();
-  assert(adminHtml.includes('<title>hAPI ENTERPRICE · Admin</title>'));
-  assert(adminHtml.includes('<span class="brand-name">hAPI ENTERPRICE</span>'));
+  assert(adminHtml.includes('<title>hAPI Enterprise · Admin</title>'));
+  assert(adminHtml.includes('<span class="brand-name">hAPI Enterprise</span>'));
   const adminScript=await get(adm,ingress+'/admin.js',ingressHeaders);
   assert.equal(adminScript.status,200);
   const adminJs=await adminScript.text();

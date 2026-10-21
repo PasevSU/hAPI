@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "hierarchy": ["system", "storage", "portal", "folder", "file", "user", "token", "session"],
+  "system": { "allow_downloads": true, "public_gateway": true, "mode": "FREE" },
+  "default_policy": {
+    "mode": "FREE",
+    "roles": [],
+    "expires_at": null,
+    "max_downloads": null,
+    "password": false,
+    "verify_on_serve": true,
+    "audit": true,
+    "window": null,
+    "ip": { "allow": [], "deny": [] },
+    "concurrency": 2,
+    "rate_per_hour": 60,
+    "one_time": false
+  }
+}

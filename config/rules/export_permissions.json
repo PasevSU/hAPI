@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "permissions": [
+    { "id": "files.read", "label": "Преглед на файл", "roles": ["admin", "operator", "viewer", "judge"] },
+    { "id": "files.download", "label": "Изтегляне", "roles": ["admin", "operator", "viewer", "judge", "portal-guest"] },
+    { "id": "reports.export", "label": "Експорт на отчет", "roles": ["admin", "operator"] },
+    { "id": "evidence.export", "label": "Експорт на доказателства", "roles": ["admin"] },
+    { "id": "templates.export", "label": "Експорт на шаблони", "roles": ["admin", "operator"] },
+    { "id": "audit.export", "label": "Експорт на логове", "roles": ["admin"] },
+    { "id": "backups.create", "label": "Създаване на архив", "roles": ["admin"] },
+    { "id": "bulk.export", "label": "Групов експорт", "roles": ["admin", "operator"] }
+  ],
+  "mode_permissions": {
+    "single": "files.download",
+    "selected": "files.download",
+    "report": "reports.export",
+    "evidence": "evidence.export",
+    "manifest": "reports.export",
+    "certificates": "audit.export",
+    "pdf": "reports.export",
+    "template": "templates.export",
+    "backup": "backups.create",
+    "audit": "audit.export",
+    "bulk": "bulk.export",
+    "verified": "files.download"
+  },
+  "public_tokens": {
+    "inherit_internal_permissions": false,
+    "note": "Порталният ключ не дава evidence.export или audit.export."
+  }
+}

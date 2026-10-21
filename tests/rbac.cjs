@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
-const {create,CAPABILITIES}=require('../portal_enterprise/rbac');
+const {create,CAPABILITIES}=require('../hapi_enterprise/rbac');
 (async()=>{
  // Unit: role resolution + capability matrix
  const admin='rbac-admin-token-0123456789ABCDEF',operator='rbac-operator-token-0123456789AB',viewer='rbac-viewer-token-0123456789ABC';
@@ -15,11 +15,16 @@ const {create,CAPABILITIES}=require('../portal_enterprise/rbac');
  assert.equal(rbac.allowed(null,'portals','GET'),false);
  assert.equal(rbac.allowed('viewer','*','GET'),false); // untagged routes are admin-only
  assert(CAPABILITIES.settings.admin===true);
+ // Делата (cases) се управляват като контактите: operator пише, viewer чете.
+ assert.equal(rbac.allowed('operator','cases','POST'),true);
+ assert.equal(rbac.allowed('viewer','cases','GET'),true);
+ assert.equal(rbac.allowed('viewer','cases','POST'),false);
+ assert.equal(rbac.allowed('operator','directory','POST'),true);
 
  // API: role enforcement across endpoints
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'portal-rbac-api-'));
  const port=27000+Math.floor(Math.random()*10000);
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:root,PORT:String(port),ADMIN_TOKEN:admin,OPERATOR_TOKEN:operator,VIEWER_TOKEN:viewer},stdio:'ignore'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:root,PORT:String(port),ADMIN_TOKEN:admin,OPERATOR_TOKEN:operator,VIEWER_TOKEN:viewer},stdio:'ignore'});
  const call=async(route,token,method='GET',data)=>{const x=await fetch(`http://127.0.0.1:${port}${route}`,{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:data});return {status:x.status,data:await x.json()}};
  try{
   let ready=false;for(let i=0;i<100;i++){try{if((await fetch(`http://127.0.0.1:${port}/health`)).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}assert(ready,'server did not start');

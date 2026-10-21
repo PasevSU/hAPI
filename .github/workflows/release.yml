@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Версия за изданието (напр. 0.52.0). Празно = текущата от config.yaml"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build + verify (Ubuntu · Node 22)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build release (includes full test suite)
+        shell: bash
+        run: |
+          set -e
+          if [ -n "${{ inputs.version }}" ]; then
+            node scripts/build-release.cjs --version "${{ inputs.version }}"
+          else
+            node scripts/build-release.cjs
+          fi
+        env:
+          CI: "true"
+
+      - name: Verify release (all scenarios incl. tests)
+        run: node scripts/verify-release.cjs --with-tests
+        env:
+          CI: "true"
+
+      - name: Check tag matches config.yaml
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          version=$(node -e "process.stdout.write(require('./scripts/release-lib.cjs').readAddonVersion())")
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$version" != "$tag" ]; then
+            echo "::error::Тагът е $tag, а config.yaml е $version"
+            exit 1
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hapi-enterprise-release
+          path: dist/
+          if-no-files-found: error
+
+      - name: Attach to GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/hapi_enterprise-*.tar.gz
+            dist/hapi_enterprise-integration-*.zip
+            dist/repository.yaml
+            dist/RELEASE.json
+            dist/SHA256SUMS.txt
+          generate_release_notes: true

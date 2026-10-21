@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest an enhancement for hAPI Enterprise
+labels: [enhancement, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Link your request to the roadmap where relevant (see `documentation/00_GOVERNANCE/ROADMAP.md`).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the feature and how it should behave.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How will we know it is done? (e.g. tests, observable behavior)
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Roadmap phase
+      options:
+        - "Phase 5 — settings + progress"
+        - "Phase 6 — zero-damage migration"
+        - "Phase 7 — evidence portal"
+        - "Other / not on roadmap"

@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "defaults": {
+    "status": "active",
+    "access": "KEY_REQUIRED",
+    "visibility": "public",
+    "html": "catalog",
+    "api": true,
+    "qr": true,
+    "storage_root": "/share",
+    "inherit": true
+  },
+  "portals": [
+    { "slug": "chronoseal-vault", "title": "ChronoSeal-Vault", "status": "active", "access": "KEY_REQUIRED", "visibility": "public", "storage_root": "/share/chronoseal" },
+    { "slug": "dew21-documents", "title": "DEW21 — документи", "status": "active", "access": "KEY_REQUIRED", "visibility": "public", "storage_root": "/share/dew21" },
+    { "slug": "forensic-2026-114", "title": "Forensic — дело 2026-114", "status": "paused", "access": "PRIVATE", "visibility": "hidden", "roles": ["admin", "judge"], "storage_root": "/share/forensic" },
+    { "slug": "public-notices", "title": "Public notices", "status": "active", "access": "FREE", "visibility": "public", "storage_root": "/share/notices" }
+  ]
+}

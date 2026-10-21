@@ -1,15 +1,34 @@
 'use strict';
 const { stopChild } = require('./helpers.cjs');
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
-const rc=require('../portal_enterprise/runtime-config.js');
+const rc=require('../hapi_enterprise/runtime-config.js');
 (async()=>{
  assert.deepEqual(rc.validate({}).limits.maxJobs,null);
  for(const bad of [{maxJobs:9},{maxUploadMb:0},{maxDownloadStreams:5000},{storageCheckMinutes:-1},{publicBaseUrl:'javascript:alert(1)'},{corsOrigin:'ftp://x'},{requirePortalToken:'yes'},{nope:1}])assert.throws(()=>rc.validate({limits:bad}));
  assert.equal(rc.validate({limits:{publicBaseUrl:'https://portal.example.com/'}}).limits.publicBaseUrl,'https://portal.example.com');
 
+ // Публичният базов адрес от средата (run.sh → public_domain) се валидира: невалиден не
+ // влиза в QR кодовете, а пътят (reverse proxy) се запазва.
+ const baseDir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-base-')),savedBase=process.env.PUBLIC_BASE_URL;
+ try{
+  process.env.PUBLIC_BASE_URL='https://pasev.asuscomm.com/';
+  assert.equal(rc.create(baseDir).effective().publicBaseUrl,'https://pasev.asuscomm.com');
+  process.env.PUBLIC_BASE_URL='https://pasev.asuscomm.com/hapi/';
+  assert.equal(rc.create(baseDir).effective().publicBaseUrl,'https://pasev.asuscomm.com/hapi','пътят се запазва');
+  process.env.PUBLIC_BASE_URL='pasev.asuscomm.com';
+  assert.equal(rc.create(baseDir).effective().publicBaseUrl,'','без схема не се приема');
+  process.env.PUBLIC_BASE_URL='javascript:alert(1)';
+  assert.equal(rc.create(baseDir).effective().publicBaseUrl,'');
+  process.env.PUBLIC_BASE_URL='';
+  assert.equal(rc.create(baseDir).effective().publicBaseUrl,'');
+ }finally{
+  if(savedBase===undefined)delete process.env.PUBLIC_BASE_URL;else process.env.PUBLIC_BASE_URL=savedBase;
+  fs.rmSync(baseDir,{recursive:true,force:true});
+ }
+
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-lim-'));
  const token='limits-test-admin-secret-2026-k4',pub=18322,B=`http://127.0.0.1:${pub}`;
- const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub)},stdio:'pipe'});
+ const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub)},stdio:'pipe'});
  try{
   let ready=false;for(let i=0;i<70;i++){try{if((await fetch(B+'/health')).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,70))}
   assert(ready);

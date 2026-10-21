@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hapi-enterprise.local/schemas/transfer_state.schema.json",
+  "title": "transfer_state",
+  "description": "Журнал на една трансферна операция. При рестарт незавършените операции се проверяват, преди да бъдат възобновени.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["operation_id", "state", "mode", "created_at", "updated_at"],
+  "properties": {
+    "operation_id": { "type": "string", "minLength": 8, "maxLength": 64 },
+    "state": {
+      "enum": [
+        "QUEUED",
+        "PREFLIGHT",
+        "COPYING",
+        "VERIFYING",
+        "FINALIZING",
+        "COMPLETED",
+        "FAILED",
+        "CANCELLED",
+        "RECOVERY_REQUIRED"
+      ]
+    },
+    "mode": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "source": { "type": "string" },
+    "destination": { "type": "string" },
+    "size": { "type": "integer", "minimum": 0 },
+    "expected_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "written_bytes": { "type": "integer", "minimum": 0 },
+    "verified": { "type": "boolean" },
+    "error": { "type": ["string", "null"] },
+    "timeline": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["state", "at"],
+        "properties": {
+          "state": { "type": "string" },
+          "at": { "type": "string", "format": "date-time" },
+          "detail": { "type": "string" }
+        }
+      }
+    }
+  }
+}

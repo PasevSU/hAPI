@@ -1,6 +1,7 @@
 # DOCFLOW — Master Plan v5.0 (Консолидирана архитектура)
 
-> **Статус:** Каноничен документ. Този файл заменя/надгражда v1.0–v4.3 и е единственият източник на истина напред.
+> **Статус:** Каноничен до v6.0. Този файл заменя/надгражда v1.0–v4.3 и остава детайлното архитектурно приложение.
+> **Обхват и приоритет:** [`15-unified-master-plan-v6.0.md`](15-unified-master-plan-v6.0.md) (единствен източник на истина от 2026-10-20).
 > **Цел:** Да върне в центъра **оригиналното изискване** (йерархията с променливи), да вземе **най-доброто** от всяка версия и да остане **реалистично** за Home Assistant add-on (единичен Node.js процес, SQLite, без външни зависимости).
 
 ---
@@ -157,7 +158,7 @@ variables         (key TEXT PK,        -- "{prefix}-{ID_db}-{id_gruppe}-{field}"
                    record_id, field, value_type, value_text, value_num, value_json,
                    updated_at)
 links             (group_id, record_id)      -- асоцииране/премахване
-audit_log         (запазва се от portal_enterprise)
+audit_log         (запазва се от hapi_enterprise)
 ```
 
 `variables.key` е **каноничният** ключ от §1.1. `record_id` е обратна връзка за обновяване на отделен запис без да се парсва ключа.
@@ -171,7 +172,7 @@ Bounded contexts от v4.1 остават полезни като **ментал
 | Context       | Отговорност                                   | Реализация днес                     |
 | ------------- | --------------------------------------------- | ----------------------------------- |
 | Document      | досиета, профили, променливи, orphan          | ядрото §1                           |
-| Identity      | потребители, права                           | scrypt + RBAC (от portal_enterprise)|
+| Identity      | потребители, права                           | scrypt + RBAC (от hapi_enterprise)|
 | Verification  | подпис/верификация, QR                       | hash-chain audit + signed URL       |
 | Template      | шаблони 5000, генериране на PDF/OOXML         | съществуващ dependency-free writer  |
 | Audit         | неизменяем журнал                            | hash-chain audit_log                |
@@ -208,7 +209,7 @@ v4.2 (Multi-Tenancy) и v4.3 (Zero Trust) са **ценни като бъдещ 
 
 ## 6. Какво строим СЕГА vs ПО-КЪСНО (заземен roadmap)
 
-### 6.1 Фаза 1 — Ядрото (сега, в portal_enterprise)
+### 6.1 Фаза 1 — Ядрото (сега, в hapi_enterprise)
 
 1. **Registry + config.yaml** — дефиниции на профили 1000–5000 и техните полета.
 2. **Variable store** — таблица `variables` с композитния ключ от §1.1.
@@ -236,9 +237,9 @@ v4.2 (Multi-Tenancy) и v4.3 (Zero Trust) са **ценни като бъдещ 
 
 ---
 
-## 7. Миграция от portal_enterprise v0.49
+## 7. Миграция от hapi_enterprise v0.49
 
-| portal_enterprise      | DOCFLOW v5.0                             |
+| hapi_enterprise      | DOCFLOW v5.0                             |
 | ---------------------- | ---------------------------------------- |
 | `portals`              | `groups` + `records` (3000) + QR         |
 | `files`                | `records` (2000) + storage               |

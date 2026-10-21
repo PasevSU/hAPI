@@ -1,7 +1,7 @@
 'use strict';
 const { stopChild } = require('./helpers.cjs');
 const {spawn}=require('node:child_process'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),assert=require('node:assert/strict');
-(async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-bulk-'));const port=29000+Math.floor(Math.random()*1000),token='admin-secret-12345678901234567890';const child=spawn(process.execPath,[path.join(__dirname,'../portal_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'pipe'});
+(async()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-bulk-'));const port=29000+Math.floor(Math.random()*1000),token='admin-secret-12345678901234567890';const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,PORT:String(port),ADMIN_TOKEN:token},stdio:'pipe'});
 const call=async(p,m='GET',data,auth=true,raw=false)=>{const r=await fetch(`http://127.0.0.1:${port}${p}`,{method:m,headers:{...(auth?{Authorization:'Bearer '+token}:{}),...(raw?{'X-File-Name':'test.txt'}:{'Content-Type':'application/json'})},body:data===undefined?undefined:raw?data:JSON.stringify(data)});return {status:r.status,v:await r.json()}};
 try{let ready=false;for(let i=0;i<100;i++){try{if((await call('/health')).status===200){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,30))}assert(ready);
 const p=(await call('/admin/api/portals','POST',{slug:'batch',title:'Batch'})).v;const base=`/admin/api/portals/${p.id}`;const a=(await call(base+'/files','POST','AAA',true,true)).v;const b=(await call(base+'/files','POST','BBB',true,true)).v;

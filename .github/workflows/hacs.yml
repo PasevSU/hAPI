@@ -1,0 +1,38 @@
+name: HACS validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "custom_components/**"
+      - "hacs.json"
+      - "hapi_enterprise/config.yaml"
+      - ".github/workflows/hacs.yml"
+  pull_request:
+    paths:
+      - "custom_components/**"
+      - "hacs.json"
+      - "hapi_enterprise/config.yaml"
+      - ".github/workflows/hacs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: HACS action (integration)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Local structure checks
+        shell: bash
+        run: node tests/hacs-structure.cjs
+
+      # `topics` се игнорира, защото се задават в настройките на хранилището
+      # (home-assistant, hacs, integration), а не във файл в кода.
+      - uses: hacs/action@main
+        with:
+          category: integration
+          ignore: topics

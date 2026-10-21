@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "events": [
+    "access.allowed",
+    "access.denied",
+    "download.start",
+    "download.complete",
+    "export.complete",
+    "export.failed",
+    "token.issued",
+    "token.revoked",
+    "gateway.published",
+    "gateway.unpublished"
+  ],
+  "fields": ["timestamp", "channel", "portal", "file_id", "user", "token_id", "ip", "status", "reason", "operation_id"],
+  "retention_days": 365,
+  "channels": { "ingress": "admin-audit", "public": "access-history" }
+}

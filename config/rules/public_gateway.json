@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "ingress": { "port": 8099, "stream": true, "panel_admin": true, "path": "/" },
+  "public": {
+    "port": 8088,
+    "published": false,
+    "require_https": true,
+    "domain": null,
+    "base_path": "/p/",
+    "relative": false
+  },
+  "storage": { "allowed_roots": ["/share", "/media"] },
+  "deny": {
+    "admin_paths": [
+      "/admin",
+      "/admin/api",
+      "/hassio",
+      "/supervisor",
+      "/api/hassio",
+      "/api/services",
+      "/api/states",
+      "/api/config"
+    ],
+    "prefixes": ["/config", "/ssl", "/backup", "/addons", "/addon_configs"],
+    "filesystem_paths": ["/etc", "/proc", "/sys", "/root", "/home", "/usr", "/var", "/dev", "/boot"]
+  },
+  "tokens": { "prefix": "hapi_", "reject_ha_jwt": true, "min_length": 16, "max_length": 256 },
+  "routes": {
+    "portal": "/p/{id}/",
+    "portal_api": "/api/public/v1/portals/{slug}",
+    "file_api": "/api/public/v1/files/{id}",
+    "download": "/api/public/v1/files/{id}/download",
+    "qr": "/api/public/v1/portals/{slug}/qr.svg"
+  }
+}

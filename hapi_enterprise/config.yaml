@@ -1,0 +1,56 @@
+name: "hAPI Enterprise"
+version: "0.54.0"
+slug: "hapi_enterprise"
+description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 8098
+ingress_entry: /admin
+ports:
+  8099/tcp: null
+  8088/tcp: null
+ports_description:
+  8099/tcp: "Internal-only API; do not expose host port"
+  8088/tcp: "Public API Gateway (internal; reverse proxy on the same host/port as Home Assistant)"
+options:
+  username: ""
+  password: ""
+  token: ""
+  db_name: ""
+  backup_folder: ""
+  db_id: "1"
+  profiles: ""
+  public_domain: ""
+  public_gateway: false
+  public_same_origin: false
+  user_roles: ""
+  group_roles: ""
+schema:
+  username: str?
+  password: password?
+  token: password?
+  db_name: str?
+  backup_folder: str?
+  db_id: str?
+  profiles: str?
+  public_domain: str?
+  public_gateway: bool?
+  public_same_origin: bool?
+  user_roles: str?
+  group_roles: str?
+map:
+  - addon_config:rw
+  - media:rw
+  - share:rw
+environment:
+  DATA_DIR: /config
+  PORT: "8099"
+  PUBLIC_GATEWAY_PORT: "8088"
+  PUBLIC_GATEWAY_BIND: "0.0.0.0"
+
+# The public API is intended to be exposed through the optional HA custom integration.

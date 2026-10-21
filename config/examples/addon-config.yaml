@@ -1,0 +1,27 @@
+# Проектен пример — НЕ е готова конфигурация за публикуване.
+# 8099 обслужва само Ingress (администрация през Home Assistant).
+# 8088 е отделен Public API Gateway; не се отваря автоматично и изисква собствен
+# HTTPS reverse proxy и домейн, различен от този на Home Assistant.
+name: hAPI ENTERPRICE
+slug: hapi_enterprice
+version: 0.1.0
+ingress: true
+ingress_port: 8099
+ingress_stream: true
+panel_title: hAPI ENTERPRICE
+panel_icon: mdi:api
+panel_admin: true
+
+ports:
+  8088/tcp: null
+
+ports_description:
+  8088/tcp: Public API Gateway
+
+# За да работи API-то на същия IP и порт като Home Assistant, включете:
+#   public_same_origin: true
+# и маршрутизирайте /p/ и /api/public/ към add-on-а на :8088 през reverse proxy.
+options:
+  public_domain: ""
+  public_gateway: false
+  public_same_origin: true

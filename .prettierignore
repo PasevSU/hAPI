@@ -1,0 +1,10 @@
+node_modules/
+data/
+release/
+build/
+dist/
+hapi_enterprise/fonts/
+img/
+docs/
+documentation/
+*.min.js
