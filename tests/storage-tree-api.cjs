@@ -14,6 +14,8 @@ const assert = require('node:assert/strict');
   const token = 'storage-tree-test-token-24-chars';
   // storage_root винаги е под /share — в теста това е <root>/share/<уникална>.
   const shareBase = path.join(path.parse(os.tmpdir()).root, 'share');
+  // mkdtempSync изисква родителската папка да съществува (на Linux/macOS /share липсва).
+  fs.mkdirSync(shareBase, { recursive: true });
   const storageDir = fs.mkdtempSync(path.join(shareBase, 'hapi-tree-'));
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: { ...process.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },
