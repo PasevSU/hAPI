@@ -39,6 +39,8 @@ const parameters = [
   '[switch]$Prerelease',
   '[switch]$Latest',
   '[int]$Retries',
+  '[switch]$Hacs',
+  '[switch]$SkipHacs',
   '[string]$LogFile',
 ];
 for (const parameter of parameters) {
@@ -67,10 +69,23 @@ const layers = [
   'Слой 7 · Какво ще се публикува',
   'Слой 8 · Публикуване',
   'Слой 9 · Проверка',
+  'Слой 10 · HACS',
 ];
 for (const layer of layers) {
   assert.ok(text.includes(layer), 'липсва ' + layer);
 }
+
+// 3б. HACS се обновява след изданието и само след изрично съгласие.
+const hacsLayer = text.indexOf('function Invoke-HacsUpdate');
+assert.ok(hacsLayer > 0, 'има функция Invoke-HacsUpdate');
+assert.ok(text.indexOf('Invoke-HacsUpdate', hacsLayer + 10) > hacsLayer, 'Invoke-HacsUpdate се извиква, не само дефинира');
+// Редът се проверява в главния поток, а не по първото срещане в текста (функциите са отгоре).
+const mainFlow = text.slice(text.indexOf('# ── Главен поток'));
+assert.ok(mainFlow.indexOf('Test-Published') > 0, 'главният поток вика Test-Published');
+assert.ok(mainFlow.indexOf('Invoke-HacsUpdate') > mainFlow.indexOf('Test-Published'), 'HACS слоят върви след проверката на изданието');
+assert.ok(text.includes('publish-haoss.ps1'), 'ползва съществуващия HACS скрипт, вместо да го преписва');
+assert.ok(text.includes('HACS НЕ се пипа'), '-Yes сам по себе си не публикува в HACS');
+assert.ok(text.includes('$script:ReleaseGone = $true'), 'изтрито издание не води до обновяване на HACS');
 
 // 4. Пита в кое хранилище и предлага реален списък.
 const repoDefinition = text.indexOf('function Select-Repo');

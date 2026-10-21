@@ -20,6 +20,7 @@
       8. Публикуване  — създаване, после отделно качване (за да може да се продължи при частичен
                         провал), с повторни опити и възстановяване.
       9. Проверка     — сверява каченото с очакваното, предлага отваряне/повторно качване/изтриване.
+      10. HACS        — пита дали да обнови и HACS хранилището (интеграцията) до същата версия.
 
     Без -Execute НИЩО не се качва: показват се проверките, текстът и точната gh команда.
 
@@ -69,6 +70,13 @@
 .PARAMETER LogFile
     Път до лог файл. По подразбиране — временен файл, който се показва накрая.
 
+.PARAMETER Hacs
+    След успешно публикуване обновява и HACS хранилището (интеграцията) без да пита.
+    Без него скриптът пита; в неинтерактивен режим (-Yes) HACS НЕ се пипа.
+
+.PARAMETER SkipHacs
+    Не предлага обновяване на HACS хранилището (само add-on изданието).
+
 .EXAMPLE
     pwsh -File release/publish-release.ps1
     Интерактивно: избираш източник, минаваш през всички проверки, потвърждаваш (dry run).
@@ -96,6 +104,8 @@ param(
     [switch]$Prerelease,
     [switch]$Latest,
     [int]$Retries = 3,
+    [switch]$Hacs,
+    [switch]$SkipHacs,
     [string]$LogFile
 )
 
@@ -129,6 +139,9 @@ $script:GhReady = $false
 $script:TargetExplicit = $PSBoundParameters.ContainsKey('Target')
 $script:TagExplicit = $PSBoundParameters.ContainsKey('TagName')
 $script:SummaryShown = $false
+$script:HacsWanted = [bool]$Hacs
+$script:SkipHacs = [bool]$SkipHacs
+$script:ReleaseGone = $false
 
 # ── Изход и лог ────────────────────────────────────────────────────────────
 function Write-Step([string]$Text) {
@@ -1595,11 +1608,65 @@ function Test-Published {
             if (Confirm-Strict -Question "Да изтрия ли изданието $($script:TagName)?" -Expected $script:TagName) {
                 $null = Invoke-Gh -Arguments @('release', 'delete', $script:TagName, '--repo', $Repo, '--yes', '--cleanup-tag') -What 'gh release delete'
                 Write-Ok 'изданието е изтрито'
+                # Изтрито издание не бива да води до обновяване на HACS — то ще сочи към таг, който вече го няма.
+                $script:ReleaseGone = $true
                 return
             }
             continue
         }
     }
+}
+
+# ── Слой 10 · HACS хранилището ──────────────────────────────────
+function Invoke-HacsUpdate {
+    Write-Step 'Слой 10 · HACS хранилището'
+    if ($script:SkipHacs) {
+        Write-Info 'пропуснато заради -SkipHacs'
+        return
+    }
+    if ($script:ReleaseGone) {
+        Write-Info 'изданието е изтрито — HACS остава непроменен'
+        return
+    }
+    $hacsScript = Join-Path $Root 'scripts/publish-haoss.ps1'
+    if (-not (Test-Path -LiteralPath $hacsScript)) {
+        Write-Warn2 'липсва scripts/publish-haoss.ps1 — стъпката се пропуска'
+        return
+    }
+
+    Write-Info 'HACS чете интеграцията от отделно хранилище — add-on изданието не го обновява'
+    $choice = 'n'
+    if ($script:HacsWanted) {
+        $choice = 'y'
+        Write-Info 'избрано с -Hacs'
+    }
+    elseif ($script:NonInteractive) {
+        Write-Info 'неинтерактивен режим (-Yes) — HACS НЕ се пипа; за целта: -Hacs или npm run publish:haoss'
+        return
+    }
+    else {
+        $choice = Ask-Choice -Question "Да обновя ли и HACS хранилището до $($script:Version)?" -Choices ([ordered]@{
+                'n' = 'не — оставям HACS както е'
+                'p' = 'само покажи какво би направил (dry run)'
+                'y' = "да — публикувай интеграцията $($script:Version)"
+            }) -Default 'n' -Help 'HACS хранилището е release/haoss (интеграцията). Публикуването му вдига таг в друго хранилище и пуска неговия release.yml; add-on изданието остава непокътнато.'
+    }
+    if ($choice -eq 'n') {
+        Write-Info 'HACS остава непроменен'
+        return
+    }
+
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $hacsScript, '-Version', $script:Version)
+    if ($choice -eq 'y') { $arguments += '-Execute' }
+    Write-Host ("  pwsh " + ($arguments -join ' ')) -ForegroundColor White
+    & pwsh @arguments
+    $code = $LASTEXITCODE
+    if ($code -ne 0) {
+        Write-Warn2 "publish-haoss.ps1 завърши с код $code — HACS не е обновен (add-on изданието е налично)"
+        return
+    }
+    if ($choice -eq 'y') { Write-Ok "HACS хранилището е обновено до $($script:Version)" }
+    else { Write-Ok 'HACS dry run мина без грешка' }
 }
 
 # ── Главен поток ───────────────────────────────────────────────────────────
@@ -1711,6 +1778,7 @@ else {
 
 Invoke-Publish
 Test-Published
+Invoke-HacsUpdate
 
 Write-Host ''
 Write-Host "  Провери: gh release view $($script:TagName) --repo $Repo" -ForegroundColor DarkGray

@@ -78,7 +78,7 @@ pwsh -File release/publish-release.ps1 -Source release/haoss_v.0.63.0 -Execute
 ```
 
 Without `-Execute` nothing is uploaded: the script runs every check, prints the release
-text and the exact `gh` command. It walks ten layers and asks at each decision instead of
+text and the exact `gh` command. It walks eleven layers and asks at each decision instead of
 picking one â€” which repository (list from `gh repo list`, `-Repo` is only the pre-selected
 answer), where the new version is (`release/haoss_v.*`, `release/haoss`, `dist/*.tar.gz`,
 manual path, or build it on the spot), whether artifacts and versions agree with the
@@ -95,6 +95,8 @@ release already exists.
 | `-Execute`                           | Actually publish; requires typing the version unless `-Force`                                             |
 | `-Force`                             | Allow a version that differs from the working copy, and update an existing release                        |
 | `-Yes`                               | Non-interactive: take the safe defaults (`-Execute` still required)                                       |
+| `-Hacs`                              | After a successful publish, also update the HACS repository without asking                                |
+| `-SkipHacs`                          | Never offer the HACS repository in this run                                                               |
 | `-Retries` / `-LogFile`              | Retry budget for `gh` calls, and where the run log goes                                                   |
 
 **Tags and CI.** Pushing a `v*` tag triggers `.github/workflows/release.yml`, which rebuilds
@@ -105,7 +107,12 @@ tag, wait for the Release workflow, then run the publisher again with `-Force` â
 already exists, CI does not rerun, and the script only updates the text and verifies the
 attached files. A tag without the `v` prefix (e.g. `0.63.0`) matches no workflow trigger,
 so the script offers to rename it to `v0.63.0`; and a dry run never creates a tag. The
-HACS-tree repository is published separately with `npm run publish:haoss -- -Execute`.
+eleventh layer then asks whether to refresh the HACS repository too. HACS reads the
+integration from `release/haoss`, which is a separate repository, so the add-on release
+does **not** update it: answering `y` runs `scripts/publish-haoss.ps1 -Version <version>
+-Execute` (the same script as `npm run publish:haoss`), `p` only shows its commands, and
+`n` leaves HACS alone. In non-interactive mode (`-Yes`) HACS is never published unless
+`-Hacs` is given, and a release deleted in layer 9 skips the step entirely.
 
 ## Updating the Repository
 
