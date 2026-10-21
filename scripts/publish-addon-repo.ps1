@@ -67,6 +67,12 @@ function Invoke-Step {
 # ── 1. Издателски артефакти ─────────────────────────────────────────────────
 Write-Host ''
 Write-Host '▸ 1/4  Издателски артефакти' -ForegroundColor Cyan
+# Одитът върви ВИНАГИ, дори с -SkipBuild: той проверява какво реално би влязло в git.
+Write-Host '  $ node scripts/pre-push-audit.cjs'
+if ($Execute) {
+    & node scripts/pre-push-audit.cjs 2>&1 | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) { throw 'pre-push-audit не мина (тайни/подозрителни имена/едри файлове) — спирам преди публикуване' }
+}
 if ($SkipBuild) {
     Write-Host '  пропуснато (-SkipBuild)'
 }
