@@ -1,8 +1,53 @@
 # Portal Enterprise — release qualification history
 
-**Status: BLOCKED / NOT PRODUCTION RELEASE.** Scope frozen: no new feature families.
+**Текущ статус: 0.61.3 — готово за публикуване** като custom add-on (Supervisor repo) и като
+HACS интеграция. Актуалната квалификация е в първата секция по-долу; всички следващи записи
+са история от предишни снимки и **не** описват текущото състояние.
 
-## v0.47.0 — synchronized source and package qualification (2026-10-11)
+## v0.61.3 — актуална квалификация (2026-10-21)
+
+Обхватът е замразен: няма нови функционални семейства, само съвместимост с Home Assistant,
+издателска хигиена и готовност за HACS.
+
+### Проверени локални гейтове
+
+| Гейт                               | Команда                           | Резултат                                 |
+| ---------------------------------- | --------------------------------- | ---------------------------------------- |
+| Пълен тестов пакет                 | `node scripts/run-tests.cjs`      | **132/132** файла минават                |
+| HA съвместимост (проект-wide одит) | `node tests/ha-compatibility.cjs` | **42/42** правила · 0 блокера · **100%** |
+| Издателски сценарии (S01–S19, S21) | `node scripts/verify-release.cjs` | **20/20**                                |
+| Готово HACS хранилище              | `node tests/haoss-release.cjs`    | структура, версия, brand, без тайни      |
+| Документация                       | `node tests/docs-consistency.cjs` | 0.61.3, без счупени връзки               |
+
+### Какво е покрито
+
+- **Entrypoint е чист JavaScript** — `hapi_enterprise/start.js`; `run.sh` е премахнат.
+  Гейт за Node ≥ 22.13 и `node:sqlite`, storage preflight, admin token във файл `0600`
+  без печат в лога, `SIGTERM`/`SIGINT` с чист изход.
+- **Ingress** — идентичност от реалните HA заглавки (`X-Remote-User-Name`, `-Id`,
+  `-Display-Name`), peer allowlist на admin listener-а (`172.30.32.2` + loopback),
+  обработка на `X-Ingress-Path`, относителни asset URL.
+- **`config.yaml`** — `homeassistant_api: true`, `map` с `app_config/media/share/ssl`,
+  `backup: cold`, watchdog на `:8099/health`, 30 опции със схема и преводи en+bg.
+- **RBAC + HA SSO** — роли по потребител/група, `ingress-login`, чувствителните
+  `/admin/api/*` пътища не се проксират от интеграцията (fail-closed allowlist).
+- **Изданията в `dist/`** — tar.gz за add-on, zip за интеграция, `repository.yaml`,
+  `RELEASE.json`, `SHA256SUMS.txt`; съдържанието съвпада с дървото и архивът се чете
+  от системния `tar`.
+- **HACS** — `npm run release:haoss` произвежда самостоятелно хранилище в `release/haoss`
+  (`hacs.json`, README, LICENSE, `brand/icon.png`, CI с hassfest + HACS action).
+
+### Какво остава непроверено извън тази среда
+
+- Реален build и инсталация през Home Assistant Supervisor и браузърна Ingress сесия.
+- Прекъсване на NAS/мрежово хранилище и cross-filesystem recovery drill.
+- Независим security review.
+- Rating-забележки, които HA приема: контейнерът работи като root без AppArmor профил
+  и `armv7` е deprecated `arch` (приема се с warning).
+
+## История (предишни снимки)
+
+### v0.47.0 — synchronized source and package qualification (2026-10-11)
 
 **Status: BLOCKED for production release.** The active source, test suite, Home Assistant
 integration and release builders are now present together in the repository. The single

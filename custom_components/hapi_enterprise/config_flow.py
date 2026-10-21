@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Any
 
 import voluptuous as vol
+from aiohttp import ClientError
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import selector
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_BACKEND_URL,
@@ -65,6 +69,27 @@ def _validate(values: dict[str, Any], *, token_required: bool) -> dict[str, str]
     return errors
 
 
+async def _async_test_connection(hass: HomeAssistant, backend_url: str, token: str) -> str | None:
+    """Verify the add-on admin API before creating or updating an entry.
+
+    Returns an error key for the form, or None when the endpoint answered.
+    """
+    session = async_get_clientsession(hass)
+    try:
+        async with asyncio.timeout(10):
+            async with session.get(
+                backend_url.rstrip("/") + "/admin/api/whoami",
+                headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+            ) as resp:
+                if resp.status in (401, 403):
+                    return "invalid_auth"
+                if resp.status >= 400:
+                    return "cannot_connect"
+    except (ClientError, TimeoutError, OSError):
+        return "cannot_connect"
+    return None
+
+
 def _data_schema(defaults: dict[str, Any], *, token_required: bool) -> vol.Schema:
     """Build the form schema, prefilled from existing values."""
     token_key = (
@@ -99,13 +124,18 @@ class PortalEnterpriseConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             errors = _validate(user_input, token_required=True)
             if not errors:
-                user_input[CONF_BACKEND_URL] = (
-                    user_input[CONF_BACKEND_URL].strip().rstrip("/")
-                )
-                user_input[CONF_TOKEN] = user_input[CONF_TOKEN].strip()
-                await self.async_set_unique_id(user_input[CONF_BACKEND_URL])
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(title=NAME, data=user_input)
+                backend_url = user_input[CONF_BACKEND_URL].strip().rstrip("/")
+                token = user_input[CONF_TOKEN].strip()
+                # test-before-configure: never create an entry the add-on rejects.
+                connection_error = await _async_test_connection(self.hass, backend_url, token)
+                if connection_error:
+                    errors["base"] = connection_error
+                else:
+                    user_input[CONF_BACKEND_URL] = backend_url
+                    user_input[CONF_TOKEN] = token
+                    await self.async_set_unique_id(backend_url)
+                    self._abort_if_unique_id_configured()
+                    return self.async_create_entry(title=NAME, data=user_input)
         return self.async_show_form(
             step_id="user",
             data_schema=_data_schema(user_input or {}, token_required=True),
@@ -135,14 +165,21 @@ class PortalEnterpriseOptionsFlow(OptionsFlow):
         if user_input is not None:
             errors = _validate(user_input, token_required=False)
             if not errors:
-                cleaned: dict[str, Any] = {
-                    CONF_BACKEND_URL: user_input[CONF_BACKEND_URL].strip().rstrip("/"),
-                    CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
-                }
+                backend_url = user_input[CONF_BACKEND_URL].strip().rstrip("/")
                 token = (user_input.get(CONF_TOKEN) or "").strip()
-                if token:
-                    cleaned[CONF_TOKEN] = token
-                return self.async_create_entry(title="", data=cleaned)
+                # An empty token keeps the stored one; verify what will actually be used.
+                effective_token = token or str(current.get(CONF_TOKEN, ""))
+                connection_error = await _async_test_connection(self.hass, backend_url, effective_token)
+                if connection_error:
+                    errors["base"] = connection_error
+                else:
+                    cleaned: dict[str, Any] = {
+                        CONF_BACKEND_URL: backend_url,
+                        CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
+                    }
+                    if token:
+                        cleaned[CONF_TOKEN] = token
+                    return self.async_create_entry(title="", data=cleaned)
 
         return self.async_show_form(
             step_id="init",

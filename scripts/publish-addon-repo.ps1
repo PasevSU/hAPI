@@ -1,0 +1,127 @@
+<#
+.SYNOPSIS
+    Публикува add-on хранилището (PasevSU/hAPI) от локалното дърво — dry run по подразбиране.
+
+.DESCRIPTION
+    Add-on хранилището се разпознава от Home Assistant по `repository.yaml` + `<addon>/config.yaml`.
+    Git върху `H:` (SMB) блокира дори на `git rev-parse`, затова скриптът работи така:
+    клонира хранилището във `%TEMP%`, огледално копира локалното дърво върху клона
+    (robocopy /MIR, без .git/.venv/node_modules/release/dist) и push-ва.
+    Така GitHub получава точно това, което е на диска, с истински diff — без force push.
+
+    Без -Execute само показва какво би направил.
+
+.EXAMPLE
+    pwsh -NoProfile -File scripts/publish-addon-repo.ps1
+    Dry run.
+
+.EXAMPLE
+    pwsh -NoProfile -File scripts/publish-addon-repo.ps1 -Execute
+    Реално публикуване.
+#>
+[CmdletBinding()]
+param(
+    [string]$Repo = 'PasevSU/hAPI',
+    [string]$Branch = 'main',
+    [switch]$SkipBuild,
+    [switch]$Execute
+)
+
+$ErrorActionPreference = 'Stop'
+$root = Split-Path -Parent $PSScriptRoot
+$repoUrl = "https://github.com/$Repo"
+$mode = if ($Execute) { 'ПУБЛИКУВАНЕ' } else { 'DRY RUN (нищо не се качва)' }
+
+# Копираме само това, което Git би проследил: без кешове, среди и артефакти.
+$excludeDirs = @('.git', '.venv', 'node_modules', 'release', 'dist', '__pycache__', '.pytest_cache', 'coverage')
+$excludeFiles = @('*.pyc', '*.log', '*.7z', '*.zip', '*.tar.gz')
+
+$version = (Select-String -Path (Join-Path $root 'hapi_enterprise/config.yaml') -Pattern '^version:\s*"([^"]+)"' |
+    Select-Object -First 1).Matches[0].Groups[1].Value
+$workDir = Join-Path $env:TEMP "hapi-addon-repo-$version"
+
+Write-Host ''
+Write-Host "════════ Публикуване на add-on хранилището — $mode ════════" -ForegroundColor Yellow
+Write-Host "  версия: $version"
+Write-Host "  хранилище: $repo"
+Write-Host "  локално дърво: $root"
+Write-Host "  работна папка: $workDir"
+
+function Invoke-Step {
+    param([string]$Text, [string]$Command, [string]$WorkDir = $root)
+    Write-Host ''
+    Write-Host "▸ $Text" -ForegroundColor Cyan
+    Write-Host "  $ $Command"
+    if (-not $Execute) { return }
+    Push-Location $WorkDir
+    try {
+        $output = Invoke-Expression $Command 2>&1
+        if ($LASTEXITCODE -ge 8) { throw "командата се провали ($LASTEXITCODE): $Command`n$output" }
+        if ($output) { $output | Select-Object -Last 5 | ForEach-Object { Write-Host "  $_" } }
+    }
+    finally { Pop-Location }
+}
+
+# ── 1. Издателски артефакти ─────────────────────────────────────────────────
+Write-Host ''
+Write-Host '▸ 1/4  Издателски артефакти' -ForegroundColor Cyan
+if ($SkipBuild) {
+    Write-Host '  пропуснато (-SkipBuild)'
+}
+else {
+    Write-Host '  $ node scripts/verify-release.cjs'
+    if ($Execute) {
+        & node scripts/verify-release.cjs 2>&1 | Select-Object -Last 2 | ForEach-Object { Write-Host "  $_" }
+        if ($LASTEXITCODE -ne 0) { throw 'verify-release не мина — спирам преди публикуване' }
+    }
+}
+
+# ── 2. Клон ─────────────────────────────────────────────────────────────────
+Write-Host ''
+Write-Host "▸ 2/4  Клон на $Repo" -ForegroundColor Cyan
+Write-Host "  `$ git clone $repoUrl $workDir"
+if ($Execute) {
+    if (Test-Path -LiteralPath $workDir) { Remove-Item -LiteralPath $workDir -Recurse -Force }
+    & cmd /c "git clone --depth 1 --branch $Branch `"$repoUrl`" `"$workDir`" 2>&1" | Select-Object -Last 2
+    if ($LASTEXITCODE -ne 0) { throw 'git clone се провали' }
+}
+
+# ── 3. Огледално копиране на локалното дърво ────────────────────────────────
+Write-Host ''
+Write-Host '▸ 3/4  Копиране на локалното дърво върху клона (robocopy /MIR)' -ForegroundColor Cyan
+$robocopyArgs = @($root, $workDir, '/MIR', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/R:2', '/W:2') +
+@('/XD') + $excludeDirs + @('/XF') + $excludeFiles
+Write-Host "  $ robocopy $($robocopyArgs -join ' ')"
+if ($Execute) {
+    & robocopy @robocopyArgs | Out-Null
+    if ($LASTEXITCODE -ge 8) { throw "robocopy се провали ($LASTEXITCODE)" }
+    $changed = (git -C $workDir status --porcelain | Measure-Object -Line).Lines
+    Write-Host "  променени файлове: $changed"
+}
+
+# ── 4. Commit и push ────────────────────────────────────────────────────────
+Write-Host ''
+Write-Host '▸ 4/4  Commit и push' -ForegroundColor Cyan
+Write-Host "  `$ git add -A; git commit -m 'hAPI Enterprise $version'; git push origin HEAD:$Branch"
+if ($Execute) {
+    git -C $workDir add -A
+    $dirty = (git -C $workDir status --porcelain | Measure-Object -Line).Lines -gt 0
+    if ($dirty) {
+        git -C $workDir commit -m "hAPI Enterprise $version" | Select-Object -Last 2 | ForEach-Object { Write-Host "  $_" }
+        git -C $workDir push origin "HEAD:$Branch" 2>&1 | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }
+        if ($LASTEXITCODE -ne 0) { throw 'git push се провали' }
+    }
+    else {
+        Write-Host '  няма промени — нищо за качване'
+    }
+}
+
+Write-Host ''
+if ($Execute) {
+    Write-Host "✓ Публикувано: $repoUrl" -ForegroundColor Green
+    Write-Host '  В Home Assistant: Settings → Add-ons → Repositories → добави'
+    Write-Host "  $repoUrl   (после Check for updates / Rebuild)"
+}
+else {
+    Write-Host '✓ Dry run приключи. За реално публикуване добави -Execute.' -ForegroundColor Green
+}

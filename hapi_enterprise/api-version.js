@@ -9,6 +9,10 @@ function headers(url) {
   if (p.startsWith('/admin/api/v2')) {
     return { 'X-API-Version': VERSION.CURRENT };
   }
+  // Публичната повърхност (gateway на add-on-а и HA-hosted адресът) е v1 и НЕ е deprecated.
+  if (p.startsWith('/api/public/v1') || p.startsWith('/api/hapi_enterprise/public/v1')) {
+    return { 'X-API-Version': VERSION.LEGACY };
+  }
   if (p.startsWith('/admin/api') || p.startsWith('/api/v1')) {
     return { 'X-API-Version': VERSION.LEGACY, 'Deprecation': 'true', 'Sunset': SUNSET };
   }

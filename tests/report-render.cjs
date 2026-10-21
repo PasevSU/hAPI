@@ -3,7 +3,7 @@
 const assert = require('node:assert/strict');
 const M = require('../hapi_enterprise/report-manifest.js');
 const R = require('../hapi_enterprise/report-render.js');
-const example = require('../ui/manifest.example.json');
+const example = require('../hapi_enterprise/ui/manifest.example.json');
 
 // 1. Превод на блоковете: START е първи, STOP е последен.
 const manifest = M.normalize(example);

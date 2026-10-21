@@ -4,12 +4,17 @@
   "private": true,
   "description": "hAPI Enterprise — документи и портали между Home Assistant и Windows",
   "scripts": {
-    "test": "node scripts/run-tests.cjs",
+    "test": "node scripts/test-matrix.cjs",
+    "test:once": "node scripts/run-tests.cjs",
+    "test:matrix": "node scripts/test-matrix.cjs --attempts=5",
     "dashboard": "node scripts/dev-dashboard.cjs",
+    "sync:local": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/sync-local-addon.ps1",
     "release": "node scripts/build-release.cjs --with-tests && node scripts/verify-release.cjs",
     "release:build": "node scripts/build-release.cjs",
     "release:verify": "node scripts/verify-release.cjs --with-tests",
     "release:export": "node scripts/export-release.cjs",
+    "release:haoss": "node scripts/build-haoss.cjs",
+    "publish:haoss": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/publish-haoss.ps1",
     "audit": "node scripts/pre-push-audit.cjs",
     "lint": "eslint hapi_enterprise tests custom_components scripts",
     "lint:fix": "eslint hapi_enterprise tests custom_components scripts --fix",
@@ -24,5 +29,3 @@
     "prettier": "^3.9.10"
   }
 }
-
-

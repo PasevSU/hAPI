@@ -7,6 +7,8 @@ yarn-error.log*
 __pycache__/
 *.py[cod]
 *.egg-info/
+# Local Home Assistant dev venv — не е част от add-on-а и не бива да влиза в репото
+.venv/
 
 # OS
 .DS_Store

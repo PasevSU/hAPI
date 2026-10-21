@@ -1,1 +1,21 @@
-{"domain":"hapi_enterprise","name":"hAPI Enterprise","version":"0.54.0","documentation":"https://github.com/PasevSU/hAPI#readme","issue_tracker":"https://github.com/PasevSU/hAPI/issues","codeowners":["@PasevSU"],"requirements":[],"dependencies":["http"],"after_dependencies":[],"iot_class":"local_polling","config_flow":true,"loggers":["hapi_enterprise"]}
+{
+  "domain": "hapi_enterprise",
+  "name": "hAPI Enterprise",
+  "after_dependencies": [],
+  "codeowners": [
+    "@PasevSU"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
+  "documentation": "https://github.com/PasevSU/hAPI#readme",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/PasevSU/hAPI/issues",
+  "loggers": [
+    "hapi_enterprise"
+  ],
+  "requirements": [],
+  "version": "0.61.4"
+}

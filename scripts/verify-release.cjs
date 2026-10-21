@@ -6,7 +6,7 @@
 //   node scripts/verify-release.cjs --dist other  # друга папка с артефакти
 //
 // Сценарии: версия, add-on схема, файлове, Dockerfile, синтаксис (JS/Python),
-// интеграция, архиви, манифест на изданието, тайни, портални активи, run.sh,
+// интеграция, архиви, манифест на изданието, тайни, портални активи, start.js,
 // опции↔схема, repository.yaml, документация, хигиена на архива, четене със
 // системен tar, (по избор) пълния тестов набор.
 
@@ -144,8 +144,11 @@ check('S03', 'Add-on: всички файлове за стартиране са
   const required = [
     'config.yaml',
     'Dockerfile',
-    'run.sh',
+    'start.js',
     'server.js',
+    'logger.js',
+    'rules/download_rules.json',
+    'rules/public_gateway.json',
     'portal.html',
     'portal.js',
     'portal.css',
@@ -154,6 +157,9 @@ check('S03', 'Add-on: всички файлове за стартиране са
     'storage-preflight.js',
     'admin.html',
     'admin.js',
+    'ui/index.html',
+    'ui/app.js',
+    'ui/styles.css',
     'icon.png',
     'logo.png',
     'fonts/DejaVuSans.ttf',
@@ -173,7 +179,7 @@ check('S04', 'Dockerfile: COPY покрива всички локални мод
   assert(!/apk add[^\n]*nodejs/.test(docker), 'Node не се инсталира през apk — базата го носи');
   assert(/node:sqlite/.test(docker), 'Dockerfile не проверява node:sqlite при build');
   assert(/^EXPOSE\s+.*8098/m.test(docker) && /8099/.test(docker), 'EXPOSE трябва да включва 8098 и 8099');
-  assert(/^CMD\s+\["\/app\/run\.sh"\]/m.test(docker), 'CMD трябва да стартира run.sh');
+  assert(/^CMD\s+\["node",\s*"\/app\/start\.js"\]/m.test(docker), 'CMD трябва да стартира node /app/start.js');
   assert(/^COPY\s+fonts\s+\/app\/fonts\/$/m.test(docker), 'липсва COPY на шрифтовете');
   const copyLine = (docker.match(/^COPY\s+(.+?)\s+\/app\/\s*$/m) || [])[1] || '';
   const copied = new Set(copyLine.split(/\s+/).filter(Boolean));
@@ -291,9 +297,9 @@ check('S08', 'Артефакт: add-on tar.gz съдържа точно файл
     assert(got, 'липсва в архива: ' + entry.path);
     assert(lib.sha256(got.data) === lib.sha256(fs.readFileSync(entry.abs)), 'съдържанието се разминава: ' + entry.path);
   }
-  const runSh = actual.get(lib.ADDON_DIR + '/run.sh');
-  assert(runSh, 'липсва run.sh');
-  assert((runSh.mode & 0o111) !== 0, 'run.sh трябва да е изпълним в архива');
+  const startEntry = actual.get(lib.ADDON_DIR + '/start.js');
+  assert(startEntry, 'липсва start.js — entrypoint-ът на add-on-а е JavaScript, не shell');
+  assert(!actual.has(lib.ADDON_DIR + '/run.sh'), 'run.sh не бива да се връща: entrypoint-ът е start.js');
   return `${entries.length} файла, ${lib.fmtBytes(fs.statSync(addonArchive).size)}`;
 });
 
@@ -375,19 +381,23 @@ check('S12', 'Портал: адаптивни текстове и сигурн�
   return 'адаптивни текстове, CSP и id/slug маршрути';
 });
 
-// ── S13. run.sh ─────────────────────────────────────────────────────────────
-check('S13', 'run.sh: безопасен старт без изтичане на тайни', () => {
-  const run = readText(path.join(addonDir, 'run.sh'));
-  assert(run.startsWith('#!/bin/sh'), 'run.sh трябва да започва с #!/bin/sh');
-  assert(!run.includes('\r'), 'run.sh съдържа CRLF — ще се счупи в Alpine');
-  assert(/node:sqlite/.test(run), 'липсва проверка за node:sqlite');
-  assert(/exec node \/app\/server\.js/.test(run), 'липсва exec node /app/server.js');
-  assert(/ADMIN_TOKEN=/.test(run), 'липсва генериране на ADMIN_TOKEN');
-  assert(/\/data\/admin-token/.test(run), 'липсва постоянен файл за ADMIN_TOKEN');
-  assert(!/echo[^\n]*ADMIN_TOKEN/.test(run), 'run.sh не бива да отпечатва ADMIN_TOKEN');
-  assert(/PUBLIC_BASE_URL=/.test(run), 'липсва PUBLIC_BASE_URL от public_domain');
-  assert(/INGRESS_MODE=true/.test(run), 'липсва INGRESS_MODE=true');
-  return 'sh, LF, node:sqlite gate, exec, без отпечатване на токена';
+// ── S13. Entrypoint (JavaScript) ───────────────────────────────────────────
+check('S13', 'start.js: старт на чист JS без изтичане на тайни', () => {
+  const entry = readText(path.join(addonDir, 'start.js'));
+  assert(!entry.includes('\r'), 'start.js съдържа CRLF');
+  assert(!entry.startsWith('#!'), 'start.js се стартира с `node`, шебанг не е нужен');
+  assert(/node:sqlite/.test(entry), 'липсва проверка за node:sqlite');
+  assert(/nodeMajor\s*<\s*22/.test(entry) && /nodeMinor\s*<\s*13/.test(entry), 'липсва гейт за Node >=22.13');
+  assert(/spawn\(process\.execPath,\s*\[SERVER\]/.test(entry), 'сървърът не се стартира като дете на entrypoint-а');
+  assert(/SIGTERM/.test(entry), 'липсва подаване на SIGTERM към сървъра (graceful stop)');
+  assert(/ADMIN_TOKEN/.test(entry), 'липсва генериране на ADMIN_TOKEN');
+  assert(/\/data\/admin-token/.test(entry), 'липсва постоянен файл за ADMIN_TOKEN');
+  assert(/0o600/.test(entry), 'файлът с токена трябва да се създава с права 0600');
+  assert(!/console\.(log|info)\([^\n]*ADMIN_TOKEN/.test(entry), 'entrypoint-ът не бива да отпечатва ADMIN_TOKEN');
+  assert(/PUBLIC_BASE_URL/.test(entry), 'липсва PUBLIC_BASE_URL от public_domain');
+  assert(/INGRESS_MODE/.test(entry), 'липсва INGRESS_MODE=true');
+  assert(/storagePreflight/.test(entry), 'липсва storage preflight преди старта');
+  return 'JS entrypoint, node:sqlite gate, SIGTERM, storage preflight, без отпечатване на токена';
 });
 
 // ── S14. Опции ↔ схема ─────────────────────────────────────────────────────

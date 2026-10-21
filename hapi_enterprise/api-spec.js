@@ -104,27 +104,61 @@ function buildOpenApi(portal, options = {}) {
     security: secured,
     paths: {
       [p]: {
-        get: { summary: 'Метаданни на портала', security: secured, responses: { 200: ok('Portal metadata') } },
+        get: {
+          summary: 'Метаданни на портала',
+          security: secured,
+          responses: { 200: ok('Portal metadata'), 401: { description: 'Липсва или е невалиден ключ' }, 404: { description: 'Not found' } },
+        },
       },
       [`${p}/manifest`]: {
         get: {
           summary: 'Манифест (списък + хешове, без съдържание)',
           security: secured,
-          responses: { 200: ok('Manifest') },
+          responses: { 200: ok('Manifest'), 401: { description: 'Липсва или е невалиден ключ' }, 404: { description: 'Not found' } },
         },
       },
       [`${p}/files`]: {
         get: {
-          summary: 'Списък на файловете',
+          summary: 'Списък на файловете (пагинация и филтри)',
           security: secured,
           parameters: [
-            { name: 'q', in: 'query', schema: { type: 'string' } },
-            { name: 'limit', in: 'query', schema: { type: 'integer', default: 50, maximum: 500 } },
-            { name: 'offset', in: 'query', schema: { type: 'integer', default: 0 } },
-            { name: 'order', in: 'query', schema: { type: 'string', enum: ['name', 'date', 'size'] } },
-            { name: 'direction', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'] } },
+            { name: 'q', in: 'query', schema: { type: 'string', maxLength: 200 }, description: 'Търсене в името' },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 50, minimum: 1, maximum: 500 } },
+            { name: 'offset', in: 'query', schema: { type: 'integer', default: 0, minimum: 0 } },
+            {
+              name: 'order',
+              in: 'query',
+              schema: { type: 'string', enum: ['name', 'uploadedAt', 'size'], default: 'name' },
+              description: 'uploadedAt е името на полето в отговора (не „date“).',
+            },
+            { name: 'direction', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'], default: 'asc' } },
+            { name: 'topic', in: 'query', schema: { type: 'string', maxLength: 120 } },
+            { name: 'category', in: 'query', schema: { type: 'string', maxLength: 120 } },
+            { name: 'group', in: 'query', schema: { type: 'string', maxLength: 120 } },
+            { name: 'tag', in: 'query', schema: { type: 'string', maxLength: 120 } },
           ],
-          responses: { 200: ok('Files') },
+          responses: {
+            200: {
+              description: 'Страница с файлове',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['files', 'total', 'limit', 'offset', 'hasMore'],
+                    properties: {
+                      files: { type: 'array', items: { type: 'object' } },
+                      total: { type: 'integer' },
+                      limit: { type: 'integer' },
+                      offset: { type: 'integer' },
+                      hasMore: { type: 'boolean' },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Невалидна пагинация, сортиране или филтър' },
+            401: { description: 'Липсва или е невалиден ключ на портала' },
+          },
         },
       },
       [`${p}/files/{fileId}`]: {
@@ -132,7 +166,11 @@ function buildOpenApi(portal, options = {}) {
           summary: 'Метаданни на файл',
           security: secured,
           parameters: [{ name: 'fileId', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 200: ok('File metadata'), 404: { description: 'Not found' } },
+          responses: {
+            200: ok('File metadata'),
+            401: { description: 'Липсва или е невалиден ключ' },
+            404: { description: 'Not found' },
+          },
         },
       },
       [`${p}/files/{fileId}/download`]: {
@@ -140,7 +178,12 @@ function buildOpenApi(portal, options = {}) {
           summary: 'Изтегляне (поддържа Range)',
           security: secured,
           parameters: [{ name: 'fileId', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 200: { description: 'Binary stream' }, 206: { description: 'Partial content' } },
+          responses: {
+            200: { description: 'Binary stream' },
+            206: { description: 'Partial content' },
+            401: { description: 'Липсва или е невалиден ключ' },
+            404: { description: 'Not found' },
+          },
         },
       },
       [`${p}/storage`]: {
@@ -158,7 +201,11 @@ function buildOpenApi(portal, options = {}) {
               description: 'Виртуален път, напр. /Тема/Категория. Без стойност → коренът.',
             },
           ],
-          responses: { 200: ok('Virtual storage node'), 404: { description: 'Path not found' } },
+          responses: {
+            200: ok('Virtual storage node'),
+            401: { description: 'Липсва или е невалиден ключ' },
+            404: { description: 'Path not found' },
+          },
         },
       },
       [`${p}/openapi.json`]: {

@@ -4,7 +4,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const m = require('../ui/files-manager.js');
+const m = require('../hapi_enterprise/ui/files-manager.js');
 
 // 1. Действията: 11 по план 17 §3.1 + „Пакет (ZIP)“ + „Бележка“ (добави/редактирай).
 assert.equal(m.ACTIONS.length, 13);
@@ -33,7 +33,7 @@ assert.deepEqual(f.versions, []);
 // 4. Изходният код ползва реалните административни endpoints.
 //    Порталът е разделен на три модула (контролен панел · папки · файлове),
 //    затова src е сборът от тях — проверките важат за целия интерфейс.
-const uiSrc = (name) => fs.readFileSync(path.join(__dirname, '..', 'ui', name), 'utf8');
+const uiSrc = (name) => fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', name), 'utf8');
 const src = ['files-manager.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js'].map(uiSrc).join('\n');
 for (const endpoint of [
   '/preview',
@@ -66,7 +66,7 @@ assert.match(src, /data-open-portal/);
 assert.match(src, /fm-files/);
 assert.match(src, /fm-file-head/);
 assert.match(src, /fm-file-name/);
-assert.match(src, /fm-detail/);assert.match(src, /Контролен панел на портала/);
+assert.match(src, /fm-detail/); assert.match(src, /Контролен панел на портала/);
 assert.match(src, /createPortal/);
 assert.match(src, /generateApi/);
 assert.match(src, /qrSvg/);
@@ -127,7 +127,7 @@ assert.match(src, /\/admin\/api\/cases/);
 assert.equal(m.normalizeCase({ id: 'k', number: '1', title: 'T', extras: [{ key: 'a', value: 'b' }, { value: 'x' }] }).extras.length, 1);
 assert.equal(m.normalizeContact({ id: 'c', extras: [{ key: 'Роля', value: 'адвокат' }] }).extras[0].key, 'Роля');
 // 7е. Стандарт на подредбата: всичко в проценти + фиксиран брой обекти на ред.
-const css = fs.readFileSync(path.join(__dirname, '..', 'ui', 'styles.css'), 'utf8');
+const css = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'styles.css'), 'utf8');
 assert.match(css, /--w-100: 100%/);
 assert.match(css, /--grid-gap: 0\.8%/);
 assert.match(css, /--per-row-actions:/);
@@ -201,8 +201,8 @@ assert.equal(/[\u{1F300}-\u{1FAFF}]/u.test(src), false, 'няма емоджи-�
 assert.match(src, /\{ id: 'important', label: 'важно', icon: '★', cls: 'warn' \}/);
 assert.match(src, /\{ id: 'urgent', label: 'спешно', icon: '!', cls: 'err' \}/);
 // Спрайтът е отделен модул и се зарежда преди files-manager.js.
-assert.ok(fs.readFileSync(path.join(__dirname, '../ui/icons.js'), 'utf8').includes('window.HapiIcons'));
-assert.match(fs.readFileSync(path.join(__dirname, '../ui/index.html'), 'utf8'), /<script src="icons\.js"><\/script>/);
+assert.ok(fs.readFileSync(path.join(__dirname, '../hapi_enterprise/ui/icons.js'), 'utf8').includes('window.HapiIcons'));
+assert.match(fs.readFileSync(path.join(__dirname, '../hapi_enterprise/ui/index.html'), 'utf8'), /<script src="icons\.js"><\/script>/);
 // Плочките на действията са наполовина по-малки.
 assert.match(css, /\.fm-action \{[\s\S]*?min-height: calc\(var\(--tile-h\) \/ 2\)/);
 // Всички табелки са с един стил и големина; разделителни ленти между секциите.
@@ -250,7 +250,7 @@ assert.doesNotMatch(src, /Автоподписване с PGP/);
 assert.match(src, /includeStorage/);
 assert.ok(m.ACTIONS.some((a) => a.id === 'package' && /Пакет/.test(a.label)));
 // 7л. Настройки: прикачане на PGP ключ + падащо меню за автоподписване (без генериране).
-const settingsSrc = fs.readFileSync(require('node:path').join(__dirname, '..', 'ui', 'settings-panel.js'), 'utf8');
+const settingsSrc = fs.readFileSync(require('node:path').join(__dirname, '..', 'hapi_enterprise', 'ui', 'settings-panel.js'), 'utf8');
 assert.match(settingsSrc, /\/admin\/api\/pgp\/keys/);
 assert.match(settingsSrc, /id="set-pgp-attach"/);
 assert.match(settingsSrc, /id="set-pgp-key"/);
@@ -263,7 +263,7 @@ assert.match(settingsSrc, /secretArmored/);
 assert.doesNotMatch(settingsSrc, /algorithm: *'ed25519'|Генерирай ключ|generate/);
 assert.match(settingsSrc, /OpenPGP v\$\{/);
 // Експорт центърът също не пита за PGP — само портал и бутони за пакета.
-const exportSrc = fs.readFileSync(require('node:path').join(__dirname, '..', 'ui', 'export-center.js'), 'utf8');
+const exportSrc = fs.readFileSync(require('node:path').join(__dirname, '..', 'hapi_enterprise', 'ui', 'export-center.js'), 'utf8');
 assert.doesNotMatch(exportSrc, /ec-pkg-sign|ec-pkg-key|Автоподписване с PGP/);
 assert.match(exportSrc, /ec-pkg-build/);
 assert.match(exportSrc, /Настройки → PGP ключ и автоподписване/);
@@ -293,27 +293,28 @@ assert.equal(nc.name, 'Тест');
 assert.equal(nc.phone, '+1 2');
 assert.equal(nc.email, 'a@b.co');
 // 8. Сървърът приема и връща бележки (портал и файл).
-const serverSrc = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'server.js'), 'utf8');assert.match(serverSrc, /notes:p\.notesText\|\|''/);
-assert.match(serverSrc, /notes:f\.notes\|\|''/);
-assert.match(serverSrc, /meta\.notes=clean\(b\.notes\)/);
-assert.match(serverSrc, /if\(b\.notes!==undefined\)p\.notesText=clean\(b\.notes\)/);
-assert.match(serverSrc, /category:p\.category\|\|''/);
-assert.match(serverSrc, /subject:p\.subject\|\|''/);
-assert.match(serverSrc, /flag:p\.flag\|\|'none'/);
-assert.match(serverSrc, /const portalFlag=/);
-assert.match(serverSrc, /const portalRoot=/);
-assert.match(serverSrc, /storage_root:portalRoot\(b\.storage_root\)/);
-assert.match(serverSrc, /if\(b\.storage_root!==undefined\)p\.storage_root=portalRoot\(b\.storage_root\)/);
-assert.match(serverSrc, /contactId:portalContact\(db,b\.contactId\)/);
-assert.match(serverSrc, /if\(b\.contactId!==undefined\)p\.contactId=portalContact\(db,b\.contactId\)/);
-assert.match(serverSrc, /if\(b\.caseId!==undefined\)p\.caseId=portalCase\(db,b\.caseId\)/);
-assert.match(serverSrc, /parts\[3\]==='contacts'&&parts\.length===4&&method==='POST'/);
+//    Проверките са без значение от форматирането (интервали около операторите).
+const serverSrc = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'server.js'), 'utf8'); assert.match(serverSrc, /notes:\s*p\.notesText\s*\|\|\s*''/);
+assert.match(serverSrc, /notes:\s*f\.notes\s*\|\|\s*''/);
+assert.match(serverSrc, /meta\.notes\s*=\s*clean\(b\.notes\)/);
+assert.match(serverSrc, /if\s*\(b\.notes\s*!==\s*undefined\)\s*p\.notesText\s*=\s*clean\(b\.notes\)/);
+assert.match(serverSrc, /category:\s*p\.category\s*\|\|\s*''/);
+assert.match(serverSrc, /subject:\s*p\.subject\s*\|\|\s*''/);
+assert.match(serverSrc, /flag:\s*p\.flag\s*\|\|\s*'none'/);
+assert.match(serverSrc, /const portalFlag\s*=/);
+assert.match(serverSrc, /const portalRoot\s*=/);
+assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\)/);
+assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\)/);
+assert.match(serverSrc, /contactId:\s*portalContact\(db,\s*b\.contactId\)/);
+assert.match(serverSrc, /if\s*\(b\.contactId\s*!==\s*undefined\)\s*p\.contactId\s*=\s*portalContact\(db,\s*b\.contactId\)/);
+assert.match(serverSrc, /if\s*\(b\.caseId\s*!==\s*undefined\)\s*p\.caseId\s*=\s*portalCase\(db,\s*b\.caseId\)/);
+assert.match(serverSrc, /parts\[3\]\s*===\s*'contacts'\s*&&\s*parts\.length\s*===\s*4\s*&&\s*method\s*===\s*'POST'/);
 const casesSrc = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'cases.js'), 'utf8');
 assert.match(casesSrc, /function addCase/);
 assert.match(casesSrc, /function caseView/);
 assert.match(casesSrc, /sanitizeExtras/);
 // Горните табели (Проект/Среда/Криптография/Модули) са премахнати от заглавната лента.
-const indexSrc = fs.readFileSync(path.join(__dirname, '..', 'ui', 'index.html'), 'utf8');
+const indexSrc = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'index.html'), 'utf8');
 assert.equal(/chip-project|chip-env|chip-modules|class="chips"/.test(indexSrc), false);
 // 9. Метаданните се илюстрират с икони: създаден, качен, промяна, хеш, заключване.
 // (В Node няма DOM, затова SVG-то е празно — проверяваме, че ключовете съществуват.)
@@ -333,15 +334,18 @@ assert.equal(nf.lockedBy, '');
 assert.equal(m.normalizeFile({ id: 'z', locked: true, lockedBy: 'admin' }).locked, true);
 // Заключването е допълнително действие (извън 11-те по план 17 §3.1) и има backend маршрут.
 assert.deepEqual(m.EXTRA_ACTIONS.map((a) => a.id), ['lock']);
-assert.match(serverSrc, /parts\[6\]==='lock'&&method==='PATCH'/);
-assert.match(serverSrc, /locked:!!f\.locked/);
-assert.match(serverSrc, /f\.modifiedAt=new Date\(\)\.toISOString\(\)/);
-const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'ui', 'index.html'), 'utf8');
-assert.match(indexHtml, /qrcode\.js/, 'QR библиотеката се зарежда в GUI-я');
+assert.match(serverSrc, /parts\[6\]\s*===\s*'lock'\s*&&\s*method\s*===\s*'PATCH'/);
+assert.match(serverSrc, /locked:\s*!!f\.locked/);
+assert.match(serverSrc, /f\.modifiedAt\s*=\s*new Date\(\)\.toISOString\(\)/);
+const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'index.html'), 'utf8');
+// Споделените библиотеки се зареждат от bootstrap.js (за да работят и по file://),
+// затова проверката гледа и двата файла.
+const bootstrapJs = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'bootstrap.js'), 'utf8');
+assert.match(indexHtml + bootstrapJs, /qrcode\.js/, 'QR библиотеката се зарежда в GUI-я');
 
 // 7. Сървърът предлага административно изтегляне (иначе „Изтегли“ би бил декоративен).
 const server = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'server.js'), 'utf8');
-assert.match(server, /parts\[6\]==='download'&&method==='GET'/);
+assert.match(server, /parts\[6\]\s*===\s*'download'\s*&&\s*method\s*===\s*'GET'/);
 assert.match(server, /file\.download\.admin/);
 
 // 10. Папките на портала: скриващо се меню за всяка папка (отворена е само една).

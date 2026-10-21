@@ -1,21 +1,41 @@
 name: "hAPI Enterprise"
-version: "0.54.0"
+version: "0.61.4"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
+url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
 arch:
   - amd64
   - aarch64
+  # 32-bit Raspberry Pi OS (Pi 2/3/4/5). Official node:22-alpine ships linux/arm/v7;
+  # armhf (Pi Zero/1, armv6) has no Node 22 build, so it is deliberately not claimed.
+  # Забележка: Supervisor вече смята `armv7` за deprecated (приема го с warning) —
+  # маха се само с решение да отпадне 32-bit поддръжката.
+  - armv7
+homeassistant: "2024.6.0"
 startup: application
 boot: auto
 init: false
+timeout: 30
+# Изпращането на QR/линк (notify.js) минава през Supervisor проксито
+# http://supervisor/core/api/services/<domain>/<service>. Без този ключ проксито е
+# забранено (default false) и dispatch-ът връща 403/502 в реален add-on.
+homeassistant_api: true
 ingress: true
 ingress_port: 8098
 ingress_entry: /admin
+ingress_stream: true
+panel_title: "hAPI Enterprise"
+panel_icon: mdi:file-document-multiple
+panel_admin: true
+# SQLite runs in WAL mode; a hot backup can capture a torn database. Cold backup
+# stops the add-on for the duration of the Supervisor snapshot.
+backup: cold
+watchdog: "http://[HOST]:[PORT:8099]/health"
 ports:
   8099/tcp: null
   8088/tcp: null
 ports_description:
-  8099/tcp: "Internal-only API; do not expose host port"
+  8099/tcp: "Internal API (opt-in only; keep it unpublished)"
   8088/tcp: "Public API Gateway (internal; reverse proxy on the same host/port as Home Assistant)"
 options:
   username: ""
@@ -23,6 +43,9 @@ options:
   token: ""
   db_name: ""
   backup_folder: ""
+  backup_mirror: ""
+  storage_mirror: ""
+  memory_limit_mb: 0
   db_id: "1"
   profiles: ""
   public_domain: ""
@@ -30,12 +53,30 @@ options:
   public_same_origin: false
   user_roles: ""
   group_roles: ""
+  storage_location: addon_config
+  storage_subdirectory: hapi_enterprise
+  storage_mode: local
+  storage_mount_name: ""
+  min_free_mb: 100
+  log_level: info
+  config_dir: ""
+  tsa_enabled: false
+  tsa_start_url: "https://zeitstempel.dfn.de/"
+  tsa_stop_url: "http://timestamp.digicert.com"
+  sign_packages: false
+  signing_key: ""
+  encrypt_files: false
+  tls_cert: ""
+  tls_key: ""
 schema:
   username: str?
   password: password?
   token: password?
   db_name: str?
   backup_folder: str?
+  backup_mirror: str?
+  storage_mirror: str?
+  memory_limit_mb: int(0,8192)?
   db_id: str?
   profiles: str?
   public_domain: str?
@@ -43,12 +84,30 @@ schema:
   public_same_origin: bool?
   user_roles: str?
   group_roles: str?
+  storage_location: "list(addon_config|media|share)"
+  storage_subdirectory: match(^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,79}$)
+  storage_mode: "list(local|ha_network)"
+  storage_mount_name: str?
+  min_free_mb: int(0,1048576)
+  log_level: "list(error|warn|info|debug|trace)"
+  config_dir: str?
+  tsa_enabled: bool?
+  tsa_start_url: str?
+  tsa_stop_url: str?
+  sign_packages: bool?
+  signing_key: str?
+  encrypt_files: bool?
+  tls_cert: str?
+  tls_key: str?
+# app_config mounts at /config inside the container (app_configs/<slug> on the host).
+# ssl is mounted read-only: tls_cert/tls_key may point inside it (see translations),
+# and without the mount that documented option can never work.
 map:
-  - addon_config:rw
+  - app_config:rw
   - media:rw
   - share:rw
+  - ssl
 environment:
-  DATA_DIR: /config
   PORT: "8099"
   PUBLIC_GATEWAY_PORT: "8088"
   PUBLIC_GATEWAY_BIND: "0.0.0.0"

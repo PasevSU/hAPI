@@ -53,6 +53,21 @@ const spec = require('../hapi_enterprise/api-spec.js');
   assert.ok(openapi.components.securitySchemes.portalKey);
   assert.deepEqual(openapi.servers, [{ url: 'https://x.test' }]);
 
+  // Договорът трябва да съвпада със сървъра: `order` приема uploadedAt, не „date“.
+  const fileParams = openapi.paths['/api/v1/p/demo-portal/files'].get.parameters;
+  const orderParam = fileParams.find((p) => p.name === 'order');
+  assert.deepEqual(orderParam.schema.enum, ['name', 'uploadedAt', 'size'], 'order enum съвпада със сървъра');
+  for (const param of ['q', 'topic', 'category', 'group', 'tag']) {
+    assert.ok(fileParams.some((p) => p.name === param), 'липсва параметър ' + param);
+  }
+  const pageSchema = openapi.paths['/api/v1/p/demo-portal/files'].get.responses[200].content['application/json'].schema;
+  assert.ok(pageSchema.properties.hasMore, 'страницата документира hasMore');
+  assert.ok(pageSchema.properties.total, 'страницата документира total');
+  assert.ok(
+    openapi.paths['/api/v1/p/demo-portal/files'].get.responses[401],
+    'документиран е 401 за липсващ ключ',
+  );
+
   // --- 2. Интеграция: endpoint + файлове на диска ---------------------------
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'api-gen-'));
   const token = 'api-gen-admin-secret-2026-x7';

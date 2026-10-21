@@ -70,7 +70,7 @@ if (flag('with-tests')) {
 // ── 3. Събиране на файловете ─────────────────────────────────────────────────
 const addonEntries = step('Файлове на add-on-а', () => {
   const entries = lib.walk(path.join(root, lib.ADDON_DIR), lib.ADDON_DIR);
-  for (const required of ['config.yaml', 'Dockerfile', 'run.sh', 'server.js', 'portal.html', 'portal.js', 'portal.css', 'icon.png', 'logo.png']) {
+  for (const required of ['config.yaml', 'Dockerfile', 'start.js', 'server.js', 'portal.html', 'portal.js', 'portal.css', 'icon.png', 'logo.png']) {
     if (!entries.some((e) => e.path === lib.ADDON_DIR + '/' + required)) fail('add-on: липсва ' + required);
   }
   return entries;

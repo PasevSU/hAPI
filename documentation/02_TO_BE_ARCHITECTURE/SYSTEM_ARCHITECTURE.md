@@ -30,14 +30,14 @@ A single codebase, three deployment targets, one behavior:
 
 ## Cross-cutting concerns
 
-- **Identity & RBAC** — roles + SSO (`X-Remote-User`) + TOTP for sensitive ops.
+- **Identity & RBAC** — roles + SSO (`X-Remote-User-Name` / `-Id` / `-Display-Name`) + TOTP for sensitive ops.
 - **Observability** — bounded JSONL error log + audit chain + job progress events.
 - **Compatibility** — same API contract across HA and Windows (see `INTEGRATION_CONTRACTS.md`).
 
 ## Deployment topologies
 
-| Topology | Target | Note |
-| -------- | ------ | ---- |
-| HA add-on | `Dockerfile` + `run.sh` | Ingress + local volume |
-| Windows | `standalone.js` + pywebview | loopback admin |
-| Portal | public static + read API | judge/prosecutor access |
+| Topology  | Target                      | Note                    |
+| --------- | --------------------------- | ----------------------- |
+| HA add-on | `Dockerfile` + `start.js`   | Ingress + local volume  |
+| Windows   | `standalone.js` + pywebview | loopback admin          |
+| Portal    | public static + read API    | judge/prosecutor access |

@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="240" viewBox="0 0 1600 240" role="img" aria-labelledby="t">
+  <title id="t">hAPI Enterprise — document vault with verifiable integrity, powered by PasevSU</title>
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1d33"/>
+      <stop offset="0.5" stop-color="#08111f"/>
+      <stop offset="1" stop-color="#04070d"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5ab4ff"/>
+      <stop offset="1" stop-color="#00e5ff"/>
+    </linearGradient>
+    <linearGradient id="sheet" x1="0" y1="0" x2="0.45" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e9f1fc"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00e5ff" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#00e5ff" stop-opacity="0.85"/>
+      <stop offset="0.7" stop-color="#5ab4ff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#5ab4ff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="orbA">
+      <stop offset="0" stop-color="#00e5ff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#00e5ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbB">
+      <stop offset="0" stop-color="#2b6cff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#2b6cff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbC">
+      <stop offset="0" stop-color="#7c3aed" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="markGlow">
+      <stop offset="0" stop-color="#4ea8ff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#4ea8ff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#5a8cc8" stroke-opacity="0.09" stroke-width="1"/>
+    </pattern>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="42"/>
+    </filter>
+    <filter id="softer" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="64"/>
+    </filter>
+  </defs>
+
+  <!-- background: gradient + grid + glows -->
+  <rect width="1600" height="240" fill="url(#base)"/>
+  <rect width="1600" height="240" fill="url(#grid)"/>
+  <ellipse cx="230" cy="150" rx="300" ry="150" fill="url(#orbB)" filter="url(#softer)"/>
+  <ellipse cx="1320" cy="210" rx="360" ry="150" fill="url(#orbA)" filter="url(#softer)" opacity="0.8"/>
+  <ellipse cx="980" cy="-30" rx="420" ry="140" fill="url(#orbC)" filter="url(#softer)"/>
+  <rect x="0" y="0" width="1600" height="2" fill="url(#hair)"/>
+  <rect x="0" y="238" width="1600" height="1" fill="#5ab4ff" opacity="0.18"/>
+
+  <!-- mark -->
+  <ellipse cx="122" cy="126" rx="118" ry="96" fill="url(#markGlow)" filter="url(#soft)"/>
+  <g transform="translate(48 53) scale(0.26)">
+    <path d="M118 118A26 26 0 0 1 144 92H288L340 144V370A26 26 0 0 1 314 396H144A26 26 0 0 1 118 370Z" fill="url(#sheet)"/>
+    <path d="M288 92L340 144H288Z" fill="#c3d8ef"/>
+    <path d="M118 118A26 26 0 0 1 144 92H288L340 144V370A26 26 0 0 1 314 396H144A26 26 0 0 1 118 370Z" fill="none" stroke="#a9c6e4" stroke-width="2"/>
+    <rect x="148" y="146" width="90" height="90" rx="6" fill="none" stroke="#0b78d0" stroke-width="11"/>
+    <rect x="178" y="176" width="30" height="30" rx="3" fill="#0b78d0"/>
+    <g fill="#0b78d0">
+      <rect x="250" y="146" width="18" height="18" rx="3" opacity="0.9"/>
+      <rect x="274" y="146" width="18" height="18" rx="3" opacity="0.45"/>
+      <rect x="250" y="170" width="18" height="18" rx="3" opacity="0.45"/>
+      <rect x="298" y="170" width="18" height="18" rx="3" opacity="0.9"/>
+      <rect x="250" y="194" width="18" height="18" rx="3" opacity="0.9"/>
+      <rect x="274" y="194" width="18" height="18" rx="3" opacity="0.45"/>
+    </g>
+    <rect x="150" y="258" width="130" height="14" rx="7" fill="#b4c9e1"/>
+    <rect x="150" y="286" width="92" height="14" rx="7" fill="#d2dfef"/>
+    <path d="M388 296C408 309 428 315 452 318V366C452 402 424 428 388 440C352 428 324 402 324 366V318C348 315 368 309 388 296Z" fill="#08111f"/>
+    <path d="M388 304C406 316 424 321 444 324V366C444 397 420 420 388 431C356 420 332 397 332 366V324C352 321 370 316 388 304Z" fill="url(#accent)"/>
+    <path d="M356 366L378 388L420 342" fill="none" stroke="#04172a" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="198" y="134" font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif"
+        font-size="66" font-weight="700" letter-spacing="-2.5"><tspan fill="#f2f7ff">h</tspan><tspan fill="url(#accent)">API</tspan></text>
+  <text x="201" y="164" font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif"
+        font-size="12.5" font-weight="600" letter-spacing="6.5" fill="#7ea7d8">ENTERPRISE</text>
+
+  <!-- divider -->
+  <rect x="392" y="52" width="1" height="136" fill="url(#hair)" opacity="0.7"/>
+
+  <!-- message -->
+  <text x="432" y="108" font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif"
+        font-size="25" font-weight="700" fill="#eaf2ff">Document vault with verifiable integrity</text>
+  <text x="432" y="138" font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif"
+        font-size="14" fill="#8fa6c2">Home Assistant add-on · Windows edge runtime · self-hosted</text>
+
+  <!-- feature chips -->
+  <g font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif" font-size="12.5" font-weight="600">
+    <rect x="432" y="156" width="104" height="30" rx="15" fill="#0b1a2e" stroke="#2f6f9f" stroke-opacity="0.7"/>
+    <text x="484" y="175" text-anchor="middle" fill="#9fdcff">QR portals</text>
+    <rect x="546" y="156" width="176" height="30" rx="15" fill="#0b1a2e" stroke="#2f6f9f" stroke-opacity="0.7"/>
+    <text x="634" y="175" text-anchor="middle" fill="#9fdcff">SHA-256 · signatures</text>
+    <rect x="732" y="156" width="124" height="30" rx="15" fill="#0b1a2e" stroke="#2f6f9f" stroke-opacity="0.7"/>
+    <text x="794" y="175" text-anchor="middle" fill="#9fdcff">Ingress SSO</text>
+    <rect x="866" y="156" width="118" height="30" rx="15" fill="#0b1a2e" stroke="#2f6f9f" stroke-opacity="0.7"/>
+    <text x="925" y="175" text-anchor="middle" fill="#9fdcff">Audit chain</text>
+  </g>
+
+  <!-- PasevSU card -->
+  <g>
+    <rect x="1200" y="42" width="352" height="156" rx="20" fill="#ffffff" fill-opacity="0.045" stroke="#8fc8ff" stroke-opacity="0.22"/>
+    <rect x="1200" y="42" width="352" height="2" rx="1" fill="url(#hair)"/>
+    <text x="1228" y="76" font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif"
+          font-size="10.5" font-weight="600" letter-spacing="3.4" fill="#7ea7d8">POWERED BY</text>
+    <rect x="1228" y="92" width="54" height="54" rx="14" fill="#0a1524" stroke="#5ab4ff" stroke-opacity="0.45"/>
+    <text x="1255" y="129" text-anchor="middle" font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif"
+          font-size="23" font-weight="700" fill="url(#accent)">PS</text>
+    <text x="1300" y="122" font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif"
+          font-size="33" font-weight="700" letter-spacing="-0.5"><tspan fill="#f2f7ff">Pasev</tspan><tspan fill="url(#accent)">SU</tspan></text>
+    <text x="1301" y="144" font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif"
+          font-size="11.5" fill="#93a9c4">Home Assistant &amp; edge engineering</text>
+    <text x="1301" y="167" font-family="'Segoe UI', Inter, Arial, Helvetica, sans-serif"
+          font-size="12" font-weight="600" fill="#5fd0ff">github.com/PasevSU/hAPI</text>
+  </g>
+</svg>

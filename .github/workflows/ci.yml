@@ -50,3 +50,23 @@ jobs:
         run: node tests/edge-runtime.cjs
         env:
           CI: "true"
+
+  build-addon:
+    name: Add-on image (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, aarch64, armv7]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - name: Build add-on with the Home Assistant builder (no push)
+        uses: home-assistant/builder@master
+        with:
+          args: |
+            --${{ matrix.arch }} \
+            --target /data/hapi_enterprise \
+            --test

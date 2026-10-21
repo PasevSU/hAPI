@@ -5,7 +5,7 @@
         "title": "hAPI Enterprise",
         "description": "Connect to the hAPI Enterprise add-on admin API to expose telemetry sensors.",
         "data": {
-          "backend_url": "Admin API URL (http://<addon-hostname>:8098)",
+          "backend_url": "Admin API URL (e.g. http://hapi_enterprise:8098)",
           "token": "Admin token",
           "scan_interval": "Update interval (seconds)"
         }
@@ -16,7 +16,9 @@
       "token_required": "A token is required for the initial setup.",
       "token_too_short": "The token is too short (minimum 24 characters).",
       "token_too_long": "The token is too long (maximum 512 characters).",
-      "invalid_scan_interval": "Interval must be between 10 and 86400 seconds."
+      "invalid_scan_interval": "Interval must be between 10 and 86400 seconds.",
+      "invalid_auth": "The add-on rejected the admin token.",
+      "cannot_connect": "Cannot reach the add-on admin API. Check the URL and that the add-on is running."
     },
     "abort": {
       "already_configured": "This backend is already configured."
@@ -28,7 +30,7 @@
         "title": "hAPI Enterprise options",
         "description": "Update the admin API connection settings. Leave the token empty to keep the current value.",
         "data": {
-          "backend_url": "Admin API URL (http://<addon-hostname>:8098)",
+          "backend_url": "Admin API URL (e.g. http://hapi_enterprise:8098)",
           "token": "Admin token",
           "scan_interval": "Update interval (seconds)"
         }
@@ -38,7 +40,9 @@
       "invalid_url": "Enter a valid http(s) URL.",
       "token_too_short": "The token is too short (minimum 24 characters).",
       "token_too_long": "The token is too long (maximum 512 characters).",
-      "invalid_scan_interval": "Interval must be between 10 and 86400 seconds."
+      "invalid_scan_interval": "Interval must be between 10 and 86400 seconds.",
+      "invalid_auth": "The add-on rejected the admin token.",
+      "cannot_connect": "Cannot reach the add-on admin API. Check the URL and that the add-on is running."
     }
   },
   "entity": {

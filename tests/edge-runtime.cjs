@@ -30,7 +30,11 @@ const edge=require('../hapi_enterprise/standalone');
   assert((await admin.text()).includes('hAPI Enterprise'),'admin GUI branding missing');
   const who=await fetch(`http://127.0.0.1:${adminPort}/admin/api/whoami`,{headers:{Authorization:'Bearer '+t1}});
   assert.equal(who.status,200,'whoami must resolve the admin role');
-  assert.deepEqual(await who.json(),{role:'admin',ingress:true});
+  const whoBody=await who.json();
+  assert.equal(whoBody.role,'admin');
+  assert.equal(whoBody.ingress,true);
+  assert.equal(whoBody.defaultRole,'admin','admin е ролята по подразбиране');
+  assert.equal(whoBody.mapped,false,'без user_roles/group_roles няма карта');
 
   // Admin API surface used by the live desktop GUI (contract for ui/live.js).
   const H={Authorization:'Bearer '+t1};

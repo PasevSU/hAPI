@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+const read = (rel) => fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', rel), 'utf8');
 const app = read('ui/app.js');
 const index = read('ui/index.html');
 const settings = read('ui/settings-panel.js');
@@ -40,6 +40,10 @@ assert.match(settings, /\/admin\/api\/connection/);
 assert.match(settings, /\/admin\/api\/settings/);
 assert.match(settings, /publicBaseUrl/);
 assert.match(settings, /id="set-public-save"/);
+assert.match(settings, /id="set-pgp-import"/);
+assert.match(settings, /\/admin\/api\/pgp\/keys\/import/);
+assert.match(settings, /k\.source === 'bundle'/);
+assert.match(settings, /k\.roles/);
 
 // 4. Контакти и дела: реалните административни маршрути + полета по желание.
 assert.match(directory, /\/admin\/api\/directory/);
@@ -55,6 +59,18 @@ assert.match(filesManager, /const publicBase = \(\) => \(state\.publicBaseUrl \|
 assert.match(filesManager, /buildApiRecord\(portalObj, \{ baseUrl: publicBase\(\) \}\)/);
 assert.match(filesManager, /return `\$\{publicBase\(\)\}\/api\/public\/v1\/files/);
 assert.match(filesManager, /\/admin\/api\/connection/);
+
+// 5б. RFC 3161 START / STOP блокът (порт от HASH_REPORT): TSA URL-и, два бутона
+// и резултат; токенът идва само от сървъра, никога от интерфейса.
+const reportStudio = read('ui/report-studio.js');
+for (const marker of ['rs-tsa-start-url', 'rs-tsa-stop-url', 'rs-tsa-start', 'rs-tsa-stop', 'rs-tsa-result']) {
+  assert.ok(reportStudio.includes(marker), 'Report Studio: липсва ' + marker);
+}
+assert.match(reportStudio, /https:\/\/zeitstempel\.dfn\.de\//);
+assert.match(reportStudio, /http:\/\/timestamp\.digicert\.com/);
+assert.match(reportStudio, /\/admin\/api\/v2\/rfc3161/);
+assert.match(reportStudio, /JSON\.stringify\(\{ phase, manifest: result\.manifest, url \}\)/);
+assert.equal(/token\s*[:=]\s*['"][a-f0-9]{40,}/i.test(reportStudio), false, 'интерфейсът не измисля токени');
 
 // 6. Табелки: еднакъв стил и големина за всички (chip/badge/state-chip) и по-добър контраст на картите.
 assert.match(css, /--card: #13233c;/);

@@ -21,11 +21,28 @@ const ingress='/api/hassio_ingress/test-token_123';
   assert.equal(await status(adm,'/api/v1/portals'),404);
   assert.equal(await status(adm,'/admin'),200);
   assert.equal(await status(adm,'/admin.js'),200);
-  assert.equal(await status(adm,'/admin/api/portals'),401);
+  // Control Center (ui/) живее в add-on пакета и се сервира САМО през ingress,
+  // защото admin.html сочи към него с относителен линк.
+  assert.equal(await status(pub,'/ui/index.html'),404);
+  assert.equal(await status(pub,'/hapi_enterprise/qrcode.js'),404);
+  assert.equal(await status(adm,'/ui/'),200);
+  assert.equal(await status(adm,'/ui/app.js'),200);
+  assert.equal(await status(adm,'/ui/styles.css'),200);
+  assert.equal(await status(adm,'/hapi_enterprise/report-manifest.js'),200);
+  const controlCenter=await get(adm,'/ui/');
+  assert.equal(controlCenter.status,200);
+  assert.equal(controlCenter.headers.get('content-type'),'text/html; charset=utf-8');
+  assert.match(await controlCenter.text(),/Enterprise Control Center/);
+  // Ingress listener без профили → администраторски права по подразбиране.
+  assert.equal(await status(adm,'/admin/api/portals'),200);
   assert.equal(await status(adm,'/admin/api/ingress-login'),403);
   assert.equal(await status(pub,'/admin/api/ingress-login'),404);
   assert.equal(await status(adm,'/admin/api/portals',{Authorization:'Bearer '+token}),200);
   const ingressHeaders={'X-Ingress-Path':ingress};
+  assert.equal(await status(adm,ingress+'/ui/',ingressHeaders),200);
+  assert.equal(await status(adm,ingress+'/ui/app.js',ingressHeaders),200);
+  assert.equal(await status(adm,ingress+'/hapi_enterprise/qrcode.js',ingressHeaders),200);
+  assert.equal(await status(adm,ingress+'/ui/../admin.js',ingressHeaders),200);
   const adminPage=await get(adm,ingress+'/admin',ingressHeaders);
   assert.equal(adminPage.status,200);
   const adminHtml=await adminPage.text();

@@ -10,7 +10,9 @@
 
 ## Build & test
 
-- [ ] `npm test` (пълен набор `tests/*.cjs`) зелен.
+- [ ] `npm test` (пълен набор `tests/*.cjs` през `scripts/test-matrix.cjs`) — 100% успех;
+      при грешка серията се рестартира от начало, докато не се стигне 100%
+      (`--attempts=N`), а `reports/test-matrix.json` показва времената и нестабилните тестове.
 - [ ] `node scripts/build-release.cjs` — строи `dist/`.
 - [ ] `node scripts/verify-release.cjs --with-tests` — 21/21 сценария зелени (вкл. HACS структурата).
 - [ ] `npm run audit` — без тайни и файлове над 5 MB в дървото.
@@ -22,7 +24,7 @@
 - [ ] `dist/hapi_enterprise-<v>.tar.gz` — add-on архивът е валиден.
 - [ ] `dist/hapi_enterprise-integration-<v>.zip` — интеграцията е валидна.
 - [ ] `dist/SHA256SUMS.txt` проверен след трансфер.
-- [ ] Brand banners (`img/banner.png`, etc.) correct (tank-with-wings v2).
+- [ ] Brand banners (`img/banner-thin.png` + `banner-thin.svg` source) correct (hAPI mark + PasevSU lockup).
 - [ ] Public portal assets deployed.
 
 ## Docs

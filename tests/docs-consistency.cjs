@@ -31,6 +31,15 @@ for (const doc of docs) {
   );
 }
 
+// 1б. README-то на add-on-а (показва се в add-on store) също носи бадж за версия.
+const addonReadme = read('hapi_enterprise/README.md');
+const addonBadge = addonReadme.match(/img\.shields\.io\/badge\/version-([0-9.]+)-/);
+assert.ok(addonBadge, 'hapi_enterprise/README.md: липсва бадж за версия');
+assert.equal(addonBadge[1], version, `hapi_enterprise/README.md: баджът е ${addonBadge[1]}, а config.yaml е ${version}`);
+for (const button of ['supervisor_add_addon_repository', 'supervisor_addon', 'hacs_repository']) {
+  assert.ok(addonReadme.includes(button), 'hapi_enterprise/README.md: липсва бутон ' + button);
+}
+
 // 2. Локалните връзки водят до реален файл.
 for (const doc of docs) {
   const text = read(doc);

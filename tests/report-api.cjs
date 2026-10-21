@@ -29,7 +29,7 @@ const assert = require('node:assert/strict'),
     }
     assert(ready);
 
-    const manifest = require('../ui/manifest.example.json');
+    const manifest = require('../hapi_enterprise/ui/manifest.example.json');
     const M = require('../hapi_enterprise/report-manifest.js');
     const H = { authorization: 'Bearer ' + token, 'content-type': 'application/json' };
     const post = (url, body, headers = H) =>

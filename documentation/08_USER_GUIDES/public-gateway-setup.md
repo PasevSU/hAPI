@@ -10,13 +10,13 @@
 
 ## 0. Какво трябва да е налично
 
-| Компонент | Изискване |
-| --------- | --------- |
-| Home Assistant | работещ, достъпен в мрежата; add-on с Ingress |
-| Домейн | управление на DNS записи (A / CNAME / CAA) |
-| TLS | валиден сертификат за публичния поддомейн (Let's Encrypt) |
-| Reverse proxy | NGINX add-on, NGINX Proxy Manager, Caddy, Traefik или Cloudflare Tunnel |
-| Add-on | вътрешен порт **8088** (не се публикува на хоста; достъпен само през reverse proxy) |
+| Компонент      | Изискване                                                                           |
+| -------------- | ----------------------------------------------------------------------------------- |
+| Home Assistant | работещ, достъпен в мрежата; add-on с Ingress                                       |
+| Домейн         | управление на DNS записи (A / CNAME / CAA)                                          |
+| TLS            | валиден сертификат за публичния поддомейн (Let's Encrypt)                           |
+| Reverse proxy  | NGINX add-on, NGINX Proxy Manager, Caddy, Traefik или Cloudflare Tunnel             |
+| Add-on         | вътрешен порт **8088** (не се публикува на хоста; достъпен само през reverse proxy) |
 
 > **Проверено на инсталацията `192.168.50.4` (2026-10-20):** панелът на add-on-а е
 > `https://192.168.50.4:8123/app/c838e403_portal_enterprise`. Този адрес е **HA frontend
@@ -63,19 +63,19 @@ options:
 
 След това в **Settings → Add-ons → hAPI Enterprise → Configuration** задайте:
 
-| Опция | Стойност | Значение |
-| ----- | -------- | -------- |
-| `public_same_origin` | `true` | адресите са относителни — API-то работи на **същия IP и порт** като HA |
-| `public_gateway` | `true` | маркира gateway-я като публикуван (Public Access Test минава) |
-| `public_domain` | *(празно)* | външният домейн за порталите, напр. `pasev.asuscomm.com`; той дава и базовия адрес на **QR кодовете** (`PUBLIC_BASE_URL`) |
-| `user_roles` | `{"pasev":"admin"}` | HA потребител → роля (admin/operator/viewer) за Ingress |
-| `group_roles` | `{"hapi-admins":"admin"}` | HA група → роля, когато ползвате групи |
+| Опция                | Стойност                  | Значение                                                                                                                  |
+| -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `public_same_origin` | `true`                    | адресите са относителни — API-то работи на **същия IP и порт** като HA                                                    |
+| `public_gateway`     | `true`                    | маркира gateway-я като публикуван (Public Access Test минава)                                                             |
+| `public_domain`      | *(празно)*                | външният домейн за порталите, напр. `pasev.asuscomm.com`; той дава и базовия адрес на **QR кодовете** (`PUBLIC_BASE_URL`) |
+| `user_roles`         | `{"pasev":"admin"}`       | HA потребител → роля (admin/operator/viewer) за Ingress                                                                   |
+| `group_roles`        | `{"hapi-admins":"admin"}` | HA група → роля, когато ползвате групи                                                                                    |
 
 > При `public_same_origin: true` не е нужен отделен домейн: адресите са
 > `/api/public/v1/...` и `/p/<id>/` и се отварят на адреса на Home Assistant.
 > Environment еквивалентът е `PUBLIC_GATEWAY_SAME_ORIGIN=1`.
 
-> `run.sh` подава `public_domain` като `PUBLIC_BASE_URL`. Затова QR кодът и адресът
+> `start.js` подава `public_domain` като `PUBLIC_BASE_URL`. Затова QR кодът и адресът
 > на портала от административния панел сочат **външния домейн**, дори когато панелът
 > се отваря по вътрешния адрес (`192.168.50.4:8123`). Домейн без схема се приема като
 > `https://<домейн>`; невалидна стойност се игнорира и адресът пада към адреса на
@@ -257,6 +257,13 @@ curl -i -H "X-Portal-Key: hapi_..." \
 Йерархията е `system → storage → portal → folder → file → user/role → token → session`;
 по-слаба файлова политика не може да отмени порталната.
 
+> **Къде живеят правилата в add-on-а?** В контейнера `config/rules/*` е `/config/rules`
+> (собствената папка на add-on-а, видима през Samba/SSH/File editor). При първи старт
+> вградените файлове от образа се копират там и не се презаписват. Друга директория се
+> задава с опцията `config_dir` (`HAPI_CONFIG_DIR`). Промените се прилагат с
+> `POST /admin/api/rules/reload`, а `GET /admin/api/rules` показва кой файл откъде е
+> зареден и кои липсват.
+
 ---
 
 ## 6. Сигурност — задължителен минимум
@@ -276,32 +283,32 @@ curl -i -H "X-Portal-Key: hapi_..." \
 
 ## 7. Чести проблеми
 
-| Симптом | Причина | Решение |
-| ------- | ------- | ------- |
-| `502 Bad Gateway` | proxy не достига `hapi_enterprise:8088` | проверете името на контейнера/порта; `docker exec` + `curl localhost:8088` |
-| `404` на `/admin/...` през домейна | **правилно** — публичният канал е изолиран | администрацията е през HA Ingress |
-| `404` на `/p/<slug>/` | порталът не е `active` или slug е сгрешен | проверете статуса в GUI |
-| `403 {"reason":"token-active"}` | файлът е `KEY_REQUIRED` без валиден ключ | издайте ключ и го подайте в `X-Portal-Key` |
-| `403 {"reason":"mode-enabled"}` | файлът е `DISABLED` | сменете режима през админ API |
-| Public Access Test: `gateway-published` | `public_gateway` е `false` | включете опцията или `PUBLIC_GATEWAY=1` |
-| Public Access Test: `https` | няма зададен домейн | попълнете `public_domain` |
-| URL-ите показват `portal.example.com` | домейнът не е зададен | `public_domain` / `PUBLIC_DOMAIN` |
-| URL-ите са абсолютни, а искате същия порт като HA | `public_same_origin` е изключен | включете `public_same_origin` / `PUBLIC_GATEWAY_SAME_ORIGIN=1` |
-| `https` в Public Access Test при same-origin | няма домейн, но режимът е относителен | **не е грешка** — TLS се наследява от HA |
-| `/api/public/...` връща HTML на HA | nginx не пренасочва пътя | добавете `location /api/public/` преди `location /` |
-| `404` на `/api/public/v1/...` на `:8123` | интеграцията липсва или HA не е рестартиран | копирайте `custom_components/hapi_enterprise` и рестартирайте |
-| `/app/<slug>/...` връща HA интерфейс | `/app/...` е SPA маршрут, не proxy | ползвайте интеграцията (`/api/public/...`) или reverse proxy |
-| `401` в GUI през Ingress | няма роля за вашия HA потребител | задайте `user_roles` (напр. `{"pasev":"admin"}`) и рестартирайте add-on-а |
-| `502` от интеграцията към `:8123` | `backend_url` е грешен | `http://hapi_enterprise:8099` (hostname на add-on-а, вътрешен порт) |
+| Симптом                                           | Причина                                     | Решение                                                                    |
+| ------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------- |
+| `502 Bad Gateway`                                 | proxy не достига `hapi_enterprise:8088`     | проверете името на контейнера/порта; `docker exec` + `curl localhost:8088` |
+| `404` на `/admin/...` през домейна                | **правилно** — публичният канал е изолиран  | администрацията е през HA Ingress                                          |
+| `404` на `/p/<slug>/`                             | порталът не е `active` или slug е сгрешен   | проверете статуса в GUI                                                    |
+| `403 {"reason":"token-active"}`                   | файлът е `KEY_REQUIRED` без валиден ключ    | издайте ключ и го подайте в `X-Portal-Key`                                 |
+| `403 {"reason":"mode-enabled"}`                   | файлът е `DISABLED`                         | сменете режима през админ API                                              |
+| Public Access Test: `gateway-published`           | `public_gateway` е `false`                  | включете опцията или `PUBLIC_GATEWAY=1`                                    |
+| Public Access Test: `https`                       | няма зададен домейн                         | попълнете `public_domain`                                                  |
+| URL-ите показват `portal.example.com`             | домейнът не е зададен                       | `public_domain` / `PUBLIC_DOMAIN`                                          |
+| URL-ите са абсолютни, а искате същия порт като HA | `public_same_origin` е изключен             | включете `public_same_origin` / `PUBLIC_GATEWAY_SAME_ORIGIN=1`             |
+| `https` в Public Access Test при same-origin      | няма домейн, но режимът е относителен       | **не е грешка** — TLS се наследява от HA                                   |
+| `/api/public/...` връща HTML на HA                | nginx не пренасочва пътя                    | добавете `location /api/public/` преди `location /`                        |
+| `404` на `/api/public/v1/...` на `:8123`          | интеграцията липсва или HA не е рестартиран | копирайте `custom_components/hapi_enterprise` и рестартирайте              |
+| `/app/<slug>/...` връща HA интерфейс              | `/app/...` е SPA маршрут, не proxy          | ползвайте интеграцията (`/api/public/...`) или reverse proxy               |
+| `401` в GUI през Ingress                          | няма роля за вашия HA потребител            | задайте `user_roles` (напр. `{"pasev":"admin"}`) и рестартирайте add-on-а  |
+| `502` от интеграцията към `:8123`                 | `backend_url` е грешен                      | `http://hapi_enterprise:8099` (hostname на add-on-а, вътрешен порт)        |
 
 ---
 
 ## 8. Какво още не е включено (по план)
 
-| Способност | Статус |
-| ---------- | ------ |
-| Автоматично издаване на TLS през add-on-а | извън обхват — ползва се reverse proxy |
-| Географски ограничения | само при надежден източник на геолокация |
-| Компресия / части / криптиране на експортни пакети | `capabilities` = `false` (планирано) |
-| Собствен домейн на портал (различен от gateway домейна) | по-късен етап (portal-level domain) |
-| Излагане на публичния API на IP/порта на HA | ✅ чрез `custom_components/hapi_enterprise` (read-only) |
+| Способност                                              | Статус                                                 |
+| ------------------------------------------------------- | ------------------------------------------------------ |
+| Автоматично издаване на TLS през add-on-а               | извън обхват — ползва се reverse proxy                 |
+| Географски ограничения                                  | само при надежден източник на геолокация               |
+| Компресия / части / криптиране на експортни пакети      | `capabilities` = `false` (планирано)                   |
+| Собствен домейн на портал (различен от gateway домейна) | по-късен етап (portal-level domain)                    |
+| Излагане на публичния API на IP/порта на HA             | ✅ чрез `custom_components/hapi_enterprise` (read-only) |

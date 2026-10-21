@@ -1,0 +1,140 @@
+configuration:
+  username:
+    name: Console user name
+    description: Optional user name stored next to the admin token.
+  password:
+    name: Console password
+    description: Optional console password; leave empty to rely on the token only.
+  token:
+    name: Admin token
+    description: >-
+      Secret for the console and the API, at least 24 characters. When empty, a random
+      token is generated once and kept in /data/admin-token.
+  db_name:
+    name: Database and portal name
+    description: Name used for the first portal and for the database file.
+  memory_limit_mb:
+    name: Node heap limit (MB)
+    description: >-
+      0 keeps the Node.js default (about half of the container memory). Set 256-384 on a
+      Raspberry Pi or another small board so a large folder scan cannot trigger the OOM
+      killer; the value is passed as --max-old-space-size.
+  storage_mirror:
+    name: File mirror folder
+    description: >-
+      Optional second copy target for uploaded files (inside /share, /media or
+      /config). Every upload is copied and the mirror is verified with SHA-256 by
+      POST /admin/api/storage/mirror/verify; a missing or damaged side is restored from
+      the healthy one (`repair`), and reading a file heals a lost original.
+  backup_mirror:
+    name: Backup mirror folder
+    description: >-
+      Optional second location for the database backups (inside /share, /media or
+      /config). Every copy is verified with SHA-256; a copy that does not match the
+      original is deleted, so a broken mirror can never look like a valid backup.
+  backup_folder:
+    name: Backup folder
+    description: Folder for scheduled backups. A relative path resolves inside /share.
+  db_id:
+    name: Database id
+    description: Identifier used in composite DOCFLOW keys.
+  profiles:
+    name: Configuration profiles
+    description: JSON object or path with portal, folder and field definitions.
+  public_domain:
+    name: Public domain
+    description: >-
+      External host name used in QR codes and portal links, for example
+      pasev.asuscomm.com.
+  public_gateway:
+    name: Public API gateway
+    description: Enable the public API gateway on container port 8088.
+  public_same_origin:
+    name: Same-origin URLs
+    description: >-
+      Emit relative URLs because the API answers on the Home Assistant host and port.
+  user_roles:
+    name: User roles
+    description: >-
+      Optional JSON map from Home Assistant identity to role. The key is matched
+      against the ingress headers `X-Remote-User-Name`, then `X-Remote-User-Id`, then
+      `X-Remote-User-Display-Name`. Admin is the default for every Ingress user, so use
+      this only to demote, e.g. {"guest": "viewer"}.
+  group_roles:
+    name: Group roles
+    description: >-
+      Optional JSON map of group name to role for a reverse proxy that adds
+      `X-Remote-Groups`. Home Assistant itself does not send group information, so this
+      stays empty in a plain add-on installation.
+  storage_location:
+    name: Storage location
+    description: >-
+      Where documents and the database live. addon_config is the add-on's own folder
+      (/config inside the container); media and share are shared Home Assistant folders.
+  storage_subdirectory:
+    name: Storage subdirectory
+    description: Subfolder created inside the chosen storage location.
+  storage_mode:
+    name: Storage mode
+    description: >-
+      local uses the mounted folder directly; ha_network requires an active Home
+      Assistant network storage mount.
+  storage_mount_name:
+    name: Network storage name
+    description: Name of the Home Assistant network storage mount (only for ha_network).
+  min_free_mb:
+    name: Minimum free space (MB)
+    description: Startup fails when less free space is available at the storage location.
+  log_level:
+    name: Log level
+    description: >-
+      error, warn, info, debug or trace. debug adds one line per HTTP request; trace is
+      reserved for very verbose diagnostics. Files are written to logs/ in the add-on folder.
+  config_dir:
+    name: Rules directory
+    description: >-
+      Folder with the access and export rule files. Leave empty to use /config/rules,
+      where the built-in defaults are copied on first start and can be edited.
+  tsa_enabled:
+    name: RFC 3161 timestamps
+    description: >-
+      Enable the RFC 3161 START / STOP panel. When off, the timestamp endpoints answer
+      409 and no tokens are created; nothing is ever faked.
+  tsa_start_url:
+    name: START TSA URL
+    description: >-
+      Time-stamp authority for the START boundary (default DFN). Must be an http(s) URL;
+      the reply token is stored as a .tsr file under the storage folder.
+  tsa_stop_url:
+    name: STOP TSA URL
+    description: >-
+      Time-stamp authority for the STOP boundary (default DigiCert). STOP stamps the
+      closing digest: SHA-256 of the START digest and the START token fingerprint.
+  sign_packages:
+    name: Sign export packages
+    description: >-
+      Sign every export package (.zip) with the selected OpenPGP key by default. A key
+      must be attached first in the console (Settings -> PGP keys).
+  signing_key:
+    name: Signing key
+    description: >-
+      Fingerprint or key ID of the OpenPGP key used for signing packages and receipts.
+      Leave empty to use the key selected in the console.
+  encrypt_files:
+    name: Encrypt stored files
+    description: >-
+      Encrypt new uploads at rest (AES-256-GCM with the admin key) by default. An
+      explicit X-File-Encrypt header still wins per upload.
+  tls_cert:
+    name: TLS certificate
+    description: >-
+      Path to a PEM certificate (inside /config, /ssl or /share). Together with the key
+      it makes the add-on serve its own listeners over HTTPS.
+  tls_key:
+    name: TLS private key
+    description: >-
+      Path to the PEM private key that matches the certificate. Both options must point
+      to readable files, otherwise the add-on refuses to start.
+network:
+  8099/tcp: Internal API
+  8088/tcp: Public API gateway

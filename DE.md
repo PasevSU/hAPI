@@ -1,9 +1,9 @@
-<p align="center"><img src="img/banner.png" alt="hAPI Enterprise" width="100%"></p>
+<p align="center"><img src="img/banner-thin.png" alt="hAPI Enterprise — Dokumentenarchiv mit nachweisbarer Integrität, von PasevSU" width="100%"></p>
 
 # 🏠 HOME ASSISTANT Portal Enterprise - hAPI Enterprise
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?color=ff00d8)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.54.0-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.61.4-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?color=ff00d8)](https://hacs.xyz)
 
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -137,31 +137,31 @@ Versuch wird dauerhaft aufgezeichnet. In hAPI Enterprise sind gefälschte Dokume
 Jede unten aufgeführte Enterprise-Funktion ist als **echter Backend-Handler mit
 automatisiertem Test** implementiert — niemals nur als UI-Schaltfläche:
 
-| Modul | Funktion |
-|-------|----------|
-| 🔧 Adaptive Laststeuerung | Skaliert die Download-Parallelität anhand von Heap-Nutzung und Fehlerrate. |
-| 📦 Gruppenoperationen | Änderung von Zugriffsmodus und Sichtbarkeit vieler Dateien mit Vorschau. |
-| 🧰 Konfigurationsprofile | Benannte, validierte, atomar gespeicherte Einstellungsprofile. |
-| 💾 Backup & Restore | Konsistente SQLite-Backups mit Integritätsprüfung beim Wiederherstellen. |
-| 🔍 Speicherprüfungen | Periodische Verfügbarkeits-/Schreibprüfungen pro Speicher. |
-| 📒 Fehlerprotokoll | Begrenztes JSONL-Protokoll mit Filterung nach Ebene und Quelle. |
-| 🗃️ Job-Warteschlange | FIFO, begrenzte Parallelität, Fortschritt, Abbruch, Pause/Fortsetzen, Wiederherstellung. |
-| 🔑 RBAC + SSO | admin / operator / viewer-Token plus HA-Ingress-`X-Remote-User`-Zuordnung. |
-| 📱 QR-Artefakte | QR-Erzeugung für veröffentlichte Portale und Zugriffslinks. |
-| 🩺 Diagnose | RAM/Heap, Downloads, Anfragen, Fehler, Portale, Dateien, Speicher — ohne Geheimnisse. |
-| 🗄️ SQLite-Store | Transaktionale Metadaten über `node:sqlite` `DatabaseSync`. |
-| 🖥️ Desktop-GUI | pywebview-GUI, das jede Admin-Funktion 1:1 abbildet. |
-| 🧬 DOCFLOW-Kern | Gruppen/Profile/Datensätze/Variablen mit zusammengesetztem Schlüssel; orphan + Zuordnung. |
-| 📄 Vorschau | Office-/Dokument-Vorschau mit Limits und versioniertem Cache. |
-| 🖼️ Thumbnails | Dokument-Miniaturansichten (deaktivierbar über `preview.thumbnails`). |
-| 🔢 Versionierung | Dokumenthistorie mit Wiederherstellung. |
-| 🌊 Wasserzeichen | PDF-Wasserzeichen bei der Erzeugung. |
-| 📊 PDF/OOXML | PDF-Bilder (JPEG) + Tabellen; `xlsx`/`pptx`-Extraktion. |
-| 🔐 Verschlüsselung at rest | AES-256-GCM pro Datei (optional). |
-| 🗓️ Retention + Audit | Richtlinien für Dateien und Audit; Audit-Export (json/csv). |
-| 🧾 QR-Landing | Gebrandete Landing-Seite für QR-Einträge. |
-| 🚫 QR-Widerruf | Widerruf/Ablauf von QR-Links mit Rollback. |
-| 📨 Versand (notify) | E-Mail/SMS über HA-Notify-Hooks (`notify.js`). |
+| Modul                     | Funktion                                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------- |
+| 🔧 Adaptive Laststeuerung  | Skaliert die Download-Parallelität anhand von Heap-Nutzung und Fehlerrate.                |
+| 📦 Gruppenoperationen      | Änderung von Zugriffsmodus und Sichtbarkeit vieler Dateien mit Vorschau.                  |
+| 🧰 Konfigurationsprofile   | Benannte, validierte, atomar gespeicherte Einstellungsprofile.                            |
+| 💾 Backup & Restore        | Konsistente SQLite-Backups mit Integritätsprüfung beim Wiederherstellen.                  |
+| 🔍 Speicherprüfungen       | Periodische Verfügbarkeits-/Schreibprüfungen pro Speicher.                                |
+| 📒 Fehlerprotokoll         | Begrenztes JSONL-Protokoll mit Filterung nach Ebene und Quelle.                           |
+| 🗃️ Job-Warteschlange       | FIFO, begrenzte Parallelität, Fortschritt, Abbruch, Pause/Fortsetzen, Wiederherstellung.  |
+| 🔑 RBAC + SSO              | admin / operator / viewer-Token plus HA-Ingress-`X-Remote-User-Name`-Zuordnung.           |
+| 📱 QR-Artefakte            | QR-Erzeugung für veröffentlichte Portale und Zugriffslinks.                               |
+| 🩺 Diagnose                | RAM/Heap, Downloads, Anfragen, Fehler, Portale, Dateien, Speicher — ohne Geheimnisse.     |
+| 🗄️ SQLite-Store            | Transaktionale Metadaten über `node:sqlite` `DatabaseSync`.                               |
+| 🖥️ Desktop-GUI             | pywebview-GUI, das jede Admin-Funktion 1:1 abbildet.                                      |
+| 🧬 DOCFLOW-Kern            | Gruppen/Profile/Datensätze/Variablen mit zusammengesetztem Schlüssel; orphan + Zuordnung. |
+| 📄 Vorschau                | Office-/Dokument-Vorschau mit Limits und versioniertem Cache.                             |
+| 🖼️ Thumbnails              | Dokument-Miniaturansichten (deaktivierbar über `preview.thumbnails`).                     |
+| 🔢 Versionierung           | Dokumenthistorie mit Wiederherstellung.                                                   |
+| 🌊 Wasserzeichen           | PDF-Wasserzeichen bei der Erzeugung.                                                      |
+| 📊 PDF/OOXML               | PDF-Bilder (JPEG) + Tabellen; `xlsx`/`pptx`-Extraktion.                                   |
+| 🔐 Verschlüsselung at rest | AES-256-GCM pro Datei (optional).                                                         |
+| 🗓️ Retention + Audit       | Richtlinien für Dateien und Audit; Audit-Export (json/csv).                               |
+| 🧾 QR-Landing              | Gebrandete Landing-Seite für QR-Einträge.                                                 |
+| 🚫 QR-Widerruf             | Widerruf/Ablauf von QR-Links mit Rollback.                                                |
+| 📨 Versand (notify)        | E-Mail/SMS über HA-Notify-Hooks (`notify.js`).                                            |
 
 ---
 
@@ -266,7 +266,7 @@ Ingress-Route und sind nur für authentifizierte Home-Assistant-Benutzer verfüg
 hapi_enterprise/            # HA-Add-on — gemeinsames Node.js-Backend (server.js + Module)
   server.js                 #   maßgebliches HTTP-Backend (HA + Windows)
   standalone.js             #   Windows-Edge-Bootstrap
-  run.sh / Dockerfile       #   HA-Add-on-Einstieg + Image
+  start.js / Dockerfile     #   HA-Add-on-Einstieg (reines JS, keine Shell) + Image
   config.yaml               #   Add-on-Metadaten / Optionen
   admin.html / admin.js     #   Web-Admin-Konsole
 custom_components/hapi_enterprise/  # HACS-Komponente (Fail-Closed-Brücke)

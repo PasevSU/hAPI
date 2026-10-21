@@ -38,6 +38,25 @@ its own `DATA_DIR`, `ADMIN_TOKEN` (≥24 chars) and `PORT`):
 node tests/<name>.cjs
 ```
 
+Run the whole package — every file in `tests/` (100+ scenarios) — with
+
+```bash
+npm test            # = node scripts/test-matrix.cjs
+```
+
+The matrix runner executes **all** tests from the beginning, and if anything fails it
+**restarts the whole series from scratch**, repeating until 100% success (default 5
+attempts; `--attempts=N` to change it, `--only=rbac` to narrow). It always starts with a
+sanitised environment, so a leaked `DATA_DIR`/`INGRESS_MODE`/`ADMIN_PORT` cannot produce
+misleading 401/404 failures. A run only counts as success at `118/118`; remaining
+failures exit non-zero and are listed explicitly. The JSON report lands in
+`reports/test-matrix.json` (per-test timings, attempts, flaky tests).
+
+`tests/scenario-matrix.cjs` keeps the package honest: every route served by
+`hapi_enterprise/server.js`, every RBAC capability in `rbac.js` and every option in
+`config.yaml` must be referenced by at least one test, and each scenario area in its map
+must keep a living owner file. A new endpoint without a test fails the suite immediately.
+
 The full suite is asserted by `tests/docker-runtime.cjs` (module completeness in the
 `Dockerfile`).
 

@@ -1,12 +1,12 @@
 @echo off
 rem ============================================================================
 rem  hAPI Enterprise — Enterprise Control Center (GUI за тестове)
-rem  Стартира ui\index.html директно от диска: без сървър, без npm, без backend.
+rem  Стартира hapi_enterprise\ui\index.html директно от диска: без сървър, без npm, без backend.
 rem  Ако има Edge/Chrome — отваря се в самостоятелен app прозорец (WebView стил).
 rem ============================================================================
 setlocal
 
-set "GUI=%~dp0ui\index.html"
+set "GUI=%~dp0hapi_enterprise\ui\index.html"
 if not exist "%GUI%" (
   echo [x] Липсва "%GUI%"
   pause

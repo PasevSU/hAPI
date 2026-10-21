@@ -1,0 +1,140 @@
+configuration:
+  username:
+    name: Потребителско име за конзолата
+    description: Незадължително име, съхранявано заедно с администраторския токен.
+  password:
+    name: Парола за конзолата
+    description: Незадължителна парола; оставете празна, за да се използва само токенът.
+  token:
+    name: Администраторски токен
+    description: >-
+      Тайна за конзолата и API-то, поне 24 знака. Ако е празна, еднократно се генерира
+      случаен токен и се пази в /data/admin-token.
+  db_name:
+    name: Име на базата и портала
+    description: Име на първия портал и на файла на базата.
+  memory_limit_mb:
+    name: Лимит на паметта (MB)
+    description: >-
+      0 оставя default-а на Node.js (около половината от паметта на контейнера). Задайте
+      256-384 на Raspberry Pi или друга малка машина, за да не стигне голямо сканиране до
+      OOM killer; стойността се подава като --max-old-space-size.
+  storage_mirror:
+    name: Огледална папка за файловете
+    description: >-
+      Опционално второ място за копие на качените файлове (в /share, /media или
+      /config). Всяко качване се копира и огледалото се сверява с SHA-256 през
+      POST /admin/api/storage/mirror/verify; липсваща или повредена страна се
+      възстановява от здравата (`repair`), а четенето лекува изгубен оригинал.
+  backup_mirror:
+    name: Огледална папка за архивите
+    description: >-
+      Опционално второ място за архивите на базата (в /share, /media или
+      /config). Всяко копие се проверява с SHA-256; копие, което не съвпада с
+      оригинала, се изтрива — счупено огледало не може да изглежда като валиден архив.
+  backup_folder:
+    name: Папка за резервни копия
+    description: Папка за планираните архиви. Относителен път се решава в /share.
+  db_id:
+    name: Идентификатор на базата
+    description: Идентификатор, използван в съставните DOCFLOW ключове.
+  profiles:
+    name: Конфигурационни профили
+    description: JSON обект или път с дефиниции за портали, папки и полета.
+  public_domain:
+    name: Публичен домейн
+    description: >-
+      Външно име, използвано в QR кодовете и адресите на порталите, например
+      pasev.asuscomm.com.
+  public_gateway:
+    name: Публичен API шлюз
+    description: Включва публичния API шлюз на порт 8088 в контейнера.
+  public_same_origin:
+    name: Адреси в същия origin
+    description: >-
+      Връща относителни адреси, защото API-то отговаря на хоста и порта на Home Assistant.
+  user_roles:
+    name: Роли на потребители
+    description: >-
+      Опционална JSON карта от идентичност на Home Assistant към роля. Ключът се търси
+      в `X-Remote-User-Name`, после в `X-Remote-User-Id`, после в
+      `X-Remote-User-Display-Name`. По подразбиране всеки Ingress потребител е admin —
+      ползвайте я само за понижаване, напр. {"guest": "viewer"}.
+  group_roles:
+    name: Роли на групи
+    description: >-
+      Опционална JSON карта от име на група към роля за reverse proxy, който добавя
+      `X-Remote-Groups`. Home Assistant не изпраща групи, затова при обикновен add-on
+      тази карта остава празна.
+  storage_location:
+    name: Място за съхранение
+    description: >-
+      Къде живеят документите и базата. addon_config е собствената папка на add-on-а
+      (/config в контейнера); media и share са споделените папки на Home Assistant.
+  storage_subdirectory:
+    name: Подпапка за съхранение
+    description: Подпапка, създадена в избраното място за съхранение.
+  storage_mode:
+    name: Режим на съхранение
+    description: >-
+      local използва директно монтираната папка; ha_network изисква активен мрежов
+      storage mount в Home Assistant.
+  storage_mount_name:
+    name: Име на мрежовия storage
+    description: Име на мрежовия storage mount в Home Assistant (само за ha_network).
+  min_free_mb:
+    name: Минимум свободно място (MB)
+    description: Стартирането се проваля, ако свободното място е под тази стойност.
+  log_level:
+    name: Ниво на логове
+    description: >-
+      error, warn, info, debug или trace. debug добавя по един ред на HTTP заявка; trace е
+      за много подробна диагностика. Файловете се пишат в logs/ в папката на add-on-а.
+  config_dir:
+    name: Директория с правила
+    description: >-
+      Папка с файловете с правила за достъп и експорт. Празно → /config/rules, където
+      при първи старт се копират вградените стойности и могат да се редактират.
+  tsa_enabled:
+    name: RFC 3161 времеви печати
+    description: >-
+      Включва панела RFC 3161 START / STOP. Изключено → endpoint-ите връщат 409 и не се
+      създават токени; нищо не се фалшифицира.
+  tsa_start_url:
+    name: START TSA адрес
+    description: >-
+      Доставчик на времеви печат за START границата (по подразбиране DFN). Трябва да е
+      http(s) адрес; токенът се пази като .tsr файл в папката на хранилището.
+  tsa_stop_url:
+    name: STOP TSA адрес
+    description: >-
+      Доставчик на времеви печат за STOP границата (по подразбиране DigiCert). STOP
+      подпечатва затварящия хеш: SHA-256 от START digest и отпечатъка на START токена.
+  sign_packages:
+    name: Подписване на експортните пакети
+    description: >-
+      Подписва всеки експортен пакет (.zip) с избрания OpenPGP ключ по подразбиране.
+      Първо трябва да е прикачен ключ в конзолата (Настройки → PGP ключове).
+  signing_key:
+    name: Ключ за подписване
+    description: >-
+      Отпечатък или key ID на OpenPGP ключа за подписване на пакети и разписки. Празно →
+      ключът, избран в конзолата.
+  encrypt_files:
+    name: Шифроване на файловете
+    description: >-
+      Шифрова новите качвания на диска (AES-256-GCM с админ ключа) по подразбиране.
+      Явният X-File-Encrypt header продължава да има приоритет за всяко качване.
+  tls_cert:
+    name: TLS сертификат
+    description: >-
+      Път до PEM сертификат (в /config, /ssl или /share). Заедно с ключа кара add-on-а
+      да сервира собствените си листенъри по HTTPS.
+  tls_key:
+    name: TLS частен ключ
+    description: >-
+      Път до PEM частния ключ, който отговаря на сертификата. Двете опции трябва да сочат
+      четими файлове, иначе add-on-ът отказва старт.
+network:
+  8099/tcp: Вътрешно API
+  8088/tcp: Публичен API шлюз

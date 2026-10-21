@@ -12,7 +12,7 @@
 ## 2. Security & crypto
 
 - 2.1 RBAC (admin / operator / viewer).
-- 2.2 Home Assistant Ingress SSO (X-Remote-User).
+- 2.2 Home Assistant Ingress SSO (X-Remote-User-Name / -Id / -Display-Name).
 - 2.3 Token bootstrap + timing-safe comparison.
 - 2.4 AES-256-GCM encryption at rest.
 - 2.5 Signing (HMAC-SHA256 → PKCS#7 detached).

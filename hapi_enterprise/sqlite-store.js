@@ -59,7 +59,19 @@ function open(jsonPath){
  }catch(e){console.error('JSON SNAPSHOT FAILED:',e.message)}
  }
  function stats(){const sizes=[sqlitePath,sqlitePath+'-wal',sqlitePath+'-shm'].map(p=>{try{return fs.statSync(p).size}catch(e){if(e.code==='ENOENT')return 0;throw e}});return {engine:'sqlite',sqlitePath,bytes:sizes.reduce((a,b)=>a+b,0),databaseBytes:sizes[0],walBytes:sizes[1],sharedMemoryBytes:sizes[2],revision:db.prepare('SELECT revision FROM metadata WHERE id=1').get()?.revision||0}}
- function backup(destination){
+ // Бърза проверка на цялата база (PRAGMA quick_check): открива повредени страници,
+// които не пречат на отварянето, но правят записа опасен. Read-only, безопасна за
+// извикване от /ready — не пипа данните и не блокира записа за дълго.
+function quickCheck(){
+  try{
+    const row=db.prepare('PRAGMA quick_check').get();
+    const value=row?Object.values(row)[0]:'failed';
+    return {ok:String(value)==='ok',result:String(value==null?'failed':value)};
+  }catch(e){
+    return {ok:false,result:e.message||'quick_check failed'};
+  }
+}
+function backup(destination){
   if(typeof destination!=='string'||!destination.endsWith('.sqlite'))throw Error('Backup destination must be .sqlite');
   if(fs.existsSync(destination))throw Error('Backup destination already exists');
   const parent=path.dirname(destination);
@@ -107,6 +119,6 @@ function open(jsonPath){
  function deleteUserSessions(username){deleteUserSessionsStmt.run(username)}
  function purgeExpiredSessions(){deleteExpiredStmt.run(nowIso())}
 
- return {load,save,stats,backup,restoreFrom,createUser,listUsers,getUser,updateUser,deleteUser,createSession,getSession,deleteSession,deleteUserSessions,purgeExpiredSessions,close:()=>db.close()};
+ return {load,save,stats,quickCheck,backup,restoreFrom,createUser,listUsers,getUser,updateUser,deleteUser,createSession,getSession,deleteSession,deleteUserSessions,purgeExpiredSessions,close:()=>db.close()};
 }
 module.exports={open};

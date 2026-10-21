@@ -113,7 +113,7 @@ assert.equal(s.properties.schemaVersion.const, 1);
 assert.deepEqual(s.properties.blocks.items.properties.type.enum.slice(-2), ['rfc3161-start', 'rfc3161-stop']);
 
 // 14. Примерният манифест на GUI-я минава същия валидатор (един договор, един код).
-const example = require('../ui/manifest.example.json');
+const example = require('../hapi_enterprise/ui/manifest.example.json');
 const exampleResult = M.check(example);
 assert.equal(exampleResult.ok, true, JSON.stringify(exampleResult.errors));
 assert.equal(exampleResult.manifest.blocks[0].type, 'rfc3161-start');

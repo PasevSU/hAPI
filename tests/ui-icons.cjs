@@ -8,7 +8,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const uiDir = path.join(__dirname, '..', 'ui');
+const uiDir = path.join(__dirname, '..', 'hapi_enterprise', 'ui');
 const iconsSrc = fs.readFileSync(path.join(uiDir, 'icons.js'), 'utf8');
 
 // Символите се дефинират като ключове в обекта P: `  name: '<path .../>'`.

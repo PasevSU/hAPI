@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "note": "Индивидуална политика за файл. По-слаба от порталната не се прилага.",
+  "rules": [
+    { "portal": "public-notices", "file": "Public_Report.pdf", "access": "FREE", "visibility": "public" },
+    { "portal": "public-notices", "file": "Evidence_Package.zip", "access": "KEY_REQUIRED", "visibility": "public", "max_downloads": 10 },
+    { "portal": "chronoseal-vault", "file": "Internal_Audit.json", "access": "PRIVATE", "visibility": "hidden", "roles": ["admin"] },
+    { "portal": "chronoseal-vault", "file": "Revoked_File.pdf", "access": "DISABLED", "visibility": "public" }
+  ]
+}

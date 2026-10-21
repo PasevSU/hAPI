@@ -11,7 +11,27 @@ const ACC = require('./download-access.js');
 const R = require('./export-rules.js');
 const MGR = require('./export-manager.js');
 
-const CONFIG_DIR = process.env.HAPI_CONFIG_DIR || path.join(__dirname, '..', 'config');
+// ── Зареждане на правила ─────────────────────────────────────────────────────
+// Търсят се в този ред, файл по файл:
+//   1. HAPI_CONFIG_DIR (или неговият поддиректориум rules/) — задава се от опцията
+//      `config_dir` на add-on-а;
+//   2. /config/rules — app_config папката на add-on-а (редактируема от потребителя);
+//   3. <addon>/rules — вградените стойности, които пътуват с образа;
+//   4. <repo>/config/rules — авторското копие при разработка.
+// Ако никъде няма файл, се ползва вградената константа и се логва предупреждение.
+const BUNDLED_DIR = path.join(__dirname, 'rules');
+const CONTAINER_DIR = '/config/rules';
+const REPO_DIR = path.join(__dirname, '..', 'config', 'rules');
+const RULE_FILES = [
+  'download_rules.json',
+  'public_gateway.json',
+  'download_access.json',
+  'file_permissions.json',
+  'token_policies.json',
+  'rate_limits.json',
+  'export_profiles.json',
+  'export_permissions.json',
+];
 const FALLBACK = {
   gateway: {},
   access: { default_policy: {}, system: {} },
@@ -23,20 +43,56 @@ const FALLBACK = {
   rules: R.DEFAULT_RULES,
 };
 let cache = null;
+let loadedAt = null;
+let sources = {};
+let apiLog = null;
 
-function readJson(rel, fallback) {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(CONFIG_DIR, rel), 'utf8'));
-  } catch {
-    return fallback;
+/** Подава логера на сървъра, за да не се губи информация при fallback. */
+function setLogger(logger) {
+  apiLog = logger && typeof logger.warn === 'function' ? logger : null;
+}
+
+function ruleDirs() {
+  const dirs = [];
+  const env = String(process.env.HAPI_CONFIG_DIR || '').trim();
+  if (env) dirs.push(fs.existsSync(path.join(env, 'rules')) ? path.join(env, 'rules') : env);
+  dirs.push(CONTAINER_DIR);
+  dirs.push(BUNDLED_DIR);
+  dirs.push(REPO_DIR);
+  return [...new Set(dirs)];
+}
+
+const CONFIG_DIR = ruleDirs()[0];
+
+function warnFallback(name, reason) {
+  const detail = { ns: 'rules', file: name, reason: reason || 'missing' };
+  if (apiLog) apiLog.warn('rules.fallback', detail);
+  else console.warn('rules: using built-in defaults for ' + name);
+}
+
+/** Чете един файл с правила; връща fallback, ако никъде не е намерен. */
+function readJson(name, fallback) {
+  for (const dir of ruleDirs()) {
+    const file = path.join(dir, name);
+    try {
+      if (!fs.existsSync(file)) continue;
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+      sources[name] = file;
+      return parsed;
+    } catch (e) {
+      if (apiLog) apiLog.warn('rules.invalid', { ns: 'rules', file, err: e.message });
+    }
   }
+  sources[name] = 'default';
+  warnFallback(name);
+  return fallback;
 }
 
 /** Зарежда конфигурацията веднъж (и замразява резултата). */
 function config() {
   if (cache) return cache;
-  const rules = readJson(path.join('rules', 'download_rules.json'), R.DEFAULT_RULES);
-  const rawGateway = readJson(path.join('rules', 'public_gateway.json'), FALLBACK.gateway);
+  const rules = readJson('download_rules.json', R.DEFAULT_RULES);
+  const rawGateway = readJson('public_gateway.json', FALLBACK.gateway);
   // Домейнът и публикуването могат да дойдат от среда (Docker/тестове) или от
   // опциите на add-on-а (Settings → Add-on configuration).
   let options = {};
@@ -62,15 +118,72 @@ function config() {
   });
   cache = {
     gateway: GW.normalizeGateway(gatewayInput),
-    access: readJson(path.join('rules', 'download_access.json'), FALLBACK.access),
-    files: readJson(path.join('rules', 'file_permissions.json'), FALLBACK.files),
-    tokens: readJson(path.join('rules', 'token_policies.json'), FALLBACK.tokens),
-    rate: readJson(path.join('rules', 'rate_limits.json'), FALLBACK.rate),
-    profiles: readJson(path.join('rules', 'export_profiles.json'), FALLBACK.profiles),
-    permissions: readJson(path.join('rules', 'export_permissions.json'), FALLBACK.permissions),
+    access: readJson('download_access.json', FALLBACK.access),
+    files: readJson('file_permissions.json', FALLBACK.files),
+    tokens: readJson('token_policies.json', FALLBACK.tokens),
+    rate: readJson('rate_limits.json', FALLBACK.rate),
+    profiles: readJson('export_profiles.json', FALLBACK.profiles),
+    permissions: readJson('export_permissions.json', FALLBACK.permissions),
     rules: R.validateRules(rules).ok ? rules : R.DEFAULT_RULES,
   };
+  loadedAt = new Date().toISOString();
   return cache;
+}
+
+/** Кой файл откъде е зареден — за диагностика и за admin API-то. */
+function status() {
+  const current = config();
+  return {
+    dirs: ruleDirs(),
+    files: Object.fromEntries(RULE_FILES.map((name) => [name, sources[name] || 'default'])),
+    missing: RULE_FILES.filter((name) => !sources[name] || sources[name] === 'default'),
+    loadedAt,
+    gateway: {
+      published: current.gateway.public?.published === true,
+      domain: current.gateway.public?.domain || '',
+      relative: current.gateway.public?.relative === true,
+    },
+  };
+}
+
+/** Изхвърля кеша и зарежда правилата наново (без рестарт на add-on-а). */
+function reload() {
+  cache = null;
+  loadedAt = null;
+  sources = {};
+  config();
+  if (apiLog) apiLog.info('rules.reloaded', { ns: 'rules', dirs: ruleDirs().length });
+  return status();
+}
+
+/** Къде да се копират вградените правила, за да могат да се редактират. */
+function defaultSeedDir() {
+  const env = String(process.env.HAPI_CONFIG_DIR || '').trim();
+  if (env) return env;
+  return fs.existsSync('/config') ? CONTAINER_DIR : '';
+}
+
+/** Копира липсващите вградени правила в целевата директория (без презапис). */
+function seedRules(target) {
+  const dir = target === undefined ? defaultSeedDir() : String(target || '');
+  if (!dir) return { dir: '', copied: [] };
+  try {
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const copied = [];
+    for (const name of RULE_FILES) {
+      const dest = path.join(dir, name);
+      const src = path.join(BUNDLED_DIR, name);
+      if (fs.existsSync(dest) || !fs.existsSync(src)) continue;
+      fs.copyFileSync(src, dest);
+      try {
+        fs.chmodSync(dest, 0o600);
+      } catch {}
+      copied.push(name);
+    }
+    return { dir, copied };
+  } catch (e) {
+    return { dir, copied: [], error: e.message };
+  }
 }
 
 // ── Мапинг от legacy модела (portals/files) към gateway модела ─────────────
@@ -233,6 +346,14 @@ function exportPreflight(input) {
 
 module.exports = {
   CONFIG_DIR,
+  BUNDLED_DIR,
+  RULE_FILES,
+  ruleDirs,
+  status,
+  reload,
+  seedRules,
+  defaultSeedDir,
+  setLogger,
   config,
   readJson,
   portalMode,

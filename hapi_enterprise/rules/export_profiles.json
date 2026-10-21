@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "profiles": [
+    { "id": "single", "label": "Единичен файл", "format": "file", "contents": ["originals"], "permission": "files.download" },
+    { "id": "selected", "label": "Избрани файлове", "format": "zip", "contents": ["originals"], "permission": "files.download" },
+    { "id": "report", "label": "Пълен отчет", "format": "zip", "contents": ["pdf", "manifest"], "permission": "reports.export" },
+    {
+      "id": "evidence",
+      "label": "Доказателствен пакет",
+      "format": "zip",
+      "contents": ["pdf", "manifest", "hashes", "timestamps", "originals", "audit", "certificates"],
+      "permission": "evidence.export",
+      "verification": "required"
+    },
+    { "id": "manifest", "label": "Само манифест", "format": "json", "contents": ["manifest"], "permission": "reports.export" },
+    { "id": "certificates", "label": "Сертификати", "format": "zip", "contents": ["certificates", "timestamps"], "permission": "audit.export", "verification": "required" },
+    { "id": "pdf", "label": "PDF експорт", "format": "pdf", "contents": ["pdf"], "permission": "reports.export" },
+    { "id": "template", "label": "Шаблон", "format": "json", "contents": ["templates"], "permission": "templates.export" },
+    { "id": "backup", "label": "Архив на проекта", "format": "zip", "contents": ["originals", "manifest", "audit"], "permission": "backups.create", "verification": "required" },
+    { "id": "audit", "label": "Одит експорт", "format": "json", "contents": ["audit"], "permission": "audit.export", "verification": "required" },
+    { "id": "bulk", "label": "Групово експортиране", "format": "zip", "contents": ["originals"], "permission": "bulk.export" },
+    { "id": "verified", "label": "Проверен трансфер", "format": "folder", "contents": ["originals"], "permission": "files.download", "verification": "required" }
+  ]
+}

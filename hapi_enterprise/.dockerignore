@@ -1,0 +1,11 @@
+# Build context is this folder. Keep only what the image really uses, so a rebuild
+# never ships docs, source icons or servers-side-only helpers.
+README.md
+icon.svg
+logo.svg
+translations/
+plugins/
+.venv/
+node_modules/
+*.log
+tmp-*

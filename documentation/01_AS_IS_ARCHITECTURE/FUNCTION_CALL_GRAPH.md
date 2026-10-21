@@ -10,7 +10,7 @@ server.js ──────────────── HTTP entrypoint (HA I
   │    ├─ repository.js ── sqlite-repository.js ── sqlite-store.js
   │    ├─ event-bus.js     observable events
   │    └─ plugins.js
-  ├─ auth / rbac.js        login, roles, X-Remote-User SSO
+  ├─ auth / rbac.js        login, roles, HA ingress identity SSO
   ├─ core-store.js         groups/profiles/records/variables
   │    ├─ directory.js
   │    └─ cabinet.js
@@ -39,7 +39,7 @@ server.js ──────────────── HTTP entrypoint (HA I
 
 ## Entry points
 
-| Entry | Runtime |
-| ----- | ------- |
-| `server.js` | HA add-on (via `run.sh`/`Dockerfile`) + Windows backend |
+| Entry           | Runtime                                                    |
+| --------------- | ---------------------------------------------------------- |
+| `server.js`     | HA add-on (via `start.js`/`Dockerfile`) + Windows backend  |
 | `standalone.js` | Windows edge bootstrap (starts `server.js` + optional GUI) |

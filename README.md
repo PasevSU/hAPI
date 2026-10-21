@@ -1,12 +1,25 @@
 <p align="center">
-  <img src="img/banner.png" alt="hAPI Enterprise" width="100%">
+  <img src="img/banner-thin.png" alt="hAPI Enterprise — document vault with verifiable integrity, powered by PasevSU" width="100%">
+</p>
+
+<p align="center">
+  <a href="https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FPasevSU%2FhAPI">
+    <img src="https://img.shields.io/badge/ADD_REPOSITORY-my.home--assistant-41BDF5?style=for-the-badge&logo=homeassistant" alt="Add repository to Home Assistant">
+  </a>
+  <a href="https://my.home-assistant.io/redirect/supervisor_addon/?addon=hapi_enterprise&repository_url=https%3A%2F%2Fgithub.com%2FPasevSU%2FhAPI">
+    <img src="https://img.shields.io/badge/OPEN_ADD--ON-my.home--assistant-18BC9C?style=for-the-badge&logo=homeassistant" alt="Open the add-on">
+  </a>
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=PasevSU&repository=hAPI&category=integration">
+    <img src="https://img.shields.io/badge/HACS-Integration-41BDF5?style=for-the-badge&logo=homeassistant" alt="Open in HACS">
+  </a>
 </p>
 
 # hAPI Enterprise — Home Assistant add-on
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.54.0-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.61.4-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.13-blue?logo=nodedotjs)](https://nodejs.org)
+[![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-informational)](hapi_enterprise/README.md#raspberry-pi-and-small-boards)
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
 [![Български](https://img.shields.io/badge/BG-ЕЗИК-green?logo=translate&labelColor=gray&style=flat-square)](BG.md)
 [![Deutsch](https://img.shields.io/badge/DE-SPRACHE-green?logo=translate&labelColor=gray&style=flat-square)](DE.md)
@@ -100,13 +113,13 @@ composite key `{prefix}-{ID_db}-{id_gruppe}-{field}`, grouped under a stable `id
 Profiles are generated automatically when a folder (group) is created; records can exist
 without a folder (orphan) and be associated later.
 
-| Layer | What it provides |
-| ----- | ---------------- |
-| **Core** | DI container, Event Bus, metadata-driven Registry, groups/profiles/records/variables |
-| **Data** | Transactional SQLite store (`node:sqlite` `DatabaseSync`) behind a Repository interface |
-| **Documents** | Preview, thumbnails, versioning, PDF watermarks, PDF images + tables, xlsx/pptx extraction |
-| **Sharing** | QR artifacts, branded landing page, QR revocation, dispatch via Home Assistant notify |
-| **Security** | RBAC + HA Ingress SSO, AES-256-GCM encryption at rest, retention + audit export |
+| Layer          | What it provides                                                                                               |
+| -------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Core**       | DI container, Event Bus, metadata-driven Registry, groups/profiles/records/variables                           |
+| **Data**       | Transactional SQLite store (`node:sqlite` `DatabaseSync`) behind a Repository interface                        |
+| **Documents**  | Preview, thumbnails, versioning, PDF watermarks, PDF images + tables, xlsx/pptx extraction                     |
+| **Sharing**    | QR artifacts, branded landing page, QR revocation, dispatch via Home Assistant notify                          |
+| **Security**   | RBAC + HA Ingress SSO, AES-256-GCM encryption at rest, retention + audit export                                |
 | **Operations** | Backup/restore, job queue with progress, load control, storage checks, diagnostics, error log, config profiles |
 
 Every feature ships with a real backend handler and an automated test — never just a UI
@@ -125,23 +138,23 @@ history and detailed annexes.
 
 ## Repository layout
 
-| Path                                  | Purpose                                                            |
-| ------------------------------------- | ------------------------------------------------------------------ |
-| `hapi_enterprise/`                  | The Home Assistant add-on (source, ready to build and run)         |
-| `custom_components/hapi_enterprise/`| HA custom integration: public API bridge + portal page, UI setup (config/options flow) and telemetry sensors |
-| `hacs.json`                           | HACS manifest — add this repository as a custom repository (Integration) |
-| `tests/`                              | Automated test suite (`node tests/*.cjs`, 100+ files)              |
-| `scripts/`                            | Test runner, dev dashboard and the release tools (`build-release.cjs`, `verify-release.cjs`) |
-| `docs/`                               | Documentation, plans (`docs/plan/15` is canonical) and ADR links   |
-| `documentation/`                      | Governance, ADR registry, migration, testing, release, user guides |
-| `archive/`                            | Read-only history: old plans, `ANALYSIS.md`, first SDK client      |
-| `ui/`                                 | Enterprise Control Center GUI — 13 panels + Report Studio (plain JS, no server, no npm) |
-| `START_HAPI_GUI.bat`                  | Opens `ui/index.html` from disk (Edge/Chrome app window) — GUI for testing |
-| `api/` *(planned, phase 8)*           | Postman collection + published OpenAPI contract (generated by `api-spec.js`) |
-| `sdk/` *(planned, phase 8)*           | Public client SDK (from `archive/SDK/client.mjs`)                  |
-| `img/`                                | Brand banners, logo and icons used by the documentation            |
-| `CHANGELOG.md`                        | Release notes for the add-on and the integration                   |
-| `dist/` *(generated)*                 | Release artifacts from `node scripts/build-release.cjs` (git-ignored) |
+| Path                                 | Purpose                                                                                                          |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `hapi_enterprise/`                   | The Home Assistant add-on (source, ready to build and run)                                                       |
+| `custom_components/hapi_enterprise/` | HA custom integration: public API bridge + portal page, UI setup (config/options flow) and telemetry sensors     |
+| `hacs.json`                          | HACS manifest — add this repository as a custom repository (Integration)                                         |
+| `tests/`                             | Automated test suite (`npm test`, 118 scenario files, 100% gate)                                                 |
+| `scripts/`                           | Test runner (`test-matrix.cjs`), dev dashboard and the release tools (`build-release.cjs`, `verify-release.cjs`) |
+| `docs/`                              | Documentation, plans (`docs/plan/15` is canonical) and ADR links                                                 |
+| `documentation/`                     | Governance, ADR registry, migration, testing, release, user guides                                               |
+| `archive/`                           | Read-only history: old plans, `ANALYSIS.md`, first SDK client                                                    |
+| `hapi_enterprise/ui/`                | Enterprise Control Center GUI — 13 panels + Report Studio (plain JS, no server, no npm)                          |
+| `START_HAPI_GUI.bat`                 | Opens `hapi_enterprise/ui/index.html` from disk (Edge/Chrome app window) — GUI for testing                       |
+| `api/` *(planned, phase 8)*          | Postman collection + published OpenAPI contract (generated by `api-spec.js`)                                     |
+| `sdk/` *(planned, phase 8)*          | Public client SDK (from `archive/SDK/client.mjs`)                                                                |
+| `img/`                               | Brand banners, logo and icons used by the documentation                                                          |
+| `CHANGELOG.md`                       | Release notes for the add-on and the integration                                                                 |
+| `dist/` *(generated)*                | Release artifacts from `node scripts/build-release.cjs` (git-ignored)                                            |
 
 ## Requirements
 
@@ -158,6 +171,34 @@ or keep using YAML for the portal proxy. Details: [`documentation/08_USER_GUIDES
 **Add-on.** Supervisor → Add-on Store → ⋮ → Repositories → `https://github.com/PasevSU/hAPI`,
 then install **hAPI Enterprise** and set an admin token (≥ 24 characters). Details:
 [`documentation/08_USER_GUIDES/public-gateway-setup.md`](documentation/08_USER_GUIDES/public-gateway-setup.md).
+
+**Local add-on and integration (no GitHub).** Both parts can be deployed from this working
+copy, so Home Assistant lists the add-on under **Local apps** instead of the GitHub
+repository version:
+
+```powershell
+npm run sync:local                                              # add-on + integration
+pwsh -NoProfile -File scripts/sync-local-addon.ps1 -VerifyOnly   # checks only
+pwsh -NoProfile -File scripts/sync-local-addon.ps1 -Backup       # keep the previous copy
+```
+
+The script copies `hapi_enterprise/` → `/addons/hapi_enterprise` and
+`custom_components/hapi_enterprise/` → `/config/custom_components/hapi_enterprise`
+(`robocopy /MIR`, overridable with `-Target` / `-IntegrationTarget`) and refuses to finish
+when the layout is broken: `config.yaml` keys, every `Dockerfile` `COPY` source and
+`exec node /app/server.js` for the add-on; `manifest.domain === hapi_enterprise`, SemVer
+version, `__init__.py`, `config_flow.py`, `sensor.py`, `strings.json` for the integration.
+The same actions exist as VS Code tasks (`hAPI: синхронизирай локалния add-on`,
+`hAPI: провери локалния add-on`, `hAPI: пълен тестов пакет`). After a sync:
+**Settings → Add-ons → ⋮ → Check for updates → Rebuild**; remove
+`https://github.com/PasevSU/hAPI` from **⋮ → Repositories** if the GitHub copy (0.54.0)
+should not show up next to the local one. Home Assistant only loads a custom component
+whose folder name equals the `domain` in its `manifest.json` — a copy under
+`custom_components/hAPI Enterptice` is ignored silently.
+
+**Before the first start** — token, storage location (`addon_config` vs `share`), network
+mounts, public address and admin role mapping: see
+[`hapi_enterprise/README.md` → Recommended settings](hapi_enterprise/README.md#recommended-settings-before-you-install).
 
 **Release artifacts.** `node scripts/build-release.cjs` writes `dist/`
 (`hapi_enterprise-<version>.tar.gz`, `hapi_enterprise-integration-<version>.zip`,

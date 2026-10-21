@@ -57,12 +57,23 @@ function writeVersion(version, root = ROOT) {
 
   // Баджовете за версия в документите се обновяват заедно с кода, за да не изостават.
   const BADGE = /(img\.shields\.io\/badge\/version-)[0-9.]+(-)/;
-  for (const doc of ['README.md', 'BG.md', 'DE.md']) {
+  for (const doc of ['README.md', 'BG.md', 'DE.md', path.posix.join(ADDON_DIR, 'README.md')]) {
     const file = path.join(root, doc);
     if (!fs.existsSync(file)) continue;
     const text = fs.readFileSync(file, 'utf8');
     if (!BADGE.test(text)) continue;
     fs.writeFileSync(file, text.replace(BADGE, `$1${version}$2`));
+  }
+
+  // Enterprise Control Center показва версията от едно място — `window.HAPI_VERSION`.
+  // Без тази стъпка UI-ят показва стара версия след всяко издание (тестът ui-version
+  // пази съответствието, но е по-добре да не се стига дотам).
+  const uiData = path.join(root, ADDON_DIR, 'ui', 'data.js');
+  if (fs.existsSync(uiData)) {
+    const text = fs.readFileSync(uiData, 'utf8');
+    const next = text.replace(/(window\.HAPI_VERSION\s*=\s*')[0-9.]+(')/, `$1${version}$2`);
+    if (next === text) throw new Error('ui/data.js: липсва window.HAPI_VERSION');
+    fs.writeFileSync(uiData, next);
   }
   return version;
 }

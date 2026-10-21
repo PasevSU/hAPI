@@ -1,7 +1,7 @@
 'use strict';
 // Обектен регистър на Report Studio: 8 категории, ready / system / planned.
 const assert = require('node:assert/strict');
-const objects = require('../ui/report-objects.js');
+const objects = require('../hapi_enterprise/ui/report-objects.js');
 const M = require('../hapi_enterprise/report-manifest.js');
 
 // 1. Всеки готов обект е валиден тип в манифеста (един договор).
