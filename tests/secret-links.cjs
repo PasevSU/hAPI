@@ -111,6 +111,13 @@ const b64u = (buf) => Buffer.from(buf).toString('base64url');
     assert.ok(html.includes('/secret-view.js'), 'страницата зарежда скрипта за декриптиране');
     assert.equal((await fetch(base + '/secret/невалиден-идентификатор')).status, 404, 'невалидно id не отваря страница');
 
+    // Скриптът за декриптиране е публичен асет в КОРЕНА (страницата се отваря на public
+    // listener-а, а `/hapi_enterprise/` е само за административния).
+    r = await fetch(base + '/secret-view.js');
+    assert.equal(r.status, 200, 'скриптът се сервира');
+    assert.match(String(r.headers.get('content-type')), /javascript/);
+    assert.match(await r.text(), /AES-GCM/, 'скриптът декриптира с AES-GCM');
+
     // Първи преглед: шифротекстът излиза, декриптира се, броячът се изчерпва.
     r = await fetch(base + '/api/v2/secrets/' + created.id + '/reveal', { method: 'POST', headers: { accept: 'application/json' } });
     assert.equal(r.status, 200);
@@ -158,7 +165,7 @@ const b64u = (buf) => Buffer.from(buf).toString('base64url');
     assert.ok(!JSON.stringify(list).includes(ciphertext), 'списъкът не връща шифротекста');
     assert.equal((await fetch(base + '/admin/api/v2/secrets')).status, 401, 'списъкът иска токен');
 
-    console.log('PASS secret links: шифротекст без ключ, един преглед, 410 след това, изтекло/отменено, CSP');
+    console.log('PASS secret links: шифротекст без ключ, един преглед, 404/410 след това, изтекло/отменено, CSP и публичен скрипт');
   } finally {
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });
