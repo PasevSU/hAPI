@@ -7,6 +7,7 @@
 // кешове и на тайни. Така изданието не може да се размине с договора на HACS.
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -80,6 +81,49 @@ try {
   const readme = read('README.md');
   for (const needle of ['HACS', 'Custom repositories', '8098', 'custom_components', 'Troubleshooting', 'License']) {
     assert.ok(readme.includes(needle), 'README.md не споменава „' + needle + '“');
+  }
+
+  // 6b. Отчетните манифести са част от изданието и са валидни.
+  const manifestsDir = 'custom_components/hapi_enterprise/report_manifests';
+  const EXPECTED = {
+    'single.json': { scope: 'single_file', label: 'HASHREPORT_TYP_SINGLE' },
+    'combo.json': { scope: 'current_folder', label: 'HASHREPORT_TYP_COMBO' },
+    'combo_all.json': { scope: 'recursive_folder', label: 'HASHREPORT_TYP_COMBO_ALL' },
+    'volume.json': { scope: 'recursive_folder', label: 'HASHREPORT_TYP_VOLUME' },
+  };
+  const SCOPES = new Set(['single_file', 'current_folder', 'recursive_folder']);
+  for (const [file, expected] of Object.entries(EXPECTED)) {
+    const body = read(`${manifestsDir}/${file}`);
+    const spec = JSON.parse(body);
+    assert.equal(spec.id, file.replace(/\.json$/, ''), `${file}: id трябва да съвпада с името`);
+    assert.equal(spec.version, 1, `${file}: version`);
+    assert.ok(SCOPES.has(spec.input_scope), `${file}: непознат input_scope ${spec.input_scope}`);
+    assert.equal(spec.input_scope, expected.scope, `${file}: input_scope`);
+    assert.equal(spec.meta.report_type_label, expected.label, `${file}: report_type_label`);
+    const slots = spec.sections.filter((section) => section.block === 'slot');
+    assert.equal(slots.length, 1, `${file}: трябва да има точно един слот`);
+    assert.equal(slots[0].key, 'generator', `${file}: слотът трябва да е generator`);
+    assert.deepEqual(slots[0].between, ['start', 'stop'], `${file}: слотът трябва да е между start и stop`);
+    // Рекурсията не е подразбираща се: само combo_all и volume слизат в подпапки.
+    assert.equal(spec.input_scope === 'recursive_folder', ['combo_all.json', 'volume.json'].includes(file), `${file}: обхват/рекурсия`);
+  }
+  const index = JSON.parse(read(`${manifestsDir}/index.json`));
+  assert.equal(index.schema_version, 1, 'index.json: schema_version');
+  assert.deepEqual(
+    index.manifests.map((entry) => entry.file).sort(),
+    Object.keys(EXPECTED).sort(),
+    'index.json трябва да изброява точно четирите манифеста',
+  );
+  assert.deepEqual(index.slot.between, ['start', 'stop'], 'index.json: слотът трябва да е между start и stop');
+  for (const entry of index.manifests) {
+    assert.equal(entry.input_scope, EXPECTED[entry.file].scope, `index.json: обхват за ${entry.file}`);
+    // Издаденият файл трябва да е точно този, който индексът е записал като доказателство.
+    const shipped = read(`${manifestsDir}/${entry.file}`).replace(/\r\n/g, '\n');
+    assert.equal(
+      crypto.createHash('sha256').update(shipped, 'utf8').digest('hex'),
+      entry.sha256,
+      `издаденият ${entry.file} не съвпада с sha256 в index.json`,
+    );
   }
 
   // 7. Никакви кешове и никакви тайни в артефакта.

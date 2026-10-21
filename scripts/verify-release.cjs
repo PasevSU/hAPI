@@ -284,7 +284,8 @@ const sumsFile = path.join(distDir, 'SHA256SUMS.txt');
 
 const archived = (file) => {
   assert(fs.existsSync(file), 'липсва ' + path.relative(root, file) + ' — пусни node scripts/build-release.cjs');
-  return lib.readArchive(fs.readFileSync(file), file);
+  // Запис, който излиза извън папката, не бива да влиза в издание: распаковането му пише навън.
+  return lib.assertSafeEntryPaths(lib.readArchive(fs.readFileSync(file), file), path.basename(file));
 };
 
 check('S08', 'Артефакт: add-on tar.gz съдържа точно файловете от дървото', () => {

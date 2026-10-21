@@ -932,6 +932,64 @@
       min-width: 140px
     }
 
+    .org-block {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      margin: 10px 0;
+      background: var(--surface-2, var(--surface))
+    }
+
+    .org-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px
+    }
+
+    .org-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) auto;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 6px
+    }
+
+    .org-row input {
+      min-width: 0
+    }
+
+    .org-group {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      margin-bottom: 8px
+    }
+
+    .org-group-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px
+    }
+
+    .org-address,
+    .org-emp {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 0;
+      border-top: 1px dashed var(--border)
+    }
+
+    .org-emp strong {
+      min-width: 160px
+    }
+
     .conf {
       border: 1px solid var(--warn, #f59e0b);
       border-radius: var(--radius-sm);
@@ -1689,6 +1747,39 @@
               <form id="dir-rule-form" class="cab-bar"><input id="dir-rule-pattern" placeholder="@martinswerk.de"
                   aria-label="Domain"><span id="dir-rule-fields" class="cab-tools"></span><button class="btn-primary"
                   type="submit" data-i18n="Добави правило">Добави правило</button></form>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head">
+              <h2 data-i18n="Фирми и институции">Фирми и институции</h2>
+            </div>
+            <div class="card-body">
+              <p class="hint"
+                data-i18n="Добави фирма или институция с адреси, а под нея — служители с имейл, име, позиция и коментар.">
+                Добави фирма или институция с адреси, а под нея — служители с имейл, име, позиция и коментар.</p>
+              <form id="dir-org-form" novalidate>
+                <div class="cab-bar">
+                  <input id="dir-org-name" maxlength="160" required aria-label="Име на фирмата или институцията"
+                    placeholder="Име на фирмата/институцията" data-i18n-ph="Име на фирмата/институцията">
+                  <select id="dir-org-kind" aria-label="Вид">
+                    <option value="company" data-i18n="Фирма">Фирма</option>
+                    <option value="institution" data-i18n="Институция">Институция</option>
+                  </select>
+                </div>
+                <div class="org-block">
+                  <div class="org-head"><strong data-i18n="Адреси">Адреси</strong><button type="button"
+                      id="dir-org-add-address" data-i18n="Добави адрес">Добави адрес</button></div>
+                  <div id="dir-org-addresses"></div>
+                </div>
+                <div class="org-block">
+                  <div class="org-head"><strong data-i18n="Служители">Служители</strong><button type="button"
+                      id="dir-org-add-employee" data-i18n="Добави служител">Добави служител</button></div>
+                  <div id="dir-org-employees"></div>
+                </div>
+                <button class="btn-primary" type="submit" data-i18n="Добави фирма/институция">Добави
+                  фирма/институция</button>
+              </form>
+              <div id="dir-orgs"></div>
             </div>
           </section>
           <section class="card">

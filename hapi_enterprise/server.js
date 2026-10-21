@@ -303,6 +303,27 @@ async function pruneTsaRecords() {
   return drop.length;
 }
 
+// RS-05: токените от отчет стават .tsr + .json до останалите доказателства, за да ги
+// покрие `POST /rfc3161/verify`. Записва се само това, което TSA е върнал — без токен
+// няма файл, така че „имам времеви печат“ винаги сочи проверим артефакт.
+async function persistTsaRecords(records) {
+  const dir = path.join(root, 'tsa');
+  const written = [];
+  for (const record of records) {
+    if (!record || !record.tokenDer) continue;
+    await fsp.mkdir(dir, { recursive: true });
+    const at = new Date().toISOString(), stamp = at.replace(/[:.]/g, '-');
+    const base = 'report-' + record.phase + '-' + stamp + '-' + String(record.digest || '').slice(0, 12);
+    const file = base + '.tsr';
+    await fsp.writeFile(path.join(dir, file), record.tokenDer, { flag: 'wx', mode: 0o600 });
+    const stored = { phase: record.phase, source: 'report', at, url: record.url, attempts: record.attempts, algorithm: record.algorithm, digest: record.digest, closingDigest: record.closingDigest || null, file, status: record.status, statusText: record.statusText, token: record.token };
+    await fsp.writeFile(path.join(dir, base + '.json'), JSON.stringify(stored, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+    written.push(file);
+  }
+  if (written.length) await pruneTsaRecords().catch(e => log.warn('tsa.prune.failed', { ns: 'tsa', err: e.message }));
+  return written;
+}
+
 function updateBackup() {
   const job = backupQueue.then(async () => {
     const dir = backupsDir; await fsp.mkdir(dir, { recursive: true, mode: 0o700 });
@@ -1543,8 +1564,11 @@ async function handler(req, res) {
       if (parts[3] === 'rules' && parts.length === 4 && method === 'POST') { const b = await parse(req); return json(res, 201, await update(() => { const r = D.addRule(db, b, runtime.settings.data); void audit('directory.rule.add', { pattern: r.rule.pattern }); return r })) }
       if (parts[3] === 'rules' && parts.length === 5 && method === 'DELETE') return json(res, 200, await update(() => { const r = D.removeRule(db, parts[4]); void audit('directory.rule.remove', { id: parts[4] }); return r }));
       if (parts[3] === 'contacts' && parts.length === 4 && method === 'POST') { const b = await parse(req); return json(res, 201, await update(() => { const c = D.addContact(db, b); void audit('directory.contact.add', { id: c.id }); return c })) }
-      if (parts[3] === 'contacts' && parts.length === 5 && method === 'PATCH') { const b = await parse(req); return json(res, 200, await update(() => D.patchContact(db, parts[4], b.fields, b.extras))) }
+      if (parts[3] === 'contacts' && parts.length === 5 && method === 'PATCH') { const b = await parse(req); return json(res, 200, await update(() => D.patchContact(db, parts[4], b.fields, b.extras, b))) }
       if (parts[3] === 'contacts' && parts.length === 5 && method === 'DELETE') return json(res, 200, await update(() => D.removeContact(db, parts[4])));
+      if (parts[3] === 'organizations' && parts.length === 4 && method === 'POST') { const b = await parse(req); return json(res, 201, await update(() => { const r = D.addOrganization(db, b); void audit('directory.organization.add', { id: r.organization.id, employees: r.employees.length }); return r })) }
+      if (parts[3] === 'organizations' && parts.length === 5 && method === 'PATCH') { const b = await parse(req); return json(res, 200, await update(() => { const o = D.patchOrganization(db, parts[4], b); void audit('directory.organization.update', { id: parts[4] }); return o })) }
+      if (parts[3] === 'organizations' && parts.length === 5 && method === 'DELETE') { const detach = url.searchParams.get('detach') === '1'; return json(res, 200, await update(() => { const r = D.removeOrganization(db, parts[4], { detach }); void audit('directory.organization.remove', { id: parts[4], detached: r.detached }); return r })) }
       if (parts[3] === 'conflicts' && parts[5] === 'resolve' && method === 'POST') { const b = await parse(req); return json(res, 200, await update(() => { const r = D.resolveConflict(db, parts[4], b.value); void audit('directory.conflict.resolve', { id: parts[4] }); return r })) }
       return fail(res, 404, 'Not found');
     }
@@ -1600,11 +1624,35 @@ async function handler(req, res) {
         try {
           const manifest = (payload && payload.manifest) || payload;
           const reportRender = require('./report-render');
-          const pdf = reportRender.renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, watermark: payload && payload.watermark });
+          // RS-05: TSA обхватът е ИЗРИЧЕН (`tsa: true`) и изисква tsa_enabled. Отчетът
+          // никога не звъни на TSA „ей така“ и без токен не си измисля такъв (ADR-0025, т. 5).
+          const wantTsa = Boolean(payload && payload.tsa === true);
+          let stamps = null;
+          if (wantTsa) {
+            if (!cryptoOptions.tsaEnabled) return fail(res, 409, 'RFC 3161 timestamps are disabled (tsa_enabled)');
+            const reportStamp = require('./report-stamp');
+            stamps = await reportStamp.stampReport(manifest, { startUrl: cryptoOptions.tsaStart, stopUrl: cryptoOptions.tsaStop || cryptoOptions.tsaStart });
+            // Токените стават .tsr артефакти до останалите доказателства, за да ги покрие
+            // GET/POST /rfc3161/verify — иначе отчетът щеше да твърди нещо непроверимо.
+            if (stamps.ok) {
+              await persistTsaRecords([stamps.start, { ...stamps.stop, closingDigest: stamps.closingDigest }]).catch((e) => log.warn('report.tsa.persist.failed', { ns: 'tsa', err: e.message }));
+            }
+            void audit('report.tsa.' + (stamps.ok ? 'ok' : 'fail'), { profile: (manifest && manifest.profile) || '', start: stamps.start && stamps.start.token ? stamps.start.token.sha256 : null, stop: stamps.stop && stamps.stop.token ? stamps.stop.token.sha256 : null, evidenceDigest: stamps.evidenceDigest, closingDigest: stamps.closingDigest, error: stamps.error });
+          }
+          const pdf = reportRender.renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, watermark: payload && payload.watermark, stamps });
           const digest = require('./report-manifest').digest(manifest) || '';
+          // RS-06: отпечатък на ГОТОВИЯ PDF. Не може да стои вътре в себе си, затова се връща
+          // като хедър и влиза в одита — така „този файл е този отчет“ се проверява с sha256sum.
+          const pdfSha256 = crypto.createHash('sha256').update(pdf).digest('hex');
           const safeName = String((manifest && manifest.profile) || 'default').replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 48);
-          void audit('report.render', { profile: (manifest && manifest.profile) || '', digest });
-          res.writeHead(201, { 'Content-Type': 'application/pdf', 'Content-Length': pdf.length, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Manifest-SHA256': digest, 'Content-Disposition': 'attachment; filename="report-' + safeName + '.pdf"' });
+          void audit('report.render', { profile: (manifest && manifest.profile) || '', digest, pdfSha256, tsa: wantTsa ? (stamps && stamps.ok ? 'ok' : 'fail') : 'not requested' });
+          const headers = { 'Content-Type': 'application/pdf', 'Content-Length': pdf.length, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Manifest-SHA256': digest, 'X-PDF-SHA256': pdfSha256, 'Content-Disposition': 'attachment; filename="report-' + safeName + '.pdf"' };
+          if (wantTsa) {
+            headers['X-TSA-Status'] = stamps && stamps.ok ? 'granted' : 'failed';
+            if (stamps && stamps.evidenceDigest) headers['X-TSA-Evidence-SHA256'] = stamps.evidenceDigest;
+            if (stamps && stamps.closingDigest) headers['X-TSA-Closing-SHA256'] = stamps.closingDigest;
+          }
+          res.writeHead(201, headers);
           return res.end(pdf);
         } catch (e) { return fail(res, e.status || 500, (e.code ? e.code + ': ' : '') + (e.message || 'Report render failed')) }
       }

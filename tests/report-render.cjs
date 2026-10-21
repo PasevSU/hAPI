@@ -13,6 +13,21 @@ assert.equal(headings[0], 'RFC 3161 START');
 assert.equal(headings.at(-1), 'RFC 3161 STOP');
 assert.ok(blocks.some((b) => b.type === 'h1' && b.text.includes('КРИМИНАЛИСТИЧЕН')));
 
+// 1б. RS-07: произходът на манифеста стои В обхвата на отчета (след START, преди STOP),
+// така че издаденият PDF сам казва по кой манифест е направен.
+const startIndex = blocks.findIndex((b) => b.type === 'h3' && b.text === 'RFC 3161 START');
+const stopIndex = blocks.findIndex((b) => b.type === 'h3' && b.text === 'RFC 3161 STOP');
+const provenanceIndex = blocks.findIndex(
+  (b) => b.type === 'table' && b.rows[0][0] === 'Произход на манифеста',
+);
+assert.ok(provenanceIndex > startIndex, 'произходът трябва да е след START');
+assert.ok(provenanceIndex < stopIndex, 'произходът трябва да е преди STOP');
+const provenanceRows = blocks[provenanceIndex].rows;
+const shaRow = provenanceRows.find((r) => r[0] === 'Манифест SHA-256');
+assert.match(shaRow[1], /^[a-f0-9]{64}$/, 'манифестът се идентифицира с SHA-256');
+assert.equal(shaRow[1], M.digest(manifest), 'хешът в отчета трябва да е същият, който връща API-то');
+assert.equal(provenanceRows.find((r) => r[0] === 'Блокове')[1], String(manifest.blocks.length));
+
 // 2. Подписът никога не е „издаден“ в рендера.
 const signIndex = blocks.findIndex((b) => b.type === 'p' && /Подпис на издателя/.test(b.text || ''));
 assert.ok(signIndex > 0, 'signature block rendered');

@@ -41,31 +41,59 @@ function tableRows(block, data) {
 function toPdfBlocks(manifest, options = {}) {
   const data = options.data && typeof options.data === 'object' ? options.data : {};
   const hashes = options.hashes && typeof options.hashes === 'object' ? options.hashes : {};
+  // RS-05: реалните RFC 3161 записи идват от `report-stamp.stampReport()`. Когато ги няма,
+  // отчетът остава с честното изречение „не е издаден“ — нищо не се дописва.
+  const stamps = options.stamps && typeof options.stamps === 'object' ? options.stamps : null;
+  const stampRows = (phase) => {
+    const section = stamps && stamps[phase];
+    const fields = section && Array.isArray(section.fields) ? section.fields : null;
+    return fields && fields.length ? [['Поле', 'Стойност'], ...fields.map((row) => [String(row[0]), String(row[1])])] : null;
+  };
   const out = [];
+  // RS-07: произходът на манифеста. Изчислява се веднъж и влиза В обхвата на отчета,
+  // за да може издаденият PDF сам да каже по кой манифест е направен.
+  const manifestSha256 = M.digest(manifest);
+  const provenance = {
+    type: 'table',
+    header: true,
+    rows: [
+      ['Произход на манифеста', 'Стойност'],
+      ['Схема', `report-studio/v${manifest.schemaVersion === undefined ? 1 : manifest.schemaVersion}`],
+      ['Профил', String(manifest.profile || 'default')],
+      ['Манифест SHA-256', manifestSha256],
+      ['Блокове', String(Array.isArray(manifest.blocks) ? manifest.blocks.length : 0)],
+    ],
+  };
   const heading = (text) => {
     if (text) out.push({ type: 'h3', text: String(text) });
   };
 
   for (const block of manifest.blocks) {
     switch (block.type) {
-      case M.START:
+      case M.START: {
         out.push(
           { type: 'h3', text: block.label || 'RFC 3161 START' },
           { type: 'p', text: 'Начало на криптографския обхват на отчета.' },
-          { type: 'hr' },
+          provenance,
         );
+        const startTable = stampRows('start');
+        if (startTable) out.push({ type: 'table', header: true, rows: startTable });
+        out.push({ type: 'hr' });
         break;
-      case M.STOP:
-        out.push(
-          { type: 'hr' },
-          { type: 'h3', text: block.label || 'RFC 3161 STOP' },
-          {
-            type: 'p',
-            text:
-              'Край на криптографския обхват. Без реален отговор от TSA времеви печат не е издаден.',
-          },
-        );
+      }
+      case M.STOP: {
+        out.push({ type: 'hr' }, { type: 'h3', text: block.label || 'RFC 3161 STOP' });
+        const stopTable = stampRows('stop');
+        const stopIssued = Boolean(stamps && stamps.ok);
+        out.push({
+          type: 'p',
+          text: stopIssued
+            ? 'Край на криптографския обхват. STOP е подпечатан с времеви печат на TSA — виж таблицата по-долу.'
+            : 'Край на криптографския обхват. Без реален отговор от TSA времеви печат не е издаден.',
+        });
+        if (stopTable) out.push({ type: 'table', header: true, rows: stopTable });
         break;
+      }
       case 'title':
         if (block.value) out.push({ type: 'h1', text: String(block.value) });
         if (block.subtitle) out.push({ type: 'p', text: String(block.subtitle) });
@@ -100,7 +128,14 @@ function toPdfBlocks(manifest, options = {}) {
         break;
       }
       case 'qr':
-        out.push({ type: 'p', text: `QR: ${block.value ? String(block.value) : '(без стойност)'}` });
+        // RS-06: истински векторен QR (pdf-writer го рисува като модули), плюс самият текст,
+        // за да може отчетът да се чете и без скенер.
+        heading(block.label);
+        out.push({ type: 'qr', text: block.value ? String(block.value) : '', size: block.size, level: block.level });
+        out.push({
+          type: 'p',
+          text: block.value ? `Съдържание на QR кода: ${String(block.value)}` : 'QR код: няма зададена стойност.',
+        });
         break;
       case 'image': {
         const jpeg = jpegFrom(block);
@@ -109,9 +144,10 @@ function toPdfBlocks(manifest, options = {}) {
         break;
       }
       case 'signature':
+        // Без ключ няма подпис: казва се какво липсва, вместо да се рисува „подписано“.
         out.push(
           { type: 'hr' },
-          { type: 'p', text: `${block.label || 'Подпис'}: не е издаден (SHA-256, RS-05).` },
+          { type: 'p', text: `${block.label || 'Подпис'}: не е издаден (изисква PKCS#7 ключ; виж ADR-0025, т. 7).` },
         );
         break;
       case 'separator':

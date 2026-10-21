@@ -35,15 +35,15 @@ Definition of Done. Иначе остава бележка в §12 (идеи б�
 
 ### 1.1 Текущо репо — `hAPI Enterptice` (`final-package`, v0.50.0)
 
-| Компонент | Състояние | Какво дава |
-| --- | --- | --- |
-| `hapi_enterprise/` (~40 модула) | Работещ | Единствен backend: DI, Event Bus, Registry, repository, SQLite, RBAC, crypto, QR, preview/PDF/OOXML, jobs, retention, backup, diagnostics |
-| `tests/*.cjs` (**76** файла) | Работещи | Интеграционни тестове без зависимости |
-| `custom_components/hapi_enterprise/` | Работещ | HA мост към порталното API (read-only, fail-closed, Range поддръжка) |
-| `docs/plan/00…14` | Канонична история | Изискване → v1.0…v5.0 → фази 4–7 |
-| `documentation/` (00–08) | Governance | Charter, WBS, ADR-0001…0023, миграция, тестове, release gate, ръководства |
-| `scripts/run-tests.cjs`, `dev-dashboard.cjs` | Работещи | Test runner + dev dashboard |
-| `RELEASE_QUALIFICATION.md` | Работещ | Release gate |
+| Компонент                                    | Състояние         | Какво дава                                                                                                                                |
+| -------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `hapi_enterprise/` (~40 модула)              | Работещ           | Единствен backend: DI, Event Bus, Registry, repository, SQLite, RBAC, crypto, QR, preview/PDF/OOXML, jobs, retention, backup, diagnostics |
+| `tests/*.cjs` (**76** файла)                 | Работещи          | Интеграционни тестове без зависимости                                                                                                     |
+| `custom_components/hapi_enterprise/`         | Работещ           | HA мост към порталното API (read-only, fail-closed, Range поддръжка)                                                                      |
+| `docs/plan/00…14`                            | Канонична история | Изискване → v1.0…v5.0 → фази 4–7                                                                                                          |
+| `documentation/` (00–08)                     | Governance        | Charter, WBS, ADR-0001…0023, миграция, тестове, release gate, ръководства                                                                 |
+| `scripts/run-tests.cjs`, `dev-dashboard.cjs` | Работещи          | Test runner + dev dashboard                                                                                                               |
+| `RELEASE_QUALIFICATION.md`                   | Работещ           | Release gate                                                                                                                              |
 
 ### 1.2 Worktree — `hAPI Enterptice.worktrees/pr/3-dependabot`
 
@@ -52,42 +52,42 @@ Definition of Done. Иначе остава бележка в §12 (идеи б�
 
 ### 1.3 `hapi_old/hAPI_enterprice` (v0.43-rc7)
 
-| Артефакт | Стойност | Решение |
-| --- | --- | --- |
-| `build.cjs`, `build-release.cjs`, `build-platforms.cjs` | Скриптове за 6 пакета (HA, Repo, Windows, Portable, Setup, Full) | `MERGE` → Фаза 9 |
-| `hacs.json`, `repository.yaml`, `install.bat`, `START_WINDOWS.bat` | Дистрибуция | `MERGE` → Фаза 9 |
-| `Brand_Kit/`, `img/` | Бранд | `MERGE` → Фаза 9 (един brand kit) |
-| 8 PNG екрана (`01_Document_Register` … `08_Options_Menu`) | UI макети | `MERGE` → Фаза 5/7 (референция за UX) |
-| `BG.md`, `DE.md`, `README.md`, `SECURITY.md` | Локализация | `KEEP` в текущото репо |
+| Артефакт                                                           | Стойност                                                         | Решение                               |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------- | ------------------------------------- |
+| `build.cjs`, `build-release.cjs`, `build-platforms.cjs`            | Скриптове за 6 пакета (HA, Repo, Windows, Portable, Setup, Full) | `MERGE` → Фаза 9                      |
+| `hacs.json`, `repository.yaml`, `install.bat`, `START_WINDOWS.bat` | Дистрибуция                                                      | `MERGE` → Фаза 9                      |
+| `Brand_Kit/`, `img/`                                               | Бранд                                                            | `MERGE` → Фаза 9 (един brand kit)     |
+| 8 PNG екрана (`01_Document_Register` … `08_Options_Menu`)          | UI макети                                                        | `MERGE` → Фаза 5/7 (референция за UX) |
+| `BG.md`, `DE.md`, `README.md`, `SECURITY.md`                       | Локализация                                                      | `KEEP` в текущото репо                |
 
 ### 1.4 `hapi_old/hAPI_Enterptice_v0.47_snapshot`
 
-| Артефакт | Стойност | Решение |
-| --- | --- | --- |
-| `sdk/client.mjs` | Първи публичен клиент на порталното API (`PortalClient`) | **`MERGE` → Фаза 8** (ядро на новия SDK) |
-| `gui/` (`hapi-core.js` + 8 panel JS + `launch.html`) | Макет „8 Separate JS Panels“ | `DEFER` — референция за модуларизация на `admin.js` (Фаза 10) |
-| `ui/` (PyWebView desktop: `Start_hAPI_ENTERPRICE.pyw`, `runtime.js`, `live.js`, `lang.js`) | Desktop обвивка | `MERGE` → Фаза 9 (Windows runtime) |
-| `download_portal/` | По-стар backend (v0.47) | `DROP` (заменен от `hapi_enterprise/`) |
-| `release/` | Стари пакети | `DROP` (архив) |
+| Артефакт                                                                                   | Стойност                                                 | Решение                                                       |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------- |
+| `sdk/client.mjs`                                                                           | Първи публичен клиент на порталното API (`PortalClient`) | **`MERGE` → Фаза 8** (ядро на новия SDK)                      |
+| `gui/` (`hapi-core.js` + 8 panel JS + `launch.html`)                                       | Макет „8 Separate JS Panels“                             | `DEFER` — референция за модуларизация на `admin.js` (Фаза 10) |
+| `ui/` (PyWebView desktop: `Start_hAPI_ENTERPRICE.pyw`, `runtime.js`, `live.js`, `lang.js`) | Desktop обвивка                                          | `MERGE` → Фаза 9 (Windows runtime)                            |
+| `download_portal/`                                                                         | По-стар backend (v0.47)                                  | `DROP` (заменен от `hapi_enterprise/`)                        |
+| `release/`                                                                                 | Стари пакети                                             | `DROP` (архив)                                                |
 
 ### 1.5 `hapi_old/HAPI.SU` (v0.49.1)
 
-| Артефакт | Стойност | Решение |
-| --- | --- | --- |
-| `ANALYSIS.md` | **Критичен анализ v0.24 → v0.49.1** с 13 находки и 7 препоръки | **`MERGE` → Фаза 10** (всички препоръки стават задачи) |
-| `sdk/client.mjs` | Същият клиент | `MERGE` → Фаза 8 |
-| `custom_components/portal_enterprise/` | По-стар HA мост | `DROP` (заменен от `custom_components/hapi_enterprise/`) |
-| `ui/`, `runtime/node.exe` (85 MB) | Desktop runtime | `MERGE` → Фаза 9 (runtime се сваля при билд, не се съхранява в git) |
-| `download_portal/` | Стар backend | `DROP` |
-| ~40 release архива (~660 MB) | История | `DROP` от git → `archive/RELEASES.md` (само списък + SHA-256) |
+| Артефакт                               | Стойност                                                       | Решение                                                             |
+| -------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `ANALYSIS.md`                          | **Критичен анализ v0.24 → v0.49.1** с 13 находки и 7 препоръки | **`MERGE` → Фаза 10** (всички препоръки стават задачи)              |
+| `sdk/client.mjs`                       | Същият клиент                                                  | `MERGE` → Фаза 8                                                    |
+| `custom_components/portal_enterprise/` | По-стар HA мост                                                | `DROP` (заменен от `custom_components/hapi_enterprise/`)            |
+| `ui/`, `runtime/node.exe` (85 MB)      | Desktop runtime                                                | `MERGE` → Фаза 9 (runtime се сваля при билд, не се съхранява в git) |
+| `download_portal/`                     | Стар backend                                                   | `DROP`                                                              |
+| ~40 release архива (~660 MB)           | История                                                        | `DROP` от git → `archive/RELEASES.md` (само списък + SHA-256)       |
 
 ### 1.6 `hapi_old/doku/plan` (v1.0 → v4.3)
 
-| Файл | Стойност | Решение |
-| --- | --- | --- |
-| `plan001_чернова.txt`, `plan001_v1.0.md` | Първоначална визия | `KEEP` като история |
-| `v2.0.md` … `v4.3.md` | Еволюция (DOCFLOW → DDD → Multi-tenancy → Zero Trust) | `KEEP` като приложение; **`MERGE`** само приетите части (виж §9) |
-| `v4.4.md` | **Празен файл** | `DROP` |
+| Файл                                     | Стойност                                              | Решение                                                          |
+| ---------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------- |
+| `plan001_чернова.txt`, `plan001_v1.0.md` | Първоначална визия                                    | `KEEP` като история                                              |
+| `v2.0.md` … `v4.3.md`                    | Еволюция (DOCFLOW → DDD → Multi-tenancy → Zero Trust) | `KEEP` като приложение; **`MERGE`** само приетите части (виж §9) |
+| `v4.4.md`                                | **Празен файл**                                       | `DROP`                                                           |
 
 ### 1.7 `hapi_old/portal_enterprise`
 
@@ -97,14 +97,14 @@ Definition of Done. Иначе остава бележка в §12 (идеи б�
 
 Разговорът (7–10.10.2026) покрива **четири отделни теми**, не само API:
 
-| # | Тема от чата | Същност | Решение |
-| --- | --- | --- | --- |
-| 1 | **Публично API на портал** | „за всеки портал създава публично API“ + токен достъп | `MERGE` → **Фаза 8** (§6.9); в кода вече има `/api/v1/p/{slug}` |
-| 2 | **Enterprise Dashboard GUI** | визуален дизайн за HA Portal Enterprise → преименуван hAPI ENTERPRICE, всички панели | `MERGE` → **Фаза 10** `UI-01` |
-| 3 | **Standalone JS GUI (12 панела)** | HTML/CSS/JS без npm и backend, демо данни, `localStorage`, светла/тъмна тема, JSON експорт | `MERGE` → **Фаза 10** `UI-01` |
-| 4 | **Enterprise Control Center (13 панела) + Report Studio** | ново модулно GUI; Report Studio с три области (библиотека, подредба, свойства); A4 preview; JSON манифест import/export; 8 вида елементи | **нова Фаза 11** (§6.12) |
-| 5 | **Банеры** | 2 издания (Windows / Home Assistant) × 3 езика, 1280×640 GitHub Open Graph | `MERGE` → **Фаза 9** `PKG-04` |
-| 6 | **Windows WebView2 runtime** | `Install_GUI_Dependency.bat` (pywebview), `Start_hAPI_ENTERPRICE.bat`, без браузър и без HA | `MERGE` → **Фаза 9** `PKG-05` |
+| #   | Тема от чата                                              | Същност                                                                                                                                  | Решение                                                         |
+| --- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 1   | **Публично API на портал**                                | „за всеки портал създава публично API“ + токен достъп                                                                                    | `MERGE` → **Фаза 8** (§6.9); в кода вече има `/api/v1/p/{slug}` |
+| 2   | **Enterprise Dashboard GUI**                              | визуален дизайн за HA Portal Enterprise → преименуван hAPI ENTERPRICE, всички панели                                                     | `MERGE` → **Фаза 10** `UI-01`                                   |
+| 3   | **Standalone JS GUI (12 панела)**                         | HTML/CSS/JS без npm и backend, демо данни, `localStorage`, светла/тъмна тема, JSON експорт                                               | `MERGE` → **Фаза 10** `UI-01`                                   |
+| 4   | **Enterprise Control Center (13 панела) + Report Studio** | ново модулно GUI; Report Studio с три области (библиотека, подредба, свойства); A4 preview; JSON манифест import/export; 8 вида елементи | **нова Фаза 11** (§6.12)                                        |
+| 5   | **Банеры**                                                | 2 издания (Windows / Home Assistant) × 3 езика, 1280×640 GitHub Open Graph                                                               | `MERGE` → **Фаза 9** `PKG-04`                                   |
+| 6   | **Windows WebView2 runtime**                              | `Install_GUI_Dependency.bat` (pywebview), `Start_hAPI_ENTERPRICE.bat`, без браузър и без HA                                              | `MERGE` → **Фаза 9** `PKG-05`                                   |
 
 **Най-важната нова идея — Report Studio (manifest-driven отчет):**
 
@@ -132,12 +132,12 @@ Report Studio е точно такъв генератор, но **огранич
 
 ## 2. Правило за решения (keep / merge / drop / defer)
 
-| Решение | Значение | Критерий |
-| --- | --- | --- |
-| `KEEP` | Остава както е | Работи, тествано, в текущото репо |
-| `MERGE` | Влиза в нова фаза | Има стойност, но не е реализирано или е в стар проект |
-| `DROP` | Отпада | Дубликат, празно, или заменено от по-нов модул |
-| `DEFER` | Отлага се | Има смисъл само при мащабиране (v7+) или зависи от друга фаза |
+| Решение | Значение          | Критерий                                                      |
+| ------- | ----------------- | ------------------------------------------------------------- |
+| `KEEP`  | Остава както е    | Работи, тествано, в текущото репо                             |
+| `MERGE` | Влиза в нова фаза | Има стойност, но не е реализирано или е в стар проект         |
+| `DROP`  | Отпада            | Дубликат, празно, или заменено от по-нов модул                |
+| `DEFER` | Отлага се         | Има смисъл само при мащабиране (v7+) или зависи от друга фаза |
 
 **Забрани (от историята на проекта):**
 - Не се връщаме към `data JSONB`, microservices, PostgreSQL/Kafka/K8s/HSM като текуща
@@ -159,14 +159,14 @@ Report Studio е точно такъв генератор, но **огранич
 Ключ: {prefix}-{ID_db}-{id_gruppe}-{field}
 ```
 
-| prefix | Профил | Роля |
-| --- | --- | --- |
-| 1000 | Указател | Справочни записи |
-| 1001 | Служител | Хора/контакти |
-| 2000 | Картотека | Документи/досиета |
-| 3000 | Портали | Портални връзки/QR |
-| 4000 | Текстове | Стандартни текстове |
-| 5000 | Шаблони | Шаблони за документи |
+| prefix | Профил    | Роля                 |
+| ------ | --------- | -------------------- |
+| 1000   | Указател  | Справочни записи     |
+| 1001   | Служител  | Хора/контакти        |
+| 2000   | Картотека | Документи/досиета    |
+| 3000   | Портали   | Портални връзки/QR   |
+| 4000   | Текстове  | Стандартни текстове  |
+| 5000   | Шаблони   | Шаблони за документи |
 
 Правила, които не подлежат на обсъждане: `id_gruppe` (не `name_folder`) е в ключа;
 orphan записите са първокласни; всички профили на една група споделят `id_gruppe`;
@@ -205,14 +205,14 @@ flowchart TB
     L1 --> L2 --> L3 --> L4 --> L5 --> L6
 ```
 
-| Слой | Модули днес | Правило |
-| --- | --- | --- |
-| L1 | `config.yaml`, `runtime-config.js`, `config-profiles.js` | Всичко изключваемо/сменяемо |
-| L2 | `container.js`, `event-bus.js`, `registry.js`, `plugins.js` | < 100 реда ядро, без домейн логика |
-| L3 | `core-store.js`, `migration-bridge.js`, `signer.js`, `audit-chain.js`, `rbac.js`, `versioning.js` | Един контекст = един модул с интерфейс |
-| L4 | `repository.js`, `sqlite-repository.js`, `sqlite-store.js`, `file-crypto.js`, `storage-*.js` | Никакъв SQL извън repository |
-| L5 | `server.js` (рутер), `api-version.js`, `custom_components/` мост | Контракт преди код (OpenAPI) |
-| L6 | `admin.html/js`, `portal.html/js/css`, `preview.js`, `pdf-writer.js`, `ooxml.js`, `qrcode.js` | Без бизнес логика в UI |
+| Слой | Модули днес                                                                                       | Правило                                |
+| ---- | ------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| L1   | `config.yaml`, `runtime-config.js`, `config-profiles.js`                                          | Всичко изключваемо/сменяемо            |
+| L2   | `container.js`, `event-bus.js`, `registry.js`, `plugins.js`                                       | < 100 реда ядро, без домейн логика     |
+| L3   | `core-store.js`, `migration-bridge.js`, `signer.js`, `audit-chain.js`, `rbac.js`, `versioning.js` | Един контекст = един модул с интерфейс |
+| L4   | `repository.js`, `sqlite-repository.js`, `sqlite-store.js`, `file-crypto.js`, `storage-*.js`      | Никакъв SQL извън repository           |
+| L5   | `server.js` (рутер), `api-version.js`, `custom_components/` мост                                  | Контракт преди код (OpenAPI)           |
+| L6   | `admin.html/js`, `portal.html/js/css`, `preview.js`, `pdf-writer.js`, `ooxml.js`, `qrcode.js`     | Без бизнес логика в UI                 |
 
 **Известен дълг:** `server.js` и `admin.js` са монолитни (находка №8 от `ANALYSIS.md`) —
 адресира се във Фаза 10, не се пренаписва изведнъж.
@@ -221,14 +221,14 @@ flowchart TB
 
 ## 5. Една продуктова повърхност (6 плоскости)
 
-| # | Плоскост | За кого | Състояние |
-| --- | --- | --- | --- |
-| 1 | **Admin Console** (йерархия Група → Профил → Поле) | администратор, деловодител | ✅ |
-| 2 | **Портал за получател** (QR landing, файлове, ключ) | външен получател | ✅ |
-| 3 | **Портал за доказателства** (роли, верификация, верига на пазене) | съд, прокуратура, вещи лица | 🟡 Фаза 7 |
-| 4 | **Публично API + SDK** | интегратори, външни системи | 🟡 Фаза 8 |
-| 5 | **Report Studio** (манифест → отчет с RFC 3161 обхват) | деловодител, вещо лице, съд | 🟡 Фаза 11 |
-| 6 | **Runtime** (HA add-on, Windows WebView2 desktop/portable, Docker/edge) | инсталатор | ✅ код / 🟡 Фаза 9 пакетиране |
+| #   | Плоскост                                                                | За кого                     | Състояние                   |
+| --- | ----------------------------------------------------------------------- | --------------------------- | --------------------------- |
+| 1   | **Admin Console** (йерархия Група → Профил → Поле)                      | администратор, деловодител  | ✅                           |
+| 2   | **Портал за получател** (QR landing, файлове, ключ)                     | външен получател            | ✅                           |
+| 3   | **Портал за доказателства** (роли, верификация, верига на пазене)       | съд, прокуратура, вещи лица | 🟡 Фаза 7                    |
+| 4   | **Публично API + SDK**                                                  | интегратори, външни системи | 🟡 Фаза 8                    |
+| 5   | **Report Studio** (манифест → отчет с RFC 3161 обхват)                  | деловодител, вещо лице, съд | 🟡 Фаза 11                   |
+| 6   | **Runtime** (HA add-on, Windows WebView2 desktop/portable, Docker/edge) | инсталатор                  | ✅ код / 🟡 Фаза 9 пакетиране |
 
 Всяка плоскост има **собствена автентикация** и **собствен одит**; нито една не ползва
 администраторския токен.
@@ -242,20 +242,20 @@ flowchart TB
 > (Фаза 11) е **след** тях: работи като прототип, но не е приоритет и не се брои за готов
 > продукт, докато не чете реални данни (`F8-4`).
 
-| Фаза | Име | Статус | Ключов резултат |
-| --- | --- | --- | --- |
-| 0 | **Консолидация** (този документ, архив, един индекс) | 🟡 сега | Един източник на истина, чисто репо |
-| 1 | Ядро (променлива йерархия) | ✅ | Registry, variable store, групи/профили/записи, orphan |
-| 2 | Гъвкавост | ✅ | DI, Event Bus, Repository, плъгини, версиониран API |
-| 3 | Цялост (подпис) | ✅ | HMAC-SHA256 receipt |
-| 4 | Документи + QR | ✅ | Preview, thumbnails, версии, водни знаци, PDF/OOXML, QR landing + отмяна |
-| 5 | Настройки + център за прогрес | 🟡 план 12 | 7 секции настройки, постоянен прогрес, Event Bus |
-| 6 | Миграция без щети | 🟡 план 13 | Copy→Verify→Switch, dry-run, rollback, resume |
-| 7 | Портал за доказателства | 🟡 план 14 | Роли, PKCE/OIDC, SHA-256/512, PKCS#7, RFC 3161, верига, WORM |
-| 8 | **Публично API v2 + SDK** | 🆕 | Контракт-първо API, scoped токени, SDK, webhooks |
-| 9 | **Пакетиране и доставка** | 🆕 | 6 пакета от един build, Windows WebView2 runtime, 6 банера |
-| 10 | **Качество и CI** | 🆕 | HA интеграция, Playwright UI, Enterprise Control Center (13 панела), модуларизация |
-| 11 | **Report Studio** (manifest-driven отчети + RFC 3161 обхват) | 🆕 | JSON манифест, 8 елемента, START→STOP, A4/PDF, без фалшиви токени |
+| Фаза | Име                                                          | Статус    | Ключов резултат                                                                    |
+| ---- | ------------------------------------------------------------ | --------- | ---------------------------------------------------------------------------------- |
+| 0    | **Консолидация** (този документ, архив, един индекс)         | 🟡 сега    | Един източник на истина, чисто репо                                                |
+| 1    | Ядро (променлива йерархия)                                   | ✅         | Registry, variable store, групи/профили/записи, orphan                             |
+| 2    | Гъвкавост                                                    | ✅         | DI, Event Bus, Repository, плъгини, версиониран API                                |
+| 3    | Цялост (подпис)                                              | ✅         | HMAC-SHA256 receipt                                                                |
+| 4    | Документи + QR                                               | ✅         | Preview, thumbnails, версии, водни знаци, PDF/OOXML, QR landing + отмяна           |
+| 5    | Настройки + център за прогрес                                | 🟡 план 12 | 7 секции настройки, постоянен прогрес, Event Bus                                   |
+| 6    | Миграция без щети                                            | 🟡 план 13 | Copy→Verify→Switch, dry-run, rollback, resume                                      |
+| 7    | Портал за доказателства                                      | 🟡 план 14 | Роли, PKCE/OIDC, SHA-256/512, PKCS#7, RFC 3161, верига, WORM                       |
+| 8    | **Публично API v2 + SDK**                                    | 🆕         | Контракт-първо API, scoped токени, SDK, webhooks                                   |
+| 9    | **Пакетиране и доставка**                                    | 🆕         | 6 пакета от един build, Windows WebView2 runtime, 6 банера                         |
+| 10   | **Качество и CI**                                            | 🆕         | HA интеграция, Playwright UI, Enterprise Control Center (13 панела), модуларизация |
+| 11   | **Report Studio** (manifest-driven отчети + RFC 3161 обхват) | 🆕         | JSON манифест, 8 елемента, START→STOP, A4/PDF, без фалшиви токени                  |
 
 ### 6.1 Фаза 0 — Консолидация (тази седмица)
 
@@ -300,28 +300,28 @@ flowchart TB
 
 **Автентикация — 4 класа идентичности**
 
-| Клас | Носител | Обхват | Живот |
-| --- | --- | --- | --- |
-| Порталeн ключ | `X-Portal-Key` | `portal:read` | до ротация |
-| Файлов ключ | `X-File-Key` | един файл | до изтичане/отмяна |
-| Service токен | `Authorization: Bearer` | `portal:read`, `file:read`, `file:write`, `verify:read`, `chain:read`, `qr:admin` | 15 мин + refresh |
-| Крайни потребители (съд) | PKCE/OIDC сесия | роли от Фаза 7 | 15 мин |
+| Клас                     | Носител                 | Обхват                                                                            | Живот              |
+| ------------------------ | ----------------------- | --------------------------------------------------------------------------------- | ------------------ |
+| Порталeн ключ            | `X-Portal-Key`          | `portal:read`                                                                     | до ротация         |
+| Файлов ключ              | `X-File-Key`            | един файл                                                                         | до изтичане/отмяна |
+| Service токен            | `Authorization: Bearer` | `portal:read`, `file:read`, `file:write`, `verify:read`, `chain:read`, `qr:admin` | 15 мин + refresh   |
+| Крайни потребители (съд) | PKCE/OIDC сесия         | роли от Фаза 7                                                                    | 15 мин             |
 
 **Ресурси (v2)**
 
-| Метод | Път | Обхват |
-| --- | --- | --- |
-| `GET` | `/api/v2/portals` | `portal:read` (списък на достъпните) |
-| `GET` | `/api/v2/p/{slug}` | `portal:read` |
-| `GET` | `/api/v2/p/{slug}/manifest` | `portal:read` |
-| `GET` | `/api/v2/p/{slug}/files` | `portal:read` (филтри, cursor) |
-| `GET` | `/api/v2/p/{slug}/files/{id}` | `file:read` |
-| `POST` | `/api/v2/p/{slug}/files` | `file:write` (+ `Idempotency-Key`) |
-| `GET` | `/api/v2/p/{slug}/files/{id}/download` | `file:read` (Range, ETag) |
-| `GET` | `/api/v2/p/{slug}/files/{id}/verify` | `verify:read` |
-| `GET` | `/api/v2/p/{slug}/files/{id}/chain` | `chain:read` |
-| `POST` | `/api/v2/p/{slug}/tokens` | `qr:admin` (издаване/ротация) |
-| `POST` | `/api/v2/hooks` | `qr:admin` (webhook регистрация) |
+| Метод  | Път                                    | Обхват                               |
+| ------ | -------------------------------------- | ------------------------------------ |
+| `GET`  | `/api/v2/portals`                      | `portal:read` (списък на достъпните) |
+| `GET`  | `/api/v2/p/{slug}`                     | `portal:read`                        |
+| `GET`  | `/api/v2/p/{slug}/manifest`            | `portal:read`                        |
+| `GET`  | `/api/v2/p/{slug}/files`               | `portal:read` (филтри, cursor)       |
+| `GET`  | `/api/v2/p/{slug}/files/{id}`          | `file:read`                          |
+| `POST` | `/api/v2/p/{slug}/files`               | `file:write` (+ `Idempotency-Key`)   |
+| `GET`  | `/api/v2/p/{slug}/files/{id}/download` | `file:read` (Range, ETag)            |
+| `GET`  | `/api/v2/p/{slug}/files/{id}/verify`   | `verify:read`                        |
+| `GET`  | `/api/v2/p/{slug}/files/{id}/chain`    | `chain:read`                         |
+| `POST` | `/api/v2/p/{slug}/tokens`              | `qr:admin` (издаване/ротация)        |
+| `POST` | `/api/v2/hooks`                        | `qr:admin` (webhook регистрация)     |
 
 **Договорни изисквания**
 - **Грешки:** RFC 9457 `application/problem+json` — `type`, `title`, `status`, `detail`, `instance`, `requestId`.
@@ -383,21 +383,21 @@ webhook подпис); `docs/api/` с quickstart за 3 сценария.
 
 ### 6.11 Фаза 10 — Качество и CI (всички препоръки от `ANALYSIS.md`)
 
-| ID | Задача | Източник |
-| --- | --- | --- |
-| `BUG-01` | Интеграционен тест срещу работещ HA в CI | ANALYSIS №1 |
-| `BUG-02` | Playwright UI тест за основните потоци | ANALYSIS №2 |
-| `BUG-03` | По-добро конвертиране docx→PDF (картинки/таблици) | ANALYSIS №3 |
-| `BUG-04` | `{{променлива}}` в имена/описания на портали, пътища, имейли | ANALYSIS №4 |
-| `BUG-05` | Ограничаване на грешните опити по токен, не по IP | ANALYSIS №5 |
-| `BUG-06` | Преместване на API директорията при смяна на slug | ANALYSIS №6 |
-| `BUG-07` | Отваряне в програма — само Windows, документиран лимит | ANALYSIS №7 |
-| `BUG-08` | Модуларизация на `server.js` / `admin.js` | ANALYSIS №8 |
-| `BUG-09` | Довършване на дизайна по макетите (8 екрана) | ANALYSIS №9 |
-| `BUG-10` | Почистване на стари архиви (последни 2–3 версии) | ANALYSIS №10 |
-| `BUG-11` | Проверка на немските низове в новите панели | ANALYSIS №13 |
-| `UI-01` | **Enterprise Control Center** — 13 панела (Dashboard, Портали, Файлов мениджър, Потребители/RBAC, Задачи, Хранилища, Анализи, Сигурност, Резервни копия, QR архиви, Report Studio, Настройки, Относно) | чат §1.8 т. 2–4 |
-| `UI-02` | Модулен JS фронтенд (един панел = един модул), без npm; `localStorage` само за dev; JSON експорт | чат §1.8 т. 3 |
+| ID       | Задача                                                                                                                                                                                                 | Източник        |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------- |
+| `BUG-01` | Интеграционен тест срещу работещ HA в CI                                                                                                                                                               | ANALYSIS №1     |
+| `BUG-02` | Playwright UI тест за основните потоци                                                                                                                                                                 | ANALYSIS №2     |
+| `BUG-03` | По-добро конвертиране docx→PDF (картинки/таблици)                                                                                                                                                      | ANALYSIS №3     |
+| `BUG-04` | `{{променлива}}` в имена/описания на портали, пътища, имейли                                                                                                                                           | ANALYSIS №4     |
+| `BUG-05` | Ограничаване на грешните опити по токен, не по IP                                                                                                                                                      | ANALYSIS №5     |
+| `BUG-06` | Преместване на API директорията при смяна на slug                                                                                                                                                      | ANALYSIS №6     |
+| `BUG-07` | Отваряне в програма — само Windows, документиран лимит                                                                                                                                                 | ANALYSIS №7     |
+| `BUG-08` | Модуларизация на `server.js` / `admin.js`                                                                                                                                                              | ANALYSIS №8     |
+| `BUG-09` | Довършване на дизайна по макетите (8 екрана)                                                                                                                                                           | ANALYSIS №9     |
+| `BUG-10` | Почистване на стари архиви (последни 2–3 версии)                                                                                                                                                       | ANALYSIS №10    |
+| `BUG-11` | Проверка на немските низове в новите панели                                                                                                                                                            | ANALYSIS №13    |
+| `UI-01`  | **Enterprise Control Center** — 13 панела (Dashboard, Портали, Файлов мениджър, Потребители/RBAC, Задачи, Хранилища, Анализи, Сигурност, Резервни копия, QR архиви, Report Studio, Настройки, Относно) | чат §1.8 т. 2–4 |
+| `UI-02`  | Модулен JS фронтенд (един панел = един модул), без npm; `localStorage` само за dev; JSON експорт                                                                                                       | чат §1.8 т. 3   |
 
 **Правило от чата:** демо прототипът може да ползва симулирани данни, но **не** може да
 показва фалшиви RFC 3161 токени, фалшиви подписи или „удостоверен PDF“.
@@ -417,7 +417,14 @@ webhook подпис); `docs/api/` с quickstart за 3 сценария.
 > + `tests/report-render.cjs`, `tests/report-api.cjs`.
 > `RS-04` ✅ — всички 9 елемента + `hash-table`; изображение само JPEG (лимит на
 > `pdf-writer`), QR е текст до `RS-06`.
-> `RS-05…RS-07` 🟡.
+> `RS-07` ✅ 2026-10-21 — произход на манифеста В обхвата: `report-render.js` вмъква
+> `Манифест SHA-256` (`report-manifest.digest()`, каноничен JSON) след START и преди STOP;
+> `X-Manifest-SHA256` вече се връща и от `POST /admin/api/v2/reports/render`.
+> `RS-05` ✅ 2026-10-21 — реален обхват: `report-stamp.js` (START = digest на манифеста,
+> STOP = `sha256("<START digest>|<START token>"`), токените се пазят като `.tsr`, обхватът е
+> изричен (`tsa: true` + `tsa_enabled`), а без TSA полетата остават „not established“.
+> `RS-06` 🟡 — QR е истински векторен код и отчетът връща `X-PDF-SHA256`; PDF/A-3 и
+> цифровият подпис (PKCS#7) остават открити, защото без veraPDF/ключ биха били надпис.
 
 **Цел:** деловодител/вещо лице да сглобява отчет от блокове, а системата да го
 изпълнява **в криптографски обхват** — от `RFC 3161 START` до `RFC 3161 STOP`.
@@ -468,43 +475,43 @@ token само между START и STOP); PDF отчет с хеш таблиц�
 
 Приоритет: `P0` = блокер за release, `P1` = следваща фаза, `P2` = подобрение, `P3` = отложено.
 
-| ID | Задача | Фаза | Приоритет |
-| --- | --- | --- | --- |
-| `CON-01` | Този документ + индексите | 0 | P0 |
-| `CON-02` | `archive/MANIFEST.md`, `RELEASES.md`, `PLANS/`, `SDK/` | 0 | P0 |
-| `CON-03` | Вливане на `pr/3-dependabot` | 0 | P1 |
-| `CON-04` | ADR-0024 (обединяване) | 0 | P1 |
-| `S5-01` | Екран „Настройки“ (7 секции) | 5 | P1 |
-| `S5-02` | Център за прогрес/статус (Event Bus) | 5 | P1 |
-| `MIG-01` | Тръбопровод PRECHECK→REPORT | 6 | P1 |
-| `MIG-02` | `migrate` API + rollback | 6 | P1 |
-| `E7-01` | Публичен екран + manifest без съдържание | 7 | P1 |
-| `E7-02` | Роли съд + PKCE/OIDC | 7 | P1 |
-| `E7-03` | Клиентска верификация (WebCrypto SHA-256/512) | 7 | P1 |
-| `E7-04` | EVIDENCE качване (WORM, receipt) | 7 | P1 |
-| `E7-05` | PKCS#7 detached + RFC 3161 TSA | 7 | P2 |
-| `E7-06` | PDF отчет по делото | 7 | P2 |
-| `API-01` | `api/openapi.yaml` + CI проверка | 8 | P1 |
-| `API-02` | Service токени + обхвати | 8 | P1 |
-| `API-03` | v2 маршрути (files, download, verify, chain) | 8 | P1 |
-| `API-04` | `problem+json`, `ETag`, `Idempotency-Key`, `429` | 8 | P1 |
-| `API-05` | `sdk/js` + примери + Postman | 8 | P1 |
-| `API-06` | Webhooks с HMAC подпис | 8 | P2 |
-| `PKG-01` | Един build → 6 пакета | 9 | P1 |
-| `PKG-02` | Една версия навсякъде | 9 | P1 |
-| `PKG-03` | Windows runtime + desktop обвивка (`ui/`) | 9 | P2 |
-| `PKG-04` | Brand kit + 6 банера (2 издания × 3 езика) + ръководства BG/DE/EN | 9 | P2 |
-| `PKG-05` | Windows WebView2 обвивка (`Install_GUI_Dependency.bat`, `Start_hAPI_ENTERPRICE.bat`) | 9 | P2 |
-| `BUG-01`…`BUG-11` | Виж §6.11 | 10 | P1/P2 |
-| `UI-01` | Enterprise Control Center — 13 панела | 10 | P1 |
-| `UI-02` | Модулен JS фронтенд (един панел = един модул) | 10 | P2 |
-| `RS-01` | Схема + валидатор на `report-manifest.json` (START/STOP задължителни) | 11 | P1 |
-| `RS-02` | Редактор: библиотека / подредба / свойства / A4 preview | 11 | P1 |
-| `RS-03` | Рендер START → блокове → STOP (`pdf-writer` A4 layout) | 11 | P1 |
-| `RS-04` | 8 вида елементи + `hash-table` (CRC32/MD5/SHA1/SHA256/SHA512) | 11 | P2 |
-| `RS-05` | Връзка с TSA: токен само между START и STOP; без фалшиви токени | 11 | P1 |
-| `RS-06` | Експорт PDF / PDF-A3 / SHA-256 подпис / QR | 11 | P2 |
-| `RS-07` | Версиониране на манифеста (възпроизводимост на издаден отчет) | 11 | P2 |
+| ID                | Задача                                                                               | Фаза | Приоритет |
+| ----------------- | ------------------------------------------------------------------------------------ | ---- | --------- |
+| `CON-01`          | Този документ + индексите                                                            | 0    | P0        |
+| `CON-02`          | `archive/MANIFEST.md`, `RELEASES.md`, `PLANS/`, `SDK/`                               | 0    | P0        |
+| `CON-03`          | Вливане на `pr/3-dependabot`                                                         | 0    | P1        |
+| `CON-04`          | ADR-0024 (обединяване)                                                               | 0    | P1        |
+| `S5-01`           | Екран „Настройки“ (7 секции)                                                         | 5    | P1        |
+| `S5-02`           | Център за прогрес/статус (Event Bus)                                                 | 5    | P1        |
+| `MIG-01`          | Тръбопровод PRECHECK→REPORT                                                          | 6    | P1        |
+| `MIG-02`          | `migrate` API + rollback                                                             | 6    | P1        |
+| `E7-01`           | Публичен екран + manifest без съдържание                                             | 7    | P1        |
+| `E7-02`           | Роли съд + PKCE/OIDC                                                                 | 7    | P1        |
+| `E7-03`           | Клиентска верификация (WebCrypto SHA-256/512)                                        | 7    | P1        |
+| `E7-04`           | EVIDENCE качване (WORM, receipt)                                                     | 7    | P1        |
+| `E7-05`           | PKCS#7 detached + RFC 3161 TSA                                                       | 7    | P2        |
+| `E7-06`           | PDF отчет по делото                                                                  | 7    | P2        |
+| `API-01`          | `api/openapi.yaml` + CI проверка                                                     | 8    | P1        |
+| `API-02`          | Service токени + обхвати                                                             | 8    | P1        |
+| `API-03`          | v2 маршрути (files, download, verify, chain)                                         | 8    | P1        |
+| `API-04`          | `problem+json`, `ETag`, `Idempotency-Key`, `429`                                     | 8    | P1        |
+| `API-05`          | `sdk/js` + примери + Postman                                                         | 8    | P1        |
+| `API-06`          | Webhooks с HMAC подпис                                                               | 8    | P2        |
+| `PKG-01`          | Един build → 6 пакета                                                                | 9    | P1        |
+| `PKG-02`          | Една версия навсякъде                                                                | 9    | P1        |
+| `PKG-03`          | Windows runtime + desktop обвивка (`ui/`)                                            | 9    | P2        |
+| `PKG-04`          | Brand kit + 6 банера (2 издания × 3 езика) + ръководства BG/DE/EN                    | 9    | P2        |
+| `PKG-05`          | Windows WebView2 обвивка (`Install_GUI_Dependency.bat`, `Start_hAPI_ENTERPRICE.bat`) | 9    | P2        |
+| `BUG-01`…`BUG-11` | Виж §6.11                                                                            | 10   | P1/P2     |
+| `UI-01`           | Enterprise Control Center — 13 панела                                                | 10   | P1        |
+| `UI-02`           | Модулен JS фронтенд (един панел = един модул)                                        | 10   | P2        |
+| `RS-01`           | Схема + валидатор на `report-manifest.json` (START/STOP задължителни)                | 11   | P1        |
+| `RS-02`           | Редактор: библиотека / подредба / свойства / A4 preview                              | 11   | P1        |
+| `RS-03`           | Рендер START → блокове → STOP (`pdf-writer` A4 layout)                               | 11   | P1        |
+| `RS-04`           | 8 вида елементи + `hash-table` (CRC32/MD5/SHA1/SHA256/SHA512)                        | 11   | P2        |
+| `RS-05`           | Връзка с TSA: токен само между START и STOP; без фалшиви токени                      | 11   | P1        |
+| `RS-06`           | Експорт PDF / PDF-A3 / SHA-256 подпис / QR                                           | 11   | P2        |
+| `RS-07`           | Версиониране на манифеста (възпроизводимост на издаден отчет)                        | 11   | P2        |
 
 ---
 
@@ -557,46 +564,46 @@ token само между START и STOP); PDF отчет с хеш таблиц�
 
 ## 9. Трассируемост: идея → източник → решение → фаза
 
-| Идея | Източник | Решение | Фаза |
-| --- | --- | --- | --- |
-| Променлива йерархия, композитен ключ | `00-core-requirement.txt` | KEEP | 1 ✅ |
-| Metadata-driven Registry | v3.0 §2.3 | MERGE | 2 ✅ |
-| Orphan записи + асоцииране | `00-core-requirement.txt` | KEEP | 1 ✅ |
-| DI + Event Bus + Repository | v3.0 / v5.0 §2.2 | MERGE | 2 ✅ |
-| Verсиониран API + legacy bridge | v5.0 §6.2 | MERGE | 2 ✅ |
-| HMAC-SHA256 receipt | v5.0 §6.3 | MERGE | 3 ✅ |
-| Preview, thumbnails, версии, водни знаци | `10-phase-4` | MERGE | 4 ✅ |
-| QR landing + отмяна + notify | `10-phase-4` §4.4 | MERGE | 4 ✅ |
-| Настройки UI + прогрес | `12-phase-5` | MERGE | 5 |
-| Zero-damage миграция | `13-phase-6` | MERGE | 6 |
-| Портал за доказателства, роли | `14-phase-7` | MERGE | 7 |
-| PKCS#7 + RFC 3161 | `14-phase-7` §6.1 | MERGE | 7 |
-| Публично API като продукт | ChatGPT тема + `sdk/client.mjs` + `spec()` | MERGE | 8 |
-| SDK клиент | `hAPI_Enterptice_v0.47_snapshot/sdk/client.mjs` | MERGE | 8 |
-| HA мост | `custom_components/hapi_enterprise/` | KEEP | ✅ |
-| 6 пакета от един build | `hapi_old/hAPI_enterprice/build-*.cjs` | MERGE | 9 |
-| Desktop runtime (PyWebView) | `hapi_old/**/ui/` | MERGE | 9 |
-| Brand kit | `hapi_old/**/Brand_Kit`, `img/` | MERGE | 9 |
-| 6 банера (Windows/HA × BG/DE/EN, 1280×640) | чат §1.8 т. 5 | MERGE | 9 |
-| Windows WebView2 обвивка | чат §1.8 т. 6 | MERGE | 9 |
-| 8 UI макета | `hapi_old/hAPI_enterprice/*.png` | MERGE (референция) | 10 |
-| `gui/hapi-core.js` (8 панела) | `v0.47_snapshot/gui/` | MERGE (референция) | 10 |
-| Критики 1–13 | `HAPI.SU/ANALYSIS.md` | MERGE | 10 |
-| Enterprise Dashboard (визуален дизайн) | чат §1.8 т. 2 | MERGE | 10 |
-| Standalone JS GUI (12 панела) | чат §1.8 т. 3 | MERGE | 10 |
-| Enterprise Control Center (13 панела) | чат §1.8 т. 4 | MERGE | 10 |
-| Report Studio (манифест, START/STOP, A4, 8 елемента) | чат §1.8 т. 4 | MERGE | **11** |
-| „Без фалшиви RFC 3161 токени“ | чат §1.8 | KEEP (правило) | 11 |
-| DDD bounded contexts | v4.1 | MERGE (като модули) | — |
-| Multi-tenancy реална | v4.2 | DEFER | v7+ |
-| Zero Trust пълен (OIDC/MFA/OPA/HSM) | v4.3 | DEFER (OIDC/MFA → 7) | 7/v7+ |
-| PostgreSQL/Kafka/K8s/polyglot | v4.0–v4.3 | DROP | — |
-| `data JSONB` | v4.0 | DROP | — |
-| Стари backend-и (`download_portal/`) | v0.43/v0.47/HAPI.SU | DROP | — |
-| `portal_enterprise/` (само маркер) | `hapi_old` | DROP | — |
-| `v4.4.md` (празен) | `doku/plan` | DROP | — |
-| `node.exe` в git | `HAPI.SU/runtime` | DROP | — |
-| ~660 MB releases в git | `HAPI.SU/release/` | DROP | — |
+| Идея                                                 | Източник                                        | Решение              | Фаза   |
+| ---------------------------------------------------- | ----------------------------------------------- | -------------------- | ------ |
+| Променлива йерархия, композитен ключ                 | `00-core-requirement.txt`                       | KEEP                 | 1 ✅    |
+| Metadata-driven Registry                             | v3.0 §2.3                                       | MERGE                | 2 ✅    |
+| Orphan записи + асоцииране                           | `00-core-requirement.txt`                       | KEEP                 | 1 ✅    |
+| DI + Event Bus + Repository                          | v3.0 / v5.0 §2.2                                | MERGE                | 2 ✅    |
+| Verсиониран API + legacy bridge                      | v5.0 §6.2                                       | MERGE                | 2 ✅    |
+| HMAC-SHA256 receipt                                  | v5.0 §6.3                                       | MERGE                | 3 ✅    |
+| Preview, thumbnails, версии, водни знаци             | `10-phase-4`                                    | MERGE                | 4 ✅    |
+| QR landing + отмяна + notify                         | `10-phase-4` §4.4                               | MERGE                | 4 ✅    |
+| Настройки UI + прогрес                               | `12-phase-5`                                    | MERGE                | 5      |
+| Zero-damage миграция                                 | `13-phase-6`                                    | MERGE                | 6      |
+| Портал за доказателства, роли                        | `14-phase-7`                                    | MERGE                | 7      |
+| PKCS#7 + RFC 3161                                    | `14-phase-7` §6.1                               | MERGE                | 7      |
+| Публично API като продукт                            | ChatGPT тема + `sdk/client.mjs` + `spec()`      | MERGE                | 8      |
+| SDK клиент                                           | `hAPI_Enterptice_v0.47_snapshot/sdk/client.mjs` | MERGE                | 8      |
+| HA мост                                              | `custom_components/hapi_enterprise/`            | KEEP                 | ✅      |
+| 6 пакета от един build                               | `hapi_old/hAPI_enterprice/build-*.cjs`          | MERGE                | 9      |
+| Desktop runtime (PyWebView)                          | `hapi_old/**/ui/`                               | MERGE                | 9      |
+| Brand kit                                            | `hapi_old/**/Brand_Kit`, `img/`                 | MERGE                | 9      |
+| 6 банера (Windows/HA × BG/DE/EN, 1280×640)           | чат §1.8 т. 5                                   | MERGE                | 9      |
+| Windows WebView2 обвивка                             | чат §1.8 т. 6                                   | MERGE                | 9      |
+| 8 UI макета                                          | `hapi_old/hAPI_enterprice/*.png`                | MERGE (референция)   | 10     |
+| `gui/hapi-core.js` (8 панела)                        | `v0.47_snapshot/gui/`                           | MERGE (референция)   | 10     |
+| Критики 1–13                                         | `HAPI.SU/ANALYSIS.md`                           | MERGE                | 10     |
+| Enterprise Dashboard (визуален дизайн)               | чат §1.8 т. 2                                   | MERGE                | 10     |
+| Standalone JS GUI (12 панела)                        | чат §1.8 т. 3                                   | MERGE                | 10     |
+| Enterprise Control Center (13 панела)                | чат §1.8 т. 4                                   | MERGE                | 10     |
+| Report Studio (манифест, START/STOP, A4, 8 елемента) | чат §1.8 т. 4                                   | MERGE                | **11** |
+| „Без фалшиви RFC 3161 токени“                        | чат §1.8                                        | KEEP (правило)       | 11     |
+| DDD bounded contexts                                 | v4.1                                            | MERGE (като модули)  | —      |
+| Multi-tenancy реална                                 | v4.2                                            | DEFER                | v7+    |
+| Zero Trust пълен (OIDC/MFA/OPA/HSM)                  | v4.3                                            | DEFER (OIDC/MFA → 7) | 7/v7+  |
+| PostgreSQL/Kafka/K8s/polyglot                        | v4.0–v4.3                                       | DROP                 | —      |
+| `data JSONB`                                         | v4.0                                            | DROP                 | —      |
+| Стари backend-и (`download_portal/`)                 | v0.43/v0.47/HAPI.SU                             | DROP                 | —      |
+| `portal_enterprise/` (само маркер)                   | `hapi_old`                                      | DROP                 | —      |
+| `v4.4.md` (празен)                                   | `doku/plan`                                     | DROP                 | —      |
+| `node.exe` в git                                     | `HAPI.SU/runtime`                               | DROP                 | —      |
+| ~660 MB releases в git                               | `HAPI.SU/release/`                              | DROP                 | —      |
 
 ---
 

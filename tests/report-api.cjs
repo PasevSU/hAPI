@@ -24,7 +24,7 @@ const assert = require('node:assert/strict'),
           ready = true;
           break;
         }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 70));
     }
     assert(ready);
@@ -47,6 +47,12 @@ const assert = require('node:assert/strict'),
     const pdf = Buffer.from(await r.arrayBuffer());
     assert.equal(pdf.subarray(0, 8).toString('latin1'), '%PDF-1.5');
     assert.ok(pdf.length > 4000, 'pdf has content');
+    // RS-06: отпечатъкът на готовия PDF се връща и съвпада с изпратените байтове.
+    assert.equal(
+      r.headers.get('x-pdf-sha256'),
+      require('node:crypto').createHash('sha256').update(pdf).digest('hex'),
+      'X-PDF-SHA256 трябва да е sha256 на самия файл',
+    );
 
     // 3. Невалиден манифест → 400 с код.
     r = await post('/admin/api/v2/reports/render', { manifest: { ...manifest, blocks: [] } });
@@ -65,6 +71,13 @@ const assert = require('node:assert/strict'),
     // 5. Метод GET не е разрешен за този маршрут.
     r = await fetch(B + '/admin/api/v2/reports/render', { headers: H });
     assert.equal(r.status, 404);
+
+    // 5б. RS-05: TSA обхват без включен TSA → 409, а не мълчаливо „подпечатан“ отчет.
+    // (Сървърът тук работи с tsa_enabled=false по подразбиране.)
+    r = await post('/admin/api/v2/reports/render', { manifest, tsa: true });
+    assert.equal(r.status, 409);
+    body = await r.json();
+    assert.match(body.error, /tsa_enabled/);
 
     // 6. GUI-ят се сервира от backend-а (същия origin → без CORS) със строг CSP.
     r = await fetch(B + '/ui/');

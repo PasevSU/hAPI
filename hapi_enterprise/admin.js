@@ -143,7 +143,7 @@ function refreshOnLanguageChange(buttonId, resultId, render) {
   _languageRefreshers.push(async () => { if (result.dataset.languageLoaded === 'true') await refresh() });
 }
 function setAdminLang(l) { if (['bg', 'en', 'de'].includes(l)) adminLang = l; applyAdminLang(); action(async () => { await load(); for (const refresh of _languageRefreshers) await refresh() }) }
-function applyAdminLang() { document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')) }); const sel = document.getElementById('admin-lang'); if (sel) sel.value = adminLang }
+function applyAdminLang() { document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')) }); document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))) }); const sel = document.getElementById('admin-lang'); if (sel) sel.value = adminLang }
 const $ = id => document.getElementById(id);
 // Панелът се удостоверява с идентичността от Home Assistant (Ingress), не с токен.
 // sessionToken се попълва САМО в standalone режим (Docker без Supervisor), където
@@ -625,6 +625,8 @@ async function cabInit() { cab.info = await cabJson('info'); cabBuildTools(); aw
 
 Object.assign(ADMIN_DIC.en, { 'Указател': 'Directory', 'Променливи': 'Variables', 'Конфликти': 'Conflicts', 'Данните не съвпадат. Избери стойност или въведи своя.': 'The data does not match. Pick a value or enter your own.', 'Добави имейл адреси': 'Add email addresses', 'Въведи един или повече адреса. Останалото се попълва от правилата за домейни.': 'Enter one or more addresses. The rest is filled from the domain rules.', 'Правила за домейни': 'Domain rules', 'Въвеждаш данните веднъж за домейн, напр. @martinswerk.de. Можеш да ползваш {{променлива}}.': 'Enter the data once per domain, e.g. @martinswerk.de. You can use {{variable}}.', 'Добави правило': 'Add rule', 'Контакти': 'Contacts', 'Всеки вид данни е променлива. Липсваща се създава тук и веднага се появява в указателя.': 'Every kind of data is a variable. A missing one is created here and appears in the directory at once.', 'Етикет': 'Label', 'Поле на контакт': 'Contact field', 'Няма контакти.': 'No contacts.', 'Няма правила.': 'No rules.', 'Реши': 'Resolve', 'Своя стойност': 'Custom value', 'Създадени: ': 'Created: ', 'Неразпознати домейни: ': 'Domains without a rule: ', 'Невалидни: ': 'Invalid: ', 'Конфликти: ': 'Conflicts: ', 'Приложено към контакти: ': 'Applied to contacts: ', 'Стойност': 'Value', 'Запази': 'Save', 'Липсва правило за домейна': 'No rule for this domain', 'Тест': 'Test' });
 Object.assign(ADMIN_DIC.de, { 'Указател': 'Verzeichnis', 'Променливи': 'Variablen', 'Конфликти': 'Konflikte', 'Данните не съвпадат. Избери стойност или въведи своя.': 'Die Daten stimmen nicht überein. Wert wählen oder eigenen eingeben.', 'Добави имейл адреси': 'E-Mail-Adressen hinzufügen', 'Въведи един или повече адреса. Останалото се попълва от правилата за домейни.': 'Eine oder mehrere Adressen eingeben. Der Rest wird aus den Domain-Regeln gefüllt.', 'Правила за домейни': 'Domain-Regeln', 'Въвеждаш данните веднъж за домейн, напр. @martinswerk.de. Можеш да ползваш {{променлива}}.': 'Daten einmal pro Domain eingeben, z. B. @martinswerk.de. {{Variable}} möglich.', 'Добави правило': 'Regel hinzufügen', 'Контакти': 'Kontakte', 'Всеки вид данни е променлива. Липсваща се създава тук и веднага се появява в указателя.': 'Jede Datenart ist eine Variable. Fehlende werden hier angelegt und erscheinen sofort im Verzeichnis.', 'Етикет': 'Bezeichnung', 'Поле на контакт': 'Kontaktfeld', 'Няма контакти.': 'Keine Kontakte.', 'Няма правила.': 'Keine Regeln.', 'Реши': 'Lösen', 'Своя стойност': 'Eigener Wert', 'Създадени: ': 'Erstellt: ', 'Неразпознати домейни: ': 'Domains ohne Regel: ', 'Невалидни: ': 'Ungültig: ', 'Конфликти: ': 'Konflikte: ', 'Приложено към контакти: ': 'Auf Kontakte angewendet: ', 'Стойност': 'Wert', 'Запази': 'Speichern', 'Липсва правило за домейна': 'Keine Regel für diese Domain', 'Тест': 'Test' });
+Object.assign(ADMIN_DIC.en, { 'Фирми и институции': 'Companies & institutions', 'Добави фирма или институция с адреси, а под нея — служители с имейл, име, позиция и коментар.': 'Add a company or institution with addresses and, below it, employees with e-mail, name, position and comment.', 'Име на фирмата/институцията': 'Company or institution name', 'Вид': 'Kind', 'Фирма': 'Company', 'Институция': 'Institution', 'Адреси': 'Addresses', 'Добави адрес': 'Add address', 'Служители': 'Employees', 'Добави служител': 'Add employee', 'Добави фирма/институция': 'Add company/institution', 'Няма фирми или институции.': 'No companies or institutions.', 'Няма служители.': 'No employees.', 'Без фирма': 'No company', 'Улица': 'Street', 'Град': 'City', 'Пощенски код': 'Postal code', 'Държава': 'Country', 'Бележка': 'Note', 'Имейл': 'E-mail', 'Име': 'Name', 'Позиция': 'Position', 'Коментар': 'Comment', 'служители': 'employees', 'служител': 'employee', 'Добавени служители: ': 'Employees added: ', 'Въведи име на фирмата/институцията.': 'Enter the company or institution name.', 'Изтриване на фирмата/институцията ': 'Delete company/institution ', 'Фирмата има служители. Откачи ги и продължи?': 'The company still has employees. Detach them and continue?' });
+Object.assign(ADMIN_DIC.de, { 'Фирми и институции': 'Firmen & Institutionen', 'Добави фирма или институция с адреси, а под нея — служители с имейл, име, позиция и коментар.': 'Firma oder Institution mit Adressen anlegen und darunter Mitarbeiter mit E-Mail, Name, Position und Kommentar.', 'Име на фирмата/институцията': 'Name der Firma/Institution', 'Вид': 'Art', 'Фирма': 'Firma', 'Институция': 'Institution', 'Адреси': 'Adressen', 'Добави адрес': 'Adresse hinzufügen', 'Служители': 'Mitarbeiter', 'Добави служител': 'Mitarbeiter hinzufügen', 'Добави фирма/институция': 'Firma/Institution hinzufügen', 'Няма фирми или институции.': 'Keine Firmen oder Institutionen.', 'Няма служители.': 'Keine Mitarbeiter.', 'Без фирма': 'Ohne Firma', 'Улица': 'Straße', 'Град': 'Ort', 'Пощенски код': 'Postleitzahl', 'Държава': 'Land', 'Бележка': 'Notiz', 'Имейл': 'E-Mail', 'Име': 'Name', 'Позиция': 'Position', 'Коментар': 'Kommentar', 'служители': 'Mitarbeiter', 'служител': 'Mitarbeiter', 'Добавени служители: ': 'Mitarbeiter hinzugefügt: ', 'Въведи име на фирмата/институцията.': 'Name der Firma/Institution eingeben.', 'Изтриване на фирмата/институцията ': 'Firma/Institution löschen ', 'Фирмата има служители. Откачи ги и продължи?': 'Die Firma hat noch Mitarbeiter. Abtrennen und fortfahren?' });
 
 // Variables registry and contact directory.
 const dirState = { fields: [], variables: [], types: [] };
@@ -671,7 +673,140 @@ async function loadDirectory() {
     const del = node('button', t('Изтрий')); del.type = 'button'; del.className = 'danger'; del.onclick = () => action(async () => { if (!confirm(t('Изтриване на ') + c.email + '?')) return; await api('/admin/api/directory/contacts/' + c.id, 'DELETE'); await loadDirectory() });
     row.append(edit, del); box.append(row);
   }
+  renderOrganizations(d);
 }
+// Фирми и институции: записът държи име, вид и адреси, а под него стоят служителите (контакти).
+const ORG_ADDRESS_KEYS = [['label', 'Етикет'], ['street', 'Улица'], ['city', 'Град'], ['postal', 'Пощенски код'], ['country', 'Държава'], ['note', 'Бележка']];
+const ORG_EMPLOYEE_KEYS = [['email', 'Имейл'], ['name', 'Име'], ['position', 'Позиция'], ['comment', 'Коментар']];
+function orgInput(key, label, value) {
+  const i = document.createElement('input');
+  i.dataset.key = key; i.value = value == null ? '' : String(value); i.placeholder = t(label);
+  i.setAttribute('aria-label', t(label)); i.maxLength = 500; return i;
+}
+function orgRow(keys, values) {
+  const row = document.createElement('div'); row.className = 'org-row';
+  for (const [key, label] of keys) row.append(orgInput(key, label, values && values[key]));
+  const del = node('button', t('Изтрий')); del.type = 'button'; del.className = 'danger';
+  del.onclick = () => row.remove(); row.append(del); return row;
+}
+function orgCollect(box, keys) {
+  return [...box.children].map(row => {
+    const out = {};
+    for (const [key] of keys) { const i = row.querySelector('input[data-key="' + key + '"]'); if (i && i.value.trim()) out[key] = i.value.trim() }
+    return out;
+  }).filter(x => Object.keys(x).length);
+}
+function orgKindSelect(value) {
+  const s = document.createElement('select'); s.setAttribute('aria-label', t('Вид'));
+  for (const [v, l] of [['company', 'Фирма'], ['institution', 'Институция']]) { const o = document.createElement('option'); o.value = v; o.textContent = t(l); s.append(o) }
+  s.value = value === 'institution' ? 'institution' : 'company'; return s;
+}
+function orgSelect(value) {
+  const s = document.createElement('select'); s.setAttribute('aria-label', t('Фирма'));
+  const none = document.createElement('option'); none.value = ''; none.textContent = t('Без фирма'); s.append(none);
+  for (const o of dirState.orgs) { const opt = document.createElement('option'); opt.value = o.id; opt.textContent = o.name; s.append(opt) }
+  s.value = value || ''; return s;
+}
+const orgLabel = (tag, control) => { const l = document.createElement('label'); l.style.cssText = 'display:block;margin:6px 0'; l.append(control); return l };
+function editEmployee(contact) {
+  const body = document.createElement('div');
+  const name = orgInput('name', 'Име', (contact.fields && contact.fields.name) || '');
+  const position = orgInput('position', 'Позиция', contact.position || '');
+  const comment = orgInput('comment', 'Коментар', contact.comment || '');
+  const org = orgSelect(contact.organizationId);
+  body.append(orgLabel('name', name), orgLabel('position', position), orgLabel('comment', comment), orgLabel('org', org));
+  const save = node('button', t('Запази')); save.type = 'button'; save.className = 'btn-primary';
+  const dlg = dialog(contact.email, body, [save]);
+  save.onclick = () => action(async () => {
+    const payload = { position: position.value.trim(), comment: comment.value.trim(), organizationId: org.value };
+    const current = (contact.fields && contact.fields.name) || '';
+    if (name.value.trim() !== current) payload.fields = { name: name.value.trim() };
+    await api('/admin/api/directory/contacts/' + contact.id, 'PATCH', payload);
+    dlg.close(); await loadDirectory();
+  });
+}
+function editOrganization(organization) {
+  const body = document.createElement('div');
+  const name = orgInput('name', 'Име на фирмата/институцията', organization.name);
+  const kind = orgKindSelect(organization.kind);
+  const addresses = document.createElement('div');
+  for (const a of (organization.addresses || [])) addresses.append(orgRow(ORG_ADDRESS_KEYS, a));
+  const add = node('button', t('Добави адрес')); add.type = 'button'; add.onclick = () => addresses.append(orgRow(ORG_ADDRESS_KEYS));
+  body.append(orgLabel('name', name), orgLabel('kind', kind), node('strong', t('Адреси')), add, addresses);
+  const save = node('button', t('Запази')); save.type = 'button'; save.className = 'btn-primary';
+  const dlg = dialog(organization.name, body, [save]);
+  save.onclick = () => action(async () => {
+    await api('/admin/api/directory/organizations/' + organization.id, 'PATCH',
+      { name: name.value.trim(), kind: kind.value, addresses: orgCollect(addresses, ORG_ADDRESS_KEYS) });
+    dlg.close(); await loadDirectory();
+  });
+}
+function renderOrganizations(d) {
+  dirState.orgs = d.organizations || [];
+  const box = $('dir-orgs'); if (!box) return;
+  box.replaceChildren();
+  const byOrg = new Map(dirState.orgs.map(o => [o.id, []]));
+  const free = [];
+  for (const c of d.contacts) { const list = c.organizationId && byOrg.get(c.organizationId); if (list) list.push(c); else if (!c.organizationId) free.push(c) }
+  if (!dirState.orgs.length && !free.length) { box.append(node('p', t('Няма фирми или институции.'))); return }
+  const employee = contact => {
+    const row = document.createElement('div'); row.className = 'org-emp';
+    row.append(node('strong', (contact.fields && contact.fields.name) || '—'), node('code', contact.email));
+    const meta = [contact.position, contact.comment].filter(Boolean).join(' · ');
+    if (meta) row.append(node('span', meta));
+    const edit = node('button', t('Редактирай')); edit.type = 'button'; edit.onclick = () => editEmployee(contact);
+    const del = node('button', t('Изтрий')); del.type = 'button'; del.className = 'danger';
+    del.onclick = () => action(async () => { if (!confirm(t('Изтриване на ') + contact.email + '?')) return; await api('/admin/api/directory/contacts/' + contact.id, 'DELETE'); await loadDirectory() });
+    row.append(edit, del); return row;
+  };
+  for (const o of dirState.orgs) {
+    const group = document.createElement('div'); group.className = 'org-group';
+    const head = document.createElement('div'); head.className = 'org-group-head';
+    head.append(node('strong', o.name), node('span', t(o.kind === 'institution' ? 'Институция' : 'Фирма') + (o.employeeCount ? ' · ' + o.employeeCount + ' ' + t(o.employeeCount === 1 ? 'служител' : 'служители') : '')));
+    const edit = node('button', t('Редактирай')); edit.type = 'button'; edit.onclick = () => editOrganization(o);
+    const del = node('button', t('Изтрий')); del.type = 'button'; del.className = 'danger';
+    del.onclick = () => action(async () => {
+      if (!confirm(t('Изтриване на фирмата/институцията ') + o.name + '?')) return;
+      const detach = o.employeeCount > 0;
+      if (detach && !confirm(t('Фирмата има служители. Откачи ги и продължи?'))) return;
+      await api('/admin/api/directory/organizations/' + o.id + (detach ? '?detach=1' : ''), 'DELETE');
+      await loadDirectory();
+    });
+    head.append(edit, del); group.append(head);
+    for (const a of (o.addresses || [])) { const line = document.createElement('div'); line.className = 'org-address'; line.append(node('span', [a.label, a.street, a.postal, a.city, a.country, a.note].filter(Boolean).join(' · '))); group.append(line) }
+    const employees = byOrg.get(o.id) || [];
+    if (!employees.length) group.append(node('p', t('Няма служители.')));
+    for (const c of employees) group.append(employee(c));
+    box.append(group);
+  }
+  if (free.length) {
+    const group = document.createElement('div'); group.className = 'org-group';
+    const head = document.createElement('div'); head.className = 'org-group-head';
+    head.append(node('strong', t('Без фирма')), node('span', String(free.length))); group.append(head);
+    for (const c of free) group.append(employee(c));
+    box.append(group);
+  }
+}
+$('dir-org-add-address').onclick = () => $('dir-org-addresses').append(orgRow(ORG_ADDRESS_KEYS));
+$('dir-org-add-employee').onclick = () => $('dir-org-employees').append(orgRow(ORG_EMPLOYEE_KEYS));
+$('dir-org-form').addEventListener('submit', e => {
+  e.preventDefault(); action(async () => {
+    const name = $('dir-org-name').value.trim();
+    if (!name) { $('status').textContent = t('Въведи име на фирмата/институцията.'); return }
+    const r = await api('/admin/api/directory/organizations', 'POST', {
+      name, kind: $('dir-org-kind').value,
+      addresses: orgCollect($('dir-org-addresses'), ORG_ADDRESS_KEYS),
+      employees: orgCollect($('dir-org-employees'), ORG_EMPLOYEE_KEYS).filter(x => x.email)
+    });
+    $('dir-org-name').value = ''; $('dir-org-kind').value = 'company';
+    $('dir-org-addresses').replaceChildren(orgRow(ORG_ADDRESS_KEYS));
+    $('dir-org-employees').replaceChildren(orgRow(ORG_EMPLOYEE_KEYS));
+    $('status').textContent = t('Добавени служители: ') + r.employees.length;
+    await loadDirectory();
+  })
+});
+$('dir-org-addresses').append(orgRow(ORG_ADDRESS_KEYS));
+$('dir-org-employees').append(orgRow(ORG_EMPLOYEE_KEYS));
 $('dir-ingest').addEventListener('submit', e => {
   e.preventDefault(); action(async () => {
     const r = await api('/admin/api/directory/ingest', 'POST', { emails: $('dir-emails').value }); $('dir-emails').value = '';

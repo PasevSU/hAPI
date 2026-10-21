@@ -50,10 +50,16 @@ function writeVersion(version, root = ROOT) {
   if (nextCfg === cfg && !cfg.includes(`version: "${version}"`)) throw new Error('config.yaml: version не е намерена');
   fs.writeFileSync(cfgPath, nextCfg);
 
+  // manifest.json се сменя по текст, не чрез JSON.stringify: иначе всяко вдигане на
+  // версията превръща файла в един ред и diff-ът изглежда като преписан файл.
   const manPath = path.join(root, INTEGRATION_DIR, 'manifest.json');
-  const manifest = JSON.parse(fs.readFileSync(manPath, 'utf8'));
+  const manText = fs.readFileSync(manPath, 'utf8');
+  const manifest = JSON.parse(manText);
   manifest.version = version;
-  fs.writeFileSync(manPath, JSON.stringify(manifest) + '\n');
+  const nextMan = /"version"\s*:\s*"[^"]*"/.test(manText)
+    ? manText.replace(/"version"\s*:\s*"[^"]*"/, `"version": "${version}"`)
+    : JSON.stringify(manifest, null, 2) + '\n';
+  fs.writeFileSync(manPath, nextMan);
 
   // Баджовете за версия в документите се обновяват заедно с кода, за да не изостават.
   const BADGE = /(img\.shields\.io\/badge\/version-)[0-9.]+(-)/;
@@ -107,6 +113,22 @@ function walk(dirAbs, prefix, out = []) {
 
 const sha256 = (data) => crypto.createHash('sha256').update(data).digest('hex');
 const sha256File = (file) => sha256(fs.readFileSync(file));
+
+// Архивните записи трябва да са относителни и да не излизат от папката (zip-slip / tar-slip).
+// Иначе распаковането пише извън дървото — затова се проверява и при строеж, и при проверка.
+function assertSafeEntryPaths(entries, label = 'архив') {
+  for (const entry of entries) {
+    const name = String((entry && entry.path) || '');
+    const bad = (why) => { throw new Error(`${label}: ${why}: ${JSON.stringify(name)}`); };
+    if (!name) bad('запис без име');
+    if (name.startsWith('/') || /^[A-Za-z]:/.test(name)) bad('абсолютен път');
+    if (name.includes('\\')) bad('обратни наклонени черти');
+    const parts = name.split('/');
+    if (parts.includes('..')) bad('изход от папката (..)');
+    if (parts.includes('.') || parts.includes('')) bad('непозволен сегмент в пътя');
+  }
+  return entries;
+}
 
 // ── tar.gz (USTAR) ────────────────────────────────────────────────────────────
 const octal = (value, width) => {
@@ -316,5 +338,6 @@ module.exports = {
   buildZip,
   readZip,
   readArchive,
+  assertSafeEntryPaths,
   fmtBytes,
 };

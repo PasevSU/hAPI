@@ -398,4 +398,18 @@ if (problems.length) {
   for (const problem of problems) console.error('  - ' + problem);
   process.exit(1);
 }
+
+// ── 9. Версионна снимка ─────────────────────────────────────────────────────
+// `release/haoss` се презаписва при всяко пускане; затова до него се пази снимка
+// `release/haoss_v<version>`, която показва точно какво е излязло за тази версия.
+// Прави се само след като изданието мине проверките — снимка на счупено издание
+// не бива да съществува. `--no-versioned` я изключва (напр. при --out някъде другаде).
+if (argv.includes('--no-versioned')) {
+  console.log('\nверсионната снимка е изключена (--no-versioned)');
+} else {
+  const versioned = path.join(path.dirname(OUT), `haoss_v.${manifest.version}`);
+  fs.rmSync(versioned, { recursive: true, force: true });
+  copyTree(OUT, versioned);
+  console.log(`\nверсионна снимка → ${versioned}`);
+}
 console.log('\n✓ HACS структура: hacs.json + README + LICENSE + custom_components/<domain> + brand/icon.png, без тайни и без собствени портове');

@@ -60,6 +60,71 @@ must keep a living owner file. A new endpoint without a test fails the suite imm
 The full suite is asserted by `tests/docker-runtime.cjs` (module completeness in the
 `Dockerfile`).
 
+## Publishing a Release
+
+The version lives in `hapi_enterprise/config.yaml` only. Build the artifacts with
+
+```bash
+npm run release        # build-release --with-tests + verify-release
+npm run release:haoss  # standalone HACS tree in release/haoss (+ snapshots)
+```
+
+and publish a GitHub release with the interactive publisher:
+
+```bash
+pwsh -File release/publish-release.ps1                                   # dry run
+pwsh -File release/publish-release.ps1 -Source release/haoss_v.0.63.0 -Execute
+```
+
+Without `-Execute` nothing is uploaded: the script runs every check, prints the release
+text and the exact `gh` command. It walks ten layers and asks at each decision instead of
+picking one — which repository (list from `gh repo list`, `-Repo` is only the pre-selected
+answer), where the new version is (`release/haoss_v.*`, `release/haoss`, `dist/*.tar.gz`,
+manual path, or build it on the spot), whether artifacts and versions agree with the
+working copy, whether `SHA256SUMS.txt` matches the files, and what to do if the tag or the
+release already exists.
+
+| Option                               | Meaning                                                                                                   |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `-Source <path>`                     | Folder with `custom_components/hapi_enterprise/manifest.json`, or `dist/hapi_enterprise-<version>.tar.gz` |
+| `-Repo owner/name`                   | Pre-selected repository (still asked interactively)                                                       |
+| `-TagName` / `-Title`                | Override the tag or the release title                                                                     |
+| `-Target <ref>`                      | Where the tag is created when it does not exist yet (default `main`)                                      |
+| `-Draft` / `-Prerelease` / `-Latest` | Release flags                                                                                             |
+| `-Execute`                           | Actually publish; requires typing the version unless `-Force`                                             |
+| `-Force`                             | Allow a version that differs from the working copy, and update an existing release                        |
+| `-Yes`                               | Non-interactive: take the safe defaults (`-Execute` still required)                                       |
+| `-Retries` / `-LogFile`              | Retry budget for `gh` calls, and where the run log goes                                                   |
+
+**Tags and CI.** Pushing a `v*` tag triggers `.github/workflows/release.yml`, which rebuilds
+on Ubuntu, attaches the same artifact names and regenerates the release notes. A release
+created together with its tag can therefore have its text replaced a minute later. The
+script warns about this before creating a tag and offers the safe order: create only the
+tag, wait for the Release workflow, then run the publisher again with `-Force` — the tag
+already exists, CI does not rerun, and the script only updates the text and verifies the
+attached files. A tag without the `v` prefix (e.g. `0.63.0`) matches no workflow trigger,
+so the script offers to rename it to `v0.63.0`; and a dry run never creates a tag. The
+HACS-tree repository is published separately with `npm run publish:haoss -- -Execute`.
+
+## Updating the Repository
+
+`H:` is an SMB share, so `git` started there hangs — even `git config --global`. That is why
+the repository updater works on a clone under `%TEMP%`:
+
+```bash
+pwsh -File scripts/update-repo.ps1            # dry run: shows the diff, writes nothing
+pwsh -File scripts/update-repo.ps1 -Execute   # commit + push after confirmation
+```
+
+The script asks which repository and branch, exports only what git would track
+(`scripts/export-tracked.cjs`, which follows `.gitignore` and refuses secrets), runs
+`scripts/pre-push-audit.cjs`, converts the export to LF (`.gitattributes` requires it —
+otherwise git reports hundreds of phantom changes), and then shows new/modified/deleted
+files. Deletions are the only destructive step and stay off unless chosen explicitly.
+It never force-pushes; a rejected push is resolved with `pull --rebase` (aborted on
+conflict, so nothing is lost). `-Yes` accepts the safe defaults, `-AllowDelete` is needed
+for deletion in that mode, `-Reuse` keeps the existing clone.
+
 ## Code Style
 
 - JavaScript: plain CommonJS, Node built-ins only (no runtime npm dependencies).

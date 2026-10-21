@@ -83,6 +83,11 @@ const AREAS = [
   { area: 'хаос и устойчивост', owner: 'chaos-resilience.cjs', endpoints: ['/admin/api/audit/verify', '/ready'] },
   { area: 'една инстанция на data директория', owner: 'instance-lock.cjs', endpoints: ['INSTANCE_ID', 'INSTANCE_LOCKED', 'instance-lock'] },
   { area: 'версия в GUI-я', owner: 'ui-version.cjs', endpoints: ['HAPI_VERSION', 'ui/bootstrap.js'] },
+  { area: 'отчетни манифести (hash report)', owner: 'report-manifests.cjs', endpoints: ['generator', 'recursive_folder', 'index.json'] },
+  { area: 'RFC 3161 обхват на отчет (RS-05)', owner: 'report-stamp.cjs', endpoints: ['startUrl', 'stopUrl', 'timestamp-reply', 'Evidence-Set SHA-256'] },
+  { area: 'векторен QR в отчет (RS-06)', owner: 'report-qr.cjs', endpoints: ['qrMatrix', 'finder', 're f', 'pdf-writer'] },
+  { area: 'токени от отчет в доказателствата (RS-05)', owner: 'report-tsa-e2e.cjs', endpoints: ['reports/render', 'rfc3161/verify', 'x-tsa-status', 'closingDigest'] },
+  { area: 'приемка на изданието за HA', owner: 'release-acceptance.cjs', endpoints: ['report_manifests', 'tsa_enabled', 'qrMatrix', 'index.json'] },
 ];
 
 // ── 2. Всеки собственик съществува и ползва своите маршрути ──────────────────

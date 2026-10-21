@@ -69,7 +69,7 @@ if (flag('with-tests')) {
 
 // ── 3. Събиране на файловете ─────────────────────────────────────────────────
 const addonEntries = step('Файлове на add-on-а', () => {
-  const entries = lib.walk(path.join(root, lib.ADDON_DIR), lib.ADDON_DIR);
+  const entries = lib.assertSafeEntryPaths(lib.walk(path.join(root, lib.ADDON_DIR), lib.ADDON_DIR), 'add-on');
   for (const required of ['config.yaml', 'Dockerfile', 'start.js', 'server.js', 'portal.html', 'portal.js', 'portal.css', 'icon.png', 'logo.png']) {
     if (!entries.some((e) => e.path === lib.ADDON_DIR + '/' + required)) fail('add-on: липсва ' + required);
   }
@@ -77,7 +77,7 @@ const addonEntries = step('Файлове на add-on-а', () => {
 });
 
 const integrationEntries = step('Файлове на интеграцията', () => {
-  const entries = lib.walk(path.join(root, lib.INTEGRATION_DIR), path.posix.join('custom_components', 'hapi_enterprise'));
+  const entries = lib.assertSafeEntryPaths(lib.walk(path.join(root, lib.INTEGRATION_DIR), path.posix.join('custom_components', 'hapi_enterprise')), 'интеграция');
   for (const required of ['manifest.json', '__init__.py', 'portal.html', 'portal.js', 'portal.css', 'icon.png', 'logo.png']) {
     if (!entries.some((e) => path.posix.basename(e.path) === required)) fail('интеграция: липсва ' + required);
   }
