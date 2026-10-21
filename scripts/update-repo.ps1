@@ -699,8 +699,14 @@ function Step-Diff {
     $modified = [System.Collections.Generic.List[string]]::new()
     foreach ($line in ($status.Text -split "`n")) {
         if (-not $line.Trim()) { continue }
-        $code = $line.Substring(0, 2)
-        $path = $line.Substring(3).Trim().Trim('"')
+        # `Invoke-Git` прави Trim() на целия текст, а това отхапва водния интервал на
+        # ПЪРВИЯ ред (` M път` → `M път`) и старият Substring(3) изяждаше първата буква
+        # от името („HANGELOG.md“). Затова статусът се разпознава с шаблон, не с отместване.
+        $match = [regex]::Match($line, '^([ MADRCU?!]{1,2})\s+(.+)$')
+        if (-not $match.Success) { continue }
+        $code = $match.Groups[1].Value.PadRight(2)
+        $path = $match.Groups[2].Value.Trim().Trim('"')
+        if ($path.Contains(' -> ')) { $path = $path.Substring($path.LastIndexOf(' -> ') + 4) }
         if ($code -eq '??') { $added.Add($path) } else { $modified.Add($path) }
     }
     $script:Added = @($added)
