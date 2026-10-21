@@ -870,6 +870,16 @@ Object.assign(ADMIN_DIC.de, { 'Лимити и достъп': 'Limits und Zugrif
 applyAdminLang();
 
 // ===== UX redesign: QR modal, dashboard, theme, i18n =====
+Object.assign(ADMIN_DIC.en, {
+  'Home Assistant таг (NFC или QR)': 'Home Assistant tag (NFC or QR)',
+  'Копирай тага': 'Copy the tag',
+  'Копирай автоматизацията': 'Copy the automation',
+});
+Object.assign(ADMIN_DIC.de, {
+  'Home Assistant таг (NFC или QR)': 'Home Assistant-Tag (NFC oder QR)',
+  'Копирай тага': 'Tag kopieren',
+  'Копирай автоматизацията': 'Automatisierung kopieren',
+});
 function showQr(info, p) {
   const body = document.createElement('div');
   // QR кодът води към ЧОВЕШКАТА страница на портала (/p/<id>), не към JSON API-то.
@@ -887,6 +897,25 @@ function showQr(info, p) {
     const warn = node('p', t('Внимание: адресът е вътрешен (' + info.base + '). QR кодът няма да се отвори извън локалната мрежа — задай public_domain в опциите на add-on-а или „Публичен базов адрес“ в Настройки.'));
     warn.style.cssText = 'margin:8px 0 0;color:#b45309;font-size:13px';
     body.append(warn);
+  }
+  // Home Assistant таг: стикерът/QR кодът в Companion носи този адрес и вдига
+  // събитие `tag_scanned`. Показваме и готовата автоматизация, за да не се сглобява на ръка.
+  if (info.links && info.links.tag) {
+    const l = info.links;
+    const box = document.createElement('div');
+    box.style.cssText = 'margin-top:14px;border-top:1px solid #e5e7eb;padding-top:10px;text-align:left';
+    const head = node('p', t('Home Assistant таг (NFC или QR)'));
+    head.style.cssText = 'margin:0 0 4px;font-weight:600';
+    const tagCode = node('code', l.tag.url); tagCode.style.wordBreak = 'break-all';
+    const tagRow = document.createElement('div'); tagRow.style.cssText = 'display:flex;gap:8px;margin:6px 0;flex-wrap:wrap';
+    const copyTag = node('button', t('Копирай тага')); copyTag.type = 'button'; copyTag.onclick = () => copyText(l.tag.url);
+    tagRow.append(copyTag);
+    const yaml = document.createElement('pre');
+    yaml.textContent = l.automation || '';
+    yaml.style.cssText = 'white-space:pre-wrap;font-size:12px;background:#f8fafc;color:#0f172a;padding:8px;border-radius:6px;max-height:190px;overflow:auto;margin:8px 0';
+    const copyYaml = node('button', t('Копирай автоматизацията')); copyYaml.type = 'button'; copyYaml.onclick = () => copyText(l.automation || '');
+    box.append(head, tagCode, tagRow, yaml, copyYaml);
+    body.append(box);
   }
   const d = dialog('QR · ' + (p.title || p.slug), body); d.addEventListener('close', () => URL.revokeObjectURL(url));
 }

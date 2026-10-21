@@ -49,3 +49,9 @@ dist/
 
 # Dev dashboard (local)
 dashboard-commands.json
+
+# Външни файлове, попаднали в работната папка по погрешка.
+# `create link/` дойде на 2026-10-21 с минифицирани content script-ове на
+# разширение за браузър (Bitwarden: autofill/fido2) — не е код на add-on-а,
+# не се качва в публичното хранилище и не влиза в изданието.
+create link/

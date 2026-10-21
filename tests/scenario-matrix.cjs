@@ -82,6 +82,7 @@ const AREAS = [
   { area: 'подписване с fallback', owner: 'signing-fallback.cjs', endpoints: ['/admin/api/packages', 'signingFallback'] },
   { area: 'хаос и устойчивост', owner: 'chaos-resilience.cjs', endpoints: ['/admin/api/audit/verify', '/ready'] },
   { area: 'една инстанция на data директория', owner: 'instance-lock.cjs', endpoints: ['INSTANCE_ID', 'INSTANCE_LOCKED', 'instance-lock'] },
+  { area: 'тагове и universal links за Companion', owner: 'share-links.cjs', endpoints: ['home-assistant.io/tag', 'api-info', 'tag_scanned'] },
   { area: 'версия в GUI-я', owner: 'ui-version.cjs', endpoints: ['HAPI_VERSION', 'ui/bootstrap.js'] },
   { area: 'отчетни манифести (hash report)', owner: 'report-manifests.cjs', endpoints: ['generator', 'recursive_folder', 'index.json'] },
   { area: 'RFC 3161 обхват на отчет (RS-05)', owner: 'report-stamp.cjs', endpoints: ['startUrl', 'stopUrl', 'timestamp-reply', 'Evidence-Set SHA-256'] },

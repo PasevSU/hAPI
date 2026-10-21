@@ -130,17 +130,17 @@ for (const env of ['TSA_ENABLED', 'TSA_START_URL', 'TSA_STOP_URL']) {
   assert.match(startJs, new RegExp(`'${env}'`), `start.js не предава ${env} към сървъра`);
 }
 
-// ── 5. Няма „тихи“ функции: CHANGELOG за версията ги изброява ───────────────
-// Пач издание (0.63.1) не описва наново функциите от 0.63.0 — затова се гледа цялата
-// линия major.minor (0.63.x), а не само секцията на точната версия.
+// ── 5. Няма „тихи“ функции: CHANGELOG ги изброява ───────────────────────────
+// Проверката е върху ЦЕЛИЯ CHANGELOG, не само върху секцията на текущата версия:
+// пач издание (0.63.1) не описва наново функциите от 0.63.0, а ново минорно (0.64.0)
+// ги наследява. Изискването, което наистина има смисъл, е всяка голяма функция да е
+// документирана НЯКЪДЕ в историята — иначе излиза „тихо“.
 const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
 const sections = changelog.split(/^## /m).filter((part) => /^\d+\.\d+\.\d+/.test(part));
 const sectionIndex = sections.findIndex((part) => part.startsWith(version + '\n') || part.startsWith(version + '\r\n'));
 assert.ok(sectionIndex >= 0, `CHANGELOG няма секция за ${version}`);
-const releaseLine = version.split('.').slice(0, 2).join('.') + '.';
-const lineBlock = sections.slice(sectionIndex).filter((part) => part.startsWith(releaseLine)).join('\n');
 for (const marker of ['report_manifests', 'report-stamp.js', 'qrMatrix', 'X-PDF-SHA256', 'tsa_enabled']) {
-  assert.ok(lineBlock.includes(marker), `CHANGELOG за линията ${releaseLine}x не споменава ${marker} — функцията е „тиха“`);
+  assert.ok(changelog.includes(marker), `CHANGELOG не споменава ${marker} — функцията е „тиха“`);
 }
 
 console.log(

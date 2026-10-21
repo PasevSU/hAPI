@@ -1808,7 +1808,10 @@ async function handler(req, res) {
           // Вътрешен адрес (LAN/localhost) значи QR код, който не се отваря отвън — връщаме флаг,
           // за да го покаже административният панел вместо да остави потребителя да го открие сам.
           const isLocal = /^https?:\/\/(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?)/i.test(base);
-          return json(res, 200, { id: p.id, slug: p.slug, landingUrl, apiUrl, directory: 'api/' + p.slug, qr: qrSvg(landingUrl), qrTarget: landingUrl, baseIsLocal: isLocal, base })
+          // Таг за Home Assistant Companion (NFC/QR) и universal link: адресите идват от
+          // share-links.js, за да има едно място за формата и за автоматизацията.
+          const links = require('./share-links').build({ slug: p.slug, title: p.title, landingUrl });
+          return json(res, 200, { id: p.id, slug: p.slug, landingUrl, apiUrl, directory: 'api/' + p.slug, qr: qrSvg(landingUrl), qrTarget: landingUrl, baseIsLocal: isLocal, base, links })
         }
         // Дървото на папката на портала (експлорер): папки → подпапки → файлове.
         // Всяка папка има собствен адрес в API-то (виж `tree/api.json`).

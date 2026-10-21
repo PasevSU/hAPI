@@ -47,7 +47,7 @@ const assert = require('node:assert/strict');
     for (let i = 0; i < 120; i++) {
       try {
         if ((await call('/health')).status === 200) { ready = true; break; }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 30));
     }
     assert(ready, 'сървърът трябва да стартира');
