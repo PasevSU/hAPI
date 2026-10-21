@@ -7,7 +7,7 @@
 //     (`https://www.home-assistant.io/tag/<id>` и `…/ios/nfc/?url=<…>`) и се
 //     декодират обратно до същия адрес;
 //   • unit: автоматизацията е валиден YAML-образен текст с екранирани кавички;
-//   • API: `/admin/api/v2/portals/<id>/api-info` връща `links` за реалния портал,
+//   • API: `/admin/api/portals/<id>/api-info` връща `links` за реалния портал,
 //     а адресът на тага съдържа неговия slug.
 const { stopChild } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
@@ -92,7 +92,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     assert.equal(r.status, 201, 'порталът е създаден');
     const portal = await r.json();
 
-    r = await call(`/admin/api/v2/portals/${encodeURIComponent(portal.id)}/api-info`);
+    r = await call(`/admin/api/portals/${encodeURIComponent(portal.id)}/api-info`);
     assert.equal(r.status, 200);
     const info = await r.json();
     assert.ok(info.links, 'api-info носи links');
@@ -107,7 +107,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     assert.equal(info.qrTarget, info.landingUrl, 'QR кодът остава към човешката страница');
 
     // Без токен админският отговор не се дава.
-    r = await fetch(`${base}/admin/api/v2/portals/${encodeURIComponent(portal.id)}/api-info`);
+    r = await fetch(`${base}/admin/api/portals/${encodeURIComponent(portal.id)}/api-info`);
     assert.equal(r.status, 401, 'api-info иска токен');
 
     console.log('PASS share links: tag id, universal link, автоматизация и api-info → links');
