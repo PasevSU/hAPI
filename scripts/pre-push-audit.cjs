@@ -10,7 +10,9 @@ const SECRETS = [
   // Истински JWT има три части (header.payload.signature); тестовите fixture-и са само header.
   [/eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{20,}/, 'JWT с подпис'],
   [/BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY/, 'частен ключ'],
-  [/BEGIN PGP PRIVATE KEY BLOCK/, 'PGP частен ключ'],
+  // Само ЦЯЛ блок с ключов материал е тайна; изразът „BEGIN PGP PRIVATE KEY BLOCK"
+  // се среща и като текст в UI/тестове и не бива да дава фалшиви сигнали.
+  [/-----BEGIN PGP PRIVATE KEY BLOCK-----[\s\S]{100,}?-----END PGP PRIVATE KEY BLOCK-----/, 'PGP частен ключ'],
   [/SUPERVISOR_TOKEN\s*=\s*\S+/, 'Supervisor токен'],
   [/(?:^|\s)(?:ghp|gho|github_pat)_[A-Za-z0-9_]{20,}/, 'GitHub токен'],
   [/AKIA[0-9A-Z]{16}/, 'AWS ключ'],
