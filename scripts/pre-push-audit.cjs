@@ -21,15 +21,25 @@ const globToRegExp = (pattern) => {
   return new RegExp(`^${anchored ? body : `(?:.*/)?${body}`}(?:/.*)?$`);
 };
 const gitignorePath = path.join(root, '.gitignore');
+// Отрицанията се уважават (release/* + !release/*.ps1) — иначе одитът и експортът
+// виждат различен набор от файлове от този, който git реално следи.
 const IGNORED = fs.existsSync(gitignorePath)
   ? fs
     .readFileSync(gitignorePath, 'utf8')
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#') && !line.startsWith('!'))
-    .map((line) => globToRegExp(line.replace(/\/+$/, '')))
+    .filter((line) => line && !line.startsWith('#'))
+    .map((line) => {
+      const negated = line.startsWith('!');
+      const pattern = (negated ? line.slice(1) : line).replace(/\/+$/, '');
+      return { re: globToRegExp(pattern), negated };
+    })
   : [];
-const isIgnored = (relPath) => IGNORED.some((re) => re.test(relPath));
+const isIgnored = (relPath) => {
+  let ignored = false;
+  for (const rule of IGNORED) if (rule.re.test(relPath)) ignored = !rule.negated;
+  return ignored;
+};
 
 const files = [];
 const skipped = [];

@@ -29,15 +29,16 @@ const allowed = new Set([
   'hacs',
   'hide_default_branch',
   'persistent_directory',
-  'domains',
   'render_readme',
   'release_filter',
 ]);
 for (const key of Object.keys(hacs)) assert.ok(allowed.has(key), 'hacs.json: непознат ключ ' + key);
+// `domains` НЕ е част от схемата на hacs.json — HACS отхвърля файла с него
+// ("not a valid option at 'domains'"), а домейнът се взима от manifest.json.
+assert.ok(!('domains' in hacs), 'hacs.json: domains не е валиден ключ за HACS');
 assert.equal(typeof hacs.name, 'string', 'hacs.json: name е задължително');
 assert.equal(hacs.content_in_root, false, 'интеграцията е в custom_components/, не в корена');
 assert.match(String(hacs.homeassistant), /^\d{4}\.\d{1,2}(\.\d+)?$/, 'hacs.json: homeassistant трябва да е версия (напр. 2024.6.0)');
-assert.ok(Array.isArray(hacs.domains) && hacs.domains.includes('hapi_enterprise'), 'hacs.json: domains трябва да съдържа hapi_enterprise');
 
 // 2. Интеграцията и манифестът
 const folder = path.basename(integration);

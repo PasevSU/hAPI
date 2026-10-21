@@ -14,6 +14,7 @@
     "release:verify": "node scripts/verify-release.cjs --with-tests",
     "release:export": "node scripts/export-release.cjs",
     "release:haoss": "node scripts/build-haoss.cjs",
+    "changelog:addon": "node scripts/sync-addon-changelog.cjs",
     "publish:haoss": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/publish-haoss.ps1",
     "audit": "node scripts/pre-push-audit.cjs",
     "lint": "eslint hapi_enterprise tests custom_components scripts",

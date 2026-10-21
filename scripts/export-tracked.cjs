@@ -12,7 +12,7 @@ const path = require('node:path');
 const { TEXT_EXT, blockingReason } = require('./secret-patterns.cjs');
 
 const root = path.join(__dirname, '..');
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'release', '__pycache__', '.pytest_cache', '.venv', 'coverage']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', '__pycache__', '.pytest_cache', '.venv', 'coverage']);
 
 const argv = process.argv.slice(2);
 const option = (name) => { const i = argv.indexOf('--' + name); return i >= 0 ? argv[i + 1] : undefined };
@@ -37,14 +37,24 @@ const globToRegExp = (pattern) => {
   return new RegExp(`^${anchored ? body : `(?:.*/)?${body}`}(?:/.*)?$`);
 };
 const gitignorePath = path.join(root, '.gitignore');
-const IGNORED = fs.existsSync(gitignorePath)
+// `.gitignore` се чете с отрицанията: `release/*` + `!release/*.ps1` трябва да значи
+// „всичко от release/ е изход, освен инструментите“. Печели последното съвпадащо правило.
+const RULES = fs.existsSync(gitignorePath)
   ? fs.readFileSync(gitignorePath, 'utf8')
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#') && !line.startsWith('!'))
-    .map((line) => globToRegExp(line.replace(/\/+$/, '')))
+    .filter((line) => line && !line.startsWith('#'))
+    .map((line) => {
+      const negated = line.startsWith('!');
+      const pattern = (negated ? line.slice(1) : line).replace(/\/+$/, '');
+      return { re: globToRegExp(pattern), negated };
+    })
   : [];
-const isIgnored = (relPath) => IGNORED.some((re) => re.test(relPath));
+const isIgnored = (relPath) => {
+  let ignored = false;
+  for (const rule of RULES) if (rule.re.test(relPath)) ignored = !rule.negated;
+  return ignored;
+};
 
 const files = [];
 const skipped = [];

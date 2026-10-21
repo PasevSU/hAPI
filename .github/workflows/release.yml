@@ -68,4 +68,6 @@ jobs:
             dist/repository.yaml
             dist/RELEASE.json
             dist/SHA256SUMS.txt
-          generate_release_notes: true
+          # Без `generate_release_notes`: то ЗАМЕНЯ текста, който
+          # `release/publish-release.ps1` е написал (бележките от CHANGELOG).
+          # Тук се качват само артефактите; текстът се пази.

@@ -19,6 +19,11 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Build release artifacts (тестовете четат dist/)
+        run: node scripts/build-release.cjs
+        env:
+          CI: "true"
+
       - name: Run full test suite
         shell: bash
         run: |
@@ -68,5 +73,6 @@ jobs:
         with:
           args: |
             --${{ matrix.arch }} \
+            --image "ghcr.io/pasevsu/hapi-enterprise-{arch}" \
             --target /data/hapi_enterprise \
             --test

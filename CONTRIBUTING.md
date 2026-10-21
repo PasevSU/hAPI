@@ -67,6 +67,7 @@ The version lives in `hapi_enterprise/config.yaml` only. Build the artifacts wit
 ```bash
 npm run release        # build-release --with-tests + verify-release
 npm run release:haoss  # standalone HACS tree in release/haoss (+ snapshots)
+npm run changelog:addon  # hapi_enterprise/CHANGELOG.md, which Supervisor shows
 ```
 
 and publish a GitHub release with the interactive publisher:

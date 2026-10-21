@@ -367,7 +367,7 @@ check('HA-X02', 'интеграция', 'blocker', 'manifest.json е валид�
 check('HA-X03', 'интеграция', 'blocker', 'hacs.json е коректен', () => {
   const hacs = JSON.parse(read('hacs.json'));
   need(hacs.content_in_root === false, 'content_in_root трябва да е false');
-  need((hacs.domains || []).includes(manifest.domain), 'domains не съдържа ' + manifest.domain);
+  need(!('domains' in hacs), 'domains не е валиден ключ за hacs.json (HACS го отхвърля)');
   const addonMin = unquote(scalar('homeassistant'));
   need(hacs.homeassistant === addonMin, `HACS минимум ${hacs.homeassistant} ≠ add-on ${addonMin}`);
   return hacs.homeassistant;

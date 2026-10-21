@@ -3,6 +3,7 @@
   "render_readme": true,
   "homeassistant": "2024.6.0",
   "content_in_root": false,
-  "domains": ["hapi_enterprise"],
-  "country": ["BG"]
+  "country": [
+    "BG"
+  ]
 }

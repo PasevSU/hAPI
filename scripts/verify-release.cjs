@@ -481,7 +481,7 @@ check('S21', 'HACS: хранилището е готово за custom repositor
   const hacs = JSON.parse(readText(hacsFile));
   assert(hacs.content_in_root === false, 'hacs.json: content_in_root трябва да е false (интеграцията е в custom_components/)');
   assert(/^\d{4}\.\d{1,2}(\.\d+)?$/.test(String(hacs.homeassistant)), 'hacs.json: homeassistant трябва да е версия');
-  assert(Array.isArray(hacs.domains) && hacs.domains.includes('hapi_enterprise'), 'hacs.json: липсва domains: [hapi_enterprise]');
+  assert(!('domains' in hacs), 'hacs.json: domains не е валиден ключ за HACS (домейнът идва от manifest.json)');
   const manifest = JSON.parse(readText(path.join(integrationDir, 'manifest.json')));
   assert(Array.isArray(manifest.codeowners) && manifest.codeowners.length > 0, 'manifest.json: codeowners е задължителен за HACS');
   assert(/^https:\/\/github\.com\/[^/]+\/[^/]+\/issues$/.test(manifest.issue_tracker), 'issue_tracker трябва да е GitHub Issues URL');

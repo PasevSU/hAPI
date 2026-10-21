@@ -788,18 +788,35 @@ function Step-Diff {
 
 # ── Слой 4 · Съобщение ─────────────────────────────────────────────────────
 function Get-ChangelogHeadline {
+    # Уводът („Всички забележими промени...“) НЕ е заглавие. Взема се първата точка
+    # от първата секция с версия — тя казва какво реално се е променило.
     if (-not (Test-Path -LiteralPath $Changelog)) { return '' }
-    $lines = Get-Content -LiteralPath $Changelog
-    $collected = @()
-    foreach ($line in $lines) {
-        if ($line -match '^#{1,3}\s' -and $collected.Count -gt 0) { break }
-        if ($line -match '^#{1,3}\s') { continue }
-        if (-not $line.Trim()) { continue }
-        $collected += ($line.Trim() -replace '^[-*]\s+', '')
-        if ($collected.Count -ge 5) { break }
+    $inSection = $false
+    foreach ($line in (Get-Content -LiteralPath $Changelog)) {
+        if ($line -match '^##\s') {
+            if ($inSection) { break }
+            $inSection = $true
+            continue
+        }
+        if (-not $inSection) { continue }
+        if ($line -match '^#{1,3}\s') { break }
+        $trimmed = $line.Trim()
+        if ($trimmed -notmatch '^[-*]\s+') { continue }
+        $bullet = ($trimmed -replace '^[-*]\s+', '') -replace '\*\*', '' -replace '`', ''
+        $bullet = ($bullet -replace '[\s\u2014\u2013,;:.\-]+$', '').Trim()
+        if (-not $bullet) { continue }
+        if ($bullet.Length -gt 60) { $bullet = $bullet.Substring(0, 57).TrimEnd() + '...' }
+        return $bullet
     }
-    if (-not $collected.Count) { return '' }
-    return ($collected[0] -replace '\*\*', '' -replace '`', '')
+    return ''
+}
+
+function Get-CurrentVersion {
+    $configYaml = Join-Path $Root 'hapi_enterprise/config.yaml'
+    if (-not (Test-Path -LiteralPath $configYaml)) { return '' }
+    $match = Select-String -LiteralPath $configYaml -Pattern '^version:\s*"?([0-9][^"\s]*)' | Select-Object -First 1
+    if (-not $match) { return '' }
+    return $match.Matches[0].Groups[1].Value
 }
 
 function New-DefaultMessage {
@@ -808,10 +825,12 @@ function New-DefaultMessage {
     if ($script:Modified.Count) { $parts.Add("~$($script:Modified.Count)") }
     if ($script:DeleteApproved -and $script:Deleted.Count) { $parts.Add("-$($script:Deleted.Count)") }
     $summary = if ($parts.Count) { $parts -join ' ' } else { 'без промени' }
+    $version = Get-CurrentVersion
     $headline = Get-ChangelogHeadline
-    if (-not $headline) { return "Обновяване на съдържанието ($summary)" }
-    if ($headline.Length -gt 60) { $headline = $headline.Substring(0, 57).TrimEnd() + '...' }
-    return "$headline ($summary)"
+    if (-not $version -and -not $headline) { return "Обновяване на съдържанието ($summary)" }
+    if (-not $headline) { return "hAPI Enterprise $version ($summary)" }
+    if (-not $version) { return "$headline ($summary)" }
+    return "hAPI Enterprise $version`: $headline ($summary)"
 }
 
 function Step-Message {

@@ -119,6 +119,19 @@
   XMP метаданни и политика за шрифтовете, а проверката става с veraPDF — без това
   „PDF/A-3“ би било надпис, не факт. Подписът изисква PKCS#7 ключ (§7 на ADR-0025);
   дотогава блокът `signature` казва точно какво липсва.
+- **HACS и Supervisor съвместимост**: `domains` е премахнат от `hacs.json` — HACS отхвърля
+  файла с „not a valid option at 'domains'“, а домейнът се взима от `manifest.json`
+  (`tests/hacs-structure.cjs`, `tests/ha-compatibility.cjs` HA-X03 и `scripts/verify-release.cjs`
+  S21 вече пазят точно обратното — че ключът **не** присъства). `hapi_enterprise/CHANGELOG.md`
+  се строи от кореновия (`scripts/sync-addon-changelog.cjs`), за да показва Supervisor
+  бележките вместо „No changelog found“.
+- **Инструментите за издаване са код, не артефакт**: `.gitignore` пази `release/*`, но
+  връща `!release/*.ps1`, а `scripts/export-tracked.cjs` и `scripts/pre-push-audit.cjs`
+  вече уважават отрицанията (последното съвпадащо правило печели) — иначе експортът и
+  одитът виждаха различен набор от файлове от този, който git следи.
+- **CI строи артефактите преди тестовете** (`node scripts/build-release.cjs` в
+  `test-ubuntu`) и подава `--image` на add-on builder-а — без него той получава
+  невалиден таг `/:<версия>`.
 
 ## 0.62.1
 

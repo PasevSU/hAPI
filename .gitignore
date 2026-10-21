@@ -32,7 +32,9 @@ id_rsa*
 *.pfx
 
 # Build artifacts & releases
-release/
+release/*
+# Инструментите за издаване са код, не артефакт — те трябва да са в хранилището
+!release/*.ps1
 build/
 dist/
 *.zip
