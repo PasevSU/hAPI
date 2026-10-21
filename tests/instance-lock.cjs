@@ -21,7 +21,7 @@ async function waitHealthy(base, attempts = 160) {
   for (let i = 0; i < attempts; i++) {
     try {
       if ((await fetch(base + '/health')).ok) return true;
-    } catch {}
+    } catch { }
     await sleep(50);
   }
   return false;
@@ -120,6 +120,59 @@ function waitExit(child, ms = 8000) {
   assert.equal(stale.ok, true);
   assert.equal(stale.tookOver, true);
   lock.release(dir, 'fifth');
+
+  // ── 2б. Unit: преизползван PID не е жив собственик ───────────────────────
+  // В контейнер новият процес получава същия номер (напр. 14) като предишната
+  // инстанция. Ако това минеше за „жив собственик“, add-on-ът щеше да не тръгне
+  // никога след рестарт — точно това се виждаше в логовете (pid 14 = самият нов процес).
+  fs.writeFileSync(
+    file,
+    JSON.stringify({
+      id: 'reused-pid',
+      pid: process.pid,
+      pidStart: 'not-our-starttime',
+      host: os.hostname(),
+      startedAt: new Date(Date.now() - 600000).toISOString(),
+      heartbeatAt: new Date().toISOString(),
+    }),
+  );
+  const reused = lock.acquire({ dir, id: 'seventh' });
+  assert.equal(reused.ok, true, 'същият pid от предишна инстанция не блокира');
+  assert.equal(reused.tookOver, true);
+  assert.equal(reused.previous.id, 'reused-pid');
+  lock.release(dir, 'seventh');
+
+  // Същото, но със заключване от версия, която още не пише pidStart; решава startedAt.
+  fs.writeFileSync(
+    file,
+    JSON.stringify({
+      id: 'legacy-lock',
+      pid: process.pid,
+      host: os.hostname(),
+      startedAt: new Date(Date.now() - 600000).toISOString(),
+      heartbeatAt: new Date().toISOString(),
+    }),
+  );
+  const legacy = lock.acquire({ dir, id: 'eighth' });
+  assert.equal(legacy.ok, true, 'старо заключване с нашия pid и стар startedAt се поема');
+  assert.equal(legacy.previous.id, 'legacy-lock');
+  lock.release(dir, 'eighth');
+
+  // …но съвсем прясно заключване със същия pid остава в сила (текущият процес).
+  fs.writeFileSync(
+    file,
+    JSON.stringify({
+      id: 'self',
+      pid: process.pid,
+      host: os.hostname(),
+      startedAt: new Date().toISOString(),
+      heartbeatAt: new Date().toISOString(),
+    }),
+  );
+  const selfLock = lock.acquire({ dir, id: 'ninth' });
+  assert.equal(selfLock.ok, false, 'собственикът е този процес, значи е жив');
+  assert.equal(selfLock.holder.id, 'self');
+  lock.release(dir, 'self');
   fs.rmSync(dir, { recursive: true, force: true });
 
   // ── 3. API: втори сървър върху същите данни не стартира ─────────────────

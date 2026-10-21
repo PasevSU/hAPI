@@ -131,11 +131,16 @@ for (const env of ['TSA_ENABLED', 'TSA_START_URL', 'TSA_STOP_URL']) {
 }
 
 // ── 5. Няма „тихи“ функции: CHANGELOG за версията ги изброява ───────────────
+// Пач издание (0.63.1) не описва наново функциите от 0.63.0 — затова се гледа цялата
+// линия major.minor (0.63.x), а не само секцията на точната версия.
 const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
-const section = changelog.split(/^## /m).find((part) => part.startsWith(version + '\n') || part.startsWith(version + '\r\n'));
-assert.ok(section, `CHANGELOG няма секция за ${version}`);
+const sections = changelog.split(/^## /m).filter((part) => /^\d+\.\d+\.\d+/.test(part));
+const sectionIndex = sections.findIndex((part) => part.startsWith(version + '\n') || part.startsWith(version + '\r\n'));
+assert.ok(sectionIndex >= 0, `CHANGELOG няма секция за ${version}`);
+const releaseLine = version.split('.').slice(0, 2).join('.') + '.';
+const lineBlock = sections.slice(sectionIndex).filter((part) => part.startsWith(releaseLine)).join('\n');
 for (const marker of ['report_manifests', 'report-stamp.js', 'qrMatrix', 'X-PDF-SHA256', 'tsa_enabled']) {
-  assert.ok(section.includes(marker), `CHANGELOG ${version} не споменава ${marker} — функцията е „тиха“`);
+  assert.ok(lineBlock.includes(marker), `CHANGELOG за линията ${releaseLine}x не споменава ${marker} — функцията е „тиха“`);
 }
 
 console.log(

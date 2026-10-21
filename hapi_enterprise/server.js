@@ -2272,7 +2272,13 @@ async function start() {
     if (!lock.ok) {
       const holder = lock.holder || {};
       const message = `data directory ${root} is locked by instance ${holder.id || '?'} (pid ${holder.pid || '?'} on ${holder.host || '?'}, heartbeat ${holder.heartbeatAt || '?'})`;
-      if (String(process.env.INSTANCE_STRICT || '1') !== '0') { console.error('instance lock: ' + message); process.exit(1) }
+      if (String(process.env.INSTANCE_STRICT || '1') !== '0') {
+        // Подсказката е важна: при преизползван PID старият файл изглежда като жив
+        // собственик, а човекът пред конзолата няма как да го разбере от самите числа.
+        console.error('instance lock: ' + message);
+        console.error(`instance lock: ако в ${root} няма друга работеща инстанция, изтрий ${lock.file} и рестартирай add-on-а`);
+        process.exit(1)
+      }
       log.warn('instance.locked', { ns: 'server', holder: holder.id, pid: holder.pid });
     } else {
       instanceState = { id: instanceId, acquired: true, tookOver: Boolean(lock.tookOver), startedAt: lock.payload.startedAt };
