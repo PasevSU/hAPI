@@ -390,10 +390,14 @@ check('HA-X05', 'интеграция', 'blocker', 'мостът не прокс
 // ── CI ──────────────────────────────────────────────────────────────────────
 check('HA-K01', 'CI', 'blocker', 'всяка обявена архитектура се билдва', () => {
   const ci = read('.github/workflows/ci.yml');
-  need(/home-assistant\/builder/.test(ci), 'не се ползва home-assistant/builder');
-  const matrix = (ci.match(/arch:\s*\[([^\]]+)\]/) || [])[1] || '';
-  const built = matrix.split(',').map((s) => s.trim()).filter(Boolean);
-  const missing = sectionItems('arch').filter((a) => !built.includes(a));
+  // `home-assistant/builder` е deprecated и подава невалиден таг, затова CI строи
+  // образа с buildx. Изискването е същото: всяка архитектура от config.yaml
+  // участва в билда, и то без push (type=oci).
+  need(/docker buildx build/.test(ci), 'липсва `docker buildx build` в CI');
+  need(/type=oci/.test(ci), 'образът трябва да се строи без push (type=oci)');
+  const platforms = { amd64: 'linux/amd64', aarch64: 'linux/arm64', armv7: 'linux/arm/v7' };
+  const built = sectionItems('arch');
+  const missing = built.filter((a) => !platforms[a] || !ci.includes(platforms[a]));
   need(!missing.length, 'не се билдват: ' + missing.join(', '));
   return built.join('+');
 });

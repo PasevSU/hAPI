@@ -24,6 +24,9 @@ jobs:
         env:
           CI: "true"
 
+      - name: Prepare /share (тестовете за пътят на порталите го изискват)
+        run: sudo mkdir -p /share /media && sudo chown "$USER" /share /media
+
       - name: Run full test suite
         shell: bash
         run: |
@@ -57,22 +60,22 @@ jobs:
           CI: "true"
 
   build-addon:
-    name: Add-on image (${{ matrix.arch }})
+    name: Add-on image (всички обявени архитектури)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [amd64, aarch64, armv7]
     steps:
       - uses: actions/checkout@v4
 
+      # `home-assistant/builder` е обявен за deprecated и подава невалиден таг
+      # (`/ghcr.io/<owner>/...` — с воден наклон), затова образът се строи направо
+      # с buildx: без push, само доказателство, че Dockerfile-ът се билдва за
+      # всяка архитектура, която config.yaml обещава.
       - uses: docker/setup-qemu-action@v3
 
-      - name: Build add-on with the Home Assistant builder (no push)
-        uses: home-assistant/builder@master
-        with:
-          args: |
-            --${{ matrix.arch }} \
-            --image "ghcr.io/pasevsu/hapi-enterprise-{arch}" \
-            --target /data/hapi_enterprise \
-            --test
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the add-on image (без push)
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64,linux/arm/v7 \
+            --output type=oci,dest=/tmp/hapi-enterprise-image.tar \
+            hapi_enterprise
