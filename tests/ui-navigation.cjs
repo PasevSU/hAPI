@@ -12,14 +12,14 @@ const directory = read('ui/directory-panel.js');
 const filesManager = read('ui/files-manager.js');
 const css = read('ui/styles.css');
 
-// 1. Навигация: панелите по плана (UI-01, §6.11) — 13 панела + Контакти и Дела.
+// 1. Навигация: панелите по плана (UI-01, §6.11) — 13 панела + Контакти, Дела и Кой влиза.
 //    Панел без собствена логика не е забранен, стига да води към РЕАЛНА секция
 //    (вж. проверката по-долу) — така няма празни екрани.
 const navBlock = app.slice(app.indexOf('const NAV = ['), app.indexOf('];', app.indexOf('const NAV = [')));
 const ids = [...navBlock.matchAll(/id: '([a-z]+)'/g)].map((m) => m[1]);
 const PLANNED = [
   'dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export',
-  'users', 'jobs', 'storage', 'analytics', 'security', 'backups', 'qr',
+  'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'backups', 'qr',
   'report', 'settings', 'about',
 ];
 assert.deepEqual(ids, PLANNED, 'навигацията следва плана: ' + PLANNED.length + ' панела');
@@ -40,9 +40,11 @@ for (const lang of app.match(/bg: \{[\s\S]*?\n    \},/g)) {
 
 // 2. Панелите са заредени и монтирани.
 assert.match(index, /<script src="directory-panel\.js"><\/script>/);
+assert.match(index, /<script src="visitors-panel\.js"><\/script>/);
 assert.match(index, /<script src="settings-panel\.js"><\/script>/);
 assert.match(app, /window\.ContactsPanel\.mount\(view\)/);
 assert.match(app, /window\.CasesPanel\.mount\(view\)/);
+assert.match(app, /window\.HapiVisitorsPanel\.mount\(view\)/);
 assert.match(app, /window\.SettingsPanel\.mount\(view\)/);
 
 // 3. Настройки: поле за токен + публичен адрес (сървърна настройка).

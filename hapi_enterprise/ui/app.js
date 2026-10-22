@@ -18,6 +18,7 @@
       jobs: 'Задачи',
       storage: 'Хранилища',
       analytics: 'Анализи',
+      visitors: 'Кой влиза',
       security: 'Сигурност',
       backups: 'Резервни копия',
       qr: 'QR архиви',
@@ -47,6 +48,7 @@
       jobs: 'Jobs',
       storage: 'Storage',
       analytics: 'Analytics',
+      visitors: 'Who visits',
       security: 'Security',
       backups: 'Backups',
       qr: 'QR archive',
@@ -76,6 +78,7 @@
       jobs: 'Aufgaben',
       storage: 'Speicher',
       analytics: 'Analysen',
+      visitors: 'Wer besucht',
       security: 'Sicherheit',
       backups: 'Sicherungen',
       qr: 'QR-Archiv',
@@ -109,6 +112,7 @@
     { id: 'jobs', ico: 'clock', section: 'jobs' },
     { id: 'storage', ico: 'drive', section: 'storage' },
     { id: 'analytics', ico: 'chart', section: 'analytics' },
+    { id: 'visitors', ico: 'person' },
     { id: 'security', ico: 'shield', section: 'security' },
     { id: 'backups', ico: 'archive', section: 'backups' },
     { id: 'qr', ico: 'qr', section: 'qr' },
@@ -181,6 +185,11 @@
     if (current === 'report') {
       view.innerHTML = '';
       window.ReportStudio.mount(view);
+      return;
+    }
+    if (current === 'visitors' && window.HapiVisitorsPanel) {
+      view.innerHTML = '';
+      window.HapiVisitorsPanel.mount(view);
       return;
     }
     if (current === 'portals' && window.FilesManagerPanel) {

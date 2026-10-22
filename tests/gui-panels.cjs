@@ -27,6 +27,7 @@ const PANEL_MODULES = [
   'settings-panel.js',
   'export-center.js',
   'public-gateway.js',
+  'visitors-panel.js',
   'secret-share.js',
   'report-sign.js',
 ];
@@ -54,7 +55,7 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
     const w = ui.window;
 
     // ── 1. Модулите са заредени ─────────────────────────────────────────────────
-    for (const name of ['HapiDashboardPanel', 'ReportStudio', 'FilesManagerPanel', 'PortalsPanel', 'ExportCenterPanel', 'PublicGatewayPanel', 'ContactsPanel', 'CasesPanel', 'SettingsPanel', 'HapiSecretShare', 'HapiReportSign']) {
+    for (const name of ['HapiDashboardPanel', 'ReportStudio', 'FilesManagerPanel', 'PortalsPanel', 'ExportCenterPanel', 'PublicGatewayPanel', 'ContactsPanel', 'CasesPanel', 'SettingsPanel', 'HapiVisitorsPanel', 'HapiSecretShare', 'HapiReportSign']) {
       assert.ok(w[name], 'липсва ' + name + ' — app.js щеше да покаже „не е зареден“');
     }
 
@@ -68,6 +69,7 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       { id: 'gateway', mount: (h) => w.PublicGatewayPanel.mount(h), expect: ['Public Gateway', 'Публични портали'] },
       { id: 'export', mount: (h) => w.ExportCenterPanel.mount(h), expect: ['Export & Download Center', 'Режим на експортиране'] },
       { id: 'report', mount: (h) => w.ReportStudio.mount(h), expect: ['Report Studio', 'Документ структура'] },
+      { id: 'visitors', mount: (h) => w.HapiVisitorsPanel.mount(h), expect: ['Кой влиза', 'Уникални посетители', 'Посетители'] },
       { id: 'settings', mount: (h) => { w.SettingsPanel.state.section = 'general'; w.SettingsPanel.mount(h) }, expect: ['Връзка с add-on-а', 'Публичен адрес'] },
     ];
 
