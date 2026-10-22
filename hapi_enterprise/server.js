@@ -1113,7 +1113,7 @@ async function handler(req, res) {
     // а административните API-та си изискват Bearer токен. Allowlist — без произволни пътища.
     const UI_FILES = (() => {
       const files = { '/ui': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/index.html': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/styles.css': ['ui/styles.css', 'text/css; charset=utf-8'], '/ui/manifest.example.json': ['ui/manifest.example.json', 'application/json; charset=utf-8'] };
-      for (const f of ['bootstrap.js', 'app.js', 'icons.js', 'data.js', 'i18n.js', 'report-objects.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'dashboard-panel.js', 'settings-panel.js', 'secret-share.js', 'export-center.js', 'public-gateway.js']) files['/ui/' + f] = ['ui/' + f, 'text/javascript; charset=utf-8'];
+      for (const f of ['bootstrap.js', 'app.js', 'icons.js', 'data.js', 'i18n.js', 'report-objects.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'dashboard-panel.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js', 'export-center.js', 'public-gateway.js']) files['/ui/' + f] = ['ui/' + f, 'text/javascript; charset=utf-8'];
       for (const f of ['report-manifest.js', 'api-spec.js', 'virtual-storage.js', 'storage-tree.js', 'export-rules.js', 'export-manager.js', 'download-access.js', 'public-gateway.js', 'qrcode.js']) files['/hapi_enterprise/' + f] = ['hapi_enterprise/' + f, 'text/javascript; charset=utf-8'];
       // Публичната страница на тайна връзка отваря този скрипт от корена: `/hapi_enterprise/`
       // е достъпен само на административния listener (ingress), а прегледът е публичен.
@@ -1806,6 +1806,38 @@ async function handler(req, res) {
           res.writeHead(201, headers);
           return res.end(pdf);
         } catch (e) { return fail(res, e.status || 500, (e.code ? e.code + ': ' : '') + (e.message || 'Report render failed')) }
+      }
+      // Detached CMS/PKCS#7 подпис на готов PDF (RS-06). Ключът идва В ЗАЯВКАТА и не се
+      // пази: без тях отговорът е 400, а не „подпис по подразбиране“. Така никой не може
+      // да подпише нещо, без да даде ключ, и няма фалшив сертификат в изданието.
+      if (parts[3] === 'reports' && parts[4] === 'sign' && parts.length === 5 && method === 'POST') {
+        let b; try { b = JSON.parse((await body(req, 8 * 1024 * 1024)).toString('utf8')) } catch (e) { return fail(res, e.status || 400, e.status ? e.message : 'Invalid JSON') }
+        const pdfBytes = typeof b.pdfBase64 === 'string' ? Buffer.from(b.pdfBase64, 'base64') : null;
+        if (!pdfBytes || !pdfBytes.length) return fail(res, 400, 'pdfBase64 is required');
+        if (pdfBytes.subarray(0, 5).toString('latin1') !== '%PDF-') return fail(res, 400, 'pdfBase64 is not a PDF (missing %PDF- header)');
+        const certDer = typeof b.certPem === 'string' ? new crypto.X509Certificate(String(b.certPem)).raw : null;
+        try {
+          const signed = require('./cms-sign').signDetached({ data: pdfBytes, certDer, keyPem: b.keyPem });
+          void audit('report.sign', { pdfSha256: signed.digest, subject: certDer ? new crypto.X509Certificate(certDer).subject.replace(/\n/g, ', ') : '' });
+          return json(res, 200, {
+            pdfSha256: signed.digest,
+            cmsBase64: signed.cms.toString('base64'),
+            cmsBytes: signed.cms.length,
+            detached: true,
+            // Честно: подписът доказва цялост и произход на ключа. Доверието в сертификата
+            // зависи от това кой го е издал — това не е „удостоверен документ“.
+            note: 'Detached CMS (PKCS#7, SHA-256/RSA). Доверието зависи от издателя на сертификата.',
+          });
+        } catch (e) { return fail(res, e.status || 400, e.message || 'Signing failed') }
+      }
+      // Проверка на detached CMS подпис срещу данни — със същия код, който го прави.
+      if (parts[3] === 'cms' && parts[4] === 'verify' && parts.length === 5 && method === 'POST') {
+        let b; try { b = JSON.parse((await body(req, 8 * 1024 * 1024)).toString('utf8')) } catch (e) { return fail(res, e.status || 400, e.status ? e.message : 'Invalid JSON') }
+        const data = typeof b.dataBase64 === 'string' ? Buffer.from(b.dataBase64, 'base64') : null;
+        const cmsBytes = typeof b.cmsBase64 === 'string' ? Buffer.from(b.cmsBase64, 'base64') : null;
+        if (!data || !cmsBytes) return fail(res, 400, 'dataBase64 and cmsBase64 are required');
+        const verdict = require('./cms-sign').verifyDetached({ data, cms: cmsBytes });
+        return json(res, verdict.ok ? 200 : 409, verdict);
       }
       // RFC 3161 TSA (порт от HASH_REPORT блок „START / STOP“): START подпечатва
       // манифеста, STOP — затварящия хеш (START digest + START токен). Токените се

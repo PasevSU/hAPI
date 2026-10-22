@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.9
+# Състояние на изданието — hAPI Enterprise 0.69.14
 
-Генериран: 2026-10-22 · Версия: **0.69.9** · Клон: `main`
+Генериран: 2026-10-22 · Версия: **0.69.14** · Клон: `main`
 
 Този отчет събира на едно място доказателствата: какво е проверено, с какво и къде е доказано.
 Подробният разказ е в `documentation/07_RELEASE/AUDIT-PROTOCOL.md`.
@@ -9,28 +9,47 @@
 
 | Проверка                     | Команда                                         | Резултат                                                       |
 | ---------------------------- | ----------------------------------------------- | -------------------------------------------------------------- |
-| Тестове                      | `node scripts/test-matrix.cjs --attempts=1`     | **163/163** за ~155 s (един опит)                              |
-| Издание                      | `node scripts/verify-release.cjs --with-tests`  | **21/21** сценария (S01–S21), вкл. S20 = 163/163               |
-| Логически одит               | `node scripts/logic-audit.cjs --gate`           | 287 файла · 49 400+ реда · **0** critical/high · 7 с обосновка |
+| Тестове                      | `node scripts/test-matrix.cjs --attempts=1`     | **169/169** за ~128 s (един опит)                              |
+| Издание                      | `node scripts/verify-release.cjs --with-tests`  | **21/21** сценария (S01–S21), вкл. S20 = 169/169               |
+| Логически одит               | `node scripts/logic-audit.cjs --gate`           | 299 файла · 52 496 реда · **0** critical/high · 7 с обосновка  |
 | Скенер за лош код            | `node scripts/bad-code-scan.cjs --gate`         | **0** critical/high · всички находки с обосновка               |
-| Таг = версия                 | `node scripts/check-tag-version.cjs v0.69.9`    | ✔ `config.yaml` = `manifest.json` = таг                        |
-| Документи                    | `node tests/docs-consistency.cjs`               | ✔ 3 документа на версия 0.69.9, без счупени връзки             |
+| Таг = версия                 | `node scripts/check-tag-version.cjs v0.69.14`   | ✔ `config.yaml` = `manifest.json` = таг                        |
+| Документи                    | `node tests/docs-consistency.cjs`               | ✔ 3 документа на версия 0.69.14, без счупени връзки            |
 | Changelog на add-on-а        | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален                                                     |
-| Сценарии                     | `node tests/scenario-matrix.cjs`                | ✔ 62 области · 44 маршрута · 163 тестови файла                 |
-| CI / CodeQL (`main`)         | GitHub Actions                                  | ✔ / ✔                                                          |
-| Release workflow (`v0.69.9`) | GitHub Actions                                  | виж `gh run list --repo PasevSU/hAPI`                          |
+| Сценарии                     | `node tests/scenario-matrix.cjs`                | ✔ 62 области · 44 маршрута · 169 тестови файла                 |
+| CI / CodeQL (`main`)         | GitHub Actions                                  | след push                                                      |
+| Release workflow (`v0.69.14`) | GitHub Actions                                 | виж `gh run list --repo PasevSU/hAPI`                          |
 | HACS Validate + Release      | GitHub Actions                                  | виж `gh run list --repo PasevSU/hapi-enterprise-integration`   |
 
 ## 2. Артефакти (dist/)
 
-| Файл                                     | Брой файла | Проверка                   |
-| ---------------------------------------- | ---------- | -------------------------- |
-| `hapi_enterprise-0.69.9.tar.gz`          | 117        | = дървото (S08)            |
-| `hapi_enterprise-integration-0.69.9.zip` | 22         | = дървото (S09)            |
-| `repository.yaml`                        | —          | наличен, с валидна сума    |
-| `RELEASE.json` + `SHA256SUMS.txt`        | —          | 4 артефакта с валидни суми |
+| Файл                                      | Брой файла | Проверка                   |
+| ----------------------------------------- | ---------- | -------------------------- |
+| `hapi_enterprise-0.69.14.tar.gz`          | 123        | = дървото (S08)            |
+| `hapi_enterprise-integration-0.69.14.zip` | 22         | = дървото (S09)            |
+| `repository.yaml`                         | —          | наличен, с валидна сума    |
+| `RELEASE.json` + `SHA256SUMS.txt`         | —          | 4 артефакта с валидни суми |
 
-## 3. Какво влезе в 0.69.9
+## 3. Какво влезе в 0.69.14
+
+Подпис на отчетите (`RS-06`): PDF/A-3 структура и отделен CMS (PKCS#7) подпис.
+
+- **PDF/A-3 структура:** XMP метаданни (`pdfaid:part>3`, `pdfaid:conformance>B`), `/Lang`,
+  `/Names /EmbeddedFiles`, `/AF` — всеки отчет носи `report-manifest.json` като асоцииран
+  файл (`/AFRelationship /Data`).
+- **`cms-sign.js`:** detached CMS SignedData с подписани атрибути (contentType +
+  messageDigest SHA-256), подпис с частния ключ и проверка чрез обхождане на TLV +
+  `crypto.verify`. PDF-ът не се променя — подписът е `.p7s` до него.
+- **`x509.js`:** минимален DER генератор без зависимости (самоподписан сертификат на
+  устройството) — ползва се и от тестовете.
+- **Маршрути:** `POST /admin/api/v2/reports/sign`, `POST /admin/api/v2/cms/verify` (само
+  администратор; 400 без ключ/сертификат, 409 при подправен байт).
+- **Панел:** нова секция „Подпис на отчети“ (общо 15 секции), клиент `ui/report-sign.js`,
+  речникът расте до **91 ключа × 3 езика**.
+- **Честност:** съответствие по PDF/A НЕ се твърди — структурата е налице, пълното
+  съответствие се доказва с външен валидатор (veraPDF).
+
+## 3a. Какво влезе в 0.69.9–0.69.13
 
 Изравняване с плана и поправка на Report Studio.
 
@@ -75,8 +94,11 @@
 - Ingres изолацията и статиката се проверяват с жив сървър (`tests/ingress-isolation.cjs`,
   `tests/blackbox-security.cjs`): `/admin` стига до новия интерфейс, `/admin.js` е 404,
   `/ui/*` се сервира само на административния listener.
-- Съдържанието на изданието се сверява с дървото (S08 = 117 файла) и се стартира от
+- Съдържанието на изданието се сверява с дървото (S08 = 123 файла) и се стартира от
   разархивираното издание (S19: `/health` OK, статичните активи се сервират).
+- Подписът се проверява ДВА пъти независимо: `tests/pdf-signature.cjs` разчита CMS-а със
+  собствен TLV четец и `crypto.verify` (без да ползва кода на add-on-а), а
+  `tests/cms-panel.cjs` минава през същия клиент, който ползва панелът, срещу жив сървър.
 
 ## 5. Известни разлики
 

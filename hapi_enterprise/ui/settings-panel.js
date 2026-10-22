@@ -261,6 +261,7 @@
     { id: 'analytics', label: 'section.analytics' },
     { id: 'security', label: 'section.security' },
     { id: 'qr', label: 'section.qr' },
+    { id: 'cms', label: 'section.cms' },
     { id: 'storage', label: 'section.storage' },
     { id: 'backups', label: 'section.backups' },
     { id: 'logs', label: 'section.logs' },
@@ -365,6 +366,11 @@
       out.data = { audit, who };
     } else if (id === 'qr') {
       out.data = await grab('/admin/api/qr-artifacts');
+    } else if (id === 'cms') {
+      // Подписът не зависи от данни от сървъра: формата се показва и преди избор на файл,
+      // а реалната проверка е в действията долу.
+      const who = await grab('/admin/api/whoami');
+      out.data = { role: (who && who.role) || '' };
     } else if (id === 'storage') {
       const [status, retention] = await Promise.all([grab('/admin/api/storage/status'), grab('/admin/api/retention')]);
       out.data = { status, retention };
@@ -649,6 +655,25 @@
       return '<p class="hint">Издадените QR артефакти се пазят, докато не бъдат отменени. Отмяната спира текущата връзка.</p>' +
         table(['QR ID', 'Етикет', T('th.created'), ''], items);
     }
+    if (id === 'cms') {
+      // Подписът е detached: PDF-ът НЕ се променя, а .p7s се пази до него. Така един и
+      // същи отчет може да има няколко подписа от различни лица, без да се пре-рендира.
+      return '<p class="hint">' + esc(T('cms.hint')) + '</p>' +
+        '<div class="field"><label>' + esc(T('cms.pdf')) + '</label>' +
+        '<input type="file" id="set-cms-file" accept="application/pdf,.pdf" /></div>' +
+        '<div class="field u-mt"><label>' + esc(T('cms.cert')) + '</label>' +
+        '<textarea id="set-cms-cert" rows="4" spellcheck="false" placeholder="PEM"></textarea></div>' +
+        '<div class="field u-mt"><label>' + esc(T('cms.key')) + '</label>' +
+        '<textarea id="set-cms-key" rows="4" spellcheck="false" placeholder="PEM"></textarea></div>' +
+        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="cmsSign">' + esc(T('cms.sign')) + '</button></div>' +
+        '<div id="set-cms-out" class="u-mt"></div>' +
+        '<h3 class="u-mt">' + esc(T('cms.verifyTitle')) + '</h3>' +
+        '<p class="hint">Проверката ползва същия PDF файл по-горе — смени го, ако проверяваш друг отчет.</p>' +
+        '<div class="field"><label>' + esc(T('cms.cms')) + '</label>' +
+        '<textarea id="set-cms-sig" rows="3" spellcheck="false" placeholder="MIIB..."></textarea></div>' +
+        '<div class="u-row u-mt"><button type="button" class="btn" data-action="cmsVerify">' + esc(T('cms.verify')) + '</button></div>' +
+        '<pre class="tree u-mt" id="set-cms-verify-out" aria-live="polite">—</pre>';
+    }
     if (id === 'storage') {
       const st = d.status || {};
       const last = st.lastCheck || {};
@@ -715,6 +740,16 @@
         '<p class="hint">Правила на gateway: ' + esc(rules.count != null ? rules.count + ' активни' : (rules.host || 'няма данни')) + '</p>';
     }
     return '<p class="hint">Непозната секция.</p>';
+  }
+
+  // Диагностиката на подписа: кодът от модула се превежда, а непознат код се показва
+  // такъв, какъвто е — по-добре видим код, отколкото измислено обяснение.
+  function cmsReason(res) {
+    const code = (res && res.reason) || '';
+    if (code === 'not-pdf' || code === 'no-pdf') return T('cms.errNotPdf');
+    if (code === 'bad-certificate') return T('cms.errCert');
+    if (code === 'bad-key') return T('cms.errKey');
+    return T('cms.errGeneric') + ((res && res.error) ? ': ' + res.error : code ? ' (' + code + ')' : '');
   }
 
   // Действията в секциите. Патент: секция → какво прави бутонът.
@@ -809,6 +844,93 @@
         toast('Одитът не е изтеглен: ' + e.message, 'err');
       }
       return;
+    } else if (action === 'cmsSign') {
+      // Подписът се издава тук, но се ПРОВЕРЯВА на сървъра: браузърът не бива да
+      // „потвърждава“ собствения си подпис.
+      const mod = window.HapiReportSign;
+      if (!mod) return toast(T('cms.noModule'), 'err');
+      const input = host.querySelector('#set-cms-file');
+      const file = input && input.files && input.files[0];
+      if (!file) return toast(T('cms.needFile'), 'err');
+      const certPem = host.querySelector('#set-cms-cert').value;
+      const keyPem = host.querySelector('#set-cms-key').value;
+      if (!String(certPem).trim()) return toast(T('cms.needCert'), 'err');
+      if (!String(keyPem).trim()) return toast(T('cms.needKey'), 'err');
+      const out = host.querySelector('#set-cms-out');
+      let pdfBytes;
+      try {
+        pdfBytes = new Uint8Array(await file.arrayBuffer());
+      } catch (e) {
+        return toast(T('cms.signFail') + ': ' + e.message, 'err');
+      }
+      const res = await mod.sign({
+        pdfBytes,
+        certPem,
+        keyPem,
+        fileName: file.name,
+        base: effectiveBase(),
+        fetch,
+        headers: storedToken() ? { Authorization: 'Bearer ' + storedToken() } : {},
+      });
+      if (!res.ok) {
+        const why = cmsReason(res);
+        if (out) out.innerHTML = '<p><span class="badge err">' + esc(T('cms.signFail')) + '</span> <span class="hint">' + esc(why) + '</span></p>';
+        return toast(T('cms.signFail') + ' · ' + why, 'err');
+      }
+      if (out) {
+        out.innerHTML =
+          '<div class="field"><label>sha256 на PDF-а</label><code>' + esc(res.pdfSha256 || '—') + '</code></div>' +
+          '<p class="hint">Подписът е отделен файл (' + esc(String(res.cmsBytes || 0)) + ' B). ' + esc(res.note || '') + '</p>' +
+          '<div class="u-row u-row-inline"><button type="button" class="btn btn-primary" data-cms-download="1">' +
+          esc(T('cms.download')) + '</button></div><pre class="tree" id="set-cms-sig-preview">' +
+          esc(String(res.cmsBase64 || '').slice(0, 160)) + '…</pre>';
+        // Съдържанието се пренася в полето за проверка, за да не се копира на ръка.
+        const sig = host.querySelector('#set-cms-sig');
+        if (sig) sig.value = res.cmsBase64 || '';
+        const dl = out.querySelector('[data-cms-download]');
+        if (dl) {
+          dl.addEventListener('click', () => {
+            const bytes = mod.fromBase64(res.cmsBase64 || '');
+            const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pkcs7-signature' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = res.fileName || 'report.p7s';
+            a.click();
+            URL.revokeObjectURL(url);
+          });
+        }
+      }
+      toast(T('cms.signOk'), 'ok');
+    } else if (action === 'cmsVerify') {
+      const mod = window.HapiReportSign;
+      if (!mod) return toast(T('cms.noModule'), 'err');
+      const sigValue = host.querySelector('#set-cms-sig').value;
+      if (!String(sigValue).trim()) return toast(T('cms.needCms'), 'err');
+      const input = host.querySelector('#set-cms-file');
+      const file = input && input.files && input.files[0];
+      if (!file) return toast(T('cms.needFile'), 'err');
+      const pre = host.querySelector('#set-cms-verify-out');
+      let pdfBytes;
+      try {
+        pdfBytes = new Uint8Array(await file.arrayBuffer());
+      } catch (e) {
+        return toast(T('cms.verifyFail') + ': ' + e.message, 'err');
+      }
+      const res = await mod.verify({
+        dataBytes: pdfBytes,
+        cmsBase64: sigValue,
+        base: effectiveBase(),
+        fetch,
+        headers: storedToken() ? { Authorization: 'Bearer ' + storedToken() } : {},
+      });
+      const verdict = res.ok ? T('cms.verifyOk') : T('cms.verifyFail');
+      const details = [
+        res.subject ? 'CN: ' + res.subject : '',
+        res.digest ? 'sha256: ' + res.digest : '',
+        res.reason ? res.reason : '',
+      ].filter(Boolean);
+      if (pre) pre.textContent = verdict + (details.length ? ' · ' + details.join(' · ') : '');
+      toast(verdict, res.ok ? 'ok' : 'err');
     } else if (action === 'notify') {
       const service = host.querySelector('#set-notify-service').value.trim();
       const link = host.querySelector('#set-notify-link').value.trim();

@@ -171,7 +171,24 @@ function renderPdf(input, options = {}) {
   const blocks = toPdfBlocks(manifest, options);
   const watermark =
     options.watermark === undefined ? 'hAPI ENTERPRISE' : String(options.watermark).slice(0, 40);
-  return pdfWriter.render(blocks, { title: `hAPI report — ${manifest.profile}`.slice(0, 200), watermark });
+  // PDF/A-3 (RS-06): вграденият файл отличава A-3 от A-2. По подразбиране се прикачва
+  // самият манифест — така отчетът носи проверимия си произход вътре в себе си.
+  const attachments = Array.isArray(options.attachments)
+    ? options.attachments
+    : [
+      {
+        name: 'report-manifest.json',
+        description: 'Манифест на отчета (нормализиран, с отпечатък в XMP)',
+        mime: 'application/json',
+        data: Buffer.from(JSON.stringify(manifest, null, 2), 'utf8'),
+      },
+    ];
+  return pdfWriter.render(blocks, {
+    title: `hAPI report — ${manifest.profile}`.slice(0, 200),
+    watermark,
+    lang: String(options.lang || 'bg').slice(0, 8),
+    attachments,
+  });
 }
 
 module.exports = { toPdfBlocks, renderPdf, PLACEHOLDER };

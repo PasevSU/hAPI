@@ -10,6 +10,7 @@
 // текста от клетките на таблицата, и дали грешките са ясни.
 const assert = require('node:assert/strict');
 const zlib = require('node:zlib');
+const path = require('node:path');
 const ooxml = require('../hapi_enterprise/ooxml.js');
 const pdf = require('../hapi_enterprise/pdf-writer.js');
 
@@ -163,10 +164,37 @@ assert.throws(() => pdf.render([{ type: 'image', data: Buffer.from('GIF89a') }])
 assert.throws(() => ooxml.docxRich(Buffer.from('not a zip')), /ZIP|OOXML/, 'не-docx файл се отказва');
 
 // ── 4. Кабинетът и прегледът ползват новото извличане ───────────────────────────
-const cabinetSrc = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'hapi_enterprise', 'cabinet.js'), 'utf8');
-const previewSrc = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'hapi_enterprise', 'preview.js'), 'utf8');
-assert.ok(cabinetSrc.includes('ooxml.docxRich(buf).blocks'), 'конвертирането в кабинета ползва богатото извличане');
-assert.ok(previewSrc.includes('ooxml.docxRich(buffer).blocks'), 'прегледът също');
-assert.match(previewSrc, /type==='table'/, 'прегледът показва таблица като таблица');
+// Проверява се РЕЗУЛТАТЪТ, а не текстът на изходния код: grep за `docxRich` минава и
+// когато форматирането се смени, и когато извикването е мъртво. Тук се конвертира
+// истински .docx и се гледа какво излиза.
+const os = require('node:os');
+const fsx = require('node:fs');
+const cabinet = require('../hapi_enterprise/cabinet.js');
+const preview = require('../hapi_enterprise/preview.js');
 
-console.log('PASS docx-pdf: таблици и картинки от .docx · PNG в PDF без прекодиране · ясни грешки');
+(async () => {
+  const html = preview.docxToHtml(docx);
+  assert.match(html, /<table>/, 'прегледът показва таблица като таблица');
+  assert.match(html, /<th>/, 'заглавният ред е <th>, не <td>');
+  assert.ok(html.includes('Файлове') && html.includes('12'), 'клетките са в HTML-а');
+  assert.equal(html.includes('data:image'), false, 'прегледът не вгражда картинката като байтове');
+
+  const root = fsx.mkdtempSync(path.join(os.tmpdir(), 'hapi-docx-cabinet-'));
+  try {
+    const cab = cabinet.create({ root, localOpen: false });
+    await cab.upload('', 'дело.docx', docx);
+    const made = await cab.convert('дело.docx', 'pdf');
+    assert.equal(made.name, 'дело.pdf', 'кабинетът връща име на PDF-а');
+    const converted = fsx.readFileSync(path.join(root, 'cabinet', made.name));
+    const asText = converted.toString('latin1');
+    assert.match(asText, /\/Subtype \/Image/, 'PDF от кабинета носи картинката (BUG-03)');
+    assert.match(asText, /\/Width 2 \/Height 2/, 'картинката е с истинските си размери');
+    assert.ok(converted.length > 1000, 'PDF-ът от кабинета не е празен');
+    console.log('PASS docx-pdf: таблици и картинки от .docx · PNG в PDF без прекодиране · ясни грешки');
+  } finally {
+    fsx.rmSync(root, { recursive: true, force: true });
+  }
+})().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});

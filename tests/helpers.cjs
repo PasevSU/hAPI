@@ -67,6 +67,19 @@ async function freePort(host = '127.0.0.1', { tries = 60 } = {}) {
     }
     if (!['EACCES', 'EADDRINUSE'].includes(probe.code)) return port; // друга причина — не е наш проблем
   }
+  // Втори шанс, когато динамичният диапазон е изчерпан: при паралелен тестов пакет
+  // десетки деца държат портове едновременно и `listen(0)` връща номер, който в същия
+  // момент е зает от друго дете. Тогава се избира СЛЯПО в 40000–64000 (под динамичния
+  // диапазон на Windows и под прага за `port + 500`, който тестовете ползват).
+  for (let i = 0; i < 200; i++) {
+    const port = 40000 + Math.floor(Math.random() * 24000);
+    if (handedOut.has(port)) continue;
+    const probe = await canBind(host, port);
+    if (probe.ok) {
+      handedOut.add(port);
+      return port;
+    }
+  }
   throw new Error('няма порт, който може да се върже изрично (изключени диапазони на Windows?)');
 }
 

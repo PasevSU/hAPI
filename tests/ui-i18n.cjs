@@ -41,7 +41,7 @@ for (const key of used) assert.ok(i18n.has(key), `кодът ползва лип
 // Секциите пазят ключ, а не текст: иначе смяната на езика не работи без презареждане.
 const sectionBlock = panel.slice(panel.indexOf('const SECTIONS = ['), panel.indexOf('];', panel.indexOf('const SECTIONS = [')));
 const sectionLabels = [...sectionBlock.matchAll(/label: '([^']+)'/g)].map((m) => m[1]);
-assert.equal(sectionLabels.length, 14, 'четиринайсет секции');
+assert.equal(sectionLabels.length, 15, 'петнайсет секции');
 for (const label of sectionLabels) {
   assert.match(label, /^section\./, `секцията пази ключ, а не текст: ${label}`);
   assert.ok(i18n.has(label), `липсва ключ за секция: ${label}`);
@@ -64,8 +64,8 @@ function stubElement() {
     title: '',
     className: '',
     dataset: {},
-    addEventListener() {},
-    setAttribute() {},
+    addEventListener() { },
+    setAttribute() { },
     getAttribute() {
       return null;
     },
@@ -76,21 +76,21 @@ function stubElement() {
     querySelectorAll() {
       return [];
     },
-    classList: { toggle() {}, add() {}, remove() {}, contains: () => false },
+    classList: { toggle() { }, add() { }, remove() { }, contains: () => false },
   };
 }
 
 function mountWithLang(lang) {
-  const window = { HapiUI: { getLang: () => lang, toast() {} } };
+  const window = { HapiUI: { getLang: () => lang, toast() { } } };
   const document = {
     documentElement: { lang },
     body: stubElement(),
     createElement: () => stubElement(),
     querySelector: () => null,
     querySelectorAll: () => [],
-    addEventListener() {},
+    addEventListener() { },
   };
-  const storage = () => ({ getItem: () => null, setItem() {}, removeItem() {} });
+  const storage = () => ({ getItem: () => null, setItem() { }, removeItem() { } });
   const sandbox = {
     window,
     document,
@@ -118,7 +118,7 @@ const german = mountWithLang('de');
 const germanTabs = german.slice(german.indexOf('<nav class="set-tabs"'), german.indexOf('</nav>'));
 assert.ok(germanTabs.length > 100, 'намирам табовете в немския изглед');
 assert.equal(/[\u0400-\u04FF]/.test(germanTabs), false, 'немските табове нямат кирилица: ' + germanTabs.replace(/<[^>]+>/g, ' '));
-for (const label of ['Allgemein', 'Hierarchie', 'Kartei', 'Aufgaben', 'Benutzer', 'Variablen', 'Diagnose', 'Analysen', 'Sicherheit', 'QR-Archiv', 'Speicher', 'Sicherungen', 'Protokoll']) {
+for (const label of ['Allgemein', 'Hierarchie', 'Kartei', 'Aufgaben', 'Benutzer', 'Variablen', 'Diagnose', 'Analysen', 'Sicherheit', 'QR-Archiv', 'Berichtssignatur', 'Speicher', 'Sicherungen', 'Protokoll']) {
   assert.ok(germanTabs.includes(label), `немският таб „${label}“ липсва`);
 }
 const germanTitle = german.slice(0, german.indexOf('<nav'));

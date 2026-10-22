@@ -97,6 +97,11 @@ const STYLES = {
 };
 const hex = n => n.toString(16).padStart(4, '0');
 const num = n => (Math.round(n * 100) / 100).toString();
+/** Екраниране за XMP (XML) — иначе заглавие с „&“ или „<“ чупи метаданните. */
+const escapeXml = (s) =>
+  String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
+/** PDF име (`/Subtype`) от MIME: само безопасни знаци, с наклонена черта вместо „/“. */
+const pdfName = (mime) => '/' + String(mime || 'application/octet-stream').replace(/[^A-Za-z0-9.+#-]/g, '#20').replace(/^#20/, '');
 
 // QR матрица: тъмните модули като редове от '0'/'1'. Ползва се от `qr` блока и от
 // тестовете, за да се провери, че кодът е истински (finder/timing мостри), а не картинка.
@@ -114,7 +119,7 @@ function qrMatrix(text, level) {
   }
   return rows;
 }
-function render(blocks, { title = '', watermark = '' } = {}) {
+function render(blocks, { title = '', watermark = '', lang = 'bg', attachments = [] } = {}) {
   const used = {}; const fontIds = {}; const faces = {};
   const face = kind => { if (!faces[kind]) { faces[kind] = { f: font(kind), key: 'F' + (Object.keys(faces).length + 1), used: new Map() } } return faces[kind] };
   const measure = (kind, s, size) => { const F = face(kind).f; let w = 0; for (const ch of s) w += F.adv(F.glyph(ch.codePointAt(0))); return w * size / F.upm };
@@ -276,7 +281,43 @@ function render(blocks, { title = '', watermark = '' } = {}) {
     obj(pg, `<< /Type /Page /Parent ${pagesRef} 0 R /MediaBox [0 0 ${A4.w} ${A4.h}] /Resources << /Font << ${fontRes} >>${xobjRes} >> /Contents ${c} 0 R >>`);
   }
   obj(pagesRef, `<< /Type /Pages /Kids [${kids.map(k => k + ' 0 R').join(' ')}] /Count ${kids.length} >>`);
-  obj(catalog, `<< /Type /Catalog /Pages ${pagesRef} 0 R >>`);
+  // ── PDF/A-3 структура (RS-06) ────────────────────────────────────────────────
+  // XMP с `pdfaid:part=3` + `conformance=B` и — по избор — вграден файл (манифестът),
+  // защото точно вграденият файл отличава A-3 от A-2. НЕ се твърди съответствие: то се
+  // удостоверява само от валидатор (veraPDF), а тук се строи САМО структурата.
+  const created = new Date().toISOString();
+  const xmp = `<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="hAPI Enterprise">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmlns:pdf="http://ns.adobe.com/pdf/1.3/">
+   <pdfaid:part>3</pdfaid:part>
+   <pdfaid:conformance>B</pdfaid:conformance>
+   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">${escapeXml(String(title).slice(0, 200))}</rdf:li></rdf:Alt></dc:title>
+   <xmp:CreateDate>${created}</xmp:CreateDate>
+   <pdf:Producer>hAPI Enterprise</pdf:Producer>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>`;
+  const metaRef = reserve();
+  stream(metaRef, '/Type /Metadata /Subtype /XML', Buffer.from(xmp, 'utf8'));
+  // Вградени файлове: /Names → /EmbeddedFiles → [(име) filespec], плюс /AF (асоциация).
+  const fileRefs = [];
+  for (const att of attachments) {
+    if (!att || !att.name || !Buffer.isBuffer(att.data)) continue;
+    const embedded = reserve();
+    const payload = zlib.deflateSync(att.data);
+    stream(embedded, `/Type /EmbeddedFile /Subtype ${pdfName(String(att.mime || 'application/octet-stream'))} /Filter /FlateDecode /Params << /Size ${att.data.length} /ModDate (D:${created.replace(/[-:T]/g, '').slice(0, 14)}Z) >>`, payload);
+    const filespec = reserve();
+    const safeName = String(att.name).replace(/[()\\]/g, '_').slice(0, 120);
+    obj(filespec, `<< /Type /Filespec /F (${safeName}) /UF <${u16hex(safeName)}> /Desc <${u16hex(String(att.description || '').slice(0, 200))}> /EF << /F ${embedded} 0 R >> /AFRelationship /Data >>`);
+    fileRefs.push({ name: safeName, ref: filespec });
+  }
+  const namesDict = fileRefs.length
+    ? ` /Names << /EmbeddedFiles << /Names [${fileRefs.map(f => `(${f.name}) ${f.ref} 0 R`).join(' ')}] >> >>`
+    : '';
+  const afEntry = fileRefs.length ? ` /AF [${fileRefs.map(f => `${f.ref} 0 R`).join(' ')}]` : '';
+  obj(catalog, `<< /Type /Catalog /Pages ${pagesRef} 0 R /Metadata ${metaRef} 0 R /Lang (${String(lang).slice(0, 8)})${namesDict}${afEntry} >>`);
   obj(info, `<< /Title <${u16hex(String(title).slice(0, 200))}> /Producer (hAPI Enterprise) /CreationDate (D:${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}Z) >>`);
   const head = Buffer.from('%PDF-1.5\n%\xE2\xE3\xCF\xD3\n', 'latin1'), parts = [head], offs = []; let pos = head.length;
   for (const o of objs) { offs.push(pos); parts.push(o); pos += o.length }
