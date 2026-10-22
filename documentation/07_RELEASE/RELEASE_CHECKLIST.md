@@ -37,7 +37,17 @@
 
 ## Release
 
-- [ ] Tag `v<версия>` created (Actions `Release` строи и качва артефактите).
+- [ ] Tag `v<версия>` created (annotated: `git tag -a v<v> -m "hAPI Enterprise <v>" <sha>`).
+- [ ] **Проверено, че изданието в GitHub съществува** — workflow-ът `Release` не се задейства
+      надеждно при push на таг, затова се проверява изрично:
+      `gh release view v<v> --repo PasevSU/hAPI --json assets`.
+      Ако го няма: `gh release create v<v> --title "v<v>" --notes-file <CHANGELOG-частта>`,
+      после `gh release upload v<v> --clobber` с петте файла от `dist/`.
+- [ ] Пет актива в изданието: tar.gz, integration zip, `RELEASE.json`, `repository.yaml`,
+      `SHA256SUMS.txt` — и `sha256` на качените архиви съвпада със `SHA256SUMS.txt`
+      (сваляне + `Get-FileHash`, не „изглежда качено“).
+- [ ] HACS хранилището (`PasevSU/hapi-enterprise-integration`) е на същата версия:
+      `pwsh scripts/publish-haoss.ps1 -Version <v> -Execute` (без `-Execute` е dry run).
 - [ ] Release notes published.
 - [ ] `RELEASE_DECISION.md` signed with date + approver.
 
