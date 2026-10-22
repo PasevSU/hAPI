@@ -238,7 +238,9 @@ async function boot(dir, port) {
 
     // 17. Рестарт: същите данни, същите хешове, същата одит верига.
     await stopChild(server.child);
-    server = await boot(dir, port + 500);
+    // Рестартът взима СВОЙ свободен порт: `port + 500` можеше да излезе над 65535
+    // (`ERR_SOCKET_BAD_PORT`), ако ядрото даде порт близо до горната граница.
+    server = await boot(dir, await freePort());
     const second = server.call;
     const afterRestart = await second(`/admin/api/portals/${portalId}`, { bearer: ADMIN });
     assert.equal(afterRestart.status, 200, 'порталът трябва да оцелее след рестарт');

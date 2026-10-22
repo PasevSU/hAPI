@@ -753,7 +753,7 @@ for (const kind of ['category', 'group']) $('tax-form-' + kind).addEventListener
 // Filing cabinet: separate document store with folders, previews, editing and conversion.
 const cab = { path: '', info: { createTypes: [], convert: {}, localOpen: false }, url: null, current: null };
 const cabRel = n => cab.path ? cab.path + '/' + n : n;
-const cabFetch = async (act, { query = '', method = 'GET', json, body, headers = {} } = {}) => { const h = { ...authHeader(), ...headers }; let b = body; if (json !== undefined) { h['Content-Type'] = 'application/json'; b = JSON.stringify(json) } const r = await fetch(adminPath('/admin/api/cabinet/' + act + query), { method, headers: h, body: b }); if (!r.ok) { let m = 'HTTP ' + r.status; try { m = (await r.json()).error || m } catch { } throw Error(m) } return r };
+const cabFetch = async (act, { query = '', method = 'GET', json, body, headers = {} } = {}) => { const h = { ...authHeader(), ...headers }; let b = body; if (json !== undefined) { h['Content-Type'] = 'application/json'; b = JSON.stringify(json) } const r = await fetch(adminPath('/admin/api/cabinet/' + act + query), { method, headers: h, body: b }); if (!r.ok) { let m = 'HTTP ' + r.status; try { m = (await r.json()).error || m } catch { /* тялото на грешката може да не е JSON — остава HTTP кодът */ } throw Error(m) } return r };
 const cabJson = async (...a) => (await cabFetch(...a)).json();
 const cabQ = p => '?path=' + encodeURIComponent(p);
 const cabExt = n => { const i = n.lastIndexOf('.'); return i < 0 ? '' : n.slice(i + 1).toLowerCase() };
@@ -1049,7 +1049,7 @@ _setPanel(_currentPanel);
     if (d.token) sessionToken = String(d.token);
     const badge = $('session-role'); if (badge) { badge.textContent = d.role + (d.ingress ? ' · ingress' : ''); badge.title = 'user: ' + (d.user || '—') + ' · default: ' + d.defaultRole + ' · mapped: ' + d.mapped }
     await action(load); await action(loadOverview)
-  } catch { }
+  } catch { /* грешката вече се показва от action(); тук само спираме */ }
 })();
 
 Object.assign(ADMIN_DIC.en, { 'Лимити и достъп': 'Limits and access', 'Празно поле = автоматична стойност по подразбиране (в полето е показана текущата).': 'Empty field = automatic default (the current value is shown in the field).', 'Макс. размер на качване (MB)': 'Max upload size (MB)', 'Едновременни изтегляния': 'Concurrent downloads', 'Паралелни задачи': 'Parallel jobs', 'Проверка на хранилищата (мин, 0 = изкл.)': 'Storage check (min, 0 = off)', 'Публичен адрес': 'Public address', 'CORS адрес': 'CORS origin', 'Ключ за портал': 'Portal key', 'Пълен IP в телеметрията': 'Full IP in telemetry', 'Автоматично': 'Automatic', 'Задължителен': 'Required', 'Не е задължителен': 'Not required', 'Не (препоръчително)': 'No (recommended)', 'Да': 'Yes', 'Запазено. Някои промени се прилагат след рестарт на add-on-а.': 'Saved. Some changes apply after the add-on restarts.' });
@@ -1113,8 +1113,8 @@ async function loadOverview() {
   const kpis = $('overview-kpis'), ports = $('overview-portals'), sys = $('overview-system');
   if (!kpis) return;
   let sensors = null, diag = null;
-  try { sensors = await api('/admin/api/sensors') } catch { }
-  try { diag = await api('/admin/api/diagnostics') } catch { }
+  try { sensors = await api('/admin/api/sensors') } catch { /* панелът е допълнителен: липсата му не е грешка */ }
+  try { diag = await api('/admin/api/diagnostics') } catch { /* диагностиката е по избор — липсва ли, KPI-тата остават */ }
   const pc = sensors && Array.isArray(sensors.portals) ? sensors.portals.length : (diag && diag.catalog ? diag.catalog.portals : 0);
   const fc = sensors && sensors.files != null ? sensors.files : (diag && diag.catalog ? diag.catalog.files : 0);
   const fb = sensors && sensors.fileBytes != null ? sensors.fileBytes : 0;
@@ -1174,10 +1174,10 @@ const _overviewRefresh = $('overview-refresh');
 if (_overviewRefresh) _overviewRefresh.onclick = () => action(loadOverview);
 
 const _themeToggle = $('theme-toggle');
-const _applyTheme = () => { let dark = false; try { dark = localStorage.getItem('portal-theme') === 'dark' } catch { } document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); if (_themeToggle) _themeToggle.setAttribute('aria-pressed', String(dark)) };
-try { if (localStorage.getItem('portal-theme') == null) localStorage.setItem('portal-theme', (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light') } catch { }
+const _applyTheme = () => { let dark = false; try { dark = localStorage.getItem('portal-theme') === 'dark' } catch { /* localStorage може да е забранен — остава системната тема */ } document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); if (_themeToggle) _themeToggle.setAttribute('aria-pressed', String(dark)) };
+try { if (localStorage.getItem('portal-theme') == null) localStorage.setItem('portal-theme', (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light') } catch { /* matchMedia липсва при стари браузъри — остава светла тема */ }
 _applyTheme();
-if (_themeToggle) _themeToggle.onclick = () => { try { localStorage.setItem('portal-theme', localStorage.getItem('portal-theme') === 'dark' ? 'light' : 'dark') } catch { } _applyTheme() };
+if (_themeToggle) _themeToggle.onclick = () => { try { localStorage.setItem('portal-theme', localStorage.getItem('portal-theme') === 'dark' ? 'light' : 'dark') } catch { /* localStorage може да е забранен — темата не се помни */ } _applyTheme() };
 
 Object.assign(ADMIN_DIC.en, { 'Обзор': 'Overview', 'Портали накратко': 'Portals at a glance', 'Обнови': 'Refresh', 'Състояние на системата': 'System status', 'Публичен': 'Public', 'Частен': 'Private', 'Копирай линк': 'Copy link', 'QR код': 'QR code', 'Копирай': 'Copy', 'Изтегли QR': 'Download QR', 'Директория': 'Directory', 'Линк': 'Link', 'Изтрий': 'Delete', 'скрит': 'hidden', 'Няма файлове': 'No files', 'Файл': 'File', 'Размер': 'Size', 'Качен': 'Uploaded', 'Действия': 'Actions', 'Файлове': 'Files', 'Посещения': 'Visits', 'Изтегляния': 'Downloads', 'База данни': 'Database', 'Телеметрия': 'Telemetry', 'Време на работа': 'Uptime', 'Памет (RSS)': 'Memory (RSS)', 'Памет (Heap)': 'Memory (Heap)', 'Заявки': 'Requests', 'Активни изтегляния': 'Active downloads', 'Хранилище': 'Storage', 'Достъпно': 'Available', 'Само за четене': 'Read-only', 'Недостъпно': 'Unavailable', 'Режим на IP': 'IP mode', 'Пълен': 'Full', 'Хеширан': 'Hashed', 'Няма данни': 'No data', 'Копирано в клипборда': 'Copied to clipboard', 'Копирането не успя': 'Copy failed', 'току-що': 'just now', 'мин': 'min', 'ч': 'h', 'дни': 'days', 'Създаден': 'Created', 'файла': 'files', 'Състояние': 'Status', 'Портал': 'Portal', 'Данни': 'Data' });
 Object.assign(ADMIN_DIC.de, { 'Обзор': 'Übersicht', 'Портали накратко': 'Portale im Überblick', 'Обнови': 'Aktualisieren', 'Състояние на системата': 'Systemstatus', 'Публичен': 'Öffentlich', 'Частен': 'Privat', 'Копирай линк': 'Link kopieren', 'QR код': 'QR-Code', 'Копирай': 'Kopieren', 'Изтегли QR': 'QR herunterladen', 'Директория': 'Verzeichnis', 'Линк': 'Link', 'Изтрий': 'Löschen', 'скрит': 'versteckt', 'Няма файлове': 'Keine Dateien', 'Файл': 'Datei', 'Размер': 'Größe', 'Качен': 'Hochgeladen', 'Действия': 'Aktionen', 'Файлове': 'Dateien', 'Посещения': 'Besuche', 'Изтегляния': 'Downloads', 'База данни': 'Datenbank', 'Телеметрия': 'Telemetrie', 'Време на работа': 'Laufzeit', 'Памет (RSS)': 'Speicher (RSS)', 'Памет (Heap)': 'Speicher (Heap)', 'Заявки': 'Anfragen', 'Активни изтегляния': 'Aktive Downloads', 'Хранилище': 'Speicher', 'Достъпно': 'Verfügbar', 'Само за четене': 'Schreibgeschützt', 'Недостъпно': 'Nicht verfügbar', 'Режим на IP': 'IP-Modus', 'Пълен': 'Voll', 'Хеширан': 'Gehasht', 'Няма данни': 'Keine Daten', 'Копирано в клипборда': 'In die Zwischenablage kopiert', 'Копирането не успя': 'Kopieren fehlgeschlagen', 'току-що': 'gerade eben', 'мин': 'Min', 'ч': 'Std', 'дни': 'Tage', 'Създаден': 'Erstellt', 'файла': 'Dateien', 'Състояние': 'Status', 'Портал': 'Portal', 'Данни': 'Daten' });

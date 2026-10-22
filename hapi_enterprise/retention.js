@@ -11,7 +11,7 @@ function create({filesRoot,auditPath,getSettings}){
  async function preview(portals){
   const c=cfg();const fileCut=c.fileDays?Date.now()-c.fileDays*MS:null,auditCut=c.auditDays?Date.now()-c.auditDays*MS:null;
   const files=[];if(fileCut){for(const p of portals)for(const f of p.files){const t=Date.parse(f.uploadedAt||'');if(!Number.isFinite(t))continue;if(t<fileCut&&f.accessMode!=='DISABLED')files.push({portalId:p.id,fileId:f.id,name:f.name,uploadedAt:f.uploadedAt})}}
-  let auditLinesExpired=0;if(auditCut){for(const line of await auditLines()){try{if(Date.parse(JSON.parse(line).at)<auditCut)auditLinesExpired++}catch{}}}
+  let auditLinesExpired=0;if(auditCut){for(const line of await auditLines()){try{if(Date.parse(JSON.parse(line).at)<auditCut)auditLinesExpired++}catch { /* повреден одитен ред не се брои за изтекъл */ }}}
   return {enabled:c.enabled,fileDays:c.fileDays,auditDays:c.auditDays,fileAction:c.fileAction,files,auditLinesExpired};
  }
  async function apply(portals){

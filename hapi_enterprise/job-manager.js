@@ -91,7 +91,7 @@ function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolv
   (function load() {
     if (!hasDir) return;
     let entries = [];
-    try { entries = fs.readdirSync(dir).filter(n => n.endsWith('.json') && !n.includes('.tmp')); } catch {}
+    try { entries = fs.readdirSync(dir).filter(n => n.endsWith('.json') && !n.includes('.tmp')); } catch { /* липсваща папка значи „няма запазени задачи“ */ }
     for (const name of entries) {
       let data;
       try { data = JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8')); } catch { console.error('Skipping corrupt job record', name); continue; }

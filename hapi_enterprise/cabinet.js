@@ -34,7 +34,7 @@ function create({root,maxBytes:maxBytesOpt=52428800,localOpen=false}){const limi
   async list(rel){
    const r=await resolve(rel),st=await fsp.lstat(r.abs);if(!st.isDirectory())throw err('Not a folder');
    const names=await fsp.readdir(r.abs);const items=[];
-   for(const n of names){try{if(BAD.test(n))continue;items.push(await entry(r.abs,n))}catch{}}
+   for(const n of names){try{if(BAD.test(n))continue;items.push(await entry(r.abs,n))}catch { /* един нечетим запис не бива да спира целия списък */ }}
    items.sort((a,b)=>(a.type===b.type?0:a.type==='folder'?-1:1)||a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
    return {path:r.rel,items};
   },

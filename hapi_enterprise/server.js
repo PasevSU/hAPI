@@ -389,7 +389,7 @@ let backupScheduleTimer = null, backupScheduleNext = null;
 async function listBackupFiles() {
   const dir = backupsDir; let entries = [];
   try { entries = (await fsp.readdir(dir)).filter(n => n.endsWith('.sqlite')) } catch (e) { if (e.code !== 'ENOENT') throw e }
-  const out = []; for (const name of entries) { try { const st = await fsp.stat(path.join(dir, name)); out.push({ name, mtime: st.mtimeMs }) } catch { } }
+  const out = []; for (const name of entries) { try { const st = await fsp.stat(path.join(dir, name)); out.push({ name, mtime: st.mtimeMs }) } catch { /* файл, изчезнал между readdir и stat, се прескача */ } }
   out.sort((a, b) => a.mtime - b.mtime); return out;
 }
 async function pruneBackups(maxKeep) {
@@ -605,7 +605,7 @@ async function handler(req, res) {
     const startedAt = process.hrtime.bigint(); let reqId = req.headers['x-request-id'];
     if (typeof reqId !== 'string' || !/^[A-Za-z0-9._-]{1,64}$/.test(reqId)) reqId = crypto.randomBytes(8).toString('hex');
     req.log = log.child({ ns: 'http', reqId });
-    try { res.setHeader('X-Request-Id', reqId) } catch { }
+    try { res.setHeader('X-Request-Id', reqId) } catch { /* заглавките може вече да са изпратени — логът не бива да чупи отговора */ }
     res.on('finish', () => {
       try {
         const ms = Number(process.hrtime.bigint() - startedAt) / 1e6;
@@ -614,7 +614,7 @@ async function handler(req, res) {
         const listener = isAdminListener ? 'admin' : req.hapiPublicOnly ? 'gateway' : 'public';
         const declared = Number(res.getHeader && (res.getHeader('content-length') || 0)) || 0;
         observer.observe({ method: req.method, path: String(req.url || '/'), status: res.statusCode, ms, bytesIn: Number(req.headers['content-length'] || 0) || 0, bytesOut: declared, listener });
-      } catch { }
+      } catch { /* логът на заявката не бива да чупи отговора */ }
     });
     const isAdminListener = ingressMode && req.socket.localPort === adminPort; req.ingress = isAdminListener;
     // Peer allowlist before any routing: the ingress listener trusts only the Supervisor
@@ -907,7 +907,7 @@ async function handler(req, res) {
       const dir = backupsDir; let entries = [];
       try { entries = (await fsp.readdir(dir)).filter(n => n.endsWith('.sqlite')) } catch (e) { if (e.code !== 'ENOENT') throw e }
       const backups = [];
-      for (const name of entries) { try { const st = await fsp.stat(path.join(dir, name)); backups.push({ name, bytes: st.size, createdAt: st.mtime.toISOString() }) } catch { } }
+      for (const name of entries) { try { const st = await fsp.stat(path.join(dir, name)); backups.push({ name, bytes: st.size, createdAt: st.mtime.toISOString() }) } catch { /* архив, изчезнал между readdir и stat, се прескача */ } }
       backups.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       return json(res, 200, { backups, mirror: backupsMirrorDir ? { dir: backupsMirrorDir } : null });
     }
@@ -1036,7 +1036,7 @@ async function handler(req, res) {
     if (url.pathname === '/ready' && method === 'GET') {
       // Readiness (не liveness): проверява реалните зависимости, за да не се праща трафик към счупен процес.
       const checks = { storage: false, db: false, rules: false };
-      try { const probe = path.join(root, '.ready-' + process.pid); await fsp.writeFile(probe, 'ok', { flag: 'wx' }); await fsp.unlink(probe); checks.storage = true } catch { }
+      try { const probe = path.join(root, '.ready-' + process.pid); await fsp.writeFile(probe, 'ok', { flag: 'wx' }); await fsp.unlink(probe); checks.storage = true } catch { /* недостъпно за запис хранилище е валиден резултат (checks.storage=false) */ }
       // Дълбока проверка: PRAGMA quick_check хваща повредени страници, които не пречат
       // на отварянето, но правят записа опасен. Състоянието е отделно поле (db.state),
       // за да остане `checks` стабилен договор за probe-овете: ok | degraded | failed.
@@ -1106,7 +1106,7 @@ async function handler(req, res) {
     // Статиката се търси първо до server.js (така е в контейнера: /app/ui, /app/*.js),
     // после в родителската папка (така е при разработка от repo root). Липсващ файл
     // връща 404, а не 500 — иначе UI-ят „гърми" само в add-on-а.
-    const uiFile = rel => { const candidates = [path.join(__dirname, rel)]; const prefix = 'hapi_enterprise/'; if (rel.startsWith(prefix)) candidates.push(path.join(__dirname, rel.slice(prefix.length))); candidates.push(path.join(__dirname, '..', rel)); for (const candidate of candidates) { try { if (fs.statSync(candidate).isFile()) return candidate } catch { } } return null };
+    const uiFile = rel => { const candidates = [path.join(__dirname, rel)]; const prefix = 'hapi_enterprise/'; if (rel.startsWith(prefix)) candidates.push(path.join(__dirname, rel.slice(prefix.length))); candidates.push(path.join(__dirname, '..', rel)); for (const candidate of candidates) { try { if (fs.statSync(candidate).isFile()) return candidate } catch { /* кандидатът просто не съществува — търсим следващия */ } } return null };
     if (method === 'GET' && UI_FILES[url.pathname]) {
       const [rel, type] = UI_FILES[url.pathname]; const file = uiFile(rel);
       if (!file) { req.log.warn('ui.asset.missing', { ns: 'ui', asset: rel }); return fail(res, 404, 'Not found') }
@@ -1145,7 +1145,7 @@ async function handler(req, res) {
       if (!a) return fail(res, 404, 'Not found');
       observer.visit({ portalId: a.portalId || '', qr: true });
       let manifest = {};
-      try { manifest = JSON.parse(fs.readFileSync(path.join(root, a.relativeDirectory, 'manifest.json'), 'utf8')) } catch { }
+      try { manifest = JSON.parse(fs.readFileSync(path.join(root, a.relativeDirectory, 'manifest.json'), 'utf8')) } catch { /* липсващ или повреден манифест значи празен обект */ }
       const org = htmlEsc(manifest.organization || ''), project = htmlEsc(manifest.project || ''), campaign = htmlEsc(manifest.campaign || '');
       const files = Array.isArray(manifest.files) ? manifest.files : [];
       const rows = files.map(f => '<tr><td>' + htmlEsc(f.name || f.id || '') + '</td><td>' + htmlEsc(String(f.sha256 || '').slice(0, 12)) + '</td></tr>').join('');
@@ -1794,7 +1794,7 @@ async function handler(req, res) {
           let names = []; try { names = (await fsp.readdir(tsaDir)).filter(n => n.endsWith('.json')).sort() } catch (e) { if (e.code !== 'ENOENT') throw e }
           const out = [];
           for (const name of names.slice(-40)) {
-            try { out.push(JSON.parse(await fsp.readFile(path.join(tsaDir, name), 'utf8'))) } catch { }
+            try { out.push(JSON.parse(await fsp.readFile(path.join(tsaDir, name), 'utf8'))) } catch { /* повреден TSA запис се прескача, останалите се показват */ }
           }
           return out.sort((a, b) => String(b.at).localeCompare(String(a.at)))
         };
@@ -2342,7 +2342,7 @@ async function bundleRoles(base) {
     const names = (await fsp.readdir(path.join(base, 'subkeys'))).filter(n => n.endsWith('.json'));
     const roles = new Set();
     for (const name of names) {
-      try { const meta = JSON.parse(await fsp.readFile(path.join(base, 'subkeys', name), 'utf8')); const role = String((meta && (meta.role || meta.purpose)) || '').trim().toLowerCase(); if (role) roles.add(role) } catch { }
+      try { const meta = JSON.parse(await fsp.readFile(path.join(base, 'subkeys', name), 'utf8')); const role = String((meta && (meta.role || meta.purpose)) || '').trim().toLowerCase(); if (role) roles.add(role) } catch { /* липсващ мета файл значи „няма роля“ */ }
     }
     return [...roles];
   } catch { return [] }
@@ -2372,8 +2372,8 @@ async function importKeyBundles() {
 async function firstRunSeed() {
   if (process.env.HAPI_FIRST_RUN_SEED !== '1') return;
   const marker = path.join(root, '.first-run-done');
-  try { await fsp.access(marker); return } catch { }
-  let init = {}; try { init = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || '/data/options.json', 'utf8')) } catch { }
+  try { await fsp.access(marker); return } catch { /* ENOENT значи „още не е стартиран“ — това е очакваното */ }
+  let init = {}; try { init = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || '/data/options.json', 'utf8')) } catch { /* липсващи опции значат празен обект (първи старт) */ }
   const str = v => typeof v === 'string' ? v.trim() : '';
   const dbName = str(init.db_name);
   const slug = dbName.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'files';

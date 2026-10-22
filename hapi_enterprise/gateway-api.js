@@ -177,7 +177,7 @@ function seedRules(target) {
       fs.copyFileSync(src, dest);
       try {
         fs.chmodSync(dest, 0o600);
-      } catch {}
+      } catch { /* chmod не е задължителен на всички файлови системи */ }
       copied.push(name);
     }
     return { dir, copied };

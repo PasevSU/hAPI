@@ -39,7 +39,7 @@ async function canBind(host, port) {
   });
 }
 
-async function freePort(host = '127.0.0.1', { tries = 25 } = {}) {
+async function freePort(host = '127.0.0.1', { tries = 60 } = {}) {
   for (let i = 0; i < tries; i++) {
     const port = await new Promise((resolve, reject) => {
       const server = net.createServer();
@@ -55,6 +55,11 @@ async function freePort(host = '127.0.0.1', { tries = 25 } = {}) {
     // номер → сървърът пада с EADDRINUSE при втория listen. Затова помним какво
     // вече сме дали в този процес и не го даваме повторно.
     if (handedOut.has(port)) continue;
+    // Тестове смятат `port + N` за втори/трети listener (най-голямото срещано е +500).
+    // Ако ядрото даде порт съвсем близо до 65535, сметката излиза извън диапазона
+    // (`ERR_SOCKET_BAD_PORT`), затова оставяме 1000 номера резерв отгоре. Прагът НЕ е
+    // 60000: на тази машина ядрото дава портове от порядъка на 61xxx.
+    if (port > 64535) continue;
     const probe = await canBind(host, port);
     if (probe.ok) {
       handedOut.add(port);

@@ -86,7 +86,7 @@ function probeHealth(port, timeoutMs) {
     });
     req.on('error', () => resolve(false));
     req.on('timeout', () => { req.destroy(); resolve(false); });
-    setTimeout(() => { try { req.destroy(); } catch {} resolve(false); }, timeoutMs);
+    setTimeout(() => { try { req.destroy(); } catch { /* унищожаването на вече затворена заявка не е грешка */ } resolve(false); }, timeoutMs);
   });
 }
 
@@ -109,12 +109,12 @@ async function main() {
   console.log('Admin GUI:       http://127.0.0.1:' + env.ADMIN_PORT + '/admin');
   const child = spawnServer(env);
   child.on('exit', code => process.exit(code == null ? 0 : code));
-  const shutdown = () => { try { child.kill(); } catch {} process.exit(0); };
+  const shutdown = () => { try { child.kill(); } catch { /* процесът може вече да е спрял — kill хвърля */ } process.exit(0); };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
   if (!(await waitForHealth(env.PORT))) {
     console.error('Server did not become healthy in time.');
-    try { child.kill(); } catch {}
+    try { child.kill(); } catch { /* процесът може вече да е спрял — kill хвърля */ }
     process.exit(1);
   }
   console.log('Backend ready · public API http://127.0.0.1:' + env.PORT + ' · admin GUI http://127.0.0.1:' + env.ADMIN_PORT + '/admin');
