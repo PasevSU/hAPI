@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.16
+# Състояние на изданието — hAPI Enterprise 0.69.17
 
-Генериран: 2026-10-22 · Версия: **0.69.16** · Клон: `main`
+Генериран: 2026-10-22 · Версия: **0.69.17** · Клон: `main`
 
 Този отчет събира на едно място доказателствата: какво е проверено, с какво и къде е доказано.
 Подробният разказ е в `documentation/07_RELEASE/AUDIT-PROTOCOL.md`.
@@ -9,14 +9,14 @@
 
 | Проверка                      | Команда                                         | Резултат                                                      |
 | ----------------------------- | ----------------------------------------------- | ------------------------------------------------------------- |
-| Тестове                      | `node scripts/test-matrix.cjs`                  | **173/173** за ~160 s (един опит)                              |
-| Издание                      | `node scripts/verify-release.cjs --with-tests`  | **21/21** сценария (S01–S21), вкл. S20 = 173/173               |
+| Тестове                      | `node scripts/test-matrix.cjs`                  | **178/178** за ~140 s (един опит)                              |
+| Издание                      | `node scripts/verify-release.cjs --with-tests`  | **21/21** сценария (S01–S21), вкл. S20 = 178/178               |
 | Логически одит                | `node scripts/logic-audit.cjs --gate`           | 299 файла · 52 496 реда · **0** critical/high · 7 с обосновка |
 | Скенер за лош код             | `node scripts/bad-code-scan.cjs --gate`         | **0** critical/high · всички находки с обосновка              |
-| Таг = версия                 | `node scripts/check-tag-version.cjs v0.69.16`   | ✔ `config.yaml` = `manifest.json` = таг                        |
-| Документи                    | `node tests/docs-consistency.cjs`               | ✔ 3 документа на версия 0.69.16, без счупени връзки            |
+| Таг = версия                 | `node scripts/check-tag-version.cjs v0.69.17`   | ✔ `config.yaml` = `manifest.json` = таг                        |
+| Документи                    | `node tests/docs-consistency.cjs`               | ✔ 3 документа на версия 0.69.17, без счупени връзки            |
 | Changelog на add-on-а         | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален                                                    |
-| Сценарии                     | `node tests/scenario-matrix.cjs`                | ✔ 62 области · 44 маршрута · 173 тестови файла                 |
+| Сценарии                     | `node tests/scenario-matrix.cjs`                | ✔ 62 области · 44 маршрута · 178 тестови файла                 |
 | CI / CodeQL (`main`)          | GitHub Actions                                  | след push                                                     |
 | Release workflow (`v0.69.15`) | GitHub Actions                                  | виж `gh run list --repo PasevSU/hAPI`                         |
 | HACS Validate + Release       | GitHub Actions                                  | виж `gh run list --repo PasevSU/hapi-enterprise-integration`  |
@@ -25,12 +25,29 @@
 
 | Файл                                      | Брой файла | Проверка                   |
 | ----------------------------------------- | ---------- | -------------------------- |
-| `hapi_enterprise-0.69.16.tar.gz`          | 123        | = дървото (S08)            |
-| `hapi_enterprise-integration-0.69.16.zip` | 22         | = дървото (S09)            |
+| `hapi_enterprise-0.69.17.tar.gz`          | 123        | = дървото (S08)            |
+| `hapi_enterprise-integration-0.69.17.zip` | 22         | = дървото (S09)            |
 | `repository.yaml`                         | —          | наличен, с валидна сума    |
 | `RELEASE.json` + `SHA256SUMS.txt`         | —          | 4 артефакта с валидни суми |
 
-## 3. Какво влезе в 0.69.16
+## 3. Какво влезе в 0.69.17
+
+Тестовете проверяват **очаквания резултат**, не само че кодът не гърми.
+
+- `tests/oracle-digest-chain.cjs`: един файл → един `sha256` през пет изхода; PDF байтово
+  възпроизводим при фиксирана дата; CMS подписът пасва на `sha256(pdf)`; одитната верига се
+  преизчислява ред по ред; криптираният файл е точно `[hapiE1][iv12][tag16][данни]`.
+- `tests/oracle-lifecycle.cjs`: точни стойности по подразбиране, 409 при повторен slug,
+  три отказа, след които порталът е дълбоко равен на себе си; потребител без `passwordHash`.
+- `tests/oracle-rbac-matrix.cjs`: независима таблица 24 × 3 × 4 = **288 решения**.
+- `tests/oracle-manifest-rules.cjs`: точното тяло на шаблона и точните кодове на нарушения
+  (`MISSING_START@blocks`, `UNKNOWN_BLOCK_TYPE@blocks[1].type`, `FORBIDDEN_FIELD@...`).
+- `tests/oracle-slug-and-paths.cjs`: смяната на slug мести **и адреса**, не само полето.
+- Поправено: PDF-ът не беше възпроизводим (милисекунди в XMP) → `createdAt` + `X-PDF-ISSUED-AT`;
+  отговорът при създаване на потребител връщаше `passwordHash`; `BUG-06` — сменен slug
+  оставяше `api/<стар slug>` и публичните артефакти висяха на адрес, който дава `404`.
+
+## 3a. Какво влезе в 0.69.16
 
 Всеки сценарий на кода е и GUI тест — и три реални дефекта, които тези тестове намериха.
 
@@ -46,7 +63,7 @@
   резултатът изчезваше след действие (пре-рисуване след всяко действие); късното зареждане
   на връзката изтриваше екрана.
 
-## 3a. Какво влезе в 0.69.15
+## 3б. Какво влезе в 0.69.15
 
 Ограничаване на грешните опити по самоличност (`BUG-05`). Зад Home Assistant Ingress всички
 заявки идват от един peer, затова лимит по IP заключваше целия панел заради един клиент.
@@ -60,7 +77,7 @@
 - Тестове: `tests/admin-throttle.cjs` и `tests/auth.cjs` пазят поведението; обяснение в
   `documentation/02_TO_BE_ARCHITECTURE/SECURITY_MODEL.md`.
 
-## 3б. Какво влезе в 0.69.14
+## 3в. Какво влезе в 0.69.14
 
 Подпис на отчетите (`RS-06`): PDF/A-3 структура и отделен CMS (PKCS#7) подпис.
 

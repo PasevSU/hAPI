@@ -119,7 +119,18 @@ function qrMatrix(text, level) {
   }
   return rows;
 }
-function render(blocks, { title = '', watermark = '', lang = 'bg', attachments = [] } = {}) {
+// `createdAt` е част от договора, не „украшение“: отчетът е доказателство и при ЕДИН И
+// СЪЩИ входни данни (манифест + дата на издаване) трябва да излиза ЕДИН И СЪЩ файл.
+// Затова датата се подава отвън, а във файла влиза С ТОЧНОСТ ДО СЕКУНДА — милисекундите
+// правеха две рендирания в една секунда различни и отпечатъкът не се възпроизвеждаше.
+function stampOf(value) {
+  const date = value == null ? new Date() : value instanceof Date ? value : new Date(String(value));
+  const time = Number.isNaN(date.getTime()) ? new Date() : date;
+  const iso = time.toISOString();
+  return { iso: iso.slice(0, 19) + 'Z', pdf: iso.replace(/[-:T]/g, '').slice(0, 14) + 'Z' };
+}
+function render(blocks, { title = '', watermark = '', lang = 'bg', attachments = [], createdAt = null } = {}) {
+  const stamp = stampOf(createdAt);
   const used = {}; const fontIds = {}; const faces = {};
   const face = kind => { if (!faces[kind]) { faces[kind] = { f: font(kind), key: 'F' + (Object.keys(faces).length + 1), used: new Map() } } return faces[kind] };
   const measure = (kind, s, size) => { const F = face(kind).f; let w = 0; for (const ch of s) w += F.adv(F.glyph(ch.codePointAt(0))); return w * size / F.upm };
@@ -285,7 +296,7 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
   // XMP с `pdfaid:part=3` + `conformance=B` и — по избор — вграден файл (манифестът),
   // защото точно вграденият файл отличава A-3 от A-2. НЕ се твърди съответствие: то се
   // удостоверява само от валидатор (veraPDF), а тук се строи САМО структурата.
-  const created = new Date().toISOString();
+  const created = stamp.iso;
   const xmp = `<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="hAPI Enterprise">
  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -307,7 +318,7 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
     if (!att || !att.name || !Buffer.isBuffer(att.data)) continue;
     const embedded = reserve();
     const payload = zlib.deflateSync(att.data);
-    stream(embedded, `/Type /EmbeddedFile /Subtype ${pdfName(String(att.mime || 'application/octet-stream'))} /Filter /FlateDecode /Params << /Size ${att.data.length} /ModDate (D:${created.replace(/[-:T]/g, '').slice(0, 14)}Z) >>`, payload);
+    stream(embedded, `/Type /EmbeddedFile /Subtype ${pdfName(String(att.mime || 'application/octet-stream'))} /Filter /FlateDecode /Params << /Size ${att.data.length} /ModDate (D:${stamp.pdf}) >>`, payload);
     const filespec = reserve();
     const safeName = String(att.name).replace(/[()\\]/g, '_').slice(0, 120);
     obj(filespec, `<< /Type /Filespec /F (${safeName}) /UF <${u16hex(safeName)}> /Desc <${u16hex(String(att.description || '').slice(0, 200))}> /EF << /F ${embedded} 0 R >> /AFRelationship /Data >>`);
@@ -318,7 +329,7 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
     : '';
   const afEntry = fileRefs.length ? ` /AF [${fileRefs.map(f => `${f.ref} 0 R`).join(' ')}]` : '';
   obj(catalog, `<< /Type /Catalog /Pages ${pagesRef} 0 R /Metadata ${metaRef} 0 R /Lang (${String(lang).slice(0, 8)})${namesDict}${afEntry} >>`);
-  obj(info, `<< /Title <${u16hex(String(title).slice(0, 200))}> /Producer (hAPI Enterprise) /CreationDate (D:${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}Z) >>`);
+  obj(info, `<< /Title <${u16hex(String(title).slice(0, 200))}> /Producer (hAPI Enterprise) /CreationDate (D:${stamp.pdf}) >>`);
   const head = Buffer.from('%PDF-1.5\n%\xE2\xE3\xCF\xD3\n', 'latin1'), parts = [head], offs = []; let pos = head.length;
   for (const o of objs) { offs.push(pos); parts.push(o); pos += o.length }
   let xref = `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + offs.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('');

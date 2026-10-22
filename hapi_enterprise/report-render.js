@@ -183,11 +183,16 @@ function renderPdf(input, options = {}) {
         data: Buffer.from(JSON.stringify(manifest, null, 2), 'utf8'),
       },
     ];
+  // Датата на издаване е част от входа: при подадена стойност (`options.createdAt` или
+  // `manifest.createdAt`/`generatedAt`) отчетът е ВЪЗПРОИЗВОДИМ — същият манифест дава
+  // същия файл и същия отпечатък. Без нея се взима часовникът, както преди.
+  const createdAt = options.createdAt || manifest.createdAt || manifest.generatedAt || null;
   return pdfWriter.render(blocks, {
     title: `hAPI report — ${manifest.profile}`.slice(0, 200),
     watermark,
     lang: String(options.lang || 'bg').slice(0, 8),
     attachments,
+    createdAt,
   });
 }
 
