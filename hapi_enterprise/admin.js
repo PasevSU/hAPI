@@ -254,26 +254,21 @@ Object.assign(ADMIN_DIC.de, {
 const bytesToB64u = (bytes) => btoa(Array.from(new Uint8Array(bytes), (b) => String.fromCharCode(b)).join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 function secretField(label, control) {
   const wrap = document.createElement('label');
-  wrap.style.cssText = 'display:block;margin:12px 0 0;font-size:13px';
+  wrap.className = 'field';
   const caption = document.createElement('span');
   caption.textContent = label;
-  caption.style.cssText = 'display:block;margin:0 0 4px;color:var(--muted,#67708c)';
   wrap.append(caption, control);
   return wrap;
 }
 function openSecretDialog() {
-  const inputStyle = 'width:100%;box-sizing:border-box;font:inherit;padding:8px;border-radius:8px;border:1px solid var(--border-strong,#cfd5e6)';
   const area = document.createElement('textarea');
   area.rows = 6;
   area.placeholder = t('Текстът, който искаш да споделиш (парола, IBAN, ключ…)');
-  area.style.cssText = inputStyle.replace('font:inherit', 'font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace') + ';resize:vertical';
   const hint = document.createElement('input');
   hint.type = 'text';
   hint.maxLength = 200;
   hint.placeholder = t('Подсказка — открит текст, който сървърът вижда (по избор)');
-  hint.style.cssText = inputStyle;
   const ttl = document.createElement('select');
-  ttl.style.cssText = inputStyle;
   for (const [value, label] of [['3600', '1 час'], ['86400', '24 часа'], ['604800', '7 дни'], ['2592000', '30 дни']]) {
     const option = document.createElement('option');
     option.value = value;
@@ -282,7 +277,6 @@ function openSecretDialog() {
   }
   ttl.value = '86400';
   const views = document.createElement('select');
-  views.style.cssText = inputStyle;
   for (const value of ['1', '2', '3', '5', '10']) {
     const option = document.createElement('option');
     option.value = value;
@@ -296,23 +290,23 @@ function openSecretDialog() {
   password.type = 'password';
   password.autocomplete = 'new-password';
   password.placeholder = t('Втора парола — подателят я дава отделно от линка');
-  password.style.cssText = inputStyle + ';flex:1 1 auto';
   const passwordToggle = node('button', t('Покажи'));
   passwordToggle.type = 'button';
-  passwordToggle.style.cssText = 'padding:8px 12px;border-radius:8px;border:1px solid var(--border-strong,#cfd5e6);background:#fff;cursor:pointer;white-space:nowrap';
+  passwordToggle.className = 'btn-ghost';
   passwordToggle.onclick = () => {
     const hidden = password.type === 'password';
     password.type = hidden ? 'text' : 'password';
     passwordToggle.textContent = t(hidden ? 'Скрий' : 'Покажи');
   };
   const passwordRow = document.createElement('div');
-  passwordRow.style.cssText = 'display:flex;gap:8px;align-items:center';
+  passwordRow.className = 'field-row';
   passwordRow.append(password, passwordToggle);
   const note = node('p', t('Целият линк е след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока.'));
-  note.style.cssText = 'font-size:12px;color:var(--muted,#67708c);margin:12px 0 0;line-height:1.5';
+  note.className = 'secret-note';
   const pwdNote = node('p', t('Паролата е втори слой шифроване: без нея дори целият линк не е достатъчен. Сървърът пази само отпечатък, за да не изгори преглед при сгрешена парола.'));
-  pwdNote.style.cssText = note.style.cssText;
+  pwdNote.className = 'secret-note';
   const body = document.createElement('div');
+  body.className = 'secret-form';
   body.append(
     secretField(t('Тайна'), area),
     secretField(t('Подсказка'), hint),
@@ -369,15 +363,17 @@ function openSecretDialog() {
     const link = location.origin + base + created.path + '#' + secretId + bytesToB64u(linkKeyBytes);
     d.close();
     const out = document.createElement('div');
+    out.className = 'secret-form';
     const code = node('code', link);
-    code.style.cssText = 'display:block;word-break:break-all;font:13px ui-monospace,Menlo,monospace;background:var(--surface-2,#f8fafc);padding:10px;border-radius:8px';
+    code.className = 'secret-link';
     const copy = node('button', t('Копирай'));
     copy.type = 'button';
+    copy.className = 'btn-ghost';
     copy.onclick = () => copyText(link);
     const meta = node('p', t('Линкът е копиран. Валиден до ') + new Date(created.expiresAt).toLocaleString() + t(', прегледи: ') + created.maxViews + '.');
-    meta.style.cssText = 'font-size:13px;color:var(--muted,#67708c)';
+    meta.className = 'secret-meta';
     const receipt = node('p', t('Чек') + ': ' + (created.receipt || '—') + (created.requiresPassword ? ' · ' + t('с парола') : ''));
-    receipt.style.cssText = meta.style.cssText;
+    receipt.className = 'secret-meta secret-receipt';
     out.append(meta, code, copy, receipt);
     dialog(t('Тайна връзка'), out);
     void copyText(link);

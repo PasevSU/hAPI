@@ -713,6 +713,76 @@
       word-break: break-all
     }
 
+    /* Диалог „Сподели тайна“: една вертикална решетка, общи разстояния и токени —
+       без inline стилове в admin.js. */
+    .secret-form {
+      display: grid;
+      gap: 14px
+    }
+
+    .secret-form .field>span {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: var(--text-dim)
+    }
+
+    .secret-form input,
+    .secret-form select,
+    .secret-form textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm)
+    }
+
+    .secret-form textarea {
+      font: 13px/1.5 var(--mono);
+      resize: vertical
+    }
+
+    .secret-form .field-row {
+      display: flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .secret-form .field-row input {
+      flex: 1 1 auto
+    }
+
+    .secret-note {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-faint)
+    }
+
+    .secret-link {
+      display: block;
+      padding: 10px 12px;
+      font: 13px var(--mono);
+      word-break: break-all;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm)
+    }
+
+    .secret-meta {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-dim)
+    }
+
+    .secret-receipt {
+      font: 13px var(--mono);
+      color: var(--text)
+    }
+
     .api-user-create {
       display: flex;
       flex-wrap: wrap;

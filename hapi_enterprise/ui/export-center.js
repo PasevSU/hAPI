@@ -1,9 +1,11 @@
 'use strict';
-// Export & Download Center (FD-2) — интерактивен модел на правилата за експорт.
+// Export & Download Center (FD-2).
 //
-// Панелът НЕ извършва трансфер. Той изчислява реалната конфигурация чрез
-// HapiExportRules: режим, съдържание, формат, политика при конфликт, име на пакета,
-// дърво на пакета и валидация. Всичко, което не е реализирано, е надписано „планирано“.
+// Правилата и preflight-ът идват от add-on-а (`GET /admin/api/v2/export/rules` и
+// `POST /admin/api/v2/export/preflight`) и той е източникът на истина. Локалният
+// преглед по HapiExportRules (същият споделен модул, който ползва backend-ът) се
+// показва САМО когато няма връзка и е изрично надписан „офлайн преглед“ — не се
+// представя за резултат от сървъра.
 (function () {
   const R = () => globalThis.HapiExportRules;
   const esc = (s) =>
@@ -21,6 +23,8 @@
     readOnly: false,
     caseId: 'CASE001',
     files: ['protokol-2026-114.pdf', 'tablica-hashes.xlsx'],
+    // Отговорът от add-on-а: правила и последен preflight.
+    srv: { rules: null, rulesError: '', preflight: null, preflightError: '', busy: false },
     // Реален експорт (свързан режим): портал и последен пакет.
     pkg: { portalId: '', last: null, error: '', loaded: false },
   };
@@ -94,8 +98,8 @@
     host.innerHTML = `
       <div class="page-title">
         <h1>Export &amp; Download Center</h1>
-        <p>Правила за изтегляне и експорт · модел без реален трансфер</p>
-        <span class="badge demo">интерактивен модел</span>
+        <p>Правила за изтегляне и експорт · проверка и пакет от add-on-а</p>
+        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'свързан с add-on-а' : 'офлайн преглед'}</span>
       </div>
 
       <div class="two-col">
@@ -106,20 +110,19 @@
               <label>Режим</label>
               <select id="ec-mode">
                 ${R()
-                  .MODES.map((m) => `<option value="${m.id}" ${m.id === cfg.mode ? 'selected' : ''}>${esc(m.label)}</option>`)
-                  .join('')}
+        .MODES.map((m) => `<option value="${m.id}" ${m.id === cfg.mode ? 'selected' : ''}>${esc(m.label)}</option>`)
+        .join('')}
               </select>
             </div>
             <div class="field">
               <label>Съдържание на пакета</label>
               <div class="checks">
                 ${R()
-                  .CONTENT_IDS.map(
-                    (id) => `<label><input type="checkbox" data-content="${id}" ${
-                      cfg.contents.includes(id) ? 'checked' : ''
-                    }/> ${esc(R().contentLabel(id))}</label>`,
-                  )
-                  .join('')}
+        .CONTENT_IDS.map(
+          (id) => `<label><input type="checkbox" data-content="${id}" ${cfg.contents.includes(id) ? 'checked' : ''
+            }/> ${esc(R().contentLabel(id))}</label>`,
+        )
+        .join('')}
               </div>
             </div>
             <div class="two-col">
@@ -127,16 +130,16 @@
                 <label>Формат</label>
                 <select id="ec-format">
                   ${Object.entries(R().FORMATS)
-                    .map(([id, f]) => `<option value="${id}" ${id === cfg.format ? 'selected' : ''}>${esc(f.label)}</option>`)
-                    .join('')}
+        .map(([id, f]) => `<option value="${id}" ${id === cfg.format ? 'selected' : ''}>${esc(f.label)}</option>`)
+        .join('')}
                 </select>
               </div>
               <div class="field">
                 <label>Местоназначение</label>
                 <select id="ec-location">
                   ${Object.entries(R().LOCATIONS)
-                    .map(([id, l]) => `<option value="${id}" ${id === cfg.location ? 'selected' : ''}>${esc(l.label)}</option>`)
-                    .join('')}
+        .map(([id, l]) => `<option value="${id}" ${id === cfg.location ? 'selected' : ''}>${esc(l.label)}</option>`)
+        .join('')}
                 </select>
               </div>
             </div>
@@ -154,26 +157,24 @@
               <label>При съществуващ файл</label>
               <div class="checks">
                 ${Object.entries(R().ON_CONFLICT)
-                  .map(
-                    ([id, c]) =>
-                      `<label><input type="radio" name="ec-conflict" value="${id}" ${id === cfg.onConflict ? 'checked' : ''}/> ${esc(
-                        c.label,
-                      )}</label>`,
-                  )
-                  .join('')}
+        .map(
+          ([id, c]) =>
+            `<label><input type="radio" name="ec-conflict" value="${id}" ${id === cfg.onConflict ? 'checked' : ''}/> ${esc(
+              c.label,
+            )}</label>`,
+        )
+        .join('')}
               </div>
             </div>
             <div class="checks u-mt">
-              <label><input type="checkbox" id="ec-verify" ${cfg.verifySha256 ? 'checked' : ''} ${
-                locked ? 'disabled' : ''
-              }/> Проверка на SHA-256 след запис</label>
+              <label><input type="checkbox" id="ec-verify" ${cfg.verifySha256 ? 'checked' : ''} ${locked ? 'disabled' : ''
+      }/> Проверка на SHA-256 след запис</label>
               <label><input type="checkbox" id="ec-readonly" ${cfg.readOnly ? 'checked' : ''}/> Read-only атрибут, когато се поддържа</label>
             </div>
-            ${
-              locked
-                ? '<p class="hint">Режимът е доказателствен: проверката на SHA-256 е задължителна и не може да бъде изключена.</p>'
-                : ''
-            }
+            ${locked
+        ? '<p class="hint">Режимът е доказателствен: проверката на SHA-256 е задължителна и не може да бъде изключена.</p>'
+        : ''
+      }
             <p class="hint">Презаписът е изключен по подразбиране; за доказателствени архиви е забранен.</p>
           </div>
         </section>
@@ -191,24 +192,22 @@
           <table class="grid">
             <thead><tr><th>#</th><th>Относителен път</th><th>Тип</th><th>Категория</th></tr></thead>
             <tbody>${plan.entries
-              .map(
-                (e, i) => `<tr><td>${i + 1}</td><td><code>${esc(e.path)}${e.kind === 'folder' ? '/' : ''}</code></td><td>${esc(
-                  e.kind,
-                )}</td><td>${esc(e.content === 'index' ? 'PACKAGE_INDEX.json' : R().contentLabel(e.content))}</td></tr>`,
-              )
-              .join('')}</tbody>
+        .map(
+          (e, i) => `<tr><td>${i + 1}</td><td><code>${esc(e.path)}${e.kind === 'folder' ? '/' : ''}</code></td><td>${esc(
+            e.kind,
+          )}</td><td>${esc(e.content === 'index' ? 'PACKAGE_INDEX.json' : R().contentLabel(e.content))}</td></tr>`,
+        )
+        .join('')}</tbody>
           </table>
           <p class="hint">PACKAGE_INDEX.json съдържа за всеки файл относителен път, размер, SHA-256, тип, източник и резултат от проверката.</p>
-          ${
-            check.errors.length
-              ? `<ul class="err-list">${check.errors.map((e) => `<li>${esc(e.message)}</li>`).join('')}</ul>`
-              : ''
-          }
-          ${
-            check.warnings.length
-              ? `<ul class="hint">${check.warnings.map((w) => `<li>${esc(w.message)}</li>`).join('')}</ul>`
-              : ''
-          }
+          ${check.errors.length
+        ? `<ul class="err-list">${check.errors.map((e) => `<li>${esc(e.message)}</li>`).join('')}</ul>`
+        : ''
+      }
+          ${check.warnings.length
+        ? `<ul class="hint">${check.warnings.map((w) => `<li>${esc(w.message)}</li>`).join('')}</ul>`
+        : ''
+      }
           <div class="u-row u-row-2 u-mt">
             <button type="button" class="btn btn-primary" id="ec-copy">Копирай конфигурацията като JSON</button>
             <button type="button" class="btn" id="ec-download">Свали export_config.json</button>
@@ -218,9 +217,8 @@
       </section>
 
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Пакет и PGP подпис</h2><span class="badge ${connected() ? 'ok' : 'demo'}">${
-          connected() ? 'реален експорт' : 'изисква връзка'
-        }</span></div>
+        <div class="panel-head"><h2>Пакет и PGP подпис</h2><span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'реален експорт' : 'изисква връзка'
+      }</span></div>
         <div class="panel-body">
           <p class="hint">Пакетът е ZIP с <code>PACKAGE_INDEX.json</code>, <code>hashes/sha256sum.txt</code>, манифест и оригиналите. Дали се подписва с PGP се задава в <strong>„Настройки → PGP ключ и автоподписване“</strong> — тук не се пита.</p>
           <div class="u-grid u-grid-fields">
@@ -236,39 +234,125 @@
             <button type="button" class="btn" id="ec-pkg-asc" ${state.pkg.last && state.pkg.last.hasSignature ? '' : 'disabled'}>Свали .asc</button>
             <button type="button" class="btn" id="ec-pkg-verify" ${state.pkg.last && state.pkg.last.hasSignature ? '' : 'disabled'}>Провери подписа</button>
           </div>
-          <p class="hint" id="ec-pkg-state">${
-            !connected()
-              ? 'Демо: създаването на пакет изисква свързан add-on.'
-              : state.pkg.error
-                ? esc(state.pkg.error)
-                : state.pkg.last
-                  ? `Последен пакет: <code>${esc(state.pkg.last.fileName)}</code> · ${state.pkg.last.files} файла · SHA-256 <code>${esc(
-                      String(state.pkg.last.sha256).slice(0, 8),
-                    )}</code> · ${state.pkg.last.hasSignature ? `подпис ${esc(state.pkg.last.signature.keyId)}` : 'без подпис'}`
-                  : 'Избери портал и натисни „Създай и изтегли пакета“.'
-          }</p>
+          <p class="hint" id="ec-pkg-state">${!connected()
+        ? 'Демо: създаването на пакет изисква свързан add-on.'
+        : state.pkg.error
+          ? esc(state.pkg.error)
+          : state.pkg.last
+            ? `Последен пакет: <code>${esc(state.pkg.last.fileName)}</code> · ${state.pkg.last.files} файла · SHA-256 <code>${esc(
+              String(state.pkg.last.sha256).slice(0, 8),
+            )}</code> · ${state.pkg.last.hasSignature ? `подпис ${esc(state.pkg.last.signature.keyId)}` : 'без подпис'}`
+            : 'Избери портал и натисни „Създай и изтегли пакета“.'
+      }</p>
         </div>
       </section>
 
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Enterprise опции (capabilities)</h2><span class="badge demo">по план</span></div>
+        <div class="panel-head">
+          <h2>Правила и проверка от add-on-а</h2>
+          <span class="badge ${state.srv.rules ? 'ok' : 'demo'}">${state.srv.rules ? `схема ${esc(state.srv.rules.schema_version)}` : 'без връзка'}</span>
+        </div>
+        <div class="panel-body">
+          <p class="hint">Правилата се четат от <code>GET /admin/api/v2/export/rules</code>, а проверката минава през
+            <code>POST /admin/api/v2/export/preflight</code> — тоест тук се вижда какво ще направи САМИЯТ add-on,
+            включително проверките на средата (права, свободно място, read-only корени), които браузърът не може да направи.</p>
+          ${state.srv.rulesError ? `<ul class="err-list"><li>${esc(state.srv.rulesError)}</li></ul>` : ''}
+          ${rulesSummaryHtml()}
+          <div class="u-row u-row-2 u-mt">
+            <button type="button" class="btn btn-primary" id="ec-preflight" ${connected() && !state.srv.busy ? '' : 'disabled'}>
+              ${state.srv.busy ? 'Проверка…' : 'Провери конфигурацията (preflight)'}
+            </button>
+          </div>
+          ${preflightHtml()}
+        </div>
+      </section>
+
+      <section class="panel u-mt">
+        <div class="panel-head"><h2>Enterprise опции (capabilities)</h2><span class="badge ${state.srv.rules ? 'ok' : 'demo'}">${state.srv.rules ? 'от add-on-а' : 'офлайн'}</span></div>
         <div class="panel-body">
           <div class="grid-2">
-            ${R()
-              .capabilities()
-              .map(
-                (c) =>
-                  `<div class="cap-row"><span>${esc(c.label)}</span><span class="state-chip ${c.implemented ? 'ok' : 'warn'}">${
-                    c.implemented ? 'готово' : 'планирано'
-                  }</span></div>`,
-              )
-              .join('')}
+            ${(state.srv.rules && Array.isArray(state.srv.rules.capabilities) ? state.srv.rules.capabilities : R().capabilities())
+        .map(
+          (c) =>
+            `<div class="cap-row"><span>${esc(c.label)}</span><span class="state-chip ${c.implemented ? 'ok' : 'warn'}">${c.implemented ? 'готово' : 'планирано'
+            }</span></div>`,
+        )
+        .join('')}
           </div>
-          <p class="hint">Capabilities не се показват като работещи преди реалната им имплементация.</p>
+          <p class="hint">Capabilities не се показват като работещи преди реалната им имплементация; когато има връзка, списъкът идва от add-on-а.</p>
         </div>
       </section>`;
 
     wire(plan, cfg);
+  }
+
+  /** Резюме на правилата, дошли от add-on-а (без измислени стойности). */
+  function rulesSummaryHtml() {
+    const rules = state.srv.rules;
+    if (!rules) {
+      return '<p class="hint">Няма връзка с add-on-а — правилата не са заредени. По-долу виждаш само офлайн преглед по същите споделени правила.</p>';
+    }
+    const profiles = rules.export_profiles && rules.export_profiles.profiles ? Object.keys(rules.export_profiles.profiles) : [];
+    const impl = (rules.capabilities || []).filter((c) => c.implemented).length;
+    const checks = rules.download_rules || {};
+    return `
+      <table class="grid">
+        <thead><tr><th>Правило</th><th>Стойност от add-on-а</th></tr></thead>
+        <tbody>
+          <tr><td>Схема</td><td><code>${esc(rules.schema_version)}</code></td></tr>
+          <tr><td>Профили за експорт</td><td>${profiles.length ? profiles.map((p) => `<code>${esc(p)}</code>`).join(' · ') : 'няма'}</td></tr>
+          <tr><td>Проверка на SHA-256</td><td>${checks.verify_sha256 ? 'задължителна според правилата' : 'по избор'}</td></tr>
+          <tr><td>При конфликт по подразбиране</td><td><code>${esc(checks.on_conflict || '—')}</code></td></tr>
+          <tr><td>Разрешени корени</td><td><code>${esc(((checks.storage || {}).allowed_roots || []).join(', ') || '—')}</code></td></tr>
+          <tr><td>Готови capabilities</td><td>${impl} от ${(rules.capabilities || []).length}</td></tr>
+        </tbody>
+      </table>`;
+  }
+
+  /** Резултатът от preflight-а на add-on-а: истинският отговор, не пресметнат в браузъра. */
+  function preflightHtml() {
+    if (state.srv.preflightError) return `<ul class="err-list"><li>${esc(state.srv.preflightError)}</li></ul>`;
+    const p = state.srv.preflight;
+    if (!p) return '<p class="hint">Preflight още не е пускан в тази сесия.</p>';
+    const failed = (p.preflight && p.preflight.checks ? p.preflight.checks : []).filter((c) => !c.ok);
+    return `
+      <p class="hint summary-line">Пакет <code>${esc(p.packageId || '—')}</code> · ${p.entries ? p.entries.length : 0} записа · ${p.ok ? 'готово за експорт' : 'има пречки'}</p>
+      ${p.summary ? `<p class="hint">${esc(p.summary)}</p>` : ''}
+      ${failed.length
+        ? `<ul class="err-list">${failed.map((c) => `<li><strong>${esc(c.id || '')}</strong> ${esc(c.detail || c.reason || '')}</li>`).join('')}</ul>`
+        : '<p class="hint">Всички проверки на средата минават.</p>'
+      }`;
+  }
+
+  /** Правила от add-on-а — източникът на истина, когато има връзка. */
+  async function loadServerRules() {
+    if (!connected()) return;
+    const r = await api('/admin/api/v2/export/rules');
+    if (!r.ok || !r.data) {
+      state.srv.rulesError = r.error || `HTTP ${r.status}`;
+      return render();
+    }
+    state.srv.rules = r.data;
+    state.srv.rulesError = '';
+    render();
+  }
+
+  /** Проверката минава през СЪРВЪРА: той вижда права, място и read-only корени. */
+  async function runPreflight() {
+    if (!connected()) return toast('Preflight изисква връзка с add-on-а', 'err');
+    state.srv.busy = true;
+    state.srv.preflightError = '';
+    render();
+    const r = await api('/admin/api/v2/export/preflight', { method: 'POST', json: { config: config(), meta: { date: new Date().toISOString(), caseId: state.caseId } } });
+    state.srv.busy = false;
+    if (!r.ok || !r.data) {
+      state.srv.preflightError = r.error || `HTTP ${r.status}`;
+      render();
+      return toast(state.srv.preflightError, 'err');
+    }
+    state.srv.preflight = r.data;
+    render();
+    toast(r.data.ok ? `Preflight OK · ${r.data.packageId}` : 'Preflight намери пречки', r.data.ok ? 'ok' : 'err');
   }
 
   async function loadPackageContext() {
@@ -361,6 +445,8 @@
         render();
       });
     });
+    const preflightButton = q('#ec-preflight');
+    if (preflightButton) preflightButton.addEventListener('click', () => runPreflight());
     const verify = q('#ec-verify');
     if (verify) {
       verify.addEventListener('change', () => {
@@ -420,6 +506,7 @@
   function mount(node) {
     host = node;
     render();
+    if (connected() && !state.srv.rules) void loadServerRules();
   }
 
   window.ExportCenterPanel = { mount, state };

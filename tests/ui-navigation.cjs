@@ -79,5 +79,24 @@ assert.match(css, /\.state-chip::before \{|\.chip::before,/);
 assert.match(css, /\.pf-portal \{[^}]*border-left: 3px solid var\(--accent-2\)/);
 assert.match(filesManager, /class="chip \$\{x\.visibility === 'public' \? 'ok' : ''\}"/);
 
+// 7. Диалогът „Сподели тайна“ е с класове от таблицата със стилове, не с inline стилове:
+//    размерите идват от токените (--radius-sm, --surface-2, --text-dim), за да е съразмерен.
+const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'admin.html'), 'utf8');
+const adminJs = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'admin.js'), 'utf8');
+for (const cls of ['.secret-form', '.secret-link', '.secret-meta', '.secret-note', '.secret-receipt']) {
+  assert.ok(adminHtml.includes(cls + ' {'), 'admin.html: липсва стил за ' + cls);
+}
+assert.ok(adminHtml.includes('.secret-form input,'), 'admin.html: полетата на диалога имат общ стил');
+assert.match(adminHtml, /\.secret-form input,[\s\S]{0,400}border-radius: var\(--radius-sm\)/, 'полетата ползват токена за радиус');
+const openSecret = adminJs.slice(adminJs.indexOf('function openSecretDialog()'), adminJs.indexOf('const secretShare'));
+assert.ok(openSecret.length > 0, 'намирам openSecretDialog');
+assert.equal(/\.style\./.test(openSecret), false, 'диалогът за тайна не пише inline стилове');
+assert.match(openSecret, /className = 'secret-form'/);
+assert.match(openSecret, /className = 'secret-link'/);
+// Inline стиловете в admin.js не бива да растат. Базова линия 17: остават в QR/NFC диалога
+// и йерархията (стар код); диалогът за тайна вече е изцяло с класове.
+const cssTextCount = (adminJs.match(/style\.cssText/g) || []).length;
+assert.ok(cssTextCount <= 17, `inline cssText в admin.js е ${cssTextCount}, над базовата линия 17 — ползвай клас`);
+
 console.log('ui-navigation OK');
 process.exit(0);
