@@ -5,7 +5,7 @@
 //   2. Зададен е ключ, който вече не съществува → пакетът пак се подписва с наличния
 //      ключ, а метаданните носят `signingFallback` (не мълчим за смяната).
 //   3. Няма никакъв ключ със секретна част → ясна 400 грешка, без счупен артефакт.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort, waitHealthy } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -15,7 +15,7 @@ const pgp = require('../hapi_enterprise/pgp.js');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-sign-fallback-'));
-  const port = 37100 + Math.floor(Math.random() * 500);
+  const port = await freePort();
   const token = 'signing-fallback-admin-token-0123456789';
   const base = `http://127.0.0.1:${port}`;
 
@@ -50,17 +50,7 @@ const pgp = require('../hapi_enterprise/pgp.js');
   });
 
   try {
-    let ready = false;
-    for (let i = 0; i < 140; i++) {
-      try {
-        if ((await fetch(base + '/health')).ok) {
-          ready = true;
-          break;
-        }
-      } catch {}
-      await new Promise((r) => setTimeout(r, 50));
-    }
-    assert.ok(ready, 'сървърът стартира');
+    await waitHealthy(child, base, { attempts: 140 });
 
     const portal = await call('/admin/api/portals', { method: 'POST', body: { slug: 'signed', title: 'Signed' } });
     assert.equal(portal.status, 201, JSON.stringify(portal.value));

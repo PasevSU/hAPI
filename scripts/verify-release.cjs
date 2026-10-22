@@ -541,8 +541,11 @@ check('S19', 'Функционално: сървърът стартира от �
 if (flag('with-tests')) {
   check('S20', 'Тестове: целият набор минава', () => {
     const res = spawnSync(process.execPath, [path.join(root, 'scripts', 'run-tests.cjs')], { cwd: root, stdio: 'pipe', encoding: 'utf8' });
-    const tail = String(res.stdout || '').trim().split(/\r?\n/).slice(-1)[0];
-    assert(res.status === 0, 'тестовете не минават: ' + tail);
+    const out = String(res.stdout || '').trim().split(/\r?\n/);
+    const tail = out.slice(-1)[0];
+    // При провал показваме и последните редове от изхода: иначе в CI се вижда само името на
+    // теста, а причината остава скрита в погълнатия stdout.
+    assert(res.status === 0, 'тестовете не минават: ' + tail + '\n' + out.slice(-15).join('\n'));
     return tail;
   });
 }
