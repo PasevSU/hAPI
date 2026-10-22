@@ -414,44 +414,93 @@ function applyBackupSchedule() {
 }
 const json = (res, status, obj, headers = {}) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers }); res.end(JSON.stringify(obj)) };
 const fail = (res, status, message) => json(res, status, { error: message });
-// Bounded authentication failures per peer. Never trust forwarded IP headers.
-// The limit applies only to administrative API routes and does not lock out
-// legitimate public downloads or the Home Assistant ingress UI.
+// Bounded authentication failures.
+//
+// КЛЮЧЪТ Е САМОЛИЧНОСТТА, НЕ IP-ТО (BUG-05). Зад Home Assistant Ingress всички
+// заявки идват от един и същ peer (проксирането на Supervisor), затова лимит по IP
+// означаваше две неща наведнъж: един грешен клиент заключва ЦЕЛИЯ панел, а ротацията
+// на токени от едно място не се забелязва. Затова броячът е по:
+//   • отпечатък на предявения Bearer токен (`t:<sha256/16>` — самият токен НЕ се пази);
+//   • самоличността от Ingress (`u:<user>`), когато токен няма;
+//   • `anon:<peer>` само когато няма нито токен, нито самоличност.
+// Peer-ът остава втори, МНОГО по-висок таван: пази паметта от заливка с случайни
+// токени, без да заключва истинските потребители.
 const authFailures = new Map();
 const AUTH_WINDOW_MS = 60_000, AUTH_MAX_FAILURES = 12;
-function adminGate(req, res, capability, method) {
-  const peer = req.socket.remoteAddress || 'unknown', now = Date.now();
-  let state = authFailures.get(peer);
-  if (state && now - state.since >= AUTH_WINDOW_MS) { authFailures.delete(peer); state = null }
-  if (state && state.count >= AUTH_MAX_FAILURES) {
-    res.setHeader('Retry-After', String(Math.max(1, Math.ceil((AUTH_WINDOW_MS - (now - state.since)) / 1000))));
-    return fail(res, 429, 'Too many authentication attempts');
+const PEER_CEILING = 200;
+const presentedToken = req => String((req.headers && req.headers.authorization) || '').replace(/^Bearer /i, '').trim();
+const throttleKey = req => {
+  const token = presentedToken(req);
+  if (token) return 't:' + crypto.createHash('sha256').update(token).digest('hex').slice(0, 16);
+  const h = req.headers || {};
+  const user = String(h['x-remote-user-id'] || h['x-remote-user-name'] || h['x-remote-user'] || '').trim();
+  if (user) return 'u:' + crypto.createHash('sha256').update(user).digest('hex').slice(0, 16);
+  return 'anon:' + (req.socket.remoteAddress || 'unknown');
+};
+const peerKey = req => 'ip:' + (req.socket.remoteAddress || 'unknown');
+// Един брояч: връща записа, ако е в прозореца, иначе null (изтеклите се трият).
+function throttleState(map, key, now, windowMs = AUTH_WINDOW_MS) {
+  const state = map.get(key);
+  if (!state) return null;
+  if (now - state.since >= windowMs) { map.delete(key); return null }
+  return state;
+}
+function throttleBump(map, key, now, windowMs = AUTH_WINDOW_MS) {
+  const state = throttleState(map, key, now, windowMs) || { since: now, count: 0 };
+  state.count += 1;
+  map.set(key, state);
+  // Паметта е ограничена: изтеклите влизат наново, а при преливка се маха най-старият.
+  if (map.size > 4096) {
+    for (const [k, v] of map) { if (now - v.since >= windowMs) map.delete(k) }
+    if (map.size > 4096) map.delete(map.keys().next().value);
   }
+  return state.count;
+}
+function throttleBlocked(res, state, now, message, windowMs = AUTH_WINDOW_MS) {
+  res.setHeader('Retry-After', String(Math.max(1, Math.ceil((windowMs - (now - state.since)) / 1000))));
+  return fail(res, 429, message);
+}
+function adminGate(req, res, capability, method) {
+  const now = Date.now(), key = throttleKey(req), peer = peerKey(req);
+  // 1. Таванът на peer-а е само предпазител срещу заливка — той не е „заключване по IP“.
+  const peerState = throttleState(authFailures, peer, now);
+  if (peerState && peerState.count >= PEER_CEILING) return throttleBlocked(res, peerState, now, 'Too many authentication attempts');
+  // 2. Истинското ограничение е по самоличност: един клиент не бива да заключва другите.
+  const state = throttleState(authFailures, key, now);
+  if (state && state.count >= AUTH_MAX_FAILURES) return throttleBlocked(res, state, now, 'Too many authentication attempts');
   const role = rbac.resolve(req);
   if (role) {
-    authFailures.delete(peer);
+    authFailures.delete(key);
     if (!rbac.allowed(role, capability || '*', method || req.method)) return fail(res, 403, 'Insufficient role');
     return true;
   }
-  if (!state) { state = { since: now, count: 0 }; authFailures.set(peer, state) }
-  state.count++;
-  if (authFailures.size > 4096) {
-    for (const [ip, v] of authFailures) { if (now - v.since >= AUTH_WINDOW_MS) authFailures.delete(ip) }
-    if (authFailures.size > 4096) authFailures.delete(authFailures.keys().next().value)
-  }
+  throttleBump(authFailures, key, now);
+  throttleBump(authFailures, peer, now);
   fail(res, 401, 'Unauthorized'); return false;
 }
+// Входът се ограничава по АКАУНТ, не по IP (същата причина като adminGate: зад Ingress
+// всички идват от един peer). Peer-ът остава висок таван срещу заливка ПРЕДИ четенето
+// на тялото, за да не се харчи памет за невалидни заявки.
 const loginFailures = new Map();
-const LOGIN_WINDOW_MS = 60_000, LOGIN_MAX_FAILURES = 10;
-function loginGate(req, res) {
-  const peer = req.socket.remoteAddress || 'unknown', now = Date.now();
-  let s = loginFailures.get(peer);
-  if (s && now - s.since >= LOGIN_WINDOW_MS) { loginFailures.delete(peer); s = null }
-  if (s && s.count >= LOGIN_MAX_FAILURES) { res.setHeader('Retry-After', String(Math.max(1, Math.ceil((LOGIN_WINDOW_MS - (now - s.since)) / 1000)))); fail(res, 429, 'Too many login attempts'); return false }
+const LOGIN_WINDOW_MS = 60_000, LOGIN_MAX_FAILURES = 10, LOGIN_PEER_CEILING = 60;
+const accountKey = username => 'u:' + crypto.createHash('sha256').update(String(username || '').toLowerCase()).digest('hex').slice(0, 16);
+function loginPeerGate(req, res) {
+  const now = Date.now(), state = throttleState(loginFailures, peerKey(req), now, LOGIN_WINDOW_MS);
+  // ВАЖНО: throttleBlocked вече е изпратил отговора — връща се false, за да не се пише втори.
+  if (state && state.count >= LOGIN_PEER_CEILING) { throttleBlocked(res, state, now, 'Too many login attempts', LOGIN_WINDOW_MS); return false }
   return true;
 }
-function registerLoginFailure(req) { const peer = req.socket.remoteAddress || 'unknown', now = Date.now(); let s = loginFailures.get(peer); if (!s || now - s.since >= LOGIN_WINDOW_MS) { s = { since: now, count: 0 }; loginFailures.set(peer, s) } s.count++; if (loginFailures.size > 4096) loginFailures.delete(loginFailures.keys().next().value) }
-function clearLoginFailures(req) { loginFailures.delete(req.socket.remoteAddress || 'unknown') }
+function loginAccountGate(res, username) {
+  const now = Date.now(), state = throttleState(loginFailures, accountKey(username), now, LOGIN_WINDOW_MS);
+  if (state && state.count >= LOGIN_MAX_FAILURES) { throttleBlocked(res, state, now, 'Too many login attempts', LOGIN_WINDOW_MS); return false }
+  return true;
+}
+function registerLoginFailure(req, username) {
+  const now = Date.now();
+  throttleBump(loginFailures, accountKey(username), now, LOGIN_WINDOW_MS);
+  throttleBump(loginFailures, peerKey(req), now, LOGIN_WINDOW_MS);
+}
+function clearLoginFailures(username) { loginFailures.delete(accountKey(username)) }
 const clean = x => typeof x === 'string' ? x.trim() : '';
 const htmlEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const validSlug = x => /^[a-z0-9][a-z0-9-]{0,62}$/.test(x);
@@ -674,13 +723,15 @@ async function handler(req, res) {
     const parts = url.pathname.split('/').filter(Boolean); const method = req.method; counters.requests++; if (req.hapiPublicOnly && (parts[0] === 'admin' || parts[0] === 'ui')) return fail(res, 404, 'Not found'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'no-referrer'); if (!isAdminListener) res.setHeader('X-Frame-Options', 'DENY');
     for (const [k, v] of Object.entries(apiVersion.headers(url))) res.setHeader(k, v);
     if (url.pathname === '/api/v1/auth/login' && method === 'POST') {
-      if (!loginGate(req, res)) return;
+      if (!loginPeerGate(req, res)) return;
       const b = await parse(req); const username = clean(b.username), password = String(b.password || '');
       if (!/^[A-Za-z0-9_.@-]{1,64}$/.test(username) || !password || password.length > 200) return fail(res, 400, 'Username or password required');
+      // Лимитът е по АКАУНТ: грешките на един потребител не заключват останалите зад Ingress.
+      if (!loginAccountGate(res, username)) return;
       const user = metadataStore.getUser(username);
-      if (!user || !user.active || !verifyPassword(password, user.passwordHash)) { registerLoginFailure(req); void audit('auth.login_failed', { username }); return fail(res, 401, 'Invalid credentials') }
+      if (!user || !user.active || !verifyPassword(password, user.passwordHash)) { registerLoginFailure(req, username); void audit('auth.login_failed', { username }); return fail(res, 401, 'Invalid credentials') }
       let expiresAt = null; const ttl = Number(b.ttlSeconds); if (Number.isFinite(ttl) && ttl > 0) { if (ttl > 31536000) return fail(res, 400, 'TTL exceeds maximum'); expiresAt = new Date(Date.now() + ttl * 1000).toISOString() }
-      const token = newSessionToken(); metadataStore.createSession(keyDigest(token), username, expiresAt); clearLoginFailures(req);
+      const token = newSessionToken(); metadataStore.createSession(keyDigest(token), username, expiresAt); clearLoginFailures(username);
       void audit('auth.login', { username });
       return json(res, 200, { token, username, scopes: user.scopes, expiresAt });
     }

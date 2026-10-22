@@ -40,6 +40,11 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
     const carolLogin = await json('/api/v1/auth/login', 'POST', { username: 'carol', password: 'carol-pass-123' }); assert.equal(carolLogin.status, 200);
     for (let i = 0; i < 10; i++) { assert.equal((await json('/api/v1/auth/login', 'POST', { username: 'carol', password: 'wrong-pass-000' })).status, 401) }
     assert.equal((await json('/api/v1/auth/login', 'POST', { username: 'carol', password: 'wrong-pass-000' })).status, 429);
-    console.log('PASS auth: hashing, login/logout/me, scopes, inactive lockout, user CRUD, rate limiting');
+    // BUG-05: заключването е по АКАУНТ, не по IP. Зад Ingress всички идват от един peer,
+    // затова грешките на carol не бива да връщат 429 на друг потребител от същия адрес.
+    assert.equal((await json('/api/v1/auth/login', 'POST', { username: 'carol', password: 'carol-pass-123' })).status, 429, 'заключеният акаунт остава заключен дори с вярна парола');
+    const otherUser = await json('/api/v1/auth/login', 'POST', { username: 'nobody-here', password: 'whatever-000' });
+    assert.equal(otherUser.status, 401, 'друг акаунт от същия адрес получава 401, а не 429');
+    console.log('PASS auth: hashing, login/logout/me, scopes, inactive lockout, user CRUD, rate limiting (по акаунт)');
   } finally { await stopChild(child); fs.rmSync(dir, { recursive: true, force: true }) }
 })().catch(e => { console.error(e); process.exitCode = 1 });
