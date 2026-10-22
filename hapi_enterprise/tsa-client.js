@@ -247,10 +247,21 @@ function parseResponse(der, { digestHex, algorithm = 'SHA256' } = {}) {
     genTime: info ? info.genTime : null,
     serialNumber: info ? info.serialNumber : null,
     imprint: info ? info.digestHex : null,
-    imprintMatches: Boolean(expected && info && info.digestHex === expected),
+    imprintMatches: expected && info ? safeEqualHex(info.digestHex, expected) : false,
     der: tokenDer,
   };
   return result;
+}
+
+// Сравнение на два hex отпечатъка в постоянно време: дължината се проверява
+// предварително (timingSafeEqual хвърля при различна дължина), а самите байтове
+// се сравняват без ранен изход.
+function safeEqualHex(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const left = Buffer.from(a.toLowerCase(), 'utf8');
+  const right = Buffer.from(b.toLowerCase(), 'utf8');
+  if (left.length !== right.length || left.length === 0) return false;
+  return crypto.timingSafeEqual(left, right);
 }
 
 // ── HTTP ─────────────────────────────────────────────────────────────────────
@@ -314,12 +325,12 @@ async function stampOne({ url, digestHex, algorithm = 'SHA256', nonce, timeoutMs
     failInfo: parsed.failInfo,
     token: parsed.token
       ? {
-          bytes: parsed.token.bytes,
-          sha256: parsed.token.sha256,
-          genTime: parsed.token.genTime,
-          serialNumber: parsed.token.serialNumber,
-          imprintMatches: parsed.token.imprintMatches,
-        }
+        bytes: parsed.token.bytes,
+        sha256: parsed.token.sha256,
+        genTime: parsed.token.genTime,
+        serialNumber: parsed.token.serialNumber,
+        imprintMatches: parsed.token.imprintMatches,
+      }
       : null,
     tokenDer: parsed.token ? parsed.token.der : null,
   };

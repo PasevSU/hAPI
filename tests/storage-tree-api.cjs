@@ -1,7 +1,7 @@
 'use strict';
 // Папките на портала: дърво през административното API, собствен API (api.json + QR)
 // за всяка папка и защита срещу публикуване на целия /share.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-tree-api-'));
-  const port = 21300 + Math.floor(Math.random() * 3000);
+  const port = await freePort();
   const token = 'storage-tree-test-token-24-chars';
   // storage_root винаги е под /share — в теста това е <root>/share/<уникална>.
   const shareBase = path.join(path.parse(os.tmpdir()).root, 'share');

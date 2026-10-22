@@ -27,23 +27,31 @@ fs.writeFileSync(
   JSON.stringify({ storage_location: 'addon_config', storage_subdirectory: 'hapi_enterprise', memory_limit_mb: 0 }),
 );
 
-const port = 20000 + Math.floor(Math.random() * 9000);
-const adminPort = port + 1;
-const child = spawn(process.execPath, [ENTRY], {
-  env: {
-    ...process.env,
-    HAPI_ADDON_DATA_DIR: dataDir,
-    STORAGE_ROOT_OVERRIDE: storageRoot,
-    PORT: String(port),
-    ADMIN_PORT: String(adminPort),
-    PUBLIC_GATEWAY_PORT: '0',
-  },
-  stdio: ['ignore', 'pipe', 'pipe'],
-});
+const { freePort } = require('./helpers.cjs');
+let port;
+let adminPort;
+let child;
 let stderr = '';
-child.stderr.on('data', (chunk) => {
-  stderr += chunk.toString();
-});
+// Портовете се взимат от ядрото в момента на старта — двата са независими, за да
+// не може вторият да попадне върху порт, който друг тест вече държи.
+const startChild = async () => {
+  port = await freePort();
+  adminPort = await freePort();
+  child = spawn(process.execPath, [ENTRY], {
+    env: {
+      ...process.env,
+      HAPI_ADDON_DATA_DIR: dataDir,
+      STORAGE_ROOT_OVERRIDE: storageRoot,
+      PORT: String(port),
+      ADMIN_PORT: String(adminPort),
+      PUBLIC_GATEWAY_PORT: '0',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk.toString();
+  });
+};
 
 const waitForHealth = async () => {
   for (let i = 0; i < 100; i++) {
@@ -87,6 +95,7 @@ const reapServer = async (storageBase) => {
   // Storage preflight: маркерът се създава от storage-preflight.js в избраната папка.
   const storageBase = path.join(storageRoot, 'addon_config', 'hapi_enterprise');
   try {
+    await startChild();
     await waitForHealth();
 
     assert.ok(fs.existsSync(path.join(storageBase, '.portal-enterprise-storage')), 'storage preflight не е създал хранилището');
@@ -113,7 +122,7 @@ const reapServer = async (storageBase) => {
 
     console.log('PASS entrypoint: storage preflight, генериран admin-token (0600), спиране при SIGTERM');
   } catch (e) {
-    child.kill('SIGKILL');
+    if (child) child.kill('SIGKILL');
     await reapServer(storageBase);
     throw e;
   } finally {

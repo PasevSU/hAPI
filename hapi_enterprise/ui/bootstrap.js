@@ -8,8 +8,8 @@
 //     от диска сочи hapi_enterprise/hapi_enterprise/... и мълчаливо дава 404,
 //     т.е. HapiReportManifest/HapiApiSpec/... липсват и панелите не работят.
 //
-// document.write по време на парсването запазва реда и синхронното изпълнение на
-// скриптовете; файлът е външен, така че CSP-то (script-src 'self') не се нарушава.
+// Скриптовете се добавят като елементи, не с document.write: браузърът ги
+// изпълнява в реда на добавяне (без async), а страницата не се презаписва.
 (function () {
   var shared = [
     'report-manifest.js',
@@ -24,6 +24,8 @@
   ];
   var base = location.protocol === 'file:' ? '../' : '../hapi_enterprise/';
   for (var i = 0; i < shared.length; i += 1) {
-    document.write('<script src="' + base + shared[i] + '"><\/script>');
+    var el = document.createElement('script');
+    el.src = base + shared[i];
+    document.head.appendChild(el);
   }
 })();

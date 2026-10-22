@@ -1,7 +1,7 @@
 'use strict';
 // Readiness срещу liveness: /health е жив процес, /ready проверява зависимостите
 // (запис в хранилището, отворена база, заредени правила) и е публичен за probe-ове.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-ready-'));
-  const port = 36500 + Math.floor(Math.random() * 1200);
+  const port = await freePort();
   const token = 'readiness-test-admin-token-1234567890';
   const base = `http://127.0.0.1:${port}`;
   let child;
@@ -34,7 +34,7 @@ const assert = require('node:assert/strict');
           ready = true;
           break;
         }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
     assert.equal(ready, true, 'сървърът стартира');

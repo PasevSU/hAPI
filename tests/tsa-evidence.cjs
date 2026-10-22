@@ -7,7 +7,7 @@
 //     сравнява с отпечатъка от записа → 200 при всички валидни, 409 при подправен,
 //     изчезнал или нечетим файл (доказателството не минава „на доверие“);
 //   • маршрутът е административен (401 без токен).
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -93,7 +93,7 @@ const grantedReply = (digestHex) => {
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-tsa-evidence-'));
   const tsaDir = path.join(dir, 'tsa');
-  const port = 39100 + Math.floor(Math.random() * 400);
+  const port = await freePort();
   const token = 'tsa-evidence-admin-token-0123456789';
   const base = `http://127.0.0.1:${port}`;
 
@@ -131,7 +131,7 @@ const grantedReply = (digestHex) => {
           ready = true;
           break;
         }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
     assert.ok(ready, 'сървърът стартира');

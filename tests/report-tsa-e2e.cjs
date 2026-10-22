@@ -7,7 +7,7 @@
 //   2. на диска има един START и един STOP запис, а дигитите им са преизчислими;
 //   3. /rfc3161/verify ги признава за валидни;
 //   4. подправен .tsr се хваща (409), след което се възстановява.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const http = require('node:http');
 const fs = require('node:fs');
@@ -67,7 +67,7 @@ const sha256 = (text) => crypto.createHash('sha256').update(String(text), 'utf8'
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-report-tsa-'));
-  const port = 33500 + Math.floor(Math.random() * 1000);
+  const port = await freePort();
   const token = 'report-tsa-admin-token-2026-r5';
   const base = `http://127.0.0.1:${port}`;
   const M = require('../hapi_enterprise/report-manifest.js');

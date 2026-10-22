@@ -5,7 +5,7 @@
 // се прескача за cooldown периода, а резервираният (втори) TSA продължава да работи.
 // Проверява се и през API: 502 при реални откази → 503 „cooldown“, когато всички
 // адреси са отворени, плюс видимо състояние в GET /admin/api/v2/rfc3161.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -142,7 +142,7 @@ const DIGEST = 'cd'.repeat(32);
 
   // ── 4. През API: 502 → 503 и видимо състояние ────────────────────────────
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-breaker-'));
-  const port = 36200 + Math.floor(Math.random() * 500);
+  const port = await freePort();
   const token = 'tsa-breaker-admin-token-0123456789';
   const base = `http://127.0.0.1:${port}`;
   const call = async (route, { method = 'GET', body } = {}) => {
@@ -185,7 +185,7 @@ const DIGEST = 'cd'.repeat(32);
           ready = true;
           break;
         }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
     assert.ok(ready, 'сървърът стартира');

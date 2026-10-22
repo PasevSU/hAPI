@@ -4,7 +4,14 @@
 // with a capability; a capability maps a role to full access, read-only (GET) access,
 // or no access. Routes not tagged default to admin-only.
 const crypto = require('node:crypto');
-const safeEqual = (a, b) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && crypto.timingSafeEqual(x, y) };
+// Сравнение на тайни в постоянно време. Приема низ или буфер; липсваща/празна
+// стойност НЕ е равна на нищо — иначе при неконфигуриран токен заявка без
+// Authorization би минала.
+const toCompare = (v) => (Buffer.isBuffer(v) ? v : typeof v === 'string' ? Buffer.from(v, 'utf8') : null);
+const safeEqual = (a, b) => {
+  const x = toCompare(a), y = toCompare(b);
+  return !!x && !!y && x.length > 0 && x.length === y.length && crypto.timingSafeEqual(x, y);
+};
 // capability -> { role: true (all methods) | 'read' (GET only) }
 const CAPABILITIES = {
   '*': { admin: true },

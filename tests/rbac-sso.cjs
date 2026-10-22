@@ -26,7 +26,8 @@ const { create } = require('../hapi_enterprise/rbac');
 
   // API: SSO role enforcement on the admin (ingress) listener.
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'portal-rbac-sso-'));
-  const port = 28000 + Math.floor(Math.random() * 5000), adminPort = port + 1;
+  const { freePort } = require('./helpers.cjs');
+  const port = await freePort(), adminPort = await freePort();
   const admin = 'sso-admin-token-0123456789ABCDEF';
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: {

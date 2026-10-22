@@ -288,7 +288,14 @@ function readPlainBuffer(p, f) {
   return buf;
 }
 const keyDigest = v => crypto.createHash('sha256').update(v).digest('hex');
-const safeEqual = (a, b) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && crypto.timingSafeEqual(x, y) };
+// Сравнение на тайни в постоянно време. Приема низ или буфер (scrypt сравнява
+// Buffer), а липсваща/празна стойност НЕ е равна на нищо — иначе неконфигуриран
+// токен би пропуснал заявка без Authorization.
+const toCompare = (v) => (Buffer.isBuffer(v) ? v : typeof v === 'string' ? Buffer.from(v, 'utf8') : null);
+const safeEqual = (a, b) => {
+  const x = toCompare(a), y = toCompare(b);
+  return !!x && !!y && x.length > 0 && x.length === y.length && crypto.timingSafeEqual(x, y);
+};
 const SCRYPT = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 const hashPassword = pw => { const salt = crypto.randomBytes(16); const hash = crypto.scryptSync(pw, salt, 64, SCRYPT); return 'scrypt$' + salt.toString('hex') + '$' + hash.toString('hex') };
 const verifyPassword = (pw, stored) => { const parts = String(stored || '').split('$'); if (parts.length !== 3 || parts[0] !== 'scrypt') return false; const salt = Buffer.from(parts[1], 'hex'), expected = Buffer.from(parts[2], 'hex'); if (!salt.length || !expected.length) return false; return safeEqual(crypto.scryptSync(pw, salt, expected.length, SCRYPT), expected) };

@@ -1,0 +1,85 @@
+[
+  {
+    "file": "hapi_enterprise/pgp.js",
+    "rule": "md5-sha1",
+    "line": 296,
+    "reason": "SHA-1 е задължителен от RFC 4880 за v4 отпечатък на ключ (OpenPGP). Не се ползва за защита на данни — само за идентичност на ключ, както изисква стандартът. v6 ключовете ползват SHA-256."
+  },
+  {
+    "file": "tests/package-api.cjs",
+    "rule": "md5-sha1",
+    "reason": "Тестът проверява, че API-то връща обещаните в пакета хешове (sha1/md5 съществуват за съвместимост с външни системи). Изчислява ги, за да сравни — не ги ползва за защита."
+  },
+  {
+    "file": "tests/release-tooling.cjs",
+    "rule": "groupless-mode",
+    "reason": "Синтетични ZIP записи в тест: 0644/0755 са нормалните права за файлове в публичен архив, не права върху тайни."
+  },
+  {
+    "file": "scripts/dev-dashboard.cjs",
+    "rule": "shell-true",
+    "line": 79,
+    "reason": "Локално dev табло (само за разработка, слуша 127.0.0.1, проверява Origin преди всяка заявка и не влиза в изданието). Командите са дефинирани от самия разработчик, за да пуска npm скриптове с произволен синтаксис; argv режим не покрива случая."
+  },
+  {
+    "file": "hapi_enterprise/start.js",
+    "rule": "token-eq",
+    "line": 69,
+    "reason": "Сравнение с известна константа-заместител (PLACEHOLDER_TOKEN), за да се открие невалиден/копиран токен при старт. Няма тайна от заявка и няма какво да се измери по време."
+  },
+  {
+    "file": "hapi_enterprise/notify.js",
+    "rule": "ssrf-fetch",
+    "reason": "Адресът е Supervisor проксито от конфигурацията на add-on-а (не от заявка), пътят е точно /api/services/<domain>/<service> и се проверява за http(s)."
+  },
+  {
+    "file": "hapi_enterprise/tsa-client.js",
+    "rule": "ssrf-fetch",
+    "reason": "TSA адресът е административна настройка (rules/tsa), валидира се с normalizeUrl (само http/https), а отговорът се проверява срещу messageImprint в постоянно време."
+  },
+  {
+    "file": "hapi_enterprise/ui/app.js",
+    "rule": "html-sink",
+    "reason": "Прегледани всички интерполации: литерали, тернари над литерали, esc(t(...)) и собствена икона. Страницата се сервира с CSP script-src 'self' без unsafe-inline, т.е. вмъкнат HTML не може да изпълни код."
+  },
+  {
+    "file": "hapi_enterprise/ui/directory-panel.js",
+    "rule": "html-sink",
+    "reason": "Всички данни за контакти/дела минават през esc() в contactForm/contactCard/caseForm/caseCard; останалите изрази са броячи и HTTP статуси. CSP без unsafe-inline."
+  },
+  {
+    "file": "hapi_enterprise/ui/export-center.js",
+    "rule": "html-sink",
+    "reason": "Шаблонът рисува собствени константи (R().MODES/FORMATS/LOCATIONS) и числа от отговора; имената на файлове се показват през esc() в редовете на плана. CSP без unsafe-inline."
+  },
+  {
+    "file": "hapi_enterprise/ui/files-manager.js",
+    "rule": "html-sink",
+    "reason": "Имената на портали, папки и файлове се рендират през esc()/fmt*(); проверени са и атрибутите (value=, title=). Останалите изрази са броячи, икони и вътрешни компоненти. CSP script-src 'self' без unsafe-inline."
+  },
+  {
+    "file": "hapi_enterprise/ui/icons.js",
+    "rule": "html-sink",
+    "reason": "Спрайтът се строи от вградения речник с икони (P) — няма външни данни."
+  },
+  {
+    "file": "hapi_enterprise/ui/portals.js",
+    "rule": "html-sink",
+    "reason": "slug/title се показват през esc(), включително във value= на <option>. Останалите изрази са броячи и състояния. CSP без unsafe-inline."
+  },
+  {
+    "file": "hapi_enterprise/ui/public-gateway.js",
+    "rule": "html-sink",
+    "reason": "Каналите и етикетите идват от собствените константи (GW().CHANNELS), имената на файлове — през esc(). CSP без unsafe-inline."
+  },
+  {
+    "file": "hapi_enterprise/ui/report-studio.js",
+    "rule": "html-sink",
+    "reason": "Манифестните полета се рендират през esc(); кодовете на грешки са собствени константи на валидатора; ${body} е HTML от нашия renderer в изолиран преглед."
+  },
+  {
+    "file": "hapi_enterprise/ui/settings-panel.js",
+    "rule": "html-sink",
+    "reason": "Само състояния и вътрешни компоненти (statusLine/pgpSection), които екранират стойностите си."
+  }
+]

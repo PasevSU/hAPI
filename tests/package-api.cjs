@@ -1,7 +1,7 @@
 'use strict';
 // API за PGP ключове и експортни пакети: прикачане на ключ (без генерация),
 // автоподписване, изтегляне на ZIP и на .asc, проверка на подписа и RBAC.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -12,7 +12,7 @@ const ooxml = require('../hapi_enterprise/ooxml.js');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-package-api-'));
-  const port = 21000 + Math.floor(Math.random() * 3000);
+  const port = await freePort();
   const token = 'package-api-test-token-at-least-24-chars';
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: { ...process.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },
@@ -38,7 +38,7 @@ const ooxml = require('../hapi_enterprise/ooxml.js');
     for (let i = 0; i < 120; i++) {
       try {
         if ((await call('/health')).status === 200) { ready = true; break; }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 30));
     }
     assert(ready, 'сървърът трябва да стартира');

@@ -1,7 +1,7 @@
 'use strict';
 // Крипто опции на add-on-а: tsa_enabled/адреси, шифроване по подразбиране,
 // приоритет на X-File-Encrypt и fail-closed TLS конфигурация.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -13,8 +13,8 @@ const MAGIC = Buffer.from('hapiE1', 'ascii');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-crypto-'));
-  const port = 33000 + Math.floor(Math.random() * 1200);
-  const adminPort = port + 1;
+  const port = await freePort();
+  const adminPort = await freePort();
   const token = 'crypto-options-admin-token-0987654321';
   const base = `http://127.0.0.1:${port}`;
   const admin = `http://127.0.0.1:${adminPort}`;
@@ -35,7 +35,7 @@ const MAGIC = Buffer.from('hapiE1', 'ascii');
     for (let i = 0; i < 120; i++) {
       try {
         if ((await fetch(base + '/health')).status === 200) return true;
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
     return false;
@@ -49,7 +49,7 @@ const MAGIC = Buffer.from('hapiE1', 'ascii');
     let value = null;
     try {
       value = await res.json();
-    } catch {}
+    } catch { }
     return { status: res.status, value };
   };
 

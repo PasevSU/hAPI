@@ -5,7 +5,7 @@
 //   POST /admin/api/rules/reload   — презареждане без рестарт на add-on-а
 //   GET  /admin/api/connection     — роля, режим, публичен адрес и версия на API
 //   GET  /admin/api/load           — текущото ниво на load control
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort, waitHealthy } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -14,7 +14,7 @@ const { spawn } = require('node:child_process');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-rules-conn-'));
-  const port = 31000 + Math.floor(Math.random() * 2000);
+  const port = await freePort();
   const token = 'rules-connection-admin-token-0123456789';
   const viewer = 'rules-connection-viewer-token-0123456789';
   const base = `http://127.0.0.1:${port}`;
@@ -57,7 +57,7 @@ const { spawn } = require('node:child_process');
           ready = true;
           break;
         }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
     assert.ok(ready, 'сървърът не стартира');

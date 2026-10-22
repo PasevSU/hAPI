@@ -49,21 +49,6 @@ Write-Host "  хранилище: $repo"
 Write-Host "  локално дърво: $root"
 Write-Host "  работна папка: $workDir"
 
-function Invoke-Step {
-    param([string]$Text, [string]$Command, [string]$WorkDir = $root)
-    Write-Host ''
-    Write-Host "▸ $Text" -ForegroundColor Cyan
-    Write-Host "  $ $Command"
-    if (-not $Execute) { return }
-    Push-Location $WorkDir
-    try {
-        $output = Invoke-Expression $Command 2>&1
-        if ($LASTEXITCODE -ge 8) { throw "командата се провали ($LASTEXITCODE): $Command`n$output" }
-        if ($output) { $output | Select-Object -Last 5 | ForEach-Object { Write-Host "  $_" } }
-    }
-    finally { Pop-Location }
-}
-
 # ── 1. Издателски артефакти ─────────────────────────────────────────────────
 Write-Host ''
 Write-Host '▸ 1/4  Издателски артефакти' -ForegroundColor Cyan

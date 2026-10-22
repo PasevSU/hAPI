@@ -8,7 +8,7 @@
 //
 // Повредена база → 503 и db.state='degraded': probe-ът спира трафика, вместо
 // add-on-ът да пише върху повредени страници.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -81,7 +81,7 @@ const store = require('../hapi_enterprise/sqlite-store');
 
   // ── 3. Живият сървър: db.state в /ready ──────────────────────────────────
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-ready-int-'));
-  const port = 34100 + Math.floor(Math.random() * 700);
+  const port = await freePort();
   const token = 'ready-integrity-admin-token-0123456789';
   const base = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
@@ -103,7 +103,7 @@ const store = require('../hapi_enterprise/sqlite-store');
           ready = true;
           break;
         }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
     assert.ok(ready, 'сървърът стартира');

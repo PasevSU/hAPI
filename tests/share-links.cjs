@@ -9,7 +9,7 @@
 //   • unit: автоматизацията е валиден YAML-образен текст с екранирани кавички;
 //   • API: `/admin/api/portals/<id>/api-info` връща `links` за реалния портал,
 //     а адресът на тага съдържа неговия slug.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -65,7 +65,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // ── 5. API: реалният портал получава links ───────────────────────────────
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'share-links-'));
   const token = 'share-links-admin-token-0123456789';
-  const port = 19600 + Math.floor(Math.random() * 300);
+  const port = await freePort();
   const base = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: { ...process.env, DATA_DIR: dir, ADMIN_TOKEN: token, PORT: String(port) },

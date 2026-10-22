@@ -2,7 +2,7 @@
 // RFC 3161 START / STOP през административното API: TSQ към истински TSA
 // (тук — локален фалшив TSA), запис на .tsr + метаданни, затварящ digest за STOP,
 // отказ от TSA → 502 без запис, ролева защита.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const http = require('node:http');
 const fs = require('node:fs');
@@ -63,8 +63,8 @@ const rejectedReply = () => seq(seq(int(2), seq(tlv(0x0c, Buffer.from('bad reque
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-rfc3161-'));
-  const port = 31000 + Math.floor(Math.random() * 1500);
-  const adminPort = port + 1;
+  const port = await freePort();
+  const adminPort = await freePort();
   const token = 'rfc3161-test-admin-token-1234567890';
   const base = `http://127.0.0.1:${port}`;
   const admin = `http://127.0.0.1:${adminPort}`;
@@ -126,7 +126,7 @@ const rejectedReply = () => seq(seq(int(2), seq(tlv(0x0c, Buffer.from('bad reque
     for (let i = 0; i < 120; i++) {
       try {
         if ((await call(base + '/health')).status === 200) break;
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
 

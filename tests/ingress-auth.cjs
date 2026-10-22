@@ -3,7 +3,7 @@
 // Home Assistant подава X-Remote-User-Id / X-Remote-User-Name / X-Remote-User-Display-Name;
 // X-Remote-User / X-Remote-Groups остават като fallback за reverse proxy и стари среди.
 // Само на ingress listener-а.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -18,8 +18,8 @@ const assert = require('node:assert/strict');
     JSON.stringify({ user_roles: '{"pasev":"admin"}', group_roles: '{"hapi-admins":"admin"}' }),
     'utf8',
   );
-  const port = 27000 + Math.floor(Math.random() * 2000);
-  const adminPort = port + 1;
+  const port = await freePort();
+  const adminPort = await freePort();
   const token = 'ingress-test-admin-token-1234567890';
   const base = `http://127.0.0.1:${port}`;
   const adminBase = `http://127.0.0.1:${adminPort}`;

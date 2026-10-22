@@ -1,7 +1,7 @@
 'use strict';
 // Ключов пакет на диска: импорт при старт, роли от subkeys/*.json, без дубликати,
 // повторен импорт през API не създава втори запис.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -11,8 +11,8 @@ const pgp = require('../hapi_enterprise/pgp');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-bundle-'));
-  const port = 34500 + Math.floor(Math.random() * 1200);
-  const adminPort = port + 1;
+  const port = await freePort();
+  const adminPort = await freePort();
   const token = 'bundle-test-admin-token-1234567890';
   const admin = `http://127.0.0.1:${adminPort}`;
   const base = `http://127.0.0.1:${port}`;
@@ -40,7 +40,7 @@ const pgp = require('../hapi_enterprise/pgp');
     for (let i = 0; i < 120; i++) {
       try {
         if ((await fetch(base + '/health')).status === 200) return true;
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
     return false;

@@ -2,7 +2,7 @@
 // Едновременни линкове: 3 паралелни изтегляния при лимит 1 трябва да се изчакат в
 // опашка, а не да връщат 503. Регенерацията на API файловете не бива да оставя
 // частично записан JSON при паралелни заявки.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -11,8 +11,8 @@ const assert = require('node:assert/strict');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-concurrent-'));
-  const port = 31000 + Math.floor(Math.random() * 900);
-  const adminPort = port + 1;
+  const port = await freePort();
+  const adminPort = await freePort();
   const token = 'concurrent-links-admin-token-123456789';
   const base = `http://127.0.0.1:${port}`;
   const adminBase = `http://127.0.0.1:${adminPort}`;
@@ -42,7 +42,7 @@ const assert = require('node:assert/strict');
           ready = true;
           break;
         }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
     assert.ok(ready, 'сървърът не стартира');

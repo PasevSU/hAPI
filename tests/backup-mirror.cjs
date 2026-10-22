@@ -6,7 +6,7 @@
 //     отчита състоянието на огледалото (ok / mismatch / missing);
 //   • подправено копие не минава за валидно — verify го отчита като mismatch;
 //   • backup_mirror = backup_folder е конфигурационна грешка → add-on-ът не стартира.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -19,7 +19,7 @@ async function waitHealthy(base, attempts = 140) {
   for (let i = 0; i < attempts; i++) {
     try {
       if ((await fetch(base + '/health')).ok) return true;
-    } catch {}
+    } catch { }
     await sleep(50);
   }
   return false;
@@ -29,7 +29,7 @@ async function waitHealthy(base, attempts = 140) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-mirror-'));
   const primary = path.join(root, 'primary');
   const mirror = path.join(root, 'mirror');
-  const port = 35200 + Math.floor(Math.random() * 600);
+  const port = await freePort();
   const token = 'backup-mirror-admin-token-0123456789';
   const base = `http://127.0.0.1:${port}`;
 
@@ -124,7 +124,7 @@ async function waitHealthy(base, attempts = 140) {
   // 7. Огледало, равно на първия таргет, е грешка — add-on-ът отказва старт.
   const sameRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-mirror-same-'));
   const sameDir = path.join(sameRoot, 'backups');
-  const badPort = 35900 + Math.floor(Math.random() * 90);
+  const badPort = await freePort();
   const badChild = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: {
       ...process.env,

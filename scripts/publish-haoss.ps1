@@ -42,13 +42,15 @@ function Write-Step {
 }
 
 function Invoke-Command-Step {
-    param([string]$Text, [string]$Command, [string]$WorkDir = $root)
-    Write-Host "  $ $Command"
+    param([string]$Text, [string]$Exe, [string[]]$Arguments = @(), [string]$WorkDir = $root)
+    Write-Host "  $ $Exe $($Arguments -join ' ')"
     if (-not $Execute) { return $null }
     Push-Location $WorkDir
     try {
-        $output = Invoke-Expression $Command 2>&1
-        if ($LASTEXITCODE -ne 0) { throw "командата се провали ($LASTEXITCODE): $Command`n$output" }
+        # argv, не низ: описание/име на репо с кавички или `;` остава литерал,
+        # вместо да се изпълни като втора команда (Invoke-Expression правеше точно това).
+        $output = & $Exe @Arguments 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "командата се провали ($LASTEXITCODE): $Exe $($Arguments -join ' ')`n$output" }
         return $output
     }
     finally { Pop-Location }
@@ -82,7 +84,7 @@ if (-not $InPlace) { Write-Host "  git работна папка: $gitDir (ло�
 
 if ($Execute) {
     Write-Step 'Проверка на GitHub автентикацията'
-    Invoke-Command-Step -Text 'gh auth status' -Command 'gh auth status' | Out-Null
+    Invoke-Command-Step -Text 'gh auth status' -Exe 'gh' -Arguments @('auth', 'status') | Out-Null
 }
 
 # ── 1. Издание ──────────────────────────────────────────────────────────────
@@ -99,9 +101,9 @@ if ($SkipBuild) {
 }
 else {
     $buildArgs = @()
-    if ($Execute) { $buildArgs += "--repo-url $repoUrl" }
-    if ($Execute -and -not $InPlace) { $buildArgs += "--out `"$buildOut`" --no-versioned" }
-    Invoke-Command-Step -Text 'build' -Command ("node scripts/build-haoss.cjs " + ($buildArgs -join ' ')).Trim() | Out-Null
+    if ($Execute) { $buildArgs += @('--repo-url', $repoUrl) }
+    if ($Execute -and -not $InPlace) { $buildArgs += @('--out', $buildOut, '--no-versioned') }
+    Invoke-Command-Step -Text 'build' -Exe 'node' -Arguments (@('scripts/build-haoss.cjs') + $buildArgs) | Out-Null
 }
 $sourceDir = if ($Execute -and -not $InPlace) { $buildOut } else { $repoDir }
 if (-not (Test-Path (Join-Path $sourceDir 'hacs.json'))) {
@@ -154,7 +156,7 @@ if (-not $hasGit) {
         }
     }
 }
-Invoke-Command-Step -Text 'add' -Command 'git add -A' -WorkDir $gitDir | Out-Null
+Invoke-Command-Step -Text 'add' -Exe 'git' -Arguments @('add', '-A') -WorkDir $gitDir | Out-Null
 
 # Празни commit-и не помагат на никого: при реално изпълнение проверяваме дали има промени.
 # `git rev-parse HEAD` пада при първи commit — това е „мръсно“ по определение.
@@ -170,7 +172,7 @@ if ($Execute) {
     }
     finally { Pop-Location }
     if ($dirty) {
-        Invoke-Command-Step -Text 'commit' -Command "git commit -m 'hAPI Enterprise $Version — HACS integration'" -WorkDir $gitDir | Out-Null
+        Invoke-Command-Step -Text 'commit' -Exe 'git' -Arguments @('commit', '-m', "hAPI Enterprise $Version — HACS integration") -WorkDir $gitDir | Out-Null
     }
     else {
         Write-Host '  няма промени — без нов commit'
@@ -190,7 +192,8 @@ if ($Execute) {
     finally { Pop-Location }
     if (-not $email -or -not $userName) {
         Write-Host "  няма git идентичност — задавам локално ($owner)"
-        Invoke-Command-Step -Text 'identity' -Command "git config user.name '$owner'; git config user.email '$owner@users.noreply.github.com'" -WorkDir $gitDir | Out-Null
+        Invoke-Command-Step -Text 'identity' -Exe 'git' -Arguments @('config', 'user.name', $owner) -WorkDir $gitDir | Out-Null
+        Invoke-Command-Step -Text 'identity' -Exe 'git' -Arguments @('config', 'user.email', "$owner@users.noreply.github.com") -WorkDir $gitDir | Out-Null
     }
     else {
         Write-Host "  git идентичност: $userName <$email>"
@@ -204,7 +207,7 @@ else {
 Write-Step '3/5  GitHub хранилище'
 if (-not $repoExists) {
     Write-Host "  създава се публично хранилище $fullName"
-    Invoke-Command-Step -Text 'create' -Command "gh repo create $fullName --public --source . --remote origin --push --description `"$Description`"" -WorkDir $gitDir | Out-Null
+    Invoke-Command-Step -Text 'create' -Exe 'gh' -Arguments @('repo', 'create', $fullName, '--public', '--source', '.', '--remote', 'origin', '--push', '--description', $Description) -WorkDir $gitDir | Out-Null
 }
 else {
     # HACS приема САМО публични хранилища: `hacs/action` отказва private с
@@ -220,12 +223,12 @@ else {
         }
     }
     Write-Host "  хранилището съществува — push към origin (без force)"
-    Invoke-Command-Step -Text 'push' -Command 'git push origin HEAD:main' -WorkDir $gitDir | Out-Null
+    Invoke-Command-Step -Text 'push' -Exe 'git' -Arguments @('push', 'origin', 'HEAD:main') -WorkDir $gitDir | Out-Null
 }
 
 # Метаданни, които HACS проверява за включване в списъка по подразбиране.
-$topicArgs = ($Topics | ForEach-Object { "--add-topic $_" }) -join ' '
-Invoke-Command-Step -Text 'meta' -Command "gh repo edit $fullName --description `"$Description`" $topicArgs --enable-issues" -WorkDir $gitDir | Out-Null
+$topicArgs = @($Topics | ForEach-Object { '--add-topic'; $_ })
+Invoke-Command-Step -Text 'meta' -Exe 'gh' -Arguments (@('repo', 'edit', $fullName, '--description', $Description) + $topicArgs + @('--enable-issues')) -WorkDir $gitDir | Out-Null
 
 # ── 4. Таг → release ────────────────────────────────────────────────────────
 Write-Step "4/5  Таг $tag"
@@ -251,13 +254,14 @@ if ($Execute -and $remoteTagSha) {
     }
 }
 else {
-    Invoke-Command-Step -Text 'tag' -Command "git tag -f $tag; git push origin $tag" -WorkDir $gitDir | Out-Null
+    Invoke-Command-Step -Text 'tag' -Exe 'git' -Arguments @('tag', '-f', $tag) -WorkDir $gitDir | Out-Null
+    Invoke-Command-Step -Text 'tag push' -Exe 'git' -Arguments @('push', 'origin', $tag) -WorkDir $gitDir | Out-Null
 }
 Write-Host '  workflow-ът release.yml създава GitHub release (сверява тага с manifest.json)'
 
 # ── 5. Проверка ─────────────────────────────────────────────────────────────
 Write-Step '5/5  Проверка'
-Invoke-Command-Step -Text 'release' -Command "gh release list -R $fullName -L 3" | Out-Null
+Invoke-Command-Step -Text 'release' -Exe 'gh' -Arguments @('release', 'list', '-R', $fullName, '-L', '3') | Out-Null
 
 Write-Host ''
 if ($Execute) {

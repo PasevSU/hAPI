@@ -7,7 +7,7 @@
 //   • API: втори сървър върху същата директория излиза с код 1 и ясно съобщение, първият
 //     остава здрав и /ready показва неговия instance id;
 //   • след SIGTERM заключването се освобождава и рестартът минава.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -177,7 +177,7 @@ function waitExit(child, ms = 8000) {
 
   // ── 3. API: втори сървър върху същите данни не стартира ─────────────────
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-instance-api-'));
-  const port = 40100 + Math.floor(Math.random() * 400);
+  const port = await freePort();
   const base = `http://127.0.0.1:${port}`;
   const primary = boot(dataDir, port, { INSTANCE_ID: 'primary' });
   try {

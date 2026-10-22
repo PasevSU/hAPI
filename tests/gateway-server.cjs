@@ -1,6 +1,6 @@
 'use strict';
 // PG-6 / FD-6: реален сървър — административни правила и публичен gateway канал.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -9,8 +9,8 @@ const assert = require('node:assert/strict');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-gateway-'));
-  const port = 24000 + Math.floor(Math.random() * 3000);
-  const gwPort = port + 1;
+  const port = await freePort();
+  const gwPort = await freePort();
   const token = 'gateway-test-admin-token-1234567890';
   const base = `http://127.0.0.1:${port}`;
   const gwBase = `http://127.0.0.1:${gwPort}`;
@@ -51,7 +51,7 @@ const assert = require('node:assert/strict');
       try {
         const [main, gw] = await Promise.all([req('/health'), fetch(gwBase + '/api/public/v1/portals/nope')]);
         if (main.status === 200 && gw.status === 404) return;
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
     throw Error('Startup failed');

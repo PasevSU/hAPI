@@ -8,7 +8,7 @@
 //   • изчезнали и двете → `lost` (repair не лъже, че е възстановено);
 //   • изтриване на файл/портал чисти и копието;
 //   • огледало върху самата data директория е грешка при старт.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -21,7 +21,7 @@ async function waitHealthy(base, attempts = 160) {
   for (let i = 0; i < attempts; i++) {
     try {
       if ((await fetch(base + '/health')).ok) return true;
-    } catch {}
+    } catch { }
     await sleep(50);
   }
   return false;
@@ -31,7 +31,7 @@ async function waitHealthy(base, attempts = 160) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-storage-mirror-'));
   const dataDir = path.join(root, 'data');
   const mirrorDir = path.join(root, 'mirror');
-  const port = 41100 + Math.floor(Math.random() * 400);
+  const port = await freePort();
   const token = 'storage-mirror-admin-token-0123456789';
   const base = `http://127.0.0.1:${port}`;
   const auth = { Authorization: 'Bearer ' + token };
@@ -184,7 +184,7 @@ async function waitHealthy(base, attempts = 160) {
       ...process.env,
       DATA_DIR: badRoot,
       OPTIONS_PATH: path.join(badRoot, 'missing-options.json'),
-      PORT: String(41900 + Math.floor(Math.random() * 90)),
+      PORT: String(await freePort()),
       ADMIN_TOKEN: 'storage-mirror-admin-token-0123456789',
       STORAGE_MIRROR: badRoot,
       STORAGE_MIRROR_ANY: '1',

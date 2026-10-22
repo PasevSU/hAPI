@@ -1,7 +1,7 @@
 'use strict';
 // „Бърз линк“ (Send-lite): безсрочен по подразбиране, еднократен билет, парола по избор,
 // лимит на свалянията, отмяна. Проверява и че публичните изгледи не изтичат хеша на паролата.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process'), fs = require('node:fs'), os = require('node:os'), path = require('node:path'), assert = require('node:assert/strict');
 const sendLite = require('../hapi_enterprise/send');
 (async () => {
@@ -32,7 +32,7 @@ const sendLite = require('../hapi_enterprise/send');
 
   // ── 2. HTTP поток ───────────────────────────────────────────────────────────
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'send-'));
-  const port = 33000 + Math.floor(Math.random() * 1500), adminPort = 36000 + Math.floor(Math.random() * 1500);
+  const port = await freePort(), adminPort = await freePort();
   const token = 'send-test-admin-token-1234567890';
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], { env: { ...process.env, DATA_DIR: dir, PORT: String(port), ADMIN_PORT: String(adminPort), INGRESS_MODE: 'true', ADMIN_TOKEN: token }, stdio: 'pipe' });
   const call = (p, opts = {}, admin = false) => fetch(`http://127.0.0.1:${admin ? adminPort : port}${p}`, opts);

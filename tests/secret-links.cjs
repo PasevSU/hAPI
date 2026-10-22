@@ -12,7 +12,7 @@
 //   • краен-до-край: втора парола (PBKDF2 → външен слой), сгрешена парола е 403 и НЕ харчи
 //     преглед; изтекъл срок и отмяна дават 410/404;
 //   • страницата `/secret` се сервира с `script-src 'self'` и без ключ в HTML-а.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -82,7 +82,7 @@ const hex = (bytes) => Buffer.from(bytes).toString('hex');
   // ── 3. Краен-до-край през истинския сървър ────────────────────────────────
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-secret-'));
   const token = 'secret-links-admin-token-0123456789';
-  const port = 19800 + Math.floor(Math.random() * 300);
+  const port = await freePort();
   const base = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: { ...process.env, DATA_DIR: dir, ADMIN_TOKEN: token, PORT: String(port) },

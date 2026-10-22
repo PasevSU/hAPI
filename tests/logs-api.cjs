@@ -1,7 +1,7 @@
 'use strict';
 // Debug лог през API: четене от ring buffer-а, смяна на нивото в runtime,
 // correlation header и ролеви ограничения (viewer чете, но не променя).
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -10,8 +10,8 @@ const assert = require('node:assert/strict');
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-logs-'));
-  const port = 29000 + Math.floor(Math.random() * 1500);
-  const adminPort = port + 1;
+  const port = await freePort();
+  const adminPort = await freePort();
   const token = 'logs-test-admin-token-1234567890';
   const viewer = 'logs-test-viewer-token-0987654321';
   const base = `http://127.0.0.1:${port}`;
@@ -55,7 +55,7 @@ const assert = require('node:assert/strict');
     for (let i = 0; i < 120; i++) {
       try {
         if ((await call(base + '/health')).status === 200) break;
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 50));
     }
 
