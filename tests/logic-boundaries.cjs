@@ -252,11 +252,14 @@ function lockSection() {
   assert.equal(atBoundary.ok, true, 'на самата граница се поема');
   assert.equal(atBoundary.tookOver, true);
   assert.equal(atBoundary.previous.id, 'remote');
+  // Освобождаваме го: поемането е записало нашия pid, а „наше“ заключване се държи
+  // жив собственик (една инстанция не взима два пъти).
+  assert.equal(lock.release(dir, 'p2'), true);
   assert.equal(lock.release(dir, 'p1'), false, 'чужд id не освобождава');
 
   // Жив собственик на същия host блокира втория.
   const mine = lock.acquire({ dir, id: 'p3' });
-  assert.equal(mine.ok, true, 'след поемането заключването е наше');
+  assert.equal(mine.ok, true, 'след освобождаване заключването е наше');
   const second = lock.acquire({ dir, id: 'p4' });
   assert.equal(second.ok, false, 'втори жив собственик не се допуска');
   assert.equal(second.holder.id, 'p3');
