@@ -32,6 +32,8 @@
 - [ ] README.md / BG.md / DE.md updated.
 - [ ] `documentation/` tree current (00–08).
 - [ ] Changelog entry added.
+- [ ] `node scripts/release-status.cjs` — `reports/RELEASE-STATUS.md` регенериран (числата в него
+      идват от отчетите на инструментите; `--check` може да го провери).
 
 ## Release
 
