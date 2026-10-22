@@ -140,4 +140,3 @@ const decide = (cell, method) => cell === 'all' || (cell === 'read' && method ==
   console.error(e);
   process.exitCode = 1;
 });
-

@@ -161,4 +161,133 @@ function release(dir, id) {
   }
 }
 
-module.exports = { acquire, heartbeat, release, inspect, lockPath, FILE, DEFAULT_STALE_MS };
+// ── Споделен режим (HAPI_SHARED_DATA=1) ────────────────────────────────────────
+// Няколко процеса върху ЕДНИ И СЪЩИ данни (многослоен цикъл: втори слой, CLI процес,
+// втори контейнер по избор). Тук няма „собственик“ — всеки процес се регистрира във
+// `<DATA_DIR>/.hapi-peers/` със сърцебиене, а записите се пазят от shared-data.js чрез
+// сравнение-и-размяна. Файловете на мъртвите процеси се чистят, за да не расте папката.
+const PEERS_DIR = '.hapi-peers';
+const peersDir = (dir) => path.join(dir, PEERS_DIR);
+const peerName = (id) => `${process.pid}-${String(id || 'instance').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40)}.json`;
+
+function writePeer(file, payload) {
+  const tmp = `${file}.${Math.random().toString(16).slice(2)}.tmp`;
+  try {
+    fs.writeFileSync(tmp, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
+    fs.renameSync(tmp, file);
+  } finally {
+    try {
+      fs.unlinkSync(tmp);
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+    }
+  }
+}
+
+/** Регистрира този процес като участник върху данните (без изключителност). */
+function joinShared({ dir, id, host = os.hostname(), now = Date.now(), staleMs = DEFAULT_STALE_MS } = {}) {
+  if (!dir) throw Error('instance-lock: dir is required');
+  const folder = peersDir(dir);
+  fs.mkdirSync(folder, { recursive: true });
+  const file = path.join(folder, peerName(id));
+  const payload = { id: String(id || ''), pid: process.pid, pidStart: pidStart(process.pid), host: String(host || ''), joinedAt: new Date(now).toISOString(), heartbeatAt: new Date(now).toISOString() };
+  writePeer(file, payload);
+  pruneShared({ dir, host, now, staleMs });
+  return { ok: true, file, payload, peers: listShared({ dir, host, now, staleMs }) };
+}
+
+function heartbeatShared({ dir, file, id, now = Date.now() } = {}) {
+  if (!file || !fs.existsSync(file)) return false;
+  let current;
+  try {
+    current = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    // Нечетимият файл се пренаписва — това е нашият собствен запис, не чужда собственост.
+    current = { id: String(id || '') };
+  }
+  writePeer(file, { ...current, id: String(id || current.id || ''), pid: process.pid, pidStart: pidStart(process.pid), heartbeatAt: new Date(now).toISOString() });
+  return true;
+}
+
+/** Сваля регистрацията на процеса (само своя файл). */
+function leaveShared({ file } = {}) {
+  if (!file) return false;
+  try {
+    fs.unlinkSync(file);
+    return true;
+  } catch (e) {
+    return e.code === 'ENOENT';
+  }
+}
+
+/** Живите участници върху данните към момента (мъртвите не се броят). */
+function listShared({ dir, host = os.hostname(), now = Date.now(), staleMs = DEFAULT_STALE_MS } = {}) {
+  const folder = peersDir(dir);
+  let names;
+  try {
+    names = fs.readdirSync(folder).filter((name) => name.endsWith('.json'));
+  } catch (e) {
+    if (e.code === 'ENOENT') return [];
+    throw e;
+  }
+  const live = [];
+  for (const name of names) {
+    const file = path.join(folder, name);
+    let entry;
+    try {
+      entry = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch {
+      continue; // Полузаписан/повреден файл не бива да чупи списъка — следващият prune го маха.
+    }
+    const sameHost = String(entry.host || '') === String(host || '');
+    const beatAge = entry.heartbeatAt ? now - Date.parse(entry.heartbeatAt) : Infinity;
+    const fresh = Number.isFinite(beatAge) && beatAge < staleMs;
+    const isSelf = Number(entry.pid) === process.pid && String(entry.pidStart || '') === pidStart(process.pid);
+    // На друг host решава само сърцебиенето (процесите не се виждат един друг).
+    const aliveHere = sameHost ? alive(Number(entry.pid)) || isSelf : true;
+    if (aliveHere && fresh) live.push({ ...entry, file, self: isSelf });
+  }
+  return live;
+}
+
+/** Изтрива регистрациите на мъртви/застояли процеси. */
+function pruneShared({ dir, host = os.hostname(), now = Date.now(), staleMs = DEFAULT_STALE_MS } = {}) {
+  const folder = peersDir(dir);
+  let names;
+  try {
+    names = fs.readdirSync(folder).filter((name) => name.endsWith('.json'));
+  } catch (e) {
+    if (e.code === 'ENOENT') return 0;
+    throw e;
+  }
+  const live = new Set(listShared({ dir, host, now, staleMs }).map((entry) => entry.file));
+  let removed = 0;
+  for (const name of names) {
+    const file = path.join(folder, name);
+    if (live.has(file)) continue;
+    try {
+      fs.unlinkSync(file);
+      removed++;
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+    }
+  }
+  return removed;
+}
+
+module.exports = {
+  acquire,
+  heartbeat,
+  release,
+  inspect,
+  lockPath,
+  joinShared,
+  heartbeatShared,
+  leaveShared,
+  listShared,
+  pruneShared,
+  peersDir,
+  FILE,
+  PEERS_DIR,
+  DEFAULT_STALE_MS,
+};

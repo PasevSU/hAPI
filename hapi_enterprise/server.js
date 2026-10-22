@@ -100,6 +100,9 @@ async function verifyPortalFiles(p, ctx) {
   return { portalId: p.id, summary, files: results, verified: summary.VERIFIED === results.length && results.length === p.files.length };
 }
 const dbPath = runtime.databasePath, filesRoot = path.join(root, 'files'), internalRoot = path.join(root, 'internal'); let db = { portals: [], qrArtifacts: [] }; let queue = Promise.resolve(); const metadataStore = require('./sqlite-store').open(dbPath);
+// Споделени данни между процесите: `bind` кара `db` да сочи към това, което е В БАЗАТА
+// (включително след запис на друг процес), а `transaction` пази записа от презаписване.
+const sharedData = require('./shared-data').create({ store: metadataStore, bind: (payload) => { db = payload } });
 const id = () => crypto.randomBytes(12).toString('hex');
 // --- DOCFLOW core (Phase 1): hierarchical variable store, additive to legacy metadata ---
 const coreDbId = (() => { const v = String(process.env.DB_ID || '1').trim(); return /^[A-Za-z0-9_-]{1,32}$/.test(v) ? v : '1' })();
@@ -507,11 +510,15 @@ const validSlug = x => /^[a-z0-9][a-z0-9-]{0,62}$/.test(x);
 const body = async (req, limit = 65536) => { let parts = [], size = 0; for await (const chunk of req) { size += chunk.length; if (size > limit) throw Object.assign(new Error('Payload too large'), { status: 413 }); parts.push(chunk) } return Buffer.concat(parts) };
 const parse = async req => { try { return JSON.parse((await body(req)).toString('utf8')) } catch (e) { if (e.status) throw e; throw Object.assign(new Error('Invalid JSON'), { status: 400 }) } };
 const update = (fn, onFailure) => {
-  const run = queue.then(async () => {
-    const previous = structuredClone(db); let result;
-    try { result = await fn(); metadataStore.save(db); return result }
-    catch (e) { db = previous; if (result !== undefined && onFailure) { try { await onFailure(result) } catch (cleanupError) { console.error('ROLLBACK CLEANUP FAILED', cleanupError) } } throw e }
-  }); queue = run.catch(() => { }); return run
+  // Всяка промяна минава през shared-data: прясна снимка → работно копие → запис само ако
+  // ревизията не е мръднала. Конфликт с друг процес се повтаря, вместо да се презапише.
+  let produced;
+  return sharedData.transaction(async () => { produced = await fn(); return produced }).catch(async (e) => {
+    if (produced !== undefined && onFailure) {
+      try { await onFailure(produced) } catch (cleanupError) { console.error('ROLLBACK CLEANUP FAILED', cleanupError) }
+    }
+    throw e
+  })
 };
 // Публичен контакт на издателя: само имена/канали за връзка (без вътрешни id и extras).
 const publicContact = id => { const c = contactById(db, id); if (!c) return null; const out = { name: c.name, organization: c.organization, department: c.department, email: c.email, phone: c.phone, city: c.city, country: c.country }; return Object.values(out).some(Boolean) ? out : null };
@@ -659,6 +666,9 @@ async function handler(req, res) {
     const startedAt = process.hrtime.bigint(); let reqId = req.headers['x-request-id'];
     if (typeof reqId !== 'string' || !/^[A-Za-z0-9._-]{1,64}$/.test(reqId)) reqId = crypto.randomBytes(8).toString('hex');
     req.log = log.child({ ns: 'http', reqId });
+    // Сверка с базата ПРЕДИ всяко четене: една подготвена заявка за ревизията. Така всички
+    // функции в този процес виждат и промените на ДРУГ процес, а не снимка от своя старт.
+    try { sharedData.sync() } catch (e) { req.log.warn('shared.sync.failed', { err: e.message }) }
     try { res.setHeader('X-Request-Id', reqId) } catch { /* заглавките може вече да са изпратени — логът не бива да чупи отговора */ }
     res.on('finish', () => {
       try {
@@ -1068,7 +1078,7 @@ async function handler(req, res) {
         // with a partial write; validation happens before any commit.
         let result;
         try {
-          result = await new Promise((resolve, reject) => { const run = queue.then(() => { try { const r = metadataStore.restoreFrom(source); db = metadataStore.load(); resolve(r) } catch (e) { reject(e) } }); queue = run.catch(() => { }) });
+          result = await new Promise((resolve, reject) => { const run = queue.then(() => { try { const r = metadataStore.restoreFrom(source); sharedData.refresh(); resolve(r) } catch (e) { reject(e) } }); queue = run.catch(() => { }) });
         } catch (e) {
           void errorLog.append('error', 'backup-restore', e && e.message || 'Restore failed', { name });
           return fail(res, 422, 'Restore failed: invalid or incompatible backup');
@@ -1102,7 +1112,7 @@ async function handler(req, res) {
       if (!adminGate(req, res, 'whoami', method)) return;
       return json(res, 200, { role: rbac.role(req), ingress: req.ingress === true, publicBaseUrl: runtime.effective().publicBaseUrl || '', requestBase: baseUrl(req), apiVersion: apiVersion.VERSION.CURRENT });
     }
-    if (url.pathname === '/health' && method === 'GET') return json(res, 200, { status: 'ok' });
+    if (url.pathname === '/health' && method === 'GET') return json(res, 200, { status: 'ok', shared: sharedData.state() });
     if (url.pathname === '/ready' && method === 'GET') {
       // Readiness (не liveness): проверява реалните зависимости, за да не се праща трафик към счупен процес.
       const checks = { storage: false, db: false, rules: false };
@@ -2495,7 +2505,9 @@ async function firstRunSeed() {
   const slug = dbName.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'files';
   if (!db.portals.length) {
     const p = { id: id(), slug, title: dbName || 'Files', description: '', visibility: 'private', createdAt: new Date().toISOString(), files: [] };
-    await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true }); db.portals.push(p); metadataStore.save(db);
+    await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true });
+    // Seed-ът също минава през общия слой: ако друг процес вече е създал портал, той не се дублира.
+    await update(() => { if (!db.portals.some(x => x.id === p.id)) db.portals.push(p) });
   }
   const uname = /^[A-Za-z0-9_.@-]{1,64}$/.test(str(init.username)) ? str(init.username) : 'api';
   if (!metadataStore.getUser(uname)) {
@@ -2525,7 +2537,12 @@ async function start() {
     // Първо заключване на data директорията: две инстанции на едни и същи данни биха
     // корумпирали метаданни, одит верига и TSA архив. INSTANCE_STRICT=0 само предупреждава.
     const instanceLock = require('./instance-lock');
-    const lock = instanceLock.acquire({ dir: root, id: instanceId });
+    // Споделен режим (HAPI_SHARED_DATA=1): няколко процеса върху ЕДНИ данни. Изключителното
+    // заключване остава по подразбиране; тук процесът се регистрира като участник, а записите
+    // се пазят от сравнение-и-размяна в shared-data.js (нищо не се презаписва сляпо).
+    const sharedMode = String(process.env.HAPI_SHARED_DATA || '') === '1';
+    const lock = sharedMode ? instanceLock.joinShared({ dir: root, id: instanceId }) : instanceLock.acquire({ dir: root, id: instanceId });
+    if (lock.ok && sharedMode) { instanceState = { id: instanceId, acquired: true, tookOver: false, shared: true, startedAt: lock.payload.joinedAt, peers: lock.peers.length }; log.info('instance.shared', { ns: 'server', peers: lock.peers.length }) }
     if (!lock.ok) {
       const holder = lock.holder || {};
       const message = `data directory ${root} is locked by instance ${holder.id || '?'} (pid ${holder.pid || '?'} on ${holder.host || '?'}, heartbeat ${holder.heartbeatAt || '?'})`;
@@ -2540,7 +2557,7 @@ async function start() {
     } else {
       instanceState = { id: instanceId, acquired: true, tookOver: Boolean(lock.tookOver), startedAt: lock.payload.startedAt };
       if (lock.tookOver) log.warn('instance.stale-lock', { ns: 'server', previous: lock.previous ? lock.previous.id : null });
-      const beat = setInterval(() => { try { instanceLock.heartbeat(root, { id: instanceId }) } catch (e) { log.warn('instance.heartbeat.failed', { ns: 'server', err: e.message }) } }, 30000);
+      const beat = setInterval(() => { try { if (sharedMode) instanceLock.heartbeatShared({ dir: root, file: lock.file, id: instanceId }); else instanceLock.heartbeat(root, { id: instanceId }) } catch (e) { log.warn('instance.heartbeat.failed', { ns: 'server', err: e.message }) } }, 30000);
       beat.unref();
     }
     // Вградените правила се копират веднъж в редактируемата директория, а липсващите
@@ -2552,7 +2569,7 @@ async function start() {
     if (rulesStatus.missing.length) log.warn('rules.defaults', { ns: 'rules', missing: rulesStatus.missing.join(',') });
     else log.info('rules.loaded', { ns: 'rules', files: Object.keys(rulesStatus.files).length });
     const lines = (await fsp.readFile(telemetryFile, 'utf8')).split('\n'); for (const line of lines) { if (!line.trim()) continue; try { const e = JSON.parse(line); if (['visit', 'download', 'rating'].includes(e.event)) applyTelemetry(e) } catch { console.error('Invalid telemetry record') } }
-  } catch (e) { if (e.code !== 'ENOENT') throw e } await fsp.mkdir(htmlProjectsRoot, { recursive: true }); await fsp.mkdir(filesRoot, { recursive: true }); await fsp.mkdir(internalRoot, { recursive: true }); await auditChain.init(); db = metadataStore.load(); metadataStore.purgeExpiredSessions(); jobManager.recover(); await firstRunSeed(); await deployEvidencePortal(); await importKeyBundles().catch(e => log.warn('pgp.bundle.failed', { ns: 'pgp', err: e.message })); for (const p of db.portals) if (!fs.existsSync(path.join(apiRoot, p.slug, 'qr.svg'))) await writeApiDir(p, baseUrl(null)); applyBackupSchedule(); if (runtime.settings.retention && runtime.settings.retention.enabled) { const runScheduledRetention = () => { void queue.then(async () => { const r = await retention.apply(db.portals); metadataStore.save(db); if (r.deleted || r.disabled || r.auditLinesPruned) void audit('retention.scheduled', { deleted: r.deleted, disabled: r.disabled, auditLinesPruned: r.auditLinesPruned }) }).catch(e => console.error('SCHEDULED RETENTION FAILED', e.message)) }; setInterval(runScheduledRetention, 86400000).unref() } if (storageCheckIntervalMs > 0) { void runStorageCheck('scheduled').catch(() => { }); setInterval(() => { void runStorageCheck('scheduled').catch(() => { }) }, storageCheckIntervalMs) } log.info('startup', { ns: 'server', node: process.version, pid: process.pid, dataDir: root, level: log.level(), ingress: ingressMode, publicHost, port, adminPort, tsa: cryptoOptions.tsaEnabled, encryptFiles: cryptoOptions.encryptFiles, signPackages: cryptoOptions.signPackages, tls: Boolean(cryptoOptions.tlsCert || cryptoOptions.tlsKey) });
+  } catch (e) { if (e.code !== 'ENOENT') throw e } await fsp.mkdir(htmlProjectsRoot, { recursive: true }); await fsp.mkdir(filesRoot, { recursive: true }); await fsp.mkdir(internalRoot, { recursive: true }); await auditChain.init(); sharedData.refresh(); metadataStore.purgeExpiredSessions(); jobManager.recover(); await firstRunSeed(); await deployEvidencePortal(); await importKeyBundles().catch(e => log.warn('pgp.bundle.failed', { ns: 'pgp', err: e.message })); for (const p of db.portals) if (!fs.existsSync(path.join(apiRoot, p.slug, 'qr.svg'))) await writeApiDir(p, baseUrl(null)); applyBackupSchedule(); if (runtime.settings.retention && runtime.settings.retention.enabled) { const runScheduledRetention = () => { void update(async () => { const r = await retention.apply(db.portals); if (r.deleted || r.disabled || r.auditLinesPruned) void audit('retention.scheduled', { deleted: r.deleted, disabled: r.disabled, auditLinesPruned: r.auditLinesPruned }) }).catch(e => console.error('SCHEDULED RETENTION FAILED', e.message)) }; setInterval(runScheduledRetention, 86400000).unref() } if (storageCheckIntervalMs > 0) { void runStorageCheck('scheduled').catch(() => { }); setInterval(() => { void runStorageCheck('scheduled').catch(() => { }) }, storageCheckIntervalMs) } log.info('startup', { ns: 'server', node: process.version, pid: process.pid, dataDir: root, level: log.level(), ingress: ingressMode, publicHost, port, adminPort, tsa: cryptoOptions.tsaEnabled, encryptFiles: cryptoOptions.encryptFiles, signPackages: cryptoOptions.signPackages, tls: Boolean(cryptoOptions.tlsCert || cryptoOptions.tlsKey) });
   // TLS за собствените листенери (порт 8099/8098/8088). Двете опции вървят заедно:
   // липсващ или нечетим файл спира старта, вместо тихо да падне на HTTP.
   const tlsEnabled = Boolean(cryptoOptions.tlsCert || cryptoOptions.tlsKey);
@@ -2570,6 +2587,6 @@ async function start() {
   // accepting requests, let queued metadata writes finish, then close SQLite so the
   // WAL is checkpointed instead of leaving the shutdown to the kernel.
   let shuttingDown = false;
-  const shutdown = signal => { if (shuttingDown) return; shuttingDown = true; log.info('shutdown', { ns: 'server', signal }); let finished = false; const finish = () => { if (finished) return; finished = true; try { require('./instance-lock').release(root, instanceId) } catch (e) { log.warn('instance.release.failed', { ns: 'server', err: e.message }) } try { observer.close() } catch (e) { log.warn('observer.close.failed', { ns: 'server', err: e.message }) } try { metadataStore.close() } catch (e) { log.error('sqlite.close.failed', { ns: 'server', err: e.message }) } process.exit(0) }; const timer = setTimeout(finish, 5000); timer.unref(); let open = servers.length; if (!open) return finish(); for (const s of servers) s.close(() => { if (--open === 0) { clearTimeout(timer); void Promise.resolve(queue).catch(() => { }).then(finish) } }) };
+  const shutdown = signal => { if (shuttingDown) return; shuttingDown = true; log.info('shutdown', { ns: 'server', signal }); let finished = false; const finish = () => { if (finished) return; finished = true; try { require('./instance-lock').release(root, instanceId); if (sharedMode) require('./instance-lock').leaveShared({ file: lock && lock.file }) } catch (e) { log.warn('instance.release.failed', { ns: 'server', err: e.message }) } try { observer.close() } catch (e) { log.warn('observer.close.failed', { ns: 'server', err: e.message }) } try { metadataStore.close() } catch (e) { log.error('sqlite.close.failed', { ns: 'server', err: e.message }) } process.exit(0) }; const timer = setTimeout(finish, 5000); timer.unref(); let open = servers.length; if (!open) return finish(); for (const s of servers) s.close(() => { if (--open === 0) { clearTimeout(timer); void Promise.resolve(queue).catch(() => { }).then(finish) } }) };
   process.on('SIGTERM', () => shutdown('SIGTERM')); process.on('SIGINT', () => shutdown('SIGINT'))
 } start().catch(e => { console.error(e); process.exit(1) });

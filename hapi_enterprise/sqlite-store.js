@@ -20,8 +20,13 @@ function open(jsonPath) {
  CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE, created_at TEXT NOT NULL, expires_at TEXT);
  CREATE INDEX IF NOT EXISTS sessions_username_idx ON sessions(username);`);
   const get = db.prepare('SELECT payload FROM metadata WHERE id=1');
+  const getSnapshot = db.prepare('SELECT payload, revision FROM metadata WHERE id=1');
+  const getRevision = db.prepare('SELECT revision FROM metadata WHERE id=1');
   const insert = db.prepare('INSERT INTO metadata(id,payload,revision) VALUES(1,?,0)');
   const replace = db.prepare('UPDATE metadata SET payload=?, revision=revision+1 WHERE id=1');
+  // Записът е сравнение-и-размяна: ревизията, която сме прочели, трябва да е още същата.
+  // Така втори процес, който е записал между нашето четене и нашето писане, не се губи.
+  const replaceIf = db.prepare('UPDATE metadata SET payload=?, revision=revision+1 WHERE id=1 AND revision=?');
   const insertPortal = db.prepare('INSERT INTO portal_index(id,slug,title) VALUES(?,?,?)');
   const insertFile = db.prepare('INSERT INTO file_index(id,portal_id,name,size) VALUES(?,?,?,?)');
   const insertUser = db.prepare('INSERT INTO users(username,password_hash,scopes,active,created_at) VALUES(?,?,?,1,?)');
@@ -52,8 +57,16 @@ function open(jsonPath) {
   }
   function load() { const row = get.get(); if (row) return validate(parseStored(row.payload, 'SQLite')); let initial = { portals: [], qrArtifacts: [] }; if (fs.existsSync(jsonPath)) initial = validate(parseStored(fs.readFileSync(jsonPath, 'utf8'), jsonPath)); db.exec('BEGIN IMMEDIATE'); try { insert.run(JSON.stringify(initial)); reindex(initial); db.exec('COMMIT') } catch (e) { db.exec('ROLLBACK'); throw e } return initial }
   function reindex(v) { db.exec('DELETE FROM file_index; DELETE FROM portal_index'); for (const p of v.portals) { insertPortal.run(p.id, p.slug, p.title); for (const f of p.files || []) insertFile.run(f.id, p.id, f.name, f.size || 0) } }
-  function save(v) {
-    validate(v); db.exec('BEGIN IMMEDIATE'); try { replace.run(JSON.stringify(v)); reindex(v); db.exec('COMMIT') } catch (e) { db.exec('ROLLBACK'); throw e }
+  // `save(payload)` — безусловен запис (възстановяване от архив, начален seed).
+  // `save(payload, revision)` — запис САМО ако ревизията е още `revision`; иначе
+  // `STORE_CONFLICT` (код 409), за да може извикващият да прочете наново и да опита пак.
+  function save(v, expectedRevision) { // eslint-disable-line
+    validate(v); db.exec('BEGIN IMMEDIATE');
+    try {
+      if (expectedRevision === undefined || expectedRevision === null) replace.run(JSON.stringify(v));
+      else if (replaceIf.run(JSON.stringify(v), Number(expectedRevision)).changes !== 1) throw Object.assign(new Error('Метаданните са променени от друг процес (очаквана ревизия ' + Number(expectedRevision) + '). Прочети наново и опитай пак.'), { status: 409, code: 'STORE_CONFLICT', expectedRevision: Number(expectedRevision) });
+      reindex(v); db.exec('COMMIT')
+    } catch (e) { db.exec('ROLLBACK'); throw e }
     // A failed JSON mirror cannot undo a committed SQLite transaction.
     try {
       // Never follow a pre-existing snapshot symlink. Use a unique, exclusive temporary
@@ -71,6 +84,16 @@ function open(jsonPath) {
         try { fs.unlinkSync(tmp) } catch (e) { if (e.code !== 'ENOENT') console.error('Snapshot cleanup failed:', e.message) }
       }
     } catch (e) { console.error('JSON SNAPSHOT FAILED:', e.message) }
+    return revision()
+  }
+  // Колко е голяма ревизията в базата — една подготвена заявка, без payload. Служи за
+  // „има ли нови данни?“ проверка преди всяка заявка, без да се чете целият JSON.
+  function revision() { const row = getRevision.get(); return row ? Number(row.revision) || 0 : 0 }
+  // Данните и ревизията им в ЕДНА заявка — така читането не може да хване половин състояние.
+  function snapshot() {
+    const row = getSnapshot.get();
+    if (!row) return { payload: load(), revision: revision() };
+    return { payload: validate(parseStored(row.payload, 'SQLite')), revision: Number(row.revision) || 0 };
   }
   function stats() { const sizes = [sqlitePath, sqlitePath + '-wal', sqlitePath + '-shm'].map(p => { try { return fs.statSync(p).size } catch (e) { if (e.code === 'ENOENT') return 0; throw e } }); return { engine: 'sqlite', sqlitePath, bytes: sizes.reduce((a, b) => a + b, 0), databaseBytes: sizes[0], walBytes: sizes[1], sharedMemoryBytes: sizes[2], revision: db.prepare('SELECT revision FROM metadata WHERE id=1').get()?.revision || 0 } }
   // Бърза проверка на цялата база (PRAGMA quick_check): открива повредени страници,
@@ -133,6 +156,6 @@ function open(jsonPath) {
   function deleteUserSessions(username) { deleteUserSessionsStmt.run(username) }
   function purgeExpiredSessions() { deleteExpiredStmt.run(nowIso()) }
 
-  return { load, save, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, close: () => db.close() };
+  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, close: () => db.close() };
 }
 module.exports = { open };

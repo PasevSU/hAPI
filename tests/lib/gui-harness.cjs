@@ -30,12 +30,13 @@ const SHARED = [
   'qrcode.js',
 ];
 
-async function startServer({ dataDir, token, port } = {}) {
+async function startServer({ dataDir, token, port, env, keepData } = {}) {
   const dir = dataDir || fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-gui-'));
+  const keepDirectory = Boolean(keepData);
   const listenPort = port || (await freePort());
   const adminToken = token || 'gui-' + require('node:crypto').randomBytes(18).toString('hex');
   const child = spawn(process.execPath, [path.join(root, 'hapi_enterprise', 'server.js')], {
-    env: { ...process.env, DATA_DIR: dir, PORT: String(listenPort), PUBLIC_GATEWAY_PORT: '0', ADMIN_TOKEN: adminToken },
+    env: { ...process.env, DATA_DIR: dir, PORT: String(listenPort), PUBLIC_GATEWAY_PORT: '0', ADMIN_TOKEN: adminToken, ...(env || {}) },
     stdio: 'ignore',
   });
   const base = `http://127.0.0.1:${listenPort}`;
@@ -76,9 +77,9 @@ async function startServer({ dataDir, token, port } = {}) {
     child,
     authFetch,
     api,
-    async stop() {
+    async stop({ keep = keepDirectory } = {}) {
       await stopChild(child);
-      fs.rmSync(dir, { recursive: true, force: true });
+      if (!keep) fs.rmSync(dir, { recursive: true, force: true });
     },
   };
 }

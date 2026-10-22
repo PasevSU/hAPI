@@ -39,10 +39,16 @@ const assert = require('node:assert/strict');
     }
     assert.equal(ready, true, 'сървърът стартира');
 
-    // 1. Liveness остава минимален и без детайли за вътрешността.
+    // 1. Liveness остава минимален: статус + състояние на споделените данни (ревизия и
+    //    броячи), без нито една тайна и без вътрешни пътища.
     const health = await fetch(base + '/health');
     assert.equal(health.status, 200);
-    assert.deepEqual(await health.json(), { status: 'ok' });
+    const liveness = await health.json();
+    assert.equal(liveness.status, 'ok');
+    assert.equal(typeof liveness.shared.revision, 'number', 'ревизията на данните е число');
+    assert.equal(Number.isInteger(liveness.shared.transactions), true, 'броячът на транзакциите е цяло число');
+    const asText = JSON.stringify(liveness);
+    assert.equal(/token|password|secret|PRIVATE/i.test(asText), false, 'в /health няма тайни');
 
     // 2. Readiness: публичен, без токен, с реални проверки.
     const response = await fetch(base + '/ready');
