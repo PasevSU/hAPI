@@ -3,7 +3,7 @@
 # 🏠 HOME ASSISTANT Portal Enterprise - hAPI Enterprise
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?color=ff00d8)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.28-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.29-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?color=ff00d8)](https://hacs.xyz)
 
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -261,6 +261,92 @@ node hapi_enterprise\standalone.js
 > `/api/hapi_enterprise/v1/{tail}`; никога не препраща административни API.
 
 ---
+
+## ⚙️ Настройки по подразбиране
+
+Всяка настройка има подразбиране — прясна инсталация работи, без да пипаш нищо. Таблицата
+се генерира от `hapi_enterprise/config.yaml` и преводите (`node scripts/settings-defaults.cjs`),
+за да не се разминава с кода. Празно поле не значи „изключено“ навсякъде — виж последната
+колона.
+
+<!-- SETTINGS-DEFAULTS:START — генерира се от scripts/settings-defaults.cjs; не се редактира на ръка -->
+
+| Настройка | Ключ | По подразбиране | Какво следва от него |
+| --- | --- | --- | --- |
+| Потребителско име за конзолата | `username` | — | Празно: при първи старт се създава конзолен потребител `api`. През Ingress се ползва HA акаунтът. |
+| Парола за конзолата | `password` | — | Празно: при първи старт се генерира случайна парола и се записва в `api-credentials.txt` (права 0600). |
+| Име на базата и портала | `db_name` | `Files` | Именува първия портал (`Files`, slug `files`). Сменя се преди първия старт, ако трябва друго име. |
+| Папка за резервни копия | `backup_folder` | — | Празно: `<хранилище>/backups` в папката на add-on-а. Относителен път се решава в `/share`. |
+| Огледална папка за архивите | `backup_mirror` | — | Празно: без второ копие на резервните копия. Всяко зададено копие се проверява с SHA-256. |
+| Огледална папка за файловете | `storage_mirror` | — | Празно: без второ копие на качените файлове. Зададено огледало се проверява и възстановява. |
+| Лимит на паметта (MB) | `memory_limit_mb` | `0` | `0` оставя подразбирането на Node.js. `256`-`384` е разумният диапазон за Raspberry Pi. |
+| Идентификатор на базата | `db_id` | `1` | `1` е пространството от имена по подразбиране. Сменя се само за втора, независима база. |
+| Конфигурационни профили | `profiles` | — | Празно: ползват се вградените профили. Път или JSON ги заменя; невалиден JSON се игнорира. |
+| Публичен домейн | `public_domain` | — | Празно: само относителни адреси — порталите и QR кодовете работят в локалната мрежа, не от интернет. |
+| Публичен API шлюз | `public_gateway` | `false` | `false`: порт `8088` остава непубликуван. `true` отваря gateway-а за собствен reverse proxy. |
+| Адреси в същия origin | `public_same_origin` | `false` | `false`: абсолютните адреси се строят от `public_domain`. `true` дава относителни на адреса на HA. |
+| Роли на потребители | `user_roles` | — | Празно: всеки Ingress потребител е `admin`. Картата е за понижаване, напр. `{"guest": "viewer"}`. |
+| Роли на групи | `group_roles` | — | Празно: без карта на групи. HA не подава групи; reverse proxy, който ги добавя, може. |
+| Място за съхранение | `storage_location` | `addon_config` | `addon_config`: документите са в папката на add-on-а. `media` и `share` са споделени HA папки. |
+| Подпапка за съхранение | `storage_subdirectory` | `hapi_enterprise` | `hapi_enterprise`: една предвидима подпапка в избраното хранилище. |
+| Режим на съхранение | `storage_mode` | `local` | `local`: монтираната папка се ползва директно. `ha_network` отказва старт при неактивен mount. |
+| Име на мрежовия storage | `storage_mount_name` | — | Празно: има значение само при `storage_mode: ha_network`, където името на mount-а е задължително. |
+| Минимум свободно място (MB) | `min_free_mb` | `100` | `100`: стартът се отказва под 100 MB свободни. Вдигни до `500`+ при сканиране на големи папки. |
+| Ниво на логове | `log_level` | `info` | `info`: без ред на заявка. `debug` пише по ред на всяка заявка; `trace` е за дълбока диагностика. |
+| Директория с правила | `config_dir` | — | Празно: `/config/rules`, където при първи старт се копират вградените правила и могат да се редактират. |
+| Публикуване на QR портала за доказателства | `evidence_portal_deploy` | `true` | `true`: страницата Evidence View се копира в `<HA config>/www/hapi/data` и се сервира на `/local/hapi/data/`. |
+| RFC 3161 времеви печати | `tsa_enabled` | `false` | `false`: RFC 3161 маршрутите отговарят `409` и не се създават токени. Нищо не се преструва. |
+| START TSA адрес | `tsa_start_url` | `https://zeitstempel.dfn.de/` | DFN услуга за времеви печат за START границата (отпечатъкът на манифеста). |
+| STOP TSA адрес | `tsa_stop_url` | `http://timestamp.digicert.com` | DigiCert услуга за времеви печат за STOP границата (затварящият отпечатък). |
+| Подписване на експортните пакети | `sign_packages` | `false` | `false`: пакетите не се подписват, докато в конзолата не се прикачи частен ключ. |
+| Ключ за подписване | `signing_key` | — | Празно: подписването ползва избрания в конзолата ключ (Настройки → PGP ключове). |
+| Шифроване на файловете | `encrypt_files` | `false` | `false`: качванията се пазят както са; `X-File-Encrypt` пак решава за конкретната заявка. |
+| TLS сертификат | `tls_cert` | — | Празно: HTTPS е изключен. Сертификат и ключ се задават заедно, иначе стартът се отказва. |
+| TLS частен ключ | `tls_key` | — | Празно: HTTPS е изключен. Или `tls_cert` и `tls_key` заедно, или нито едно. |
+| Сензори · режим на IP | `visitor_ip_mode` | `hashed` | `hashed`: адресите на посетителите се пазят като SHA-256 хеш. `masked` пази подмрежата, `full` — целия адрес. |
+| Сензори · срок на записа (дни) | `visitor_retention_days` | `90` | `90`: записите за посещения се махат след 90 дни. `0` значи „наследи подразбирането“. |
+| Сензори · файл с геобаза | `visitor_geoip_path` | — | Празно: без офлайн геобаза, страната остава неизвестна. Абсолютен път я включва. |
+
+### Настройки в конзолата (раздел „Настройки“)
+
+Записват се в `config/settings.json` още при първия старт. `—` значи „наследява от опцията на add-on-а или от вграденото подразбиране“, а не „изключено“.
+
+| Настройка | По подразбиране |
+| --- | --- |
+| `artifactDirectory` | `qr-records` |
+| `databaseFile` | `db.json` |
+| `databaseDirectory` | `.` |
+| `organization` | `PasevSU DEV` |
+| `project` | `Home Assistant Projects` |
+| `campaign` | `NO TRUST Cybersecurity` |
+| `backupSchedule.enabled` | `false` |
+| `backupSchedule.intervalMinutes` | `1440` |
+| `backupSchedule.maxBackups` | `10` |
+| `limits.maxUploadMb` | — |
+| `limits.maxDownloadStreams` | — |
+| `limits.maxJobs` | — |
+| `limits.storageCheckMinutes` | — |
+| `limits.publicBaseUrl` | `` |
+| `limits.corsOrigin` | `` |
+| `limits.requirePortalToken` | — |
+| `limits.storeRawIp` | — |
+| `data.conflictPolicy` | `queue` |
+| `data.strictTaxonomy` | `false` |
+| `data.defaultCategory` | `` |
+| `data.defaultGroup` | `` |
+| `data.maxTags` | `30` |
+| `retention.enabled` | `false` |
+| `retention.fileDays` | — |
+| `retention.auditDays` | — |
+| `retention.fileAction` | `disable` |
+| `preview.enabled` | `true` |
+| `preview.thumbnails` | `true` |
+| `sensors.ipMode` | — |
+| `sensors.trustProxy` | — |
+| `sensors.retentionDays` | — |
+| `sensors.geoipPath` | `` |
+
+<!-- SETTINGS-DEFAULTS:END -->
 
 ## 🗂️ Структура на хранилището
 

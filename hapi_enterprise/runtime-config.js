@@ -92,7 +92,23 @@ function validate(v) {
 function publicBase(v) { const s = String(v ?? '').trim().replace(/\/+$/, ''); return s && s.length <= 200 && /^https?:\/\/[A-Za-z0-9.\-:\[\]]+(\/[A-Za-z0-9._~\-\/]*)?$/.test(s) ? s : '' }
 function create(root) {
   const configDir = path.join(root, 'config'), configPath = path.join(configDir, 'settings.json'); let settings = DEFAULT;
-  try { settings = validate(JSON.parse(fs.readFileSync(configPath, 'utf8'))) } catch (e) { if (e.code !== 'ENOENT') throw e }
+  try {
+    settings = validate(JSON.parse(fs.readFileSync(configPath, 'utf8')));
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e;
+    // Първи старт: записваме ЦЕЛИЯ набор настройки с подразбиранията, за да не съществува
+    // състояние „нищо не е зададено“. Конзолата показва конкретни стойности, а не празни
+    // полета, и всеки ключ има стойност на диска от първата секунда. `null` при сензорите
+    // остава нарочно: това значи „наследи от опцията на add-on-а/средата“, а записана
+    // конкретна стойност би заключила поведението и би отменила опцията.
+    try {
+      fs.mkdirSync(configDir, { recursive: true });
+      fs.writeFileSync(configPath, JSON.stringify(settings, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+    } catch (writeError) {
+      // Друг процес може да е създал файла в същата секунда — тогава печели неговият.
+      if (writeError.code !== 'EEXIST') throw writeError;
+    }
+  }
   const databaseRelative = path.join(settings.databaseDirectory, settings.databaseFile), databasePath = path.join(root, databaseRelative);
   async function atomic(file, data) { const tmp = file + '.' + crypto.randomBytes(6).toString('hex') + '.tmp'; await fsp.mkdir(path.dirname(file), { recursive: true }); try { const h = await fsp.open(tmp, 'wx', 0o600); try { await h.writeFile(JSON.stringify(data, null, 2)); await h.sync() } finally { await h.close() } await fsp.rename(tmp, file) } catch (e) { await fsp.rm(tmp, { force: true }).catch(() => { }); throw e } }
   async function save(patch) {
@@ -133,4 +149,4 @@ function create(root) {
   }
   return { get settings() { return settings }, effective, databasePath, databaseRelative, save, createArtifacts, removeArtifacts };
 }
-module.exports = { create, validate, validateSensors };
+module.exports = { create, validate, validateSensors, DEFAULT };

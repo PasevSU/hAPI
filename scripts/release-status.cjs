@@ -90,6 +90,7 @@ const badCounts = bad.data ? { files: bad.data.scanned, lines: bad.data.totalLin
 const docs = runGate('tests/docs-consistency.cjs');
 const changelog = runGate('scripts/sync-addon-changelog.cjs', ['--check']);
 const scenario = runGate('tests/scenario-matrix.cjs');
+const defaults = runGate('scripts/settings-defaults.cjs', ['--check']);
 
 // ── 5. Какво влезе — първият запис в CHANGELOG ────────────────────────────────
 function changelogSection(wanted) {
@@ -124,6 +125,7 @@ rows.push([
 ]);
 rows.push(['Документация', '`node tests/docs-consistency.cjs`', docs.ok ? '✔ версията е еднаква в документите, няма счупени връзки' : '✘ ' + docs.last]);
 rows.push(['Changelog на add-on-а', '`node scripts/sync-addon-changelog.cjs --check`', changelog.ok ? '✔ актуален' : '✘ ' + changelog.last]);
+rows.push(['Настройки по подразбиране', '`node scripts/settings-defaults.cjs --check`', defaults.ok ? '✔ публикувани в README-тата' : '✘ ' + defaults.last]);
 rows.push(['Сценарии', '`node tests/scenario-matrix.cjs`', scenario.ok ? '✔ ' + scenario.last.replace(/^PASS[^:]*:\s*/, '') : '✘ ' + scenario.last]);
 
 // Броят файлове в архива е свойство на дървото (кой файл влиза), не на байтовете му —

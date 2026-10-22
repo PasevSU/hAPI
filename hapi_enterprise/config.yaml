@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.69.28"
+version: "0.69.29"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
@@ -43,7 +43,7 @@ ports_description:
 options:
   username: ""
   password: ""
-  db_name: ""
+  db_name: "Files"
   backup_folder: ""
   backup_mirror: ""
   storage_mirror: ""
@@ -79,7 +79,7 @@ options:
   # конзолата: Настройки → Сензори, и в средата като TRUST_PROXY). Режимът е match,
   # за да приеме и старото празно "" — иначе Supervisor отказва старт след обновяване.
   visitor_ip_mode: hashed
-  visitor_retention_days: 0
+  visitor_retention_days: 90
   visitor_geoip_path: ""
 schema:
   username: str?

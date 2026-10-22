@@ -34,12 +34,15 @@
 - [ ] Changelog entry added.
 - [ ] `node scripts/release-status.cjs` — `reports/RELEASE-STATUS.md` регенериран (числата в него
       идват от отчетите на инструментите; `--check` може да го провери).
+- [ ] `node scripts/settings-defaults.cjs` — таблицата „Настройки по подразбиране“ в
+      `hapi_enterprise/README.md` и `BG.md` е регенерирана (нова/променена опция без ред
+      спира генератора; `--check` го хваща).
 
 ## Release
 
 - [ ] Tag `v<версия>` created (annotated: `git tag -a v<v> -m "hAPI Enterprise <v>" <sha>`).
-- [ ] **Проверено, че изданието в GitHub съществува** — workflow-ът `Release` не се задейства
-      надеждно при push на таг, затова се проверява изрично:
+- [ ] **Проверено, че изданието в GitHub съществува.** (Проверено на 0.69.28: един таг, пратен
+      сам, задейства `Release` workflow-а и той създава изданието с петте актива.)
       `gh release view v<v> --repo PasevSU/hAPI --json assets`.
       Ако го няма: `gh release create v<v> --title "v<v>" --notes-file <CHANGELOG-частта>`,
       после `gh release upload v<v> --clobber` с петте файла от `dist/`.

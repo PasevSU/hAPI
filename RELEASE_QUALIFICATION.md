@@ -1,6 +1,6 @@
 # Portal Enterprise — release qualification history
 
-**Текущо квалифицирано издание: 0.69.28** — публикува се като custom add-on (Supervisor repo) и
+**Текущо квалифицирано издание: 0.69.29** — публикува се като custom add-on (Supervisor repo) и
 като HACS интеграция. Издаването минава през Release workflow (таг → CI → артефакти), а не през
 ръчно качване. Единственият източник за актуалното състояние е
 [`reports/RELEASE-STATUS.md`](reports/RELEASE-STATUS.md) — той се генерира заедно с изданието
@@ -9,7 +9,40 @@
 **Всичко по-долу е ИСТОРИЯ** от предишни снимки и **не** описва текущото състояние. Ако
 цифрите тук и в `reports/RELEASE-STATUS.md` се разминават, важи `RELEASE-STATUS.md`.
 
-## v0.69.28 — актуална квалификация (2026-10-22)
+## v0.69.29 — актуална квалификация (2026-10-22)
+
+Обхват: подразбиранията при инсталация и тяхната публикация.
+
+- Първият старт записва целия `config/settings.json`; `null` при сензорите остава „наследи“.
+- Нови `scripts/settings-defaults.cjs` и `tests/settings-defaults.cjs`: таблицата се строи от
+  `config.yaml` + преводите + `runtime-config.DEFAULT` и се проверява; нова опция без обяснение
+  спира генератора.
+- Таблицата замества четирите ръчно писани таблици в add-on README-то (две от тях вече бяха
+  неверни) и е публикувана на български в `BG.md`.
+- `db_name: "Files"` и `visitor_retention_days: 90` са явни (ефектът им е същият като преди).
+- GitHub Actions: `checkout` v7, `setup-node` v7, `upload-artifact` v7, `codeql-action` v4,
+  `action-gh-release` v3.
+
+### Проверени локални гейтове
+
+| Гейт                           | Команда                                      | Резултат                                             |
+| ------------------------------ | -------------------------------------------- | ---------------------------------------------------- |
+| Пълен тестов пакет             | `node scripts/test-matrix.cjs`               | **207/207** (1 опит)                                 |
+| Издателски сценарии            | `node scripts/verify-release.cjs`            | **20/20**                                            |
+| GUI + съвместимост + изданието | `npm run audit:gui`                          | GUI 33/33 · съвместимост 28/28 · изданието проверено |
+| Логически одит                 | `node scripts/logic-audit.cjs --gate`        | чисто (0 отворени)                                   |
+| Скенер за лош код              | `node scripts/bad-code-scan.cjs --gate`      | чисто (critical/high/medium = 0)                     |
+| Подразбирания в README         | `node scripts/settings-defaults.cjs --check` | ✔ 33 настройки                                       |
+| Отчет за състоянието           | `node scripts/release-status.cjs --check`    | ✔ актуален                                           |
+
+### Какво остава непроверено извън тази среда
+
+- Реален build и инсталация през Home Assistant Supervisor и браузърна Ingress сесия.
+- Прекъсване на NAS/мрежово хранилище и cross-filesystem recovery drill; независим security review.
+- PDF/A-3 не е заверен с veraPDF; Evidence Package и статусите `DRAFT`/`INCOMPLETE` в GUI
+  остават от W7 — виж [`docs/plan/17-portal-files-management-plan.md`](docs/plan/17-portal-files-management-plan.md).
+
+## v0.69.28 — предишна квалификация (2026-10-22)
 
 Обхват: доказателствената верига. Изданието не добавя функции — прави така, че зеленият
 резултат да значи нещо и извън една машина.

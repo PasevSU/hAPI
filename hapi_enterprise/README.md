@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.28-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.29-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
@@ -185,16 +185,89 @@ tls_key: ""
 
 ## Configuration
 
-All options are optional. Options apply on add-on restart.
+All options are optional and have a default — a fresh installation works without editing
+this tab. Options apply on add-on restart.
 
-### Access and console
+<!-- SETTINGS-DEFAULTS:START — генерира се от scripts/settings-defaults.cjs; не се редактира на ръка -->
 
-| Option        | Default   | Meaning                                                                 |
-| ------------- | --------- | ----------------------------------------------------------------------- |
-| `username`    | *(empty)* | Optional console user name for standalone deployments.                  |
-| `password`    | *(empty)* | Optional console password for standalone deployments.                   |
-| `user_roles`  | *(empty)* | Optional JSON map of HA user → role, e.g. `{"guest": "viewer"}`.        |
-| `group_roles` | *(empty)* | Optional JSON map of HA group → role, when roles are assigned by group. |
+| Setting | Key | Default | What the default means |
+| --- | --- | --- | --- |
+| Console user name | `username` | — | Empty: a standalone console user `api` is created on first start. Under Ingress the Home Assistant account is used. |
+| Console password | `password` | — | Empty: a random password is generated on first start and written to `api-credentials.txt` (mode 0600). |
+| Database and portal name | `db_name` | `Files` | Names the first portal (`Files`, slug `files`). Change it before the first start to get another name. |
+| Backup folder | `backup_folder` | — | Empty: `<storage>/backups` inside the add-on data folder. A relative path resolves inside `/share`. |
+| Backup mirror folder | `backup_mirror` | — | Empty: no second copy of the database backups. Every configured copy is verified with SHA-256. |
+| File mirror folder | `storage_mirror` | — | Empty: no second copy of uploaded files. A configured mirror is verified and repairable. |
+| Node heap limit (MB) | `memory_limit_mb` | `0` | `0` keeps the Node.js default heap. `256`-`384` is the sane range on a Raspberry Pi. |
+| Database id | `db_id` | `1` | `1` is the default namespace for composite keys. Change it only for a second, independent database. |
+| Configuration profiles | `profiles` | — | Empty: the built-in profile set is used. A path or JSON replaces it; invalid JSON is ignored. |
+| Public domain | `public_domain` | — | Empty: relative links only — portals and QR codes work on the local network, not from the internet. |
+| Public API gateway | `public_gateway` | `false` | `false`: port `8088` stays unpublished. `true` opens the add-on gateway for your own reverse proxy. |
+| Same-origin URLs | `public_same_origin` | `false` | `false`: absolute URLs are built from `public_domain`. `true` emits relative URLs on the HA host and port. |
+| User roles | `user_roles` | — | Empty: every Ingress user is `admin`. The map is for demotion, e.g. `{"guest": "viewer"}`. |
+| Group roles | `group_roles` | — | Empty: no group mapping. Home Assistant does not send groups; a reverse proxy that adds them can. |
+| Storage location | `storage_location` | `addon_config` | `addon_config`: documents live in the add-on folder. `media` and `share` are shared HA folders. |
+| Storage subdirectory | `storage_subdirectory` | `hapi_enterprise` | `hapi_enterprise`: one predictable subfolder inside the chosen storage location. |
+| Storage mode | `storage_mode` | `local` | `local`: the mounted folder is used directly. `ha_network` refuses to start when the mount is inactive. |
+| Network storage name | `storage_mount_name` | — | Empty: only meaningful with `storage_mode: ha_network`, where the mount name is required. |
+| Minimum free space (MB) | `min_free_mb` | `100` | `100`: startup fails below 100 MB free. Raise it to `500`+ when you scan large folders. |
+| Log level | `log_level` | `info` | `info`: no per-request lines. `debug` logs one line per HTTP request; `trace` is for deep diagnostics. |
+| Rules directory | `config_dir` | — | Empty: `/config/rules`, where the built-in rules are copied on first start and can be edited. |
+| Publish the QR evidence portal | `evidence_portal_deploy` | `true` | `true`: the Evidence View page is copied to `<HA config>/www/hapi/data` and served at `/local/hapi/data/`. |
+| RFC 3161 timestamps | `tsa_enabled` | `false` | `false`: the RFC 3161 endpoints answer `409` and no tokens are created. Nothing is ever faked. |
+| START TSA URL | `tsa_start_url` | `https://zeitstempel.dfn.de/` | DFN timestamp service for the START boundary (the manifest digest). |
+| STOP TSA URL | `tsa_stop_url` | `http://timestamp.digicert.com` | DigiCert timestamp service for the STOP boundary (the closing digest). |
+| Sign export packages | `sign_packages` | `false` | `false`: packages are not signed until a private key is attached in the console. |
+| Signing key | `signing_key` | — | Empty: signing uses the key selected in the console (Settings → PGP keys). |
+| Encrypt stored files | `encrypt_files` | `false` | `false`: uploads are stored as they are; `X-File-Encrypt` still wins per request. |
+| TLS certificate | `tls_cert` | — | Empty: HTTPS is off. Certificate and private key must be set together, otherwise startup fails. |
+| TLS private key | `tls_key` | — | Empty: HTTPS is off. Both `tls_cert` and `tls_key` or neither. |
+| Sensors · IP mode | `visitor_ip_mode` | `hashed` | `hashed`: visitor addresses are stored as SHA-256 hashes. `masked` keeps the subnet, `full` the raw address. |
+| Sensors · record lifetime (days) | `visitor_retention_days` | `90` | `90`: visitor records are removed after 90 days. Set `0` to inherit the runtime default. |
+| Sensors · geo database file | `visitor_geoip_path` | — | Empty: no offline geo database, so the country stays unknown. An absolute path enables it. |
+
+### Console settings (Settings tab)
+
+Written to `config/settings.json` on the first start. `—` means “inherits from the add-on option or the built-in default”, not “off”.
+
+| Setting | Default |
+| --- | --- |
+| `artifactDirectory` | `qr-records` |
+| `databaseFile` | `db.json` |
+| `databaseDirectory` | `.` |
+| `organization` | `PasevSU DEV` |
+| `project` | `Home Assistant Projects` |
+| `campaign` | `NO TRUST Cybersecurity` |
+| `backupSchedule.enabled` | `false` |
+| `backupSchedule.intervalMinutes` | `1440` |
+| `backupSchedule.maxBackups` | `10` |
+| `limits.maxUploadMb` | — |
+| `limits.maxDownloadStreams` | — |
+| `limits.maxJobs` | — |
+| `limits.storageCheckMinutes` | — |
+| `limits.publicBaseUrl` | `` |
+| `limits.corsOrigin` | `` |
+| `limits.requirePortalToken` | — |
+| `limits.storeRawIp` | — |
+| `data.conflictPolicy` | `queue` |
+| `data.strictTaxonomy` | `false` |
+| `data.defaultCategory` | `` |
+| `data.defaultGroup` | `` |
+| `data.maxTags` | `30` |
+| `retention.enabled` | `false` |
+| `retention.fileDays` | — |
+| `retention.auditDays` | — |
+| `retention.fileAction` | `disable` |
+| `preview.enabled` | `true` |
+| `preview.thumbnails` | `true` |
+| `sensors.ipMode` | — |
+| `sensors.trustProxy` | — |
+| `sensors.retentionDays` | — |
+| `sensors.geoipPath` | `` |
+
+<!-- SETTINGS-DEFAULTS:END -->
+
+### Roles
 
 Roles are `admin`, `operator` and `viewer`. **Admin is the default:** every Home
 Assistant user who reaches the Ingress listener is treated as `admin`, so a fresh
@@ -206,21 +279,7 @@ to `admin`. `DEFAULT_ROLE=viewer` in the add-on environment flips the fallback f
 installations that prefer deny-by-default at the Home Assistant account level.
 `GET /admin/api/whoami` reports the effective `role`, `ingress` and `defaultRole`.
 
-### Storage
-
-| Option                 | Default           | Meaning                                                                  |
-| ---------------------- | ----------------- | ------------------------------------------------------------------------ |
-| `storage_location`     | `addon_config`    | `addon_config` (the add-on's own `/config` folder), `media` or `share`.  |
-| `storage_subdirectory` | `hapi_enterprise` | Subfolder created inside the storage location.                           |
-| `storage_mode`         | `local`           | `local`, or `ha_network` with an active HA network storage mount.        |
-| `storage_mount_name`   | *(empty)*         | Name of the HA network storage mount, only for `ha_network`.             |
-| `min_free_mb`          | `100`             | Startup fails when the storage location has less free space.             |
-| `db_name`              | *(empty)*         | Database file name inside `/config` (default name when empty).           |
-| `db_id`                | `1`               | Database/profile identifier used in composite variable keys.             |
-| `backup_folder`        | *(empty)*         | Folder for scheduled backups (inside `/config` or `/share`).             |
-| `backup_mirror`        | *(empty)*         | Second copy target for those backups (must differ from `backup_folder`). |
-| `storage_mirror`       | *(empty)*         | Second copy target for uploaded files (must differ from the data dir).   |
-| `memory_limit_mb`      | `0`               | Node heap cap in MB (`0` = Node default; `256`–`384` on small boards).   |
+### Mirrors and backups
 
 With `storage_mirror` set, every upload is written twice and the copy is compared
 byte-for-byte. `POST /admin/api/storage/mirror/verify` re-hashes both sides
@@ -234,35 +293,6 @@ copy is hashed again and compared with the original; a copy that does not match 
 deleted and logged (`backup.mirror.mismatch`), so a broken mirror can never look like
 a valid archive. `POST /admin/api/database/backups/verify` re-hashes every archive and
 reports `primary` / `mirror` state (`ok`, `mismatch`, `missing`).
-
-### Public channel
-
-| Option               | Default   | Meaning                                                                            |
-| -------------------- | --------- | ---------------------------------------------------------------------------------- |
-| `public_gateway`     | `false`   | Enable the add-on's own public gateway on port `8088` (reverse-proxy it yourself). |
-| `public_same_origin` | `false`   | Emit relative URLs — the API answers on the same host/port as Home Assistant.      |
-| `public_domain`      | *(empty)* | External domain for portals and QR codes, e.g. `pasev.asuscomm.com`.               |
-
-### Diagnostics and advanced
-
-| Option       | Default   | Meaning                                                                         |
-| ------------ | --------- | ------------------------------------------------------------------------------- |
-| `log_level`  | `info`    | `error`, `warn`, `info`, `debug` or `trace`. `debug` logs one line per request. |
-| `config_dir` | *(empty)* | Folder with the access/export rule files. Empty → `/config/rules`.              |
-| `profiles`   | *(empty)* | Path or JSON with configuration profiles (folders/groups/fields definitions).   |
-
-### Cryptography
-
-| Option          | Default                         | Meaning                                                                |
-| --------------- | ------------------------------- | ---------------------------------------------------------------------- |
-| `tsa_enabled`   | `false`                         | RFC 3161 START/STOP endpoint; `false` answers `409`, nothing is faked. |
-| `tsa_start_url` | `https://zeitstempel.dfn.de/`   | TSA for the START boundary (manifest hash).                            |
-| `tsa_stop_url`  | `http://timestamp.digicert.com` | TSA for the STOP boundary (closing digest).                            |
-| `sign_packages` | `false`                         | Sign export packages by default — needs an attached private key.       |
-| `signing_key`   | *(empty)*                       | Fingerprint or key ID for signing; empty = the console selection.      |
-| `encrypt_files` | `false`                         | Encrypt new uploads at rest by default (`X-File-Encrypt` still wins).  |
-| `tls_cert`      | *(empty)*                       | PEM certificate for the add-on's own listeners.                        |
-| `tls_key`       | *(empty)*                       | Matching PEM private key — both or neither, else startup fails.        |
 
 ## Storage layout
 
