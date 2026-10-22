@@ -98,8 +98,8 @@ const titles = (list) => list.map((p) => p.title).sort();
 
     console.log('PASS shared-data-processes: два процеса върху ЕДНИ данни · запис в единия се вижда в другия веднага · 20 едновременни записа без загуба · една и съща ревизия · регистърът на участниците се чисти');
   } finally {
-    await A.stop({ keep: true }).catch(() => {});
-    await B.stop({ keep: true }).catch(() => {});
+    await A.stop({ keep: true }).catch(() => { });
+    await B.stop({ keep: true }).catch(() => { });
     fs.rmSync(dir, { recursive: true, force: true });
   }
 })().catch((e) => {

@@ -77,7 +77,7 @@ const lockPathIn = (dir) => path.join(dir, '.hapi-store-lock');
     // ── 3. transaction: живее върху живия обект и записва точно веднъж ────────────
     {
       const store = fakeStore({ portals: [{ id: 'p1', files: [] }] });
-      const data = sharedData.create({ store, bind: () => {}, lockPath: lockPathIn(tmp) });
+      const data = sharedData.create({ store, bind: () => { }, lockPath: lockPathIn(tmp) });
       const live = data.sync();
       const portal = live.portals[0];
       await data.transaction(() => { portal.files.push({ id: 'f1' }) });
@@ -92,7 +92,7 @@ const lockPathIn = (dir) => path.join(dir, '.hapi-store-lock');
     // ── 4. transaction: провал връща и паметта, и диска ──────────────────────────
     {
       const store = fakeStore({ portals: [{ id: 'p1', title: 'Оригинал' }] });
-      const data = sharedData.create({ store, bind: () => {}, lockPath: lockPathIn(tmp) });
+      const data = sharedData.create({ store, bind: () => { }, lockPath: lockPathIn(tmp) });
       const live = data.sync();
       await assert.rejects(
         data.transaction(() => {
@@ -111,8 +111,8 @@ const lockPathIn = (dir) => path.join(dir, '.hapi-store-lock');
     {
       const store = fakeStore({ entries: [] });
       const lockPath = lockPathIn(tmp);
-      const a = sharedData.create({ store, bind: () => {}, lockPath, pollMs: 2 });
-      const b = sharedData.create({ store, bind: () => {}, lockPath, pollMs: 2 });
+      const a = sharedData.create({ store, bind: () => { }, lockPath, pollMs: 2 });
+      const b = sharedData.create({ store, bind: () => { }, lockPath, pollMs: 2 });
       a.sync();
       b.sync();
       let inside = 0;
@@ -137,7 +137,7 @@ const lockPathIn = (dir) => path.join(dir, '.hapi-store-lock');
       const store = fakeStore({ entries: [] });
       const lockPath = lockPathIn(tmp);
       fs.writeFileSync(lockPath, JSON.stringify({ pid: 999999, host: os.hostname(), at: new Date().toISOString() }));
-      const data = sharedData.create({ store, bind: () => {}, lockPath, pollMs: 2, lockTimeoutMs: 2000 });
+      const data = sharedData.create({ store, bind: () => { }, lockPath, pollMs: 2, lockTimeoutMs: 2000 });
       data.sync();
       await data.transaction(() => { data.peek().entries.push({ id: 'след-срив' }) });
       assert.equal(store.state.payload.entries.length, 1, 'записът минава след изоставена ключалка');
@@ -149,7 +149,7 @@ const lockPathIn = (dir) => path.join(dir, '.hapi-store-lock');
       const store = fakeStore({ entries: [] });
       const lockPath = lockPathIn(tmp);
       fs.writeFileSync(lockPath, JSON.stringify({ pid: process.pid, host: os.hostname(), at: new Date().toISOString() }));
-      const data = sharedData.create({ store, bind: () => {}, lockPath, pollMs: 2, lockTimeoutMs: 60 });
+      const data = sharedData.create({ store, bind: () => { }, lockPath, pollMs: 2, lockTimeoutMs: 60 });
       data.sync();
       await assert.rejects(
         data.transaction(() => { data.peek().entries.push({ id: 'не-бива' }) }),
@@ -163,7 +163,7 @@ const lockPathIn = (dir) => path.join(dir, '.hapi-store-lock');
     // ── 8. sync() в средата на транзакция НЕ подменя работния обект ──────────────
     {
       const store = fakeStore({ portals: [] });
-      const data = sharedData.create({ store, bind: () => {}, lockPath: lockPathIn(tmp) });
+      const data = sharedData.create({ store, bind: () => { }, lockPath: lockPathIn(tmp) });
       const live = data.sync();
       let insideSame = null;
       // Чужд запис „извън ключалката“: транзакцията трябва да откаже ясно (не да презапише),

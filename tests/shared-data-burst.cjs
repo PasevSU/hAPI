@@ -60,7 +60,7 @@ const TOTAL = PROCESSES * PER_PROCESS;
 
     console.log('PASS shared-data-burst: ' + PROCESSES + ' процеса × ' + PER_PROCESS + ' едновременни записа върху ПРАЗНА база · 0 отказа · ' + TOTAL + '/' + TOTAL + ' налични във всеки процес · ревизия ' + TOTAL + ' · без загубени записи');
   } finally {
-    for (const server of servers) await server.stop({ keep: true }).catch(() => {});
+    for (const server of servers) await server.stop({ keep: true }).catch(() => { });
     fs.rmSync(dir, { recursive: true, force: true });
   }
 })().catch((e) => {
