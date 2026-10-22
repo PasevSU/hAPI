@@ -59,6 +59,25 @@ const apiVersion = require('./api-version');
 const signer = require('./signer');
 const pgp = require('./pgp');
 const packager = require('./packager').create({ root });
+// ── Пакет, поискан от ПУБЛИЧНАТА страница ────────────────────────────────────
+// Посетителят натиска „Изтегли всички“ и получава ZIP с файловете, които и без това
+// може да свали поотделно (само FREE и видими). Ключовете и забранените файлове НЕ
+// влизат — манифестът казва кои са и защо. Линкът е еднократен и краткотраен.
+//
+//   PUBLIC_PACKAGE=0                — изключва пакета от публичната страница
+//   PUBLIC_PACKAGE_MAX_FILES        — таван на файловете в един пакет (по подразбиране 100)
+//   PUBLIC_PACKAGE_MAX_BYTES        — таван на обема в един пакет (по подразбиране 64 MB)
+//   PUBLIC_PACKAGE_TTL_SECONDS      — колко живее еднократният линк (по подразбиране 600)
+//   PUBLIC_PACKAGE_KEEP_HOURS       — колко се пази ZIP-ът на диска (по подразбиране 24)
+const PUBLIC_PACKAGE_DISABLED = ['0', 'false', 'off', 'no'].includes(String(process.env.PUBLIC_PACKAGE ?? '').trim().toLowerCase());
+const PUBLIC_PACKAGE_MAX_FILES = Number(process.env.PUBLIC_PACKAGE_MAX_FILES) > 0 ? Math.floor(Number(process.env.PUBLIC_PACKAGE_MAX_FILES)) : 100;
+const PUBLIC_PACKAGE_MAX_BYTES = Number(process.env.PUBLIC_PACKAGE_MAX_BYTES) > 0 ? Math.floor(Number(process.env.PUBLIC_PACKAGE_MAX_BYTES)) : 64 * 1024 * 1024;
+const PUBLIC_PACKAGE_TTL_SECONDS = Number(process.env.PUBLIC_PACKAGE_TTL_SECONDS) > 0 ? Math.floor(Number(process.env.PUBLIC_PACKAGE_TTL_SECONDS)) : 600;
+const PUBLIC_PACKAGE_KEEP_HOURS = Number(process.env.PUBLIC_PACKAGE_KEEP_HOURS) > 0 ? Number(process.env.PUBLIC_PACKAGE_KEEP_HOURS) : 24;
+const publicPackage = require('./public-package').create({ dir: root, ttlSeconds: PUBLIC_PACKAGE_TTL_SECONDS });
+// Един пакет на портал в даден момент: два едновременни клика не бива да строят два
+// еднакви архива в паметта на add-on-а.
+const publicPackageInFlight = new Set();
 const fileCrypto = require('./file-crypto');
 const sendLite = require('./send');
 // Тайни връзки (zero-knowledge): сървърът пази само шифротекст, ключът е във фрагмента.
@@ -591,8 +610,15 @@ const publicPortal = p => ({
   urls: {
     landing: portalLandingUrl(p, ''), api: portalApiUrl(p, ''), manifest: portalApiUrl(p, '') + '/manifest', openapi: portalApiUrl(p, '') + '/openapi.json', qr: portalApiUrl(p, '') + '/qr.svg',
     // Какво точно кодира QR кодът — публичната страница, не JSON API-то.
-    qrTarget: portalLandingUrl(p, '')
-  }
+    qrTarget: portalLandingUrl(p, ''),
+    // Пакетът на целия портал (PP-12): адресът се вижда, за да знае страницата къде да поиска.
+    package: portalApiUrl(p, '') + '/package'
+  },
+  // Какво може да влезе в публичния пакет — сметнато ТУК, за да не гадае страницата.
+  package: (() => {
+    const eligible = p.files.filter(f => fileMode(f) === 'FREE' && f.listed !== false);
+    return { enabled: !PUBLIC_PACKAGE_DISABLED, eligible: eligible.length, bytes: eligible.reduce((sum, f) => sum + (Number(f.size) || 0), 0), maxFiles: PUBLIC_PACKAGE_MAX_FILES, maxBytes: PUBLIC_PACKAGE_MAX_BYTES };
+  })()
 });
 // Флаг на портала: само от фиксиран списък (иначе 'none').
 const PORTAL_FLAGS = ['none', 'info', 'important', 'urgent', 'archive'];
@@ -1595,6 +1621,45 @@ async function handler(req, res) {
         }
         void recordTelemetry('visit', req, p, null, url);
         return json(res, 200, { storage: true, root: '/', ...folderView, apiUrl, folders: (node.folders || []).map(f => ({ name: f.name, path: '/' + f.path, folderCount: f.folderCount, fileCount: f.fileCount, bytes: f.bytes, apiUrl: folderUrl(f.path) })), files: (node.files || []).map(f => ({ name: f.name, path: '/' + f.path, size: f.size, modifiedAt: f.modifiedAt || '' })) });
+      }
+      // Пакет на целия портал за посетителя (PP-12): само FREE и видими файлове, а
+      // линкът е еднократен и краткотраен. Ключовете и забранените файлове се назовават
+      // в манифеста — отказът се вижда, не се премълчава.
+      if (tail[0] === 'package' && tail.length === 1 && method === 'POST') {
+        if (PUBLIC_PACKAGE_DISABLED) return fail(res, 404, 'Not found');
+        // Два клика не бива да строят два архива едновременно в паметта на add-on-а.
+        if (publicPackageInFlight.has(p.id)) { res.setHeader('Retry-After', '5'); return fail(res, 429, 'Пакетът се строи — опитай отново след няколко секунди') }
+        const usable = f => fileMode(f) === 'FREE' && f.listed !== false;
+        const eligible = p.files.filter(usable);
+        const skipped = p.files.filter(f => !usable(f)).map(f => ({ name: f.name, size: f.size, reason: f.listed === false ? 'UNLISTED' : fileMode(f) }));
+        if (!eligible.length) return fail(res, 409, 'Няма файлове, които могат да се свалят без ключ');
+        const bytes = eligible.reduce((sum, f) => sum + (Number(f.size) || 0), 0);
+        if (eligible.length > PUBLIC_PACKAGE_MAX_FILES) return fail(res, 413, 'Пакетът надхвърля ' + PUBLIC_PACKAGE_MAX_FILES + ' файла — свали ги поотделно');
+        if (bytes > PUBLIC_PACKAGE_MAX_BYTES) return fail(res, 413, 'Пакетът надхвърля ' + Math.floor(PUBLIC_PACKAGE_MAX_BYTES / 1048576) + ' MB — свали файловете поотделно');
+        publicPackageInFlight.add(p.id);
+        let meta;
+        try {
+          const files = []; const missing = [];
+          for (const f of eligible) { const buf = readPlainBuffer(p, f); if (!buf) { missing.push(f.id); continue } files.push({ name: f.name, data: buf, source: 'portal' }) }
+          if (missing.length) return fail(res, 409, 'Липсващи или недешифрируеми файлове: ' + missing.join(', '));
+          meta = await packager.build({ portal: p, files, sign: null, ttlHours: PUBLIC_PACKAGE_KEEP_HOURS, excluded: skipped, origin: 'public' });
+        } catch (e) { return fail(res, e.status || 500, e.message) } finally { publicPackageInFlight.delete(p.id) }
+        const grant = publicPackage.issue({ packageId: meta.id, portalId: p.id, portalSlug: p.slug, fileName: meta.fileName, files: meta.files });
+        void audit('package.public.build', { portalId: p.id, packageId: meta.id, files: meta.files, excluded: skipped.length, sha256: meta.sha256 });
+        return json(res, 201, { package: meta, download: { url: portalApiUrl(p, '') + '/package/' + grant.token, expiresAt: grant.expiresAt, ttlSeconds: grant.ttlSeconds, once: true }, excluded: skipped });
+      }
+      // Сваляне на вече поискания пакет: токенът се изгаря при първото успешно сваляне.
+      if (tail[0] === 'package' && tail.length === 2 && method === 'GET') {
+        if (PUBLIC_PACKAGE_DISABLED) return fail(res, 404, 'Not found');
+        const grant = publicPackage.redeem(tail[1], { portalId: p.id });
+        if (!grant.ok) {
+          if (grant.reason === 'used') return fail(res, 410, 'Линкът вече е използван — поискай нов пакет');
+          if (grant.reason === 'expired') return fail(res, 410, 'Линкът е изтекъл — поискай нов пакет');
+          return fail(res, 404, 'Not found');
+        }
+        const art = await packager.artifact(grant.entry.packageId, 'zip');
+        if (!art) return fail(res, 410, 'Пакетът вече не е наличен — поискай нов');
+        return streamDownload(req, res, art.file, art.stat, art.name, () => { counters.downloads++; void recordTelemetry('download', req, p, null, url, { bytes: art.meta.size || 0, packageId: art.meta.id }); void audit('package.public.download', { portalId: p.id, packageId: art.meta.id }) });
       }
       if (tail[0] === 'files' && tail.length === 1 && method === 'GET') return json(res, 200, filePage(p.files.filter(f => f.listed !== false), url));
       if (tail[0] === 'files' && tail[1] && tail[2] === 'rating' && tail.length === 3 && method === 'POST') {

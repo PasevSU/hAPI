@@ -163,8 +163,7 @@ function buildOpenApi(portal, options = {}) {
       },
       [`${p}/files/{fileId}`]: {
         get: {
-          summary: 'Метаданни на файл',
-          security: secured,
+          summary: 'Метаданни на файл',          security: secured,
           parameters: [{ name: 'fileId', in: 'path', required: true, schema: { type: 'string' } }],
           responses: {
             200: ok('File metadata'),
@@ -186,10 +185,62 @@ function buildOpenApi(portal, options = {}) {
           },
         },
       },
+      // PP-12: пакет на целия портал. Строи се от сървъра (само FREE и видими файлове),
+      // затова е POST; отговорът носи еднократен адрес, а не самия архив.
+      [`${p}/package`]: {
+        post: {
+          summary: 'Поискване на пакет (ZIP) с файловете без ключ',
+          description:
+            'В пакета влизат само файловете с достъп FREE, които са видими (listed). Ключовите и ' +
+            'забранените се изброяват с причина в PACKAGE_INDEX.json.excluded. Отговорът съдържа ' +
+            'еднократен краткотраен адрес за сваляне.',
+          security: secured,
+          responses: {
+            201: {
+              description: 'Пакетът е готов; адресът се използва веднъж',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['package', 'download'],
+                    properties: {
+                      package: { type: 'object' },
+                      download: {
+                        type: 'object',
+                        required: ['url', 'expiresAt', 'once'],
+                        properties: { url: { type: 'string' }, expiresAt: { type: 'string' }, ttlSeconds: { type: 'integer' }, once: { type: 'boolean' } },
+                      },
+                      excluded: { type: 'array', items: { type: 'object' } },
+                    },
+                  },
+                },
+              },
+            },
+            401: { description: 'Липсва или е невалиден ключ' },
+            404: { description: 'Пакетът е изключен или порталът не е достъпен' },
+            409: { description: 'Няма файлове, които могат да се свалят без ключ' },
+            413: { description: 'Пакетът надхвърля допустимия брой файлове или обем' },
+            429: { description: 'Пакет за този портал вече се строи' },
+          },
+        },
+      },
+      [`${p}/package/{token}`]: {
+        get: {
+          summary: 'Сваляне на поискания пакет (еднократно)',
+          description: 'Токенът се изгаря при първото сваляне. Второ или закъсняло сваляне е 410.',
+          security: secured,
+          parameters: [{ name: 'token', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: 'ZIP архив' },
+            401: { description: 'Липсва или е невалиден ключ' },
+            404: { description: 'Непознат токен или токен за друг портал' },
+            410: { description: 'Линкът е използван или изтекъл' },
+          },
+        },
+      },
       [`${p}/storage`]: {
         get: {
-          summary: 'Виртуално хранилище (дърво)',
-          description:
+          summary: 'Виртуално хранилище (дърво)',          description:
             'Йерархия topic → category → group → файл. Връща папките и файловете с виртуален път, ' +
             'а не физически път на диска.',
           security: secured,

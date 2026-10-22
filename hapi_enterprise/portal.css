@@ -256,6 +256,20 @@ main {
   color: var(--muted);
 }
 
+/* PP-12: лентата с пакета в панела с резюмето (бутон + бележка за еднократния линк). */
+.package-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.package-bar:empty,
+.package-bar > [hidden] {
+  display: none;
+}
+
 .toolbar {
   margin-bottom: 8px;
 }

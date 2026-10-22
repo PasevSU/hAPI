@@ -51,6 +51,14 @@ const fmtDate = (iso) => {
   return p(d.getDate()) + "." + p(d.getMonth() + 1) + "." + d.getFullYear();
 };
 
+/** Час:минута — за срока на еднократния линк за пакета. */
+const fmtTime = (iso) => {
+  const d = iso ? new Date(iso) : null;
+  if (!d || Number.isNaN(d.getTime())) return "";
+  const p = (x) => String(x).padStart(2, "0");
+  return p(d.getHours()) + ":" + p(d.getMinutes());
+};
+
 /** Вид на артефакта по разширение — определя как се нарича съдържанието на портала. */
 const KIND_BY_EXT = {
   pdf: "doc", doc: "doc", docx: "doc", odt: "doc", rtf: "doc", txt: "doc", md: "doc",
@@ -406,8 +414,7 @@ function fileCard(file) {
   return li;
 }
 
-/** Показва файловете, които отговарят на търсенето (по име, тема, категория, група). */
-function paint(filter) {
+/** Показва файловете, които отговарят на търсенето (по име, тема, категория, група). */function paint(filter) {
   const q = String(filter || "").trim().toLocaleLowerCase();
   const list = q
     ? allFiles.filter((f) =>
@@ -435,6 +442,38 @@ function paint(filter) {
       ? total + " " + nounFor(total, prof.noun)
       : list.length + " от " + total;
   if (list.length || !total) setStatus("");
+}
+
+/**
+ * PP-12: иска пакет на целия портал и тръгва към еднократния му адрес.
+ * Сървърът решава какво влиза в него (само файловете без ключ) — страницата не гадае.
+ */
+async function requestPackage() {
+  const btn = $("package-btn");
+  const note = $("package-note");
+  btn.disabled = true;
+  note.hidden = false;
+  note.textContent = "Приготвям пакета…";
+  try {
+    const res = await fetch(withAuth("/package"), { method: "POST", referrerPolicy: "no-referrer" });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body && body.error ? body.error : "Пакетът не може да се създаде.");
+    const when = fmtTime(body.download && body.download.expiresAt);
+    const skipped = Array.isArray(body.excluded) ? body.excluded.length : 0;
+    note.textContent =
+      "Линкът е еднократен и важи до " +
+      (when || "няколко минути") +
+      "." +
+      (skipped
+        ? " В пакета не влизат " + skipped + " " + nounFor(skipped, NOUNS.file) + " (с ключ или забранени) — те са изброени в манифеста."
+        : "") +
+      " Свалянето започва…";
+    location.href = body.download.url;
+  } catch (err) {
+    note.textContent = String(err && err.message ? err.message : err);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function paintPortal(data) {
@@ -499,6 +538,18 @@ function paintPortal(data) {
   $("qr").src = (urls.qr || apiBase + "/qr.svg") + (token ? "?portal_token=" + encodeURIComponent(token) : "");
   $("portal-url").textContent = location.origin + "/p/" + key;
   $("copy-link").addEventListener("click", () => copy(location.origin + "/p/" + key, "Адресът на портала е копиран."));
+
+  // PP-12: пакетът се предлага само когато има файлове без ключ и е включен в add-on-а.
+  const pkg = data.package || {};
+  const pkgBtn = $("package-btn");
+  if (pkg.enabled && Number(pkg.eligible) > 0 && urls.package) {
+    pkgBtn.hidden = false;
+    pkgBtn.title =
+      "ZIP с " + pkg.eligible + " " + nounFor(pkg.eligible, prof.noun) + " — само файловете без ключ";
+    pkgBtn.addEventListener("click", requestPackage);
+  } else {
+    pkgBtn.hidden = true;
+  }
 }
 
 (async () => {

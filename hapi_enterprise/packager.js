@@ -84,10 +84,13 @@ function create({ root }) {
 
   /**
    * Създава пакет.
-   * files: [{ name, data: Buffer }]
-   * sign:  { secretArmored, keyId, label } | null
+   * files:    [{ name, data: Buffer, path? }]
+   * sign:     { secretArmored, keyId, label } | null
+   * excluded: [{ name, size, reason }] — какво е останало ИЗВЪН пакета и защо (публичният
+   *           пакет не слага файлове с ключ/забранени, а манифестът казва кои са те).
+   * origin:   'public' — пакетът е поискан от публичната страница, не от администратора.
    */
-  async function build({ portal, files, sign, now, ttlHours }) {
+  async function build({ portal, files, sign, now, ttlHours, excluded, origin }) {
     const list = Array.isArray(files) ? files : [];
     if (!list.length) throw bad('Пакетът е празен — няма файлове', 400);
     if (list.length > MAX_FILES) throw bad(`Твърде много файлове (макс. ${MAX_FILES})`, 413);
@@ -155,19 +158,26 @@ function create({ root }) {
       files: indexFiles,
       total_bytes: total,
     };
+    // Какво НЕ е влезнало в пакета и защо — за да не изглежда липсващ файл като грешка.
+    const skipped = (Array.isArray(excluded) ? excluded : [])
+      .filter((x) => x && x.name)
+      .map((x) => ({ name: String(x.name), size: Number(x.size) || 0, reason: String(x.reason || 'EXCLUDED') }));
+    if (skipped.length) index.excluded = skipped;
 
     const storageCount = indexFiles.filter((f) => f.source === 'storage').length;
     const manifest = {
       schema_version: '1.1',
       exported_at: createdAt,
       portal: index.portal,
-      counts: { files: indexFiles.length, bytes: total, fromStorage: storageCount },
+      counts: { files: indexFiles.length, bytes: total, fromStorage: storageCount, excluded: skipped.length },
       hash_algorithms: available,
       notes: storageCount
         ? 'Файловете под storage/ са копирани директно от папката на портала (storage_root).'
         : '',
       verification: `Всеки файл носи пълен набор хешове (${available.join(', ')}) в PACKAGE_INDEX.json; hashes/sha256sum.txt е във формат sha256sum, а hashes/checksums.txt съдържа всички алгоритми.`,
     };
+    // Отказът се назовава изрично — иначе получателят брои файловете и мисли, че липсват.
+    if (skipped.length) manifest.refused = skipped;
 
     const sums = indexFiles.map((f) => `${f.sha256}  ${f.path}`).join('\n') + '\n';
     // Четим списък с ВСИЧКИ хешове: един блок на файл (лесно се сравнява на ръка).
@@ -227,6 +237,8 @@ function create({ root }) {
         : signature,
       hasSignature: Boolean(signed),
     };
+    if (origin) meta.origin = String(origin);
+    if (skipped.length) meta.excluded = skipped.length;
 
     await writeAtomic(zipPath(id), zipBuffer);
     if (armored) await writeAtomic(sigPath(id), Buffer.from(armored, 'utf8'));

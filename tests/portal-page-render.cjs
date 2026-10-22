@@ -114,9 +114,16 @@ const { createDocument } = require('./lib/dom-stub.cjs');
     // ── INV-9: имената влизат като текст, не като HTML ───────────────────────────────
     assert.ok(doc.getElementById('files').textContent.includes('dogovor.txt'));
 
+    // ── PP-12: пакетът се предлага само когато има какво да влезе в него ──────────
+    const pkgBtn = doc.getElementById('package-btn');
+    assert.equal(pkgBtn.hidden, false, 'бутонът за пакета е показан при свободен файл');
+    assert.match(pkgBtn.title, /ZIP с 1 /, 'броят е само на файловете без ключ: ' + pkgBtn.title);
+    assert.equal(doc.getElementById('package-note').textContent, '', 'преди натискане няма бележка за линка');
+
     console.log(
       'PASS portal-page-render: id изписан и копируем · резюме „цялостен набор от 3 файла“ · ' +
-      '2 адреса за изтегляне · 1 линк с download · 1 поле за ключ · забраненият без адрес и бутон'
+      '2 адреса за изтегляне · 1 линк с download · 1 поле за ключ · забраненият без адрес и бутон · ' +
+      'бутон за пакет с броя на свободните файлове'
     );
   } finally {
     await server.stop({ keep: true }).catch(() => { });

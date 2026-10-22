@@ -4,10 +4,11 @@
   това какво вижда посетителят след сканиране на QR кода и какво връща API-то зад него.
 - **Обхват:** `hapi_enterprise/portal.html`, `portal.js`, `portal.css` и маршрутите
   `GET /api/v1/p/<key>`, `GET /api/v1/p/<key>/files`, `GET /api/v1/p/<key>/files/<id>/download`,
-  `GET /api/v1/p/<key>/qr.svg`, `POST /admin/api/notify/dispatch`.
+  `GET /api/v1/p/<key>/qr.svg`, `POST /api/v1/p/<key>/package`, `GET /api/v1/p/<key>/package/<token>`,
+  `POST /admin/api/notify/dispatch`.
 - **Приемане:** `tests/portal-page-contract.cjs` (нов), `tests/portal-page.cjs`,
   `tests/portal-api-qr.cjs`, `tests/qr-dispatch.cjs`, `tests/portal-rules-applied.cjs`,
-  `tests/public-rate-limit.cjs`.
+  `tests/public-rate-limit.cjs`, `tests/public-package.cjs`, `tests/portal-page-render.cjs`.
 - **Промяна на договора:** изисква едновременно (1) редакция тук, (2) тест, който пази новото
   поведение, (3) запис в `CHANGELOG.md`. Без трите — промяната не е договор, а мнение.
 
@@ -26,6 +27,8 @@
 | INV-9  | Данните се вмъкват само с `textContent`/`replaceChildren`, никога през `innerHTML`                | Име на файл или описание не може да инжектира HTML                                         |
 | INV-10 | Портален токен (`?portal_token=`) се запазва във всички линкове на страницата                     | Частен портал не бива да губи достъп при копиране на линк                                  |
 | INV-11 | Публичните маршрути имат лимит на честотата **по клиент**; отказът е `429` с `Retry-After`        | Един скрипт не бива да дърпа един файл хиляди пъти, нито да заключи осталите посетители    |
+| INV-12 | Пакетът на портала съдържа **само файлове, които посетителят и без това може да свали** (FREE и видими); ключовите и забранените се **назовават** в манифеста | Пакет не бива да е заобикаляне на ключ; а липсващ файл без обяснение изглежда като загуба |
+| INV-13 | Линкът към пакета е **еднократен и краткотраен**; второ или закъсняло сваляне е `410`           | ZIP-ът не бива да става безсрочен публичен адрес на целия портал                                        |
 
 ## 2. Изисквания и приемане
 
@@ -42,6 +45,8 @@
 | **PP-09** | Достъпност и език                                                                                              | `lang="bg"`, `aria-*`, skip-link, клавиатура                                   | `portal-page.cjs` проверява ids и `portal.js`                                                                                                                           |
 | **PP-10** | `?portal_token=` се запазва във всички генерирани линкове                                                      | `withAuth()` в `portal.js`                                                     | тестът проверява `portal_token` в `portal.js`                                                                                                                           |
 | **PP-11** | Лимит на честотата: `PUBLIC_RATE_LIMIT`/`PUBLIC_RATE_WINDOW_MS`; `Range` не се брои; отказът влиза в сензорите | `publicRateGate()` в `server.js`; `PUBLIC_RATE_LIMIT=0` изключва               | `public-rate-limit.cjs`: 5×200 → 429 + `Retry-After`; друг клиент → 200; админ → 200; `Range` → без лимит; след прозореца → 200; `RATE_LIMIT` в сензорите; `0` изключва |
+| **PP-12** | „Изтегли всички (ZIP)“: `POST /api/v1/p/<key>/package` → еднократен линк; в пакета само FREE + видими; отказът е в `PACKAGE_INDEX.json.excluded`/`manifest.refused` | `public-package.js` (токени) + `packager.build({excluded,origin})`; `PUBLIC_PACKAGE*` настройки | `public-package.cjs`: 201 + `once:true` · само свободният файл в ZIP · 3 причини в манифеста · 410 при повторно/изтекло · чужд портал 404 · 409 когато няма какво да влезе · `PUBLIC_PACKAGE=0` → 404 |
+| **PP-13** | Бутонът за пакет се показва само когато има файлове без ключ; иначе не се лъже с неактивен бутон | `#package-btn` в `portal.html`, решението — от `data.package.eligible` | `portal-page-render.cjs`: бутонът е показан и броят е само на свободните файлове |
 
 ## 3. Договор на данните (API)
 
@@ -60,8 +65,11 @@
     "qrTarget": "/p/<id>",               // какво кодира QR
     "qr": "/api/v1/p/<slug>/qr.svg",
     "api": "/api/v1/p/<slug>",
-    "manifest": "/api/v1/p/<slug>/manifest"
+    "manifest": "/api/v1/p/<slug>/manifest",
+    "package": "/api/v1/p/<slug>/package" // PP-12: къде се иска пакетът
   },
+  // PP-12/PP-13: какво МОЖЕ да влезе в пакета — страницата не гадае и не брои сама.
+  "package": { "enabled": true, "eligible": 2, "bytes": 4096, "maxFiles": 100, "maxBytes": 67108864 },
   "contact": { "name": "…", "email": "…", "phone": "…" } | null
 }
 ```
@@ -83,6 +91,35 @@
 | `KEY_REQUIRED` с верен ключ              | `200`                                                |
 | `DISABLED`                               | `403 Download disabled`                              |
 | скрит (`listed:false`)                   | `404`                                                |
+
+### `POST /api/v1/p/<key>/package` (PP-12) → 201
+
+```jsonc
+{
+  "package": { "id": "…", "fileName": "demo-20261022-…zip", "size": 1234, "sha256": "…", "files": 1, "origin": "public" },
+  "download": { "url": "/api/v1/p/<slug>/package/<48 hex>", "expiresAt": "2026-10-22T10:10:00.000Z", "ttlSeconds": 600, "once": true },
+  "excluded": [ { "name": "s-klyuch.txt", "size": 12, "reason": "KEY_REQUIRED" } ]
+}
+```
+
+| Условие                                                      | Отговор                                                              |
+| ------------------------------------------------------------ | -------------------------------------------------------------------- |
+| има поне един `FREE` + видим файл                            | `201` + еднократен линк                                             |
+| няма нито един такъв файл                                    | `409 Няма файлове, които могат да се свалят без ключ`               |
+| повече от `PUBLIC_PACKAGE_MAX_FILES` / `PUBLIC_PACKAGE_MAX_BYTES` | `413` с казáн таван                                               |
+| вече се строи пакет за същия портал                          | `429` + `Retry-After: 5`                                             |
+| `PUBLIC_PACKAGE=0`                                           | `404`                                                                |
+| частен портал без `?portal_token=`                           | `404` (както всички публични маршрути)                              |
+
+### `GET /api/v1/p/<key>/package/<token>` (PP-12, INV-13)
+
+| Условие            | Отговор                                                              |
+| ------------------ | -------------------------------------------------------------------- |
+| първо сваляне      | `200` + ZIP, `Cache-Control: no-store`                                |
+| второ сваляне      | `410 Линкът вече е използван — поискай нов пакет`                     |
+| след `ttlSeconds`  | `410 Линкът е изтекъл — поискай нов пакет`                            |
+| токен за друг портал / непознат | `404`                                                   |
+| ZIP-ът вече е изтрит от диска | `410`                                                     |
 
 ### `POST /admin/api/notify/dispatch` (PP-07, само администратор)
 
@@ -113,11 +150,16 @@
 
 ## 5. Какво договорът НЕ обещава
 
-- **ZIP пакет на целия портал от публичната страница.** Пакетът се прави от администратора
-  (`POST /admin/api/packages`) и се изтегля през `/admin/api/packages/<id>/download`; публичната
-  страница не обещава файл, който не съществува.
+- **ZIP с файловете, които изискват ключ.** Пакетът от публичната страница съдържа само
+  `FREE` и видимите файлове; отказаните се изброяват в `PACKAGE_INDEX.json.excluded` и
+  `manifest/portal.json.refused` — липсата е обяснена, а не премълчана (INV-12).
+- **Безсрочен или многократен линк към пакета.** Линкът се изгаря при първото сваляне и
+  изтича след `PUBLIC_PACKAGE_TTL_SECONDS` (INV-13); нов пакет се иска с ново натискане.
 - **Изпращане на съобщение от посетителя.** Опцията е администраторска (PP-07, INV-8).
 - **Показване на файлове с `DISABLED`** и на скрити файлове (`listed:false`).
-- **Конкретни числа за лимита.** Стойностите по подразбиране (120 заявки/мин на клиент) са
-  отправна точка, а не обещание: `PUBLIC_RATE_LIMIT` и `PUBLIC_RATE_WINDOW_MS` ги сменят, а
-  `PUBLIC_RATE_LIMIT=0` изключва лимита. Обещано е само поведението при отказ (INV-11, PP-11).
+- **Конкретни числа за лимитите.** Стойностите по подразбиране (120 заявки/мин на клиент;
+  100 файла и 64 MB в пакет; 600 s живот на линка; ZIP-ът се пази 24 ч) са отправна точка, а не
+  обещание: `PUBLIC_RATE_LIMIT`, `PUBLIC_RATE_WINDOW_MS`, `PUBLIC_PACKAGE_MAX_FILES`,
+  `PUBLIC_PACKAGE_MAX_BYTES`, `PUBLIC_PACKAGE_TTL_SECONDS`, `PUBLIC_PACKAGE_KEEP_HOURS` ги сменят,
+  а `PUBLIC_RATE_LIMIT=0` / `PUBLIC_PACKAGE=0` ги изключват. Обещано е само поведението при
+  отказ (INV-11…INV-13).

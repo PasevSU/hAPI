@@ -44,6 +44,12 @@
       <h2 id="summary-title">Какво съдържа този портал</h2>
       <p id="summary" class="summary-text">Зареждане…</p>
       <ul id="summary-list" class="summary-list"></ul>
+      <!-- PP-12: целият портал с едно натискане. Показва се само когато има файлове,
+           които могат да се свалят без ключ. -->
+      <div class="package-bar" id="package-bar">
+        <button id="package-btn" class="btn btn-primary" type="button" hidden>Изтегли всички (ZIP)</button>
+        <p id="package-note" class="more" role="status" aria-live="polite" hidden></p>
+      </div>
     </section>
 
     <section class="panel" aria-labelledby="files-title">
