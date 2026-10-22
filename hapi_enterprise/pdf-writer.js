@@ -47,6 +47,43 @@ function jpegSize(buf) {
   }
   throw Error('Invalid JPEG data: no SOF marker');
 }
+
+/** Ширина/височина и цветови модел от IHDR на PNG (без външни зависимости). */
+function pngSize(buf) {
+  if (buf.length < 33 || buf.readUInt32BE(0) !== 0x89504e47) throw Error('Invalid PNG data');
+  const width = buf.readUInt32BE(16), height = buf.readUInt32BE(20);
+  const depth = buf[24], colorType = buf[25], interlace = buf[28];
+  if (!width || !height) throw Error('Invalid PNG data: empty canvas');
+  if (depth !== 8) throw Error(`PNG with ${depth}-bit samples is not supported (8-bit only)`);
+  if (interlace !== 0) throw Error('Interlaced PNG is not supported (re-save without interlacing)');
+  // 0 = сива, 2 = RGB. Алфа (3/4/6) и палитра изискват допълнителен слой — по-добре ясна
+  // грешка, отколкото картинка с грешни цветове.
+  if (colorType !== 0 && colorType !== 2) throw Error(`PNG color type ${colorType} is not supported (grayscale or RGB, no alpha)`);
+  return { w: width, h: height, colorType };
+}
+
+/**
+ * PNG → PDF поток: събира IDAT и оставя zlib-а както е, защото PDF разбира PNG предиктора.
+ * Така няма декодиране и повторно компресиране, т.е. картинката не се разваля.
+ */
+function pngStream(buf, size) {
+  const chunks = [];
+  let i = 8;
+  while (i + 8 <= buf.length) {
+    const length = buf.readUInt32BE(i);
+    const type = buf.toString('latin1', i + 4, i + 8);
+    if (type === 'IDAT') chunks.push(buf.subarray(i + 8, i + 8 + length));
+    if (type === 'IEND') break;
+    i += 12 + length;
+  }
+  if (!chunks.length) throw Error('Invalid PNG data: no IDAT chunk');
+  return {
+    data: Buffer.concat(chunks),
+    filter: 'png',
+    colorSpace: size.colorType === 0 ? '/DeviceGray' : '/DeviceRGB',
+    colors: size.colorType === 0 ? 1 : 3,
+  };
+}
 const A4 = { w: 595.28, h: 841.89 }, M = { l: 56, r: 56, t: 60, b: 64 };
 const STYLES = {
   h1: { font: 'bold', size: 20, lead: 26, before: 14, after: 8 },
@@ -109,14 +146,18 @@ function render(blocks, { title = '', watermark = '' } = {}) {
     if (b.type === 'hr') { if (y - 14 < M.b) newPage(); y -= 8; ops.push(`0.7 G 0.8 w ${num(M.l)} ${num(y)} m ${num(A4.w - M.r)} ${num(y)} l S 0 G`); y -= 8; continue }
     if (b.type === 'image') {
       const data = b.data;
-      if (!Buffer.isBuffer(data) || !data.length) throw Error('Image block requires a JPEG data buffer');
-      if (data[0] !== 0xFF || data[1] !== 0xD8) throw Error('Only JPEG images are supported (convert PNG/WebP first)');
-      const sz = jpegSize(data);
+      if (!Buffer.isBuffer(data) || !data.length) throw Error('Image block requires a JPEG or PNG data buffer');
+      // JPEG се вгражда направо. PNG се вгражда като PNG-поток: PDF разбира zlib с
+      // PNG предиктор (`/Predictor 15`), т.е. IDAT може да отиде без прекодиране —
+      // важно е, защото Word пази картинките си точно като PNG.
+      const kind = data[0] === 0xff && data[1] === 0xd8 ? 'jpeg' : data[0] === 0x89 && data[1] === 0x50 ? 'png' : null;
+      if (!kind) throw Error('Only JPEG and PNG images are supported (convert other formats first)');
+      const sz = kind === 'jpeg' ? jpegSize(data) : pngSize(data);
       const dw = Math.min(Number(b.width) || sz.w, maxW);
       const dh = Math.min(Number(b.height) || (sz.h * dw / sz.w), A4.h - M.t - M.b);
       if (y - dh < M.b) newPage();
       const imgN = images.length + 1;
-      images.push({ data, w: sz.w, h: sz.h });
+      images.push(kind === 'jpeg' ? { data, w: sz.w, h: sz.h } : { ...pngStream(data, sz), w: sz.w, h: sz.h });
       ops.push(`q ${num(dw)} 0 0 ${num(dh)} ${num(M.l)} ${num(y - dh)} cm /Im${imgN} Do Q`);
       y -= dh + 6; continue;
     }
@@ -215,7 +256,17 @@ function render(blocks, { title = '', watermark = '' } = {}) {
     stream(tou, '/Filter /FlateDecode', zlib.deflateSync(Buffer.from('/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /Adobe-Identity-UCS def /CMapType 2 def 1 begincodespacerange <0000> <FFFF> endcodespacerange\n' + chunks.join('\n') + '\nendcmap CMapName currentdict /CMap defineresource pop end end', 'latin1')));
     obj(type0, `<< /Type /Font /Subtype /Type0 /BaseFont /${FONT_NAMES[kind]} /Encoding /Identity-H /DescendantFonts [${cid} 0 R] /ToUnicode ${tou} 0 R >>`);
   }
-  const imgRefs = []; for (const im of images) { const r = reserve(); stream(r, `/Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`, im.data); imgRefs.push(r) }
+  const imgRefs = [];
+  for (const im of images) {
+    const r = reserve();
+    if (im.filter === 'png') {
+      // PNG-то се вгражда без прекодиране: IDAT е zlib, а PDF разбира PNG предиктора.
+      stream(r, `/Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace ${im.colorSpace} /BitsPerComponent 8 /Filter /FlateDecode /DecodeParms << /Predictor 15 /Colors ${im.colors} /BitsPerComponent 8 /Columns ${im.w} >>`, im.data);
+    } else {
+      stream(r, `/Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`, im.data);
+    }
+    imgRefs.push(r);
+  }
   const fontRes = Object.entries(fontRefs).map(([k, r]) => `/${k} ${r} 0 R`).join(' ');
   const xobjRes = imgRefs.length ? ` /XObject << ${imgRefs.map((r, i) => `/Im${i + 1} ${r} 0 R`).join(' ')} >>` : '';
   const kids = [];

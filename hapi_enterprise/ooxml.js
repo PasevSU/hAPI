@@ -87,6 +87,85 @@ function docxBlocks(buf){
  }
  return blocks;
 }
+
+// Текстът на един абзац (с tab/br), без да губи реда.
+function paraText(p){
+ let text='';
+ for(const tok of p.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:tab\s*\/>|<w:br\s*\/>/g)){
+  if(tok[1]!==undefined)text+=unesc(tok[1]);
+  else if(tok[0].startsWith('<w:tab'))text+='\t';
+  else text+='\n';
+ }
+ return text;
+}
+
+// Релациите на документа: rId → път в пакета (за картинките).
+function docRels(files){
+ const map=new Map();const rels=files.get('word/_rels/document.xml.rels');
+ if(!rels)return map;
+ for(const m of rels().toString('utf8').matchAll(/<Relationship\b[^>]*>/g)){
+  const id=(/\bId="([^"]+)"/.exec(m[0])||[])[1];
+  const target=(/\bTarget="([^"]+)"/.exec(m[0])||[])[1];
+  if(!id||!target)continue;
+  // „../media/x.png“ и „media/x.png“ сочат едно и също вътре в пакета.
+  const name=target.startsWith('/')?target.slice(1):'word/'+target.replace(/^\.\//,'').replace(/^(\.\.\/)+/,'');
+  map.set(id,name);
+ }
+ return map;
+}
+
+/**
+ * Богато извличане на .docx: абзаци, ЗАГЛАВИЯ, ТАБЛИЦИ и КАРТИНКИ, в реда на документа.
+ * Досега таблиците се разпадаха на отделни абзаци, а картинките просто липсваха — това е
+ * `BUG-03` от плана. Връща `{blocks, media}`; `media` е Map име→Buffer, за да може
+ * рендерът да сложи картинката в PDF, без да я носи в JSON.
+ */
+function docxRich(buf){
+ const files=unzip(buf);const doc=files.get('word/document.xml');
+ if(!doc)throw Object.assign(new Error('Not a Word (.docx) document'),{status:400});
+ const xml=doc().toString('utf8'),blocks=[],media=new Map(),rels=docRels(files);
+ // Само тялото: редовете в „<w:tbl>“ се обхождат като едно цяло, затова първо се
+ // отделят таблиците, а останалото се минава абзац по абзац, в реда на появяване.
+ const tokens=[...xml.matchAll(/<w:tbl(?:\s[^>]*)?>[\s\S]*?<\/w:tbl>|<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map(m=>m[0]);
+ for(const token of tokens){
+  if(token.startsWith('<w:tbl')){
+   const rows=[];let header=false;
+   for(const rm of token.matchAll(/<w:tr(?:\s[^>]*)?>([\s\S]*?)<\/w:tr>/g)){
+    const cells=[];
+    for(const cm of rm[1].matchAll(/<w:tc(?:\s[^>]*)?>([\s\S]*?)<\/w:tc>/g)){
+     const parts=[...cm[1].matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map(p=>paraText(p[0]).trim()).filter(Boolean);
+     cells.push(parts.join('\n'));
+    }
+    if(/<w:tblHeader\b/.test(rm[0])||/<w:b\/>/.test(rm[0]))header=true;
+    rows.push(cells);
+   }
+   const width=Math.max(0,...rows.map(r=>r.length));
+   if(width)blocks.push({type:'table',header,rows:rows.map(r=>[...r,...Array(width-r.length).fill('')])});
+   continue;
+  }
+  // Картинка в абзаца: r:embed → файл в пакета.
+  const embeds=[...token.matchAll(/r:embed="([^"]+)"/g)].map(m=>m[1]);
+  for(const id of embeds){
+   const name=rels.get(id);
+   if(!name)continue;
+   const entry=files.get(name);
+   if(!entry)continue;
+   const data=entry();
+   media.set(name,data);
+   blocks.push({type:'image',data,name:name.slice(name.lastIndexOf('/')+1)});
+  }
+  const text=paraText(token);
+  const style=(/<w:pStyle\s+w:val="([^"]+)"/.exec(token)||[])[1]||'';
+  const level=/^(?:Heading|Заглавие)\s*(\d)$/i.exec(style);
+  if(!text.trim()){ if(!embeds.length)blocks.push({type:'space'}); continue }
+  if(/^Title$/i.test(style))blocks.push({type:'h1',text});
+  else if(level)blocks.push({type:'h'+Math.min(3,Number(level[1])),text});
+  else if(/<w:numPr>/.test(token)||/List/i.test(style))blocks.push({type:'li',marker:'•',text,level:0});
+  else blocks.push({type:'p',text});
+ }
+ return {blocks,media};
+}
+
 // Extracts worksheet rows/cells from .xlsx (inline + shared strings).
 function xlsxBlocks(buf){
  const files=unzip(buf);const sheet=files.get('xl/worksheets/sheet1.xml');
@@ -123,4 +202,4 @@ function pptxBlocks(buf){
  if(!blocks.length)throw Object.assign(new Error('Not a PowerPoint (.pptx) presentation'),{status:400});
  return blocks;
 }
-module.exports={zip,unzip,docx,xlsx,docxBlocks,xlsxBlocks,pptxBlocks,crc32};
+module.exports={zip,unzip,docx,xlsx,docxBlocks,docxRich,xlsxBlocks,pptxBlocks,crc32};

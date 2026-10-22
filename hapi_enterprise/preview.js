@@ -38,8 +38,14 @@ function mdToHtml(md){
 }
 
 function docxToHtml(buffer){
- const blocks=ooxml.docxBlocks(buffer);
+ // Същото богато извличане като при PDF: таблицата става таблица, а картинката — картинка.
+ const blocks=ooxml.docxRich(buffer).blocks;
  return blocks.map(b=>{
+  if(b.type==='table'){
+   const rows=(b.rows||[]).map(r=>'<tr>'+r.map((c,i)=>`<${(b.header&&i>=0)?'th':'td'}>${esc(c||'')}</${(b.header&&i>=0)?'th':'td'}>`).join('')+'</tr>').join('');
+   return '<table>'+rows+'</table>';
+  }
+  if(b.type==='image')return ''; // картинките не се показват в текстовия преглед
   const t=esc(b.text||'');
   if(b.type==='h1')return '<h1>'+t+'</h1>';
   if(b.type==='h2')return '<h2>'+t+'</h2>';

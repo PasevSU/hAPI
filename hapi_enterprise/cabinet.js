@@ -63,7 +63,8 @@ function create({root,maxBytes:maxBytesOpt=52428800,localOpen=false}){const limi
    const e=ext(r.abs),stem=path.basename(r.abs,path.extname(r.abs));let blocks;
    const buf=await fsp.readFile(r.abs);
    if(e==='md')blocks=pdf.markdownBlocks(buf.toString('utf8'));
-   else if(e==='docx')blocks=ooxml.docxBlocks(buf);
+   // Word документ: таблиците и картинките влизат в PDF-а, не само абзаците (BUG-03).
+   else if(e==='docx')blocks=ooxml.docxRich(buf).blocks;
    else throw err('Supported conversions: Word (.docx) → PDF and Markdown (.md) → PDF');
    const out=pdf.render(blocks,{title:stem}),dir=path.dirname(r.abs),nm=await unique(dir,stem+'.pdf');
    await fsp.writeFile(path.join(dir,nm),out,{flag:'wx',mode:0o600});return entry(dir,nm);
