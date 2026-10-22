@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.30-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.31-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
@@ -213,7 +213,7 @@ this tab. Options apply on add-on restart.
 | Minimum free space (MB) | `min_free_mb` | `100` | `100`: startup fails below 100 MB free. Raise it to `500`+ when you scan large folders. |
 | Log level | `log_level` | `info` | `info`: no per-request lines. `debug` logs one line per HTTP request; `trace` is for deep diagnostics. |
 | Rules directory | `config_dir` | — | Empty: `/config/rules`, where the built-in rules are copied on first start and can be edited. |
-| Publish the QR evidence portal | `evidence_portal_deploy` | `true` | `true`: the Evidence View page is copied to `<HA config>/www/hapi/data` and served at `/local/hapi/data/`. |
+| Publish the QR evidence portal | `evidence_portal_deploy` | `true` | `true`: the Evidence View page is copied to `www/hapi/data` in the Home Assistant configuration (`/config/www/hapi/data` for HA, `/homeassistant/www/hapi/data` inside the add-on) and served at `/local/hapi/data/`. |
 | RFC 3161 timestamps | `tsa_enabled` | `false` | `false`: the RFC 3161 endpoints answer `409` and no tokens are created. Nothing is ever faked. |
 | START TSA URL | `tsa_start_url` | `https://zeitstempel.dfn.de/` | DFN timestamp service for the START boundary (the manifest digest). |
 | STOP TSA URL | `tsa_stop_url` | `http://timestamp.digicert.com` | DigiCert timestamp service for the STOP boundary (the closing digest). |

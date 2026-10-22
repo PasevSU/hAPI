@@ -93,9 +93,11 @@ configuration:
   evidence_portal_deploy:
     name: Публикуване на QR портала за доказателства
     description: >-
-      Копира портала Evidence View в <HA config>/www/hapi/data, за да го сервира Home Assistant
-      на /local/hapi/data/portal.html. Порталът чете данни от API за доказателства; сам по
-      себе си не открива файлове.
+      Копира портала Evidence View в `www/hapi/data` от конфигурацията на Home Assistant —
+      `/config/www/hapi/data` както го вижда HA, `/homeassistant/www/hapi/data` в контейнера
+      на add-on-а — за да го сервира HA на /local/hapi/data/portal.html. Папката се
+      разпознава по `configuration.yaml`; `EVIDENCE_PORTAL_ROOT` е само за друго място.
+      Порталът чете данните си от API за доказателства; самите файлове не се показват.
   tsa_enabled:
     name: RFC 3161 времеви печати
     description: >-

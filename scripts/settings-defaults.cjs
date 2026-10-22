@@ -153,8 +153,8 @@ const MEANING = {
     bg: 'Празно: `/config/rules`, където при първи старт се копират вградените правила и могат да се редактират.',
   },
   evidence_portal_deploy: {
-    en: '`true`: the Evidence View page is copied to `<HA config>/www/hapi/data` and served at `/local/hapi/data/`.',
-    bg: '`true`: страницата Evidence View се копира в `<HA config>/www/hapi/data` и се сервира на `/local/hapi/data/`.',
+    en: '`true`: the Evidence View page is copied to `www/hapi/data` in the Home Assistant configuration (`/config/www/hapi/data` for HA, `/homeassistant/www/hapi/data` inside the add-on) and served at `/local/hapi/data/`.',
+    bg: '`true`: страницата Evidence View се копира в `www/hapi/data` от конфигурацията на HA (`/config/www/hapi/data` за HA, `/homeassistant/www/hapi/data` в контейнера на add-on-а) и се сервира на `/local/hapi/data/`.',
   },
   tsa_enabled: {
     en: '`false`: the RFC 3161 endpoints answer `409` and no tokens are created. Nothing is ever faked.',

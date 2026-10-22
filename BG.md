@@ -3,7 +3,7 @@
 # 🏠 HOME ASSISTANT Portal Enterprise - hAPI Enterprise
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?color=ff00d8)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.30-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.31-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?color=ff00d8)](https://hacs.xyz)
 
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -294,7 +294,7 @@ node hapi_enterprise\standalone.js
 | Минимум свободно място (MB) | `min_free_mb` | `100` | `100`: стартът се отказва под 100 MB свободни. Вдигни до `500`+ при сканиране на големи папки. |
 | Ниво на логове | `log_level` | `info` | `info`: без ред на заявка. `debug` пише по ред на всяка заявка; `trace` е за дълбока диагностика. |
 | Директория с правила | `config_dir` | — | Празно: `/config/rules`, където при първи старт се копират вградените правила и могат да се редактират. |
-| Публикуване на QR портала за доказателства | `evidence_portal_deploy` | `true` | `true`: страницата Evidence View се копира в `<HA config>/www/hapi/data` и се сервира на `/local/hapi/data/`. |
+| Публикуване на QR портала за доказателства | `evidence_portal_deploy` | `true` | `true`: страницата Evidence View се копира в `www/hapi/data` от конфигурацията на HA (`/config/www/hapi/data` за HA, `/homeassistant/www/hapi/data` в контейнера на add-on-а) и се сервира на `/local/hapi/data/`. |
 | RFC 3161 времеви печати | `tsa_enabled` | `false` | `false`: RFC 3161 маршрутите отговарят `409` и не се създават токени. Нищо не се преструва. |
 | START TSA адрес | `tsa_start_url` | `https://zeitstempel.dfn.de/` | DFN услуга за времеви печат за START границата (отпечатъкът на манифеста). |
 | STOP TSA адрес | `tsa_stop_url` | `http://timestamp.digicert.com` | DigiCert услуга за времеви печат за STOP границата (затварящият отпечатък). |

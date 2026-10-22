@@ -1,13 +1,21 @@
 'use strict';
 // ОРАКУЛ: КЪДЕ точно се публикува Evidence порталът.
 //
-// Дефектът от 0.69.19: `/homeassistant` се предпочиташе пред `/config`, затова порталът
-// отиваше на място, което Home Assistant НЕ сервира (`/local/...` идва от `<config>/www`),
-// а след рестарт копирането гръмна с ENOENT. Затова тук се проверява точният избор на корен:
-//   • корен с `configuration.yaml` И `www/` печели пред „половин“ корен;
+// Историята на този дефект е два пъти сгрешена:
+//   0.69.19 — `/homeassistant` се предпочиташе пред `/config`;
+//   0.69.29 — `/config` се предпочиташе, а `www/` се броеше за доказателство, че папката е HA
+//            конфигурация. Точно това е грешно: в add-on-а `/config` е СОБСТВЕНАТА папка на
+//            add-on-а (`app_config`), а HA конфигурацията е на `/homeassistant`. Първото
+//            погрешно публикуване създава `/config/www/hapi/data`, след което тази папка
+//            печели вечно и порталът остава извън HA (404 на `/local/hapi/data/portal.html`).
+//
+// Затова тук се проверява точният избор на корен:
+//   • HA конфигурация се разпознава САМО по `configuration.yaml` (www/ е само подсказка);
+//   • корен само с `www/` НЕ се избира, дори да е пръв в списъка;
+//   • корен с `configuration.yaml` без `www/` се избира и `www/hapi/data` се създава;
 //   • `/config` е преди `/homeassistant`;
 //   • висящ симлинк не се брои за корен;
-//   • изричната настройка `EVIDENCE_PORTAL_ROOT` винаги е първа;
+//   • изричният `EVIDENCE_PORTAL_ROOT` е думата на оператора — приема се без маркери;
 //   • публикуването е идемпотентно и връща КОЙ корен е използван (за да го вижда логът).
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -35,9 +43,23 @@ const mk = (base, name, { config = false, www = false } = {}) => {
     assert.equal(pick.root, full, 'коренът с configuration.yaml + www печели');
     assert.equal(pick.dir, path.join(full, 'www', 'hapi', 'data'), 'целта е <root>/www/hapi/data');
 
-    // ── 2. Само www бие само configuration.yaml ────────────────────────────────
-    const pick2 = evidencePortal.targetDir({ env: {}, roots: [onlyConfig, onlyWww] });
-    assert.equal(pick2.root, onlyWww, 'коренът с www е по-важен за публикуване от този само с конфигурация');
+    // ── 2. Само `www/` НЕ прави папката HA конфигурация ──────────────────────
+    // Точно това е собствената папка на add-on-а след погрешно публикуване.
+    const pick2 = evidencePortal.targetDir({ env: {}, roots: [onlyWww, onlyConfig] });
+    assert.equal(
+      pick2.root,
+      onlyConfig,
+      'коренът само с www не се приема за HA конфигурация — избира се този с configuration.yaml',
+    );
+    assert.equal(pick2.dir, path.join(onlyConfig, 'www', 'hapi', 'data'), 'целта е в избрания корен, не в чуждата www');
+
+    // ── 2б. Корен без `www/` се избира и `www/hapi/data` се създава ──────────
+    const deployed = evidencePortal.deploy({ env: {}, roots: [onlyConfig] });
+    assert.equal(deployed.ok, true, 'публикува се и когато HA още няма www/: ' + deployed.error);
+    assert.ok(
+      fs.existsSync(path.join(onlyConfig, 'www', 'hapi', 'data', 'portal.html')),
+      'www/hapi/data е създадена под HA конфигурацията',
+    );
 
     // ── 3. Висящ симлинк не е корен ────────────────────────────────────────────
     const dangling = path.join(tmp, 'visiasht');
@@ -58,6 +80,14 @@ const mk = (base, name, { config = false, www = false } = {}) => {
     assert.deepEqual(roots, ['/config', '/homeassistant'], 'редът по подразбиране: /config преди /homeassistant');
     assert.deepEqual(evidencePortal.candidateRoots({ EVIDENCE_PORTAL_ROOT: '/srv/ha' }), ['/srv/ha', '/config', '/homeassistant'], 'изричният корен е първи');
 
+    // ── 4б. Изричният корен е думата на оператора ─────────────────────────────
+    const explicit = mk(tmp, 'izrachen', {}); // без configuration.yaml и без www
+    const forced = evidencePortal.targetDir({ env: { EVIDENCE_PORTAL_ROOT: explicit }, roots: [onlyWww] });
+    assert.equal(forced.root, explicit, 'EVIDENCE_PORTAL_ROOT се приема дори без маркери');
+    assert.equal(forced.dir, path.join(explicit, 'www', 'hapi', 'data'), 'целта е под изричния корен');
+    const missingExplicit = evidencePortal.targetDir({ env: { EVIDENCE_PORTAL_ROOT: path.join(tmp, 'niakade') } });
+    assert.ok(/липсва/.test(missingExplicit.error), 'липсващ изричен корен се отчита: ' + missingExplicit.error);
+
     // ── 5. Публикуването е идемпотентно и казва кой корен ползва ───────────────
     const first = evidencePortal.deploy({ env: {}, roots: [full] });
     assert.equal(first.ok, true, 'публикуването минава');
@@ -71,11 +101,13 @@ const mk = (base, name, { config = false, www = false } = {}) => {
     assert.equal(second.unchanged.length, second.total, 'всички файлове са непроменени');
 
     // ── 6. Без корен — ясна причина, без гадаене ──────────────────────────────
-    const none = evidencePortal.deploy({ env: {}, roots: [path.join(tmp, 'niakade')] });
+    const none = evidencePortal.deploy({ env: {}, roots: [onlyWww, path.join(tmp, 'niakade')] });
     assert.equal(none.ok, false, 'без корен не се публикува');
     assert.ok(/конфигурацията на Home Assistant/.test(none.error), 'причината е разбираема: ' + none.error);
+    assert.ok(/configuration\.yaml/.test(none.error), 'грешката казва какво липсва: ' + none.error);
+    assert.ok(none.error.includes(onlyWww), 'грешката изрежда и отхвърлените корени: ' + none.error);
 
-    console.log('PASS evidence-portal-root: /config преди /homeassistant · пълният корен печели · висящ симлинк се пропуска · публикуването е идемпотентно и казва кой корен ползва');
+    console.log('PASS evidence-portal-root: HA конфигурация се разпознава по configuration.yaml · само www/ не е корен · /config преди /homeassistant · изричният корен печели · идемпотентно и казва кой корен ползва');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

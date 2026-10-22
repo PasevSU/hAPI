@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.30
+# Състояние на изданието — hAPI Enterprise 0.69.31
 
-Версия: **0.69.30** · клон `main`
+Версия: **0.69.31** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **207/207** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.30 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 334 файла · 55933 реда · **0** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 330 файла · 55569 реда · critical: 0 · high: 0 · medium: 0 · low: 150 — чисто |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.31 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 334 файла · 56003 реда · **0** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 330 файла · 55639 реда · critical: 0 · high: 0 · medium: 0 · low: 150 — чисто |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,20 +27,32 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.30.tar.gz` | add-on архив (129 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.30.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.31.tar.gz` | add-on архив (129 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.31.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.30
+## 3. Какво влезе във 0.69.31
 
-Документационна версия: кодът не се променя, затова и артефактите са същите по съдържание —
-издава се, за да стигне поправеното и до хората, които четат само изданието, а не `main`.
+Evidence порталът упорито се публикуваше на място, което Home Assistant не сервира, и QR
+кодът водеше до 404. Причината беше в правилото за избор на корен, не в пътя.
 
-- `README.md` препраща към генерираната таблица с подразбиранията (add-on README и `BG.md`)
-  и вече не твърди остарялото „(0.54.0)“ за копието от GitHub.
-- `docs/plan/21-next-updates.md` — версия 0.69.29 вместо 0.69.28.
-- `documentation/06_TESTING/TEST_CASE_CATALOG.md` — ред `T-SETTINGS-01` за
-  `tests/settings-defaults.cjs`, за да не липсва нов тест в каталога.
+- **`configuration.yaml` е единственият маркер за HA конфигурация** (`evidence-portal.js`).
+  Досега `www/` също се броеше за доказателство — а в add-on-а `/config` е **собствената**
+  папка на add-on-а (`app_config`), не конфигурацията на HA. Първото погрешно публикуване
+  създаваше `/config/www/hapi/data` и оттам тази папка печелеше при всеки следващ старт,
+  тоест порталът оставаше извън HA завинаги.
+- Сега порталът отива там, където е `configuration.yaml`: `/homeassistant/www/hapi/data` в
+  контейнера на add-on-а, което е `/config/www/hapi/data` от гледна точка на Home Assistant
+  (същата папка, която се вижда през Samba/File editor). Ако HA още няма `www/`, тя се създава.
+- **`EVIDENCE_PORTAL_ROOT` е думата на оператора**: приема се без маркери, само трябва да е
+  папка. `EVIDENCE_PORTAL_DIR` остава за точен път (трябва да завършва на `www/hapi/data`).
+- **Грешката казва какво е проверено**: изрежда всеки кандидат и какво има или няма в него,
+  вместо да оставя човек да гадае защо публикуването не се е случило.
+- Преводите (`bg`, `en`) и генерираната таблица с подразбиранията посочват и двата пътя —
+  този на Home Assistant и този в контейнера, за да не се търси „липсваща“ папка.
+- `tests/evidence-portal-root.cjs` пази новото правило: корен само с `www/` НЕ е HA
+  конфигурация, корен без `www/` се избира и `www/hapi/data` се създава, изричният корен
+  печели, а грешката изрежда отхвърлените кандидати.
 
 ## 4. Как се проверява наново
 

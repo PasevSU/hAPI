@@ -93,9 +93,12 @@ configuration:
   evidence_portal_deploy:
     name: Publish the QR evidence portal
     description: >-
-      Copies the Evidence View portal to <HA config>/www/hapi/data, so Home Assistant serves it
-      at /local/hapi/data/portal.html. The portal reads its data from an evidence API; it does
-      not expose files by itself.
+      Copies the Evidence View portal to `www/hapi/data` inside the Home Assistant
+      configuration — `/config/www/hapi/data` as Home Assistant sees it,
+      `/homeassistant/www/hapi/data` inside the add-on container — so HA serves it at
+      /local/hapi/data/portal.html. The configuration folder is recognised by
+      `configuration.yaml`; set `EVIDENCE_PORTAL_ROOT` only to publish somewhere else.
+      The portal reads its data from an evidence API; it does not expose files by itself.
   tsa_enabled:
     name: RFC 3161 timestamps
     description: >-

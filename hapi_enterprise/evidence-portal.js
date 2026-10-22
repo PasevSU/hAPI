@@ -25,24 +25,26 @@ const SUBPATH_TEXT = 'www/hapi/data';
 const sourceDir = () => path.join(__dirname, 'evidence-portal');
 const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
-/** Корените, в които може да живее HA конфигурацията (в контейнера), по ред на доверие. */
+/** Корените, в които може да живее HA конфигурацията, по ред на доверие. */
 function candidateRoots(env = process.env) {
   const roots = [];
   if (env.EVIDENCE_PORTAL_ROOT) roots.push(env.EVIDENCE_PORTAL_ROOT);
-  // `/config` е ПРАВИЛНИЯТ корен за add-on с `map: config:rw` — точно там HA сервира `www/`
-  // на `/local/`. `/homeassistant` се среща в стари изображения и понякога е застоял или
-  // висящ симлинк; затова е последен, а не първи (иначе порталът се публикуваше на място,
-  // което HA не сервира).
+  // `/config` е конфигурацията на HA при standalone/Docker употреба (там HA сервира `www/`
+  // на `/local/`). В add-on обаче `/config` е СОБСТВЕНАТА папка на add-on-а (`app_config`),
+  // а HA конфигурацията е монтирана на `/homeassistant`.
   roots.push('/config', '/homeassistant');
   return [...new Set(roots)];
 }
 
 /**
- * Корен, който наистина изглежда като HA конфигурация. Два прохода, за да не се хване
- * „половин“ корен: първо този с `configuration.yaml` И `www/` (безспорен), после този само с
- * `www/`, после само с `configuration.yaml`. Висящ симлинк не се брои за корен.
+ * Корен, който наистина изглежда като HA конфигурация. Маркерът е `configuration.yaml`;
+ * `www/` само подрежда кандидатите. Висящ симлинк не се брои за корен.
  */
 function detectRoot(roots = candidateRoots()) {
+  // Кой корен е HA конфигурация се решава САМО по `configuration.yaml`. Наличието на
+  // `www/` НЕ е доказателство: add-on-ът има своя папка `/config` (app_config), а първото
+  // погрешно публикуване създава точно `/config/www/hapi/data` — и ако `www/` се броеше
+  // за маркер, тази папка щеше да печели вечно и порталът щеше да остава извън HA.
   const usable = (root) => {
     try {
       if (!fs.statSync(root).isDirectory()) return false; // stat следва симлинк: висящият гърми
@@ -60,7 +62,6 @@ function detectRoot(roots = candidateRoots()) {
   };
   const passes = [
     (root) => has(root, 'configuration.yaml') && has(root, 'www'),
-    (root) => has(root, 'www'),
     (root) => has(root, 'configuration.yaml'),
   ];
   for (const pass of passes) {
@@ -69,11 +70,40 @@ function detectRoot(roots = candidateRoots()) {
   return null;
 }
 
+/** Защо даден корен не е приет — показва се в грешката, за да не се гадае. */
+function whyNot(root) {
+  const notes = [];
+  let isDir = false;
+  try {
+    isDir = fs.statSync(root).isDirectory();
+  } catch {
+    return root + ' (липсва)';
+  }
+  if (!isDir) return root + ' (не е папка)';
+  for (const name of ['configuration.yaml', 'www']) {
+    try {
+      if (fs.existsSync(path.join(root, name))) notes.push('има ' + name);
+    } catch { /* нечетима папка — отчита се като липсващ маркер */ }
+  }
+  return root + (notes.length ? ' (' + notes.join(', ') + ')' : ' (без configuration.yaml)');
+}
+
 /**
  * Целева директория. Изричната настройка печели; иначе <root>/www/hapi/data.
  * Връща { dir, root } или { error } — без гадаене и без мълчаливо писане на случайно място.
  */
 function targetDir({ env = process.env, roots } = {}) {
+  // Изричният корен е ДУМАТА НА ОПЕРАТОРА: не се проверява за маркери, само трябва да е папка.
+  // Така може да се публикува и на нестандартно място, без кодът да гадае.
+  if (env.EVIDENCE_PORTAL_ROOT) {
+    const root = path.resolve(env.EVIDENCE_PORTAL_ROOT);
+    try {
+      if (!fs.statSync(root).isDirectory()) return { error: `EVIDENCE_PORTAL_ROOT не е папка: ${root}` };
+    } catch {
+      return { error: `EVIDENCE_PORTAL_ROOT липсва: ${root}` };
+    }
+    return { dir: path.join(root, SUBPATH), root };
+  }
   if (env.EVIDENCE_PORTAL_DIR) {
     const dir = path.resolve(env.EVIDENCE_PORTAL_DIR);
     if (!dir.endsWith(path.join('www', 'hapi', 'data')) && !env.EVIDENCE_PORTAL_ALLOW_ANY_DIR) {
@@ -81,8 +111,16 @@ function targetDir({ env = process.env, roots } = {}) {
     }
     return { dir, root: null };
   }
-  const root = detectRoot(roots || candidateRoots(env));
-  if (!root) return { error: 'няма достъп до конфигурацията на Home Assistant (очаквам /config с www/ — или /homeassistant)' };
+  const list = roots || candidateRoots(env);
+  const root = detectRoot(list);
+  if (!root) {
+    return {
+      error:
+        'няма достъп до конфигурацията на Home Assistant (търся configuration.yaml): ' +
+        list.map(whyNot).join('; ') +
+        ' — задай EVIDENCE_PORTAL_ROOT, ако е на друго място',
+    };
+  }
   return { dir: path.join(root, SUBPATH), root };
 }
 
