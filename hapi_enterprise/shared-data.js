@@ -125,7 +125,7 @@ function createLock(lockPath, { timeoutMs, staleMs, pollMs, sleep }) {
   };
   async function acquire() {
     const startedAt = Date.now();
-    for (;;) {
+    for (; ;) {
       try {
         fs.writeFileSync(lockPath, JSON.stringify({ pid: process.pid, host: os.hostname(), at: new Date().toISOString() }), { flag: 'wx', mode: 0o600 });
         return true;
@@ -164,11 +164,11 @@ function create(options = {}) {
   const sleep = typeof options.sleep === 'function' ? options.sleep : (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const lock = options.lockPath
     ? createLock(options.lockPath, {
-        timeoutMs: Number(options.lockTimeoutMs) || DEFAULT_LOCK_TIMEOUT_MS,
-        staleMs: Number(options.staleLockMs) || DEFAULT_STALE_LOCK_MS,
-        pollMs: Number(options.pollMs) || DEFAULT_POLL_MS,
-        sleep,
-      })
+      timeoutMs: Number(options.lockTimeoutMs) || DEFAULT_LOCK_TIMEOUT_MS,
+      staleMs: Number(options.staleLockMs) || DEFAULT_STALE_LOCK_MS,
+      pollMs: Number(options.pollMs) || DEFAULT_POLL_MS,
+      sleep,
+    })
     : null;
 
   let current = null;

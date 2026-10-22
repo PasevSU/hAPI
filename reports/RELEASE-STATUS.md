@@ -9,14 +9,14 @@
 
 | Проверка                      | Команда                                         | Резултат                                                      |
 | ----------------------------- | ----------------------------------------------- | ------------------------------------------------------------- |
-| Тестове                      | `node scripts/test-matrix.cjs`                  | **182/182** за ~140 s (един опит)                              |
-| Издание                      | `node scripts/verify-release.cjs --with-tests`  | **21/21** сценария (S01–S21), вкл. S20 = 182/182               |
+| Тестове                       | `node scripts/test-matrix.cjs`                  | **182/182** за ~140 s (един опит)                             |
+| Издание                       | `node scripts/verify-release.cjs --with-tests`  | **21/21** сценария (S01–S21), вкл. S20 = 182/182              |
 | Логически одит                | `node scripts/logic-audit.cjs --gate`           | 299 файла · 52 496 реда · **0** critical/high · 7 с обосновка |
 | Скенер за лош код             | `node scripts/bad-code-scan.cjs --gate`         | **0** critical/high · всички находки с обосновка              |
-| Таг = версия                 | `node scripts/check-tag-version.cjs v0.69.19`   | ✔ `config.yaml` = `manifest.json` = таг                        |
-| Документи                    | `node tests/docs-consistency.cjs`               | ✔ 3 документа на версия 0.69.19, без счупени връзки            |
+| Таг = версия                  | `node scripts/check-tag-version.cjs v0.69.19`   | ✔ `config.yaml` = `manifest.json` = таг                       |
+| Документи                     | `node tests/docs-consistency.cjs`               | ✔ 3 документа на версия 0.69.19, без счупени връзки           |
 | Changelog на add-on-а         | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален                                                    |
-| Сценарии                     | `node tests/scenario-matrix.cjs`                | ✔ 62 области · 44 маршрута · 182 тестови файла                 |
+| Сценарии                      | `node tests/scenario-matrix.cjs`                | ✔ 62 области · 44 маршрута · 182 тестови файла                |
 | CI / CodeQL (`main`)          | GitHub Actions                                  | след push                                                     |
 | Release workflow (`v0.69.15`) | GitHub Actions                                  | виж `gh run list --repo PasevSU/hAPI`                         |
 | HACS Validate + Release       | GitHub Actions                                  | виж `gh run list --repo PasevSU/hapi-enterprise-integration`  |
