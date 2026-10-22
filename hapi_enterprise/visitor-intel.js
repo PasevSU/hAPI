@@ -209,7 +209,10 @@ const dayOf = (iso) => iso.slice(0, 10);
 
 function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile = '', trustProxy = false, now = () => Date.now() } = {}) {
   const file = dir ? path.join(dir, FILE) : '';
-  const geo = createGeo({ file: geoFile });
+  let geo = createGeo({ file: geoFile });
+  // Настройките се държат в обект, а не в запомнени параметри: администраторът ги сменя
+  // от интерфейса, без рестарт (вж. `configure`).
+  const config = { ipMode: ipMode === 'full' || ipMode === 'masked' ? ipMode : 'hashed', retentionDays: Number(retentionDays) > 0 ? Number(retentionDays) : 90, trustProxy: trustProxy === true, geoFile: String(geoFile || '') };
   let state = emptyState();
   if (file) {
     try {
@@ -236,11 +239,23 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
   };
   const touch = () => { dirty = true; if (timer) return; timer = setTimeout(() => { timer = null; saveNow() }, 1000); if (timer.unref) timer.unref() };
 
-  const storedIp = (ip) => ipMode === 'full' ? ip : ipMode === 'masked' ? maskIp(ip) : '';
+  const storedIp = (ip) => config.ipMode === 'full' ? ip : config.ipMode === 'masked' ? maskIp(ip) : '';
+
+  /**
+   * Смяна на настройките на живо. Връща приложеното (за одита и за интерфейса).
+   * Геобазата се презарежда само когато пътят ѝ се е сменил.
+   */
+  function configure(next = {}) {
+    if (Object.hasOwn(next, 'ipMode')) config.ipMode = next.ipMode === 'full' || next.ipMode === 'masked' ? next.ipMode : 'hashed';
+    if (Object.hasOwn(next, 'retentionDays')) { const days = Number(next.retentionDays); if (Number.isFinite(days) && days > 0) config.retentionDays = days }
+    if (Object.hasOwn(next, 'trustProxy')) config.trustProxy = next.trustProxy === true;
+    if (Object.hasOwn(next, 'geoFile')) { const value = String(next.geoFile || ''); if (value !== config.geoFile) { config.geoFile = value; geo = createGeo({ file: value }) } }
+    return { ...config };
+  }
 
   function observe(req, { kind = 'visit', portal = null, file: asset = null, status = 0, reason = '', bytes = 0 } = {}) {
     const at = new Date(now()).toISOString();
-    const peer = clientIp(req, { trustProxy });
+    const peer = clientIp(req, { trustProxy: config.trustProxy });
     const ip = peer.ip;
     const ipKey = storedIp(ip);
     const ua = parseUserAgent(req.headers['user-agent']);
@@ -361,7 +376,7 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
   function bid(bag, key) { if (key) bag[key] = Number(bag[key] || 0) + 1 }
 
   function prune() {
-    const limit = now() - Number(retentionDays || 0) * 86400000;
+    const limit = now() - Number(config.retentionDays || 0) * 86400000;
     if (!Number.isFinite(limit)) return { removed: 0 };
     let removed = 0;
     for (const [id, visitor] of Object.entries(state.visitors)) {
@@ -374,7 +389,7 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
       if (Date.parse(day + 'T00:00:00.000Z') < limit) { delete state.byDay[day]; bag.removed = true }
     }
     if (removed) { touch(); saveNow() }
-    return { removed, retentionDays: Number(retentionDays) || 0 };
+    return { removed, retentionDays: Number(config.retentionDays) || 0 };
   }
 
   function sensors() {
@@ -527,7 +542,7 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
   function flush() { if (timer) { clearTimeout(timer); timer = null } saveNow(); return Boolean(file) }
   function reset() { state = emptyState(); touch(); return true }
 
-  return { observe, sensors, list, profile, forget, csv, prometheus, prune, flush, reset, geo, get ipMode() { return ipMode }, get state() { return state } };
+  return { observe, sensors, list, profile, forget, csv, prometheus, prune, flush, reset, configure, get geo() { return geo }, get ipMode() { return config.ipMode }, get config() { return { ...config } }, get state() { return state } };
 }
 
 module.exports = { create, createGeo, parseUserAgent, parseLanguages, classifyReferer, clientIp, maskIp, hashIp, normalizeIp, isPrivate };

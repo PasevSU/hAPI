@@ -28,12 +28,15 @@
       <p class="ident">
         <span class="ident-label" data-i18n="header.portalId">Идентификатор на портала</span>
         <code id="portal-id" class="mono">…</code>
-        <button type="button" id="copy-id" class="btn btn-ghost btn-sm" data-i18n="header.copyId" data-i18n-title="header.copyId.title" title="Копирай идентификатора">Копирай</button>
+        <button type="button" id="copy-id" class="btn btn-ghost btn-sm" data-i18n="header.copyId"
+          data-i18n-title="header.copyId.title" title="Копирай идентификатора">Копирай</button>
       </p>
       <div class="hero-actions">
         <button type="button" id="copy-link" class="btn btn-ghost" data-i18n="header.copyLink">Копирай адреса</button>
-        <a id="api-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer" data-i18n="header.api">API</a>
-        <a id="manifest-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer" data-i18n="header.manifest">Манифест</a>
+        <a id="api-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer"
+          data-i18n="header.api">API</a>
+        <a id="manifest-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer"
+          data-i18n="header.manifest">Манифест</a>
         <!-- PP-14: езикът на страницата е избор на посетителя, не на издателя. -->
         <label class="lang">
           <span class="sr-only" data-i18n="lang.label">Език</span>
@@ -56,7 +59,8 @@
       <!-- PP-12: целият портал с едно натискане. Показва се само когато има файлове,
            които могат да се свалят без ключ. -->
       <div class="package-bar" id="package-bar">
-        <button id="package-btn" class="btn btn-primary" type="button" data-i18n="package.button" hidden>Изтегли всички (ZIP)</button>
+        <button id="package-btn" class="btn btn-primary" type="button" data-i18n="package.button" hidden>Изтегли всички
+          (ZIP)</button>
         <p id="package-note" class="more" role="status" aria-live="polite" hidden></p>
       </div>
     </section>
@@ -85,7 +89,8 @@
         <div class="qr-text">
           <p id="qr-hint" data-i18n="qr.hint.public">Сканирай кода, за да отвориш портала на друго устройство.</p>
           <p class="mono" id="portal-url"></p>
-          <p class="hint" id="qr-note" data-i18n="qr.note.allHash">Всеки файл носи SHA-256 отпечатък — сверявай го след изтегляне.</p>
+          <p class="hint" id="qr-note" data-i18n="qr.note.allHash">Всеки файл носи SHA-256 отпечатък — сверявай го след
+            изтегляне.</p>
         </div>
       </div>
     </section>

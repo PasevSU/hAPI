@@ -163,7 +163,7 @@ function buildOpenApi(portal, options = {}) {
       },
       [`${p}/files/{fileId}`]: {
         get: {
-          summary: 'Метаданни на файл',          security: secured,
+          summary: 'Метаданни на файл', security: secured,
           parameters: [{ name: 'fileId', in: 'path', required: true, schema: { type: 'string' } }],
           responses: {
             200: ok('File metadata'),
@@ -240,7 +240,7 @@ function buildOpenApi(portal, options = {}) {
       },
       [`${p}/storage`]: {
         get: {
-          summary: 'Виртуално хранилище (дърво)',          description:
+          summary: 'Виртуално хранилище (дърво)', description:
             'Йерархия topic → category → group → файл. Връща папките и файловете с виртуален път, ' +
             'а не физически път на диска.',
           security: secured,

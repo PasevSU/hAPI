@@ -136,6 +136,27 @@ configuration:
     description: >-
       Path to the PEM private key that matches the certificate. Both options must point
       to readable files, otherwise the add-on refuses to start.
+  visitor_ip_mode:
+    name: Sensors · IP mode
+    description: >-
+      What is kept of a visitor address: hashed (irreversible hash, default), masked
+      (network/16) or full (the full address — personal data). Empty means the default.
+      The same value can be set from the console: Settings → Sensors.
+  visitor_trust_proxy:
+    name: Sensors · trust X-Forwarded-For
+    description: >-
+      Enable only when the add-on sits behind your own reverse proxy. Otherwise any client
+      could spoof its address with a header. Unset means the default (no).
+  visitor_retention_days:
+    name: Sensors · record lifetime (days)
+    description: >-
+      How many days visits are kept before they are deleted. 0 or empty means the default
+      (90 days). The value can also be changed from the console.
+  visitor_geoip_path:
+    name: Sensors · geo database file
+    description: >-
+      Absolute path to an MMDB (GeoIP) file used for the visitor country. Empty means no
+      geo database: countries stay unknown and the other sensors keep working.
 network:
   8099/tcp: Internal API
   8088/tcp: Public API gateway

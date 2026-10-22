@@ -265,6 +265,7 @@
     { id: 'data', label: 'section.data' },
     { id: 'diagnostics', label: 'section.diagnostics' },
     { id: 'analytics', label: 'section.analytics' },
+    { id: 'sensors', label: 'section.sensors' },
     { id: 'security', label: 'section.security' },
     { id: 'qr', label: 'section.qr' },
     { id: 'cms', label: 'section.cms' },
@@ -367,6 +368,12 @@
     } else if (id === 'analytics') {
       const [sensors, metrics] = await Promise.all([grab('/admin/api/sensors'), grab('/admin/api/metrics')]);
       out.data = { sensors, metrics };
+    } else if (id === 'sensors') {
+      // Живите стойности идват от /admin/api/settings (записани + ефективни), а
+      // състоянието на геобазата — от /admin/api/sensors. Така панелът вижда и
+      // наследените от средата стойности, без да ги записва.
+      const [settings, sensors] = await Promise.all([grab('/admin/api/settings'), grab('/admin/api/sensors')]);
+      out.data = { settings, effective: (settings && settings.effective) || {}, sensors: (sensors && sensors.sensorSettings) || {} };
     } else if (id === 'security') {
       const [audit, who] = await Promise.all([grab('/admin/api/audit/verify'), grab('/admin/api/whoami')]);
       out.data = { audit, who };
@@ -634,6 +641,51 @@
         '<h3 class="u-mt">По портал</h3>' + table([T('th.portal'), 'Посещения', 'Изтегляния', 'Обем'], perPortal) +
         '<div class="u-row u-mt"><button type="button" class="btn" data-action="metricsProm">' + T('action.metrics') + '</button></div>';
     }
+    if (id === 'sensors') {
+      // Празно поле = „по подразбиране“ (стойността от средата/add-on опциите).
+      // Така потребителят вижда наследената стойност и може да я отмени, без да я знае.
+      const cur = (d.settings && d.settings.sensors) || {};
+      const eff = (d.effective && d.effective.sensors) || {};
+      const live = d.sensors || {};
+      const IP_LABELS = { hashed: T('sensors.ipmodeHashed'), masked: T('sensors.ipmodeMasked'), full: T('sensors.ipmodeFull') };
+      const ipLabel = (v) => IP_LABELS[v] || String(v || '—');
+      const yes = T('sensors.yes');
+      const no = T('sensors.no');
+      const boolOf = (v) => (typeof v === 'boolean' ? String(v) : '');
+      const geoPath = typeof cur.geoipPath === 'string' ? cur.geoipPath : '';
+      const effGeo = typeof eff.geoipPath === 'string' ? eff.geoipPath : '';
+      const retention = typeof cur.retentionDays === 'number' ? String(cur.retentionDays) : '';
+      const defDays = String(eff.retentionDays != null ? eff.retentionDays : 90);
+      const opt = (value, text, on) => '<option value="' + value + '"' + (on ? ' selected' : '') + '>' + esc(text) + '</option>';
+      const status = [
+        [T('sensors.statusIpMode'), esc(ipLabel(eff.ipMode))],
+        [T('sensors.statusTrust'), esc(eff.trustProxy ? yes : no)],
+        [T('sensors.statusRetention'), esc(String(eff.retentionDays != null ? eff.retentionDays : '—') + ' ' + T('sensors.days'))],
+        [T('sensors.statusGeoip'), effGeo ? '<code>' + esc(effGeo) + '</code> · ' + esc(live.geoLoaded ? T('sensors.geoLoaded') : T('sensors.geoMissing')) : esc(T('sensors.geoNone'))],
+      ];
+      return '<p class="hint">' + esc(T('sensors.hint')) + '</p>' +
+        '<div class="field"><label for="set-sensors-ipmode">' + esc(T('sensors.ipmode')) + '</label>' +
+        '<select id="set-sensors-ipmode">' +
+        opt('', T('sensors.inherit') + ' (' + ipLabel(eff.ipMode) + ')', !cur.ipMode) +
+        opt('hashed', IP_LABELS.hashed, cur.ipMode === 'hashed') +
+        opt('masked', IP_LABELS.masked, cur.ipMode === 'masked') +
+        opt('full', IP_LABELS.full, cur.ipMode === 'full') +
+        '</select><span class="hint">' + esc(T('sensors.ipmodeHint')) + '</span></div>' +
+        '<div class="field u-mt"><label for="set-sensors-trustproxy">' + esc(T('sensors.trust')) + '</label>' +
+        '<select id="set-sensors-trustproxy">' +
+        opt('', T('sensors.inherit') + ' (' + (eff.trustProxy ? yes : no) + ')', boolOf(cur.trustProxy) === '') +
+        opt('true', T('sensors.trustYes'), boolOf(cur.trustProxy) === 'true') +
+        opt('false', T('sensors.trustNo'), boolOf(cur.trustProxy) === 'false') +
+        '</select></div>' +
+        '<div class="field u-mt"><label for="set-sensors-retention">' + esc(T('sensors.retention')) + '</label>' +
+        '<input id="set-sensors-retention" type="number" min="1" max="3650" value="' + esc(retention) + '" placeholder="' + esc(defDays) + '" />' +
+        '<span class="hint">' + esc(T('sensors.retentionHint') + ' (' + defDays + ')') + '</span></div>' +
+        '<div class="field u-mt"><label for="set-sensors-geoip">' + esc(T('sensors.geoip')) + '</label>' +
+        '<input id="set-sensors-geoip" value="' + esc(geoPath) + '" placeholder="' + esc(effGeo || '/data/geoip/dbip.mmdb') + '" />' +
+        '<span class="hint">' + esc(T('sensors.geoipHint')) + '</span></div>' +
+        '<div class="u-row u-row-inline u-mt"><button type="button" class="btn btn-primary" data-action="sensors">' + esc(T('sensors.save')) + '</button></div>' +
+        '<h3 class="u-mt">' + esc(T('sensors.status')) + '</h3>' + table([T('th.metric'), T('th.value')], status.map(([a, b]) => [esc(a), b]));
+    }
     if (id === 'security') {
       const a = d.audit || {};
       const who = d.who || {};
@@ -788,6 +840,22 @@
       const r = await post('/admin/api/variables', { key, value });
       if (!r.ok) return toast(r.error || 'Променливата не е добавена', 'err');
       toast('Променливата е добавена', 'ok');
+    } else if (action === 'sensors') {
+      // Стойностите се валидират и на сървъра (runtime-config.validateSensors); тук
+      // проверяваме само това, което иначе би стигнало до 400 без ясно съобщение.
+      const ipMode = host.querySelector('#set-sensors-ipmode').value;
+      const trustRaw = host.querySelector('#set-sensors-trustproxy').value;
+      const retentionRaw = String(host.querySelector('#set-sensors-retention').value || '').trim();
+      const geoipPath = String(host.querySelector('#set-sensors-geoip').value || '').trim();
+      const retentionDays = retentionRaw === '' ? null : Number(retentionRaw);
+      if (retentionDays !== null && (!Number.isFinite(retentionDays) || retentionDays < 1 || retentionDays > 3650 || !Number.isInteger(retentionDays))) {
+        return toast(T('sensors.errRange'), 'err');
+      }
+      const sensors = { ipMode: ipMode || null, trustProxy: trustRaw === '' ? null : trustRaw === 'true', retentionDays, geoipPath };
+      const r = await api('/admin/api/settings', { method: 'PATCH', json: { sensors } });
+      if (!r.ok) return toast(r.error || T('sensors.errSave'), 'err');
+      const now = (r.data && r.data.effective && r.data.effective.sensors) || {};
+      toast(T('sensors.saved') + ' ' + String(now.ipMode || '—') + ' · ' + String(now.retentionDays || '—') + ' ' + T('sensors.days'), 'ok');
     } else if (action === 'storage') {
       const r = await post('/admin/api/storage/check', {});
       if (!r.ok) return toast(r.error || 'Проверката не мина', 'err');

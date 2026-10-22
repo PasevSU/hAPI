@@ -169,14 +169,26 @@ const rawIpEnabled = eff.storeRawIp;
 // Сензори за комуникацията: кой влиза, какво тегли, колко пъти, от кое IP и (само от
 // офлайн файл) приблизителна локация. Без външни заявки — вж. visitor-intel.js.
 const visitorModule = require('./visitor-intel');
+// Първоначалните стойности идват от runtime настройките (те вече отчитат средата).
+const sensorsAtBoot = eff.sensors;
 const visitorIntel = visitorModule.create({
   dir: root,
   salt: adminToken,
-  ipMode: process.env.VISITOR_IP_MODE === 'full' || (process.env.VISITOR_IP_MODE === undefined && rawIpEnabled) ? 'full' : process.env.VISITOR_IP_MODE === 'masked' ? 'masked' : 'hashed',
-  retentionDays: Number(process.env.VISITOR_RETENTION_DAYS) > 0 ? Number(process.env.VISITOR_RETENTION_DAYS) : 90,
-  geoFile: process.env.GEOIP_DB_PATH || path.join(root, 'geoip.json'),
-  trustProxy: process.env.TRUST_PROXY === 'true',
+  ipMode: sensorsAtBoot.ipMode,
+  retentionDays: sensorsAtBoot.retentionDays,
+  geoFile: sensorsAtBoot.geoipPath || path.join(root, 'geoip.json'),
+  trustProxy: sensorsAtBoot.trustProxy,
 });
+// Смяната на настройките на сензорите се прилага веднага — без рестарт на add-on-а.
+const applySensorSettings = () => {
+  const s = runtime.effective().sensors;
+  try {
+    return visitorIntel.configure({ ipMode: s.ipMode, retentionDays: s.retentionDays, trustProxy: s.trustProxy, geoFile: s.geoipPath || path.join(root, 'geoip.json') });
+  } catch (e) {
+    log.warn('sensors.configure.failed', { ns: 'sensors', err: e.message });
+    return null;
+  }
+};
 const visitorPruneTimer = setInterval(() => { try { const out = visitorIntel.prune(); if (out.removed) log.info('visitors.pruned', { ns: 'sensors', removed: out.removed, retentionDays: out.retentionDays }) } catch (e) { log.warn('visitors.prune.failed', { ns: 'sensors', err: e.message }) } }, 3600000);
 if (visitorPruneTimer.unref) visitorPruneTimer.unref();
 const visitorObserve = (req, data) => { try { return visitorIntel.observe(req, data) } catch (e) { log.warn('visitor.observe.failed', { ns: 'sensors', err: e.message }); return null } };
@@ -909,6 +921,9 @@ async function handler(req, res) {
       if (!adminGate(req, res, 'settings', method)) return;
       const data = await parse(req); let saved; try { saved = await runtime.save(data) } catch (e) { return fail(res, 400, String(e.message || 'Invalid settings').slice(0, 160)) }
       applyBackupSchedule();
+      // Сензорите се пренастройват веднага; одитът пази какво е поискано, без IP и пътища.
+      let sensorsApplied = null;
+      if (data && data.sensors) { sensorsApplied = applySensorSettings(); void audit('sensors.settings', { ipMode: sensorsApplied ? sensorsApplied.ipMode : '', trustProxy: sensorsApplied ? sensorsApplied.trustProxy : null, retentionDays: sensorsApplied ? sensorsApplied.retentionDays : null, geoConfigured: Boolean(sensorsApplied && sensorsApplied.geoFile) }) }
       await audit('settings_changed', { keys: Object.keys(data) });
       const now = runtime.effective(), startupKeys = ['maxDownloadStreams', 'maxJobs', 'storageCheckIntervalMs', 'corsOrigin', 'requirePortalToken', 'storeRawIp']; return json(res, 200, { settings: saved, effective: now, restartRequired: path.join(saved.databaseDirectory, saved.databaseFile) !== runtime.databaseRelative || startupKeys.some(k => now[k] !== eff[k]) });
     }
@@ -1020,7 +1035,11 @@ async function handler(req, res) {
       // Плоските ключове (`unique_visitors`, `denied_total`, `country_top`…) се четат
       // директно от HA интеграцията като отделни сензори; подробностите са в `visitors`.
       const visitors = visitorIntel.sensors();
-      return json(res, 200, { generatedAt: observed.generatedAt, databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
+      // Текущите настройки на сензорите — за панела „Настройки“ и за диагностика.
+      // Показва се само това, което панелът рисува: режим, прокси, срок, път до геобазата
+      // и дали тя е заредена. Вътрешният `geoFile` не се разкрива.
+      const sensorConfig = { ipMode: visitorIntel.config.ipMode, trustProxy: visitorIntel.config.trustProxy, retentionDays: visitorIntel.config.retentionDays, geoipPath: runtime.effective().sensors.geoipPath, geoLoaded: Boolean(visitorIntel.geo && visitorIntel.geo.status && visitorIntel.geo.status.loaded) };
+      return json(res, 200, { generatedAt: observed.generatedAt, databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, sensorSettings: sensorConfig, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
     }
     if (url.pathname === '/admin/api/database/backup' && method === 'POST') {
       if (!adminGate(req, res, 'backup', method)) return;

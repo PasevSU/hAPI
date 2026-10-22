@@ -18,7 +18,7 @@ const reportRender = require('../hapi_enterprise/report-render.js');
 
 const SECTIONS = [
   'hierarchy', 'cabinet', 'taxonomy', 'jobs', 'users', 'variables', 'data', 'diagnostics',
-  'analytics', 'security', 'qr', 'cms', 'storage', 'backups', 'logs',
+  'analytics', 'sensors', 'security', 'qr', 'cms', 'storage', 'backups', 'logs',
 ];
 
 const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
@@ -128,6 +128,24 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
         check: async () => {
           await waitFor(() => (currentHost.querySelector('#set-tpl-out') || {}).textContent && /2026/.test(currentHost.querySelector('#set-tpl-out').textContent), { label: 'прегледът на шаблона' });
           assert.match(currentHost.querySelector('#set-tpl-out').textContent, /Община Секции/, 'променливата е разгъната');
+        },
+      },
+      // Сензорите се сменят на живо: панелът пише през PATCH /admin/api/settings,
+      // а проверката е на сървъра — не само на известието.
+      sensors: {
+        fill: (h) => {
+          setValue(h, '#set-sensors-ipmode', 'masked');
+          setValue(h, '#set-sensors-trustproxy', '');
+          setValue(h, '#set-sensors-retention', '21');
+          setValue(h, '#set-sensors-geoip', '');
+        },
+        expect: /Сензори: IP masked · 21 дни/,
+        kind: 'ok',
+        check: async () => {
+          const eff = (await server.api('/admin/api/settings')).data.effective.sensors;
+          assert.equal(eff.ipMode, 'masked', 'режимът на IP е записан от панела');
+          assert.equal(eff.trustProxy, false, 'проксито остана изключено');
+          assert.equal(eff.retentionDays, 21, 'срокът е записан от панела');
         },
       },
       search: { fill: (h) => setValue(h, '#set-search-q', 'акт'), expect: /Готово|Търсене|намерен/i, kind: 'ok' },
@@ -279,7 +297,7 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
 
     // ── Присъда ────────────────────────────────────────────────────────────────
     assert.deepEqual(failures, [], 'GUI сценариите не минаха:\n  ' + failures.join('\n  '));
-    assert.deepEqual([...visited].sort(), [...SECTIONS].sort(), 'всички 15 секции са отворени');
+    assert.deepEqual([...visited].sort(), [...SECTIONS].sort(), 'всички 16 секции са отворени');
     assert.deepEqual(consoleErrors, [], 'панелът писа в console.error:\n  ' + consoleErrors.slice(0, 5).join('\n  '));
 
     console.log(

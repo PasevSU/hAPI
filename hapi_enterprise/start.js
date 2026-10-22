@@ -114,10 +114,18 @@ const OPTION_ENV = [
   ['ENCRYPT_FILES', 'encrypt_files'],
   ['TLS_CERT', 'tls_cert'],
   ['TLS_KEY', 'tls_key'],
+  // Сензори: какво се пази от адреса на посетителя. Празна/незададена опция → сървърът
+  // ползва своето подразбиране, за да не се заключва поведението от празен низ.
+  ['VISITOR_IP_MODE', 'visitor_ip_mode'],
+  ['TRUST_PROXY', 'visitor_trust_proxy'],
+  ['VISITOR_RETENTION_DAYS', 'visitor_retention_days'],
+  ['GEOIP_DB_PATH', 'visitor_geoip_path'],
 ];
 for (const [envKey, optionKey] of OPTION_ENV) {
   const value = optionText(optionKey);
-  if (value) env[envKey] = value;
+  // Нулевите дни и празните низове не се предават: 0 значи „подразбиране“, не „0 дни“.
+  if (!value || value === '0') continue;
+  env[envKey] = value;
 }
 
 // Публичният базов адрес (QR кодове, абсолютни адреси) идва от `public_domain`.

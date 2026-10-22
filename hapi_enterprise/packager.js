@@ -145,14 +145,14 @@ function create({ root }) {
       hash_algorithms: available,
       portal: portal
         ? {
-            id: portal.id,
-            slug: portal.slug,
-            title: portal.title,
-            category: portal.category || '',
-            subject: portal.subject || '',
-            flag: portal.flag || 'none',
-            storage_root: portal.storage_root || '/share',
-          }
+          id: portal.id,
+          slug: portal.slug,
+          title: portal.title,
+          category: portal.category || '',
+          subject: portal.subject || '',
+          flag: portal.flag || 'none',
+          storage_root: portal.storage_root || '/share',
+        }
         : null,
       signature: { status: signature.status, key_id: signature.keyId, algorithm: signature.algorithm },
       files: indexFiles,
