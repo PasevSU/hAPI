@@ -23,9 +23,29 @@
     'qrcode.js',
   ];
   var base = location.protocol === 'file:' ? '../' : '../hapi_enterprise/';
-  for (var i = 0; i < shared.length; i += 1) {
+  // СКРИПТОВЕТЕ СЕ ЗАРЕЖДАТ ЕДИН СЛЕД ДРУГ (onload → next), а не наведнъж.
+  // Динамично добавен `script` е `async` по подразбиране: при девет едновременни
+  // заявки редът на изпълнение не е гарантиран и панел, който ползва ядрото още
+  // при дефиниране (report-studio), гърмеше с TypeError и оставаше празен екран.
+  var index = 0;
+  function next() {
+    if (index >= shared.length) {
+      window.HAPI_SHARED_READY = true;
+      try {
+        document.dispatchEvent(new Event('hapi:shared-ready'));
+      } catch (e) {
+        /* стар браузър без Event — флагът window.HAPI_SHARED_READY стига */
+      }
+      return;
+    }
     var el = document.createElement('script');
-    el.src = base + shared[i];
+    el.src = base + shared[index];
+    index += 1;
+    el.async = false;
+    el.onload = next;
+    // Липсващ модул не бива да блокира останалите: панелите казват какво им липсва.
+    el.onerror = next;
     document.head.appendChild(el);
   }
+  next();
 })();

@@ -255,12 +255,24 @@
     { id: 'variables', label: 'Променливи' },
     { id: 'data', label: 'Данни' },
     { id: 'diagnostics', label: 'Диагностика' },
+    { id: 'analytics', label: 'Анализи' },
+    { id: 'security', label: 'Сигурност' },
+    { id: 'qr', label: 'QR архиви' },
     { id: 'storage', label: 'Съхранение' },
     { id: 'backups', label: 'Резервни копия' },
     { id: 'logs', label: 'Журнал' },
   ];
 
   const sectionCache = {};
+  // Живо обновяване на „Задачи“ (Фаза 5): таймерът съществува само докато секцията е отворена.
+  let jobsTimer = null;
+
+  function stopJobsTimer() {
+    if (jobsTimer) {
+      clearInterval(jobsTimer);
+      jobsTimer = null;
+    }
+  }
 
   const fmtBytes = (n) => {
     const v = Number(n) || 0;
@@ -342,6 +354,14 @@
         grab('/admin/api/qr-artifacts'),
       ]);
       out.data = { diag, load, metrics, who, portal, qr };
+    } else if (id === 'analytics') {
+      const [sensors, metrics] = await Promise.all([grab('/admin/api/sensors'), grab('/admin/api/metrics')]);
+      out.data = { sensors, metrics };
+    } else if (id === 'security') {
+      const [audit, who] = await Promise.all([grab('/admin/api/audit/verify'), grab('/admin/api/whoami')]);
+      out.data = { audit, who };
+    } else if (id === 'qr') {
+      out.data = await grab('/admin/api/qr-artifacts');
     } else if (id === 'storage') {
       const [status, retention] = await Promise.all([grab('/admin/api/storage/status'), grab('/admin/api/retention')]);
       out.data = { status, retention };
@@ -421,13 +441,40 @@
         '<button type="button" class="btn btn-primary" data-action="taxonomy">Добави</button></div>';
     }
     if (id === 'jobs') {
-      const jobs = (d.jobs || []).map((j) => [
-        esc(j.type || j.kind || '—'),
-        esc(j.status || '—'),
-        esc(j.progress != null ? j.progress + '%' : '—'),
-        '<button type="button" class="btn" data-job="' + esc(j.id) + '" data-job-action="cancel">Откажи</button>',
-      ]);
-      return table(['Вид', 'Състояние', 'Напредък', ''], jobs);
+      // Живи състояния по Фаза 5: queued → running → succeeded / failed / cancelled.
+      const LABELS = {
+        queued: 'в опашка',
+        running: 'изпълнява се',
+        paused: 'на пауза',
+        succeeded: 'готово',
+        failed: 'грешка',
+        cancelled: 'отказано',
+      };
+      const CLS = { queued: 'demo', running: 'ok', paused: 'demo', succeeded: 'ok', failed: 'err', cancelled: 'demo' };
+      const jobs = (d.jobs || []).map((j) => {
+        const st = String(j.status || '').toLowerCase();
+        const pct = j.progress != null ? Math.max(0, Math.min(100, Number(j.progress))) : null;
+        const live = st === 'running' || st === 'queued' || st === 'paused';
+        return [
+          esc(j.type || j.kind || '—'),
+          '<span class="badge ' + (CLS[st] || '') + '">' + esc(LABELS[st] || st || '—') + '</span>',
+          pct == null
+            ? '—'
+            : '<progress max="100" value="' + pct + '"></progress> ' + pct + '%',
+          esc(j.error || j.message || ''),
+          live
+            ? (st === 'paused'
+              ? '<button type="button" class="btn" data-job="' + esc(j.id) + '" data-job-action="resume">Продължи</button> '
+              : '<button type="button" class="btn" data-job="' + esc(j.id) + '" data-job-action="pause">Пауза</button> ') +
+              '<button type="button" class="btn" data-job="' + esc(j.id) + '" data-job-action="cancel">Откажи</button>'
+            : '',
+        ];
+      });
+      const active = jobs.length ? ' · ' + jobs.length + ' задачи' : '';
+      return '<p class="hint">Състоянието се обновява само, докато панелът е отворен' + active +
+        '. Задача в „грешка“ показва причината в колоната „Бележка“.</p>' +
+        table(['Вид', 'Състояние', 'Напредък', 'Бележка', ''], jobs) +
+        '<div class="u-row u-mt"><button type="button" class="btn" data-action="reload">Обнови сега</button></div>';
     }
     if (id === 'users') {
       const users = (d.users || []).map((u) => [
@@ -521,6 +568,55 @@
         '<button type="button" class="btn" data-action="portalDeploy">Разположи портала</button>' +
         '<button type="button" class="btn" data-action="metricsProm">Метрики за мониторинг</button>' +
         '</div>';
+    }
+    if (id === 'analytics') {
+      const s = d.sensors || {};
+      const m = d.metrics || {};
+      const perPortal = (s.portals || []).map((p) => [
+        esc(p.slug || p.id || '—'),
+        String(p.visits || 0),
+        String(p.downloads || 0),
+        fmtBytes(p.bytes || 0),
+      ]);
+      const totals = [
+        ['База данни', fmtBytes(s.databaseBytes)],
+        ['Телеметрия', fmtBytes(s.telemetryBytes)],
+        ['Файлове', String(s.files || 0) + ' · ' + fmtBytes(s.fileBytes || 0)],
+        ['Посещения / изтегляния', String(s.visits || 0) + ' / ' + String(s.downloads || 0)],
+        ['Режим на IP', esc(s.ipMode || '—')],
+        ['Заявки (брояч)', String(m.requests || 0)],
+        ['Портали (брояч)', String(m.portals || 0)],
+      ];
+      return table(['Показател', 'Стойност'], totals.map(([a, b]) => [esc(a), b])) +
+        '<h3 class="u-mt">По портал</h3>' + table(['Портал', 'Посещения', 'Изтегляния', 'Обем'], perPortal) +
+        '<div class="u-row u-mt"><button type="button" class="btn" data-action="metricsProm">Метрики за мониторинг</button></div>';
+    }
+    if (id === 'security') {
+      const a = d.audit || {};
+      const who = d.who || {};
+      const rows = [
+        ['Одитен ланец', a.valid === false ? 'ПРОБЛЕМ' : a.integrity || 'проверен'],
+        ['Записи в ланца', String(a.entries != null ? a.entries : a.lines != null ? a.lines : '—')],
+        ['Последен запис', esc(a.lastAt || a.at || '—')],
+        ['Роля в тази сесия', esc(who.role || '—')],
+        ['Роля по подразбиране', esc(who.defaultRole || '—')],
+        ['Ingress самоличност', who.ingress ? 'да' : 'не'],
+        ['RBAC картографиран', who.mapped ? 'да' : 'не (общо правило)'],
+        ['Бележка', esc(a.note || '')],
+      ];
+      return table(['Показател', 'Стойност'], rows.map(([x, y]) => [esc(x), esc(y)])) +
+        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="auditVerify">Провери ланца</button>' +
+        '<button type="button" class="btn" data-action="audit">Изтегли одита</button></div>';
+    }
+    if (id === 'qr') {
+      const items = (d.artifacts || []).map((x) => [
+        '<code>' + esc(x.qrId || '—') + '</code>',
+        esc(x.label || x.title || '—'),
+        esc(fmtTime(x.createdAt || x.at)),
+        '<button type="button" class="btn" data-qr-revoke="' + esc(x.qrId || '') + '">Отмени</button>',
+      ]);
+      return '<p class="hint">Издадените QR артефакти се пазят, докато не бъдат отменени. Отмяната спира текущата връзка.</p>' +
+        table(['QR ID', 'Етикет', 'Създаден', ''], items);
     }
     if (id === 'storage') {
       const st = d.status || {};
@@ -661,6 +757,10 @@
       const r = await post('/admin/api/rules/reload', {});
       if (!r.ok) return toast(r.error || 'Правилата не са презаредени', 'err');
       toast('Правилата са презаредени', 'ok');
+    } else if (action === 'auditVerify') {
+      const r = await api('/admin/api/audit/verify');
+      const ok = r.ok && !(r.data && r.data.valid === false);
+      toast(ok ? 'Одитният ланец е цял (' + ((r.data && r.data.integrity) || 'valid') + ')' : 'Одитният ланец е счупен', ok ? 'ok' : 'err');
     } else if (action === 'audit') {
       const token = storedToken();
       try {
@@ -768,9 +868,24 @@
     host.querySelectorAll('[data-job]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const jobId = btn.getAttribute('data-job');
-        const r = await api('/admin/api/jobs/' + encodeURIComponent(jobId) + '/cancel', { method: 'POST', json: {} });
-        if (!r.ok) return toast(r.error || 'Задачата не е отказана', 'err');
-        toast('Задачата е отказана', 'ok');
+        const act = btn.getAttribute('data-job-action') || 'cancel';
+        const r = await api('/admin/api/jobs/' + encodeURIComponent(jobId) + '/' + act, { method: 'POST', json: {} });
+        if (!r.ok) return toast(r.error || 'Задачата не е обновена', 'err');
+        toast(
+          act === 'cancel' ? 'Задачата е отказана' : act === 'pause' ? 'Задачата е на пауза' : 'Задачата продължава',
+          'ok',
+        );
+        delete sectionCache[id];
+        render();
+      });
+    });
+    host.querySelectorAll('[data-qr-revoke]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const qrId = btn.getAttribute('data-qr-revoke');
+        if (!qrId || !window.confirm('Да отменя ли QR артефакт „' + qrId + '“?')) return;
+        const r = await api('/admin/api/qr-artifacts/' + encodeURIComponent(qrId), { method: 'DELETE' });
+        if (!r.ok) return toast(r.error || 'Артефактът не е отменен', 'err');
+        toast('QR артефактът е отменен', 'ok');
         delete sectionCache[id];
         render();
       });
@@ -813,6 +928,7 @@
 
   async function renderSection() {
     const id = state.section;
+    stopJobsTimer();
     const meta = SECTIONS.find((s) => s.id === id) || { label: 'Настройки' };
     host.innerHTML =
       '<div class="page-title"><h1>Настройки · ' + esc(meta.label) + '</h1>' +
@@ -826,10 +942,23 @@
     if (!body) return;
     body.innerHTML = sectionBody(id, res);
     bindSectionActions(id);
+    // Състоянията queued → running → done се виждат без ръчно обновяване.
+    if (id === 'jobs' && connected()) {
+      jobsTimer = setInterval(async () => {
+        if (state.section !== 'jobs') return stopJobsTimer();
+        delete sectionCache.jobs;
+        const fresh = await loadSection('jobs');
+        const box = host.querySelector('#set-section-body');
+        if (!box || state.section !== 'jobs') return;
+        box.innerHTML = sectionBody('jobs', fresh);
+        bindSectionActions('jobs');
+      }, 3000);
+    }
   }
 
 
   function render() {
+    stopJobsTimer();
     if (state.section && state.section !== 'general') return renderSection();
     const isAdmin = state.role === 'admin';
     host.innerHTML = `

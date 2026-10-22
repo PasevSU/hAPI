@@ -94,6 +94,10 @@
   };
 
   // Иконите на навигацията са от общия SVG набор (ui/icons.js) — един стил навсякъде.
+  //
+  // Списъкът следва плана (§6.11 `UI-01`: Enterprise Control Center с 13 панела).
+  // Панелите, чиито данни се четат и пишат през административните секции, водят
+  // директно към своята секция в „Настройки“ — едно място за логиката, без копия.
   const NAV = [
     { id: 'dashboard', ico: 'dashboard' },
     { id: 'portals', ico: 'folder' },
@@ -101,8 +105,15 @@
     { id: 'cases', ico: 'case' },
     { id: 'gateway', ico: 'share' },
     { id: 'export', ico: 'download' },
+    { id: 'users', ico: 'person', section: 'users' },
+    { id: 'jobs', ico: 'clock', section: 'jobs' },
+    { id: 'storage', ico: 'drive', section: 'storage' },
+    { id: 'analytics', ico: 'chart', section: 'analytics' },
+    { id: 'security', ico: 'shield', section: 'security' },
+    { id: 'backups', ico: 'archive', section: 'backups' },
+    { id: 'qr', ico: 'qr', section: 'qr' },
     { id: 'report', ico: 'note' },
-    { id: 'settings', ico: 'gear' },
+    { id: 'settings', ico: 'gear', section: 'general' },
     { id: 'about', ico: 'info' },
   ];
 
@@ -209,6 +220,15 @@
     }
     if (current === 'settings' && window.SettingsPanel) {
       view.innerHTML = '';
+      window.SettingsPanel.state.section = 'general';
+      window.SettingsPanel.mount(view);
+      return;
+    }
+    // Панел, чиито данни живеят в секция на „Настройки“ (UI-01): отваряме точно нея.
+    const navItem = NAV.find((n) => n.id === current);
+    if (navItem && navItem.section && window.SettingsPanel) {
+      view.innerHTML = '';
+      window.SettingsPanel.state.section = navItem.section;
       window.SettingsPanel.mount(view);
       return;
     }

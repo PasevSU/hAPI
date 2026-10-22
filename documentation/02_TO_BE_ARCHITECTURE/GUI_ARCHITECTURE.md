@@ -4,10 +4,10 @@
 
 | Surface | Framework | Audience |
 | ------- | --------- | -------- |
-| Admin console | HTML/JS (`admin.js`) | operators/admins |
-| Evidence portal | HTML/JS (Phase 7) | courts/prosecutors |
-| Desktop | pywebview + WebView2 | Windows operators |
-| Settings UI | HTML/JS (Phase 5) | admins |
+| Admin console (`ui/`, Enterprise Control Center) | HTML/JS, без npm | operators/admins |
+| Evidence portal (`evidence-portal/`, публикува се в `www/hapi/data`) | HTML/JS | courts/prosecutors |
+| Desktop | pywebview + WebView2 (същия `ui/`) | Windows operators |
+| Settings UI (секции на `ui/settings-panel.js`) | HTML/JS | admins |
 
 ## Principles
 
@@ -17,14 +17,15 @@
 
 ## Settings UI (Phase 5)
 
-- Structured editor for `config.yaml` + runtime-config.
-- Validation + preview + rollback (profile snapshots).
+- Структуриран редактор на сървърните настройки през `PATCH /admin/api/settings` (валидация на
+  сървъра) + профили на настройките (снимка → прилагане → изтриване).
+- 14 секции в `ui/settings-panel.js`; всяка чете и — където има смисъл — пише през реалното API.
 
 ## Progress popup (Phase 5)
 
-- Event-driven job progress (SSE) → toast/inline panel.
-- States: queued → running → succeeded / failed / cancelled.
-- Failure shows bounded error detail from `error-log.js`.
+- Панел „Задачи“ показва състоянията queued → running → paused → succeeded / failed / cancelled
+  с лента за напредък, пауза/продължаване/отказ и обновяване на 3 s, докато е отворен.
+- Причината за грешка идва от `error-log.js` и се вижда в колоната „Бележка“.
 
 ## Evidence portal (Phase 7)
 

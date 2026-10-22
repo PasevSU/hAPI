@@ -5,15 +5,22 @@
 // Preview е САМО оформление: не показва издадени RFC 3161 токени, сертификати
 // или подписи — те се появяват единствено при реално изпълнение (RS-03/RS-05).
 (function () {
-  const M = globalThis.HapiReportManifest;
+  // Ядрото (`report-manifest.js`) идва от bootstrap.js и може да пристигне СЛЕД този
+  // файл. Затова се чете при всяко ползване: ако се запечаташе тук, панелът гърмеше с
+  // TypeError при старт и „Отчети“ оставаше празен екран, без обяснение.
+  const M = () => globalThis.HapiReportManifest || null;
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const toast = (msg, kind) => window.HapiUI && window.HapiUI.toast(msg, kind);
 
   const OBJ = globalThis.HapiReportObjects;
   const TYPE_LABEL = OBJ ? Object.fromEntries(OBJ.OBJECTS.map((o) => [o.type, o.label])) : {};
-  TYPE_LABEL[M.START] = TYPE_LABEL[M.START] || 'RFC 3161 START';
-  TYPE_LABEL[M.STOP] = TYPE_LABEL[M.STOP] || 'RFC 3161 STOP';
+  // Същите стойности като `START`/`STOP` в report-manifest.js (пази ги
+  // tests/report-studio-panel.cjs): системните блокове не зависят от това дали
+  // ядрото вече е пристигнало.
+  const SYSTEM_TYPES = { start: 'rfc3161-start', stop: 'rfc3161-stop' };
+  TYPE_LABEL[SYSTEM_TYPES.start] = TYPE_LABEL[SYSTEM_TYPES.start] || 'RFC 3161 START';
+  TYPE_LABEL[SYSTEM_TYPES.stop] = TYPE_LABEL[SYSTEM_TYPES.stop] || 'RFC 3161 STOP';
 
   let host = null;
   let els = null;
@@ -169,8 +176,8 @@
           <div class="tabs" id="rs-tabs">
             <button type="button" class="active" data-filter="all">Всички</button>
             ${(OBJ ? OBJ.CATEGORIES : [])
-              .map((c) => `<button type="button" data-filter="${c.id}" title="${esc(c.label)}">${c.icon}</button>`)
-              .join('')}
+        .map((c) => `<button type="button" data-filter="${c.id}" title="${esc(c.label)}">${c.icon}</button>`)
+        .join('')}
           </div>
           <div class="lib-list" id="rs-lib"></div>
         </section>
@@ -198,7 +205,7 @@
           <div class="panel-body">
             <div class="u-grid u-grid-actions">
               <label>Формат
-                <select id="rs-format">${M.PAGE_FORMATS.map((f) => `<option>${f}</option>`).join('')}</select>
+                <select id="rs-format">${M().PAGE_FORMATS.map((f) => `<option>${f}</option>`).join('')}</select>
               </label>
               <label><input type="checkbox" id="rs-sign" /> Дигитален подпис (SHA-256)</label>
               <label><input type="checkbox" id="rs-qr" /> QR код</label>
@@ -256,7 +263,7 @@
     };
 
     host.querySelector('#rs-new').addEventListener('click', () => {
-      state.manifest = M.normalize(M.template('default'));
+      state.manifest = M().normalize(M().template('default'));
       state.selectedId = null;
       resetHistory();
       refresh();
@@ -268,7 +275,7 @@
     els.undo.addEventListener('click', undo);
     els.redo.addEventListener('click', redo);
     host.querySelector('#rs-validate').addEventListener('click', () => {
-      const result = M.check(state.manifest);
+      const result = M().check(state.manifest);
       toast(
         result.ok ? 'Манифестът е валиден' : `Невалиден манифест: ${result.errors[0].code}`,
         result.ok ? 'ok' : 'err',
@@ -303,11 +310,11 @@
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result));
-        state.manifest = M.normalize(parsed);
+        state.manifest = M().normalize(parsed);
         state.selectedId = null;
         resetHistory();
         refresh();
-        const result = M.check(parsed);
+        const result = M().check(parsed);
         toast(result.ok ? 'Манифестът е зареден' : `Зареден, но невалиден: ${result.errors[0].code}`, result.ok ? 'ok' : 'err');
       } catch (e) {
         toast(`Невалиден JSON: ${e.message}`, 'err');
@@ -318,7 +325,7 @@
   }
 
   function downloadManifest(silent) {
-    const result = M.check(state.manifest);
+    const result = M().check(state.manifest);
     if (!result.ok) {
       toast(`Поправи ${result.errors.length} грешк(и) преди експорт`, 'err');
       renderErrors(result);
@@ -336,7 +343,7 @@
   }
 
   async function generate() {
-    const result = M.check(state.manifest);
+    const result = M().check(state.manifest);
     if (!result.ok) {
       toast(`Манифестът е невалиден: ${result.errors[0].code}`, 'err');
       renderErrors(result);
@@ -425,8 +432,8 @@
   }
 
   async function runTsa(phase) {
-    if (!els || !M) return;
-    const result = M.check(state.manifest);
+    if (!els || !M()) return;
+    const result = M().check(state.manifest);
     if (!result.ok) {
       toast(`Манифестът е невалиден: ${result.errors[0].code}`, 'err');
       renderErrors(result);
@@ -519,7 +526,7 @@
 
   function refresh(options) {
     const keepProps = Boolean(options && options.keepProps);
-    const result = M.check(state.manifest);
+    const result = M().check(state.manifest);
     renderLibrary();
     renderDoc();
     if (!keepProps) renderProps();
@@ -533,7 +540,7 @@
     els.state.textContent = result.ok
       ? 'валиден'
       : `${result.errors.length} ${result.errors.length === 1 ? 'грешка' : 'грешки'}`;
-    M.digestAsync(state.manifest)
+    M().digestAsync(state.manifest)
       .then((hex) => {
         state.lastHash = hex || '';
         els.hash.textContent = hex ? `sha256: ${hex.slice(0, 24)}…` : '';
@@ -652,8 +659,8 @@
       els.props.innerHTML = `
         <h4>Документ</h4>
         ${field('Профил', `<input id="p-profile" value="${esc(state.manifest.profile)}" />`)}
-        ${field('Формат', `<select id="p-format">${M.PAGE_FORMATS.map((f) => `<option ${f === state.manifest.page.format ? 'selected' : ''}>${f}</option>`).join('')}</select>`)}
-        ${field('Ориентация', `<select id="p-orient">${M.ORIENTATIONS.map((o) => `<option ${o === state.manifest.page.orientation ? 'selected' : ''}>${o}</option>`).join('')}</select>`)}
+        ${field('Формат', `<select id="p-format">${M().PAGE_FORMATS.map((f) => `<option ${f === state.manifest.page.format ? 'selected' : ''}>${f}</option>`).join('')}</select>`)}
+        ${field('Ориентация', `<select id="p-orient">${M().ORIENTATIONS.map((o) => `<option ${o === state.manifest.page.orientation ? 'selected' : ''}>${o}</option>`).join('')}</select>`)}
         ${field('Полета (мм, 4 стойности)', `<input id="p-margins" value="${esc(state.manifest.page.marginsMm.join(','))}" />`)}
         ${field('Организация', `<input id="p-org" value="${esc(state.manifest.branding.organization)}" />`)}
         ${field('Долен колонтитул', `<input id="p-footer" value="${esc(state.manifest.print.footerNote)}" />`)}
@@ -662,7 +669,7 @@
       return;
     }
     els.sel.textContent = TYPE_LABEL[block.type] || block.type;
-    const locked = block.type === M.START || block.type === M.STOP;
+    const locked = block.type === SYSTEM_TYPES.start || block.type === SYSTEM_TYPES.stop;
     let html = `<h4>${esc(TYPE_LABEL[block.type] || block.type)}</h4>
       ${field('id', `<input value="${esc(block.id)}" readonly />`)}
       ${field('Етикет', `<input id="p-label" value="${esc(block.label || '')}" ${locked ? 'readonly' : ''} />`)}`;
@@ -690,7 +697,7 @@
         <p class="hint">Ширини и повторение на заглавен ред — v2 (F8).</p>`;
     } else if (block.type === 'hash-table') {
       html += `<h4 class="u-mt">Алгоритми</h4>`;
-      for (const alg of M.HASH_ALGORITHMS) {
+      for (const alg of M().HASH_ALGORITHMS) {
         const checked = (block.algorithms || []).includes(alg) ? 'checked' : '';
         html += `<label class="hint row-check"><input type="checkbox" data-alg="${alg}" ${checked}/> ${alg}</label>`;
       }
@@ -801,16 +808,15 @@
     const rows = ['—', '—', '—'];
     const body = m.blocks
       .map((block) => {
-        if (block.type === M.START) {
+        if (block.type === SYSTEM_TYPES.start) {
           return `<div class="pv-marker start"><span>RFC 3161 START</span><span>обхватът започва</span></div>`;
         }
-        if (block.type === M.STOP) {
+        if (block.type === SYSTEM_TYPES.stop) {
           return `<div class="pv-marker stop"><span>RFC 3161 STOP</span><span>обхватът завършва</span></div>`;
         }
         if (block.type === 'title') {
-          return `<div class="pv-title">${esc(block.value || 'Заглавие')}</div>${
-            block.subtitle ? `<div class="pv-sub">${esc(block.subtitle)}</div>` : ''
-          }`;
+          return `<div class="pv-title">${esc(block.value || 'Заглавие')}</div>${block.subtitle ? `<div class="pv-sub">${esc(block.subtitle)}</div>` : ''
+            }`;
         }
         if (block.type === 'text') {
           return previewSection(block.label || 'Текст', `<div>${esc(block.value || '')}</div>`);
@@ -869,9 +875,31 @@
 
   function mount(container) {
     host = container;
+    if (!M()) {
+      // Ядрото още не е пристигнало (bootstrap.js го зарежда след панелите при бавна
+      // връзка). Казваме го с думи и се връщаме веднага щом дойде — по-добре от
+      // празен екран или гърмеж в конзолата.
+      host.innerHTML =
+        '<div class="page-title"><h1>Отчети</h1><span class="badge err">ядрото не е заредено</span></div>' +
+        '<section class="panel"><div class="panel-body"><p class="hint">Споделеното ядро ' +
+        '<code>report-manifest.js</code> не е заредено. Презареди страницата; ако грешката остане, ' +
+        'файлът липсва в пакета на add-on-а.</p></div></section>';
+      if (!state.coreWait) {
+        state.coreWait = true;
+        document.addEventListener(
+          'hapi:shared-ready',
+          () => {
+            state.coreWait = false;
+            if (host) mount(host);
+          },
+          { once: true },
+        );
+      }
+      return;
+    }
     // Състоянието живее извън DOM-а: навигацията към друг панел и обратно
     // не трябва да губи редакцията.
-    if (!state.manifest) state.manifest = M.normalize(M.template('forensic-full'));
+    if (!state.manifest) state.manifest = M().normalize(M().template('forensic-full'));
     shell();
     refresh();
     if (state.loadedExample) return;
@@ -879,7 +907,7 @@
     // Примерът идва от ui/data.js — така GUI-ят работи и през file:// (без fetch).
     const example = typeof window !== 'undefined' && window.HAPI_DATA && window.HAPI_DATA.manifest;
     if (example && state.manifest.blocks.length === 2) {
-      state.manifest = M.normalize(example);
+      state.manifest = M().normalize(example);
       state.selectedId = null;
       resetHistory();
       refresh();

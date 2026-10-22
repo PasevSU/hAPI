@@ -65,6 +65,13 @@
     mail: '<rect x="3.2" y="5.4" width="17.6" height="13.2" rx="2"/><path d="M3.8 6.6L12 13l8.2-6.4"/>',
     person: '<circle cx="12" cy="8.4" r="3.7"/><path d="M4.8 20.2c0-3.6 3.2-6.2 7.2-6.2s7.2 2.6 7.2 6.2"/>',
     case: '<path d="M3.4 8.2h17.2v10.4a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z"/><path d="M9 8.2V5.6a1.8 1.8 0 0 1 1.8-1.8h2.4A1.8 1.8 0 0 1 15 5.6v2.6"/><path d="M3.6 12.6h16.8"/>',
+    // ── Панели по плана (§6.11 UI-01) ─────────────────────────────────────
+    clock: '<circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.4 2.2"/>',
+    drive: '<rect x="3.4" y="5.2" width="17.2" height="6.4" rx="1.8"/><rect x="3.4" y="12.4" width="17.2" height="6.4" rx="1.8"/><path d="M7.2 8.4h.6"/><path d="M7.2 15.6h.6"/>',
+    chart: '<path d="M4 20h16"/><path d="M7.2 20v-6.4"/><path d="M12 20V8.4"/><path d="M16.8 20v-9.2"/>',
+    shield: '<path d="M12 3.4l7 2.6v5.6c0 4.2-2.8 7.2-7 9.2-4.2-2-7-5-7-9.2V6z"/><path d="M9 12l2.2 2.2L15.4 10"/>',
+    archive: '<rect x="3.4" y="4.6" width="17.2" height="4.6" rx="1.2"/><path d="M5 9.2v9.4a1.8 1.8 0 0 0 1.8 1.8h10.4a1.8 1.8 0 0 0 1.8-1.8V9.2"/><path d="M10 13h4"/>',
+    qr: '<rect x="4" y="4" width="6.4" height="6.4" rx="1"/><rect x="13.6" y="4" width="6.4" height="6.4" rx="1"/><rect x="4" y="13.6" width="6.4" height="6.4" rx="1"/><path d="M13.6 13.6h2.6v2.6h-2.6z"/><path d="M18.4 18.4h1.6v1.6h-1.6z"/>',
   };
 
   let injected = false;

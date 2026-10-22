@@ -1,12 +1,18 @@
 # GUI Inventory — hAPI Enterprise (As-Is)
 
-## 1. Web admin console
+## 1. Enterprise Control Center (единствен административен интерфейс)
 
 | Aspect | Detail |
 | ------ | ------ |
-| Files | `admin.html` (~51 KB), `admin.js` (~121 KB) |
-| Purpose | Full admin API surface (files, groups, profiles, QR, security, ops) |
-| Access | Home Assistant **Ingress** (authenticated) or Windows loopback `http://127.0.0.1:8098/admin` |
+| Files | `hapi_enterprise/ui/` (index.html, app.js, 16 панелни модула, styles.css, icons.js) |
+| Purpose | Пълен административен обхват: портали и файлове, контакти, дела, публичен gateway, експорт, Report Studio, настройки |
+| Access | Home Assistant **Ingress** (`ingress_entry: /`) или Windows loopback `http://127.0.0.1:8098/ui/index.html` |
+| Стар панел | `admin.html` / `admin.js` са **премахнати в 0.69.8**; `GET /admin` пренасочва към `/ui/index.html` |
+
+Навигацията следва плана (UI-01, §6.11): Dashboard, Портали, Контакти, Дела, Публичен gateway,
+Експорт, Потребители & RBAC, Задачи, Хранилища, Анализи, Сигурност, Резервни копия, QR архиви,
+Report Studio, Настройки, Относно. Панелите без собствен модул отварят точно своята секция в
+„Настройки“ — едно място за логиката, без копия (проверява се от `tests/ui-navigation.cjs`).
 
 ## 2. Public portal (QR landing)
 

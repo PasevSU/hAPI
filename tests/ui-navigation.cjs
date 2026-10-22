@@ -12,16 +12,30 @@ const directory = read('ui/directory-panel.js');
 const filesManager = read('ui/files-manager.js');
 const css = read('ui/styles.css');
 
-// 1. Навигация: само реалните панели + Контакти и Дела.
+// 1. Навигация: панелите по плана (UI-01, §6.11) — 13 панела + Контакти и Дела.
+//    Панел без собствена логика не е забранен, стига да води към РЕАЛНА секция
+//    (вж. проверката по-долу) — така няма празни екрани.
 const navBlock = app.slice(app.indexOf('const NAV = ['), app.indexOf('];', app.indexOf('const NAV = [')));
 const ids = [...navBlock.matchAll(/id: '([a-z]+)'/g)].map((m) => m[1]);
-assert.deepEqual(ids, ['dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export', 'report', 'settings', 'about']);
-for (const removed of ['users', 'jobs', 'storage', 'analytics', 'security', 'backups', 'qr']) {
-  assert.equal(ids.includes(removed), false, `излишният панел ${removed} трябва да е премахнат`);
+const PLANNED = [
+  'dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export',
+  'users', 'jobs', 'storage', 'analytics', 'security', 'backups', 'qr',
+  'report', 'settings', 'about',
+];
+assert.deepEqual(ids, PLANNED, 'навигацията следва плана: ' + PLANNED.length + ' панела');
+
+// Всеки панел, който няма собствен модул, трябва да сочи към съществуваща секция.
+const sections = ['general'].concat(
+  (settings.match(/\{ id: '([a-z]+)', label:/g) || []).map((s) => s.match(/'([a-z]+)'/)[1]),
+);
+for (const item of navBlock.matchAll(/id: '([a-z]+)'[^}]*section: '([a-z]+)'/g)) {
+  assert.ok(sections.includes(item[2]), `панелът ${item[1]} сочи към липсваща секция ${item[2]}`);
 }
 for (const lang of app.match(/bg: \{[\s\S]*?\n    \},/g)) {
   assert.match(lang, /contacts:/);
   assert.match(lang, /cases:/);
+  // Заглавията на всички панели са преведени (BG/EN/DE), не са сурови id-та.
+  for (const id of PLANNED) assert.match(lang, new RegExp('\\n\\s+' + id + ':'), 'липсва превод за ' + id);
 }
 
 // 2. Панелите са заредени и монтирани.
