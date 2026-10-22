@@ -26,6 +26,7 @@
 | T-MSG-01       | PP-07       | `tests/qr-dispatch.cjs` — съобщение през HA notify (401/503/200)                                                                                                              | L1    |
 | T-SENSORS-01   | VIS-01…06   | `tests/visitor-sensors.cjs` — кой влиза, какво тегли, колко пъти, от кое IP и откъде (офлайн гео, 3 режима за IP, срок, изтриване)                                            | L1+L3 |
 | T-SENSORS-02   | VIS-07      | `tests/visitors-panel.cjs` — панелът „Кой влиза“ рисува сензорите в DOM, изтрива с потвърждение и изнася CSV                                                              | L2    |
+| T-SENSORS-03   | VIS-01…08   | `tests/full-journey-sensors.cjs` — целият път S01…S11: трафик, откази, локация, режими на IP, срок, CSV/Prometheus, панел, изтриване, рестарт                        | L1+L2+L3 |
 | T-STORAGE-01   | OPS-03      | `tests/storage.cjs`, `tests/storage-paths.cjs`, `tests/storage-check.cjs`, `tests/storage-migrate.cjs`                                                                        | L1    |
 | T-JOB-01       | OPS-01      | `tests/job-manager.cjs`, `tests/job-persistence.cjs`                                                                                                                          | L1    |
 | T-SQLITE-01    | —           | `tests/sqlite-store.cjs`, `tests/sqlite-backup.cjs`, `tests/sqlite-size.cjs`, `tests/sqlite-snapshot-safety.cjs`                                                              | L1    |

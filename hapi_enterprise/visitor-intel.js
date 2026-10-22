@@ -199,6 +199,11 @@ const emptyState = () => ({
 });
 
 const bump = (bag, key, by = 1) => { if (!key) return; bag[key] = Number(bag[key] || 0) + by };
+const drop = (bag, key, by = 1) => {
+  if (!key || !Object.hasOwn(bag, key)) return;
+  const next = Number(bag[key] || 0) - by;
+  if (next > 0) bag[key] = next; else delete bag[key];
+};
 const trim = (map, max) => { const keys = Object.keys(map); if (keys.length <= max) return map; keys.sort((a, b) => Number(map[b].events ?? map[b].downloads ?? 0) - Number(map[a].events ?? map[a].downloads ?? 0)); for (const key of keys.slice(max)) delete map[key]; return map }
 const dayOf = (iso) => iso.slice(0, 10);
 
@@ -353,7 +358,7 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
     for (const [day, bag] of Object.entries(state.byDay)) {
       if (Date.parse(day + 'T00:00:00.000Z') < limit) { delete state.byDay[day]; bag.removed = true }
     }
-    if (removed) touch();
+    if (removed) { touch(); saveNow() }
     return { removed, retentionDays: Number(retentionDays) || 0 };
   }
 
@@ -422,12 +427,29 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
   }
 
   function forget(id) {
-    if (!state.visitors[id]) return { removed: false };
+    const visitor = state.visitors[id];
+    if (!visitor) return { removed: false };
+    // Агрегатите, които се пълнят ВЕДНЪЖ на посетител (локация, клиент, език), се
+    // намаляват — иначе изтриването на човека оставя неговата следа в картата.
+    if (visitor.geo) {
+      if (visitor.geo.country === 'LOCAL') state.geo.local = Math.max(0, state.geo.local - 1);
+      else { drop(state.geo.countries, visitor.geo.country || 'unknown'); if (visitor.geo.city) drop(state.geo.cities, visitor.geo.city) }
+    } else state.geo.unknown = Math.max(0, state.geo.unknown - 1);
+    for (const agent of Object.keys(visitor.agents)) {
+      const [browser, os, device] = agent.split('/');
+      drop(state.clients.browsers, browser);
+      drop(state.clients.os, os);
+      drop(state.clients.devices, device);
+      if (browser === 'bot') state.clients.bots = Math.max(0, state.clients.bots - 1);
+    }
+    for (const lang of Object.keys(visitor.languages)) drop(state.languages, lang);
+
     delete state.visitors[id];
     for (const bag of Object.values(state.portals)) delete bag.visitors[id];
     for (const bag of Object.values(state.files)) delete bag.visitors[id];
     for (const bag of Object.values(state.ips)) { delete bag.visitors[id]; if (!Object.keys(bag.visitors).length) delete state.ips[bagKey(bag)] }
-    touch();
+    // Изтриването е решение на администратора — записва се ВЕДНАГА, а не след дебаунса.
+    touch(); saveNow();
     return { removed: true, id };
   }
   // Намира ключа на IP кофата по референция (използва се само при изтриване).
