@@ -194,7 +194,7 @@ version, `__init__.py`, `config_flow.py`, `sensor.py`, `strings.json` for the in
 The same actions exist as VS Code tasks (`hAPI: синхронизирай локалния add-on`,
 `hAPI: провери локалния add-on`, `hAPI: пълен тестов пакет`). After a sync:
 **Settings → Add-ons → ⋮ → Check for updates → Rebuild**; remove
-`https://github.com/PasevSU/hAPI` from **⋮ → Repositories** if the GitHub copy (0.54.0)
+`https://github.com/PasevSU/hAPI` from **⋮ → Repositories** if the GitHub copy
 should not show up next to the local one. Home Assistant only loads a custom component
 whose folder name equals the `domain` in its `manifest.json` — a copy under
 `custom_components/hAPI Enterptice` is ignored silently.
@@ -202,6 +202,13 @@ whose folder name equals the `domain` in its `manifest.json` — a copy under
 **Before the first start** — token, storage location (`addon_config` vs `share`), network
 mounts, public address and admin role mapping: see
 [`hapi_enterprise/README.md` → Recommended settings](hapi_enterprise/README.md#recommended-settings-before-you-install).
+
+**Every option has a working default** — a fresh installation needs no configuration.
+The full list (all add-on options and every console setting, with what an empty value
+means) is generated from `hapi_enterprise/config.yaml` and published in
+[`hapi_enterprise/README.md` → Configuration](hapi_enterprise/README.md#configuration)
+(and in Bulgarian in [`BG.md`](BG.md#-настройки-по-подразбиране)). Regenerate it with
+`npm run settings`; `npm run settings:check` proves it is current.
 
 **Release artifacts.** `node scripts/build-release.cjs` writes `dist/`
 (`hapi_enterprise-<version>.tar.gz`, `hapi_enterprise-integration-<version>.zip`,
