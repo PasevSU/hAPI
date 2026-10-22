@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.69.26"
+version: "0.69.27"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
@@ -73,10 +73,12 @@ options:
   encrypt_files: false
   tls_cert: ""
   tls_key: ""
-  # Сензори (посещения): какво се пази от адреса. Празно = стойността по подразбиране,
-  # която може да се смени и от конзолата (Настройки → Сензори).
-  visitor_ip_mode: ""
-  visitor_trust_proxy: null
+  # Сензори (посещения): какво се пази от адреса.
+  # ВАЖНО: старите инсталации имат записани `""` за режима на IP и `null` за проксито.
+  # HA схемата не може да изрази null, затова проксито НЕ е add-on опция (живее в
+  # конзолата: Настройки → Сензори, и в средата като TRUST_PROXY). Режимът е match,
+  # за да приеме и старото празно "" — иначе Supervisor отказва старт след обновяване.
+  visitor_ip_mode: hashed
   visitor_retention_days: 0
   visitor_geoip_path: ""
 schema:
@@ -110,8 +112,7 @@ schema:
   encrypt_files: bool?
   tls_cert: str?
   tls_key: str?
-  visitor_ip_mode: "list(hashed|masked|full)?"
-  visitor_trust_proxy: bool?
+  visitor_ip_mode: "match(^(hashed|masked|full)?$)?"
   visitor_retention_days: int(0,3650)?
   visitor_geoip_path: str?
 # app_config mounts at /config inside the container (app_configs/<slug> on the host).

@@ -142,11 +142,6 @@ configuration:
       What is kept of a visitor address: hashed (irreversible hash, default), masked
       (network/16) or full (the full address — personal data). Empty means the default.
       The same value can be set from the console: Settings → Sensors.
-  visitor_trust_proxy:
-    name: Sensors · trust X-Forwarded-For
-    description: >-
-      Enable only when the add-on sits behind your own reverse proxy. Otherwise any client
-      could spoof its address with a header. Unset means the default (no).
   visitor_retention_days:
     name: Sensors · record lifetime (days)
     description: >-

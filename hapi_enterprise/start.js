@@ -116,8 +116,9 @@ const OPTION_ENV = [
   ['TLS_KEY', 'tls_key'],
   // Сензори: какво се пази от адреса на посетителя. Празна/незададена опция → сървърът
   // ползва своето подразбиране, за да не се заключва поведението от празен низ.
+  // Проксито (`TRUST_PROXY`) съзнателно НЕ е тук: HA схемата не може да изрази `null`,
+  // а старите инсталации имат точно такава записана стойност — задава се от конзолата.
   ['VISITOR_IP_MODE', 'visitor_ip_mode'],
-  ['TRUST_PROXY', 'visitor_trust_proxy'],
   ['VISITOR_RETENTION_DAYS', 'visitor_retention_days'],
   ['GEOIP_DB_PATH', 'visitor_geoip_path'],
 ];

@@ -22,11 +22,97 @@ function keysOf(section) {
 
 const options = keysOf('options');
 const schema = keysOf('schema');
-
 assert.ok(options.length >= 17, 'трябва да има поне 17 опции, намерени: ' + options.length);
 assert.equal(options.length, schema.length, 'options и schema трябва да са с еднакъв брой ключове');
 for (const key of options) assert.ok(schema.includes(key), 'опция „' + key + '“ липсва в schema');
 for (const key of schema) assert.ok(options.includes(key), 'schema ключ „' + key + '“ липсва в options');
+
+// ── Стойностите по подразбиране трябва да минават собствената си схема ────────────
+// Supervisor валидира `options` срещу `schema` при старт и отказва add-on-а с
+// „Невалидна конфигурация: value must be one of [...]“, ако примерно `list(a|b|c)`
+// е с празен низ, а `bool` — с null. Локално това не се вижда — add-on-ът просто не
+// тръгва. Затова тук се прилагат същите правила върху стойностите по подразбиране.
+function valuesOf(section) {
+  const start = cfg.indexOf('\n' + section + ':\n');
+  assert.ok(start >= 0, 'липсва секция ' + section);
+  const rest = cfg.slice(start + section.length + 2);
+  const end = rest.search(/\n[a-z_]+:\n/);
+  const out = {};
+  for (const line of rest.slice(0, end === -1 ? undefined : end).split('\n')) {
+    const m = /^ {2}([A-Za-z0-9_]+):\s*(.*)$/.exec(line);
+    if (m) out[m[1]] = m[2].replace(/\s+#.*$/, '').trim();
+  }
+  return out;
+}
+
+// YAML скалар → стойност, както го вижда Supervisor (низове, bool, числа, null).
+// В кавички стойността е низ, дори да изглежда число (`db_id: "1"`).
+function scalar(text) {
+  const raw = String(text).trim();
+  if (/^'.*'$/.test(raw) || /^".*"$/.test(raw)) return raw.slice(1, -1);
+  if (raw === '') return '';
+  if (raw === 'true' || raw === 'false') return raw === 'true';
+  if (raw === 'null' || raw === '~') return null;
+  if (/^-?\d+$/.test(raw)) return Number(raw);
+  return raw;
+}
+
+// Връща null, ако стойността е валидна за типа, иначе обяснение защо не е.
+function typeViolation(rawValue, rawType) {
+  // Типът в YAML може да е в кавички (заради `|` в list(...)) — Supervisor ги маха.
+  const type = String(rawType).replace(/^'(.*)'$/, '$1').replace(/^"(.*)"$/, '$1').trim();
+  const base = type.endsWith('?') ? type.slice(0, -1) : type;
+  const name = base.replace(/\(.*\)$/, '').trim();
+  const args = (base.match(/\(([\s\S]*)\)$/) || [])[1] || '';
+  const value = scalar(rawValue);
+  const show = JSON.stringify(value);
+  if (name === 'str' || name === 'password') return typeof value === 'string' ? null : show + ' не е низ';
+  if (name === 'bool') return typeof value === 'boolean' ? null : show + ' не е true/false';
+  if (name === 'int' || name === 'float') {
+    const [min, max] = args.split(',').map((x) => Number(String(x).trim()));
+    if (typeof value !== 'number' || (name === 'int' && !Number.isInteger(value))) return show + ' не е ' + name;
+    if (Number.isFinite(min) && value < min) return show + ' е под ' + min;
+    if (Number.isFinite(max) && value > max) return show + ' е над ' + max;
+    return null;
+  }
+  if (name === 'list') {
+    const allowed = args.split('|').map((x) => x.trim());
+    return allowed.includes(String(value)) ? null : show + ' не е от ' + JSON.stringify(allowed);
+  }
+  if (name === 'match') return typeof value === 'string' && new RegExp(args).test(value) ? null : show + ' не пасва на ' + args;
+  if (name === 'device') return typeof value === 'string' ? null : show + ' не е устройство';
+  return 'непознат тип „' + type + '“';
+}
+
+// Самата проверка трябва да хване точно дефекта, който стигна до потребител.
+assert.notEqual(typeViolation('""', '"list(hashed|masked|full)?"'), null, 'празен низ за list(...) трябва да се хване');
+assert.notEqual(typeViolation('null', 'bool?'), null, 'null за bool трябва да се хване');
+assert.notEqual(typeViolation('0', 'int(1,10)?'), null, 'стойност под минимума трябва да се хване');
+assert.equal(typeViolation('hashed', '"list(hashed|masked|full)?"'), null, 'валидна стойност от списъка минава');
+assert.equal(typeViolation('0', 'int(0,3650)?'), null, '0 в диапазона минава');
+
+const optionDefaults = valuesOf('options');
+const schemaTypes = valuesOf('schema');
+const violations = [];
+for (const key of options) {
+  const why = typeViolation(optionDefaults[key], schemaTypes[key]);
+  if (why) violations.push(key + ': ' + why + ' (schema ' + schemaTypes[key] + ')');
+}
+assert.deepEqual(violations, [], 'Supervisor би отказал тези стойности по подразбиране:\n  ' + violations.join('\n  '));
+
+// ── Обновяване на съществуваща инсталация ────────────────────────────────────────
+// Supervisor пази записаните от потребителя опции и след обновяване ги валидира
+// отново. Затова схемата трябва да приема и СТАРИТЕ стойности, иначе add-on-ът
+// отказва старт точно след ъпдейт (така се стигна до „Невалидна конфигурация“).
+assert.equal(typeViolation('""', schemaTypes.visitor_ip_mode), null, 'старото празно "" за visitor_ip_mode трябва да минава');
+for (const good of ['hashed', 'masked', 'full']) {
+  assert.equal(typeViolation('"' + good + '"', schemaTypes.visitor_ip_mode), null, 'режимът „' + good + '“ трябва да минава');
+}
+assert.notEqual(typeViolation('raw', schemaTypes.visitor_ip_mode), null, 'непознат режим трябва да се откаже');
+// `null` не може да се изрази в HA схема — затова проксито не е опция, а живее в конзолата.
+assert.equal(options.includes('visitor_trust_proxy'), false, 'visitor_trust_proxy не бива да е add-on опция (старото null не минава схема)');
+assert.equal(schema.includes('visitor_trust_proxy'), false, 'visitor_trust_proxy не бива да е в schema');
+assert.equal(optionDefaults.visitor_ip_mode.replace(/"/g, ''), 'hashed', 'visitor_ip_mode трябва да е реална стойност от списъка, не празен низ');
 
 // Storage selection is implemented in storage-preflight.js and must stay configurable.
 for (const key of ['storage_location', 'storage_subdirectory', 'storage_mode', 'storage_mount_name', 'min_free_mb']) {
