@@ -2291,6 +2291,11 @@ var qrcode = function() {
       define([], factory);
   } else if (typeof exports === 'object') {
       module.exports = factory();
+  } else if (typeof window !== 'undefined') {
+      // Браузър: UMD-обвивката иначе НЕ слага нищо на `window` и панелът
+      // (ui/files-manager.js) не може да нарисува QR — проверката там е
+      // `typeof window.qrcode === 'function'`.
+      window.qrcode = factory();
   }
 }(function () {
     return qrcode;

@@ -508,7 +508,28 @@
         esc(s.note || '—'),
       ]);
       const portalOptions = (d.portals || []).map((p) => '<option value="' + esc(p.id) + '">' + esc(p.title || p.slug) + '</option>').join('');
-      return '<h3>Тайни връзки</h3>' + table(['Идентификатор', 'Създадена', 'Бележка'], secrets) +
+      return '<h3>Създай тайна връзка</h3>' +
+        '<p class="hint">Целият линк е след „#“ и не се изпраща към сървъра: той пази само шифротекст и го изтрива след последния преглед или след срока. Ключът се ражда в браузъра.</p>' +
+        '<div class="field"><label>Какво споделяш</label>' +
+        '<select id="set-secret-kind"><option value="text">текст (парола, IBAN, ключ…)</option>' +
+        '<option value="url">връзка към панела или към портал</option></select></div>' +
+        '<div class="field u-mt"><label>Съдържание</label>' +
+        '<textarea id="set-secret-text" rows="3" placeholder="Текстът или адресът, който искаш да споделиш"></textarea></div>' +
+        '<div class="field u-mt"><label>Подсказка (открит текст — сървърът я вижда)</label>' +
+        '<input id="set-secret-hint" maxlength="200" placeholder="по избор" /></div>' +
+        '<div class="u-row u-row-inline u-mt">' +
+        '<select id="set-secret-ttl">' +
+        [['3600', '1 час'], ['86400', '24 часа'], ['604800', '7 дни'], ['2592000', '30 дни']]
+          .map(([v, l]) => '<option value="' + v + '"' + (v === '86400' ? ' selected' : '') + '>' + l + '</option>')
+          .join('') +
+        '</select>' +
+        '<select id="set-secret-views">' +
+        ['1', '2', '3', '5', '10'].map((v) => '<option value="' + v + '">' + v + ' преглед(а)</option>').join('') +
+        '</select>' +
+        '<input id="set-secret-password" type="password" autocomplete="new-password" placeholder="втора парола (по избор)" />' +
+        '<button type="button" class="btn btn-primary" data-action="secretCreate">Създай линк</button></div>' +
+        '<div id="set-secret-out" class="u-mt"></div>' +
+        '<h3 class="u-mt">Тайни връзки</h3>' + table(['Идентификатор', 'Създадена', 'Бележка'], secrets) +
         '<h3 class="u-mt">Търсене в картотеката</h3>' +
         '<div class="u-row u-row-inline"><input id="set-search-q" placeholder="търсена дума" />' +
         '<button type="button" class="btn" data-action="search">Търси</button></div>' +
@@ -786,6 +807,66 @@
       const r = await post('/admin/api/notify/dispatch', { service, link });
       if (!r.ok) return toast(r.error || 'Известието не е изпратено', 'err');
       toast('Известието е изпратено', 'ok');
+      return;
+    } else if (action === 'secretCreate') {
+      const share = window.HapiSecretShare;
+      if (!share) return toast('Модулът за тайни връзки не е зареден', 'err');
+      const text = host.querySelector('#set-secret-text').value;
+      if (!text.trim()) return toast('Няма какво да се сподели', 'err');
+      const kind = host.querySelector('#set-secret-kind').value;
+      if (kind === 'url' && !/^(https?:\/\/|\/)/i.test(text.trim())) {
+        return toast('За режим „връзка“ е нужен http(s) адрес или път', 'err');
+      }
+      const out = host.querySelector('#set-secret-out');
+      if (out) out.textContent = 'Шифровам в браузъра…';
+      const apiFetch = (path, init) => fetch(effectiveBase() + path, init);
+      try {
+        const created = await share.create({
+          text: text.trim(),
+          hint: host.querySelector('#set-secret-hint').value,
+          ttlSeconds: Number(host.querySelector('#set-secret-ttl').value),
+          maxViews: Number(host.querySelector('#set-secret-views').value),
+          password: host.querySelector('#set-secret-password').value || '',
+          base: effectiveBase(),
+          fetch: apiFetch,
+          headers: storedToken() ? { Authorization: 'Bearer ' + storedToken() } : {},
+        });
+        if (out) {
+          const qr = typeof window.qrcode === 'function' ? window.qrcode(0, 'M') : null;
+          let svg = '';
+          if (qr) {
+            qr.addData(created.link);
+            qr.make();
+            svg = qr.createSvgTag({ cellSize: 3, margin: 2, scalable: true });
+          }
+          out.innerHTML =
+            '<div class="field"><label>Линк</label><code class="secret-link">' + esc(created.link) + '</code></div>' +
+            '<p class="hint">Валиден до ' + esc(fmtTime(created.expiresAt)) + ' · прегледи: ' + created.maxViews +
+            (created.requiresPassword ? ' · с втора парола' : '') +
+            (created.receipt ? ' · чек ' + esc(created.receipt) : '') + '</p>' +
+            '<div class="u-row u-row-inline u-mt"><button type="button" class="btn" data-copy-secret="' +
+            esc(created.link) + '">Копирай</button></div>' +
+            (svg ? '<div class="u-mt">' + svg + '</div>' : '');
+          const copy = out.querySelector('[data-copy-secret]');
+          if (copy) {
+            copy.addEventListener('click', async () => {
+              try {
+                await navigator.clipboard.writeText(created.link);
+                toast('Линкът е копиран', 'ok');
+              } catch {
+                toast('Копирането е блокирано от браузъра — маркирай линка ръчно', 'err');
+              }
+            });
+          }
+          host.querySelector('#set-secret-text').value = '';
+          host.querySelector('#set-secret-password').value = '';
+        }
+        toast('Тайната връзка е създадена', 'ok');
+        delete sectionCache.data;
+      } catch (e) {
+        if (out) out.textContent = 'Грешка: ' + e.message;
+        return toast(e.message || 'Линкът не е създаден', 'err');
+      }
       return;
     } else if (action === 'search' || action === 'organization' || action === 'ingest' || action === 'merge' || action === 'conflict' || action === 'apiInfo' || action === 'htmlProjects' || action === 'htmlProject' || action === 'sends') {
       const out = host.querySelector('#set-data-out');

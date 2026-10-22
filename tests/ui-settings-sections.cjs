@@ -36,7 +36,8 @@ function stubElement() {
   return el;
 }
 
-function loadPanel() {
+function loadPanel(overrides) {
+  const o = overrides || {};
   const window = {};
   const document = {
     querySelectorAll: () => [],
@@ -44,15 +45,28 @@ function loadPanel() {
     getElementById: () => null,
     documentElement: stubElement(),
     body: stubElement(),
+    addEventListener() { },
+    createElement: () => stubElement(),
   };
-  const storage = () => ({ getItem: () => null, setItem() { }, removeItem() { } });
-  const fetchStub = async () => {
-    throw Error('офлайн');
+  const storage = () => ({
+    getItem: (key) => (o.base && key === 'hapi.apiBase' ? o.base : null),
+    setItem() { },
+    removeItem() { },
+  });
+  const fetchStub = async (url) => {
+    if (!o.json) throw Error('офлайн');
+    const key = Object.keys(o.json).find((k) => String(url).endsWith(k));
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => (key ? o.json[key] : {}),
+    };
   };
   // Панелът е браузърен IIFE без module.exports, затова го пускаме в отделен контекст
   // (vm), а не в глобалния — така тестът не замърсява процеса и не изпълнява код
   // в обхвата на самия тест.
-  const sandbox = { window, document, localStorage: storage(), sessionStorage: storage(), location: { protocol: 'file:', origin: 'null' }, fetch: fetchStub, console, setTimeout, clearTimeout };
+  const sandbox = { window, document, localStorage: storage(), sessionStorage: storage(), location: { protocol: 'file:', origin: 'null' }, fetch: fetchStub, console, setTimeout, clearTimeout, setInterval, clearInterval };
   vm.runInNewContext(code, sandbox, { filename: 'settings-panel.js' });
   return window.SettingsPanel;
 }
@@ -90,5 +104,26 @@ setTimeout(() => {
   panel.state.section = 'general';
   panel.mount(host);
   assert.ok(host.innerHTML.includes('Връзка с add-on-а'), 'връщането към „Основни“ показва настройките на връзката');
-  console.log('PASS ui-settings-sections: 15 таба · избор на секция · действия · ясно състояние без връзка');
+
+  // ── Свързано състояние: секция „Данни“ рисува формата за тайна връзка ──
+  const online = loadPanel({
+    base: 'http://stub.local',
+    json: {
+      '/admin/api/v2/secrets': { secrets: [{ idHash: 'a'.repeat(64), createdAt: '2026-10-22T09:00:00.000Z', note: '—' }] },
+      '/admin/api/portals': { portals: [{ id: 'p1', title: 'Портал 1', slug: 'p1', files: [] }] },
+    },
+  });
+  const onlineHost = stubElement();
+  online.state.section = 'data';
+  online.mount(onlineHost);
+  setTimeout(() => {
+    const dataBody = onlineHost.querySelector('#set-section-body').innerHTML;
+    assert.match(dataBody, /Създай тайна връзка/, 'секция „Данни“ показва формата за тайна връзка');
+    assert.match(dataBody, /id="set-secret-text"/, 'има поле за съдържанието');
+    assert.match(dataBody, /id="set-secret-password"/, 'има поле за втора парола');
+    assert.match(dataBody, /data-action="secretCreate"/, 'има бутон за създаване');
+    assert.match(dataBody, /връзка към панела/, 'има режим „връзка към панела“');
+    assert.match(dataBody, /id="set-secret-out"/, 'има място за резултата (линк и QR)');
+    console.log('PASS ui-settings-sections: 15 таба · избор на секция · действия · ясно състояние без връзка · форма за тайна връзка');
+  }, 80);
 }, 50);
