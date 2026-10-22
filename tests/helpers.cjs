@@ -27,6 +27,9 @@ async function stopChild(child) {
  * Тогава детето пада с `EACCES` при `listen`, макар портът да изглежда свободен. Затова
  * всеки кандидат се проверява с изрично връзване и се подменя, ако не става.
  */
+// Портовете, които вече сме дали в този процес — виж коментара във freePort().
+const handedOut = new Set();
+
 async function canBind(host, port) {
   return new Promise((resolve) => {
     const server = net.createServer();
@@ -47,8 +50,16 @@ async function freePort(host = '127.0.0.1', { tries = 25 } = {}) {
         server.close(() => resolve(port));
       });
     });
+    // Ядрото често дава току-що освободения порт отново. Два последователни
+    // `freePort()` в един тест (напр. PORT и ADMIN_PORT) можеха да върнат един и същ
+    // номер → сървърът пада с EADDRINUSE при втория listen. Затова помним какво
+    // вече сме дали в този процес и не го даваме повторно.
+    if (handedOut.has(port)) continue;
     const probe = await canBind(host, port);
-    if (probe.ok) return port;
+    if (probe.ok) {
+      handedOut.add(port);
+      return port;
+    }
     if (!['EACCES', 'EADDRINUSE'].includes(probe.code)) return port; // друга причина — не е наш проблем
   }
   throw new Error('няма порт, който може да се върже изрично (изключени диапазони на Windows?)');
