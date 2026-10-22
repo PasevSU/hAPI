@@ -37,7 +37,12 @@ try {
   const testFiles = fs.readdirSync(path.join(root, 'tests')).filter((f) => /\.cjs$/.test(f) && f !== 'helpers.cjs').length;
   assert.match(actual, new RegExp('^# Състояние на изданието — hAPI Enterprise ' + version.replace(/\./g, '\\.') + '$', 'm'), 'заглавието носи текущата версия');
   assert.ok(actual.includes(`**${testFiles}/${testFiles}**`), 'броят тестове идва от дървото: ' + testFiles);
-  assert.equal(matrix.passed, testFiles, 'последното пускане е изпълнило всички тестове (' + matrix.passed + '/' + testFiles + ')');
+  const skipped = Array.isArray(matrix.skipped) ? matrix.skipped.length : 0;
+  assert.equal(
+    matrix.passed + skipped,
+    testFiles,
+    'последното пускане е покрило всички тестове (' + matrix.passed + ' минали + ' + skipped + ' пропуснати от ' + testFiles + ')',
+  );
   assert.deepEqual(matrix.failed || [], [], 'последното пускане е зелено — иначе отчетът не бива да казва „минават“');
   assert.equal(/\*\*\d+\/undefined\*\*|\[object Object\]/.test(actual), false, 'няма счупени интерполации');
   // Остаряла версия се търси само в заглавната част и таблиците: в §3 стои текстът на
@@ -61,9 +66,35 @@ try {
   assert.equal(red.status, 1, '--check връща код 1 при разминаване');
   assert.match(red.stderr, /остарял/, 'казва какво е: ' + red.stderr);
   const missing = run(['--check', '--out', path.join(tmp, 'няма-такъв.md')]);
-  assert.equal(missing.status, 1, 'липсващ отчет също е разминаване');
+  assert.equal(missing.status, 1, 'липсащ отчет също е разминаване');
 
-  console.log('PASS release-status: отчетът съвпада с артефактите (' + version + ' · ' + testFiles + ' теста) · --check хваща остарял и липсващ');
+  // ── 6. Отчетът не зависи от самоличността на артефакта ────────────────────────
+  // sha256, обемът и датата на архива се сменят при друго сглобяване, при друг checkout
+  // (CRLF срещу LF) и дори сами в полунощ. Ако влязат в отчета, проверката „отчетът е
+  // актуален“ пада на друг компютър или на следващия ден — точно това чупеше CI.
+  const releasePath = path.join(root, 'dist', 'RELEASE.json');
+  const originalRelease = fs.readFileSync(releasePath, 'utf8');
+  try {
+    const other = JSON.parse(originalRelease);
+    other.builtAt = '2001-01-01T00:00:00.000Z';
+    other.addon.sha256 = 'f'.repeat(64);
+    other.addon.bytes = 1;
+    other.integration.sha256 = 'e'.repeat(64);
+    other.integration.bytes = 2;
+    fs.writeFileSync(releasePath, JSON.stringify(other, null, 2));
+    const again = path.join(tmp, 'again.md');
+    const regenerated = run(['--out', again]);
+    assert.equal(regenerated.status, 0, 'генераторът минава и с други отпечатъци: ' + regenerated.stderr);
+    assert.equal(
+      fs.readFileSync(again, 'utf8'),
+      actual,
+      'отчетът не зависи от sha256/обем/дата на архива — иначе пада на друга платформа или на следващия ден',
+    );
+  } finally {
+    fs.writeFileSync(releasePath, originalRelease);
+  }
+
+  console.log('PASS release-status: отчетът съвпада с артефактите (' + version + ' · ' + testFiles + ' теста) · независим е от платформа и дата · --check хваща остарял и липсващ');
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
 }

@@ -6,8 +6,16 @@
 // документ е по-лош от никакъв: изглежда като факт, а е спомен.
 //
 // Правилото: числата в отчета идват само от отчети на инструментите
-// (`reports/test-matrix.json`, `dist/RELEASE.json`, JSON изходите на двата скенера),
-// а не от ръка. Датите също идват от артефактите, за да е възпроизводим резултатът.
+// (`reports/test-matrix.json`, JSON изходите на двата скенера), а не от ръка.
+//
+// Второто правило, научено по трудния начин: в отчета влиза САМО това, което се извежда
+// от дървото на хранилището. Отпечатъците (sha256), обемът и датата на архивите НЕ влизат.
+// Те се сменят при всяко сглобяване, при друг checkout (CRLF срещу LF) и дори сами в
+// полунощ — а отчет, който се разминава сам със себе си на следващия ден или на друг
+// компютър, не доказва нищо. Затова самоличността на артефакта живее в `dist/RELEASE.json`
+// и в `SHA256SUMS.txt` на изданието, а `verify-release.cjs` ги сверява.
+// Проверено от `tests/release-status.cjs`: същият отчет се получава и когато
+// отпечатъците, обемът и датата в `dist/RELEASE.json` са умишлено други.
 //
 //   node scripts/release-status.cjs            # презаписва отчета
 //   node scripts/release-status.cjs --check    # не пише; код 1 при разминаване
@@ -45,7 +53,6 @@ function runGate(script, extra = []) {
 }
 
 const version = (/^version:\s*"([^"]+)"/m.exec(read('hapi_enterprise/config.yaml')) || [])[1] || '';
-const day = (iso) => String(iso || '').slice(0, 10);
 
 // ── 1. Тестове ────────────────────────────────────────────────────────────────
 const matrix = exists('reports/test-matrix.json') ? readJson('reports/test-matrix.json') : null;
@@ -53,7 +60,12 @@ const matrix = exists('reports/test-matrix.json') ? readJson('reports/test-matri
 // всяко пускане и биха направили проверката „отчетът е актуален“ невъзможна. Броят тестове
 // идва от дървото (`tests/*.cjs`), а „минават“ се твърди само ако последният отчет го показва.
 const testFiles = fs.readdirSync(path.join(root, 'tests')).filter((f) => /\.cjs$/.test(f) && f !== 'helpers.cjs').length;
-const testsGreen = Boolean(matrix && (matrix.failed || []).length === 0 && matrix.passed === testFiles);
+// `skipped` е bootstrap случай: тест, който чете САМИЯ този отчет, не може да участва в
+// пуска, който го създава. Брои се като покритие, но „минават“ се твърди само ако няма
+// провали и passed + skipped покрива целия набор. Затова в готовото издание `skipped` е празно.
+const matrixSkipped = matrix && Array.isArray(matrix.skipped) ? matrix.skipped.length : 0;
+const covered = matrix ? Number(matrix.passed || 0) + matrixSkipped : 0;
+const testsGreen = Boolean(matrix && (matrix.failed || []).length === 0 && covered === testFiles);
 const testRow = matrix
   ? testsGreen
     ? `**${testFiles}/${testFiles}** — всички тестове от \`tests/\` минават`
@@ -64,7 +76,7 @@ const testRow = matrix
 const release = exists('dist/RELEASE.json') ? readJson('dist/RELEASE.json') : null;
 const releaseFresh = Boolean(release && release.version === version);
 const releaseRow = release
-  ? (releaseFresh ? `\`dist/RELEASE.json\` за ${release.version}, изградено ${day(release.builtAt)}` : `**остаряло**: архивът е ${release.version}, а кодът е ${version} — пусни \`node scripts/build-release.cjs\``)
+  ? (releaseFresh ? `\`dist/RELEASE.json\` за ${release.version} — отпечатъците се сверяват от \`verify-release.cjs\`` : `**остаряло**: архивът е ${release.version}, а кодът е ${version} — пусни \`node scripts/build-release.cjs\``)
   : 'няма `dist/` — пусни `node scripts/build-release.cjs`';
 
 // ── 3. Скенерите ──────────────────────────────────────────────────────────────
@@ -114,22 +126,28 @@ rows.push(['Документация', '`node tests/docs-consistency.cjs`', docs
 rows.push(['Changelog на add-on-а', '`node scripts/sync-addon-changelog.cjs --check`', changelog.ok ? '✔ актуален' : '✘ ' + changelog.last]);
 rows.push(['Сценарии', '`node tests/scenario-matrix.cjs`', scenario.ok ? '✔ ' + scenario.last.replace(/^PASS[^:]*:\s*/, '') : '✘ ' + scenario.last]);
 
-const mb = (b) => (Number(b) / 1048576).toFixed(2) + ' MB';
+// Броят файлове в архива е свойство на дървото (кой файл влиза), не на байтовете му —
+// затова остава. Обемът и отпечатъкът не са: те се разминават между Windows и Linux.
 const artifactRows = release
   ? [
-    ['`' + release.addon.archive + '`', release.addon.fileCount != null ? `${release.addon.fileCount} файла · ${mb(release.addon.bytes)}` : '—', '`' + String(release.addon.sha256 || '').slice(0, 12) + '`'],
-    ['`' + release.integration.archive + '`', release.integration.fileCount != null ? `${release.integration.fileCount} файла · ${mb(release.integration.bytes)}` : '—', '`' + String(release.integration.sha256 || '').slice(0, 12) + '`'],
-    ['`repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt`', '4 артефакта', 'сумите вътре'],
+    ['`' + release.addon.archive + '`', 'add-on архив' + (release.addon.fileCount != null ? ` (${release.addon.fileCount} файла)` : ''), '`dist/RELEASE.json`'],
+    ['`' + release.integration.archive + '`', 'интеграция за HACS' + (release.integration.fileCount != null ? ` (${release.integration.fileCount} файла)` : ''), '`dist/RELEASE.json`'],
+    ['`repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt`', '4 артефакта', '`SHA256SUMS.txt`'],
   ]
-  : [['—', '—', 'няма `dist/`']];
+  : [['—', 'няма `dist/`', '—']];
 
 const md = [
   `# Състояние на изданието — hAPI Enterprise ${version}`,
   '',
-  `Версия: **${version}** · клон \`main\`` + (release ? ` · архив изграден ${day(release.builtAt)}` : ''),
+  `Версия: **${version}** · клон \`main\``,
   '',
   'Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,',
   'а не от памет. Проверка: `node scripts/release-status.cjs --check`.',
+  '',
+  'В отчета влиза само това, което се извежда от дървото на хранилището. Отпечатъците, обемът',
+  'и датата на архивите **не** са тук: те се сменят при всяко сглобяване и на друга платформа,',
+  'а документ, който се разминава сам със себе си, не е доказателство. Те живеят в',
+  '`dist/RELEASE.json` и в `SHA256SUMS.txt` на изданието, а `verify-release.cjs` ги сверява.',
   '',
   '## 1. Проверки',
   '',
@@ -139,7 +157,7 @@ const md = [
   '',
   '## 2. Артефакти (`dist/`)',
   '',
-  '| Файл | Обем | sha256 |',
+  '| Артефакт | Какво съдържа | Къде е отпечатъкът |',
   '| --- | --- | --- |',
   ...artifactRows.map((r) => `| ${r[0]} | ${r[1]} | ${r[2]} |`),
   '',

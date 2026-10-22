@@ -38,6 +38,8 @@ const path = require('node:path');
 const DEFAULT_LOCK_TIMEOUT_MS = 15000;
 const DEFAULT_STALE_LOCK_MS = 30000;
 const DEFAULT_POLL_MS = 5;
+// Колко пъти се повтаря транзакция, която е получила CAS отказ (STORE_CONFLICT).
+const CONFLICT_RETRIES = 3;
 
 const clone = (value) => structuredClone(value);
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -97,22 +99,46 @@ function ownerAlive(owner) {
 }
 
 function createLock(lockPath, { timeoutMs, staleMs, pollMs, sleep }) {
-  // Чете собственика; при нечетим/полузаписан файл връща `null`, а възрастта се съди по mtime.
-  const read = () => {
+  // Ключалката се създава АТОМАРНО ЗАЕДНО СЪС СЪДЪРЖАНИЕТО СИ: собственикът се записва в
+  // временен файл и се свързва към името на ключалката с hard link. `writeFileSync(..., 'wx')`
+  // създава файла и ПОСЛЕ пише в него — между двете има прозорец, в който файлът е празен.
+  // Друг процес го четеше, не можеше да го парсне, смяташе го за изоставен и го изтриваше;
+  // след това двамата пишеха едновременно. На бърза машина прозорецът е невидим, на
+  // натоварен CI се виждаше като „не всички 20 едновременни записа са приети“.
+  const writeOwner = (payload) => {
+    const tmp = lockPath + '.' + process.pid + '.' + Math.random().toString(36).slice(2) + '.tmp';
+    fs.writeFileSync(tmp, payload, { flag: 'wx', mode: 0o600 });
     try {
-      const owner = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-      return { owner, age: owner && owner.at ? Date.now() - Date.parse(owner.at) : Infinity };
+      fs.linkSync(tmp, lockPath);
+      return true;
+    } catch (e) {
+      if (e.code === 'EEXIST') return false;
+      // Файлова система без hard links (част от SMB/exFAT): остава O_EXCL. Тогава
+      // „нечетима, но прясна“ ключалка НЕ се смята за изоставена (виж acquire).
+      try {
+        fs.writeFileSync(lockPath, payload, { flag: 'wx', mode: 0o600 });
+        return true;
+      } catch (e2) {
+        if (e2.code === 'EEXIST') return false;
+        throw e2;
+      }
+    } finally {
+      try { fs.unlinkSync(tmp); } catch { /* временният файл вече не е нужен */ }
+    }
+  };
+  // Възрастта се съди ПО mtime на файла, не по съдържанието: полузаписан или повреден файл
+  // също има възраст и не бива да минава за „без собственик“ (това беше кражбата на ключалка).
+  const read = () => {
+    let mtime;
+    try {
+      mtime = fs.statSync(lockPath).mtimeMs;
     } catch (e) {
       if (e.code === 'ENOENT') return { owner: null, age: Infinity, gone: true };
-      let mtime = Infinity;
-      try {
-        mtime = fs.statSync(lockPath).mtimeMs;
-      } catch (statError) {
-        if (statError.code === 'ENOENT') return { owner: null, age: Infinity, gone: true };
-        throw statError;
-      }
-      return { owner: null, age: Date.now() - mtime };
+      throw e;
     }
+    let owner = null;
+    try { owner = JSON.parse(fs.readFileSync(lockPath, 'utf8')); } catch { owner = null; }
+    return { owner, age: Date.now() - mtime };
   };
   const drop = () => {
     try {
@@ -125,17 +151,15 @@ function createLock(lockPath, { timeoutMs, staleMs, pollMs, sleep }) {
   };
   async function acquire() {
     const startedAt = Date.now();
+    const payload = JSON.stringify({ pid: process.pid, host: os.hostname(), at: new Date().toISOString() });
     for (; ;) {
-      try {
-        fs.writeFileSync(lockPath, JSON.stringify({ pid: process.pid, host: os.hostname(), at: new Date().toISOString() }), { flag: 'wx', mode: 0o600 });
-        return true;
-      } catch (e) {
-        if (e.code !== 'EEXIST') throw e;
-      }
+      if (writeOwner(payload)) return true;
       const seen = read();
       if (seen.gone) continue;
       const deadOwner = seen.owner ? !ownerAlive(seen.owner) : false;
-      const tooOld = !seen.owner || !Number.isFinite(seen.age) || seen.age > staleMs;
+      // „Изоставена“ значи СТАРА (или с мъртъв собственик). Прясна ключалка не се пипа,
+      // дори когато съдържанието ѝ още не може да се прочете.
+      const tooOld = seen.age > staleMs;
       if (deadOwner || tooOld) {
         drop();
         continue;
@@ -162,11 +186,12 @@ function create(options = {}) {
   }
   const bind = typeof options.bind === 'function' ? options.bind : null;
   const sleep = typeof options.sleep === 'function' ? options.sleep : (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const pollMs = Number(options.pollMs) || DEFAULT_POLL_MS;
   const lock = options.lockPath
     ? createLock(options.lockPath, {
       timeoutMs: Number(options.lockTimeoutMs) || DEFAULT_LOCK_TIMEOUT_MS,
       staleMs: Number(options.staleLockMs) || DEFAULT_STALE_LOCK_MS,
-      pollMs: Number(options.pollMs) || DEFAULT_POLL_MS,
+      pollMs,
       sleep,
     })
     : null;
@@ -186,6 +211,7 @@ function create(options = {}) {
     transactions: 0,
     lockWaits: 0,
     lockTimeouts: 0,
+    conflicts: 0,
     lastSyncAt: null,
     lastRefreshAt: null,
     lastLockWaitAt: null,
@@ -282,33 +308,38 @@ function create(options = {}) {
         // Прясно състояние ПОД ключалката, но САМО ако друг процес е писал след последната
         // ни синхронизация. Безусловното презареждане би изтрило и стойности по подразбиране,
         // които манипулаторите слагат на живия обект преди самата транзакция.
-        if (current === null || (Number(store.revision()) || 0) !== revision) {
-          const snap = store.snapshot();
-          publish(snap.payload, snap.revision, null);
+        //
+        // CAS отказът на store (STORE_CONFLICT) не се очаква, докато ключалката е наша, но
+        // може да дойде от процес, който пише, без да минава през този слой. Тогава отказът
+        // НЕ се предава на клиента веднага: презарежда се прясното състояние и намерението
+        // се повтаря — иначе запис, който никой не е загубил, изглежда като 409.
+        for (let attempt = 0; ; attempt++) {
+          if (current === null || (Number(store.revision()) || 0) !== revision) {
+            const snap = store.snapshot();
+            publish(snap.payload, snap.revision, null);
+          }
+          const base = clone(current);
+          let result;
+          try {
+            result = await fn(current, { revision });
+          } catch (e) {
+            // Провалът на самата операция: връщаме състоянието отпреди нея (иначе
+            // полунаправената промяна остава в паметта и следващото четене я вижда).
+            publish(base, revision, null);
+            throw e;
+          }
+          try {
+            const nextRevision = store.save(current, revision);
+            revision = nextRevision === undefined ? revision + 1 : Number(nextRevision);
+            if (bind) bind(current, revision);
+            return result;
+          } catch (e) {
+            publish(base, revision, null);
+            if (!e || e.code !== 'STORE_CONFLICT' || attempt >= CONFLICT_RETRIES) throw e;
+            stats.conflicts++;
+            await sleep(pollMs);
+          }
         }
-        const base = clone(current);
-        let result;
-        try {
-          result = await fn(current, { revision });
-        } catch (e) {
-          // Провалът на самата операция: връщаме състоянието отпреди нея (иначе
-          // полунаправената промяна остава в паметта и следващото четене я вижда).
-          publish(base, revision, null);
-          throw e;
-        }
-        // Записът е безусловно успешен, защото ключалката е наша; CAS-ът в store остава
-        // като предпазна мрежа срещу процес, който пише, без да ползва този слой.
-        let nextRevision;
-        try {
-          nextRevision = store.save(current, revision);
-        } catch (e) {
-          publish(base, revision, null);
-          if (e && e.code === 'STORE_CONFLICT') stats.lockTimeouts++;
-          throw e;
-        }
-        revision = nextRevision === undefined ? revision + 1 : Number(nextRevision);
-        if (bind) bind(current, revision);
-        return result;
       } catch (e) {
         if (e && e.code === 'STORE_LOCKED') stats.lockTimeouts++;
         throw e;

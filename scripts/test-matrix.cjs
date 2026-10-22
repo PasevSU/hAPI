@@ -6,6 +6,7 @@
 //   node scripts/test-matrix.cjs                  # до 5 пълни опита, после провал
 //   node scripts/test-matrix.cjs --attempts=8     # повече опити
 //   node scripts/test-matrix.cjs --only=rbac      # само тестове, чието име съдържа "rbac"
+//   node scripts/test-matrix.cjs --skip=release-status # без тест, който чете отчета на самата серия
 //   node scripts/test-matrix.cjs --timeout=60000  # таймаут на отделен тест (ms)
 //   node scripts/test-matrix.cjs --verbose        # показва изхода и на успешните тестове
 //
@@ -29,6 +30,16 @@ const verbose = opt('verbose', 'false') === 'true';
 const attempts = Math.max(1, Number(opt('attempts', '5')) || 5);
 const perTestTimeout = Math.max(1000, Number(opt('timeout', '180000')) || 180000);
 const only = String(opt('only', '')).trim().toLowerCase();
+// `--skip` съществува за точно един случай: `tests/release-status.cjs` чете
+// `reports/test-matrix.json`, който САМАТА серия пише едва накрая. Когато се добави нов
+// тестов файл, отчетът още описва стария набор и тестът пада по определение. Затова
+// bootstrap-ът се прави с `--skip=release-status`, отчетът се регенерира и след това
+// пълната серия (без пропуски) го проверява. Това не е отслабване: тестът се пуска в
+// следващата пълна серия и в CI, където се изпълнява направо.
+const skip = String(opt('skip', ''))
+  .split(',')
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
 
 // Env, който add-on-ът чете. Ако е изтекъл от родителската сесия, тестовете
 // получават чужди настройки (DATA_DIR, INGRESS_MODE, ADMIN_PORT…) и падат с
@@ -85,13 +96,18 @@ function baseEnv() {
   return env;
 }
 
-function testFiles() {
-  const all = readdirSync(testsDir)
+function allTests() {
+  return readdirSync(testsDir)
     .filter((f) => /\.cjs$/.test(f) && f !== 'helpers.cjs')
     .sort();
+}
+
+function testFiles() {
+  const all = allTests();
   const picked = only ? all.filter((f) => f.toLowerCase().includes(only)) : all;
-  if (!picked.length) throw new Error(`Няма тест, който да съдържа „${only}“ в името`);
-  return picked;
+  const kept = picked.filter((f) => !skip.some((s) => f.toLowerCase().includes(s)));
+  if (!kept.length) throw new Error(`Няма тест за пускане след филтрите (only="${only}", skip="${skip.join(',')}")`);
+  return kept;
 }
 
 function runSuite(files, env) {
@@ -153,6 +169,11 @@ function writeReport(payload) {
 
 function main() {
   const files = testFiles();
+  // Пропуснатите се записват в отчета: при `--skip` те не са „минали“, а не са пускани.
+  // Генераторът на `reports/RELEASE-STATUS.md` брои покритието като passed + skipped и
+  // само тогава казва „всички тестове минават“ — иначе bootstrap пускът би се представял
+  // за пълен. При `--only` не се записва нищо (това е частична серия по определение).
+  const skipped = only ? [] : allTests().filter((f) => !files.includes(f));
   const env = baseEnv();
   process.stdout.write(
     `\n═══ Цялостен тестов пакет: ${files.length} теста · до ${attempts} пълни опита\n`,
@@ -192,6 +213,7 @@ function main() {
     passed: files.length - failed.length,
     failed: failed.map((f) => f.file),
     flaky: flaky.map((f) => f.file),
+    skipped,
     perTest: summary,
   });
 
@@ -210,7 +232,7 @@ function main() {
   }
   process.stdout.write(
     `    ✔ 100% успех: ${files.length}/${files.length} теста за ${(totalMs / 1000).toFixed(1)}s ` +
-      `(${history.length} ${history.length === 1 ? 'опит' : 'опита'})\n`,
+    `(${history.length} ${history.length === 1 ? 'опит' : 'опита'})\n`,
   );
   process.stdout.write('    отчет: reports/test-matrix.json\n');
   return 0;
