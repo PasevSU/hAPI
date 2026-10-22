@@ -49,20 +49,11 @@ function loadPanel() {
   const fetchStub = async () => {
     throw Error('офлайн');
   };
-  // vm вместо `new Function`: същината е същата (пускаме файла в отделен контекст),
-  // но без динамично компилиране на код от низ в основния процес.
-  const sandbox = {
-    window,
-    document,
-    localStorage: storage(),
-    sessionStorage: storage(),
-    location: { protocol: 'file:', origin: 'null' },
-    fetch: fetchStub,
-    console,
-    setTimeout,
-  };
-  vm.createContext(sandbox);
-  vm.runInContext(code, sandbox, { filename: 'settings-panel.js' });
+  // Панелът е браузърен IIFE без module.exports, затова го пускаме в отделен контекст
+  // (vm), а не в глобалния — така тестът не замърсява процеса и не изпълнява код
+  // в обхвата на самия тест.
+  const sandbox = { window, document, localStorage: storage(), sessionStorage: storage(), location: { protocol: 'file:', origin: 'null' }, fetch: fetchStub, console, setTimeout, clearTimeout };
+  vm.runInNewContext(code, sandbox, { filename: 'settings-panel.js' });
   return window.SettingsPanel;
 }
 
