@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="bg">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -9,6 +10,7 @@
   <title>Портал за документи</title>
   <link rel="stylesheet" href="/portal.css" />
 </head>
+
 <body>
   <a class="skip" href="#files" id="skip">Към файловете</a>
 
@@ -22,6 +24,12 @@
       <p id="description" class="lead" hidden></p>
       <ul id="badges" class="badges" aria-label="Категории"></ul>
       <p id="contact" class="contact" hidden></p>
+      <!-- PP-01: идентификаторът на портала. Адресът се мени със slug-а, id-то не. -->
+      <p class="ident">
+        <span class="ident-label">Идентификатор на портала</span>
+        <code id="portal-id" class="mono">…</code>
+        <button type="button" id="copy-id" class="btn btn-ghost btn-sm" title="Копирай идентификатора">Копирай</button>
+      </p>
       <div class="hero-actions">
         <button type="button" id="copy-link" class="btn btn-ghost">Копирай адреса</button>
         <a id="api-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer">API</a>
@@ -31,6 +39,13 @@
   </header>
 
   <main class="wrap" id="main">
+    <!-- PP-03/PP-06: какво представлява порталът и какво съдържа (брой файлове, обем, вид). -->
+    <section class="panel summary-panel" aria-labelledby="summary-title">
+      <h2 id="summary-title">Какво съдържа този портал</h2>
+      <p id="summary" class="summary-text">Зареждане…</p>
+      <ul id="summary-list" class="summary-list"></ul>
+    </section>
+
     <section class="panel" aria-labelledby="files-title">
       <div class="panel-head">
         <h2 id="files-title">Файлове</h2>
@@ -63,10 +78,12 @@
 
   <footer class="foot">
     <div class="wrap">
-      <p id="foot-note">Порталът се обслужва от <strong>hAPI Enterprise</strong> · съдържанието е собственост на издателя.</p>
+      <p id="foot-note">Порталът се обслужва от <strong>hAPI Enterprise</strong> · съдържанието е собственост на
+        издателя.</p>
     </div>
   </footer>
 
   <script src="/portal.js" defer></script>
 </body>
+
 </html>

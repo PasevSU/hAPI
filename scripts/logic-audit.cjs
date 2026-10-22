@@ -14,7 +14,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
-const SCAN_DIRS = ['hapi_enterprise', 'custom_components', 'scripts', 'tests', 'ui'];
+// Само дърветата, които наистина влизат в изданието. Коренът НЕ се сканира: там няма код,
+// а до 0.69.19 стоеше и мъртво копие на UI-я (`ui/` от 0.54.0), което изкривяваше бройките.
+const SCAN_DIRS = ['hapi_enterprise', 'custom_components', 'scripts', 'tests'];
 const SKIP_FILES = new Set([
   'hapi_enterprise/qrcode.js', // генериран библиотечен код
   'scripts/logic-audit.cjs', // собствен-orchestrator

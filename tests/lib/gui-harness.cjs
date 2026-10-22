@@ -80,6 +80,9 @@ async function startServer({ dataDir, token, port, env, keepData } = {}) {
     child,
     authFetch,
     api,
+    // Последните редове от stderr на сървъра — за тестове, които проверяват, че при спиране
+    // НЯМА предупреждение (напр. „sharedMode is not defined“).
+    logs: () => stderr,
     async stop({ keep = keepDirectory } = {}) {
       await stopChild(child);
       if (!keep) fs.rmSync(dir, { recursive: true, force: true });

@@ -9,6 +9,17 @@ Thank you for helping improve hAPI Enterprise — Home Assistant Portal Enterpri
   fork behavior between environments.
 - Enterprise features must ship as **real handlers plus tests**, not UI-only buttons.
 - Diagnostics and admin APIs must never leak secrets or absolute storage paths.
+- There is exactly **one** copy of the add-on: `hapi_enterprise/` (modules and `ui/`).
+  Nothing is mirrored at the repository root: the add-on serves `hapi_enterprise/ui/`
+  (`Dockerfile` copies `ui` into the image, `server.js` resolves paths from `__dirname`).
+  Editing a second copy is the classic reason a change "does not take effect";
+  `node tests/single-source.cjs` fails as soon as a twin tree or a twin module appears.
+- The public portal page (`/p/<id>`) is governed by a binding contract:
+  [`documentation/04_FUNCTION_SPECIFICATIONS/PORTAL_PAGE_CONTRACT.md`](documentation/04_FUNCTION_SPECIFICATIONS/PORTAL_PAGE_CONTRACT.md).
+  It must show the portal **id**, a QR to the page, a summary (what it is + how many files),
+  the **printed download address** of every file and a working **Download** action.
+  Changing it requires the contract, a test (`tests/portal-page-contract.cjs`) and a
+  CHANGELOG entry — all three, not two.
 
 ## Development Setup
 

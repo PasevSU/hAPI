@@ -396,7 +396,11 @@ assert.match(src, /async function packageFolder\(rel\)/);
 assert.match(src, /storagePath: treePath\(rel\)/);
 // Файловете на папката отиват в „Файлове в портала“ с пълен път (/папка/файл.txt).
 assert.match(src, /path: treePath\(tf\.path \|\| name\)/);
-assert.match(src, /out\.push\(Object\.assign\(\{\}, reg, \{ storagePath: treePath\(tf\.path \|\| name\) \}\)\)/);
+// Свързването е отделна чиста функция (тества се поведенчески в portal-folder-refs.cjs):
+// по ПЪТ (`storagePath`), а по име — само за записи без път.
+assert.equal(typeof m.bindFolderFiles, 'function', 'bindFolderFiles е изнесена за тестове');
+assert.match(src, /function bindFolderFiles\(treeFiles, registered\)/);
+assert.match(src, /const \{ entries, used \} = bindFolderFiles\(treeFiles, registered\);/);
 assert.match(src, /class="fm-file-sub">\$\{ICON\.folder\} <code title="\$\{esc\(x\.path\)\}">\$\{esc\(x\.path\)\}<\/code>/);
 assert.match(src, /const treePath = \(rel\) => `\/\$\{String\(rel \|\| ''\)/);
 // Отваря се само една папка — останалите се затварят; повторно щракване я затваря.
@@ -504,7 +508,8 @@ assert.match(src, /chip\(\s*ICON\.unlocked,\s*'Заключване'/);
 assert.match(src, /data-register-file="\$\{esc\(x\.path\)\}"/);
 assert.match(src, /async function registerStorageFile\(rel\)/);
 assert.match(src, /\/tree\/register`/);
-assert.match(src, /if \(!key\) for \(const f of registered\) if \(!used\.has\(f\.id\)\) out\.push\(f\);/, 'коренът включва регистрираните файлове');
+assert.match(src, /if \(!key\) \{/, 'коренът включва регистрираните файлове');
+assert.match(src, /if \(!stored \|\| !onDisk\.has\(stored\)\) out\.push\(f\);/, 'в корена остават само файловете без път или без файл на диска');
 assert.match(src, /Папката \$\{esc\(treePath\(scope\)\)\} няма файлове\./);
 // В акордеона остава само обобщение + коментар + API/QR (файловете са в списъка).
 assert.equal(/class="fm-folder-file"/.test(src), false, 'няма редове с файлове в акордеона');

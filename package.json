@@ -7,6 +7,7 @@
     "test": "node scripts/test-matrix.cjs",
     "test:once": "node scripts/run-tests.cjs",
     "test:matrix": "node scripts/test-matrix.cjs --attempts=5",
+    "audit:gui": "node scripts/audit-gui-compat.cjs",
     "dashboard": "node scripts/dev-dashboard.cjs",
     "sync:local": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/sync-local-addon.ps1",
     "release": "node scripts/build-release.cjs --with-tests && node scripts/verify-release.cjs",

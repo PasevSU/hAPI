@@ -202,6 +202,12 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
     }
     get id() { return this.getAttribute('id') || ''; }
     set id(v) { this.setAttribute('id', v) }
+    // Браузърът отразява `href`/`src` в атрибут — без това `a.href = …` не се вижда
+    // от тестовете (portal.js слага адресите точно така).
+    get href() { return this.getAttribute('href') || ''; }
+    set href(v) { this.setAttribute('href', String(v == null ? '' : v)) }
+    get src() { return this.getAttribute('src') || ''; }
+    set src(v) { this.setAttribute('src', String(v == null ? '' : v)) }
     get className() { return this.getAttribute('class') || ''; }
     set className(v) { this.setAttribute('class', String(v == null ? '' : v)) }
     get children() { return this.childNodes.filter((n) => n.nodeType === 1) }
@@ -232,6 +238,12 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
     hasAttribute(name) { return this.attributes.has(String(name).toLowerCase()) }
     removeAttribute(name) { this.attributes.delete(String(name).toLowerCase()) }
     appendChild(node) { node.parentNode = this; this.childNodes.push(node); return node }
+    // `append` приема и низове (браузърът ги превръща в текстови възли).
+    append(...nodes) {
+      for (const node of nodes) {
+        this.appendChild(typeof node === 'string' ? this.ownerDocument.createTextNode(node) : node);
+      }
+    }
     insertBefore(node, ref) {
       node.parentNode = this;
       const at = ref ? this.childNodes.indexOf(ref) : -1;
@@ -311,6 +323,8 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
     listeners: new Map(),
     activeElement: null,
     createElement: (tag) => new Element(tag),
+    // SVG елементите (иконите в portal.js) се създават с namespace — за теста е същият елемент.
+    createElementNS: (ns, tag) => new Element(tag),
     createTextNode: (data) => ({ nodeType: 3, data: String(data), parentNode: null }),
     getElementById: (id) => doc.body.querySelector('#' + id) || doc.head.querySelector('#' + id),
     querySelector: (sel) => doc.documentElement.querySelector(sel),

@@ -577,29 +577,38 @@
    * Регистрираните в портала файлове се показват с пълната си карта; файловете,
    * които са само на диска в папката, се показват като карта „хранилище“.
    */
-  function filesForFolder(rel) {
-    const p = portal();
-    if (!p) return [];
-    const registered = p.files || [];
-    const key = String(rel || '').replace(/^\/+|\/+$/g, '');
-    const node = treeNode(key);
-    const treeFiles = (node && node.files) || [];
+  /**
+   * Свързва файловете от дървото на една папка с регистрираните в портала файлове.
+   * Правило: ПЪРВО по път (`storagePath`); по име — само за запис БЕЗ път (преди 0.69.20).
+   * Иначе едноименен файл от друга папка „краде“ картата и два документа изглеждат като един.
+   */
+  function bindFolderFiles(treeFiles, registered) {
+    const norm = (v) => String(v == null ? '' : v)
+      .replace(/\\/g, '/')
+      .replace(/^\/+|\/+$/g, '')
+      .toLowerCase();
+    const byPath = new Map();
     const byName = new Map();
-    registered.forEach((f) => {
-      const k = String(f.name || '').toLowerCase();
-      if (!byName.has(k)) byName.set(k, f);
-    });
-    const used = new Set();
-    const out = [];
-    for (const tf of treeFiles) {
-      const name = String(tf.name || '');
-      const reg = byName.get(name.toLowerCase());
-      if (reg) {
-        used.add(reg.id);
-        out.push(Object.assign({}, reg, { storagePath: treePath(tf.path || name) }));
+    for (const f of registered || []) {
+      const stored = norm(f.storagePath);
+      if (stored) {
+        if (!byPath.has(stored)) byPath.set(stored, f);
         continue;
       }
-      out.push({
+      const k = String(f.name || '').toLowerCase();
+      if (!byName.has(k)) byName.set(k, f);
+    }
+    const used = new Set();
+    const entries = [];
+    for (const tf of treeFiles || []) {
+      const name = String(tf.name || '');
+      const reg = byPath.get(norm(tf.path || name)) || byName.get(name.toLowerCase());
+      if (reg) {
+        used.add(reg.id);
+        entries.push(Object.assign({}, reg, { storagePath: treePath(tf.path || name) }));
+        continue;
+      }
+      entries.push({
         id: '',
         name,
         size: Number(tf.size) || 0,
@@ -610,9 +619,41 @@
         storage: true,
       });
     }
-    // Регистрираните файлове, които ги няма в дървото, са „в корена“ на портала.
-    if (!key) for (const f of registered) if (!used.has(f.id)) out.push(f);
+    return { entries, used };
+  }
+
+  function filesForFolder(rel) {
+    const p = portal();
+    if (!p) return [];
+    const registered = p.files || [];
+    const key = String(rel || '').replace(/^\/+|\/+$/g, '');
+    const node = treeNode(key);
+    const treeFiles = (node && node.files) || [];
+    const { entries, used } = bindFolderFiles(treeFiles, registered);
+    const out = entries.slice();
+    // В корена: регистрирани файлове БЕЗ път (стари записи) и тези, чийто файл вече го няма
+    // в дървото — иначе биха изчезнали от екрана. Файл, който е в папка, НЕ се показва тук.
+    if (!key) {
+      const onDisk = treeFilePaths();
+      for (const f of registered) {
+        if (used.has(f.id)) continue;
+        const stored = String(f.storagePath || '').replace(/^\/+/, '').toLowerCase();
+        if (!stored || !onDisk.has(stored)) out.push(f);
+      }
+    }
     return out;
+  }
+
+  /** Всички пътища на файловете в дървото — за да знаем дали регистриран файл още съществува. */
+  function treeFilePaths() {
+    const paths = new Set();
+    const walk = (node) => {
+      for (const f of node.files || []) paths.add(String(f.path || f.name).replace(/^\/+/, '').toLowerCase());
+      for (const child of node.folders || []) walk(child);
+    };
+    const root = state.tree.data && state.tree.data.tree;
+    if (root) walk(root);
+    return paths;
   }
 
   function visibleFiles() {
@@ -3225,6 +3266,8 @@
     normalizeFile,
     normalizeContact,
     normalizeCase,
+    // За тестовете: свързването „файл от дървото ↔ регистриран файл“ е чиста функция.
+    bindFolderFiles,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   if (typeof window !== 'undefined') window.FilesManagerPanel = API;

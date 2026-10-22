@@ -259,6 +259,49 @@ async function downloadFile(file, key) {
   }
 }
 
+/** Абсолютен адрес за изтегляне на файл (пази порталния токен, ако има такъв). */
+const downloadUrlFor = (file) =>
+  location.origin + withAuth("/files/" + encodeURIComponent(file.id) + "/download");
+
+/**
+ * Резюме на портала (PP-03/PP-06): какво представлява и какво съдържа —
+ * брой файлове, общ обем, вид на артефактите, дата и режим на достъп.
+ * Текстовете следват договора в documentation/04_FUNCTION_SPECIFICATIONS/PORTAL_PAGE_CONTRACT.md.
+ */
+function paintSummary(data) {
+  const total = prof.total;
+  const bytes = allFiles.reduce((sum, f) => sum + (Number(f.size) || 0), 0);
+  const kinds = [...prof.kinds.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+  const kindText = kinds.map(([k, n]) => n + " " + nounFor(n, NOUNS[k] || NOUNS.file)).join(", ");
+  const accessNote = !total
+    ? ""
+    : prof.allDisabled
+      ? " Изтеглянето на всички файлове е спряно от издателя."
+      : prof.hasKey
+        ? " Файловете с ключ се отварят само с ключа, издаден от издателя."
+        : "";
+
+  const what = prof.isPublic ? "публичен портал" : "портал с ограничен достъп";
+  let text;
+  if (!total) text = "Този портал е " + what + " и още не съдържа файлове.";
+  else if (total === 1) text = "Този портал съдържа 1 " + prof.noun.one + " с общ обем " + fmtSize(bytes) + ".";
+  else text = "Този портал е цялостен набор от " + total + " " + prof.noun.many + " с общ обем " + fmtSize(bytes) + ".";
+  $("summary").textContent = text + (kindText ? " Вид: " + kindText + "." : "") + accessNote;
+
+  const items = ["Файлове: " + total, "Общ обем: " + fmtSize(bytes)];
+  if (kindText) items.push("Вид: " + kindText);
+  if (prof.newest) items.push("Обновено на: " + fmtDate(prof.newest.toISOString()));
+  items.push("Достъп: " + (prof.isPublic ? "публичен" : "само с ключ"));
+  $("summary-list").replaceChildren(
+    ...items.map((value) => {
+      const li = document.createElement("li");
+      li.className = "chip";
+      li.textContent = value;
+      return li;
+    }),
+  );
+}
+
 /** Карта на един файл: име, метаданни, SHA-256 и действие според политиката. */
 function fileCard(file) {
   const li = document.createElement("li");
@@ -308,6 +351,27 @@ function fileCard(file) {
 
   const actions = document.createElement("div");
   actions.className = "file-actions";
+  // PP-04: адресът за изтегляне се ИЗПИСВА като текст и се копира. Забраненият файл
+  // не показва адрес — адрес, който връща 403, е подвеждащ.
+  if (file.accessMode !== "DISABLED") {
+    const link = document.createElement("p");
+    link.className = "file-link";
+    const label = document.createElement("span");
+    label.className = "file-link-label";
+    label.textContent = file.accessMode === "KEY_REQUIRED" ? "Адрес за изтегляне (с ключ)" : "Адрес за изтегляне";
+    const code = document.createElement("code");
+    code.className = "mono";
+    code.textContent = downloadUrlFor(file);
+    const copyLink = document.createElement("button");
+    copyLink.type = "button";
+    copyLink.className = "icon-btn";
+    copyLink.title = "Копирай адреса за изтегляне";
+    copyLink.setAttribute("aria-label", "Копирай адреса за изтегляне на " + file.name);
+    copyLink.append(icon("copy"));
+    copyLink.addEventListener("click", () => copy(downloadUrlFor(file), "Адресът за изтегляне е копиран."));
+    link.append(label, code, copyLink);
+    li.append(link);
+  }
   if (file.accessMode === "DISABLED") {
     const blocked = document.createElement("span");
     blocked.className = "chip chip-warn";
@@ -330,12 +394,13 @@ function fileCard(file) {
     });
     actions.append(input, btn);
   } else {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn btn-primary";
-    btn.append(icon("download"), document.createTextNode(" Изтегли"));
-    btn.addEventListener("click", () => downloadFile(file, ""));
-    actions.append(btn);
+    // PP-05: истински линк с `download` — натискането стартира сваляне дори без JS.
+    const a = document.createElement("a");
+    a.className = "btn btn-primary";
+    a.href = withAuth("/files/" + encodeURIComponent(file.id) + "/download");
+    a.setAttribute("download", file.name);
+    a.append(icon("download"), document.createTextNode(" Изтегли"));
+    actions.append(a);
   }
   li.append(actions);
   return li;
@@ -346,11 +411,11 @@ function paint(filter) {
   const q = String(filter || "").trim().toLocaleLowerCase();
   const list = q
     ? allFiles.filter((f) =>
-        [f.name, f.topic, f.category, f.group, (f.tags || []).join(" ")]
-          .join(" ")
-          .toLocaleLowerCase()
-          .includes(q),
-      )
+      [f.name, f.topic, f.category, f.group, (f.tags || []).join(" ")]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(q),
+    )
     : allFiles;
   const box = $("files");
   box.replaceChildren(...list.map(fileCard));
@@ -422,6 +487,13 @@ function paintPortal(data) {
   const urls = data.urls || {};
   const apiUrl = urls.api || apiBase;
   const manifestUrl = urls.manifest || apiBase + "/manifest";
+  // PP-01: идентификаторът на портала — видим и копируем. Адресът се променя със slug-а,
+  // id-то остава същият, затова то е това, което се казва по телефон/в поддръжка.
+  const portalId = String(data.id || key);
+  const idEl = $("portal-id");
+  idEl.textContent = portalId;
+  idEl.title = "Идентификатор на портала: " + portalId;
+  $("copy-id").addEventListener("click", () => copy(portalId, "Идентификаторът на портала е копиран."));
   $("api-link").href = apiUrl + (token ? "?portal_token=" + encodeURIComponent(token) : "");
   $("manifest-link").href = manifestUrl + (token ? "?portal_token=" + encodeURIComponent(token) : "");
   $("qr").src = (urls.qr || apiBase + "/qr.svg") + (token ? "?portal_token=" + encodeURIComponent(token) : "");
@@ -444,6 +516,7 @@ function paintPortal(data) {
     prof = buildProfile(allFiles, portal);
     paintPortal(portal);
     applyWording(prof);
+    paintSummary(portal);
     paint("");
     if (listing.hasMore) {
       const more = $("more");

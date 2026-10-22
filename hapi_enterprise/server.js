@@ -564,7 +564,7 @@ const normalizeTaxonomy = (input, base = {}) => {
   }
   return out;
 };
-const publicFile = f => ({ id: f.id, name: f.name, size: f.size, sha256: f.sha256, version: Number(f.version) || 1, uploadedAt: f.uploadedAt, createdAt: f.createdAt || f.uploadedAt || '', modifiedAt: f.modifiedAt || f.uploadedAt || '', locked: !!f.locked, lockedBy: f.lockedBy || '', accessMode: fileMode(f), listed: f.listed !== false, encrypted: !!f.encrypted, notes: f.notes || '', ...normalizeTaxonomy({}, f) });
+const publicFile = f => ({ id: f.id, name: f.name, size: f.size, sha256: f.sha256, version: Number(f.version) || 1, uploadedAt: f.uploadedAt, createdAt: f.createdAt || f.uploadedAt || '', modifiedAt: f.modifiedAt || f.uploadedAt || '', locked: !!f.locked, lockedBy: f.lockedBy || '', accessMode: fileMode(f), listed: f.listed !== false, encrypted: !!f.encrypted, notes: f.notes || '', storagePath: f.storagePath || '', ...normalizeTaxonomy({}, f) });
 const filePage = (files, url) => {
   const q = (url.searchParams.get('q') || '').trim().toLocaleLowerCase();
   const rawLimit = url.searchParams.get('limit') || '50', rawOffset = url.searchParams.get('offset') || '0';
@@ -687,6 +687,9 @@ async function handler(req, res) {
     // add-on container on the shared Docker network cannot reach the admin API.
     if (isAdminListener) { const peer = String(req.socket.remoteAddress || '').replace(/^::ffff:/, ''); if (!adminPeers.has(peer) && !adminPeers.has(String(req.socket.remoteAddress || ''))) return fail(res, 403, 'Forbidden') }
     let hasIngressPath = false;
+    // Префиксът на ingress-а се помни, за да може пренасочването на корена да остане
+    // ВЪТРЕ в add-on-а (`<prefix>/ui/`), а не на `http://ha:8123/ui/`.
+    let ingressPrefix = '';
     if (isAdminListener) {
       let ingressPath = req.headers['x-ingress-path'];
       if (typeof ingressPath !== 'string') {
@@ -696,6 +699,7 @@ async function handler(req, res) {
       if (typeof ingressPath === 'string' && /^\/api\/hassio_ingress\/[A-Za-z0-9_-]+\/?$/.test(ingressPath)) {
         hasIngressPath = true;
         const prefix = ingressPath.replace(/\/+$/, '');
+        ingressPrefix = prefix;
         if (url.pathname === prefix || url.pathname.startsWith(prefix + '/')) {
           const remainder = url.pathname.slice(prefix.length);
           url.pathname = remainder ? '/' + remainder.replace(/^\/+/, '') : '/';
@@ -704,7 +708,21 @@ async function handler(req, res) {
       }
     }
     if (isAdminListener && corsOrigin) { res.setHeader('Access-Control-Allow-Origin', corsOrigin); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS'); res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type,X-File-Name,X-File-Encrypt'); res.setHeader('Access-Control-Max-Age', '600'); res.setHeader('Vary', 'Origin') }
-    if (ingressMode) { const adminPath = url.pathname === '/admin' || url.pathname.startsWith('/admin/') || url.pathname === '/' || url.pathname === '/ui' || url.pathname.startsWith('/ui/') || url.pathname.startsWith('/hapi_enterprise/') || (hasIngressPath && url.pathname.startsWith('/site/')); if (isAdminListener && !adminPath) return fail(res, 404, 'Not found'); if (!isAdminListener && adminPath) return fail(res, 404, 'Not found'); if (isAdminListener && url.pathname === '/') { url.pathname = '/ui/index.html'; req.url = url.pathname + url.search; } }
+    if (ingressMode) {
+      const adminPath = url.pathname === '/admin' || url.pathname.startsWith('/admin/') || url.pathname === '/' || url.pathname === '/ui' || url.pathname.startsWith('/ui/') || url.pathname.startsWith('/hapi_enterprise/') || (hasIngressPath && url.pathname.startsWith('/site/'));
+      if (isAdminListener && !adminPath) return fail(res, 404, 'Not found');
+      if (!isAdminListener && adminPath) return fail(res, 404, 'Not found');
+      if (isAdminListener && url.pathname === '/') {
+        // Панелът се сервира от `/ui/`, а НЕ от корена на ingress-а: `ui/index.html` ползва
+        // ОТНОСИТЕЛНИ адреси (`styles.css`, `bootstrap.js`, `app.js`, …). Ако документът е в
+        // корена, браузърът ги търси на `<ingress>/styles.css` — път, който не съществува,
+        // защото статиката е само под `/ui/`. Резултатът беше празен панел: HTML без стилове
+        // и без скриптове (всички заявки за ресурси връщаха 404).
+        // Пренасочването ЗАПАЗВА ingress префикса — иначе браузърът излиза извън add-on-а.
+        res.writeHead(302, { Location: (ingressPrefix || '') + '/ui/', 'Cache-Control': 'no-store' });
+        return res.end();
+      }
+    }
     if (isAdminListener && url.pathname === '/admin/api/ingress-login' && req.method === 'GET') {
       const peer = String(req.socket.remoteAddress || '').replace(/^::ffff:/, '');
       const fromSupervisor = supervisorPeers.has(peer) && typeof req.headers['x-ingress-path'] === 'string';
@@ -2001,7 +2019,10 @@ async function handler(req, res) {
       if (parts[3] === 'portals' && parts.length === 6 && parts[5] === 'api') {
         const portal = getPortal(decodeURIComponent(parts[4]));
         if (!portal) return fail(res, 404, 'Portal not found');
-        const registry = require('./api-registry').create({ root: apiRoot, baseUrl: baseUrl(req), qrSvg });
+        // Същият payload като глобалния регистър: QR кодът води до ЧОВЕШКАТА страница на
+        // портала (/p/<id>), а не до суровия JSON. Без това „генерирай API“ от панела
+        // презаписваше qr.svg с адрес на API-то и телефонът отваряше JSON вместо файловете.
+        const registry = require('./api-registry').create({ root: apiRoot, baseUrl: baseUrl(req), qrSvg, qrPayload: (record, p, base) => portalLandingUrl(p, base) });
         try {
           if (method === 'GET') { const record = await registry.read(portal); if (!record) return fail(res, 404, 'API not generated'); const p = registry.paths(portal); return json(res, 200, { record, references: record.links, disk: { dir: p.dir, files: require('./api-registry').FILES } }) }
           if (method === 'POST') { const out = await registry.ensure(portal); void audit('portal.api.generate', { slug: portal.slug }); return json(res, 201, out) }
@@ -2170,7 +2191,12 @@ async function handler(req, res) {
           if (rel === null || !rel) return fail(res, 400, 'Invalid path');
           const name = rel.split('/').pop() || '';
           if (!name || name.startsWith('.') || name.length > 240) return fail(res, 400, 'Invalid file name');
-          if (p.files.some(f => String(f.name || '').toLowerCase() === name.toLowerCase())) return fail(res, 409, 'Файл с това име вече е регистриран в портала');
+          // Същият файл на диска не се регистрира два пъти. Разпознава се по ПЪТЯ, не по името:
+          // две папки могат да имат едноименни файлове и това са различни документи. Записи от
+          // преди 0.69.20 (без `storagePath`) се сравняват по име, за да не се дублират.
+          const storagePath = '/' + rel;
+          const already = p.files.some(f => (f.storagePath ? f.storagePath === storagePath : String(f.name || '').toLowerCase() === name.toLowerCase()));
+          if (already) return fail(res, 409, 'Файл с това име вече е регистриран в портала');
           const root = portalRoot(p.storage_root || '/share');
           const rootAbs = path.resolve(root);
           const full = path.resolve(rootAbs, ...rel.split('/'));
@@ -2180,11 +2206,11 @@ async function handler(req, res) {
           if (stat.size > runtime.effective().maxUploadBytes) return fail(res, 413, 'Файлът е твърде голям за регистриране');
           const data = await fsp.readFile(full);
           return json(res, 201, await update(async () => {
-            const f = { id: id(), name, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex'), uploadedAt: new Date().toISOString(), category: runtime.settings.data.defaultCategory, group: runtime.settings.data.defaultGroup };
+            const f = { id: id(), name, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex'), uploadedAt: new Date().toISOString(), category: runtime.settings.data.defaultCategory, group: runtime.settings.data.defaultGroup, storagePath };
             await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true });
             await fsp.writeFile(path.join(filesRoot, p.id, f.id), data, { flag: 'wx', mode: 0o600 });
             p.files.push(f);
-            void audit('file.register.storage', { portalId: p.id, fileId: f.id, path: '/' + rel });
+            void audit('file.register.storage', { portalId: p.id, fileId: f.id, path: storagePath });
             return publicFile(f);
           }, async f => { await fsp.rm(path.join(filesRoot, p.id, f.id), { force: true }) }));
         }
@@ -2532,20 +2558,25 @@ async function deployEvidencePortal() {
   if (!enabled) { log.info('evidence-portal.disabled', { ns: 'server' }); return }
   try {
     const result = require('./evidence-portal').deploy();
-    if (result.ok) log.info('evidence-portal.deployed', { ns: 'server', dir: result.dir, copied: result.copied.length, unchanged: result.unchanged.length });
+    if (result.ok) log.info('evidence-portal.deployed', { ns: 'server', dir: result.dir, root: result.root || '', copied: result.copied.length, unchanged: result.unchanged.length });
     else log.warn('evidence-portal.skipped', { ns: 'server', reason: result.error });
   } catch (e) { log.warn('evidence-portal.failed', { ns: 'server', err: e.message }) }
 }
 async function start() {
+  // Споделен режим и заключването се обявяват ИЗВЪН `try` блока: `shutdown` е извън него и
+  // иначе не ги вижда (точно това даваше „sharedMode is not defined“ при спиране и оставяше
+  // регистрацията на процеса в `.hapi-peers/`).
+  let sharedMode = false;
+  let lock = null;
   try {
     // Първо заключване на data директорията: две инстанции на едни и същи данни биха
     // корумпирали метаданни, одит верига и TSA архив. INSTANCE_STRICT=0 само предупреждава.
     const instanceLock = require('./instance-lock');
     // Споделен режим (HAPI_SHARED_DATA=1): няколко процеса върху ЕДНИ данни. Изключителното
     // заключване остава по подразбиране; тук процесът се регистрира като участник, а записите
-    // се пазят от сравнение-и-размяна в shared-data.js (нищо не се презаписва сляпо).
-    const sharedMode = String(process.env.HAPI_SHARED_DATA || '') === '1';
-    const lock = sharedMode ? instanceLock.joinShared({ dir: root, id: instanceId }) : instanceLock.acquire({ dir: root, id: instanceId });
+    // се пазят от междупроцесна ключалка в shared-data.js (нищо не се презаписва сляпо).
+    sharedMode = String(process.env.HAPI_SHARED_DATA || '') === '1';
+    lock = sharedMode ? instanceLock.joinShared({ dir: root, id: instanceId }) : instanceLock.acquire({ dir: root, id: instanceId });
     if (lock.ok && sharedMode) { instanceState = { id: instanceId, acquired: true, tookOver: false, shared: true, startedAt: lock.payload.joinedAt, peers: lock.peers.length }; log.info('instance.shared', { ns: 'server', peers: lock.peers.length }) }
     if (!lock.ok) {
       const holder = lock.holder || {};
