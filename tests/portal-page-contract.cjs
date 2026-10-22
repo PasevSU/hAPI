@@ -68,13 +68,23 @@ const svgFor = (text) => {
       'portal-id', // PP-01
       'paintSummary', // PP-03
       'downloadUrlFor', // PP-04
-      'Адрес за изтегляне', // PP-04
       'a.setAttribute("download"', // PP-05 — истински линк за сваляне
       'withAuth(', // PP-10
-      'Този портал е цялостен набор от ', // PP-06
-      'още не съдържа файлове', // PP-03 при празен портал
+      'applyLanguage', // PP-14 — езикът се прилага на едно място
+      'I18N', // PP-14 — текстовете идват от речника
     ]) {
       assert.ok(script.includes(needle), `portal.js съдържа ${needle}`);
+    }
+    // Точните формулировки живеят в речника (portal-i18n.js) — там се проверяват,
+    // за да не се разминават българският текст и преводите.
+    const i18nScript = await (await fetch(`${base}/portal-i18n.js`)).text();
+    for (const needle of [
+      'Адрес за изтегляне', // PP-04
+      'Този портал е цялостен набор от ', // PP-06
+      'още не съдържа файлове', // PP-03 при празен портал
+      'Сканирай кода', // PP-02 — подсказката при QR кода
+    ]) {
+      assert.ok(i18nScript.includes(needle), `речникът съдържа ${needle}`);
     }
     assert.equal(/\/admin\/api\/packages/.test(script), false, 'страницата не обещава ZIP пакет, който не съществува');
     assert.equal(/innerHTML\s*=\s*[^'"`]*(file\.|data\.|listing)/.test(script), false, 'данните не влизат през innerHTML (INV-9)');

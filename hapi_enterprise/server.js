@@ -1392,6 +1392,12 @@ async function handler(req, res) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
       return res.end(html);
     }
+    if (url.pathname === '/portal-i18n.js' && method === 'GET') {
+      // Речникът на публичната страница (BG/EN/DE) — отделен файл, за да се проверява
+      // от тест и за да не се пълни portal.js с 200 реда текстове.
+      res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+      return res.end(fs.readFileSync(path.join(__dirname, 'portal-i18n.js')));
+    }
     if (url.pathname === '/portal.js' && method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
       return res.end(fs.readFileSync(path.join(__dirname, 'portal.js')));

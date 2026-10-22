@@ -387,9 +387,17 @@ check('S12', 'Портал: адаптивни текстове и сигурн�
   for (const id of ['title', 'files', 'qr', 'status', 'empty', 'count', 'toolbar', 'qr-note', 'foot-note', 'portal-url']) {
     assert(html.includes(`id="${id}"`), 'portal.html липсва id="' + id + '"');
   }
-  for (const marker of ['buildProfile', 'applyWording', 'KIND_BY_EXT', 'NOUNS', 'nounFor', 'X-File-Key']) {
+  // 0.69.24: съществителните и текстовете живеят в речника (portal-i18n.js); в portal.js
+  // остава само изборът им по вид (`nounOf`). Изискваме и двата файла — иначе страницата
+  // би показала ключове вместо думи.
+  const i18nJs = readText(path.join(addonDir, 'portal-i18n.js'));
+  for (const marker of ['buildProfile', 'applyWording', 'KIND_BY_EXT', 'nounOf', 'X-File-Key', 'I18N']) {
     assert(js.includes(marker), 'portal.js липсва ' + marker);
   }
+  for (const marker of ['NOUNS', 'apply', 'isLang']) {
+    assert(i18nJs.includes(marker), 'portal-i18n.js липсва ' + marker);
+  }
+  assert(html.includes('/portal-i18n.js'), 'portal.html трябва да зарежда речника преди portal.js');
   assert(!/innerHTML\s*=\s*[^'"`]*(file\.|data\.|listing)/.test(js), 'данните не бива да влизат през innerHTML');
   assert(js.includes('textContent'), 'рендирането трябва да е през textContent');
   assert(server.includes('img-src \'self\' data:'), 'CSP на портала трябва да позволява QR изображението');

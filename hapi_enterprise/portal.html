@@ -7,33 +7,42 @@
   <meta name="robots" content="noindex,nofollow" />
   <meta name="referrer" content="no-referrer" />
   <meta name="color-scheme" content="light dark" />
-  <title>Портал за документи</title>
+  <title data-i18n="doc.title">Портал за документи</title>
   <link rel="stylesheet" href="/portal.css" />
 </head>
 
 <body>
-  <a class="skip" href="#files" id="skip">Към файловете</a>
+  <a class="skip" href="#files" id="skip" data-i18n="nav.skip.content">Към съдържанието</a>
 
   <header class="hero">
     <div class="wrap">
       <p class="eyebrow">
         <span class="dot" aria-hidden="true"></span>
-        <span id="visibility">Портал за документи</span>
+        <span id="visibility" data-i18n="visibility.public">Портал за документи</span>
       </p>
-      <h1 id="title">Зареждане…</h1>
+      <h1 id="title" data-i18n="doc.loading">Зареждане…</h1>
       <p id="description" class="lead" hidden></p>
-      <ul id="badges" class="badges" aria-label="Категории"></ul>
+      <ul id="badges" class="badges" data-i18n-aria="header.categories" aria-label="Категории"></ul>
       <p id="contact" class="contact" hidden></p>
       <!-- PP-01: идентификаторът на портала. Адресът се мени със slug-а, id-то не. -->
       <p class="ident">
-        <span class="ident-label">Идентификатор на портала</span>
+        <span class="ident-label" data-i18n="header.portalId">Идентификатор на портала</span>
         <code id="portal-id" class="mono">…</code>
-        <button type="button" id="copy-id" class="btn btn-ghost btn-sm" title="Копирай идентификатора">Копирай</button>
+        <button type="button" id="copy-id" class="btn btn-ghost btn-sm" data-i18n="header.copyId" data-i18n-title="header.copyId.title" title="Копирай идентификатора">Копирай</button>
       </p>
       <div class="hero-actions">
-        <button type="button" id="copy-link" class="btn btn-ghost">Копирай адреса</button>
-        <a id="api-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer">API</a>
-        <a id="manifest-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer">Манифест</a>
+        <button type="button" id="copy-link" class="btn btn-ghost" data-i18n="header.copyLink">Копирай адреса</button>
+        <a id="api-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer" data-i18n="header.api">API</a>
+        <a id="manifest-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer" data-i18n="header.manifest">Манифест</a>
+        <!-- PP-14: езикът на страницата е избор на посетителя, не на издателя. -->
+        <label class="lang">
+          <span class="sr-only" data-i18n="lang.label">Език</span>
+          <select id="lang" class="lang-select" aria-label="Език">
+            <option value="bg">Български</option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+          </select>
+        </label>
       </div>
     </div>
   </header>
@@ -41,42 +50,42 @@
   <main class="wrap" id="main">
     <!-- PP-03/PP-06: какво представлява порталът и какво съдържа (брой файлове, обем, вид). -->
     <section class="panel summary-panel" aria-labelledby="summary-title">
-      <h2 id="summary-title">Какво съдържа този портал</h2>
-      <p id="summary" class="summary-text">Зареждане…</p>
+      <h2 id="summary-title" data-i18n="summary.title">Какво съдържа този портал</h2>
+      <p id="summary" class="summary-text" data-i18n="doc.loading">Зареждане…</p>
       <ul id="summary-list" class="summary-list"></ul>
       <!-- PP-12: целият портал с едно натискане. Показва се само когато има файлове,
            които могат да се свалят без ключ. -->
       <div class="package-bar" id="package-bar">
-        <button id="package-btn" class="btn btn-primary" type="button" hidden>Изтегли всички (ZIP)</button>
+        <button id="package-btn" class="btn btn-primary" type="button" data-i18n="package.button" hidden>Изтегли всички (ZIP)</button>
         <p id="package-note" class="more" role="status" aria-live="polite" hidden></p>
       </div>
     </section>
 
     <section class="panel" aria-labelledby="files-title">
       <div class="panel-head">
-        <h2 id="files-title">Файлове</h2>
+        <h2 id="files-title" data-i18n="files.title">Файлове</h2>
         <span id="count" class="count" aria-live="polite"></span>
       </div>
       <div class="toolbar" id="toolbar">
         <label class="search">
-          <span class="sr-only" id="q-label">Търси по име, тема или категория</span>
-          <input id="q" type="search" placeholder="Търси по име, тема или категория" autocomplete="off" />
+          <span class="sr-only" id="q-label">Търси по име</span>
+          <input id="q" type="search" placeholder="Търси по име" autocomplete="off" />
         </label>
       </div>
-      <p id="status" class="status" role="status" aria-live="polite">Зареждане…</p>
+      <p id="status" class="status" role="status" aria-live="polite" data-i18n="doc.loading">Зареждане…</p>
       <ul id="files" class="files"></ul>
-      <p id="empty" class="empty" hidden>Няма достъпни файлове за показване.</p>
+      <p id="empty" class="empty" data-i18n="files.empty.public" hidden>Няма достъпни файлове за показване.</p>
       <p id="more" class="more" hidden></p>
     </section>
 
     <section class="panel qr-panel" aria-labelledby="qr-title">
-      <h2 id="qr-title">QR код на портала</h2>
+      <h2 id="qr-title" data-i18n="qr.title">QR код на портала</h2>
       <div class="qr-box">
-        <img id="qr" alt="QR код към този портал" width="188" height="188" />
+        <img id="qr" data-i18n-alt="qr.alt" alt="QR код към този портал" width="188" height="188" />
         <div class="qr-text">
-          <p id="qr-hint">Сканирай кода, за да отвориш портала на друго устройство.</p>
+          <p id="qr-hint" data-i18n="qr.hint.public">Сканирай кода, за да отвориш портала на друго устройство.</p>
           <p class="mono" id="portal-url"></p>
-          <p class="hint" id="qr-note">Всеки файл носи SHA-256 отпечатък — сверявай го след изтегляне.</p>
+          <p class="hint" id="qr-note" data-i18n="qr.note.allHash">Всеки файл носи SHA-256 отпечатък — сверявай го след изтегляне.</p>
         </div>
       </div>
     </section>
@@ -84,11 +93,11 @@
 
   <footer class="foot">
     <div class="wrap">
-      <p id="foot-note">Порталът се обслужва от <strong>hAPI Enterprise</strong> · съдържанието е собственост на
-        издателя.</p>
+      <p id="foot-note"></p>
     </div>
   </footer>
 
+  <script src="/portal-i18n.js" defer></script>
   <script src="/portal.js" defer></script>
 </body>
 

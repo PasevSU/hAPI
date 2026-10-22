@@ -72,6 +72,8 @@ const { createDocument } = require('./lib/dom-stub.cjs');
     sandbox.window = sandbox;
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
+    // Редът е като в portal.html: първо речникът, после страницата.
+    vm.runInContext(await (await fetch(`${base}/portal-i18n.js`)).text(), sandbox, { filename: 'portal-i18n.js' });
     vm.runInContext(await (await fetch(`${base}/portal.js`)).text(), sandbox, { filename: 'portal.js' });
 
     await waitFor(() => doc.getElementById('files').children.length === 3, { label: 'три файла в списъка' });
@@ -117,7 +119,7 @@ const { createDocument } = require('./lib/dom-stub.cjs');
     // ── PP-12: пакетът се предлага само когато има какво да влезе в него ──────────
     const pkgBtn = doc.getElementById('package-btn');
     assert.equal(pkgBtn.hidden, false, 'бутонът за пакета е показан при свободен файл');
-    assert.match(pkgBtn.title, /ZIP с 1 /, 'броят е само на файловете без ключ: ' + pkgBtn.title);
+    assert.match(pkgBtn.title, /— 1 /, 'броят е само на файловете без ключ: ' + pkgBtn.title);
     assert.equal(doc.getElementById('package-note').textContent, '', 'преди натискане няма бележка за линка');
 
     console.log(

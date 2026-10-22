@@ -21,21 +21,27 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
     const page = await call('/p/example/?portal_token=' + encodeURIComponent(key.token));
     assert.equal(page.status, 200);
     const pageHtml = await page.text();
-    for (const needle of ['/portal.css', '/portal.js', 'id="files"', 'id="qr"', 'id="q"', 'id="status"',
+    for (const needle of ['/portal.css', '/portal.js', '/portal-i18n.js', 'id="files"', 'id="qr"', 'id="q"', 'id="status"',
       // Текстовете се сменят според артефактите — елементите трябва да имат адресируеми ids.
-      'id="toolbar"', 'id="qr-note"', 'id="qr-hint"', 'id="foot-note"', 'id="skip"', 'id="q-label']) assert.ok(pageHtml.includes(needle), `страницата съдържа ${needle}`);
+      'id="toolbar"', 'id="qr-note"', 'id="qr-hint"', 'id="foot-note"', 'id="skip"', 'id="q-label"', 'id="lang"']) assert.ok(pageHtml.includes(needle), `страницата съдържа ${needle}`);
     const pageCsp = page.headers.get('content-security-policy') || '';
     assert.ok(pageCsp.includes("img-src 'self' data:"), 'CSP позволява QR изображението');
     const script = await (await call('/portal.js')).text();
     for (const needle of ['X-File-Key', '/files/', 'textContent', 'portal_token',
       // Адаптивни текстове: профил на съдържанието → вид артефакт → съществителни.
-      'buildProfile', 'applyWording', 'KIND_BY_EXT', 'NOUNS', 'nounFor']) assert.ok(script.includes(needle), `portal.js съдържа ${needle}`);
-    // Всеки вид артефакт от KIND_BY_EXT трябва да има съществително, иначе страницата
-    // би показала „undefined“ вместо „документи“/„снимки“.
+      'buildProfile', 'applyWording', 'KIND_BY_EXT', 'nounOf']) assert.ok(script.includes(needle), `portal.js съдържа ${needle}`);
+    // Всеки вид артефакт трябва да има съществително НА ВСЕКИ ЕЗИК, иначе страницата
+    // би показала „undefined“ вместо „документи“/„documents“/„Dokumente“.
+    // Съществителните живеят в речника (portal-i18n.js), затова се проверяват там.
+    const i18n = require('../hapi_enterprise/portal-i18n.js');
     const kindValues = new Set([...((script.match(/const KIND_BY_EXT = \{([\s\S]*?)\};/) || [])[1] || '').matchAll(/:\s*"([a-z]+)"/g)].map(m => m[1]));
-    const nounKeys = new Set([...((script.match(/const NOUNS = \{([\s\S]*?)\};/) || [])[1] || '').matchAll(/([a-z]+|"[a-z]+"):\s*\{/g)].map(m => m[1].replace(/"/g, '')));
     assert.ok(kindValues.size >= 4, `видовете артефакти са разпознати (${kindValues.size})`);
-    for (const kind of kindValues) assert.ok(nounKeys.has(kind), `видът „${kind}“ има съществително в NOUNS`);
+    for (const kind of kindValues) {
+      for (const lang of i18n.LANGS) {
+        const noun = i18n.nouns(lang)[kind];
+        assert.ok(noun && noun.one && noun.many && noun.capMany && noun.for, `видът „${kind}“ има съществително на „${lang}“`);
+      }
+    }
     assert.equal(/innerHTML\s*=\s*[^'"`]*(file\.|data\.|listing)/.test(script), false, 'данните не се вмъкват през innerHTML');
     assert.equal((await call('/api/v1/p/example?portal_token=' + encodeURIComponent(key.token))).status, 200);
     const f = await call(`/admin/api/portals/${p.id}/files`, { method: 'POST', headers: { Authorization: 'Bearer ' + secret, 'X-File-Name': 'test.txt' }, body: 'hello' }, true); assert.equal(f.status, 201); const file = await f.json();

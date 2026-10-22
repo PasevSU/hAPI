@@ -203,6 +203,28 @@ body {
   gap: 8px;
 }
 
+/* PP-14: изборът на език е част от действията на хедъра, не отделна лента. */
+.lang {
+  display: inline-flex;
+  align-items: center;
+}
+
+.lang-select {
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.lang-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── Панели ────────────────────────────────────────────────────────────── */
 main {
   padding: 20px 0 8px;
