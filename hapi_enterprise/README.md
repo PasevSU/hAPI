@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.31-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.32-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
@@ -306,6 +306,31 @@ The add-on folder comes from `map: app_config:rw`; there is no `/addon_config` m
 The database, documents and logs live under `/config/<storage_subdirectory>`
 (default `/config/hapi_enterprise`). Back up `/config` and `/share` together — the
 database references documents by path.
+
+## Document Generator (`/generator/`)
+
+A self-contained HTML/CSS/JS document editor: pick a template on the left, edit freely in the
+A4 sheet, insert tables, images, warnings or a page break, then print to PDF or save the work
+as JSON. It has no build step and no state of its own — everything it shows comes from the
+server.
+
+- **Templates are files, not code.** Every `*.html` in `<storage>/generator/temp` is a
+  template. Drop one there over Samba/SSH, or upload it with **＋ Шаблон** in the app — it
+  appears in the list immediately. There is no `build-index.mjs` and no restart: the index is
+  built from the folder on every request (`GET /admin/api/generator/templates`).
+- **Nothing is hard-coded.** The add-on ships an empty `temp/`; no court, DSGVO or other
+  template is baked into the code. Title for the list comes from `<title>`, then `<h1>`, then
+  the file name.
+- **Templates never execute on the server.** They are served as `text/plain` with `nosniff`,
+  and the editor strips scripts, frames, forms, styles, `on*` attributes and unsafe URLs
+  before showing one — the same rule as the standalone generator.
+- **Access.** `/generator/` is on the administrative (Ingress) listener and the API sits
+  behind the `generator` capability: reading needs any role, uploading or deleting needs
+  `admin` or `operator`. Under Ingress the URL is the panel address with `/ui/` replaced by
+  `/generator/`; a standalone deployment uses a Bearer token.
+- **Storage.** Templates live in the add-on folder, so they survive add-on updates and are
+  covered by the `/config` backup. Only `[A-Za-z0-9_.-]{1,80}.html` is accepted and each file
+  is capped at 512 KiB.
 
 ## Endpoints
 

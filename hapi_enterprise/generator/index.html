@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="bg">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PasevSU Document Generator</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+  <header>
+    <strong>PasevSU-DEV / Document Generator</strong>
+    <span>hAPI · шаблоните се четат от сървъра на живо</span>
+  </header>
+  <main>
+    <aside>
+      <h2>Шаблони</h2>
+      <div class="row">
+        <button id="refresh" type="button">↻ Обнови</button>
+        <button id="upload" type="button">＋ Шаблон</button>
+      </div>
+      <input id="search" placeholder="Търси HTML шаблон" />
+      <div id="templates" role="list"></div>
+      <p id="status" aria-live="polite"></p>
+    </aside>
+    <section>
+      <nav>
+        <button data-action="bold" type="button">B</button>
+        <button data-action="italic" type="button"><i>I</i></button>
+        <button data-action="ordered" type="button">1. Списък</button>
+        <button data-action="indent" type="button">→ Ниво</button>
+        <button data-action="outdent" type="button">← Ниво</button>
+        <button data-action="image" type="button">Изображение</button>
+        <button data-action="table" type="button">Таблица</button>
+        <button data-action="warning" type="button">Внимание</button>
+        <button data-action="pagebreak" type="button">Нова страница</button>
+        <button data-action="pdf" type="button">PDF</button>
+        <button id="save" type="button">JSON ↓</button>
+        <button id="load" type="button">JSON ↑</button>
+        <button id="print" type="button">Печат / PDF</button>
+      </nav>
+      <article id="editor" contenteditable="true" spellcheck="true" aria-label="Редактор на документа">
+        <h1>Нов документ</h1>
+        <p>Избери шаблон отляво или започни свободно писане.</p>
+      </article>
+      <div id="menu" hidden>
+        <button data-insert="image" type="button">Изображение</button>
+        <button data-insert="table" type="button">Таблица</button>
+        <button data-insert="warning" type="button">Внимание</button>
+        <button data-insert="pagebreak" type="button">Нова страница</button>
+        <button data-insert="pdf" type="button">PDF приложение</button>
+      </div>
+    </section>
+  </main>
+  <input type="file" id="imageInput" accept="image/*" hidden />
+  <input type="file" id="pdfInput" accept="application/pdf" hidden />
+  <input type="file" id="jsonInput" accept="application/json" hidden />
+  <input type="file" id="htmlInput" accept=".html,text/html" hidden />
+  <script type="module" src="./app.js"></script>
+</body>
+
+</html>

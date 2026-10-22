@@ -138,6 +138,9 @@ const backupsMirrorDir = (() => { const v = String(optionValue('BACKUP_MIRROR', 
 const auditChain = require('./audit-chain').createAuditChain(root);
 const scopesAllowed = ['read', 'download'];
 const htmlProjectsRoot = path.join(root, 'html-projects');
+// PasevSU Document Generator: индексът на шаблоните се строи от диска при всяка заявка
+// (виж generator.js) — затова добавяне/изтриване на *.html не иска build-index.
+const generator = require('./generator').create({ root });
 const accessModes = ['FREE', 'KEY_REQUIRED', 'DISABLED'];
 const fileMode = f => f.accessMode || 'FREE';
 const validExpiry = v => v === null || typeof v === 'string' && Number.isFinite(Date.parse(v)) && Date.parse(v) > Date.now();
@@ -801,7 +804,7 @@ async function handler(req, res) {
     }
     if (isAdminListener && corsOrigin) { res.setHeader('Access-Control-Allow-Origin', corsOrigin); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS'); res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type,X-File-Name,X-File-Encrypt'); res.setHeader('Access-Control-Max-Age', '600'); res.setHeader('Vary', 'Origin') }
     if (ingressMode) {
-      const adminPath = url.pathname === '/admin' || url.pathname.startsWith('/admin/') || url.pathname === '/' || url.pathname === '/ui' || url.pathname.startsWith('/ui/') || url.pathname.startsWith('/hapi_enterprise/') || (hasIngressPath && url.pathname.startsWith('/site/'));
+      const adminPath = url.pathname === '/admin' || url.pathname.startsWith('/admin/') || url.pathname === '/' || url.pathname === '/ui' || url.pathname.startsWith('/ui/') || url.pathname.startsWith('/generator') || url.pathname.startsWith('/hapi_enterprise/') || (hasIngressPath && url.pathname.startsWith('/site/'));
       if (isAdminListener && !adminPath) return fail(res, 404, 'Not found');
       if (!isAdminListener && adminPath) return fail(res, 404, 'Not found');
       if (isAdminListener && url.pathname === '/') {
@@ -841,7 +844,7 @@ async function handler(req, res) {
       return json(res, 200, { role: 'admin', ingress: false, user: '', defaultRole: rbac.defaultRole, mapped: rbac.configured, token: adminToken });
     }
     if (req.method === 'OPTIONS') { res.writeHead(isAdminListener && corsOrigin ? 204 : 404, { 'Content-Length': '0' }); return res.end() }
-    const parts = url.pathname.split('/').filter(Boolean); const method = req.method; counters.requests++; if (req.hapiPublicOnly && (parts[0] === 'admin' || parts[0] === 'ui')) return fail(res, 404, 'Not found'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'no-referrer'); if (!isAdminListener) res.setHeader('X-Frame-Options', 'DENY');
+    const parts = url.pathname.split('/').filter(Boolean); const method = req.method; counters.requests++; if (req.hapiPublicOnly && (parts[0] === 'admin' || parts[0] === 'ui' || parts[0] === 'generator')) return fail(res, 404, 'Not found'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'no-referrer'); if (!isAdminListener) res.setHeader('X-Frame-Options', 'DENY');
     for (const [k, v] of Object.entries(apiVersion.headers(url))) res.setHeader(k, v);
     // Лимит на честотата за публичните маршрути — преди всякаква работа по заявката.
     const publicRate = publicRateGate(req, url);
@@ -1335,6 +1338,44 @@ async function handler(req, res) {
       const result = await update(async () => { const r = await retention.apply(db.portals); void audit('retention.run', { fileAction: r.fileAction, disabled: r.disabled, deleted: r.deleted, auditLinesPruned: r.auditLinesPruned }); return r });
       return json(res, 200, result);
     }
+    // PasevSU Document Generator: шаблоните се четат от диска при ВСЯКА заявка, така че
+    // добавяне или изтриване на *.html в `generator/temp` се вижда веднага — без
+    // `tools/build-index.mjs` и без рестарт. Сървърът НЕ изпълнява шаблоните: те се
+    // сервират като `text/plain` и генераторът ги почиства в браузъра.
+    if (parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'generator') {
+      if (parts[3] !== 'templates') return fail(res, 404, 'Not found');
+      const templateName = parts.length === 5 ? (() => { try { return decodeURIComponent(parts[4]) } catch { return null } })() : null;
+      if (method === 'GET' && parts.length === 4) {
+        if (!adminGate(req, res, 'generator', 'GET')) return;
+        return json(res, 200, generator.index());
+      }
+      if (method === 'GET' && parts.length === 5) {
+        if (!adminGate(req, res, 'generator', 'GET')) return;
+        if (!templateName) return fail(res, 400, 'Invalid template name');
+        let template; try { template = generator.read(templateName) } catch (e) { return fail(res, e.status || 400, e.message) }
+        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'" });
+        return res.end(template.html);
+      }
+      if (method === 'POST' && parts.length === 4) {
+        if (!adminGate(req, res, 'generator', 'POST')) return;
+        let body; try { body = await parse(req) } catch (e) { return fail(res, e.status || 400, e.message) }
+        try {
+          const out = generator.save(body && body.name, body && body.html, { overwrite: Boolean(body && body.overwrite) });
+          void audit('generator.template.save', { file: out.file, bytes: out.bytes, templates: out.templates.length });
+          return json(res, 200, out);
+        } catch (e) { return fail(res, e.status || 400, e.message) }
+      }
+      if (method === 'DELETE' && parts.length === 5) {
+        if (!adminGate(req, res, 'generator', 'DELETE')) return;
+        if (!templateName) return fail(res, 400, 'Invalid template name');
+        try {
+          const out = generator.remove(templateName);
+          void audit('generator.template.delete', { file: out.file, templates: out.templates.length });
+          return json(res, 200, out);
+        } catch (e) { return fail(res, e.status || 400, e.message) }
+      }
+      return fail(res, 405, 'Method not allowed');
+    }
     // Старият панел (admin.html/admin.js) е премахнат: входът е Enterprise Control Center.
     // Старите отметки /admin стигат до него с пренасочване, за да не се губи навикът.
     if ((url.pathname === '/admin' || url.pathname === '/admin/') && method === 'GET') { res.writeHead(302, { Location: '/ui/index.html', 'Cache-Control': 'no-store' }); return res.end() }
@@ -1344,6 +1385,12 @@ async function handler(req, res) {
       const files = { '/ui': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/index.html': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/styles.css': ['ui/styles.css', 'text/css; charset=utf-8'], '/ui/manifest.example.json': ['ui/manifest.example.json', 'application/json; charset=utf-8'] };
       for (const f of ['bootstrap.js', 'app.js', 'icons.js', 'data.js', 'i18n.js', 'report-objects.js', 'report-scope.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'dashboard-panel.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js', 'export-center.js', 'public-gateway.js', 'visitors-panel.js']) files['/ui/' + f] = ['ui/' + f, 'text/javascript; charset=utf-8'];
       for (const f of ['report-manifest.js', 'api-spec.js', 'virtual-storage.js', 'storage-tree.js', 'export-rules.js', 'export-manager.js', 'download-access.js', 'public-gateway.js', 'qrcode.js']) files['/hapi_enterprise/' + f] = ['hapi_enterprise/' + f, 'text/javascript; charset=utf-8'];
+      // PasevSU Document Generator — самостоятелно приложение под `/generator/`.
+      files['/generator'] = ['generator/index.html', 'text/html; charset=utf-8'];
+      files['/generator/'] = ['generator/index.html', 'text/html; charset=utf-8'];
+      files['/generator/index.html'] = ['generator/index.html', 'text/html; charset=utf-8'];
+      files['/generator/app.js'] = ['generator/app.js', 'text/javascript; charset=utf-8'];
+      files['/generator/style.css'] = ['generator/style.css', 'text/css; charset=utf-8'];
       // Публичната страница на тайна връзка отваря този скрипт от корена: `/hapi_enterprise/`
       // е достъпен само на административния listener (ingress), а прегледът е публичен.
       files['/secret-view.js'] = ['secret-view.js', 'text/javascript; charset=utf-8'];

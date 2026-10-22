@@ -21,7 +21,10 @@ const uiDir = path.join(root, 'hapi_enterprise', 'ui');
 const uiSources = fs
   .readdirSync(uiDir)
   .filter((f) => f.endsWith('.js'))
-  .map((f) => 'hapi_enterprise/ui/' + f);
+  .map((f) => 'hapi_enterprise/ui/' + f)
+  // Генераторът е отделно приложение под `/generator/`, но също е GUI: шаблоните се качват
+  // и трият от него, затова способността `generator` не е дупка без интерфейс.
+  .concat(['hapi_enterprise/generator/app.js']);
 const ui = uiSources.map(read).join('\n');
 const serverSrc = read('hapi_enterprise/server.js');
 

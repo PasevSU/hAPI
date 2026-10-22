@@ -1,0 +1,225 @@
+:root {
+  font-family: system-ui, Arial, sans-serif;
+  color: #eae4f7;
+  background: #10091e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  background: #211239;
+  border-bottom: 1px solid #6e4d95;
+}
+
+header span {
+  color: #bdb1d0;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: calc(100vh - 65px);
+}
+
+aside {
+  padding: 20px;
+  border-right: 1px solid #49345f;
+}
+
+h2 {
+  font-size: 17px;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  background: #34204e;
+  color: #fff;
+  border: 1px solid #70518f;
+  border-radius: 7px;
+  padding: 8px 11px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #523075;
+}
+
+input {
+  width: 100%;
+  background: #221534;
+  color: #fff;
+  border: 1px solid #70518f;
+  padding: 10px;
+  border-radius: 7px;
+  margin: 12px 0;
+}
+
+.row {
+  display: flex;
+  gap: 7px;
+}
+
+.row button {
+  flex: 1;
+}
+
+.tpl {
+  display: flex;
+  gap: 6px;
+  margin: 7px 0;
+}
+
+.tpl-open {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tpl-remove {
+  padding: 8px 10px;
+  color: #ffb4b4;
+}
+
+.empty {
+  color: #bdb1d0;
+  font-size: 14px;
+}
+
+section {
+  min-width: 0;
+  padding: 20px;
+}
+
+nav {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+#editor {
+  margin: auto;
+  background: #fff;
+  color: #161616;
+  width: min(100%, 794px);
+  min-height: 1123px;
+  padding: 70px 65px;
+  box-shadow: 0 8px 36px #0008;
+  outline: none;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+#editor img {
+  max-width: 100%;
+  height: auto;
+}
+
+#editor table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#editor td,
+#editor th {
+  border: 1px solid #555;
+  padding: 7px;
+}
+
+#editor .warning {
+  border-left: 5px solid #b55b00;
+  background: #fff2d6;
+  padding: 12px;
+}
+
+#editor .pdf-object {
+  padding: 14px;
+  border: 1px dashed #555;
+  background: #eee;
+}
+
+#menu {
+  position: fixed;
+  background: #29163d;
+  border: 1px solid #8058a4;
+  padding: 7px;
+  box-shadow: 0 8px 25px #0008;
+  z-index: 5;
+}
+
+#menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 3px 0;
+}
+
+@media (max-width: 750px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+
+  aside {
+    border-right: 0;
+    border-bottom: 1px solid #49345f;
+  }
+
+  #editor {
+    padding: 30px 20px;
+    min-height: 650px;
+  }
+}
+
+@media print {
+
+  header,
+  aside,
+  nav,
+  #menu {
+    display: none !important;
+  }
+
+  main {
+    display: block;
+  }
+
+  section {
+    padding: 0;
+  }
+
+  #editor {
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  /* Разделът, вмъкнат с „Нова страница“, започва на нова страница при печат/PDF. */
+  #editor .page-break {
+    page-break-before: always;
+    break-before: page;
+    display: block;
+    height: 0;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm;
+  }
+}

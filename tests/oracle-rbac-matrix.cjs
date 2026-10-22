@@ -21,6 +21,7 @@ const EXPECTED = {
   cabinet: { admin: 'all', operator: 'all', viewer: 'read' },
   directory: { admin: 'all', operator: 'all', viewer: 'read' },
   cases: { admin: 'all', operator: 'all', viewer: 'read' },
+  generator: { admin: 'all', operator: 'all', viewer: 'read' },
   pgp: { admin: 'all', operator: 'all', viewer: 'read' },
   packages: { admin: 'all', operator: 'all', viewer: 'read' },
   core: { admin: 'all', operator: 'all', viewer: 'read' },

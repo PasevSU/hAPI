@@ -24,6 +24,7 @@ const CAPABILITIES = {
   cabinet: { admin: true, operator: true, viewer: 'read' },
   directory: { admin: true, operator: true, viewer: 'read' },
   cases: { admin: true, operator: true, viewer: 'read' },
+  generator: { admin: true, operator: true, viewer: 'read' },
   pgp: { admin: true, operator: true, viewer: 'read' },
   packages: { admin: true, operator: true, viewer: 'read' },
   core: { admin: true, operator: true, viewer: 'read' },
