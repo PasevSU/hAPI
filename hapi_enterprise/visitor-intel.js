@@ -278,12 +278,27 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
     if (Object.keys(state.byDay).length > 400) { const oldest = Object.keys(state.byDay).sort()[0]; delete state.byDay[oldest] }
 
     if (entry.portalId) {
-      const bag = state.portals[entry.portalId] ??= { slug: entry.portalSlug, title: entry.portalTitle, visits: 0, downloads: 0, denied: 0, visitors: {} };
+      const bag = state.portals[entry.portalId] ??= {
+        slug: entry.portalSlug, title: entry.portalTitle, visits: 0, downloads: 0, denied: 0, visitors: {},
+        geo: { countries: {}, cities: {}, unknown: 0, local: 0 }, browsers: {}, languages: {}, lastAt: '',
+      };
       bag.slug = entry.portalSlug || bag.slug; bag.title = entry.portalTitle || bag.title;
+      // Профилните измерения се броят ВЕДНЪЖ на посетител ЗА ТОЗИ ПОРТАЛ — така
+      // мониторингът на портала показва собствените си данни, а не общите за инсталацията.
+      const firstHere = !bag.visitors[id];
       if (kind === 'download') bag.downloads++;
       else if (kind === 'denied') bag.denied++;
       else bag.visits++;
       bag.visitors[id] = 1;
+      bag.lastAt = at;
+      if (firstHere) {
+        if (entry.geo) {
+          if (entry.geo.country === 'LOCAL') bag.geo.local++;
+          else { bump(bag.geo.countries, entry.geo.country || 'unknown'); if (entry.geo.city) bump(bag.geo.cities, entry.geo.city) }
+        } else bag.geo.unknown++;
+        bump(bag.browsers, entry.ua.browser);
+        if (entry.language) bump(bag.languages, entry.language);
+      }
     }
     if (entry.fileId) {
       const bag = state.files[entry.fileId] ??= { name: entry.fileName, downloads: 0, visitors: {}, lastAt: '' };
@@ -397,7 +412,13 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
       languages: { ...state.languages, top: topN(state.languages) },
       referrers: { ...state.referrers, topHosts: topN(state.referrers.hosts) },
       denied: { total: state.totals.denied, reasons: state.deniedReasons },
-      portals: Object.entries(state.portals).map(([id, bag]) => ({ id, slug: bag.slug, title: bag.title, visits: bag.visits, downloads: bag.downloads, denied: bag.denied, visitors: Object.keys(bag.visitors).length })).sort((a, b) => b.downloads - a.downloads),
+      portals: Object.entries(state.portals).map(([id, bag]) => ({
+        id, slug: bag.slug, title: bag.title, visits: bag.visits, downloads: bag.downloads, denied: bag.denied,
+        visitors: Object.keys(bag.visitors).length,
+        lastAt: bag.lastAt || '',
+        geo: { countries: bag.geo.countries, cities: bag.geo.cities, unknown: bag.geo.unknown, local: bag.geo.local },
+        browsers: bag.browsers, languages: bag.languages,
+      })).sort((a, b) => b.downloads - a.downloads),
       files: Object.entries(state.files).map(([id, bag]) => ({ id, name: bag.name, downloads: bag.downloads, visitors: Object.keys(bag.visitors).length, lastAt: bag.lastAt })).sort((a, b) => b.downloads - a.downloads),
       topIps: Object.entries(state.ips).map(([ip, bag]) => ({ ip, events: bag.events, downloads: bag.downloads, visitors: Object.keys(bag.visitors).length, country: bag.geo ? bag.geo.country : '', city: bag.geo ? bag.geo.city : '', firstSeen: bag.firstSeen, lastSeen: bag.lastSeen })).sort((a, b) => b.events - a.events).slice(0, 20),
     };
@@ -443,6 +464,19 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
       if (browser === 'bot') state.clients.bots = Math.max(0, state.clients.bots - 1);
     }
     for (const lang of Object.keys(visitor.languages)) drop(state.languages, lang);
+
+    // Същото и за всяко място, което посетителят е докоснал: броячите там също се
+    // намаляват, иначе „изтрит“ човек остава в мониторинга на портала.
+    for (const portalId of Object.keys(visitor.portals)) {
+      const bag = state.portals[portalId];
+      if (!bag) continue;
+      if (visitor.geo) {
+        if (visitor.geo.country === 'LOCAL') bag.geo.local = Math.max(0, bag.geo.local - 1);
+        else { drop(bag.geo.countries, visitor.geo.country || 'unknown'); if (visitor.geo.city) drop(bag.geo.cities, visitor.geo.city) }
+      } else bag.geo.unknown = Math.max(0, bag.geo.unknown - 1);
+      for (const agent of Object.keys(visitor.agents)) drop(bag.browsers, agent.split('/')[0]);
+      for (const lang of Object.keys(visitor.languages)) drop(bag.languages, lang);
+    }
 
     delete state.visitors[id];
     for (const bag of Object.values(state.portals)) delete bag.visitors[id];

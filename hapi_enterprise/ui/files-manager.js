@@ -190,6 +190,9 @@
     cases: [],
     portalIndex: 0,
     openPortal: null,
+    // Сензорите за комуникацията (visitor-intel) — за мониторинга на порталите.
+    monitor: null,
+    monitorError: '',
     newPortal: false,
     api: {},
     selected: null,
@@ -791,6 +794,135 @@
     };
   }
 
+  /**
+   * Сензорите за комуникацията (visitor-intel) за мониторинга: кой влиза, какво тегли,
+   * колко пъти и откъде — общо за инсталацията и за всеки портал поотделно.
+   * При отказ мониторингът казва ПРИЧИНАТА, вместо да рисува нули.
+   */
+  async function loadMonitor() {
+    if (!connected()) { state.monitor = null; state.monitorError = ''; return false; }
+    const r = await api('/admin/api/sensors');
+    if (!r.ok || !r.data) {
+      state.monitor = null;
+      state.monitorError = r.status === 403
+        ? 'Токенът няма право „sensors“ — мониторингът е достъпен за администратор.'
+        : r.error || ('HTTP ' + r.status);
+      return false;
+    }
+    state.monitor = r.data.visitorsIntel || null;
+    state.monitorError = '';
+    return true;
+  }
+
+  /** Една секция „Мониторинг“: общо за инсталацията + данните на отворения портал. */
+  function monitorSection(openP) {
+    if (!connected()) return '';
+    if (state.monitorError) {
+      return `<section class="panel">
+        <div class="panel-head"><h2>Мониторинг</h2></div>
+        <div class="panel-body"><p class="hint">${esc(state.monitorError)}</p></div>
+      </section>`;
+    }
+    if (!state.monitor) {
+      return `<section class="panel">
+        <div class="panel-head"><h2>Мониторинг</h2></div>
+        <div class="panel-body"><p class="hint">Зареждане на сензорите…</p></div>
+      </section>`;
+    }
+
+    const m = state.monitor;
+    const card = (label, value, note) => `<div class="dash-card">
+      <span class="dash-label">${esc(label)}</span>
+      <strong class="dash-value">${esc(value)}</strong>
+      ${note ? `<small class="hint">${esc(note)}</small>` : ''}
+    </div>`;
+    const top = (bag, n = 6) => Object.entries(bag || {}).sort((a, b) => b[1] - a[1]).slice(0, n);
+    const chips = (bag, empty) => {
+      const items = top(bag);
+      return items.length
+        ? `<div class="fm-ico-row u-grid u-grid-chips">${items.map(([k, v]) => chip('•', k, String(v), `${k} · ${v}`)).join('')}</div>`
+        : `<p class="hint">${esc(empty)}</p>`;
+    };
+
+    const total = `
+      <div class="dash-grid">
+        ${card('Уникални посетители', String(m.unique_visitors || 0), 'по хеш от IP + клиент')}
+        ${card('Посещения', String((m.totals && m.totals.visits) || 0), 'отваряния на портали')}
+        ${card('Изтегляния', String((m.totals && m.totals.downloads) || 0), (m.download_visitors || 0) + ' души са теглили')}
+        ${card('Отказани достъпи', String(m.denied_total || 0), 'виж причините долу')}
+        ${card('Държави', String(m.countries_known || 0), m.country_top ? 'най-много: ' + m.country_top : 'няма офлайн база')}
+        ${card('Админ. влизания', String(m.admin_logins || 0))}
+      </div>
+      <p class="hint">Режим на IP: ${esc((m.privacy && m.privacy.ipMode) || 'hashed')} · срок на пазене: ${esc(
+      (m.privacy && m.privacy.retentionDays) || 0,
+    )} дни · външни заявки: не · офлайн база: ${(m.privacy && m.privacy.geoFile && m.privacy.geoFile.loaded) ? esc(m.privacy.geoFile.ranges + ' диапазона') : 'няма'
+      }</p>`;
+
+    const reasons = Object.entries((m.denied && m.denied.reasons) || {});
+    const reasonLine = reasons.length
+      ? `<p class="hint">Откази по причина: ${reasons.map(([k, v]) => esc(k) + ' — ' + esc(String(v))).join(' · ')}</p>`
+      : '';
+
+    const portalBlock = openP ? (() => {
+      const own = (m.portals || []).find((p) => p.id === openP.id);
+      const fileIds = new Set(openP.files.map((f) => f.id));
+      const files = (m.files || []).filter((f) => fileIds.has(f.id));
+      if (!own) return '<p class="hint">За този портал още няма наблюдение — никой не го е отварял.</p>';
+      return `
+        <h4>Този портал</h4>
+        <div class="dash-grid">
+          ${card('Посещения', String(own.visits || 0))}
+          ${card('Изтегляния', String(own.downloads || 0))}
+          ${card('Откази', String(own.denied || 0))}
+          ${card('Посетители', String(own.visitors || 0), 'уникални за портала')}
+        </div>
+        <p class="hint">Последно посещение: ${esc(own.lastAt ? fmtDate(own.lastAt) : 'още няма')}</p>
+        <h4>Откъде идват (този портал)</h4>
+        ${chips(own.geo && own.geo.countries, 'Няма локация — или няма офлайн база, или още няма посетители.')}
+        <h4>Клиенти и езици (този портал)</h4>
+        ${chips(own.browsers, 'Няма данни за клиента.')}
+        ${chips(own.languages, 'Няма данни за езика.')}
+        <h4>Файлове на този портал</h4>
+        <table class="table" id="pf-monitor-files">
+          <thead><tr><th>Файл</th><th>Изтегляния</th><th>Посетители</th><th>Последно</th></tr></thead>
+          <tbody>${files.length
+          ? files.map((f) => `<tr><td>${esc(f.name || f.id)}</td><td>${esc(String(f.downloads || 0))}</td><td>${esc(String(f.visitors || 0))}</td><td>${esc(f.lastAt ? fmtDate(f.lastAt) : '—')}</td></tr>`).join('')
+          : '<tr><td colspan="4" class="hint">Няма изтегляния на файлове от този портал.</td></tr>'
+        }</tbody>
+        </table>`;
+    })() : `
+      <h4>Най-активни портали</h4>
+      <table class="table" id="pf-monitor-portals">
+        <thead><tr><th>Портал</th><th>Посещения</th><th>Изтегляния</th><th>Откази</th><th>Посетители</th></tr></thead>
+        <tbody>${(m.portals || []).length
+      ? (m.portals || []).slice(0, 20).map((p) => `<tr><td>${esc(p.title || p.slug || p.id)}</td><td>${esc(String(p.visits || 0))}</td><td>${esc(String(p.downloads || 0))}</td><td>${esc(String(p.denied || 0))}</td><td>${esc(String(p.visitors || 0))}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="hint">Още няма посетители.</td></tr>'
+    }</tbody>
+      </table>
+      <h4>Какво се тегли (всички портали)</h4>
+      <table class="table" id="pf-monitor-files">
+        <thead><tr><th>Файл</th><th>Изтегляния</th><th>Посетители</th><th>Последно</th></tr></thead>
+        <tbody>${(m.files || []).length
+      ? (m.files || []).slice(0, 20).map((f) => `<tr><td>${esc(f.name || f.id)}</td><td>${esc(String(f.downloads || 0))}</td><td>${esc(String(f.visitors || 0))}</td><td>${esc(f.lastAt ? fmtDate(f.lastAt) : '—')}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="hint">Няма изтегляния.</td></tr>'
+    }</tbody>
+      </table>`;
+
+    return `<section class="panel" id="pf-monitor">
+      <div class="panel-head">
+        <h2>Мониторинг</h2>
+        <div class="u-row u-row-1">
+          <button type="button" class="btn btn-sm" id="pf-monitor-refresh">Обнови</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        ${total}
+        ${reasonLine}
+        ${portalBlock}
+      </div>
+    </section>`;
+  }
+
   async function loadPortals() {
     if (!connected()) return false;
     const all = await api('/admin/api/portals');
@@ -811,8 +943,8 @@
 
   async function reload() {
     if (!connected() || !portal()) return;
-    const r = await api(P());
-    if (r.ok && r.data) {
+    await loadMonitor().catch(() => { });
+    const r = await api(P()); if (r.ok && r.data) {
       // Обновяваме ТОЧНО отворения портал (по id), а не по индекс — иначе при
       // отворен друг портал промените (напр. бележка) остават невидими.
       const currentId = portal() ? portal().id : '';
@@ -1536,6 +1668,8 @@
       }</p>
         <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'свързан' : 'демо (без backend)'}</span>
       </div>
+
+      ${monitorSection(openP)}
 
       <section class="panel">
         <div class="panel-head">
@@ -2736,6 +2870,11 @@
       });
     }
     if (q('#pf-test')) q('#pf-test').addEventListener('click', testConnection);
+    if (q('#pf-monitor-refresh')) {
+      q('#pf-monitor-refresh').addEventListener('click', () => {
+        void loadMonitor().catch(() => { }).then(render);
+      });
+    }
     if (q('#pf-create')) {
       q('#pf-create').addEventListener('click', () => {
         const form = q('.pf-form');
@@ -3238,6 +3377,8 @@
         .then(loadCases)
         .catch(() => { })
         .then(loadPortals)
+        .catch(() => { })
+        .then(loadMonitor)
         .catch(() => { })
         .then(reload)
         .catch(() => { })
