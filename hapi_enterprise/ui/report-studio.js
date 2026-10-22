@@ -212,12 +212,17 @@
               </label>
               <label><input type="checkbox" id="rs-sign" /> Дигитален подпис (SHA-256)</label>
               <label><input type="checkbox" id="rs-qr" /> QR код</label>
+              <label><input type="checkbox" id="rs-draft" /> Чернова (DRAFT)</label>
               <button type="button" class="btn btn-primary" id="rs-generate">Генерирай отчет</button>
+              <button type="button" class="btn" id="rs-package">Пакет с доказателства</button>
+              <span class="badge" id="rs-evidence" hidden>—</span>
             </div>
             <p class="hint">
               PDF се рендира от същия манифест през <code>POST /admin/api/v2/reports/render</code>
-              (A4, portrait). Дигитален подпис и RFC 3161 са RS-05 — без тях PDF-ът е без печат,
-              и това е записано в него.
+              (A4, portrait). "Пакет с доказателства" връща ZIP с PDF, манифеста, <code>evidence.json</code> и
+              наличните TSA/подпис артефакти; статусът е <strong>READY</strong> само когато START и STOP
+              токените са налични — иначе <strong>INCOMPLETE</strong> с изброени липси, или <strong>DRAFT</strong>
+              за чернова. Доверието в TSA/сертификата зависи от издателя им.
             </p>
           </div>
         </section>
@@ -263,6 +268,7 @@
       tsaResult: host.querySelector('#rs-tsa-result'),
       tsaStartUrl: host.querySelector('#rs-tsa-start-url'),
       tsaStopUrl: host.querySelector('#rs-tsa-stop-url'),
+      evidence: host.querySelector('#rs-evidence'),
     };
 
     host.querySelector('#rs-new').addEventListener('click', () => {
@@ -286,6 +292,7 @@
       renderErrors(result);
     });
     host.querySelector('#rs-generate').addEventListener('click', generate);
+    host.querySelector('#rs-package').addEventListener('click', packageReport);
     host.querySelector('#rs-tsa-start').addEventListener('click', () => runTsa('start'));
     host.querySelector('#rs-tsa-stop').addEventListener('click', () => runTsa('stop'));
     void loadTsaStatus();
@@ -373,6 +380,78 @@
       } else {
         toast(`Рендерът се провали: ${e.message}`, 'err');
       }
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  // Пакет с доказателства (W7): един ZIP с PDF, манифест, evidence.json, TSA/подпис.
+  // Статусът идва от сървъра в заглавка (X-Evidence-Status) — интерфейсът не го измисля.
+  async function packageReport() {
+    const result = M().check(state.manifest);
+    if (!result.ok) {
+      toast(`Манифестът е невалиден: ${result.errors[0].code}`, 'err');
+      renderErrors(result);
+      return;
+    }
+    if (location.protocol === 'file:') {
+      toast('Пакетът изисква add-on (backend недостъпен при file://)', 'err');
+      return;
+    }
+    const draft = Boolean(host.querySelector('#rs-draft').checked);
+    const button = host.querySelector('#rs-package');
+    button.disabled = true;
+    try {
+      const payload = { manifest: result.manifest, draft, tsa: !draft && state.tsaEnabled !== false };
+      const send = (token) =>
+        fetch('/admin/api/v2/reports/package', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(payload),
+        });
+      let response = await send(sessionStorage.getItem('hapiAdminToken') || '');
+      if (response.status === 401) {
+        const entered = window.prompt('Админ токен за пакет с доказателства (само за тази сесия):') || '';
+        if (!entered.trim()) throw new Error('без админ токен');
+        sessionStorage.setItem('hapiAdminToken', entered.trim());
+        response = await send(entered.trim());
+      }
+      if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+          message = (await response.json()).error || message;
+        } catch {
+          /* отговорът не е JSON */
+        }
+        throw new Error(message);
+      }
+      const blob = await response.blob();
+      const status = response.headers.get('x-evidence-status') || '—';
+      const missing = String(response.headers.get('x-evidence-missing') || '')
+        .split('|')
+        .map((item) => {
+          try {
+            return decodeURIComponent(item);
+          } catch {
+            return item;
+          }
+        })
+        .filter(Boolean);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `report-${String(result.manifest.profile || 'default').replace(/[^A-Za-z0-9._-]/g, '_')}-${status}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+      if (els.evidence) {
+        els.evidence.hidden = false;
+        els.evidence.textContent = `Пакет: ${status}`;
+        els.evidence.title = missing.length ? 'Липсва: ' + missing.join(', ') : 'Всички артефакти са налични';
+      }
+      toast(`Пакет: ${status}${missing.length ? ' · липсва: ' + missing.join(', ') : ''}`, status === 'READY' ? 'ok' : '');
+      void loadTsaStatus();
+    } catch (e) {
+      toast(`Пакетът се провали: ${e.message}`, 'err');
     } finally {
       button.disabled = false;
     }

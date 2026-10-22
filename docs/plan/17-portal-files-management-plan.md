@@ -225,8 +225,10 @@
 | `F8-5` | Подпис + TSA в PDF                | зависи от F7                 | ✅ detached CMS (`.p7s`) + RFC 3161 START/STOP (`tests/report-tsa-e2e.cjs`, `tests/cms-panel.cjs`) |
 | `F8-6` | QR в PDF                          | вграден QR                   | ✅ `pdf-writer.qrMatrix` (`tests/report-qr.cjs`)                                                   |
 
-Остава от W7: **Evidence Package** от манифеста и статусите `DRAFT`/`INCOMPLETE` в GUI
-(днес `DRAFT`/`INCOMPLETE` съществуват само в `download-access.js`).
+Остава от W7: ~~**Evidence Package** от манифеста и статусите `DRAFT`/`INCOMPLETE` в GUI~~ —
+затворено в 0.69.33: `POST /admin/api/v2/reports/package` и статуси
+`READY`/`INCOMPLETE`/`DRAFT` (`report-package.js`, `tests/report-package.cjs`).
+Извън обхвата остава заверката на PDF/A-3 с veraPDF.
 
 ### F9 — Опаковка ❌
 

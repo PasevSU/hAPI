@@ -2133,6 +2133,67 @@ async function handler(req, res) {
           return res.end(pdf);
         } catch (e) { return fail(res, e.status || 500, (e.code ? e.code + ': ' : '') + (e.message || 'Report render failed')) }
       }
+      // W7: Пакет с доказателства от манифеста. Статусът не се закръгля нагоре:
+      // READY само когато START и STOP токените са налични (и подписът, ако е поискан),
+      // DRAFT за чернова, INCOMPLETE за диагностичен пакет с изброени липси.
+      if (parts[3] === 'reports' && parts[4] === 'package' && parts.length === 5 && method === 'POST') {
+        let payload; try { payload = JSON.parse((await body(req, 8 * 1024 * 1024)).toString('utf8')) } catch (e) { return fail(res, e.status || 400, e.status ? e.message : 'Invalid JSON') }
+        try {
+          const manifest = (payload && payload.manifest) || payload;
+          const draft = Boolean(payload && payload.draft === true);
+          const wantTsa = Boolean(payload && payload.tsa === true) && !draft;
+          const issuedAt = (payload && (payload.createdAt || payload.issuedAt)) || null;
+          let stamps = null;
+          if (wantTsa) {
+            if (!cryptoOptions.tsaEnabled) return fail(res, 409, 'RFC 3161 timestamps are disabled (tsa_enabled) — пакетът не може да твърди завършеност');
+            const reportStamp = require('./report-stamp');
+            stamps = await reportStamp.stampReport(manifest, { startUrl: cryptoOptions.tsaStart, stopUrl: cryptoOptions.tsaStop || cryptoOptions.tsaStart });
+            if (stamps.ok) await persistTsaRecords([stamps.start, { ...stamps.stop, closingDigest: stamps.closingDigest }]).catch((e) => log.warn('report.tsa.persist.failed', { ns: 'tsa', err: e.message }));
+            void audit('report.tsa.' + (stamps.ok ? 'ok' : 'fail'), { profile: (manifest && manifest.profile) || '', phase: 'package', start: stamps.start && stamps.start.token ? stamps.start.token.sha256 : null, stop: stamps.stop && stamps.stop.token ? stamps.stop.token.sha256 : null, evidenceDigest: stamps.evidenceDigest, closingDigest: stamps.closingDigest, error: stamps.error });
+          }
+          // PDF: клиентът може да подаде ГОТОВИЯ файл (за да не се разминава с това, което
+          // вече е подписано); иначе се рендира детерминирано от същия манифест.
+          let pdf;
+          if (payload && typeof payload.pdfBase64 === 'string' && payload.pdfBase64) {
+            pdf = Buffer.from(payload.pdfBase64, 'base64');
+            if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') return fail(res, 400, 'pdfBase64 is not a PDF (missing %PDF- header)');
+          } else {
+            const readyBefore = Boolean(stamps && stamps.ok && stamps.start && stamps.start.token && stamps.stop && stamps.stop.token);
+            const statusWord = draft ? 'DRAFT' : readyBefore ? null : 'INCOMPLETE';
+            const watermark = payload && payload.watermark !== undefined ? payload.watermark : statusWord === null ? undefined : statusWord;
+            pdf = require('./report-render').renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, watermark, stamps, createdAt: issuedAt });
+          }
+          // Подпис: иска се изрично и изисква ключ в заявката, както при `/reports/sign`.
+          let cms = null;
+          if (payload && payload.cms && typeof payload.cms === 'object' && (payload.cms.certPem || payload.cms.keyPem)) {
+            try {
+              const signed = require('./cms-sign').signDetached({ data: pdf, certDer: new crypto.X509Certificate(String(payload.cms.certPem)).raw, keyPem: payload.cms.keyPem });
+              cms = { requested: true, p7s: signed.cms };
+              void audit('report.sign', { pdfSha256: signed.digest, profile: (manifest && manifest.profile) || '' });
+            } catch (e) {
+              // Ключът е сгрешен — пакетът излиза, но като INCOMPLETE с изрична липса.
+              cms = { requested: true, p7s: null };
+              log.warn('report.package.cms.failed', { ns: 'report', err: e.message });
+            }
+          }
+          const pkg = require('./report-package').build({ manifest, pdf, stamps, cms, draft, createdAt: issuedAt || new Date().toISOString() });
+          void audit('report.package', { profile: (manifest && manifest.profile) || '', status: pkg.evidence.status, missing: pkg.evidence.missing.length, digest: pkg.evidence.manifestSha256, pdfSha256: pkg.evidence.pdfSha256, tsa: wantTsa ? (stamps && stamps.ok ? 'ok' : 'fail') : 'not requested' });
+          res.writeHead(201, {
+            'Content-Type': 'application/zip',
+            'Content-Length': pkg.zip.length,
+            'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff',
+            'X-Evidence-Status': pkg.evidence.status,
+            // HTTP заглавките са Latin-1: кирилицата тук убива връзката (ERR_INVALID_CHAR).
+            // Затова липсите пътуват URL-кодирани, а пълният им текст е в evidence.json.
+            'X-Evidence-Missing': encodeURIComponent(pkg.evidence.missing.join('|')),
+            'X-Manifest-SHA256': pkg.evidence.manifestSha256,
+            'X-PDF-SHA256': pkg.evidence.pdfSha256,
+            'Content-Disposition': 'attachment; filename="' + pkg.name + '"',
+          });
+          return res.end(pkg.zip);
+        } catch (e) { return fail(res, e.status || 500, (e.code ? e.code + ': ' : '') + (e.message || 'Report package failed')) }
+      }
       // Detached CMS/PKCS#7 подпис на готов PDF (RS-06). Ключът идва В ЗАЯВКАТА и не се
       // пази: без тях отговорът е 400, а не „подпис по подразбиране“. Така никой не може
       // да подпише нещо, без да даде ключ, и няма фалшив сертификат в изданието.

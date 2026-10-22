@@ -1,29 +1,27 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.32**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.33**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.32
+## 0.69.33
 
-PasevSU Document Generator е интегриран като самостоятелно приложение в hAPI — без ръчната
-стъпка, която го правеше крехък.
+Затваря се последният отворен слот от W7: отчетът вече може да излезе като **пакет с
+доказателства**, а статусът му не се закръгля нагоре.
 
-- **Жив индекс вместо `temp/index.json`.** Досега списъкът се строеше с
-  `tools/build-index.mjs` и се записваше във файл; след добавяне или изтриване на шаблон
-  индексът лъжеше, докато някой не пусне скрипта. Сега `hapi_enterprise/generator.js` строи
-  индекса от папката при **всяка** заявка — нов `*.html` се вижда веднага, без рестарт.
-- **Модулът живее на `/generator/`** (`index.html`, `app.js`, `style.css`) на
-  административния listener. Шаблоните са файлове в `<storage>/generator/temp`, тоест в
-  папката на add-on-а и в `/config` бекъпа. Пакетът не съдържа нито един вграден шаблон.
-- **API:** `GET/POST /admin/api/generator/templates` и `GET/DELETE …/templates/<file>` —
-  качване, замяна само с изричен `overwrite` и изтриване от самия интерфейс. Одитът пази
-  `generator.template.save` / `.delete` (файл, байтове, брой — без съдържание). Нова
-  capability `generator`: четене за всяка роля, запис за `admin`/`operator`.
-- **Шаблонът не се изпълнява на сървъра:** сервира се като `text/plain` с `nosniff`, а
-  редакторът го почиства в браузъра (скриптове, рамки, форми, стилове, `on*`, опасни адреси).
-- **Печат:** ново действие „Нова страница“ (`page-break-before`), защото досега раздел не
-  можеше да започне на нов лист.
-- Имената са ограничени до `[A-Za-z0-9_.-]{1,80}.html`, таван 512 KiB, атомарен запис без
-  частично прочетен файл.
-- `Dockerfile` копира `generator.js` и `generator/`; договорът е в
-  `documentation/04_FUNCTION_SPECIFICATIONS/DOCUMENT_GENERATOR.md` (INV-G1…G5), тестът —
-  `tests/generator-app.cjs`.
+- **`POST /admin/api/v2/reports/package`** връща ZIP с `report.pdf`, `manifest.json`,
+  `evidence.json`, наличните `tsa/start.tsr`, `tsa/stop.tsr`, `signature.p7s` и
+  `SHA256SUMS.txt`. PDF-ът се рендира от същия манифест (детерминирано), или се подава готов
+  с `pdfBase64`, ако вече е подписан.
+- **Три статуса, без украса:** `READY` само при налични START и STOP токени (и подпис, ако е
+  поискан); `INCOMPLETE` с изброени `missing`; `DRAFT` за чернова — тя не се подпечатва.
+  При рендиране от сървъра водният знак е `DRAFT`/`INCOMPLETE`, когато пакетът не е `READY`.
+- **Нов `hapi_enterprise/report-package.js`** (INV-E1…E5 в
+  `documentation/04_FUNCTION_SPECIFICATIONS/REPORT_EVIDENCE_PACKAGE.md`); `SHA256SUMS.txt`
+  покрива всеки файл в пакета, а `evidence.json` носи `manifestSha256` и `pdfSha256`.
+- **Панелът** получи „Чернова (DRAFT)“, бутон „Пакет с доказателства“ и бадж със статуса;
+  обяснението в панела вече не казва, че подписът и TSA са „RS-05“ — те са налични.
+- **Поправен капан:** списъкът с липси пътуваше в HTTP заглавка като кирилица, което убива
+  връзката (`ERR_INVALID_CHAR`). Сега `X-Evidence-Missing` е URL-кодиран, а пълният текст е в
+  `evidence.json`; тестът проверява точно това.
+- **Нов `tests/report-package.cjs`:** класификацията (включително „половин“ TSA и липсващ
+  подпис), съдържанието на ZIP-а, верността на сумите, 401 без токен и статус в заглавка.
+- `Dockerfile` копира `report-package.js`.
