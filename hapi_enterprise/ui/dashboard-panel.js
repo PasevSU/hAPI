@@ -46,12 +46,18 @@
       <section class="panel">
         <div class="panel-head"><h2>Кой влиза</h2></div>
         <div class="panel-body" id="dash-visitors"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Отчети</h2><span class="badge" id="dash-report-state">—</span></div>
+        <div class="panel-body" id="dash-reports"></div>
       </section>`;
 
     const cards = view.querySelector('#dash-cards');
     const badge = view.querySelector('#dash-badge');
     const hint = view.querySelector('#dash-hint');
     const visitBox = view.querySelector('#dash-visitors');
+    const reportBox = view.querySelector('#dash-reports');
+    const reportState = view.querySelector('#dash-report-state');
 
     const [portals, sensors, jobs, audit] = await Promise.all([
       api('/admin/api/portals'),
@@ -64,6 +70,7 @@
       badge.textContent = 'няма връзка';
       hint.textContent = 'Свържи add-on-а от „Настройки“ (адрес и токен), за да видиш реалните числа.';
       cards.replaceChildren();
+      if (reportBox) reportBox.innerHTML = '<p class="hint">Отчетите се сглобяват от данните на add-on-а — без връзка няма какво да влезе в тях.</p>';
       return;
     }
 
@@ -112,6 +119,64 @@
       });
     } else {
       visitBox.innerHTML = '<p class="hint">Сензорите за посетители не са достъпни с този токен.</p>';
+    }
+
+    // ── Отчети: комбо и рекурсивен комбо — тук, на главното табло ────────────
+    // Отчетът за един портал или за един файл стои там, където е самият обект
+    // (опциите на файла; картата на портала). На таблото стоят само обхватите
+    // „всичко“, защото тук се вижда цялата система.
+    if (reportBox) {
+      if (!list.length) {
+        reportBox.innerHTML = '<p class="hint">Няма портали — комбо отчетът би бил празен. Създай портал от „Портали“.</p>';
+        if (reportState) reportState.textContent = 'няма данни';
+      } else {
+        if (reportState) {
+          reportState.className = 'badge ok';
+          reportState.textContent = list.length + (list.length === 1 ? ' портал' : ' портала') + ' · ' + files + ' файла';
+        }
+        reportBox.innerHTML = `
+          <p class="hint">Отчетът се сглобява от данните на порталите и се отваря в „Отчети“ — там се
+            проверява, подпечатва (RFC 3161) и сваля като PDF.</p>
+          <div class="row-actions">
+            <button type="button" class="btn btn-primary" data-report="combo">Комбо отчет (всички портали)</button>
+            <button type="button" class="btn" data-report="combo-recursive">Рекурсивен комбо отчет (с папките)</button>
+          </div>
+          <p class="hint" id="dash-report-note"></p>`;
+        const note = reportBox.querySelector('#dash-report-note');
+        const buttons = [...reportBox.querySelectorAll('button[data-report]')];
+        const toast = (message, kind) => {
+          if (window.HapiUI && typeof window.HapiUI.toast === 'function') window.HapiUI.toast(message, kind);
+        };
+        const runReport = async (recursive, button) => {
+          const S = window.HapiReportScope;
+          if (!S) return toast('Модулът за отчети (report-scope.js) не е зареден', 'err');
+          const restore = button.textContent;
+          button.disabled = true;
+          button.textContent = 'Сглобявам отчета…';
+          try {
+            // Рекурсивният обхват включва и папките от хранилището на всеки портал.
+            let trees = null;
+            if (recursive) {
+              trees = {};
+              await Promise.all(list.map(async (p) => {
+                const res = await api('/admin/api/portals/' + encodeURIComponent(p.id) + '/tree');
+                if (res.ok && res.data) trees[p.id] = res.data;
+              }));
+            }
+            const result = S.buildCombo({ portals: list, trees, recursive });
+            S.open(result);
+            if (note) note.textContent = result.label + ' · ' + (result.summary.files || 0) + ' файла';
+          } catch (e) {
+            toast('Отчетът не може да се сглоби: ' + (e && e.message ? e.message : e), 'err');
+          } finally {
+            button.disabled = false;
+            button.textContent = restore;
+          }
+        };
+        for (const button of buttons) {
+          button.addEventListener('click', () => { void runReport(button.dataset.report === 'combo-recursive', button) });
+        }
+      }
     }
   }
 

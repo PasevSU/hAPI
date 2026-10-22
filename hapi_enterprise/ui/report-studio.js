@@ -32,6 +32,9 @@
     loadedExample: false,
     filter: 'all',
     tsaEnabled: false,
+    // Обхватът (файл/портал/комбо), ако отчетът е отворен от друг панел.
+    scope: '',
+    scopeLabel: '',
     history: [],
     future: [],
   };
@@ -156,7 +159,7 @@
       <div class="page-title">
         <h1>Report Studio</h1>
         <p>Manifest-driven отчет · RFC 3161 START → STOP</p>
-        <span class="badge demo">Прототип</span>
+        <span class="badge" id="rs-scope" hidden></span>
       </div>
 
       <div class="rs-toolbar">
@@ -873,6 +876,41 @@
       <div class="pv-foot"><span>${esc(m.print.footerNote || '')}</span><span>1 / 1</span></div>`;
   }
 
+  /**
+   * Обхватът идва от друг панел (файл, портал, комбо) през `HapiReportScope`.
+   * Ако има чакащ обхват, той заменя текущия манифест — така „Отчет“ до файла
+   * отваря точно този файл, а не празен шаблон.
+   */
+  function applyPendingScope() {
+    const S = globalThis.HapiReportScope;
+    if (!S || typeof S.readPending !== 'function') return null;
+    const pending = S.readPending();
+    if (!pending || !pending.manifest || !Array.isArray(pending.manifest.blocks)) return null;
+    try {
+      state.manifest = M().normalize(pending.manifest);
+    } catch {
+      // Повреден обхват не бива да събаря панела — остава текущият манифест.
+      S.clearPending();
+      return null;
+    }
+    state.selectedId = null;
+    state.scope = String(pending.scope || '');
+    state.scopeLabel = String(pending.label || pending.scope || '');
+    resetHistory();
+    S.clearPending();
+    return pending;
+  }
+
+  /** Показва кой обхват е зареден (файл/портал/комбо) — за да не се бърка с шаблона. */
+  function paintScope() {
+    const el = host && host.querySelector('#rs-scope');
+    if (!el) return;
+    const label = state.scopeLabel || '';
+    el.hidden = !label;
+    el.textContent = label;
+    el.title = label ? 'Обхватът е подаден от панела: ' + label : '';
+  }
+
   function mount(container) {
     host = container;
     if (!M()) {
@@ -899,10 +937,20 @@
     }
     // Състоянието живее извън DOM-а: навигацията към друг панел и обратно
     // не трябва да губи редакцията.
+    const pending = applyPendingScope();
     if (!state.manifest) state.manifest = M().normalize(M().template('forensic-full'));
     shell();
+    paintScope();
     refresh();
-    if (state.loadedExample) return;
+    if (pending) {
+      toast(
+        pending.label
+          ? `Зареден обхват: ${pending.label}`
+          : 'Зареден е обхват на отчет от панела',
+        'ok',
+      );
+    }
+    if (state.loadedExample || pending) return;
     state.loadedExample = true;
     // Примерът идва от ui/data.js — така GUI-ят работи и през file:// (без fetch).
     const example = typeof window !== 'undefined' && window.HAPI_DATA && window.HAPI_DATA.manifest;

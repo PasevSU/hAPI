@@ -81,5 +81,15 @@
     "file": "hapi_enterprise/ui/settings-panel.js",
     "rule": "html-sink",
     "reason": "Само състояния и вътрешни компоненти (statusLine/pgpSection), които екранират стойностите си."
+  },
+  {
+    "file": "hapi_enterprise/ui/report-scope.js",
+    "rule": "json-parse-untrusted",
+    "reason": "Парсва се САМО стойност, която самият интерфейс е записал в sessionStorage (чакащ обхват на отчет). Парсването е в try/catch — повредена стойност дава null, не 500, и панелът отваря шаблона."
+  },
+  {
+    "file": "tests/report-entry-points.cjs",
+    "rule": "json-parse-untrusted",
+    "reason": "Тестът чете обхвата, който панелът току-що е записал в sessionStorage, за да провери какво вижда Report Studio. Данните са от същия процес, а тест без парсване не може да провери нищо."
   }
 ]

@@ -7,12 +7,12 @@ const path = require('node:path');
 const m = require('../hapi_enterprise/ui/files-manager.js');
 
 // 1. Действията: 11 по план 17 §3.1 + Пакет (ZIP) + Бележка + трите за подпис
-//    (подписан URL, разписка, проверка на разписка) — всичките с реален backend.
-assert.equal(m.ACTIONS.length, 14);
+//    (подписан URL, разписка, проверка на разписка) + Отчет — всичките с реален backend.
+assert.equal(m.ACTIONS.length, 15);
 const ids = m.ACTIONS.map((a) => a.id);
 assert.deepEqual(
   [...ids].sort(),
-  ['access', 'delete', 'download', 'encrypt', 'metadata', 'note', 'package', 'preview', 'receipt', 'rename', 'share', 'signedUrl', 'verifyReceipt', 'versions'].sort(),
+  ['access', 'delete', 'download', 'encrypt', 'metadata', 'note', 'package', 'preview', 'receipt', 'rename', 'report', 'share', 'signedUrl', 'verifyReceipt', 'versions'].sort(),
 );
 assert.equal(new Set(ids).size, ids.length);
 

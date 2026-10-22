@@ -31,6 +31,8 @@
     { id: 'encrypt', label: 'Шифровай', icon: 'encrypt', info: 'Шифроването се избира при качване.' },
     { id: 'package', label: 'Пакет (ZIP)', icon: 'package' },
     { id: 'note', label: 'Бележка', icon: 'note' },
+    // Отчетът за ТОЗИ файл стои в опциите му — обхватите „всичко“ са на таблото.
+    { id: 'report', label: 'Отчет', icon: 'note' },
   ];
   // Допълнителни действия извън плана 17 §3.1: заключване на файла (икона lock в таблицата).
   const EXTRA_ACTIONS = [{ id: 'lock', label: 'Заключи / отключи', icon: 'lock' }];
@@ -1275,9 +1277,50 @@
     if (id === 'delete') return removeFile(f);
     if (id === 'lock') return toggleLock(f);
     if (id === 'package') return buildPackage();
+    if (id === 'report') return openFileReport(f);
     if (id === 'move' || id === 'copy') return toast('Планирано (F2-10 / F2-11): преместване и копиране между портали', '');
     if (id === 'encrypt') return toast('Шифроването се избира при качване на нов файл или версия', '');
     return undefined;
+  }
+
+  // ── Отчети ───────────────────────────────────────────────────────────────
+  // Същата логика като таблото и картата на портала: сглобява се манифест през
+  // `HapiReportScope` и се отваря в Report Studio. Единствената разлика е обхватът.
+  function openFileReport(f) {
+    const S = window.HapiReportScope;
+    if (!S) return toast('Модулът за отчети (report-scope.js) не е зареден', 'err');
+    const p = portal();
+    if (!f || !p) return toast('Избери файл и портал за отчета', 'err');
+    try {
+      const result = S.buildFile({ portal: p, file: f });
+      S.open(result);
+      toast(result.label + ' — отворен в „Отчети“', 'ok');
+    } catch (e) {
+      toast('Отчетът не може да се сглоби: ' + (e && e.message ? e.message : e), 'err');
+    }
+  }
+
+  async function openPortalReport(index, recursive) {
+    const S = window.HapiReportScope;
+    if (!S) return toast('Модулът за отчети (report-scope.js) не е зареден', 'err');
+    const p = state.portals[index];
+    if (!p) return toast('Порталът не е намерен', 'err');
+    try {
+      // Рекурсивният отчет включва и папките от хранилището (дървото на портала).
+      let tree = null;
+      if (recursive && connected()) {
+        const res = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/tree`);
+        if (res.ok) tree = res.data;
+        else if (res.status && res.status !== 404) return toast(res.error || `HTTP ${res.status}`, 'err');
+      } else if (recursive && state.tree && state.tree.portalId === p.id) {
+        tree = state.tree.data || null;
+      }
+      const result = S.buildPortal({ portal: p, tree, recursive });
+      S.open(result);
+      toast(result.label + ' — отворен в „Отчети“', 'ok');
+    } catch (e) {
+      toast('Отчетът не може да се сглоби: ' + (e && e.message ? e.message : e), 'err');
+    }
   }
 
   // ── Пакет с файловете на портала ────────────────────────────────────────
@@ -1753,6 +1796,8 @@
                     <button type="button" class="fm-ico-btn pf-pkg-btn" data-pkg-portal="${i}" title="Изтегли пакета (ZIP с всички файлове от хранилището: ${esc(
         x.storage_root || '/share',
       )})" aria-label="Изтегли пакета">${ICON.download}</button>
+                    <button type="button" class="fm-ico-btn pf-report-btn" data-report-portal="${i}" title="Отчет за портала (с всички регистрирани файлове)" aria-label="Отчет за портала">${ico('note')}</button>
+                    <button type="button" class="fm-ico-btn pf-report-btn" data-report-recursive="${i}" title="Рекурсивен отчет за портала (с папките от хранилището)" aria-label="Рекурсивен отчет за портала">${ICON.folder}</button>
                   </div>
                   <hr class="u-divider" />
                   <p class="fm-file-sub">${ICON.topic} категория: <code>${esc(
@@ -2942,6 +2987,12 @@
         state.portalIndex = i;
         void buildPackage({ portalId: target.id, includeStorage: true });
       });
+    });
+    host.querySelectorAll('[data-report-portal]').forEach((el) => {
+      el.addEventListener('click', () => { void openPortalReport(Number(el.dataset.reportPortal), false) });
+    });
+    host.querySelectorAll('[data-report-recursive]').forEach((el) => {
+      el.addEventListener('click', () => { void openPortalReport(Number(el.dataset.reportRecursive), true) });
     });
     // „Контролен панел на портала“ се сгъва/разгъва от заглавието си.
     host.querySelectorAll('[data-pf-control-tog]').forEach((el) => {
