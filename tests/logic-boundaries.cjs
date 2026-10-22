@@ -230,12 +230,39 @@ async function chainSection() {
 // ── 9. Заключване на инстанция: границата на изоставеност ───────────────────
 function lockSection() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-lock-'));
-  const first = lock.acquire({ dir, id: 'p1', now: 1000, staleMs: 5000 });
-  assert.equal(first.ok, true, 'първото заключване минава');
-  assert.equal(lock.acquire({ dir, id: 'p2', now: 1000, staleMs: 5000 }).ok, false, 'жив собственик блокира втори');
-  // Точно на границата (now - at === staleMs) ключалката е изоставена.
-  assert.equal(lock.acquire({ dir, id: 'p2', now: 6000, staleMs: 5000 }).ok, true, 'на самата граница се поема');
+  const file = lock.lockPath(dir);
+
+  // Собственик от ДРУГ host: решава само пресният heartbeat, а не pid (pid на друг
+  // host не се проверява). Така границата е една и съща на Windows и на Linux —
+  // на Linux `/proc/<pid>/stat` различава преизползван pid и тестът би минавал
+  // по друга причина, тоест нямаше да проверява границата, която твърди.
+  const foreign = (heartbeatAt) =>
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ id: 'remote', pid: 1, host: 'another-container', startedAt: heartbeatAt, heartbeatAt }),
+    );
+
+  foreign(new Date(1000).toISOString());
+  const fresh = lock.acquire({ dir, id: 'p1', now: 5999, staleMs: 5000 });
+  assert.equal(fresh.ok, false, 'сърце на 4 999 ms е още прясно при праг 5 000 ms');
+  assert.equal(fresh.reason, 'INSTANCE_LOCKED');
+
+  // Точно на границата (възраст === прага) заключването е изоставено.
+  const atBoundary = lock.acquire({ dir, id: 'p2', now: 6000, staleMs: 5000 });
+  assert.equal(atBoundary.ok, true, 'на самата граница се поема');
+  assert.equal(atBoundary.tookOver, true);
+  assert.equal(atBoundary.previous.id, 'remote');
   assert.equal(lock.release(dir, 'p1'), false, 'чужд id не освобождава');
+
+  // Жив собственик на същия host блокира втория.
+  const mine = lock.acquire({ dir, id: 'p3' });
+  assert.equal(mine.ok, true, 'след поемането заключването е наше');
+  const second = lock.acquire({ dir, id: 'p4' });
+  assert.equal(second.ok, false, 'втори жив собственик не се допуска');
+  assert.equal(second.holder.id, 'p3');
+  assert.equal(lock.release(dir, 'p3'), true);
+  assert.equal(lock.inspect(dir), null, 'освободеното заключване изчезва');
+
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
