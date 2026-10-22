@@ -182,7 +182,9 @@ else {
     Write-Host "  `$ git commit -m 'hAPI Enterprise $Version — HACS integration'   (само ако има промени)"
 }
 
-# Първият commit иска име/имейл — задаваме локално, ако липсват (не пипаме глобалните).
+# Публичното репо не бива да носи личния имейл на разработчика. Задаваме локално
+# noreply идентичност на собственика върху клонинга, от който публикуваме, и не пипаме
+# глобалните настройки.
 if ($Execute) {
     Push-Location $gitDir
     try {
@@ -190,8 +192,13 @@ if ($Execute) {
         $userName = git config user.name 2>$null
     }
     finally { Pop-Location }
-    if (-not $email -or -not $userName) {
-        Write-Host "  няма git идентичност — задавам локално ($owner)"
+    if ($email -ne "$owner@users.noreply.github.com" -or $userName -ne $owner) {
+        if ($email) {
+            Write-Host "  заменям локално идентичността $userName <$email> с $owner <$owner@users.noreply.github.com>"
+        }
+        else {
+            Write-Host "  няма git идентичност — задавам локално $owner <$owner@users.noreply.github.com>"
+        }
         Invoke-Command-Step -Text 'identity' -Exe 'git' -Arguments @('config', 'user.name', $owner) -WorkDir $gitDir | Out-Null
         Invoke-Command-Step -Text 'identity' -Exe 'git' -Arguments @('config', 'user.email', "$owner@users.noreply.github.com") -WorkDir $gitDir | Out-Null
     }
@@ -200,7 +207,7 @@ if ($Execute) {
     }
 }
 else {
-    Write-Host '  git идентичност се задава локално, само ако липсва'
+    Write-Host '  git идентичност: локално се задава noreply на собственика (личният имейл не се публикува)'
 }
 
 # ── 3. GitHub repo ──────────────────────────────────────────────────────────

@@ -47,14 +47,9 @@ jobs:
 
       - name: Check tag matches config.yaml
         if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          version=$(node -e "process.stdout.write(require('./scripts/release-lib.cjs').readAddonVersion())")
-          tag="${GITHUB_REF_NAME#v}"
-          if [ "$version" != "$tag" ]; then
-            echo "::error::Тагът е $tag, а config.yaml е $version"
-            exit 1
-          fi
+        run: node scripts/check-tag-version.cjs
+        env:
+          CI: "true"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

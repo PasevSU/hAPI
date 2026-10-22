@@ -77,9 +77,11 @@ function writeVersion(version, root = ROOT) {
   const uiData = path.join(root, ADDON_DIR, 'ui', 'data.js');
   if (fs.existsSync(uiData)) {
     const text = fs.readFileSync(uiData, 'utf8');
-    const next = text.replace(/(window\.HAPI_VERSION\s*=\s*')[0-9.]+(')/, `$1${version}$2`);
-    if (next === text) throw new Error('ui/data.js: липсва window.HAPI_VERSION');
-    fs.writeFileSync(uiData, next);
+    const marker = /window\.HAPI_VERSION\s*=\s*'[0-9.]+'/;
+    if (!marker.test(text)) throw new Error('ui/data.js: липсва window.HAPI_VERSION');
+    // Повторно пускане със същата версия не е грешка: файлът вече е верен.
+    const next = text.replace(marker, `window.HAPI_VERSION = '${version}'`);
+    if (next !== text) fs.writeFileSync(uiData, next);
   }
   return version;
 }

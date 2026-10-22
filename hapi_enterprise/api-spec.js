@@ -208,6 +208,35 @@ function buildOpenApi(portal, options = {}) {
           },
         },
       },
+      // Папките от хранилището (Фаза 12): дърво на отделена папка на портала.
+      // Само заделена подпапка — корените /share и /media не се публикуват (403).
+      [`${p}/tree`]: {
+        get: {
+          summary: 'Дърво на заделената папка (с API за всяка папка)',
+          description:
+            'Само когато storage_root е отделна подпапка. За /share и /media отговорът е 403 — ' +
+            'общите корени не се публикуват. Скритите папки (флаг „видима“) не се показват.',
+          security: secured,
+          parameters: [
+            { name: 'path', in: 'query', schema: { type: 'string' }, description: 'Относителен път в папката; празно → коренът.' },
+          ],
+          responses: {
+            200: ok('Дърво на папката (папки, файлове, бройки)'),
+            400: { description: 'Невалиден път (.., NUL, твърде дълбок)' },
+            401: { description: 'Липсва или е невалиден ключ' },
+            403: { description: 'storage_root не е отделна подпапка' },
+            404: { description: 'Папката не съществува' },
+          },
+        },
+      },
+      [`${p}/tree/api.json`]: {
+        get: {
+          summary: 'API запис за папката (готов за клиент)',
+          security: secured,
+          parameters: [{ name: 'path', in: 'query', schema: { type: 'string' } }],
+          responses: { 200: ok('API запис на папката'), 403: { description: 'Общ корен — не се публикува' }, 404: { description: 'Not found' } },
+        },
+      },
       [`${p}/openapi.json`]: {
         get: { summary: 'Тази спецификация', responses: { 200: ok('OpenAPI document') } },
       },
