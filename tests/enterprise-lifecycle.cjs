@@ -24,17 +24,25 @@ const FILES = [
 ];
 
 async function boot(dir, port) {
+  // Отделен admin порт за всяко стартиране: по подразбиране сървърът взима 8098 и
+  // ако предишен тест още го държи (или рестартът изпревари освобождаването му),
+  // процесът излиза с код 1 и тестът пада без ясна причина.
+  const adminPort = await freePort();
+  let err = '';
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: {
       ...process.env,
       DATA_DIR: dir,
       OPTIONS_PATH: path.join(dir, 'missing-options.json'),
       PORT: String(port),
+      ADMIN_PORT: String(adminPort),
+      PUBLIC_GATEWAY_PORT: '0',
       ADMIN_TOKEN: ADMIN,
       ENCRYPT_FILES: 'true',
     },
-    stdio: 'ignore',
+    stdio: ['ignore', 'ignore', 'pipe'],
   });
+  child.stderr.on('data', (chunk) => { err += chunk.toString() });
   const base = `http://127.0.0.1:${port}`;
   const call = async (route, { method = 'GET', bearer, body, raw, headers = {} } = {}) => {
     const res = await fetch(base + route, {
@@ -56,7 +64,7 @@ async function boot(dir, port) {
       buffer: isJson ? null : Buffer.from(await res.arrayBuffer()),
     };
   };
-  await waitHealthy(child, base, { attempts: 140 });
+  await waitHealthy(child, base, { attempts: 140, stderr: () => err });
   return { child, call };
 }
 

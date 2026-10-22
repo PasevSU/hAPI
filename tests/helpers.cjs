@@ -35,13 +35,18 @@ async function freePort(host = '127.0.0.1') {
 }
 
 /**
- * Чака `/health`. Ако процесът е умрял, казва ЗАЩО (код на изхода), вместо да чака 8 секунди
- * и да съобщи само, че портът мълчи.
+ * Чака `/health`. Ако процесът е умрял, казва ЗАЩО (код на изхода + последните редове
+ * от stderr, ако са събрани), вместо да чака 8 секунди и да съобщи само, че портът мълчи.
  */
-async function waitHealthy(child, base, { attempts = 160, delay = 50 } = {}) {
+async function waitHealthy(child, base, { attempts = 160, delay = 50, stderr = null } = {}) {
+  const tail = () => {
+    const text = String(stderr && stderr() ? stderr() : '').trim();
+    if (!text) return '';
+    return '\n' + text.split('\n').slice(-12).join('\n');
+  };
   for (let i = 0; i < attempts; i++) {
     if (child && (child.exitCode !== null || child.signalCode !== null)) {
-      throw new Error(`сървърът приключи преждевременно (код ${child.exitCode ?? child.signalCode}) — ${base}`);
+      throw new Error(`сървърът приключи преждевременно (код ${child.exitCode ?? child.signalCode}) — ${base}${tail()}`);
     }
     try {
       if ((await fetch(base + '/health')).ok) return true;
@@ -49,7 +54,7 @@ async function waitHealthy(child, base, { attempts = 160, delay = 50 } = {}) {
     catch { /* още не слуша */ }
     await new Promise((r) => setTimeout(r, delay));
   }
-  throw new Error(`сървърът не стартира на ${base} (изчакани ${attempts} опита)`);
+  throw new Error(`сървърът не стартира на ${base} (изчакани ${attempts} опита)${tail()}`);
 }
 
 module.exports = { stopChild, freePort, waitHealthy };
