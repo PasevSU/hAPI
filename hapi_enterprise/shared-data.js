@@ -14,94 +14,145 @@
 //   • `data()`   — същото, но връща ЦЕЛИЯ набор данни (не отрязък), за да има достъп до
 //                  всичко всеки, който го поиска: `topics`, `tags`, `directory`, `portals`…
 //   • `keys()`   — имената на всички слоеве в данните (за проверка, че нищо не е отрязано).
-//   • `transaction(fn)` — сравнение-и-размяна: чете прясна снимка, дава РАБОТНО копие на
-//                  `fn`, записва САМО ако ревизията не е мръднала. При конфликт (друг процес
-//                  е писал) повтаря с нова снимка вместо да презапише чуждото.
+//   • `transaction(fn)` — запис ПОД МЕЖДУПРОЦЕСНА КЛЮЧАЛКА: взима ключалката на данните,
+//                  чете ПРЯСНО състояние под нея, дава ЖИВИЯ обект на `fn` и записва.
+//                  Докато ключалката е наша, никой друг процес не пише — значи няма нужда от
+//                  сливане на чужди промени и няма как да се загуби нечий запис.
+//                  Ключалката е папка с `owner.json`; мъртва или застояла се поема принудително.
 //   • `onChange(cb)` — абонати, които трябва да разберат, че снимката е сменена (кешове).
 //
 // Инварианти:
-//   1. `bind(payload, revision)` се вика при ВСЯКА смяна на снимката — така `db` в сървъра
-//      винаги сочи към това, което е в базата, а не към копие отпреди чуждия запис.
+//   1. `bind(payload, revision)` се вика при ВСЯКА смяна на съдържанието, но обектът НЕ се
+//      подменя — съдържанието му се привежда на място (`reconcile`). Затова препратките,
+//      които кодът пази (`const p = db.portals.find(...)`), остават валидни.
 //   2. Записът е само през `transaction`; директният `store.save(data)` остава за
 //      възстановяване от архив, където безусловното презаписване е целта.
-//   3. Конфликтът не е грешка за потребителя: той се слива и записът се повтаря. Изчерпването
-//      на опитите е `503 STORE_CONFLICT` с точен брой опити, за да не изглежда като счупен
-//      сървър.
-//   4. По време на транзакция `sync()` не подменя снимката: иначе `await fn()` би продължил
-//      върху вече откачен обект и промяната тихо би се загубила.
+//   3. Многослойният цикъл е сериен: всички процеси пишат един след друг, не едновременно.
+//      Изчакването на ключалката е ограничено (по подразбиране 15 s) и след това е ясна
+//      грешка `503 STORE_LOCKED`, а не безкрайно чакане.
 
-const DEFAULT_RETRY = 12;
-const DEFAULT_BASE_DELAY_MS = 4;
-const DEFAULT_MAX_DELAY_MS = 120;
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
+const DEFAULT_LOCK_TIMEOUT_MS = 15000;
+const DEFAULT_STALE_LOCK_MS = 30000;
+const DEFAULT_POLL_MS = 5;
 
 const clone = (value) => structuredClone(value);
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
-/** Дълбоко равенство на JSON стойности (редът на ключовете не значи нищо). */
-function equal(a, b) {
-  if (a === b) return true;
-  if (typeof a !== typeof b) return false;
-  if (!a || !b || typeof a !== 'object') return false;
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
-  if (Array.isArray(a)) {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) if (!equal(a[i], b[i])) return false;
-    return true;
-  }
-  const keysA = Object.keys(a);
-  if (keysA.length !== Object.keys(b).length) return false;
-  for (const key of keysA) if (!Object.hasOwn(b, key) || !equal(a[key], b[key])) return false;
-  return true;
-}
-
-const keyedList = (list) => Array.isArray(list) && list.length > 0 && list.every((item) => isPlainObject(item) && typeof item.id === 'string');
+// Списък, който може да се разпознава по `id`. ПРАЗНИЯТ списък също е такъв (вакуумно).
+const keyedList = (list) => Array.isArray(list) && list.every((item) => isPlainObject(item) && typeof item.id === 'string');
 const byId = (list) => new Map(list.map((item) => [item.id, item]));
 
-// Сливане на списъци по идентификатор: добавеното от нас отива при тях, изтритото от нас
-// остава изтрито, а общото се слива поле по поле. Без идентификатори не гадаем — печели
-// нашето намерение (това е изрично документирано, а не случайно).
-function mergeLists(base, ours, theirs) {
-  if (!keyedList(base) || !keyedList(ours) || !keyedList(theirs)) return ours;
-  const before = byId(base);
-  const mine = byId(ours);
-  const other = byId(theirs);
-  const out = [];
-  for (const item of theirs) {
-    if (!mine.has(item.id)) {
-      if (!before.has(item.id)) out.push(item);
-      continue;
-    }
-    if (!before.has(item.id)) {
-      out.push(mine.get(item.id));
-      continue;
-    }
-    out.push(merge(before.get(item.id), mine.get(item.id), item));
+/**
+ * Обновяване НА МЯСТО: съдържанието на `live` става като `next`, но обектът остава СЪЩИЯ.
+ *
+ * Защо не просто „смени снимката“: кодът в сървъра пази препратки (`const p = db.portals.find(...)`)
+ * и после пише в тях. Ако снимката се подмени с нов обект, тези препратки сочат откачен обект
+ * и записът им се губи, без нито една грешка. Затова обектът на данните се създава веднъж и
+ * само съдържанието му се привежда към новото състояние; елементите на списъците се разпознават
+ * по `id` и се обновяват като СЪЩИТЕ обекти.
+ */
+function reconcile(live, next) {
+  if (!live || !next || typeof live !== 'object' || typeof next !== 'object') return next;
+  if (isPlainObject(live) && isPlainObject(next)) {
+    for (const key of Object.keys(live)) if (!Object.hasOwn(next, key)) delete live[key];
+    for (const key of Object.keys(next)) live[key] = Object.hasOwn(live, key) ? reconcile(live[key], next[key]) : clone(next[key]);
+    return live;
   }
-  for (const item of ours) if (!before.has(item.id) && !other.has(item.id)) out.push(item);
-  return out;
+  if (Array.isArray(live) && Array.isArray(next) && keyedList(live) && keyedList(next)) {
+    const nextById = byId(next);
+    for (let i = live.length - 1; i >= 0; i--) if (!nextById.has(live[i].id)) live.splice(i, 1);
+    const liveById = byId(live);
+    const ordered = next.map((item) => {
+      const existing = liveById.get(item.id);
+      if (existing) return reconcile(existing, item);
+      return clone(item);
+    });
+    live.length = 0;
+    for (const item of ordered) live.push(item);
+    return live;
+  }
+  return next;
 }
 
-/**
- * Тристранно сливане: `base` — какво сме прочели, `ours` — какво сме направили,
- * `theirs` — какво е на диска сега. Връща новото състояние.
- */
-function merge(base, ours, theirs) {
-  if (equal(ours, base)) return theirs;
-  if (equal(theirs, base)) return ours;
-  if (isPlainObject(ours) && isPlainObject(theirs) && isPlainObject(base)) {
-    const out = { ...theirs };
-    for (const key of Object.keys(ours)) {
-      if (!Object.hasOwn(base, key)) out[key] = ours[key];
-      else out[key] = merge(base[key], ours[key], Object.hasOwn(theirs, key) ? theirs[key] : undefined);
-    }
-    for (const key of Object.keys(base)) {
-      // Изтрито от нас: не се връща, дори другият да го е променил.
-      if (!Object.hasOwn(ours, key) && Object.hasOwn(theirs, key)) delete out[key];
-    }
-    return out;
+// ── Междупроцесна ключалка на записа ───────────────────────────────────────────
+// ЕДИН файл с `owner.json` вътре (pid + host + време), създаден с O_EXCL (`flag: 'wx'`).
+// Създаването е атомарно: или файлът е наш, или вече съществува — няма междинно състояние
+// „папка без собственик“, което два процеса да приемат за изоставено (точно това състезание
+// караше два процеса да пишат едновременно).
+// Изоставена ключалка (мъртъв pid на същия host или запис, по-стар от `staleMs`) се поема,
+// за да не блокира add-on-а след срив.
+function ownerAlive(owner) {
+  if (!owner || !Number.isInteger(Number(owner.pid)) || Number(owner.pid) <= 0) return false;
+  if (String(owner.host || '') !== os.hostname()) return true; // друг host — решава времето
+  try {
+    process.kill(Number(owner.pid), 0);
+    return true;
+  } catch (e) {
+    return e.code === 'EPERM';
   }
-  if (Array.isArray(ours) && Array.isArray(theirs) && Array.isArray(base)) return mergeLists(base, ours, theirs);
-  return ours;
+}
+
+function createLock(lockPath, { timeoutMs, staleMs, pollMs, sleep }) {
+  // Чете собственика; при нечетим/полузаписан файл връща `null`, а възрастта се съди по mtime.
+  const read = () => {
+    try {
+      const owner = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+      return { owner, age: owner && owner.at ? Date.now() - Date.parse(owner.at) : Infinity };
+    } catch (e) {
+      if (e.code === 'ENOENT') return { owner: null, age: Infinity, gone: true };
+      let mtime = Infinity;
+      try {
+        mtime = fs.statSync(lockPath).mtimeMs;
+      } catch (statError) {
+        if (statError.code === 'ENOENT') return { owner: null, age: Infinity, gone: true };
+        throw statError;
+      }
+      return { owner: null, age: Date.now() - mtime };
+    }
+  };
+  const drop = () => {
+    try {
+      fs.unlinkSync(lockPath);
+      return true;
+    } catch (e) {
+      if (e.code === 'ENOENT') return true;
+      throw e;
+    }
+  };
+  async function acquire() {
+    const startedAt = Date.now();
+    for (;;) {
+      try {
+        fs.writeFileSync(lockPath, JSON.stringify({ pid: process.pid, host: os.hostname(), at: new Date().toISOString() }), { flag: 'wx', mode: 0o600 });
+        return true;
+      } catch (e) {
+        if (e.code !== 'EEXIST') throw e;
+      }
+      const seen = read();
+      if (seen.gone) continue;
+      const deadOwner = seen.owner ? !ownerAlive(seen.owner) : false;
+      const tooOld = !seen.owner || !Number.isFinite(seen.age) || seen.age > staleMs;
+      if (deadOwner || tooOld) {
+        drop();
+        continue;
+      }
+      if (Date.now() - startedAt > timeoutMs) {
+        throw Object.assign(new Error('Данните се пишат от друг процес и ключалката не се освободи за ' + Math.round(timeoutMs / 1000) + ' s. Опитай отново.'), { status: 503, code: 'STORE_LOCKED' });
+      }
+      await sleep(pollMs);
+    }
+  }
+  function release() {
+    const seen = read();
+    if (seen.owner && Number(seen.owner.pid) !== process.pid) return false; // не пипаме чужда ключалка
+    if (!seen.owner && !seen.gone) return false; // нечетима ключалка не е задължително наша
+    return drop();
+  }
+  return { acquire, release, path: lockPath };
 }
 
 function create(options = {}) {
@@ -110,10 +161,15 @@ function create(options = {}) {
     throw Error('shared-data: необходим е store с snapshot(), revision() и save()');
   }
   const bind = typeof options.bind === 'function' ? options.bind : null;
-  const retry = Math.max(1, Number(options.retry) || DEFAULT_RETRY);
-  const baseDelayMs = Math.max(0, Number(options.baseDelayMs) === 0 ? 0 : Number(options.baseDelayMs) || DEFAULT_BASE_DELAY_MS);
-  const maxDelayMs = Math.max(baseDelayMs, Number(options.maxDelayMs) || DEFAULT_MAX_DELAY_MS);
   const sleep = typeof options.sleep === 'function' ? options.sleep : (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const lock = options.lockPath
+    ? createLock(options.lockPath, {
+        timeoutMs: Number(options.lockTimeoutMs) || DEFAULT_LOCK_TIMEOUT_MS,
+        staleMs: Number(options.staleLockMs) || DEFAULT_STALE_LOCK_MS,
+        pollMs: Number(options.pollMs) || DEFAULT_POLL_MS,
+        sleep,
+      })
+    : null;
 
   let current = null;
   let revision = -1;
@@ -128,19 +184,20 @@ function create(options = {}) {
     syncs: 0,
     refreshes: 0,
     transactions: 0,
-    conflicts: 0,
-    merges: 0,
-    retries: 0,
+    lockWaits: 0,
+    lockTimeouts: 0,
     lastSyncAt: null,
     lastRefreshAt: null,
-    lastConflictAt: null,
+    lastLockWaitAt: null,
     startedAt: new Date().toISOString(),
   };
 
-  // Публикува снимката: подменя я, казва на `bind` и уведомява абонатите. `reason` е
-  // `null` за „това е работно копие/връщане назад“, за да не се брои като презареждане.
+  // Публикува снимката: привежда ЖИВИЯ обект към новото състояние (без да го подменя),
+  // казва на `bind` и уведомява абонатите. `reason` е `null` за „това е работното
+  // състояние/връщане назад“, за да не се брои като презареждане.
   function publish(payload, nextRevision, reason) {
-    current = payload;
+    if (current === null) current = payload;
+    else if (current !== payload) reconcile(current, payload);
     revision = Number(nextRevision) || 0;
     if (bind) bind(current, revision);
     if (reason) {
@@ -196,7 +253,7 @@ function create(options = {}) {
   }
 
   function state() {
-    return { revision, ...stats, subscribers: subscribers.size };
+    return { revision, lock: lock ? lock.path : 'in-process', ...stats, subscribers: subscribers.size };
   }
 
   /** Абонат за презареждане; връща функция за отписване. */
@@ -206,67 +263,57 @@ function create(options = {}) {
     return () => subscribers.delete(listener);
   }
 
-  function giveUp(attempts) {
-    return Object.assign(
-      new Error('Данните се променят от друг процес непрекъснато — прекратих след ' + attempts + ' опита. Опитай отново.'),
-      { status: 503, code: 'STORE_CONFLICT', attempts },
-    );
-  }
-
-  // Запис: `fn` работи върху ЖИВИЯ обект (за да работят запазените препратки), записът е
-  // сравнение-и-размяна. При конфликт (друг процес е писал) нашият замисъл се слива с
-  // неговото състояние и записът се повтаря — без повторно изпълнение на `fn`, за да не се
-  // удвоят файловите ефекти.
+  // Запис: `fn` работи върху ЖИВИЯ обект (за да работят запазените препратки). Целият запис
+  // е под междупроцесна ключалка: чете се прясно състояние, прилага се намерението и се
+  // записва. Докато ключалката е наша, никой друг процес не пише — затова няма сливане на
+  // чужди промени и няма как да се загуби нечий запис.
   function transaction(fn) {
     if (typeof fn !== 'function') throw Error('shared-data: transaction(fn) иска функция');
     const run = queue.then(async () => {
       stats.transactions++;
       active++;
+      let holding = false;
       try {
-        // Прясно състояние само ако друг процес е писал след последната ни синхронизация.
-        if (current === null) load(null);
-        else if ((Number(store.revision()) || 0) !== revision) load('sync');
+        if (lock) {
+          holding = await lock.acquire();
+          stats.lockWaits++;
+          stats.lastLockWaitAt = new Date().toISOString();
+        }
+        // Прясно състояние ПОД ключалката, но САМО ако друг процес е писал след последната
+        // ни синхронизация. Безусловното презареждане би изтрило и стойности по подразбиране,
+        // които манипулаторите слагат на живия обект преди самата транзакция.
+        if (current === null || (Number(store.revision()) || 0) !== revision) {
+          const snap = store.snapshot();
+          publish(snap.payload, snap.revision, null);
+        }
         const base = clone(current);
-        let live = current;
-        let attempt = 1;
         let result;
         try {
-          result = await fn(live, { revision, attempt });
+          result = await fn(current, { revision });
         } catch (e) {
-          // Провалът на самата операция НЕ е конфликт: връщаме състоянието отпреди нея
-          // (иначе полунаправената промяна остава в паметта и следващото четене я вижда).
+          // Провалът на самата операция: връщаме състоянието отпреди нея (иначе
+          // полунаправената промяна остава в паметта и следващото четене я вижда).
           publish(base, revision, null);
           throw e;
         }
-        for (; ;) {
-          try {
-            const nextRevision = store.save(live, revision);
-            revision = nextRevision === undefined ? revision + 1 : Number(nextRevision);
-            if (bind) bind(live, revision);
-            return result;
-          } catch (e) {
-            if (!e || e.code !== 'STORE_CONFLICT') {
-              publish(base, revision, null);
-              throw e;
-            }
-            stats.conflicts++;
-            stats.lastConflictAt = new Date().toISOString();
-            if (attempt >= retry) {
-              publish(base, revision, null);
-              throw giveUp(attempt);
-            }
-            attempt++;
-            stats.retries++;
-            // Тристранно сливане: нашето намерение (base → live) върху тяхното състояние.
-            const fresh = store.snapshot();
-            live = merge(base, live, fresh.payload);
-            stats.merges++;
-            publish(live, fresh.revision, null);
-            const wait = Math.min(maxDelayMs, baseDelayMs * attempt + Math.floor(Math.random() * baseDelayMs));
-            await sleep(wait);
-          }
+        // Записът е безусловно успешен, защото ключалката е наша; CAS-ът в store остава
+        // като предпазна мрежа срещу процес, който пише, без да ползва този слой.
+        let nextRevision;
+        try {
+          nextRevision = store.save(current, revision);
+        } catch (e) {
+          publish(base, revision, null);
+          if (e && e.code === 'STORE_CONFLICT') stats.lockTimeouts++;
+          throw e;
         }
+        revision = nextRevision === undefined ? revision + 1 : Number(nextRevision);
+        if (bind) bind(current, revision);
+        return result;
+      } catch (e) {
+        if (e && e.code === 'STORE_LOCKED') stats.lockTimeouts++;
+        throw e;
       } finally {
+        if (holding && lock) lock.release();
         active--;
       }
     });
@@ -277,7 +324,7 @@ function create(options = {}) {
     return run;
   }
 
-  return { sync, refresh, data, keys, peek, state, onChange, transaction, merge, clone, equal };
+  return { sync, refresh, data, keys, peek, state, onChange, transaction, clone, reconcile, lockPath: () => (lock ? lock.path : null) };
 }
 
-module.exports = { create, merge, equal, DEFAULT_RETRY, DEFAULT_BASE_DELAY_MS, DEFAULT_MAX_DELAY_MS };
+module.exports = { create, reconcile, DEFAULT_LOCK_TIMEOUT_MS, DEFAULT_STALE_LOCK_MS };

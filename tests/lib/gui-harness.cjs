@@ -37,12 +37,15 @@ async function startServer({ dataDir, token, port, env, keepData } = {}) {
   const adminToken = token || 'gui-' + require('node:crypto').randomBytes(18).toString('hex');
   const child = spawn(process.execPath, [path.join(root, 'hapi_enterprise', 'server.js')], {
     env: { ...process.env, DATA_DIR: dir, PORT: String(listenPort), PUBLIC_GATEWAY_PORT: '0', ADMIN_TOKEN: adminToken, ...(env || {}) },
-    stdio: 'ignore',
+    stdio: ['ignore', 'ignore', 'pipe'],
   });
+  // Последните редове от stderr са единственото, което обяснява защо сървърът не е тръгнал.
+  let stderr = '';
+  if (child.stderr) child.stderr.on('data', (chunk) => { stderr = (stderr + chunk.toString()).slice(-4000); });
   const base = `http://127.0.0.1:${listenPort}`;
   let ready = false;
   for (let i = 0; i < 120; i++) {
-    if (child.exitCode !== null) throw new Error('сървърът приключи преждевременно (код ' + child.exitCode + ')');
+    if (child.exitCode !== null) throw new Error('сървърът приключи преждевременно (код ' + child.exitCode + ')' + (stderr ? ': ' + stderr.trim() : ''));
     try {
       if ((await fetch(base + '/health')).ok) {
         ready = true;
@@ -53,7 +56,7 @@ async function startServer({ dataDir, token, port, env, keepData } = {}) {
     }
     await new Promise((r) => setTimeout(r, 50));
   }
-  if (!ready) throw new Error('сървърът не стартира');
+  if (!ready) throw new Error('сървърът не стартира' + (stderr ? ': ' + stderr.trim() : ''));
   const authFetch = (url, init) =>
     fetch(url, { ...init, headers: { ...((init && init.headers) || {}), Authorization: 'Bearer ' + adminToken } });
   const api = async (p, method = 'GET', bodyValue) => {

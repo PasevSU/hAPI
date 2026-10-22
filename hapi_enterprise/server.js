@@ -101,8 +101,9 @@ async function verifyPortalFiles(p, ctx) {
 }
 const dbPath = runtime.databasePath, filesRoot = path.join(root, 'files'), internalRoot = path.join(root, 'internal'); let db = { portals: [], qrArtifacts: [] }; let queue = Promise.resolve(); const metadataStore = require('./sqlite-store').open(dbPath);
 // Споделени данни между процесите: `bind` кара `db` да сочи към това, което е В БАЗАТА
-// (включително след запис на друг процес), а `transaction` пази записа от презаписване.
-const sharedData = require('./shared-data').create({ store: metadataStore, bind: (payload) => { db = payload } });
+// (включително след запис на друг процес), а `transaction` пази записа с междупроцесна
+// ключалка. Заключването е в data директорията, за да е едно за всички процеси върху нея.
+const sharedData = require('./shared-data').create({ store: metadataStore, bind: (payload) => { db = payload }, lockPath: path.join(root, '.hapi-store-lock') });
 const id = () => crypto.randomBytes(12).toString('hex');
 // --- DOCFLOW core (Phase 1): hierarchical variable store, additive to legacy metadata ---
 const coreDbId = (() => { const v = String(process.env.DB_ID || '1').trim(); return /^[A-Za-z0-9_-]{1,32}$/.test(v) ? v : '1' })();
@@ -2271,32 +2272,35 @@ async function handler(req, res) {
         // Internal notes and attachments never enter p.files, public manifests, SDK or signed URLs.
         if (parts[4] === 'notes') {
           // Вътрешните бележки са СПИСЪК. Свободният текст на портала е p.notesText (различно поле).
-          if (!Array.isArray(p.notes)) p.notes = [];
-          if (parts.length === 5 && method === 'GET') return json(res, 200, { notes: p.notes });
+          // Списъкът се създава ВЪТРЕ в транзакцията — живият обект се обвързва с базата и
+          // промяна извън нея би се загубила при следващото презареждане.
+          const notesOf = p => (Array.isArray(p.notes) ? p.notes : []);
+          if (parts.length === 5 && method === 'GET') return json(res, 200, { notes: notesOf(p) });
           if (parts.length === 5 && method === 'POST') {
             const b = await parse(req); const title = clean(b.title), content = clean(b.content);
             if (!title || title.length > 160 || content.length > 20000) return fail(res, 400, 'Invalid note');
             const taxonomy = normalizeTaxonomy(b);
-            return json(res, 201, await update(() => { const n = { id: id(), title, content, ...taxonomy, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), fileId: clean(b.fileId) || null }; if (n.fileId && !p.files.some(f => f.id === n.fileId)) throw Object.assign(new Error('Unknown linked file'), { status: 400 }); p.notes.push(n); void audit('note.create', { portalId: p.id, noteId: n.id }); return n }));
+            return json(res, 201, await update(() => { const n = { id: id(), title, content, ...taxonomy, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), fileId: clean(b.fileId) || null }; if (n.fileId && !p.files.some(f => f.id === n.fileId)) throw Object.assign(new Error('Unknown linked file'), { status: 400 }); p.notes = notesOf(p); p.notes.push(n); void audit('note.create', { portalId: p.id, noteId: n.id }); return n }));
           }
           if (parts.length === 6) {
-            const n = p.notes.find(x => x.id === parts[5]); if (!n) return fail(res, 404, 'Note not found');
+            const n = notesOf(p).find(x => x.id === parts[5]); if (!n) return fail(res, 404, 'Note not found');
             if (method === 'PATCH') { const b = await parse(req); if (b.title !== undefined && (!clean(b.title) || clean(b.title).length > 160) || b.content !== undefined && (typeof b.content !== 'string' || b.content.length > 20000)) return fail(res, 400, 'Invalid note'); const taxonomy = normalizeTaxonomy(b, n); return json(res, 200, await update(() => { if (b.title !== undefined) n.title = clean(b.title); if (b.content !== undefined) n.content = b.content; Object.assign(n, taxonomy); n.updatedAt = new Date().toISOString(); void audit('note.update', { portalId: p.id, noteId: n.id }); return n })); }
-            if (method === 'DELETE') return json(res, 200, await update(() => { p.notes = p.notes.filter(x => x.id !== n.id); void audit('note.delete', { portalId: p.id, noteId: n.id }); return { deleted: n.id } }));
+            if (method === 'DELETE') return json(res, 200, await update(() => { p.notes = notesOf(p).filter(x => x.id !== n.id); void audit('note.delete', { portalId: p.id, noteId: n.id }); return { deleted: n.id } }));
           }
         }
         if (parts[4] === 'attachments') {
-          p.attachments ??= [];
-          if (parts.length === 5 && method === 'GET') return json(res, 200, { attachments: p.attachments });
+          // Списъкът се създава вътре в транзакцията — вж. бележката при `notes`.
+          const attachmentsOf = portal => (Array.isArray(portal.attachments) ? portal.attachments : []);
+          if (parts.length === 5 && method === 'GET') return json(res, 200, { attachments: attachmentsOf(p) });
           if (parts.length === 5 && method === 'POST') {
             const filename = clean(req.headers['x-file-name']); if (!filename || filename.length > 240 || /[\/\r\n\0]/.test(filename)) return fail(res, 400, 'Invalid X-File-Name');
             const data = await body(req, runtime.effective().maxUploadBytes); const f = { id: id(), name: filename, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex'), uploadedAt: new Date().toISOString() };
             const folder = path.join(internalRoot, p.id); await fsp.mkdir(folder, { recursive: true }); const fp = path.join(folder, f.id);
             await fsp.writeFile(fp, data, { flag: 'wx', mode: 0o600 });
-            try { return json(res, 201, await update(() => { p.attachments.push(f); void audit('attachment.create', { portalId: p.id, attachmentId: f.id }); return f })); } catch (e) { await fsp.rm(fp, { force: true }); throw e }
+            try { return json(res, 201, await update(() => { p.attachments = attachmentsOf(p); p.attachments.push(f); void audit('attachment.create', { portalId: p.id, attachmentId: f.id }); return f })); } catch (e) { await fsp.rm(fp, { force: true }); throw e }
           }
           if (parts.length >= 6) {
-            const f = p.attachments.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'Attachment not found');
+            const f = attachmentsOf(p).find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'Attachment not found');
             if (parts.length === 7 && parts[6] === 'download' && method === 'GET') {
               const fp = path.join(internalRoot, p.id, f.id); let stat; try { stat = await fsp.lstat(fp) } catch { return fail(res, 404, 'Attachment unavailable') } if (!stat.isFile()) return fail(res, 404, 'Attachment unavailable');
               return streamDownload(req, res, fp, stat, f.name, () => { void audit('attachment.download', { portalId: p.id, attachmentId: f.id }) });
@@ -2307,7 +2311,7 @@ async function handler(req, res) {
               let moved = false;
               try { await fsp.rename(fp, staged); moved = true } catch (e) { if (e.code !== 'ENOENT') throw e; return fail(res, 409, 'Attachment file missing; integrity check required') }
               let result;
-              try { result = await update(() => { p.attachments = p.attachments.filter(x => x.id !== f.id); void audit('attachment.delete', { portalId: p.id, attachmentId: f.id }); return { deleted: f.id } }) }
+              try { result = await update(() => { p.attachments = attachmentsOf(p).filter(x => x.id !== f.id); void audit('attachment.delete', { portalId: p.id, attachmentId: f.id }); return { deleted: f.id } }) }
               catch (e) { if (moved) await fsp.rename(staged, fp); throw e }
               // If cleanup fails, the staged object is recoverable and never publicly exposed.
               try { await fsp.unlink(staged) } catch (e) { console.error('Staged attachment cleanup failed', staged, e) }

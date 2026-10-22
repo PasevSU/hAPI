@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-22T13:13:13.794Z",
-  "files": 314,
-  "scannedLines": 55452,
+  "generatedAt": "2026-10-22T13:53:46.585Z",
+  "files": 315,
+  "scannedLines": 55593,
   "total": 7,
   "open": [],
   "accepted": [
@@ -67,7 +67,7 @@
     },
     {
       "file": "hapi_enterprise/server.js",
-      "line": 1548,
+      "line": 1549,
       "rule": "off-by-one-loop",
       "sev": "critical",
       "segment": "for",
