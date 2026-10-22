@@ -83,4 +83,60 @@ for (const dir of [root, emptyRoot, linkRoot, realDir]) {
   }
 }
 
-console.log('PASS evidence-portal: пакет · откриване на HA config · публикуване в www/hapi/data · идемпотентност и откази');
+// 8. Живите административни маршрути: статус и публикуване по заявка.
+//    В тази среда няма HA конфигурация, затова и двата трябва да отговорят честно
+//    (409 + причина), а не да се преструват на успех.
+(async () => {
+  const { spawn } = require('node:child_process');
+  const { freePort, waitHealthy, stopChild } = require('./helpers.cjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-portal-api-'));
+  const port = await freePort();
+  const adminPort = await freePort();
+  const base = `http://127.0.0.1:${port}`;
+  const token = 'evidence-portal-admin-token-0123456789';
+  const child = spawn(process.execPath, [path.join(__dirname, '..', 'hapi_enterprise', 'server.js')], {
+    env: {
+      ...process.env,
+      DATA_DIR: dir,
+      OPTIONS_PATH: path.join(dir, 'missing.json'),
+      PORT: String(port),
+      ADMIN_PORT: String(adminPort),
+      PUBLIC_GATEWAY_PORT: '0',
+      ADMIN_TOKEN: token,
+      // Изрична цел извън HA: тестът проверява отказа, а не писане в чужд www.
+      EVIDENCE_PORTAL_DIR: path.join(dir, 'not-www'),
+    },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let err = '';
+  child.stderr.on('data', (c) => (err += c.toString()));
+  try {
+    await waitHealthy(child, base, { attempts: 140, stderr: () => err });
+    const auth = { Authorization: 'Bearer ' + token };
+    const status = await fetch(base + '/admin/api/evidence-portal/status', { headers: auth });
+    assert.equal(status.status, 200, 'статусът отговаря 200');
+    const statusBody = await status.json();
+    assert.equal(statusBody.ok, false, 'без HA конфигурация статусът е „не“');
+    assert.match(statusBody.error, /www\/hapi\/data/, 'причината казва каква цел се очаква');
+
+    const deploy = await fetch(base + '/admin/api/evidence-portal/deploy', { method: 'POST', headers: auth });
+    assert.equal(deploy.status, 409, 'публикуване извън www се отказва с 409');
+    const deployBody = await deploy.json();
+    assert.equal(deployBody.ok, false);
+    assert.ok(deployBody.error.includes('www/hapi/data'), 'отказът обяснява изискването');
+
+    const noAuth = await fetch(base + '/admin/api/evidence-portal/status');
+    assert.equal(noAuth.status, 401, 'без токен маршрутът е затворен');
+  } finally {
+    await stopChild(child);
+    try {
+      fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      /* временна папка */
+    }
+  }
+  console.log('PASS evidence-portal: пакет · HA config · публикуване в www/hapi/data · идемпотентност, откази и живи маршрути');
+})().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});

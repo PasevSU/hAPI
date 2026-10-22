@@ -15,8 +15,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const FILES = ['portal.html', 'README.md', 'assets/app.js', 'assets/consent.js', 'assets/style.css', 'data/demo-evidence.json'];
+// Файловете на пакета. Демо-данните са `sample-evidence.json` (не в `data/`): папка
+// `data/` се пропуска от експорта на хранилището, а този файл трябва да е част от изданието.
+const FILES = ['portal.html', 'README.md', 'assets/app.js', 'assets/consent.js', 'assets/style.css', 'sample-evidence.json'];
 const SUBPATH = path.join('www', 'hapi', 'data');
+// За съобщения: винаги с прави наклонени черти, за да е еднакво на Windows и в контейнера.
+const SUBPATH_TEXT = 'www/hapi/data';
 
 const sourceDir = () => path.join(__dirname, 'evidence-portal');
 const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
@@ -52,7 +56,7 @@ function targetDir({ env = process.env, roots } = {}) {
   if (env.EVIDENCE_PORTAL_DIR) {
     const dir = path.resolve(env.EVIDENCE_PORTAL_DIR);
     if (!dir.endsWith(path.join('www', 'hapi', 'data')) && !env.EVIDENCE_PORTAL_ALLOW_ANY_DIR) {
-      return { error: `EVIDENCE_PORTAL_DIR трябва да завършва на ${SUBPATH} (получено: ${dir})` };
+      return { error: `EVIDENCE_PORTAL_DIR трябва да завършва на ${SUBPATH_TEXT} (получено: ${dir})` };
     }
     return { dir };
   }

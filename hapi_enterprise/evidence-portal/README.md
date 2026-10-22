@@ -31,7 +31,7 @@ Created/modified timestamps in the UI are claims from the manifest and must not 
 - `portal.html` — entry page
 - `assets/app.js` — tree, metadata, access states, modal, API calls
 - `assets/style.css` — responsive enterprise UI
-- `data/demo-evidence.json` — synthetic sample package
+- `sample-evidence.json` — synthetic sample package (в корена, не в `data/`: тази папка се пропуска от експорта)
 
 ## Smoke test
 
