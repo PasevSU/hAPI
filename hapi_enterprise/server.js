@@ -1089,7 +1089,7 @@ async function handler(req, res) {
     // а административните API-та си изискват Bearer токен. Allowlist — без произволни пътища.
     const UI_FILES = (() => {
       const files = { '/ui': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/index.html': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/styles.css': ['ui/styles.css', 'text/css; charset=utf-8'], '/ui/manifest.example.json': ['ui/manifest.example.json', 'application/json; charset=utf-8'] };
-      for (const f of ['bootstrap.js', 'app.js', 'icons.js', 'data.js', 'report-objects.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'settings-panel.js', 'export-center.js', 'public-gateway.js']) files['/ui/' + f] = ['ui/' + f, 'text/javascript; charset=utf-8'];
+      for (const f of ['bootstrap.js', 'app.js', 'icons.js', 'data.js', 'report-objects.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'dashboard-panel.js', 'settings-panel.js', 'export-center.js', 'public-gateway.js']) files['/ui/' + f] = ['ui/' + f, 'text/javascript; charset=utf-8'];
       for (const f of ['report-manifest.js', 'api-spec.js', 'virtual-storage.js', 'storage-tree.js', 'export-rules.js', 'export-manager.js', 'download-access.js', 'public-gateway.js', 'qrcode.js']) files['/hapi_enterprise/' + f] = ['hapi_enterprise/' + f, 'text/javascript; charset=utf-8'];
       // Публичната страница на тайна връзка отваря този скрипт от корена: `/hapi_enterprise/`
       // е достъпен само на административния listener (ingress), а прегледът е публичен.

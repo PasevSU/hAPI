@@ -1234,6 +1234,34 @@ input[type="radio"] {
   color: var(--red);
 }
 
+/* Табло: карти с РЕАЛНИ стойности от API-то. Размерите идват от токените. */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12em, 1fr));
+  gap: var(--grid-gap);
+}
+
+.dash-card {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.dash-label {
+  font-size: var(--fs-11);
+  color: var(--muted);
+}
+
+.dash-value {
+  font-size: var(--fs-20);
+  line-height: 1.2;
+  color: var(--text);
+}
+
 .fm-meta dd {
   margin: 0;
   overflow-wrap: anywhere;

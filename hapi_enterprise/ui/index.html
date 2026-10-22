@@ -1,64 +1,68 @@
 <!doctype html>
 <html lang="bg">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>hAPI Enterprise — Enterprise Control Center</title>
-    <meta name="referrer" content="no-referrer" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">hAPI</div>
-        <div class="brand-text">
-          <strong>hAPI ENTERPRISE</strong>
-          <span>Enterprise Control Center <em id="app-version"></em></span>
-        </div>
-      </div>
 
-      <div class="topbar-actions">
-        <div class="langs" role="group" aria-label="Език">
-          <button type="button" data-lang="bg" class="active">BG</button>
-          <button type="button" data-lang="de">DE</button>
-          <button type="button" data-lang="en">EN</button>
-        </div>
-        <button type="button" id="theme-toggle" class="icon-btn" title="Светла/тъмна тема">◐</button>
-        <div class="status-pill" id="status-pill">
-          <span class="dot" aria-hidden="true"></span>
-          <span id="status-text">Готов</span>
-        </div>
-      </div>
-    </header>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hAPI Enterprise — Enterprise Control Center</title>
+  <meta name="referrer" content="no-referrer" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
 
-    <div class="shell">
-      <nav id="nav" class="nav" aria-label="Основна навигация"></nav>
-      <main id="view" class="view" tabindex="-1"></main>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">hAPI</div>
+      <div class="brand-text">
+        <strong>hAPI ENTERPRISE</strong>
+        <span>Enterprise Control Center <em id="app-version"></em></span>
+      </div>
     </div>
 
-    <footer class="statusbar">
-      <span id="bar-left">hAPI Enterprise · Enterprise Control Center</span>
-      <span id="bar-center">ДЕМО данни · без backend връзка</span>
-      <span id="bar-right">CPU — · RAM — · Модус: Desktop App (WebView2)</span>
-    </footer>
+    <div class="topbar-actions">
+      <div class="langs" role="group" aria-label="Език">
+        <button type="button" data-lang="bg" class="active">BG</button>
+        <button type="button" data-lang="de">DE</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <button type="button" id="theme-toggle" class="icon-btn" title="Светла/тъмна тема">◐</button>
+      <div class="status-pill" id="status-pill">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="status-text">Готов</span>
+      </div>
+    </div>
+  </header>
 
-    <!-- Споделени ядра: същите модули, които ползва backend-ът (CommonJS + browser UMD).
+  <div class="shell">
+    <nav id="nav" class="nav" aria-label="Основна навигация"></nav>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+
+  <footer class="statusbar">
+    <span id="bar-left">hAPI Enterprise · Enterprise Control Center</span>
+    <span id="bar-center">ДЕМО данни · без backend връзка</span>
+    <span id="bar-right">CPU — · RAM — · Модус: Desktop App (WebView2)</span>
+  </footer>
+
+  <!-- Споделени ядра: същите модули, които ползва backend-ът (CommonJS + browser UMD).
          bootstrap.js избира базовия път: /hapi_enterprise/... през HTTP сървъра и
          ../ при отваряне от диска (file://), за да работят и двата режима. -->
-    <script src="bootstrap.js"></script>
-    <script src="data.js"></script>
-    <script src="icons.js"></script>
-    <script src="app.js"></script>
-    <script src="report-objects.js"></script>
-    <script src="report-studio.js"></script>
-    <script src="portals.js"></script>
-    <script src="portal-control.js"></script>
-    <script src="portal-folders.js"></script>
-    <script src="portal-files.js"></script>
-    <script src="files-manager.js"></script>
-    <script src="directory-panel.js"></script>
-    <script src="settings-panel.js"></script>
-    <script src="export-center.js"></script>
-    <script src="public-gateway.js"></script>
-  </body>
+  <script src="bootstrap.js"></script>
+  <script src="data.js"></script>
+  <script src="icons.js"></script>
+  <script src="app.js"></script>
+  <script src="report-objects.js"></script>
+  <script src="report-studio.js"></script>
+  <script src="portals.js"></script>
+  <script src="portal-control.js"></script>
+  <script src="portal-folders.js"></script>
+  <script src="portal-files.js"></script>
+  <script src="files-manager.js"></script>
+  <script src="directory-panel.js"></script>
+  <script src="dashboard-panel.js"></script>
+  <script src="settings-panel.js"></script>
+  <script src="export-center.js"></script>
+  <script src="public-gateway.js"></script>
+</body>
+
 </html>
