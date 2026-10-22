@@ -79,24 +79,22 @@ assert.match(css, /\.state-chip::before \{|\.chip::before,/);
 assert.match(css, /\.pf-portal \{[^}]*border-left: 3px solid var\(--accent-2\)/);
 assert.match(filesManager, /class="chip \$\{x\.visibility === 'public' \? 'ok' : ''\}"/);
 
-// 7. Диалогът „Сподели тайна“ е с класове от таблицата със стилове, не с inline стилове:
-//    размерите идват от токените (--radius-sm, --surface-2, --text-dim), за да е съразмерен.
-const adminHtml = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'admin.html'), 'utf8');
-const adminJs = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'admin.js'), 'utf8');
-for (const cls of ['.secret-form', '.secret-link', '.secret-meta', '.secret-note', '.secret-receipt']) {
-  assert.ok(adminHtml.includes(cls + ' {'), 'admin.html: липсва стил за ' + cls);
-}
-assert.ok(adminHtml.includes('.secret-form input,'), 'admin.html: полетата на диалога имат общ стил');
-assert.match(adminHtml, /\.secret-form input,[\s\S]{0,400}border-radius: var\(--radius-sm\)/, 'полетата ползват токена за радиус');
-const openSecret = adminJs.slice(adminJs.indexOf('function openSecretDialog()'), adminJs.indexOf('const secretShare'));
-assert.ok(openSecret.length > 0, 'намирам openSecretDialog');
-assert.equal(/\.style\./.test(openSecret), false, 'диалогът за тайна не пише inline стилове');
-assert.match(openSecret, /className = 'secret-form'/);
-assert.match(openSecret, /className = 'secret-link'/);
-// Inline стиловете в admin.js не бива да растат. Базова линия 17: остават в QR/NFC диалога
-// и йерархията (стар код); диалогът за тайна вече е изцяло с класове.
-const cssTextCount = (adminJs.match(/style\.cssText/g) || []).length;
-assert.ok(cssTextCount <= 17, `inline cssText в admin.js е ${cssTextCount}, над базовата линия 17 — ползвай клас`);
+// 7. Новият интерфейс държи всички размери и цветове в styles.css: без inline стилове
+//    в HTML и без style.cssText в скриптовете (старият панел ги имаше — той е премахнат).
+const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'index.html'), 'utf8');
+const settingsPanel = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'settings-panel.js'), 'utf8');
+assert.ok(indexHtml.includes('href="styles.css"'), 'index.html зарежда styles.css');
+assert.equal(/<style[\s>]/.test(indexHtml), false, 'index.html няма вграден <style> блок');
+assert.ok(settingsPanel.includes('class="set-tabs"'), 'табовете ползват клас от styles.css');
+assert.match(css, /\.set-tabs \{/, 'styles.css описва .set-tabs');
+assert.match(css, /\.set-tab\.active \{/, 'styles.css описва активния таб');
+const inlineStyles = fs
+  .readdirSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui'))
+  .filter((f) => f.endsWith('.js'))
+  .map((f) => fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', f), 'utf8'))
+  .join('\n');
+const cssTextCount = (inlineStyles.match(/style\.cssText/g) || []).length;
+assert.equal(cssTextCount, 0, `интерфейсът пише inline cssText (${cssTextCount} места) — ползвай клас`);
 
 console.log('ui-navigation OK');
 process.exit(0);

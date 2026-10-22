@@ -639,7 +639,7 @@ async function handler(req, res) {
       }
     }
     if (isAdminListener && corsOrigin) { res.setHeader('Access-Control-Allow-Origin', corsOrigin); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS'); res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type,X-File-Name,X-File-Encrypt'); res.setHeader('Access-Control-Max-Age', '600'); res.setHeader('Vary', 'Origin') }
-    if (ingressMode) { const adminPath = url.pathname === '/admin' || url.pathname === '/admin.js' || url.pathname.startsWith('/admin/') || url.pathname === '/' || url.pathname === '/ui' || url.pathname.startsWith('/ui/') || url.pathname.startsWith('/hapi_enterprise/') || (hasIngressPath && url.pathname.startsWith('/site/')); if (isAdminListener && !adminPath) return fail(res, 404, 'Not found'); if (!isAdminListener && adminPath) return fail(res, 404, 'Not found'); if (isAdminListener && url.pathname === '/') { url.pathname = '/admin'; req.url = url.pathname + url.search; } }
+    if (ingressMode) { const adminPath = url.pathname === '/admin' || url.pathname.startsWith('/admin/') || url.pathname === '/' || url.pathname === '/ui' || url.pathname.startsWith('/ui/') || url.pathname.startsWith('/hapi_enterprise/') || (hasIngressPath && url.pathname.startsWith('/site/')); if (isAdminListener && !adminPath) return fail(res, 404, 'Not found'); if (!isAdminListener && adminPath) return fail(res, 404, 'Not found'); if (isAdminListener && url.pathname === '/') { url.pathname = '/ui/index.html'; req.url = url.pathname + url.search; } }
     if (isAdminListener && url.pathname === '/admin/api/ingress-login' && req.method === 'GET') {
       const peer = String(req.socket.remoteAddress || '').replace(/^::ffff:/, '');
       const fromSupervisor = supervisorPeers.has(peer) && typeof req.headers['x-ingress-path'] === 'string';
@@ -1101,8 +1101,9 @@ async function handler(req, res) {
       const result = await update(async () => { const r = await retention.apply(db.portals); void audit('retention.run', { fileAction: r.fileAction, disabled: r.disabled, deleted: r.deleted, auditLinesPruned: r.auditLinesPruned }); return r });
       return json(res, 200, result);
     }
-    if (url.pathname === '/admin' && method === 'GET') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src blob: data:; frame-src blob:; object-src blob:" }); return res.end(fs.readFileSync(path.join(__dirname, 'admin.html'))) }
-    if (url.pathname === '/admin.js' && method === 'GET') { res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(path.join(__dirname, 'admin.js'))) }
+    // Старият панел (admin.html/admin.js) е премахнат: входът е Enterprise Control Center.
+    // Старите отметки /admin стигат до него с пренасочване, за да не се губи навикът.
+    if ((url.pathname === '/admin' || url.pathname === '/admin/') && method === 'GET') { res.writeHead(302, { Location: '/ui/index.html', 'Cache-Control': 'no-store' }); return res.end() }
     // Enterprise Control Center GUI (Фаза 10/11). Публичен като /admin: данните са ДЕМО,
     // а административните API-та си изискват Bearer токен. Allowlist — без произволни пътища.
     const UI_FILES = (() => {

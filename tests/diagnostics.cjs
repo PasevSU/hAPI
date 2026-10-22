@@ -11,7 +11,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), os = requ
     assert.equal((await fetch(base)).status, 401);
     const r = await fetch(base, { headers: { Authorization: `Bearer ${token}` } }); assert.equal(r.status, 200); const d = await r.json();
     assert.equal(typeof d.runtime.rssBytes, 'number'); assert(d.runtime.rssBytes > 0); assert(d.traffic.maxDownloadStreams >= 1); assert.equal(d.traffic.activeDownloadStreams, 0); assert.equal(d.catalog.portals, 0); assert.equal(d.storage.length, 3); assert(!JSON.stringify(d).includes(token)); assert(!JSON.stringify(d).includes(dir));
-    const page = await fetch(`http://127.0.0.1:${port}/admin`); assert((await page.text()).includes('diagnostics-refresh'));
+    const page = await fetch(`http://127.0.0.1:${port}/ui/settings-panel.js`); assert((await page.text()).includes('api/diagnostics'));
     console.log('PASS diagnostics auth, runtime, capacity, storage, GUI, secret isolation');
   } finally { await stopChild(child); fs.rmSync(dir, { recursive: true, force: true }) }
 })().catch(e => { console.error(e); process.exitCode = 1 });

@@ -16,7 +16,7 @@ const { DatabaseSync } = require('node:sqlite');
     const file = path.join(dir, 'backups', backup.name); assert(fs.existsSync(file)); assert.equal(backup.bytes, fs.statSync(file).size);
     assert.equal(backup.sha256, crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'));
     const db = new DatabaseSync(file, { readOnly: true }); assert.equal(db.prepare('PRAGMA quick_check').get().quick_check, 'ok'); db.close();
-    const page = await (await fetch(`http://127.0.0.1:${port}/admin`)).text(); assert(page.includes('database-backup'));
+    const page = await (await fetch(`http://127.0.0.1:${port}/ui/settings-panel.js`)).text(); assert(page.includes('api/database/backup'));
     assert(!JSON.stringify(backup).includes(dir)); assert(!JSON.stringify(backup).includes(token));
     console.log('PASS authenticated SQLite backup API, integrity, hash, GUI and path isolation');
   } finally { await stopChild(child); fs.rmSync(dir, { recursive: true, force: true }) }

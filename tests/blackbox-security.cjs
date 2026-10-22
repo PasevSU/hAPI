@@ -108,18 +108,20 @@ const b64u = (b) => Buffer.from(b).toString('base64url');
       assert.ok(r.status >= 400, `${evil} не се сервира (получено ${r.status})`);
       assert.equal(/ADMIN_TOKEN|require\('node:http'\)/.test(r.text), false, `${evil} не изтича код`);
     }
-    const adminJs = await call('/admin.js');
-    assert.equal(adminJs.status, 200, 'admin.js се сервира');
-    assert.equal(adminJs.headers.get('x-content-type-options'), 'nosniff', 'admin.js е nosniff');
-    assert.match(adminJs.headers.get('content-type') || '', /javascript/, 'admin.js е JS, не HTML');
-    const adminPage = await call('/admin');
-    assert.equal(adminPage.status, 200, 'административният интерфейс се сервира');
-    const adminCsp = adminPage.headers.get('content-security-policy') || '';
-    assert.match(adminCsp, /default-src 'none'/, 'админ страницата затваря всичко по подразбиране');
-    assert.match(adminCsp, /script-src 'self'/, 'админ страницата пуска само собствени скриптове');
-    assert.equal(/script-src[^;]*unsafe-inline/.test(adminCsp), false, 'без inline скрипт в админ страницата');
-    assert.equal(/script-src[^;]*unsafe-eval/.test(adminCsp), false, 'без eval в админ страницата');
-    console.log('· статични файлове: /ui/ и /admin.js със nosniff, изходът навън е отказан');
+    const panelJs = await call('/ui/settings-panel.js');
+    assert.equal(panelJs.status, 200, 'панелът на настройките се сервира');
+    assert.equal(panelJs.headers.get('x-content-type-options'), 'nosniff', 'settings-panel.js е nosniff');
+    assert.match(panelJs.headers.get('content-type') || '', /javascript/, 'settings-panel.js е JS, не HTML');
+    // Старият /admin е само пренасочване към новия интерфейс — не сервира HTML сам по себе си.
+    const legacyAdmin = await call('/admin');
+    assert.equal(legacyAdmin.status, 200, 'старият /admin стига до новия интерфейс');
+    assert.match(legacyAdmin.text, /Enterprise Control Center/, 'след пренасочването се показва новият интерфейс');
+    const legacyJs = await call('/admin.js');
+    assert.equal(legacyJs.status, 404, 'старият admin.js вече не се сервира');
+    const uiCsp = ui.headers.get('content-security-policy') || '';
+    assert.equal(/script-src[^;]*unsafe-inline/.test(uiCsp), false, 'без inline скрипт в интерфейса');
+    assert.equal(/script-src[^;]*unsafe-eval/.test(uiCsp), false, 'без eval в интерфейса');
+    console.log('· статични файлове: /ui/ и /ui/settings-panel.js със nosniff, изходът навън е отказан');
 
     // ── 4. Инжекция в заглавки и отразяване ───────────────────────────────
     // HTTP клиентът отказва CRLF в заглавка, затова проверяваме какво прави

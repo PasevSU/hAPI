@@ -15,9 +15,12 @@ assert.doesNotMatch(docker, /CMD\s+\["\/app\/run\.sh"\]/, 'Dockerfile не би�
 assert.match(docker, /^CMD\s+\["node",\s*"\/app\/start\.js"\]$/m, 'CMD трябва да е node /app/start.js');
 const copyLine = (docker.match(/^COPY\s+(.+?)\s+\/app\/\s*$/m) || [])[1] || '';
 const copied = new Set(copyLine.split(/\s+/));
-for (const mod of ['sqlite-store.js', 'qrcode.js', 'ooxml.js', 'pdf-writer.js', 'cabinet.js', 'directory.js', 'job-manager.js', 'server.js', 'runtime-config.js', 'audit-chain.js', 'rbac.js', 'error-log.js', 'config-profiles.js', 'storage-check.js', 'load-control.js', 'storage-preflight.js', 'storage-migrate.js', 'admin.js', 'admin.html', 'portal.html', 'portal.js', 'portal.css', 'start.js']) {
+for (const mod of ['sqlite-store.js', 'qrcode.js', 'ooxml.js', 'pdf-writer.js', 'cabinet.js', 'directory.js', 'job-manager.js', 'server.js', 'runtime-config.js', 'audit-chain.js', 'rbac.js', 'error-log.js', 'config-profiles.js', 'storage-check.js', 'load-control.js', 'storage-preflight.js', 'storage-migrate.js', 'evidence-portal.js', 'portal.html', 'portal.js', 'portal.css', 'start.js']) {
   assert.ok(copied.has(mod), 'Dockerfile must COPY ' + mod);
 }
+// Старият панел е премахнат: качва се само именното на новия интерфейс (COPY ui /app/ui/).
+assert.doesNotMatch(copyLine, /\badmin\.(?:js|html)\b/, 'Dockerfile не бива да копира стария панел');
+assert.match(docker, /^COPY\s+ui\s+\/app\/ui\/\s*$/m, 'Dockerfile копира ui/ като /app/ui/');
 // Пълен манифест: всички локални модули, които се изискват (транзитивно) от server.js,
 // трябва да са в COPY — иначе add-on-ът стартира с MODULE_NOT_FOUND.
 const seen = new Set();

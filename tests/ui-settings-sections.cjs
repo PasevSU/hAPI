@@ -64,10 +64,14 @@ const host = stubElement();
 panel.mount(host);
 
 const html = host.innerHTML;
-for (const label of ['Основни', 'Йерархия', 'Картотека', 'Категории и групи', 'Диагностика', 'Съхранение', 'Резервни копия', 'Журнал']) {
+const LABELS = [
+  'Основни', 'Йерархия', 'Картотека', 'Категории и групи', 'Задачи',
+  'Потребители', 'Променливи', 'Данни', 'Диагностика', 'Съхранение', 'Резервни копия', 'Журнал',
+];
+for (const label of LABELS) {
   assert.ok(html.includes(label), `табът „${label}“ е в панела`);
 }
-assert.equal((html.match(/data-section="[a-z]+"/g) || []).length, 8, 'осем таба: Основни + седем секции');
+assert.equal((html.match(/data-section="[a-z]+"/g) || []).length, LABELS.length, 'дванайсет таба: Основни + единайсет секции');
 assert.ok(html.includes('Секции на настройките'), 'табовете имат достъпно име');
 
 // Избор на секция: заглавието се сменя и (без връзка) секцията казва защо е празна.
@@ -85,5 +89,5 @@ setTimeout(() => {
   panel.state.section = 'general';
   panel.mount(host);
   assert.ok(host.innerHTML.includes('Връзка с add-on-а'), 'връщането към „Основни“ показва настройките на връзката');
-  console.log('PASS ui-settings-sections: 8 таба · избор на секция · ясно състояние без връзка');
+  console.log('PASS ui-settings-sections: 12 таба · избор на секция · действия · ясно състояние без връзка');
 }, 50);

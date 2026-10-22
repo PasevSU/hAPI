@@ -18,9 +18,10 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 const uiDir = path.join(root, 'hapi_enterprise', 'ui');
-const uiSources = ['hapi_enterprise/admin.html', 'hapi_enterprise/admin.js'].concat(
-  fs.readdirSync(uiDir).filter((f) => f.endsWith('.js')).map((f) => 'hapi_enterprise/ui/' + f),
-);
+const uiSources = fs
+  .readdirSync(uiDir)
+  .filter((f) => f.endsWith('.js'))
+  .map((f) => 'hapi_enterprise/ui/' + f);
 const ui = uiSources.map(read).join('\n');
 const serverSrc = read('hapi_enterprise/server.js');
 
@@ -78,7 +79,6 @@ for (const gap of KNOWN_GAPS.keys()) {
 const filesManager = read('hapi_enterprise/ui/files-manager.js');
 const portalControl = read('hapi_enterprise/ui/portal-control.js');
 const settings = read('hapi_enterprise/ui/settings-panel.js');
-const adminJs = read('hapi_enterprise/admin.js');
 const CONTROLS = [
   ['подписан URL (файл)', filesManager, "data-signed-url"],
   ['разписка (файл)', filesManager, 'data-receipt'],
@@ -87,8 +87,8 @@ const CONTROLS = [
   ['проверка за цялост (портал)', portalControl, 'pf-integrity'],
   ['фонова проверка (портал)', portalControl, 'pf-integrity-job'],
   ['миграция (настройки)', settings, 'set-migrate-analyze'],
-  ['свързване на запис', adminJs, '/associate'],
-  ['отделяне на запис', adminJs, '/detach'],
+  ['свързване на запис', settings, '/associate'],
+  ['отделяне на запис', settings, '/detach'],
 ];
 for (const [label, source, marker] of CONTROLS) {
   assert.ok(source.includes(marker), 'липсва контрол за „' + label + '“ (' + marker + ')');

@@ -44,7 +44,8 @@
         body: o.json !== undefined ? JSON.stringify(o.json) : undefined,
       });
       const type = res.headers.get('Content-Type') || '';
-      const data = type.includes('application/json') ? await res.json() : null;
+      // `raw: true` е за текстови отговори (напр. Prometheus метрики), които не са JSON.
+      const data = type.includes('application/json') ? await res.json() : o.raw ? await res.text() : null;
       return { ok: res.ok, status: res.status, error: res.ok ? '' : (data && data.error) || `HTTP ${res.status}`, data };
     } catch (e) {
       return { ok: false, status: 0, error: e.message, data: null };
@@ -242,13 +243,17 @@
   }
 
   // ── Секции на „Настройки“ ─────────────────────────────────────────────────
-  // Седемте административни секции живеят ТУК, а не в главното меню: то остава късо,
-  // а всичко „под капака“ се отваря от едно място. Всяка секция показва реални данни
-  // от административния API — няма демо числа и няма празни екрани.
+  // Десетте административни секции живеят ТУК, а не в главното меню: то остава късо,
+  // а всичко „под капака“ се отваря от едно място. Всяка секция показва реални данни от
+  // административния API и — където има смисъл — предлага самото действие.
   const SECTIONS = [
     { id: 'hierarchy', label: 'Йерархия' },
     { id: 'cabinet', label: 'Картотека' },
     { id: 'taxonomy', label: 'Категории и групи' },
+    { id: 'jobs', label: 'Задачи' },
+    { id: 'users', label: 'Потребители' },
+    { id: 'variables', label: 'Променливи' },
+    { id: 'data', label: 'Данни' },
     { id: 'diagnostics', label: 'Диагностика' },
     { id: 'storage', label: 'Съхранение' },
     { id: 'backups', label: 'Резервни копия' },
@@ -257,12 +262,29 @@
 
   const sectionCache = {};
 
+  const fmtBytes = (n) => {
+    const v = Number(n) || 0;
+    if (v < 1024) return v + ' B';
+    if (v < 1024 * 1024) return (v / 1024).toFixed(1) + ' KB';
+    return (v / 1024 / 1024).toFixed(1) + ' MB';
+  };
+  const fmtTime = (v) => {
+    if (!v) return '—';
+    const d = typeof v === 'number' ? new Date(v) : new Date(String(v));
+    return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString();
+  };
+  const table = (head, rows) =>
+    rows.length
+      ? '<table class="grid"><thead><tr>' + head.map((h) => '<th>' + esc(h) + '</th>').join('') + '</tr></thead><tbody>' +
+      rows.map((r) => '<tr>' + r.map((c) => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody></table>'
+      : '<p class="hint">Няма данни.</p>';
+
   function renderTabs() {
     const current = state.section || 'general';
     const tab = (id, label) =>
-      `<button type="button" class="set-tab${current === id ? ' active' : ''}" data-section="${esc(id)}"${current === id ? ' aria-current="true"' : ''
-      }>${esc(label)}</button>`;
-    return `<nav class="set-tabs" aria-label="Секции на настройките">${tab('general', 'Основни')}${SECTIONS.map((s) => tab(s.id, s.label)).join('')}</nav>`;
+      '<button type="button" class="set-tab' + (current === id ? ' active' : '') + '" data-section="' + esc(id) + '"' +
+      (current === id ? ' aria-current="true"' : '') + '>' + esc(label) + '</button>';
+    return '<nav class="set-tabs" aria-label="Секции на настройките">' + tab('general', 'Основни') + SECTIONS.map((s) => tab(s.id, s.label)).join('') + '</nav>';
   }
 
   function bindTabs() {
@@ -274,24 +296,6 @@
     });
   }
 
-  const fmtBytes = (n) => {
-    const v = Number(n) || 0;
-    if (v < 1024) return `${v} B`;
-    if (v < 1024 * 1024) return `${(v / 1024).toFixed(1)} KB`;
-    return `${(v / 1024 / 1024).toFixed(1)} MB`;
-  };
-  const fmtTime = (v) => {
-    if (!v) return '—';
-    const d = typeof v === 'number' ? new Date(v) : new Date(String(v));
-    return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString();
-  };
-  const table = (head, rows) =>
-    rows.length
-      ? `<table class="grid"><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows
-        .map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`)
-        .join('')}</tbody></table>`
-      : '<p class="hint">Няма данни.</p>';
-
   // Зарежда данните за секция (с кеш за сесията, за да не се дърпа при всяко цъкане).
   async function loadSection(id) {
     if (sectionCache[id]) return sectionCache[id];
@@ -300,118 +304,530 @@
       out.error = 'Няма връзка с add-on-а — задай адрес и токен в „Основни“.';
       return out;
     }
-    const grab = async (path, opts) => api(path, opts).then((r) => (r.ok ? r.data : null));
+    const grab = async (path) => api(path).then((r) => (r.ok ? r.data : null));
     if (id === 'hierarchy') {
-      const [portals, groups] = await Promise.all([grab('/admin/api/portals'), grab('/admin/api/v2/groups')]);
-      out.data = { portals: (portals && portals.portals) || [], groups: (groups && groups.groups) || [] };
+      const [portals, groups, records] = await Promise.all([
+        grab('/admin/api/portals'),
+        grab('/admin/api/v2/groups'),
+        grab('/admin/api/v2/records'),
+      ]);
+      out.data = {
+        portals: (portals && portals.portals) || [],
+        groups: (groups && groups.groups) || [],
+        records: (records && records.records) || [],
+      };
     } else if (id === 'cabinet') {
       out.data = await grab('/admin/api/cabinet/info');
     } else if (id === 'taxonomy') {
       out.data = await grab('/admin/api/taxonomy');
+    } else if (id === 'jobs') {
+      out.data = await grab('/admin/api/jobs');
+    } else if (id === 'users') {
+      out.data = await grab('/admin/api/users');
+    } else if (id === 'variables') {
+      out.data = await grab('/admin/api/variables');
+    } else if (id === 'data') {
+      const [secrets, portals] = await Promise.all([
+        grab('/admin/api/v2/secrets'),
+        grab('/admin/api/portals'),
+      ]);
+      out.data = { secrets: (secrets && secrets.secrets) || [], portals: (portals && portals.portals) || [] };
     } else if (id === 'diagnostics') {
-      const [diag, load] = await Promise.all([grab('/admin/api/diagnostics'), grab('/admin/api/load')]);
-      out.data = { diag, load };
+      const [diag, load, metrics, who, portal, qr] = await Promise.all([
+        grab('/admin/api/diagnostics'),
+        grab('/admin/api/load'),
+        grab('/admin/api/metrics'),
+        grab('/admin/api/whoami'),
+        grab('/admin/api/evidence-portal/status'),
+        grab('/admin/api/qr-artifacts'),
+      ]);
+      out.data = { diag, load, metrics, who, portal, qr };
     } else if (id === 'storage') {
-      out.data = await grab('/admin/api/storage/status');
+      const [status, retention] = await Promise.all([grab('/admin/api/storage/status'), grab('/admin/api/retention')]);
+      out.data = { status, retention };
     } else if (id === 'backups') {
-      out.data = await grab('/admin/api/database/backups');
+      const [list, schedule] = await Promise.all([grab('/admin/api/database/backups'), grab('/admin/api/database/backup-schedule')]);
+      out.data = { backups: (list && list.backups) || [], mirror: list && list.mirror, schedule };
     } else if (id === 'logs') {
-      out.data = await grab('/admin/api/errors?limit=50');
+      const [errors, logs, rules] = await Promise.all([
+        grab('/admin/api/errors?limit=50'),
+        grab('/admin/api/logs?limit=50'),
+        grab('/admin/api/rules'),
+      ]);
+      out.data = { events: (errors && errors.events) || [], logs, rules };
+    } else if (id === 'general') {
+      const profiles = await grab('/admin/api/config-profiles');
+      out.data = { profiles: (profiles && profiles.profiles) || [] };
     }
     if (!out.data) out.error = 'Сървърът не отговори с данни за тази секция.';
     sectionCache[id] = out;
     return out;
   }
 
+  const form = (id, placeholder, button, extra) =>
+    '<div class="u-row u-row-inline u-mt">' +
+    (extra || '') +
+    '<input id="set-' + id + '-input" placeholder="' + esc(placeholder) + '" />' +
+    '<button type="button" class="btn btn-primary" data-action="' + id + '">' + esc(button) + '</button>' +
+    '</div>';
+
   function sectionBody(id, res) {
-    if (res.error) return `<p><span class="badge err">грешка</span> <span class="hint">${esc(res.error)}</span></p>`;
+    if (res.error) return '<p><span class="badge err">грешка</span> <span class="hint">' + esc(res.error) + '</span></p>';
     const d = res.data || {};
     if (id === 'hierarchy') {
       const portals = (d.portals || []).map((p) => [
         esc(p.title || p.slug || '—'),
-        `<code>${esc(p.slug || '')}</code>`,
+        '<code>' + esc(p.slug || '') + '</code>',
         String((p.files || []).length),
         esc(p.visibility || '—'),
       ]);
       const groups = (d.groups || []).map((g) => [esc(g.name || g.id || '—'), esc(g.description || '')]);
-      return `<h3 class="u-mt">Портали</h3>${table(['Портал', 'Адрес', 'Файлове', 'Видимост'], portals)}
-        <h3 class="u-mt">Групи записи</h3>${table(['Група', 'Описание'], groups)}`;
+      // Записите от картотеката се свързват с група и се отделят — както в стария панел.
+      const records = (d.records || []).map((r) => [
+        '<code>' + esc(r.id || '') + '</code>',
+        esc(r.prefix || '—'),
+        esc(r.group_id || '—'),
+        '<button type="button" class="btn" data-record-assoc="' + esc(r.id) + '">Свържи</button> ' +
+        '<button type="button" class="btn" data-record-detach="' + esc(r.id) + '">Отдели</button>',
+      ]);
+      return '<h3>Портали</h3>' + table(['Портал', 'Адрес', 'Файлове', 'Видимост'], portals) +
+        '<h3 class="u-mt">Групи записи</h3>' + table(['Група', 'Описание'], groups) +
+        form('group', 'Име на група', 'Създай група') +
+        '<h3 class="u-mt">Записи (' + records.length + ')</h3>' +
+        (records.length
+          ? '<div class="u-row u-row-inline"><select id="set-record-group">' +
+          (d.groups || []).map((g) => '<option value="' + esc(g.id || g.name) + '">' + esc(g.name || g.id) + '</option>').join('') +
+          '</select><span class="hint">група за „Свържи“</span></div>' +
+          table(['Запис', 'Префикс', 'Група', ''], records)
+          : '<p class="hint">Няма записи в картотеката.</p>');
     }
     if (id === 'cabinet') {
       const rows = [
         ['Локално отваряне', d.localOpen ? 'включено' : 'изключено'],
         ['Максимален размер', fmtBytes(d.maxBytes)],
         ['Създаване на файлове', (d.createTypes || []).join(', ') || '—'],
-        ['Конвертиране', Object.entries(d.convert || {}).map(([k, v]) => `${k} → ${v.join(', ')}`).join('; ') || '—'],
+        ['Конвертиране', Object.entries(d.convert || {}).map(([k, v]) => k + ' → ' + v.join(', ')).join('; ') || '—'],
       ];
       return table(['Възможност', 'Стойност'], rows.map(([a, b]) => [esc(a), esc(b)]));
     }
     if (id === 'taxonomy') {
       const cats = (d.categories || []).map((c) => [esc(c)]);
       const grps = (d.groups || []).map((g) => [esc(g)]);
-      return `<h3>Категории (${cats.length})</h3>${table(['Категория'], cats)}<h3 class="u-mt">Групи (${grps.length})</h3>${table(['Група'], grps)}`;
+      return '<h3>Категории (' + cats.length + ')</h3>' + table(['Категория'], cats) +
+        '<h3 class="u-mt">Групи (' + grps.length + ')</h3>' + table(['Група'], grps) +
+        '<div class="u-row u-row-inline u-mt">' +
+        '<select id="set-tax-kind"><option value="category">Категория</option><option value="group">Група</option></select>' +
+        '<input id="set-tax-input" placeholder="Име" />' +
+        '<button type="button" class="btn btn-primary" data-action="taxonomy">Добави</button></div>';
+    }
+    if (id === 'jobs') {
+      const jobs = (d.jobs || []).map((j) => [
+        esc(j.type || j.kind || '—'),
+        esc(j.status || '—'),
+        esc(j.progress != null ? j.progress + '%' : '—'),
+        '<button type="button" class="btn" data-job="' + esc(j.id) + '" data-job-action="cancel">Откажи</button>',
+      ]);
+      return table(['Вид', 'Състояние', 'Напредък', ''], jobs);
+    }
+    if (id === 'users') {
+      const users = (d.users || []).map((u) => [
+        esc(u.username || '—'),
+        esc((u.scopes || []).join(', ')),
+        u.active === false ? 'не' : 'да',
+        '<button type="button" class="btn" data-user="' + esc(u.username) + '">Изтрий</button>',
+      ]);
+      return table(['Потребител', 'Права', 'Активен', ''], users) +
+        '<div class="u-row u-row-inline u-mt">' +
+        '<input id="set-user-name" placeholder="потребител" />' +
+        '<input id="set-user-pass" type="password" placeholder="парола" autocomplete="new-password" />' +
+        '<button type="button" class="btn btn-primary" data-action="user">Създай</button></div>';
+    }
+    if (id === 'variables') {
+      const vars = (d.variables || []).map((v) => [
+        esc(v.key || v.name || '—'),
+        esc(v.type || '—'),
+        esc(String(v.value == null ? '' : v.value).slice(0, 60)),
+      ]);
+      return table(['Променлива', 'Тип', 'Стойност'], vars) +
+        '<div class="u-row u-row-inline u-mt">' +
+        '<input id="set-var-key" placeholder="име" />' +
+        '<input id="set-var-value" placeholder="стойност" />' +
+        '<button type="button" class="btn btn-primary" data-action="variable">Добави</button></div>';
+    }
+    if (id === 'data') {
+      const secrets = (d.secrets || []).map((s) => [
+        '<code>' + esc(String(s.idHash || s.id || '').slice(0, 16)) + '…</code>',
+        esc(fmtTime(s.createdAt || s.at)),
+        esc(s.note || '—'),
+      ]);
+      const portalOptions = (d.portals || []).map((p) => '<option value="' + esc(p.id) + '">' + esc(p.title || p.slug) + '</option>').join('');
+      return '<h3>Тайни връзки</h3>' + table(['Идентификатор', 'Създадена', 'Бележка'], secrets) +
+        '<h3 class="u-mt">Търсене в картотеката</h3>' +
+        '<div class="u-row u-row-inline"><input id="set-search-q" placeholder="търсена дума" />' +
+        '<button type="button" class="btn" data-action="search">Търси</button></div>' +
+        '<h3 class="u-mt">Организации</h3>' +
+        '<div class="u-row u-row-inline"><input id="set-org-name" placeholder="име на организация" />' +
+        '<button type="button" class="btn" data-action="organization">Добави</button></div>' +
+        '<h3 class="u-mt">Внасяне на записи</h3>' +
+        '<div class="u-row u-row-inline"><input id="set-ingest-emails" placeholder="имейли, разделени със запетая" />' +
+        '<button type="button" class="btn" data-action="ingest">Внеси</button></div>' +
+        '<h3 class="u-mt">Сливане на портали</h3>' +
+        '<div class="u-row u-row-inline"><input id="set-merge-target" placeholder="портал-получател (id)" />' +
+        '<input id="set-merge-sources" placeholder="източници (id, id)" />' +
+        '<button type="button" class="btn" data-action="merge">Слей</button></div>' +
+        '<h3 class="u-mt">Конфликти</h3>' +
+        '<div class="u-row u-row-inline"><input id="set-conflict-id" placeholder="конфликт (id)" />' +
+        '<input id="set-conflict-value" placeholder="стойност" />' +
+        '<button type="button" class="btn" data-action="conflict">Реши</button></div>' +
+        '<h3 class="u-mt">Портални функции</h3>' +
+        (portalOptions
+          ? '<div class="u-row u-row-inline"><select id="set-data-portal">' + portalOptions + '</select>' +
+          '<input id="set-data-file" placeholder="файл (id, по избор)" />' +
+          '<input id="set-data-folder" placeholder="папка на HTML проект" />' +
+          '<input id="set-data-title" placeholder="заглавие" /></div>' +
+          '<div class="u-row u-mt"><button type="button" class="btn" data-action="apiInfo">api-info</button>' +
+          '<button type="button" class="btn" data-action="htmlProjects">HTML проекти</button>' +
+          '<button type="button" class="btn" data-action="htmlProject">Нов HTML проект</button>' +
+          '<button type="button" class="btn" data-action="sends">Изпрати връзка</button></div>'
+          : '<p class="hint">Първо създай портал.</p>') +
+        '<pre class="tree u-mt" id="set-data-out" aria-live="polite">—</pre>';
     }
     if (id === 'diagnostics') {
       const diag = d.diag || {};
       const load = d.load || {};
+      const metrics = d.metrics || {};
+      const who = d.who || {};
+      const portal = d.portal || {};
       const rows = [
         ['Време на сървъра', fmtTime(diag.generatedAt)],
-        ['Работи от', `${Math.round(Number(diag.uptimeSeconds) || 0)} s`],
+        ['Работи от', Math.round(Number(diag.uptimeSeconds) || 0) + ' s'],
         ['Node', esc((diag.runtime || {}).node || '—')],
         ['Памет (RSS)', fmtBytes((diag.runtime || {}).rssBytes)],
-        ['Заявки / грешки', `${(diag.traffic || {}).requests ?? 0} / ${(diag.traffic || {}).errors ?? 0}`],
-        ['Изтегляния', String((diag.traffic || {}).downloads ?? 0)],
-        ['Натоварване', `${esc(load.level || '—')} · ефективни паралелни ${esc(load.effective ?? '—')}`],
-        ['Съотношение памет', String(load.heapRatio ?? '—')],
+        ['Заявки / грешки', ((diag.traffic || {}).requests || 0) + ' / ' + ((diag.traffic || {}).errors || 0)],
+        ['Изтегляния', String((diag.traffic || {}).downloads || 0)],
+        ['Натоварване', esc(load.level || '—') + ' · паралелни ' + esc(load.effective != null ? load.effective : '—')],
+        ['Съотношение памет', String(load.heapRatio == null ? '—' : load.heapRatio)],
+        ['Роля / Ingress', esc(who.role || '—') + ' · ' + (who.ingress ? 'да' : 'не')],
+        ['Броячи', String((metrics.requests || 0)) + ' заявки · ' + String((metrics.portals || 0)) + ' портала'],
+        ['Портал за доказателства', esc(portal.dir || portal.error || 'не е разположен')],
+        ['QR артефакти', String(((d.qr && d.qr.artifacts) || []).length)],
       ];
-      return table(['Показател', 'Стойност'], rows.map(([a, b]) => [esc(a), b]));
+      return table(['Показател', 'Стойност'], rows.map(([a, b]) => [esc(a), b])) +
+        '<div class="u-row u-row-inline u-mt">' +
+        '<input id="set-notify-service" placeholder="услуга (напр. notify.mobile_app)" />' +
+        '<input id="set-notify-link" placeholder="връзка или адрес" />' +
+        '<button type="button" class="btn" data-action="notify">Изпрати известие</button></div>' +
+        '<div class="u-row u-mt">' +
+        '<button type="button" class="btn" data-action="portalDeploy">Разположи портала</button>' +
+        '<button type="button" class="btn" data-action="metricsProm">Метрики за мониторинг</button>' +
+        '</div>';
     }
     if (id === 'storage') {
-      const last = d.lastCheck || {};
-      const locs = (last.locations || []).map((l) => [esc(l.name), l.available ? 'да' : 'не', l.writable ? 'да' : 'не', esc(l.error || '—')]);
-      return `<p class="hint">Последна проверка: ${esc(fmtTime(last.checkedAt))} · следваща: ${esc(fmtTime(d.nextCheckAt))}</p>
-        ${table(['Локация', 'Достъпна', 'Записваема', 'Грешка'], locs)}`;
+      const st = d.status || {};
+      const last = st.lastCheck || {};
+      const retention = d.retention || {};
+      const locs = (last.locations || []).map((l) => [
+        esc(l.name),
+        l.available ? 'да' : 'не',
+        l.writable ? 'да' : 'не',
+        esc(l.error || '—'),
+      ]);
+      const ret = [
+        ['Включено', retention.enabled ? 'да' : 'не'],
+        ['Ще бъдат изтрити', String(retention.deleted != null ? retention.deleted : (retention.expired || []).length || 0)],
+        ['Ще бъдат деактивирани', String(retention.disabled != null ? retention.disabled : 0)],
+      ];
+      return '<p class="hint">Последна проверка: ' + esc(fmtTime(last.checkedAt)) + ' · следваща: ' + esc(fmtTime(st.nextCheckAt)) + '</p>' +
+        table(['Локация', 'Достъпна', 'Записваема', 'Грешка'], locs) +
+        '<h3 class="u-mt">Задържане</h3>' + table(['Показател', 'Стойност'], ret.map(([a, b]) => [esc(a), esc(b)])) +
+        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="storage">Провери сега</button>' +
+        '<button type="button" class="btn" data-action="retention">Приложи задържането</button>' +
+        '<button type="button" class="btn" data-action="mirror">Провери огледалото</button>' +
+        '<button type="button" class="btn" data-action="mirrorRepair">Поправи от огледалото</button></div>';
     }
     if (id === 'backups') {
       const list = (d.backups || []).map((b) => [
-        `<code>${esc(b.name || '—')}</code>`,
+        '<code>' + esc(b.name || '—') + '</code>',
         fmtBytes(b.bytes || b.size),
         esc(fmtTime(b.createdAt || b.mtime)),
       ]);
-      const mirror = d.mirror ? `Огледало: <code>${esc(d.mirror)}</code>` : 'Огледало не е настроено.';
-      return `<p class="hint">${mirror}</p>${table(['Архив', 'Размер', 'Създаден'], list)}`;
+      const mirror = d.mirror ? 'Огледало: <code>' + esc(d.mirror) + '</code>' : 'Огледало не е настроено.';
+      const sched = (d.schedule && d.schedule.schedule) || {};
+      const next = d.schedule && d.schedule.nextRunAt;
+      return '<p class="hint">' + mirror + '</p>' + table(['Архив', 'Размер', 'Създаден'], list) +
+        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="backup">Създай копие</button>' +
+        '<button type="button" class="btn" data-action="verify">Провери копията</button></div>' +
+        '<h3 class="u-mt">Автоматичен график</h3>' +
+        '<p class="hint">Следващо копие: ' + esc(fmtTime(next)) + '</p>' +
+        '<div class="u-row u-row-inline u-mt">' +
+        '<label><input id="set-sched-enabled" type="checkbox"' + (sched.enabled ? ' checked' : '') + ' /> включен</label>' +
+        '<input id="set-sched-interval" type="number" min="1" value="' + esc(sched.intervalMinutes != null ? sched.intervalMinutes : 1440) + '" placeholder="минути" />' +
+        '<input id="set-sched-max" type="number" min="1" value="' + esc(sched.maxBackups != null ? sched.maxBackups : 7) + '" placeholder="брой" />' +
+        '<button type="button" class="btn btn-primary" data-action="schedule">Запази графика</button></div>';
     }
     if (id === 'logs') {
       const events = (d.events || []).map((e) => [
         esc(fmtTime(e.at)),
         esc(e.level || '—'),
         esc(e.event || e.message || '—'),
-        esc((e.details && JSON.stringify(e.details).slice(0, 120)) || ''),
+        esc(e.details ? JSON.stringify(e.details).slice(0, 120) : ''),
       ]);
-      return `<p class="hint">Последни ${events.length} записа, най-новите първи.</p>${table(['Време', 'Ниво', 'Събитие', 'Детайли'], events)}`;
+      const logs = d.logs || {};
+      const rules = d.rules || {};
+      const entries = (logs.entries || []).length;
+      return '<p class="hint">Последни ' + events.length + ' записа, най-новите първи. Ниво на журнала: <code>' + esc(logs.level || '—') + '</code> · ' + entries + ' реда в паметта.</p>' +
+        table(['Време', 'Ниво', 'Събитие', 'Детайли'], events) +
+        '<div class="u-row u-row-inline u-mt">' +
+        '<select id="set-log-level">' +
+        ['trace', 'debug', 'info', 'warn', 'error'].map((lv) => '<option value="' + lv + '"' + (logs.level === lv ? ' selected' : '') + '>' + lv + '</option>').join('') +
+        '</select>' +
+        '<button type="button" class="btn btn-primary" data-action="level">Задай ниво</button>' +
+        '<button type="button" class="btn" data-action="rules">Презареди правилата</button>' +
+        '<button type="button" class="btn" data-action="audit">Изтегли одита</button>' +
+        '<button type="button" class="btn" data-action="reload">Обнови</button></div>' +
+        '<p class="hint">Правила на gateway: ' + esc(rules.count != null ? rules.count + ' активни' : (rules.host || 'няма данни')) + '</p>';
     }
     return '<p class="hint">Непозната секция.</p>';
+  }
+
+  // Действията в секциите. Патент: секция → какво прави бутонът.
+  async function runAction(action) {
+    const post = (path, json) => api(path, { method: 'POST', json });
+    if (action === 'group') {
+      const name = host.querySelector('#set-group-input').value.trim();
+      if (!name) return toast('Въведи име на група', 'err');
+      const r = await post('/admin/api/v2/groups', { name, description: '' });
+      if (!r.ok) return toast(r.error || 'Групата не е създадена', 'err');
+      toast('Групата е създадена', 'ok');
+    } else if (action === 'taxonomy') {
+      const name = host.querySelector('#set-tax-input').value.trim();
+      const kind = host.querySelector('#set-tax-kind').value;
+      if (!name) return toast('Въведи име', 'err');
+      const r = await post('/admin/api/taxonomy', { kind, name });
+      if (!r.ok) return toast(r.error || 'Не е добавено', 'err');
+      toast('Добавено', 'ok');
+    } else if (action === 'user') {
+      const username = host.querySelector('#set-user-name').value.trim();
+      const password = host.querySelector('#set-user-pass').value;
+      if (!username || !password) return toast('Потребител и парола са задължителни', 'err');
+      const r = await post('/admin/api/users', { username, password });
+      if (!r.ok) return toast(r.error || 'Потребителят не е създаден', 'err');
+      toast('Потребителят е създаден', 'ok');
+    } else if (action === 'variable') {
+      const key = host.querySelector('#set-var-key').value.trim();
+      const value = host.querySelector('#set-var-value').value;
+      if (!key) return toast('Въведи име на променлива', 'err');
+      const r = await post('/admin/api/variables', { key, value });
+      if (!r.ok) return toast(r.error || 'Променливата не е добавена', 'err');
+      toast('Променливата е добавена', 'ok');
+    } else if (action === 'storage') {
+      const r = await post('/admin/api/storage/check', {});
+      if (!r.ok) return toast(r.error || 'Проверката не мина', 'err');
+      toast('Проверката приключи', 'ok');
+    } else if (action === 'backup') {
+      const r = await post('/admin/api/database/backup', {});
+      if (!r.ok) return toast(r.error || 'Копието не е създадено', 'err');
+      toast('Копието е създадено', 'ok');
+    } else if (action === 'verify') {
+      const r = await post('/admin/api/database/backups/verify', {});
+      if (!r.ok) return toast(r.error || 'Проверката не мина', 'err');
+      const d = r.data || {};
+      toast('Проверени ' + (d.checked != null ? d.checked : '') + ' копия' + (d.ok === false ? ' · има проблем' : ''), d.ok === false ? 'err' : 'ok');
+    } else if (action === 'schedule') {
+      const enabled = Boolean(host.querySelector('#set-sched-enabled').checked);
+      const intervalMinutes = Number(host.querySelector('#set-sched-interval').value);
+      const maxBackups = Number(host.querySelector('#set-sched-max').value);
+      if (!Number.isFinite(intervalMinutes) || intervalMinutes < 1) return toast('Интервалът е в минути, поне 1', 'err');
+      if (!Number.isFinite(maxBackups) || maxBackups < 1) return toast('Броят копия е поне 1', 'err');
+      const r = await api('/admin/api/database/backup-schedule', { method: 'PUT', json: { enabled, intervalMinutes, maxBackups } });
+      if (!r.ok) return toast(r.error || 'Графикът не е записан', 'err');
+      toast('Графикът е записан', 'ok');
+    } else if (action === 'retention') {
+      const r = await post('/admin/api/retention', {});
+      if (!r.ok) return toast(r.error || 'Задържането не е приложено', 'err');
+      const d = r.data || {};
+      toast('Задържане: изтрити ' + String(d.deleted || 0) + ' · деактивирани ' + String(d.disabled || 0), 'ok');
+    } else if (action === 'mirror' || action === 'mirrorRepair') {
+      const r = await post('/admin/api/storage/mirror/verify', { repair: action === 'mirrorRepair' });
+      if (!r.ok && r.status !== 409) return toast(r.error || 'Проверката на огледалото не мина', 'err');
+      const d = r.data || {};
+      toast('Огледало: проверени ' + String(d.checked || 0) + ' · проблеми ' + String(d.problems || 0) + ' · поправени ' + String(d.repaired || 0), d.problems ? 'err' : 'ok');
+    } else if (action === 'level') {
+      const level = host.querySelector('#set-log-level').value;
+      const r = await post('/admin/api/logs/level', { level });
+      if (!r.ok) return toast(r.error || 'Нивото не е зададено', 'err');
+      toast('Ниво на журнала: ' + ((r.data && r.data.level) || level), 'ok');
+    } else if (action === 'rules') {
+      const r = await post('/admin/api/rules/reload', {});
+      if (!r.ok) return toast(r.error || 'Правилата не са презаредени', 'err');
+      toast('Правилата са презаредени', 'ok');
+    } else if (action === 'audit') {
+      const token = storedToken();
+      try {
+        const res = await fetch(effectiveBase() + '/admin/api/audit/export', { headers: token ? { Authorization: 'Bearer ' + token } : {} });
+        if (!res.ok) return toast('Одитът не е достъпен · HTTP ' + res.status, 'err');
+        const text = await res.text();
+        const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'hapi-audit-export.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+        toast('Одитът е изтеглен', 'ok');
+      } catch (e) {
+        toast('Одитът не е изтеглен: ' + e.message, 'err');
+      }
+      return;
+    } else if (action === 'notify') {
+      const service = host.querySelector('#set-notify-service').value.trim();
+      const link = host.querySelector('#set-notify-link').value.trim();
+      if (!service) return toast('Въведи услуга за известие', 'err');
+      if (!link) return toast('Въведи връзка', 'err');
+      const r = await post('/admin/api/notify/dispatch', { service, link });
+      if (!r.ok) return toast(r.error || 'Известието не е изпратено', 'err');
+      toast('Известието е изпратено', 'ok');
+      return;
+    } else if (action === 'search' || action === 'organization' || action === 'ingest' || action === 'merge' || action === 'conflict' || action === 'apiInfo' || action === 'htmlProjects' || action === 'htmlProject' || action === 'sends') {
+      const out = host.querySelector('#set-data-out');
+      const show = (payload) => { if (out) out.textContent = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2); };
+      const field = (id) => { const el = host.querySelector('#set-' + id); return el ? el.value.trim() : ''; };
+      const portalId = field('data-portal');
+      let r;
+      if (action === 'search') {
+        const q = field('search-q');
+        if (!q) return toast('Въведи дума за търсене', 'err');
+        r = await api('/admin/api/v2/search?q=' + encodeURIComponent(q));
+      } else if (action === 'organization') {
+        const name = field('org-name');
+        if (!name) return toast('Въведи име на организация', 'err');
+        r = await post('/admin/api/v2/organizations', { name });
+      } else if (action === 'ingest') {
+        const emails = field('ingest-emails').split(',').map((s) => s.trim()).filter(Boolean);
+        if (!emails.length) return toast('Въведи поне един имейл', 'err');
+        r = await post('/admin/api/v2/ingest', { emails });
+      } else if (action === 'merge') {
+        const targetId = field('merge-target');
+        const sourceIds = field('merge-sources').split(',').map((s) => s.trim()).filter(Boolean);
+        if (!targetId || !sourceIds.length) return toast('Нужни са портал-получател и поне един източник', 'err');
+        r = await post('/admin/api/v2/merge', { targetId, sourceIds });
+      } else if (action === 'conflict') {
+        const id = field('conflict-id');
+        const value = field('conflict-value');
+        if (!id) return toast('Въведи идентификатор на конфликта', 'err');
+        r = await post('/admin/api/v2/conflicts/' + encodeURIComponent(id) + '/resolve', { value });
+      } else if (action === 'apiInfo') {
+        if (!portalId) return toast('Избери портал', 'err');
+        r = await api('/admin/api/portals/' + encodeURIComponent(portalId) + '/api-info');
+      } else if (action === 'htmlProjects') {
+        if (!portalId) return toast('Избери портал', 'err');
+        r = await api('/admin/api/portals/' + encodeURIComponent(portalId) + '/html-projects');
+      } else if (action === 'htmlProject') {
+        const folder = field('data-folder');
+        const title = field('data-title');
+        if (!portalId || !folder || !title) return toast('Нужни са портал, папка и заглавие', 'err');
+        r = await post('/admin/api/portals/' + encodeURIComponent(portalId) + '/html-projects', { folder, title });
+      } else {
+        const fileId = field('data-file');
+        if (!portalId || !fileId) return toast('Нужни са портал и файл', 'err');
+        r = await post('/admin/api/portals/' + encodeURIComponent(portalId) + '/files/' + encodeURIComponent(fileId) + '/sends', {});
+      }
+      if (!r.ok) {
+        show(r.error || ('HTTP ' + r.status));
+        return toast(r.error || 'Действието не мина', 'err');
+      }
+      show(r.data);
+      toast('Готово', 'ok');
+      return;
+    } else if (action === 'portalDeploy') {
+      const r = await post('/admin/api/evidence-portal/deploy', {});
+      if (!r.ok) return toast(r.error || 'Порталът не е разположен', 'err');
+      toast('Порталът е разположен в ' + ((r.data && r.data.dir) || 'www/hapi/data'), 'ok');
+    } else if (action === 'metricsProm') {
+      const r = await api('/admin/api/sensors/prometheus', { raw: true });
+      if (!r.ok) return toast(r.error || 'Метриките не са достъпни', 'err');
+      const text = typeof r.data === 'string' ? r.data : JSON.stringify(r.data, null, 2);
+      window.prompt('Метрики (копирай текста):', text.slice(0, 4000));
+      toast('Метриките са готови', 'ok');
+      return;
+    }
+    delete sectionCache[state.section];
+    render();
+  }
+
+  function bindSectionActions(id) {
+    host.querySelectorAll('[data-action]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const action = btn.getAttribute('data-action');
+        if (action === 'reload') {
+          delete sectionCache[id];
+          return render();
+        }
+        void runAction(action);
+      });
+    });
+    host.querySelectorAll('[data-job]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const jobId = btn.getAttribute('data-job');
+        const r = await api('/admin/api/jobs/' + encodeURIComponent(jobId) + '/cancel', { method: 'POST', json: {} });
+        if (!r.ok) return toast(r.error || 'Задачата не е отказана', 'err');
+        toast('Задачата е отказана', 'ok');
+        delete sectionCache[id];
+        render();
+      });
+    });
+    host.querySelectorAll('[data-record-assoc]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const recordId = btn.getAttribute('data-record-assoc');
+        const select = host.querySelector('#set-record-group');
+        const groupId = select ? select.value : '';
+        if (!groupId) return toast('Първо създай група', 'err');
+        const r = await api('/admin/api/v2/records/' + encodeURIComponent(recordId) + '/associate', { method: 'POST', json: { groupId } });
+        if (!r.ok) return toast(r.error || 'Записът не е свързан', 'err');
+        toast('Записът е свързан', 'ok');
+        delete sectionCache[id];
+        render();
+      });
+    });
+    host.querySelectorAll('[data-record-detach]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const recordId = btn.getAttribute('data-record-detach');
+        const r = await api('/admin/api/v2/records/' + encodeURIComponent(recordId) + '/detach', { method: 'POST', json: {} });
+        if (!r.ok) return toast(r.error || 'Записът не е отделен', 'err');
+        toast('Записът е отделен', 'ok');
+        delete sectionCache[id];
+        render();
+      });
+    });
+    host.querySelectorAll('[data-user]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const username = btn.getAttribute('data-user');
+        if (!window.confirm('Да изтрия ли потребител „' + username + '“?')) return;
+        const r = await api('/admin/api/users/' + encodeURIComponent(username), { method: 'DELETE' });
+        if (!r.ok) return toast(r.error || 'Потребителят не е изтрит', 'err');
+        toast('Потребителят е изтрит', 'ok');
+        delete sectionCache[id];
+        render();
+      });
+    });
   }
 
   async function renderSection() {
     const id = state.section;
     const meta = SECTIONS.find((s) => s.id === id) || { label: 'Настройки' };
-    host.innerHTML = `
-      <div class="page-title">
-        <h1>Настройки · ${esc(meta.label)}</h1>
-        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'връзка' : 'демо'}</span>
-      </div>
-      ${renderTabs()}
-      <section class="panel u-mt">
-        <div class="panel-head"><h2>${esc(meta.label)}</h2><span class="badge">API</span></div>
-        <div class="panel-body" id="set-section-body"><p class="hint">Зареждам…</p></div>
-      </section>`;
+    host.innerHTML =
+      '<div class="page-title"><h1>Настройки · ' + esc(meta.label) + '</h1>' +
+      '<span class="badge ' + (connected() ? 'ok' : 'demo') + '">' + (connected() ? 'връзка' : 'демо') + '</span></div>' +
+      renderTabs() +
+      '<section class="panel u-mt"><div class="panel-head"><h2>' + esc(meta.label) + '</h2><span class="badge">API</span></div>' +
+      '<div class="panel-body" id="set-section-body"><p class="hint">Зареждам…</p></div></section>';
     bindTabs();
     const body = host.querySelector('#set-section-body');
     const res = await loadSection(id);
     if (!body) return;
     body.innerHTML = sectionBody(id, res);
+    bindSectionActions(id);
   }
+
 
   function render() {
     if (state.section && state.section !== 'general') return renderSection();
@@ -443,6 +859,7 @@
             <button type="button" class="btn btn-primary" id="set-save">Запази връзката</button>
             <button type="button" class="btn" id="set-test">Провери връзката</button>
             <button type="button" class="btn" id="set-clear">Изчисти токена</button>
+            <button type="button" class="btn" id="set-ingress-login">Влез през Home Assistant</button>
           </div>
         </div>
       </section>
@@ -468,6 +885,19 @@
       </section>
 
       ${pgpSection()}
+
+      <section class="panel u-mt">
+        <div class="panel-head"><h2>Профили на настройките</h2><span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'снимки' : 'изисква връзка'
+      }</span></div>
+        <div class="panel-body">
+          <p class="hint">Профилът е снимка на сървърните настройки. Може да се приложи по-късно или да се изтрие.</p>
+          <div id="set-profiles"><p class="hint">${connected() ? 'Зареждам…' : 'Няма връзка — списъкът е празен.'}</p></div>
+          <div class="u-row u-row-inline u-mt">
+            <input id="set-profile-name" placeholder="име на профил" ${isAdmin ? '' : 'disabled'} />
+            <button type="button" class="btn btn-primary" id="set-profile-save" ${isAdmin && connected() ? '' : 'disabled'}>Запази профил</button>
+          </div>
+        </div>
+      </section>
 
       <section class="panel u-mt">
         <div class="panel-head"><h2>Миграция на хранилището</h2><span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'само при нужда' : 'изисква връзка'
@@ -586,6 +1016,68 @@
     host.querySelectorAll('[data-pgp-remove]').forEach((btn) => {
       btn.addEventListener('click', () => void removePgpKey(btn.getAttribute('data-pgp-remove')));
     });
+    // Профили на настройките: списък · прилагане · изтриване · запис на текущото състояние.
+    const renderProfiles = (list) => {
+      const box = q('#set-profiles');
+      if (!box) return;
+      if (!list.length) {
+        box.innerHTML = '<p class="hint">Няма запазени профили.</p>';
+        return;
+      }
+      box.innerHTML = '<table class="grid"><thead><tr><th>Профил</th><th>Създаден</th><th></th></tr></thead><tbody>' +
+        list.map((p) => {
+          const name = typeof p === 'string' ? p : p.name || '';
+          return '<tr><td><code>' + esc(name) + '</code></td><td>' + esc(fmtTime(p.createdAt || p.savedAt)) + '</td>' +
+            '<td><button type="button" class="btn" data-profile-apply="' + esc(name) + '">Приложи</button> ' +
+            '<button type="button" class="btn" data-profile-delete="' + esc(name) + '">Изтрий</button></td></tr>';
+        }).join('') + '</tbody></table>';
+      box.querySelectorAll('[data-profile-apply]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const name = btn.getAttribute('data-profile-apply');
+          if (!window.confirm('Да приложа ли профил „' + name + '“? Текущите настройки ще бъдат заменени.')) return;
+          const r = await api('/admin/api/config-profiles/' + encodeURIComponent(name) + '/apply', { method: 'POST', json: {} });
+          toast(r.ok ? 'Профилът е приложен' : r.error || 'Профилът не е приложен', r.ok ? 'ok' : 'err');
+          if (r.ok) void refreshProfiles();
+        });
+      });
+      box.querySelectorAll('[data-profile-delete]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const name = btn.getAttribute('data-profile-delete');
+          if (!window.confirm('Да изтрия ли профил „' + name + '“?')) return;
+          const r = await api('/admin/api/config-profiles/' + encodeURIComponent(name), { method: 'DELETE' });
+          toast(r.ok ? 'Профилът е изтрит' : r.error || 'Профилът не е изтрит', r.ok ? 'ok' : 'err');
+          if (r.ok) void refreshProfiles();
+        });
+      });
+    };
+    const refreshProfiles = async () => {
+      if (!connected()) return;
+      const r = await api('/admin/api/config-profiles');
+      if (!r.ok) return;
+      renderProfiles((r.data && r.data.profiles) || []);
+    };
+    if (q('#set-profiles') && connected()) void refreshProfiles();
+    if (q('#set-profile-save')) {
+      q('#set-profile-save').addEventListener('click', async () => {
+        const name = q('#set-profile-name').value.trim();
+        if (!name) return toast('Въведи име на профила', 'err');
+        const r = await api('/admin/api/config-profiles', { method: 'POST', json: { name } });
+        if (!r.ok) return toast(r.error || 'Профилът не е записан', 'err');
+        q('#set-profile-name').value = '';
+        toast('Профилът е записан', 'ok');
+        void refreshProfiles();
+      });
+    }
+    if (q('#set-ingress-login')) {
+      q('#set-ingress-login').addEventListener('click', async () => {
+        const r = await api('/admin/api/ingress-login');
+        if (!r.ok) return toast(r.error || 'Входът през Home Assistant не е възможен', 'err');
+        state.role = (r.data && r.data.role) || state.role;
+        state.ingress = Boolean(r.data && r.data.ingress);
+        toast('Влязох през Home Assistant · роля ' + (state.role || '—'), 'ok');
+        render();
+      });
+    }
     bindTabs();
   }
 

@@ -287,16 +287,16 @@ check('HA-I03', 'ingress', 'blocker', 'X-Ingress-Path се обработва', 
 });
 
 check('HA-I04', 'ingress', 'blocker', 'относителни asset URL в ingress HTML', () => {
-  for (const file of [`${ADDON}/admin.html`, `${ADDON}/ui/index.html`]) {
+  for (const file of [`${ADDON}/ui/index.html`]) {
     const html = read(file);
     const absolute = [...html.matchAll(/\b(?:src|href)="(\/[^"]*)"/g)].map((m) => m[1]);
     need(!absolute.length, `${file} има абсолютни пътища: ${absolute.join(', ')}`);
   }
-  return 'admin.html, ui/index.html';
+  return 'ui/index.html';
 });
 
 check('HA-I05', 'ingress', 'blocker', 'CSP съответства на HTML', () => {
-  const withInlineStyle = [`${ADDON}/admin.html`, `${ADDON}/ui/index.html`].filter((f) => /<style[\s>]|style="/.test(read(f)));
+  const withInlineStyle = [`${ADDON}/ui/index.html`].filter((f) => /<style[\s>]|style="/.test(read(f)));
   if (withInlineStyle.length) need(/style-src 'unsafe-inline'/.test(server), 'inline стилове без style-src unsafe-inline');
   need(!/<style[\s>]|style="/.test(read(`${ADDON}/portal.html`)), 'portal.html има inline стилове, а CSP е style-src self');
   return withInlineStyle.length ? 'unsafe-inline където е нужно' : 'стриктно';

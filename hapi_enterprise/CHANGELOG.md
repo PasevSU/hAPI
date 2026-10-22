@@ -1,36 +1,44 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.7**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.8**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.7
+## 0.69.8
 
-QR порталът за доказателства (Evidence View v1.1) е част от add-on-а и се публикува там,
-където Home Assistant го сервира: **`<HA config>/www/hapi/data/`** → `/local/hapi/data/portal.html`.
+Един интерфейс: старият панел (`admin.html` / `admin.js`) е **премахнат от пакета**, а входът
+на add-on-а е Enterprise Control Center (`ui/`). Всичко, което се правеше от стария панел, вече
+се прави от новия — без изключение.
 
-### Публикуване на портала
+### Вход и пренасочване
 
-- Пакетът е внесен в `hapi_enterprise/evidence-portal/` (`portal.html`, `assets/app.js`,
-  `assets/consent.js`, `assets/style.css`, `data/demo-evidence.json`, README).
-- При старт add-on-ът го копира в `<HA config>/www/hapi/data/` и пише в лога къде и колко
-  файла е обновил (`evidence-portal.deployed`). Изключва се с `evidence_portal_deploy: false`.
-- Копира се **само различното** (идемпотентно); symlink на целта се отказва, за да не се
-  пише извън `www`; без достъп до HA конфигурацията add-on-ът не гадае — логва причината
-  и продължава работа.
-- Нови административни маршрути: `GET /admin/api/evidence-portal/status` и
-  `POST /admin/api/evidence-portal/deploy` (повторно публикуване, с одит запис).
-- Ново мапване `homeassistant_config:rw` — без него `/config/www` не съществува в контейнера.
-  Пътят може да се зададе и с `EVIDENCE_PORTAL_DIR` (трябва да завършва на `www/hapi/data`).
+- `ingress_entry: /` — под Home Assistant панелът се отваря директно в новия интерфейс.
+- `GET /admin` връща `302 → /ui/index.html`, за да не се губят стари отметки; `GET /admin.js`
+  вече не съществува (404). `admin.html` и `admin.js` са изтрити от дървото и от `COPY` списъка
+  на `Dockerfile`.
 
-### Проверка
+### Настройки: 11 секции с реални действия
 
-- Нов тест `tests/evidence-portal.cjs`: пакетът е пълен, разпознава HA конфигурация по
-  `configuration.yaml`, публикува точно в `<root>/www/hapi/data`, вторият пуск не пренаписва
-  нищо, променен файл се обновява сам, произволна цел и symlink се отказват.
-- `tests/addon-config.cjs` вече брои **30** опции (новата `evidence_portal_deploy` с преводи).
+Към досегашните секции (Йерархия, Картотека, Категории и групи, Задачи, Потребители,
+Променливи, Диагностика, Съхранение, Резервни копия, Журнал) е добавена секция **Данни**:
 
-### Важно за сигурността
+- **Йерархия** — портали, групи, списък на записите със **свързване** (`POST …/associate`) и
+  **отделяне** (`POST …/detach`) на запис от група.
+- **Диагностика** — роля и Ingress, броячи, състояние на портала за доказателства, брой QR
+  артефакти, бутони за разполагане на портала и за метрики (Prometheus), форма за известие
+  (`POST /admin/api/notify/dispatch`).
+- **Съхранение** — преглед на задържането, прилагане, проверка и поправка на огледалото
+  (`POST /admin/api/storage/mirror/verify` с `repair`).
+- **Резервни копия** — автоматичен график (`GET/PUT /admin/api/database/backup-schedule`)
+  с включване, интервал и брой копия.
+- **Журнал** — ниво на журнала в движение (`POST /admin/api/logs/level`), презареждане на
+  правилата на gateway, изтегляне на одита (`/admin/api/audit/export`).
+- **Данни** — тайни връзки, търсене в картотеката, организации, внасяне на записи,
+  сливане на портали, решаване на конфликт, `api-info`, HTML проекти и изпращане на връзка.
+- **Основни** — профили на настройките (запис/прилагане/изтриване) и вход през Home Assistant.
 
-Порталът е само фронтенд. Той чака `GET /api/evidence/{folder}/manifest`,
-`POST /api/evidence/{folder}/consent` и `POST /api/evidence/{folder}/access` — тези endpoint-и
-**не са част от add-on-а** и трябва да ги осигури този, който публикува портала. Демо режимът
-`?folder=demo-evidence` е само за тест и трябва да е изключен в употреба.
+Покритието е проверяемо: `tests/ui-coverage.cjs` минава на **74 подмаршрута с 0 без панел**.
+
+### Документация
+
+- „Известни разлики“: отнемането на вече издаден ключ за достъп остава през API-то
+  (`DELETE /admin/api/portals/:id/files/:fileId/access-keys/:keyId`); интерфейсът издава ключ
+  и показва политиката (`FREE` / `KEY_REQUIRED` / `DISABLED`).
