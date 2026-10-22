@@ -8,6 +8,9 @@
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const toast = (m, k) => window.HapiUI && window.HapiUI.toast(m, k);
+  // Съдържанието на панела минава през общия речник (ui/i18n.js), за да не е „менюто
+  // преведено, а екранът — не“ (BUG-11). Без речник пада на българския ключ.
+  const T = (key) => (window.HapiI18n ? window.HapiI18n.t(key) : String(key));
 
   let host = null;
   const state = {
@@ -247,20 +250,20 @@
   // а всичко „под капака“ се отваря от едно място. Всяка секция показва реални данни от
   // административния API и — където има смисъл — предлага самото действие.
   const SECTIONS = [
-    { id: 'hierarchy', label: 'Йерархия' },
-    { id: 'cabinet', label: 'Картотека' },
-    { id: 'taxonomy', label: 'Категории и групи' },
-    { id: 'jobs', label: 'Задачи' },
-    { id: 'users', label: 'Потребители' },
-    { id: 'variables', label: 'Променливи' },
-    { id: 'data', label: 'Данни' },
-    { id: 'diagnostics', label: 'Диагностика' },
-    { id: 'analytics', label: 'Анализи' },
-    { id: 'security', label: 'Сигурност' },
-    { id: 'qr', label: 'QR архиви' },
-    { id: 'storage', label: 'Съхранение' },
-    { id: 'backups', label: 'Резервни копия' },
-    { id: 'logs', label: 'Журнал' },
+    { id: 'hierarchy', label: 'section.hierarchy' },
+    { id: 'cabinet', label: 'section.cabinet' },
+    { id: 'taxonomy', label: 'section.taxonomy' },
+    { id: 'jobs', label: 'section.jobs' },
+    { id: 'users', label: 'section.users' },
+    { id: 'variables', label: 'section.variables' },
+    { id: 'data', label: 'section.data' },
+    { id: 'diagnostics', label: 'section.diagnostics' },
+    { id: 'analytics', label: 'section.analytics' },
+    { id: 'security', label: 'section.security' },
+    { id: 'qr', label: 'section.qr' },
+    { id: 'storage', label: 'section.storage' },
+    { id: 'backups', label: 'section.backups' },
+    { id: 'logs', label: 'section.logs' },
   ];
 
   const sectionCache = {};
@@ -296,7 +299,7 @@
     const tab = (id, label) =>
       '<button type="button" class="set-tab' + (current === id ? ' active' : '') + '" data-section="' + esc(id) + '"' +
       (current === id ? ' aria-current="true"' : '') + '>' + esc(label) + '</button>';
-    return '<nav class="set-tabs" aria-label="Секции на настройките">' + tab('general', 'Основни') + SECTIONS.map((s) => tab(s.id, s.label)).join('') + '</nav>';
+    return '<nav class="set-tabs" aria-label="' + esc(T('aria.sections')) + '">' + tab('general', T('tab.general')) + SECTIONS.map((s) => tab(s.id, T(s.label))).join('') + '</nav>';
   }
 
   function bindTabs() {
@@ -410,15 +413,15 @@
         '<button type="button" class="btn" data-record-assoc="' + esc(r.id) + '">Свържи</button> ' +
         '<button type="button" class="btn" data-record-detach="' + esc(r.id) + '">Отдели</button>',
       ]);
-      return '<h3>Портали</h3>' + table(['Портал', 'Адрес', 'Файлове', 'Видимост'], portals) +
-        '<h3 class="u-mt">Групи записи</h3>' + table(['Група', 'Описание'], groups) +
+      return '<h3>Портали</h3>' + table([T('th.portal'), T('th.address'), T('th.files'), T('th.visibility')], portals) +
+        '<h3 class="u-mt">Групи записи</h3>' + table([T('th.group'), T('th.description')], groups) +
         form('group', 'Име на група', 'Създай група') +
         '<h3 class="u-mt">Записи (' + records.length + ')</h3>' +
         (records.length
           ? '<div class="u-row u-row-inline"><select id="set-record-group">' +
           (d.groups || []).map((g) => '<option value="' + esc(g.id || g.name) + '">' + esc(g.name || g.id) + '</option>').join('') +
           '</select><span class="hint">група за „Свържи“</span></div>' +
-          table(['Запис', 'Префикс', 'Група', ''], records)
+          table([T('th.record'), T('th.prefix'), T('th.group'), ''], records)
           : '<p class="hint">Няма записи в картотеката.</p>');
     }
     if (id === 'cabinet') {
@@ -428,13 +431,13 @@
         ['Създаване на файлове', (d.createTypes || []).join(', ') || '—'],
         ['Конвертиране', Object.entries(d.convert || {}).map(([k, v]) => k + ' → ' + v.join(', ')).join('; ') || '—'],
       ];
-      return table(['Възможност', 'Стойност'], rows.map(([a, b]) => [esc(a), esc(b)]));
+      return table(['Възможност', T('th.value')], rows.map(([a, b]) => [esc(a), esc(b)]));
     }
     if (id === 'taxonomy') {
       const cats = (d.categories || []).map((c) => [esc(c)]);
       const grps = (d.groups || []).map((g) => [esc(g)]);
       return '<h3>Категории (' + cats.length + ')</h3>' + table(['Категория'], cats) +
-        '<h3 class="u-mt">Групи (' + grps.length + ')</h3>' + table(['Група'], grps) +
+        '<h3 class="u-mt">Групи (' + grps.length + ')</h3>' + table([T('th.group')], grps) +
         '<div class="u-row u-row-inline u-mt">' +
         '<select id="set-tax-kind"><option value="category">Категория</option><option value="group">Група</option></select>' +
         '<input id="set-tax-input" placeholder="Име" />' +
@@ -473,7 +476,7 @@
       const active = jobs.length ? ' · ' + jobs.length + ' задачи' : '';
       return '<p class="hint">Състоянието се обновява само, докато панелът е отворен' + active +
         '. Задача в „грешка“ показва причината в колоната „Бележка“.</p>' +
-        table(['Вид', 'Състояние', 'Напредък', 'Бележка', ''], jobs) +
+        table([T('th.kind'), T('th.state'), T('th.progress'), T('th.note'), ''], jobs) +
         '<div class="u-row u-mt"><button type="button" class="btn" data-action="reload">Обнови сега</button></div>';
     }
     if (id === 'users') {
@@ -483,7 +486,7 @@
         u.active === false ? 'не' : 'да',
         '<button type="button" class="btn" data-user="' + esc(u.username) + '">Изтрий</button>',
       ]);
-      return table(['Потребител', 'Права', 'Активен', ''], users) +
+      return table([T('th.user'), T('th.scopes'), T('th.active'), ''], users) +
         '<div class="u-row u-row-inline u-mt">' +
         '<input id="set-user-name" placeholder="потребител" />' +
         '<input id="set-user-pass" type="password" placeholder="парола" autocomplete="new-password" />' +
@@ -495,7 +498,7 @@
         esc(v.type || '—'),
         esc(String(v.value == null ? '' : v.value).slice(0, 60)),
       ]);
-      return table(['Променлива', 'Тип', 'Стойност'], vars) +
+      return table([T('th.variable'), T('th.type'), T('th.value')], vars) +
         '<div class="u-row u-row-inline u-mt">' +
         '<input id="set-var-key" placeholder="име" />' +
         '<input id="set-var-value" placeholder="стойност" />' +
@@ -505,7 +508,7 @@
         'Вградени са <code>{{year}}</code>, <code>{{month}}</code>, <code>{{day}}</code> и <code>{{date}}</code>. ' +
         'Пътища на файлове не се интерполират (риск от обхождане на директории).</p>' +
         '<div class="u-row u-row-inline"><input id="set-tpl-input" placeholder="Договор {{year}} — {{издател}}" />' +
-        '<button type="button" class="btn" data-action="interpolate">Прегледай</button></div>' +
+        '<button type="button" class="btn" data-action="interpolate">' + T('action.preview') + '</button></div>' +
         '<pre class="u-mt" id="set-tpl-out" aria-live="polite">—</pre>';
     }
     if (id === 'data') {
@@ -534,9 +537,9 @@
         ['1', '2', '3', '5', '10'].map((v) => '<option value="' + v + '">' + v + ' преглед(а)</option>').join('') +
         '</select>' +
         '<input id="set-secret-password" type="password" autocomplete="new-password" placeholder="втора парола (по избор)" />' +
-        '<button type="button" class="btn btn-primary" data-action="secretCreate">Създай линк</button></div>' +
+        '<button type="button" class="btn btn-primary" data-action="secretCreate">' + T('action.createLink') + '</button></div>' +
         '<div id="set-secret-out" class="u-mt"></div>' +
-        '<h3 class="u-mt">Тайни връзки</h3>' + table(['Идентификатор', 'Създадена', 'Бележка'], secrets) +
+        '<h3 class="u-mt">Тайни връзки</h3>' + table([T('th.identifier'), T('th.createdF'), T('th.note')], secrets) +
         '<h3 class="u-mt">Търсене в картотеката</h3>' +
         '<div class="u-row u-row-inline"><input id="set-search-q" placeholder="търсена дума" />' +
         '<button type="button" class="btn" data-action="search">Търси</button></div>' +
@@ -587,14 +590,14 @@
         ['Портал за доказателства', esc(portal.dir || portal.error || 'не е разположен')],
         ['QR артефакти', String(((d.qr && d.qr.artifacts) || []).length)],
       ];
-      return table(['Показател', 'Стойност'], rows.map(([a, b]) => [esc(a), b])) +
+      return table([T('th.metric'), T('th.value')], rows.map(([a, b]) => [esc(a), b])) +
         '<div class="u-row u-row-inline u-mt">' +
         '<input id="set-notify-service" placeholder="услуга (напр. notify.mobile_app)" />' +
         '<input id="set-notify-link" placeholder="връзка или адрес" />' +
         '<button type="button" class="btn" data-action="notify">Изпрати известие</button></div>' +
         '<div class="u-row u-mt">' +
-        '<button type="button" class="btn" data-action="portalDeploy">Разположи портала</button>' +
-        '<button type="button" class="btn" data-action="metricsProm">Метрики за мониторинг</button>' +
+        '<button type="button" class="btn" data-action="portalDeploy">' + T('action.deployPortal') + '</button>' +
+        '<button type="button" class="btn" data-action="metricsProm">' + T('action.metrics') + '</button>' +
         '</div>';
     }
     if (id === 'analytics') {
@@ -615,9 +618,9 @@
         ['Заявки (брояч)', String(m.requests || 0)],
         ['Портали (брояч)', String(m.portals || 0)],
       ];
-      return table(['Показател', 'Стойност'], totals.map(([a, b]) => [esc(a), b])) +
-        '<h3 class="u-mt">По портал</h3>' + table(['Портал', 'Посещения', 'Изтегляния', 'Обем'], perPortal) +
-        '<div class="u-row u-mt"><button type="button" class="btn" data-action="metricsProm">Метрики за мониторинг</button></div>';
+      return table([T('th.metric'), T('th.value')], totals.map(([a, b]) => [esc(a), b])) +
+        '<h3 class="u-mt">По портал</h3>' + table([T('th.portal'), 'Посещения', 'Изтегляния', 'Обем'], perPortal) +
+        '<div class="u-row u-mt"><button type="button" class="btn" data-action="metricsProm">' + T('action.metrics') + '</button></div>';
     }
     if (id === 'security') {
       const a = d.audit || {};
@@ -632,9 +635,9 @@
         ['RBAC картографиран', who.mapped ? 'да' : 'не (общо правило)'],
         ['Бележка', esc(a.note || '')],
       ];
-      return table(['Показател', 'Стойност'], rows.map(([x, y]) => [esc(x), esc(y)])) +
-        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="auditVerify">Провери ланца</button>' +
-        '<button type="button" class="btn" data-action="audit">Изтегли одита</button></div>';
+      return table([T('th.metric'), T('th.value')], rows.map(([x, y]) => [esc(x), esc(y)])) +
+        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="auditVerify">' + T('action.verifyChain') + '</button>' +
+        '<button type="button" class="btn" data-action="audit">' + T('action.exportAudit') + '</button></div>';
     }
     if (id === 'qr') {
       const items = (d.artifacts || []).map((x) => [
@@ -644,7 +647,7 @@
         '<button type="button" class="btn" data-qr-revoke="' + esc(x.qrId || '') + '">Отмени</button>',
       ]);
       return '<p class="hint">Издадените QR артефакти се пазят, докато не бъдат отменени. Отмяната спира текущата връзка.</p>' +
-        table(['QR ID', 'Етикет', 'Създаден', ''], items);
+        table(['QR ID', 'Етикет', T('th.created'), ''], items);
     }
     if (id === 'storage') {
       const st = d.status || {};
@@ -662,9 +665,9 @@
         ['Ще бъдат деактивирани', String(retention.disabled != null ? retention.disabled : 0)],
       ];
       return '<p class="hint">Последна проверка: ' + esc(fmtTime(last.checkedAt)) + ' · следваща: ' + esc(fmtTime(st.nextCheckAt)) + '</p>' +
-        table(['Локация', 'Достъпна', 'Записваема', 'Грешка'], locs) +
-        '<h3 class="u-mt">Задържане</h3>' + table(['Показател', 'Стойност'], ret.map(([a, b]) => [esc(a), esc(b)])) +
-        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="storage">Провери сега</button>' +
+        table([T('th.location'), T('th.available'), T('th.writable'), T('th.error')], locs) +
+        '<h3 class="u-mt">Задържане</h3>' + table([T('th.metric'), T('th.value')], ret.map(([a, b]) => [esc(a), esc(b)])) +
+        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="storage">' + T('action.checkNow') + '</button>' +
         '<button type="button" class="btn" data-action="retention">Приложи задържането</button>' +
         '<button type="button" class="btn" data-action="mirror">Провери огледалото</button>' +
         '<button type="button" class="btn" data-action="mirrorRepair">Поправи от огледалото</button></div>';
@@ -678,16 +681,16 @@
       const mirror = d.mirror ? 'Огледало: <code>' + esc(d.mirror) + '</code>' : 'Огледало не е настроено.';
       const sched = (d.schedule && d.schedule.schedule) || {};
       const next = d.schedule && d.schedule.nextRunAt;
-      return '<p class="hint">' + mirror + '</p>' + table(['Архив', 'Размер', 'Създаден'], list) +
-        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="backup">Създай копие</button>' +
-        '<button type="button" class="btn" data-action="verify">Провери копията</button></div>' +
+      return '<p class="hint">' + mirror + '</p>' + table([T('th.archive'), T('th.size'), T('th.created')], list) +
+        '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="backup">' + T('action.makeBackup') + '</button>' +
+        '<button type="button" class="btn" data-action="verify">' + T('action.verifyBackups') + '</button></div>' +
         '<h3 class="u-mt">Автоматичен график</h3>' +
         '<p class="hint">Следващо копие: ' + esc(fmtTime(next)) + '</p>' +
         '<div class="u-row u-row-inline u-mt">' +
         '<label><input id="set-sched-enabled" type="checkbox"' + (sched.enabled ? ' checked' : '') + ' /> включен</label>' +
         '<input id="set-sched-interval" type="number" min="1" value="' + esc(sched.intervalMinutes != null ? sched.intervalMinutes : 1440) + '" placeholder="минути" />' +
         '<input id="set-sched-max" type="number" min="1" value="' + esc(sched.maxBackups != null ? sched.maxBackups : 7) + '" placeholder="брой" />' +
-        '<button type="button" class="btn btn-primary" data-action="schedule">Запази графика</button></div>';
+        '<button type="button" class="btn btn-primary" data-action="schedule">' + T('action.saveSchedule') + '</button></div>';
     }
     if (id === 'logs') {
       const events = (d.events || []).map((e) => [
@@ -700,14 +703,14 @@
       const rules = d.rules || {};
       const entries = (logs.entries || []).length;
       return '<p class="hint">Последни ' + events.length + ' записа, най-новите първи. Ниво на журнала: <code>' + esc(logs.level || '—') + '</code> · ' + entries + ' реда в паметта.</p>' +
-        table(['Време', 'Ниво', 'Събитие', 'Детайли'], events) +
+        table([T('th.time'), T('th.level'), T('th.event'), T('th.details')], events) +
         '<div class="u-row u-row-inline u-mt">' +
         '<select id="set-log-level">' +
         ['trace', 'debug', 'info', 'warn', 'error'].map((lv) => '<option value="' + lv + '"' + (logs.level === lv ? ' selected' : '') + '>' + lv + '</option>').join('') +
         '</select>' +
         '<button type="button" class="btn btn-primary" data-action="level">Задай ниво</button>' +
         '<button type="button" class="btn" data-action="rules">Презареди правилата</button>' +
-        '<button type="button" class="btn" data-action="audit">Изтегли одита</button>' +
+        '<button type="button" class="btn" data-action="audit">' + T('action.exportAudit') + '</button>' +
         '<button type="button" class="btn" data-action="reload">Обнови</button></div>' +
         '<p class="hint">Правила на gateway: ' + esc(rules.count != null ? rules.count + ' активни' : (rules.host || 'няма данни')) + '</p>';
     }
@@ -852,7 +855,7 @@
             (created.requiresPassword ? ' · с втора парола' : '') +
             (created.receipt ? ' · чек ' + esc(created.receipt) : '') + '</p>' +
             '<div class="u-row u-row-inline u-mt"><button type="button" class="btn" data-copy-secret="' +
-            esc(created.link) + '">Копирай</button></div>' +
+            esc(created.link) + '">' + T('action.copy') + '</button></div>' +
             (svg ? '<div class="u-mt">' + svg + '</div>' : '');
           const copy = out.querySelector('[data-copy-secret]');
           if (copy) {
@@ -1032,12 +1035,12 @@
   async function renderSection() {
     const id = state.section;
     stopJobsTimer();
-    const meta = SECTIONS.find((s) => s.id === id) || { label: 'Настройки' };
+    const meta = SECTIONS.find((s) => s.id === id) || { label: 'app.title' };
     host.innerHTML =
-      '<div class="page-title"><h1>Настройки · ' + esc(meta.label) + '</h1>' +
-      '<span class="badge ' + (connected() ? 'ok' : 'demo') + '">' + (connected() ? 'връзка' : 'демо') + '</span></div>' +
+      '<div class="page-title"><h1>' + esc(T('app.title')) + ' · ' + esc(T(meta.label)) + '</h1>' +
+      '<span class="badge ' + (connected() ? 'ok' : 'demo') + '">' + (connected() ? T('badge.linked') : T('badge.demo')) + '</span></div>' +
       renderTabs() +
-      '<section class="panel u-mt"><div class="panel-head"><h2>' + esc(meta.label) + '</h2><span class="badge">API</span></div>' +
+      '<section class="panel u-mt"><div class="panel-head"><h2>' + esc(T(meta.label)) + '</h2><span class="badge">API</span></div>' +
       '<div class="panel-body" id="set-section-body"><p class="hint">Зареждам…</p></div></section>';
     bindTabs();
     const body = host.querySelector('#set-section-body');
@@ -1066,8 +1069,8 @@
     const isAdmin = state.role === 'admin';
     host.innerHTML = `
       <div class="page-title">
-        <h1>Настройки</h1>
-        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'връзка' : 'демо'}</span>
+        <h1>${esc(T('app.title'))}</h1>
+        <span class="badge ${connected() ? 'ok' : 'demo'}">${esc(connected() ? T('badge.linked') : T('badge.demo'))}</span>
       </div>
       ${renderTabs()}
 

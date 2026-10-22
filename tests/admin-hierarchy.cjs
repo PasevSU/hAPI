@@ -10,7 +10,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 
   // Входна точка: секцията е част от навигацията на Настройки и се зарежда от индекса.
   assert.match(panel, /data-section=/, 'табовете носят data-section');
-  assert.ok(panel.includes("{ id: 'hierarchy', label: 'Йерархия' }"), 'табът е наименуван „Йерархия“');
+  assert.ok(panel.includes("{ id: 'hierarchy', label: 'section.hierarchy' }"), 'табът пази ключ за „Йерархия“ (преводът е в ui/i18n.js)');
   assert.ok(index.includes('settings-panel.js'), 'интерфейсът зарежда панела с настройки');
 
   // Създаване на група.

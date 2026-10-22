@@ -11,6 +11,9 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const code = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'settings-panel.js'), 'utf8');
+// Речникът се зарежда преди панела — точно както в index.html; без него панелът
+// показва ключове вместо текст (и това е нарочно видимо).
+const i18nCode = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'i18n.js'), 'utf8');
 
 function stubElement() {
   const children = new Map();
@@ -67,6 +70,7 @@ function loadPanel(overrides) {
   // (vm), а не в глобалния — така тестът не замърсява процеса и не изпълнява код
   // в обхвата на самия тест.
   const sandbox = { window, document, localStorage: storage(), sessionStorage: storage(), location: { protocol: 'file:', origin: 'null' }, fetch: fetchStub, console, setTimeout, clearTimeout, setInterval, clearInterval };
+  vm.runInNewContext(i18nCode, sandbox, { filename: 'i18n.js' });
   vm.runInNewContext(code, sandbox, { filename: 'settings-panel.js' });
   return window.SettingsPanel;
 }
