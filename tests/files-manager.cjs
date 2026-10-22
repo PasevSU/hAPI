@@ -266,7 +266,10 @@ assert.match(settingsSrc, /Изключено/);
 assert.match(settingsSrc, /Включено/);
 assert.match(settingsSrc, /Автоподписване с PGP/);
 assert.match(settingsSrc, /secretArmored/);
-assert.doesNotMatch(settingsSrc, /algorithm: *'ed25519'|Генерирай ключ|generate/);
+// GUI-ят НЕ генерира ключове — това е работа на сървъра. Пазим точно това: създаване на
+// ключова двойка и ръчно сглобяване на Ed25519 ключ. (По-рано шаблонът беше голо
+// „generate“ и хващаше всяко поле от вида `generatedAt`, което не е генериране на ключ.)
+assert.doesNotMatch(settingsSrc, /algorithm: *'ed25519'|Генерирай ключ|generateKeyPair|generateKey\(/);
 assert.match(settingsSrc, /OpenPGP v\$\{/);
 // Експорт центърът също не пита за PGP — само портал и бутони за пакета.
 const exportSrc = fs.readFileSync(require('node:path').join(__dirname, '..', 'hapi_enterprise', 'ui', 'export-center.js'), 'utf8');
