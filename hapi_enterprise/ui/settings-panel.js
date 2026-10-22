@@ -466,7 +466,7 @@
             ? (st === 'paused'
               ? '<button type="button" class="btn" data-job="' + esc(j.id) + '" data-job-action="resume">Продължи</button> '
               : '<button type="button" class="btn" data-job="' + esc(j.id) + '" data-job-action="pause">Пауза</button> ') +
-              '<button type="button" class="btn" data-job="' + esc(j.id) + '" data-job-action="cancel">Откажи</button>'
+            '<button type="button" class="btn" data-job="' + esc(j.id) + '" data-job-action="cancel">Откажи</button>'
             : '',
         ];
       });
@@ -499,7 +499,14 @@
         '<div class="u-row u-row-inline u-mt">' +
         '<input id="set-var-key" placeholder="име" />' +
         '<input id="set-var-value" placeholder="стойност" />' +
-        '<button type="button" class="btn btn-primary" data-action="variable">Добави</button></div>';
+        '<button type="button" class="btn btn-primary" data-action="variable">Добави</button></div>' +
+        '<h3 class="u-mt">Преглед на текст с променливи</h3>' +
+        '<p class="hint">Пиши <code>{{име}}</code> в име или описание на портал — то се заменя със стойността. ' +
+        'Вградени са <code>{{year}}</code>, <code>{{month}}</code>, <code>{{day}}</code> и <code>{{date}}</code>. ' +
+        'Пътища на файлове не се интерполират (риск от обхождане на директории).</p>' +
+        '<div class="u-row u-row-inline"><input id="set-tpl-input" placeholder="Договор {{year}} — {{издател}}" />' +
+        '<button type="button" class="btn" data-action="interpolate">Прегледай</button></div>' +
+        '<pre class="u-mt" id="set-tpl-out" aria-live="polite">—</pre>';
     }
     if (id === 'data') {
       const secrets = (d.secrets || []).map((s) => [
@@ -867,6 +874,21 @@
         if (out) out.textContent = 'Грешка: ' + e.message;
         return toast(e.message || 'Линкът не е създаден', 'err');
       }
+      return;
+    } else if (action === 'interpolate') {
+      const tpl = host.querySelector('#set-tpl-input').value;
+      const out = host.querySelector('#set-tpl-out');
+      if (!tpl.trim()) return toast('Въведи текст с {{променлива}}', 'err');
+      const r = await post('/admin/api/v2/interpolate', { template: tpl });
+      if (!r.ok) return toast(r.error || 'Прегледът не мина', 'err');
+      const d = r.data || {};
+      if (out) {
+        out.textContent =
+          String(d.output || '') +
+          (d.missing && d.missing.length ? '\n\nлипсват: ' + d.missing.join(', ') : '') +
+          (d.cycle && d.cycle.length ? '\n\nцикли: ' + d.cycle.join(', ') : '');
+      }
+      toast(d.missing && d.missing.length ? 'Има липсващи променливи' : 'Готово', d.missing && d.missing.length ? 'err' : 'ok');
       return;
     } else if (action === 'search' || action === 'organization' || action === 'ingest' || action === 'merge' || action === 'conflict' || action === 'apiInfo' || action === 'htmlProjects' || action === 'htmlProject' || action === 'sends') {
       const out = host.querySelector('#set-data-out');

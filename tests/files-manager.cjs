@@ -303,7 +303,7 @@ assert.equal(nc.phone, '+1 2');
 assert.equal(nc.email, 'a@b.co');
 // 8. Сървърът приема и връща бележки (портал и файл).
 //    Проверките са без значение от форматирането (интервали около операторите).
-const serverSrc = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'server.js'), 'utf8'); assert.match(serverSrc, /notes:\s*p\.notesText\s*\|\|\s*''/);
+const serverSrc = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'server.js'), 'utf8'); assert.match(serverSrc, /notes:\s*withVars\(p\.notesText\s*\|\|\s*''\)/);
 assert.match(serverSrc, /notes:\s*f\.notes\s*\|\|\s*''/);
 assert.match(serverSrc, /meta\.notes\s*=\s*clean\(b\.notes\)/);
 assert.match(serverSrc, /if\s*\(b\.notes\s*!==\s*undefined\)\s*p\.notesText\s*=\s*clean\(b\.notes\)/);

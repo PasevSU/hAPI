@@ -466,12 +466,17 @@ const update = (fn, onFailure) => {
 };
 // Публичен контакт на издателя: само имена/канали за връзка (без вътрешни id и extras).
 const publicContact = id => { const c = contactById(db, id); if (!c) return null; const out = { name: c.name, organization: c.organization, department: c.department, email: c.email, phone: c.phone, city: c.city, country: c.country }; return Object.values(out).some(Boolean) ? out : null };
+// `{{променлива}}` в публичния текст (BUG-04): стойностите идват от картотеката, а
+// датата — от часовника. Пътища НЕ се интерполират (вж. hapi_enterprise/interpolate.js).
+const interp = require('./interpolate');
+const varsContext = () => interp.contextFrom(db && db.variables);
+const withVars = value => (typeof value === 'string' && value.includes('{{') ? interp.text(value, varsContext()) : value);
 // Публичният изглед на портала: това, което вижда landing страницата (QR кодът води там).
 const publicPortal = p => ({
-  id: p.id, slug: p.slug, title: p.title, description: p.description, notes: p.notesText || '', category: p.category || '', subject: p.subject || '', flag: p.flag || 'none', storage_root: p.storage_root || '/share', visibility: p.visibility, branding: p.branding || {}, createdAt: p.createdAt,
+  id: p.id, slug: p.slug, title: withVars(p.title), description: withVars(p.description), notes: withVars(p.notesText || ''), category: p.category || '', subject: p.subject || '', flag: p.flag || 'none', storage_root: p.storage_root || '/share', visibility: p.visibility, branding: p.branding || {}, createdAt: p.createdAt,
   // Броят е само на видимите файлове — скритите не се броят в публичния изглед.
   fileCount: p.files.filter(f => f.listed !== false).length,
-  contact: publicContact(p.contactId),
+  contact: (() => { const c = publicContact(p.contactId); return c ? { ...c, email: withVars(c.email), name: withVars(c.name) } : null })(),
   urls: {
     landing: portalLandingUrl(p, ''), api: portalApiUrl(p, ''), manifest: portalApiUrl(p, '') + '/manifest', openapi: portalApiUrl(p, '') + '/openapi.json', qr: portalApiUrl(p, '') + '/qr.svg',
     // Какво точно кодира QR кодът — публичната страница, не JSON API-то.
@@ -1753,6 +1758,14 @@ async function handler(req, res) {
         if (parts.length === 6 && parts[5] === 'detach' && method === 'POST') { const r = store.detachRecord(parts[4]); void audit('core.record.detach', { recordId: r.id }); return json(res, 200, r) }
       }
       if (parts[3] === 'search' && parts.length === 4 && method === 'GET') { const prefix = url.searchParams.get('prefix') || null, q = url.searchParams.get('q') || ''; return json(res, 200, { results: store.search(prefix, q) }) }
+      // Преглед на шаблон с `{{променлива}}` (BUG-04): панелът показва как ще изглежда
+      // текстът, преди да го запази, и кои променливи липсват. Нищо не се записва.
+      if (parts[3] === 'interpolate' && parts.length === 4 && method === 'POST') {
+        const b = await parse(req);
+        if (typeof b.template !== 'string' || b.template.length > 20000) return fail(res, 400, 'template must be a string up to 20000 chars');
+        const rendered = interp.render(b.template, varsContext());
+        return json(res, 200, { ...rendered, placeholders: interp.placeholders(b.template) })
+      }
       if (parts[3] === 'migrate' && parts.length === 4 && method === 'GET') { const bridge = require('./migration-bridge').create({ root, store, registry }); return json(res, 200, await bridge.analyze(db)) }
       if (parts[3] === 'migrate' && parts.length === 4 && method === 'POST') { const b = await parse(req); const dryRun = !!b.dryRun; const bridge = require('./migration-bridge').create({ root, store, registry }); const out = await bridge.migrate(db, { dryRun }); void audit('core.migrate', { dryRun }); return json(res, 200, out) }
       // Report Studio (Фаза 11 / RS-03): манифест → PDF. Без фалшиви TSA токени:

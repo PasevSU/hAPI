@@ -2,12 +2,12 @@
 
 ## Surfaces
 
-| Surface | Framework | Audience |
-| ------- | --------- | -------- |
-| Admin console (`ui/`, Enterprise Control Center) | HTML/JS, без npm | operators/admins |
-| Evidence portal (`evidence-portal/`, публикува се в `www/hapi/data`) | HTML/JS | courts/prosecutors |
-| Desktop | pywebview + WebView2 (същия `ui/`) | Windows operators |
-| Settings UI (секции на `ui/settings-panel.js`) | HTML/JS | admins |
+| Surface                                                              | Framework                          | Audience           |
+| -------------------------------------------------------------------- | ---------------------------------- | ------------------ |
+| Admin console (`ui/`, Enterprise Control Center)                     | HTML/JS, без npm                   | operators/admins   |
+| Evidence portal (`evidence-portal/`, публикува се в `www/hapi/data`) | HTML/JS                            | courts/prosecutors |
+| Desktop                                                              | pywebview + WebView2 (същия `ui/`) | Windows operators  |
+| Settings UI (секции на `ui/settings-panel.js`)                       | HTML/JS                            | admins             |
 
 ## Principles
 

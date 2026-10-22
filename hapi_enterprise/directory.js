@@ -184,10 +184,22 @@ function addRule(db, { pattern, defaults }, opts = {}) {
 }
 function removeRule(db, rid) { state(db); const n = db.directory.rules.length; db.directory.rules = db.directory.rules.filter(r => r.id !== rid); if (db.directory.rules.length === n) throw err('Rule not found', 404); return { deleted: rid } }
 // Нов контакт (ръчно добавен): email е задължителен и уникален, полетата минават през TYPES.
+// Имейлът може да е ШАБЛОН с `{{променлива}}` (BUG-04): тогава формата се проверява след
+// махане на плейсхолдърите, за да не мине произволен текст. Стойността се разгъва при
+// публичния изглед (`withVars` в server.js), а не при записа.
+const emailTemplate = v => {
+  const s = clean(v);
+  if (!s.includes('{{')) return null;
+  const PH = /\{\{[a-z][a-z0-9_]{0,39}\}\}/g;
+  // Или целият адрес е един плейсхолдър (стойността ще е имейл), или остатъкът има
+  // формата на имейл, след като плейсхолдърите се заместят с „x“.
+  return { onlyPlaceholders: s.replace(PH, '').trim() === '', stripped: s.replace(PH, 'x') };
+};
 function addContact(db, input) {
   state(db); const b = input && typeof input === 'object' ? input : {};
   const email = clean(b.email).toLowerCase();
-  if (!CHECK.email(email)) throw err('Invalid email');
+  const tpl = emailTemplate(email);
+  if (!CHECK.email(email) && !(tpl && (tpl.onlyPlaceholders || CHECK.email(tpl.stripped)))) throw err('Invalid email');
   if (db.directory.contacts.some(c => c.email === email)) throw err('Contact already exists', 409);
   if (db.directory.contacts.length >= 5000) throw err('Too many contacts');
   const contact = { id: id(), email, fields: {}, createdAt: new Date().toISOString() };
