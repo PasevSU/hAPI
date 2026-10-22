@@ -19,6 +19,8 @@
     health: '',
     busy: false,
     loaded: false,
+    // Активна секция на „Настройки“: 'general' или id от SECTIONS.
+    section: 'general',
     // PGP: прикачени ключове + настройки на автоподписването на пакетите.
     pgp: { loaded: false, keys: [], settings: { autoSign: false, signKeyId: '' }, error: '', attached: null },
   };
@@ -239,13 +241,187 @@
       }`;
   }
 
+  // ── Секции на „Настройки“ ─────────────────────────────────────────────────
+  // Седемте административни секции живеят ТУК, а не в главното меню: то остава късо,
+  // а всичко „под капака“ се отваря от едно място. Всяка секция показва реални данни
+  // от административния API — няма демо числа и няма празни екрани.
+  const SECTIONS = [
+    { id: 'hierarchy', label: 'Йерархия' },
+    { id: 'cabinet', label: 'Картотека' },
+    { id: 'taxonomy', label: 'Категории и групи' },
+    { id: 'diagnostics', label: 'Диагностика' },
+    { id: 'storage', label: 'Съхранение' },
+    { id: 'backups', label: 'Резервни копия' },
+    { id: 'logs', label: 'Журнал' },
+  ];
+
+  const sectionCache = {};
+
+  function renderTabs() {
+    const current = state.section || 'general';
+    const tab = (id, label) =>
+      `<button type="button" class="set-tab${current === id ? ' active' : ''}" data-section="${esc(id)}"${current === id ? ' aria-current="true"' : ''
+      }>${esc(label)}</button>`;
+    return `<nav class="set-tabs" aria-label="Секции на настройките">${tab('general', 'Основни')}${SECTIONS.map((s) => tab(s.id, s.label)).join('')}</nav>`;
+  }
+
+  function bindTabs() {
+    host.querySelectorAll('.set-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.section = btn.getAttribute('data-section') || 'general';
+        render();
+      });
+    });
+  }
+
+  const fmtBytes = (n) => {
+    const v = Number(n) || 0;
+    if (v < 1024) return `${v} B`;
+    if (v < 1024 * 1024) return `${(v / 1024).toFixed(1)} KB`;
+    return `${(v / 1024 / 1024).toFixed(1)} MB`;
+  };
+  const fmtTime = (v) => {
+    if (!v) return '—';
+    const d = typeof v === 'number' ? new Date(v) : new Date(String(v));
+    return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString();
+  };
+  const table = (head, rows) =>
+    rows.length
+      ? `<table class="grid"><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows
+        .map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`)
+        .join('')}</tbody></table>`
+      : '<p class="hint">Няма данни.</p>';
+
+  // Зарежда данните за секция (с кеш за сесията, за да не се дърпа при всяко цъкане).
+  async function loadSection(id) {
+    if (sectionCache[id]) return sectionCache[id];
+    const out = { error: '', data: null };
+    if (!connected()) {
+      out.error = 'Няма връзка с add-on-а — задай адрес и токен в „Основни“.';
+      return out;
+    }
+    const grab = async (path, opts) => api(path, opts).then((r) => (r.ok ? r.data : null));
+    if (id === 'hierarchy') {
+      const [portals, groups] = await Promise.all([grab('/admin/api/portals'), grab('/admin/api/v2/groups')]);
+      out.data = { portals: (portals && portals.portals) || [], groups: (groups && groups.groups) || [] };
+    } else if (id === 'cabinet') {
+      out.data = await grab('/admin/api/cabinet/info');
+    } else if (id === 'taxonomy') {
+      out.data = await grab('/admin/api/taxonomy');
+    } else if (id === 'diagnostics') {
+      const [diag, load] = await Promise.all([grab('/admin/api/diagnostics'), grab('/admin/api/load')]);
+      out.data = { diag, load };
+    } else if (id === 'storage') {
+      out.data = await grab('/admin/api/storage/status');
+    } else if (id === 'backups') {
+      out.data = await grab('/admin/api/database/backups');
+    } else if (id === 'logs') {
+      out.data = await grab('/admin/api/errors?limit=50');
+    }
+    if (!out.data) out.error = 'Сървърът не отговори с данни за тази секция.';
+    sectionCache[id] = out;
+    return out;
+  }
+
+  function sectionBody(id, res) {
+    if (res.error) return `<p><span class="badge err">грешка</span> <span class="hint">${esc(res.error)}</span></p>`;
+    const d = res.data || {};
+    if (id === 'hierarchy') {
+      const portals = (d.portals || []).map((p) => [
+        esc(p.title || p.slug || '—'),
+        `<code>${esc(p.slug || '')}</code>`,
+        String((p.files || []).length),
+        esc(p.visibility || '—'),
+      ]);
+      const groups = (d.groups || []).map((g) => [esc(g.name || g.id || '—'), esc(g.description || '')]);
+      return `<h3 class="u-mt">Портали</h3>${table(['Портал', 'Адрес', 'Файлове', 'Видимост'], portals)}
+        <h3 class="u-mt">Групи записи</h3>${table(['Група', 'Описание'], groups)}`;
+    }
+    if (id === 'cabinet') {
+      const rows = [
+        ['Локално отваряне', d.localOpen ? 'включено' : 'изключено'],
+        ['Максимален размер', fmtBytes(d.maxBytes)],
+        ['Създаване на файлове', (d.createTypes || []).join(', ') || '—'],
+        ['Конвертиране', Object.entries(d.convert || {}).map(([k, v]) => `${k} → ${v.join(', ')}`).join('; ') || '—'],
+      ];
+      return table(['Възможност', 'Стойност'], rows.map(([a, b]) => [esc(a), esc(b)]));
+    }
+    if (id === 'taxonomy') {
+      const cats = (d.categories || []).map((c) => [esc(c)]);
+      const grps = (d.groups || []).map((g) => [esc(g)]);
+      return `<h3>Категории (${cats.length})</h3>${table(['Категория'], cats)}<h3 class="u-mt">Групи (${grps.length})</h3>${table(['Група'], grps)}`;
+    }
+    if (id === 'diagnostics') {
+      const diag = d.diag || {};
+      const load = d.load || {};
+      const rows = [
+        ['Време на сървъра', fmtTime(diag.generatedAt)],
+        ['Работи от', `${Math.round(Number(diag.uptimeSeconds) || 0)} s`],
+        ['Node', esc((diag.runtime || {}).node || '—')],
+        ['Памет (RSS)', fmtBytes((diag.runtime || {}).rssBytes)],
+        ['Заявки / грешки', `${(diag.traffic || {}).requests ?? 0} / ${(diag.traffic || {}).errors ?? 0}`],
+        ['Изтегляния', String((diag.traffic || {}).downloads ?? 0)],
+        ['Натоварване', `${esc(load.level || '—')} · ефективни паралелни ${esc(load.effective ?? '—')}`],
+        ['Съотношение памет', String(load.heapRatio ?? '—')],
+      ];
+      return table(['Показател', 'Стойност'], rows.map(([a, b]) => [esc(a), b]));
+    }
+    if (id === 'storage') {
+      const last = d.lastCheck || {};
+      const locs = (last.locations || []).map((l) => [esc(l.name), l.available ? 'да' : 'не', l.writable ? 'да' : 'не', esc(l.error || '—')]);
+      return `<p class="hint">Последна проверка: ${esc(fmtTime(last.checkedAt))} · следваща: ${esc(fmtTime(d.nextCheckAt))}</p>
+        ${table(['Локация', 'Достъпна', 'Записваема', 'Грешка'], locs)}`;
+    }
+    if (id === 'backups') {
+      const list = (d.backups || []).map((b) => [
+        `<code>${esc(b.name || '—')}</code>`,
+        fmtBytes(b.bytes || b.size),
+        esc(fmtTime(b.createdAt || b.mtime)),
+      ]);
+      const mirror = d.mirror ? `Огледало: <code>${esc(d.mirror)}</code>` : 'Огледало не е настроено.';
+      return `<p class="hint">${mirror}</p>${table(['Архив', 'Размер', 'Създаден'], list)}`;
+    }
+    if (id === 'logs') {
+      const events = (d.events || []).map((e) => [
+        esc(fmtTime(e.at)),
+        esc(e.level || '—'),
+        esc(e.event || e.message || '—'),
+        esc((e.details && JSON.stringify(e.details).slice(0, 120)) || ''),
+      ]);
+      return `<p class="hint">Последни ${events.length} записа, най-новите първи.</p>${table(['Време', 'Ниво', 'Събитие', 'Детайли'], events)}`;
+    }
+    return '<p class="hint">Непозната секция.</p>';
+  }
+
+  async function renderSection() {
+    const id = state.section;
+    const meta = SECTIONS.find((s) => s.id === id) || { label: 'Настройки' };
+    host.innerHTML = `
+      <div class="page-title">
+        <h1>Настройки · ${esc(meta.label)}</h1>
+        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'връзка' : 'демо'}</span>
+      </div>
+      ${renderTabs()}
+      <section class="panel u-mt">
+        <div class="panel-head"><h2>${esc(meta.label)}</h2><span class="badge">API</span></div>
+        <div class="panel-body" id="set-section-body"><p class="hint">Зареждам…</p></div>
+      </section>`;
+    bindTabs();
+    const body = host.querySelector('#set-section-body');
+    const res = await loadSection(id);
+    if (!body) return;
+    body.innerHTML = sectionBody(id, res);
+  }
+
   function render() {
+    if (state.section && state.section !== 'general') return renderSection();
     const isAdmin = state.role === 'admin';
     host.innerHTML = `
       <div class="page-title">
         <h1>Настройки</h1>
         <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'връзка' : 'демо'}</span>
       </div>
+      ${renderTabs()}
 
       <section class="panel">
         <div class="panel-head"><h2>Връзка с add-on-а</h2><span class="badge">токен</span></div>
@@ -410,6 +586,7 @@
     host.querySelectorAll('[data-pgp-remove]').forEach((btn) => {
       btn.addEventListener('click', () => void removePgpKey(btn.getAttribute('data-pgp-remove')));
     });
+    bindTabs();
   }
 
   function mount(node) {

@@ -2895,3 +2895,33 @@ input[type="radio"] {
   overflow-wrap: anywhere;
   font-size: var(--fs-11);
 }
+
+/* ── Секции на „Настройки“ ──────────────────────────────────────────────────
+   Седемте административни секции се отварят като табове в „Настройки“, а не като
+   отделни редове в главното меню. */
+.set-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 18px;
+}
+
+.set-tab {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.set-tab:hover { border-color: var(--accent); }
+
+.set-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.set-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
