@@ -1,31 +1,36 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.6**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.7**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.6
+## 0.69.7
 
-Enterprise Control Center (GUI версията в `ui/`): седемте административни секции вече са
-**в „Настройки“** — като табове в самата страница, а не като отделни редове в главното меню.
+QR порталът за доказателства (Evidence View v1.1) е част от add-on-а и се публикува там,
+където Home Assistant го сервира: **`<HA config>/www/hapi/data/`** → `/local/hapi/data/portal.html`.
 
-### „Настройки“ има секции
+### Публикуване на портала
 
-- Табове: **Основни** (връзка, публичен адрес, PGP, миграция) + **Йерархия, Картотека,
-  Категории и групи, Диагностика, Съхранение, Резервни копия, Журнал**.
-- Всяка секция показва **реални данни** от административния API (без демо числа):
-  - Йерархия → `/admin/api/portals` + `/admin/api/v2/groups` (портали, файлове, групи записи);
-  - Картотека → `/admin/api/cabinet/info` (локално отваряне, лимит, типове, конвертиране);
-  - Категории и групи → `/admin/api/taxonomy`;
-  - Диагностика → `/admin/api/diagnostics` + `/admin/api/load` (памет, трафик, натоварване);
-  - Съхранение → `/admin/api/storage/status` (локации, достъпност, запис, последна проверка);
-  - Резервни копия → `/admin/api/database/backups` (+ състояние на огледалото);
-  - Журнал → `/admin/api/errors?limit=50`.
-- Без връзка секцията казва **защо** е празна, вместо да показва празен екран.
-- Данните се кешират за сесията, за да не се дърпат при всяко цъкане.
+- Пакетът е внесен в `hapi_enterprise/evidence-portal/` (`portal.html`, `assets/app.js`,
+  `assets/consent.js`, `assets/style.css`, `data/demo-evidence.json`, README).
+- При старт add-on-ът го копира в `<HA config>/www/hapi/data/` и пише в лога къде и колко
+  файла е обновил (`evidence-portal.deployed`). Изключва се с `evidence_portal_deploy: false`.
+- Копира се **само различното** (идемпотентно); symlink на целта се отказва, за да не се
+  пише извън `www`; без достъп до HA конфигурацията add-on-ът не гадае — логва причината
+  и продължава работа.
+- Нови административни маршрути: `GET /admin/api/evidence-portal/status` и
+  `POST /admin/api/evidence-portal/deploy` (повторно публикуване, с одит запис).
+- Ново мапване `homeassistant_config:rw` — без него `/config/www` не съществува в контейнера.
+  Пътят може да се зададе и с `EVIDENCE_PORTAL_DIR` (трябва да завършва на `www/hapi/data`).
 
 ### Проверка
 
-- Нов тест `tests/ui-settings-sections.cjs` пуска панела с минимален DOM-шим и проверява:
-  осем таба, смяна на заглавието при избор на секция, ясно състояние без връзка, връщане
-  към „Основни“.
-- `ui.7z` е обновен от актуалния `ui/` (20 файла); старият архив остава като
-  `ui.prev-20261022.7z`.
+- Нов тест `tests/evidence-portal.cjs`: пакетът е пълен, разпознава HA конфигурация по
+  `configuration.yaml`, публикува точно в `<root>/www/hapi/data`, вторият пуск не пренаписва
+  нищо, променен файл се обновява сам, произволна цел и symlink се отказват.
+- `tests/addon-config.cjs` вече брои **30** опции (новата `evidence_portal_deploy` с преводи).
+
+### Важно за сигурността
+
+Порталът е само фронтенд. Той чака `GET /api/evidence/{folder}/manifest`,
+`POST /api/evidence/{folder}/consent` и `POST /api/evidence/{folder}/access` — тези endpoint-и
+**не са част от add-on-а** и трябва да ги осигури този, който публикува портала. Демо режимът
+`?folder=demo-evidence` е само за тест и трябва да е изключен в употреба.

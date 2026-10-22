@@ -90,6 +90,12 @@ configuration:
     description: >-
       Folder with the access and export rule files. Leave empty to use /config/rules,
       where the built-in defaults are copied on first start and can be edited.
+  evidence_portal_deploy:
+    name: Publish the QR evidence portal
+    description: >-
+      Copies the Evidence View portal to <HA config>/www/hapi/data, so Home Assistant serves it
+      at /local/hapi/data/portal.html. The portal reads its data from an evidence API; it does
+      not expose files by itself.
   tsa_enabled:
     name: RFC 3161 timestamps
     description: >-

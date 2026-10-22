@@ -11,6 +11,7 @@
 // системен tar, (по избор) пълния тестов набор.
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { spawnSync } = require('node:child_process');
@@ -211,8 +212,23 @@ check('S05', 'Синтаксис: всеки JS файл се компилира
   const files = [...lib.walk(addonDir, '').map((e) => e.abs), ...lib.walk(integrationDir, '').map((e) => e.abs)].filter((f) => /\.(js|cjs|mjs)$/.test(f));
   const broken = [];
   for (const file of files) {
+    const text = readText(file);
     try {
-      new vm.Script(readText(file), { filename: file });
+      // Браузърните ES модули (напр. QR порталът в evidence-portal/assets) не са CommonJS:
+      // `import`/`export` в тях е валиден синтаксис, стига файлът да се парсва като модул.
+      // Затова такива файлове се проверяват през временно копие с разширение .mjs.
+      if (/^\s*(?:import|export)\b/m.test(text)) {
+        const tmp = path.join(os.tmpdir(), 'hapi-syntax-' + process.pid + '-' + Math.random().toString(16).slice(2) + '.mjs');
+        fs.writeFileSync(tmp, text);
+        try {
+          const res = spawnSync(process.execPath, ['--check', tmp], { encoding: 'utf8' });
+          if (res.status !== 0) throw Error(String(res.stderr || '').trim().split('\n').slice(0, 2).join(' '));
+        } finally {
+          try { fs.unlinkSync(tmp); } catch { /* временен файл */ }
+        }
+      } else {
+        new vm.Script(text, { filename: file });
+      }
     } catch (error) {
       broken.push(path.relative(root, file) + ': ' + error.message);
     }

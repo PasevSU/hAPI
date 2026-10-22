@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.69.6"
+version: "0.69.7"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
@@ -62,6 +62,9 @@ options:
   min_free_mb: 100
   log_level: info
   config_dir: ""
+  # QR порталът Evidence View се публикува в <HA config>/www/hapi/data, за да го
+  # сервира Home Assistant на /local/hapi/data/portal.html. Изключено → нищо не се пише.
+  evidence_portal_deploy: true
   tsa_enabled: false
   tsa_start_url: "https://zeitstempel.dfn.de/"
   tsa_stop_url: "http://timestamp.digicert.com"
@@ -92,6 +95,7 @@ schema:
   min_free_mb: int(0,1048576)
   log_level: "list(error|warn|info|debug|trace)"
   config_dir: str?
+  evidence_portal_deploy: bool?
   tsa_enabled: bool?
   tsa_start_url: str?
   tsa_stop_url: str?
@@ -105,6 +109,7 @@ schema:
 # and without the mount that documented option can never work.
 map:
   - app_config:rw
+  - homeassistant_config:rw
   - media:rw
   - share:rw
   - ssl

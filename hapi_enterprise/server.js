@@ -1026,6 +1026,17 @@ async function handler(req, res) {
       if (!adminGate(req, res, 'storage', method)) return;
       return json(res, 200, await runStorageCheck('manual'));
     }
+    // Evidence View порталът: къде е публикуван и повторно публикуване по заявка.
+    if (url.pathname === '/admin/api/evidence-portal/status' && method === 'GET') {
+      if (!adminGate(req, res, 'storage', method)) return;
+      return json(res, 200, require('./evidence-portal').status());
+    }
+    if (url.pathname === '/admin/api/evidence-portal/deploy' && method === 'POST') {
+      if (!adminGate(req, res, 'storage', method)) return;
+      const deployed = require('./evidence-portal').deploy();
+      void audit('evidence-portal.deploy', { ok: deployed.ok, dir: deployed.dir || '', error: deployed.error || '' });
+      return json(res, deployed.ok ? 200 : 409, deployed);
+    }
     if (url.pathname === '/admin/api/whoami' && method === 'GET') { if (!adminGate(req, res, 'whoami', method)) return; return json(res, 200, { role: rbac.role(req), ingress: req.ingress === true, defaultRole: rbac.defaultRole, mapped: rbac.configured }) }
     // Връзка за GUI-я: роля, режим и публичен адрес за API/QR (без секрети).
     if (url.pathname === '/admin/api/connection' && method === 'GET') {
@@ -2392,6 +2403,18 @@ async function firstRunSeed() {
   await fsp.writeFile(marker, new Date().toISOString());
   log.info('first-run', { ns: 'server', portal: slug, apiUser: uname, dailyBackups: true });
 }
+// Evidence View порталът (QR) се публикува в <HA config>/www/hapi/data, за да го сервира
+// Home Assistant на /local/hapi/data/portal.html. Провалът не спира add-on-а: без достъп
+// до конфигурацията останалите функции трябва да работят.
+async function deployEvidencePortal() {
+  const enabled = String(optionValue('EVIDENCE_PORTAL_DEPLOY', 'evidence_portal_deploy', 'true')) !== 'false';
+  if (!enabled) { log.info('evidence-portal.disabled', { ns: 'server' }); return }
+  try {
+    const result = require('./evidence-portal').deploy();
+    if (result.ok) log.info('evidence-portal.deployed', { ns: 'server', dir: result.dir, copied: result.copied.length, unchanged: result.unchanged.length });
+    else log.warn('evidence-portal.skipped', { ns: 'server', reason: result.error });
+  } catch (e) { log.warn('evidence-portal.failed', { ns: 'server', err: e.message }) }
+}
 async function start() {
   try {
     // Първо заключване на data директорията: две инстанции на едни и същи данни биха
@@ -2424,7 +2447,7 @@ async function start() {
     if (rulesStatus.missing.length) log.warn('rules.defaults', { ns: 'rules', missing: rulesStatus.missing.join(',') });
     else log.info('rules.loaded', { ns: 'rules', files: Object.keys(rulesStatus.files).length });
     const lines = (await fsp.readFile(telemetryFile, 'utf8')).split('\n'); for (const line of lines) { if (!line.trim()) continue; try { const e = JSON.parse(line); if (['visit', 'download', 'rating'].includes(e.event)) applyTelemetry(e) } catch { console.error('Invalid telemetry record') } }
-  } catch (e) { if (e.code !== 'ENOENT') throw e } await fsp.mkdir(htmlProjectsRoot, { recursive: true }); await fsp.mkdir(filesRoot, { recursive: true }); await fsp.mkdir(internalRoot, { recursive: true }); await auditChain.init(); db = metadataStore.load(); metadataStore.purgeExpiredSessions(); jobManager.recover(); await firstRunSeed(); await importKeyBundles().catch(e => log.warn('pgp.bundle.failed', { ns: 'pgp', err: e.message })); for (const p of db.portals) if (!fs.existsSync(path.join(apiRoot, p.slug, 'qr.svg'))) await writeApiDir(p, baseUrl(null)); applyBackupSchedule(); if (runtime.settings.retention && runtime.settings.retention.enabled) { const runScheduledRetention = () => { void queue.then(async () => { const r = await retention.apply(db.portals); metadataStore.save(db); if (r.deleted || r.disabled || r.auditLinesPruned) void audit('retention.scheduled', { deleted: r.deleted, disabled: r.disabled, auditLinesPruned: r.auditLinesPruned }) }).catch(e => console.error('SCHEDULED RETENTION FAILED', e.message)) }; setInterval(runScheduledRetention, 86400000).unref() } if (storageCheckIntervalMs > 0) { void runStorageCheck('scheduled').catch(() => { }); setInterval(() => { void runStorageCheck('scheduled').catch(() => { }) }, storageCheckIntervalMs) } log.info('startup', { ns: 'server', node: process.version, pid: process.pid, dataDir: root, level: log.level(), ingress: ingressMode, publicHost, port, adminPort, tsa: cryptoOptions.tsaEnabled, encryptFiles: cryptoOptions.encryptFiles, signPackages: cryptoOptions.signPackages, tls: Boolean(cryptoOptions.tlsCert || cryptoOptions.tlsKey) });
+  } catch (e) { if (e.code !== 'ENOENT') throw e } await fsp.mkdir(htmlProjectsRoot, { recursive: true }); await fsp.mkdir(filesRoot, { recursive: true }); await fsp.mkdir(internalRoot, { recursive: true }); await auditChain.init(); db = metadataStore.load(); metadataStore.purgeExpiredSessions(); jobManager.recover(); await firstRunSeed(); await deployEvidencePortal(); await importKeyBundles().catch(e => log.warn('pgp.bundle.failed', { ns: 'pgp', err: e.message })); for (const p of db.portals) if (!fs.existsSync(path.join(apiRoot, p.slug, 'qr.svg'))) await writeApiDir(p, baseUrl(null)); applyBackupSchedule(); if (runtime.settings.retention && runtime.settings.retention.enabled) { const runScheduledRetention = () => { void queue.then(async () => { const r = await retention.apply(db.portals); metadataStore.save(db); if (r.deleted || r.disabled || r.auditLinesPruned) void audit('retention.scheduled', { deleted: r.deleted, disabled: r.disabled, auditLinesPruned: r.auditLinesPruned }) }).catch(e => console.error('SCHEDULED RETENTION FAILED', e.message)) }; setInterval(runScheduledRetention, 86400000).unref() } if (storageCheckIntervalMs > 0) { void runStorageCheck('scheduled').catch(() => { }); setInterval(() => { void runStorageCheck('scheduled').catch(() => { }) }, storageCheckIntervalMs) } log.info('startup', { ns: 'server', node: process.version, pid: process.pid, dataDir: root, level: log.level(), ingress: ingressMode, publicHost, port, adminPort, tsa: cryptoOptions.tsaEnabled, encryptFiles: cryptoOptions.encryptFiles, signPackages: cryptoOptions.signPackages, tls: Boolean(cryptoOptions.tlsCert || cryptoOptions.tlsKey) });
   // TLS за собствените листенери (порт 8099/8098/8088). Двете опции вървят заедно:
   // липсващ или нечетим файл спира старта, вместо тихо да падне на HTTP.
   const tlsEnabled = Boolean(cryptoOptions.tlsCert || cryptoOptions.tlsKey);

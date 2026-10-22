@@ -90,6 +90,12 @@ configuration:
     description: >-
       Папка с файловете с правила за достъп и експорт. Празно → /config/rules, където
       при първи старт се копират вградените стойности и могат да се редактират.
+  evidence_portal_deploy:
+    name: Публикуване на QR портала за доказателства
+    description: >-
+      Копира портала Evidence View в <HA config>/www/hapi/data, за да го сервира Home Assistant
+      на /local/hapi/data/portal.html. Порталът чете данни от API за доказателства; сам по
+      себе си не открива файлове.
   tsa_enabled:
     name: RFC 3161 времеви печати
     description: >-
