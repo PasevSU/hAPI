@@ -8,7 +8,7 @@
 //   • маршрутите са само за admin/operator с capability `sensors` (401 без токен);
 //   • броячите оцеляват рестарт чрез <DATA_DIR>/sensors.json и `restarts` расте;
 //   • няма лични данни: без IP адреси, токени и имена на файлове в агрегата.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort, waitHealthy } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -30,18 +30,13 @@ async function boot(dir, port) {
     stdio: 'ignore',
   });
   const base = `http://127.0.0.1:${port}`;
-  for (let i = 0; i < 160; i++) {
-    try {
-      if ((await fetch(base + '/health')).ok) return { child, base };
-    } catch {}
-    await sleep(50);
-  }
-  throw Error(`сървърът не стартира на ${port}`);
+  await waitHealthy(child, base);
+  return { child, base };
 }
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-sensors-telemetry-'));
-  const port = 42100 + Math.floor(Math.random() * 400);
+  const port = await freePort();
   let server = await boot(dir, port);
   const admin = { Authorization: 'Bearer sensors-telemetry-admin-token-0123456789' };
   const viewer = { Authorization: 'Bearer sensors-telemetry-viewer-token-0123456789' };
@@ -181,7 +176,7 @@ async function boot(dir, port) {
       try {
         persisted = JSON.parse(fs.readFileSync(sensorsFile, 'utf8'));
         if (persisted.http && persisted.http.total > 0) break;
-      } catch {}
+      } catch { }
       await sleep(100);
     }
     assert.ok(persisted, 'sensors.json не е записан');
@@ -189,7 +184,7 @@ async function boot(dir, port) {
 
     const beforeRestart = obs.http.total;
     await stopChild(server.child);
-    server = await boot(dir, port + 400);
+    server = await boot(dir, await freePort());
     const afterRestart = await (await fetch(server.base + '/admin/api/sensors', { headers: admin })).json();
     assert.ok(
       afterRestart.observer.http.total > beforeRestart,

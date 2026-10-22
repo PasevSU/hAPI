@@ -6,7 +6,7 @@
 //   2. Ingress идентичност без карта → admin (fallback),
 //   3. Ingress идентичност с карта → точно тази роля (може и понижаване).
 // Плюс `DEFAULT_ROLE`, който сменя fallback-а за цялата инсталация.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort, waitHealthy } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -57,17 +57,7 @@ async function boot(env, port) {
     }
     return { status: res.status, value };
   };
-  let ready = false;
-  for (let i = 0; i < 120; i++) {
-    try {
-      if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) {
-        ready = true;
-        break;
-      }
-    } catch {}
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  assert.ok(ready, `сървърът не стартира на ${port}`);
+  await waitHealthy(child, `http://127.0.0.1:${port}`, { attempts: 120 });
   return { child, call, dir };
 }
 
@@ -148,7 +138,7 @@ async function boot(env, port) {
   assert.equal(rbac.resolve({ ingress: false, headers: {} }), null);
 
   // ── 3. API: немаркиран Ingress потребител е admin ─────────────────────────
-  const first = await boot({}, 32100 + Math.floor(Math.random() * 500));
+  const first = await boot({}, await freePort());
   try {
     const who = await first.call('/admin/api/whoami');
     assert.equal(who.status, 200, JSON.stringify(who.value));
@@ -171,7 +161,7 @@ async function boot(env, port) {
   // ── 4. API: изрична карта понижава, DEFAULT_ROLE сменя fallback-а ─────────
   const second = await boot(
     { USER_ROLES: JSON.stringify({ bob: 'viewer' }), DEFAULT_ROLE: 'operator' },
-    32600 + Math.floor(Math.random() * 500),
+    await freePort(),
   );
   try {
     const bob = { 'X-Remote-User': 'bob' };
@@ -195,7 +185,7 @@ async function boot(env, port) {
 
   console.log(
     `PASS rbac default matrix: ${checked} проверки роля×способност×метод, default admin, ` +
-      'карта за понижаване, DEFAULT_ROLE',
+    'карта за понижаване, DEFAULT_ROLE',
   );
 })().catch((e) => {
   console.error(e);

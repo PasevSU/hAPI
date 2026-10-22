@@ -8,7 +8,7 @@
 //
 // Това е „дишащият“ тест: ако една стъпка от веригата се счупи, продуктът не
 // изпълнява обещанието си, дори когато отделните модули имат зелени юнит тестове.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort, waitHealthy } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -56,23 +56,13 @@ async function boot(dir, port) {
       buffer: isJson ? null : Buffer.from(await res.arrayBuffer()),
     };
   };
-  let ready = false;
-  for (let i = 0; i < 140; i++) {
-    try {
-      if ((await fetch(base + '/health')).ok) {
-        ready = true;
-        break;
-      }
-    } catch {}
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  assert.ok(ready, `сървърът не стартира на ${port}`);
+  await waitHealthy(child, base, { attempts: 140 });
   return { child, call };
 }
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-lifecycle-'));
-  const port = 33100 + Math.floor(Math.random() * 400);
+  const port = await freePort();
   let server = await boot(dir, port);
   let portalId = '';
   let fileIds = [];
@@ -255,7 +245,7 @@ async function boot(dir, port) {
 
     console.log(
       'PASS enterprise lifecycle: старт→ready→admin→портал→файлове→цялост→одит→' +
-        'публичен API→пакет→QR→метрики→правила→експорт→retention→backup→storage→рестарт',
+      'публичен API→пакет→QR→метрики→правила→експорт→retention→backup→storage→рестарт',
     );
   } finally {
     await stopChild(server.child);

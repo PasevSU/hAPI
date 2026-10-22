@@ -7,7 +7,7 @@
 //   • add-on-ът бъде рестартиран веднага след това.
 // След хаоса: сървърът е здрав, одит веригата е валидна, няма остатъчни .tmp файлове
 // и данните са същите след рестарт.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort, waitHealthy } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -28,18 +28,13 @@ async function boot(dir, port) {
     stdio: 'ignore',
   });
   const base = `http://127.0.0.1:${port}`;
-  for (let i = 0; i < 160; i++) {
-    try {
-      if ((await fetch(base + '/health')).ok) return { child, base };
-    } catch {}
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  throw Error(`сървърът не стартира на ${port}`);
+  await waitHealthy(child, base);
+  return { child, base };
 }
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-chaos-'));
-  const port = 38100 + Math.floor(Math.random() * 500);
+  const port = await freePort();
   let server = await boot(dir, port);
   let portalId = '';
 
@@ -152,7 +147,7 @@ async function boot(dir, port) {
     // 5. Рестарт веднага след хаоса: няма загуба на данни.
     const before = portalAfter.value.files.length;
     await stopChild(server.child);
-    server = await boot(dir, port + 400);
+    server = await boot(dir, await freePort());
     const restored = await fetch(`${server.base}/admin/api/portals/${portalId}`, { headers: auth });
     assert.equal(restored.status, 200, 'порталът е налице след рестарт');
     const restoredBody = await restored.json();
