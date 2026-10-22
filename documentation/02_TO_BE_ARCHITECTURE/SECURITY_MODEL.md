@@ -19,16 +19,16 @@
 
 ## Controls matrix
 
-| Control | Current | Target |
-| ------- | ------- | ------ |
-| Authentication | HA SSO + local | + TOTP for admin-ops |
-| Authorization | RBAC (admin/operator/viewer) | + court/prosecutor viewer role |
-| Encryption at rest | AES-256-GCM | + per-file keys |
-| Integrity | SHA-256 | + SHA-512 + PKCS#7 + RFC 3161 |
-| Immutability | `flag:'wx'` partial | dedicated WORM volume |
-| Auditing | hash-chained log | + external anchor |
-| Rate limiting | present, **по самоличност** (токен / HA user / акаунт), не по IP | keep + per-role |
-| Input validation | present | schema-validated API v2 |
+| Control            | Current                                                          | Target                         |
+| ------------------ | ---------------------------------------------------------------- | ------------------------------ |
+| Authentication     | HA SSO + local                                                   | + TOTP for admin-ops           |
+| Authorization      | RBAC (admin/operator/viewer)                                     | + court/prosecutor viewer role |
+| Encryption at rest | AES-256-GCM                                                      | + per-file keys                |
+| Integrity          | SHA-256                                                          | + SHA-512 + PKCS#7 + RFC 3161  |
+| Immutability       | `flag:'wx'` partial                                              | dedicated WORM volume          |
+| Auditing           | hash-chained log                                                 | + external anchor              |
+| Rate limiting      | present, **по самоличност** (токен / HA user / акаунт), не по IP | keep + per-role                |
+| Input validation   | present                                                          | schema-validated API v2        |
 
 > Защо не по IP (`BUG-05`, 0.69.15): зад Home Assistant Ingress всички заявки идват от
 > един и същ peer (проксирането на Supervisor), затова лимит по IP заключва целия панел
@@ -39,10 +39,10 @@
 
 ## Role matrix
 
-| Capability | admin | operator | viewer | court |
-| ---------- |:-----:|:--------:|:------:|:-----:|
-| Manage files | ✅ | ✅ | ❌ | ❌ |
-| Grant access | ✅ | ❌ | ❌ | ❌ |
-| View documents | ✅ | ✅ | ✅ | ✅ |
-| Verify evidence | ✅ | ✅ | ✅ | ✅ |
-| Export audit | ✅ | ❌ | ❌ | ❌ |
+| Capability      | admin | operator | viewer | court |
+| --------------- | :---: | :------: | :----: | :---: |
+| Manage files    |   ✅   |    ✅     |   ❌    |   ❌   |
+| Grant access    |   ✅   |    ❌     |   ❌    |   ❌   |
+| View documents  |   ✅   |    ✅     |   ✅    |   ✅   |
+| Verify evidence |   ✅   |    ✅     |   ✅    |   ✅   |
+| Export audit    |   ✅   |    ❌     |   ❌    |   ❌   |

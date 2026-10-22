@@ -70,7 +70,11 @@
       state.health = r.status === 0 ? 'no-connection' : r.status === 401 || r.status === 403 ? 'unauthorized' : 'error';
     }
     state.loaded = true;
-    render();
+    // ВАЖНО: връзката се зарежда асинхронно и може да пристигне СЛЕД като потребителят е
+    // отворил секция и е натиснал бутон. Безусловното `render()` изтриваше това, което
+    // той вижда (напр. току-що издадения CMS подпис) и полетата се оказваха празни.
+    // Затова се пре-рисува само екранът „Основни“, който показва връзката.
+    if (!state.section || state.section === 'general') render();
     void loadPgp();
   }
 
@@ -91,7 +95,9 @@
       state.pgp.error = r.error || `HTTP ${r.status}`;
     }
     state.pgp.loaded = true;
-    render();
+    // Същата причина като в `loadConnection`: PGP статусът идва асинхронно и не бива да
+    // изтрива секцията, в която потребителят вече работи. PGP блокът е в „Основни“.
+    if (!state.section || state.section === 'general') render();
   }
 
   async function attachPgpKey() {
@@ -1024,25 +1030,28 @@
       if (action === 'search') {
         const q = field('search-q');
         if (!q) return toast('Въведи дума за търсене', 'err');
+        // Пътищата са тези, които сървърът РЕАЛНО обслужва (директорията и сливането на
+        // портали живеят под `/admin/api/directory` и `/admin/api/portals`). Досега тук
+        // стояха измислени `/v2/...` адреси и бутоните мълчаливо връщаха 404 (BUG-GUI-01).
         r = await api('/admin/api/v2/search?q=' + encodeURIComponent(q));
       } else if (action === 'organization') {
         const name = field('org-name');
         if (!name) return toast('Въведи име на организация', 'err');
-        r = await post('/admin/api/v2/organizations', { name });
+        r = await post('/admin/api/directory/organizations', { name });
       } else if (action === 'ingest') {
         const emails = field('ingest-emails').split(',').map((s) => s.trim()).filter(Boolean);
         if (!emails.length) return toast('Въведи поне един имейл', 'err');
-        r = await post('/admin/api/v2/ingest', { emails });
+        r = await post('/admin/api/directory/ingest', { emails });
       } else if (action === 'merge') {
         const targetId = field('merge-target');
         const sourceIds = field('merge-sources').split(',').map((s) => s.trim()).filter(Boolean);
         if (!targetId || !sourceIds.length) return toast('Нужни са портал-получател и поне един източник', 'err');
-        r = await post('/admin/api/v2/merge', { targetId, sourceIds });
+        r = await post('/admin/api/portals/merge', { targetId, sourceIds });
       } else if (action === 'conflict') {
         const id = field('conflict-id');
         const value = field('conflict-value');
         if (!id) return toast('Въведи идентификатор на конфликта', 'err');
-        r = await post('/admin/api/v2/conflicts/' + encodeURIComponent(id) + '/resolve', { value });
+        r = await post('/admin/api/directory/conflicts/' + encodeURIComponent(id) + '/resolve', { value });
       } else if (action === 'apiInfo') {
         if (!portalId) return toast('Избери портал', 'err');
         r = await api('/admin/api/portals/' + encodeURIComponent(portalId) + '/api-info');
@@ -1078,6 +1087,15 @@
       toast('Метриките са готови', 'ok');
       return;
     }
+    // Действия, които пишат резултата СИ НА МЯСТО (в `#set-…-out` или в поле на същата
+    // секция). Те НЕ бива да пре-рисуват секцията след себе си — иначе потребителят
+    // вижда известие, а резултатът изчезва (така изчезваше и току-що издаденият CMS подпис).
+    const IN_PLACE = new Set([
+      'interpolate', 'secretCreate', 'cmsSign', 'cmsVerify', 'audit', 'metricsProm',
+      'apiInfo', 'htmlProjects', 'htmlProject', 'sends', 'search', 'organization', 'ingest',
+      'merge', 'conflict', 'notify', 'portalDeploy',
+    ]);
+    if (IN_PLACE.has(action)) return;
     delete sectionCache[state.section];
     render();
   }
@@ -1296,13 +1314,13 @@
     if (q('#set-migrate-analyze')) {
       q('#set-migrate-analyze').addEventListener('click', async () => {
         showMigration('Анализирам…');
-        const r = await api('/admin/api/v2/migrate');
+        const r = await api('/admin/api/directory/migrate');
         showMigration(r.ok ? r.data : r.error || `HTTP ${r.status}`);
       });
     }
     const runMigration = async (dryRun) => {
       showMigration(dryRun ? 'Dry run…' : 'Мигрирам…');
-      const r = await api('/admin/api/v2/migrate', { method: 'POST', json: { dryRun } });
+      const r = await api('/admin/api/directory/migrate', { method: 'POST', json: { dryRun } });
       if (!r.ok) return showMigration(r.error || `HTTP ${r.status}`);
       showMigration(r.data);
       toast(dryRun ? 'Dry run приключи — нищо не е записано' : 'Миграцията приключи', 'ok');
