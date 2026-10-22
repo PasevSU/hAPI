@@ -1,0 +1,17 @@
+[
+  {
+    "file": "hapi_enterprise/server.js",
+    "rule": "off-by-one-loop",
+    "reason": "lockedAncestor проверява ВСИЧКИ родителски префикси, включително пълния път; i === parts.length дава parts.slice(0, n) — точно последният родител, който трябва да се провери. Това е нарочна инклузивна итерация, не off-by-one."
+  },
+  {
+    "file": "hapi_enterprise/download-access.js",
+    "rule": "ternary-bool",
+    "reason": "Нормализация на политика: по подразбиране true, освен при изрично false. `src.x === false ? false : true` е точно това правило (undefined -> true), затова не се заменя с !src.x."
+  },
+  {
+    "file": "hapi_enterprise/public-gateway.js",
+    "rule": "ternary-bool",
+    "reason": "Същата нормализация на публичен портал: липсващо поле значи включено, изрично false значи изключено. Инверсията е умишлена."
+  }
+]

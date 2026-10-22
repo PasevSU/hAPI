@@ -159,6 +159,17 @@ if (probe.status === 0) {
   assert.ok(haossText.includes("$visibility -ne 'PUBLIC'"), 'разпознава private хранилище');
   assert.ok(haossText.includes('--visibility public'), 'казва точно как се оправя');
   assert.ok(haossText.includes('$ForcePrivate'), 'има съзнателен изход -ForcePrivate');
+  // 10в. Личният имейл не бива да влиза в публичното HACS репо. Редът има значение:
+  // идентичността се задава ПРЕДИ commit-а — научено от реален комит с личен имейл.
+  const identityAt = haossText.indexOf("Arguments @('config', 'user.email'");
+  const commitAt = haossText.indexOf("-Text 'commit'");
+  assert.ok(identityAt > 0, 'публикаторът задава локално user.email');
+  assert.ok(haossText.includes('@users.noreply.github.com'), 'имейлът при публикуване е noreply');
+  assert.ok(commitAt > identityAt, 'идентичността се задава ПРЕДИ commit-а, иначе авторът остава личният');
+  assert.ok(
+    !/git config user\.email .* -WorkDir \$root/.test(haossText),
+    'глобалната git идентичност не се пипа',
+  );
   assert.equal(syntaxVerdict(haoss), 'OK', 'синтактична грешка в publish-haoss.ps1');
 }
 else {

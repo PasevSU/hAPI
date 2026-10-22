@@ -1348,9 +1348,10 @@ async function handler(req, res) {
       if (tail[0] === 'qr' && tail.length === 1 && method === 'GET') { res.writeHead(301, { 'Location': portalApiUrl(p, baseUrl(req)) + '/qr.svg', 'Cache-Control': 'no-store' }); return res.end() }
       if (tail[0] === 'manifest' && tail.length === 1 && method === 'GET') {
         // Манифестът води към виртуалното хранилище: всеки файл носи виртуален път,
-        // а не физически път на диска.
-        const vs = require('./virtual-storage'), tree = vs.buildTree(p.files);
-        return json(res, 200, { portal: publicPortal(p), storage: { virtual: true, root: '/', url: portalApiUrl(p, baseUrl(req)) + '/storage', scheme: '/<topic>/<category>/<group>/<name>', folderCount: tree.folderCount, fileCount: tree.fileCount }, files: p.files.filter(f => f.listed !== false).map(f => ({ ...publicFile(f), accessMode: fileMode(f), path: vs.virtualPath(f) })) });
+        // а не физически път на диска. Пътят идва от дървото (`pathsOf`), защото то
+        // решава дубликатите с „ (2)“ — иначе два еднакви имена получават един адрес.
+        const vs = require('./virtual-storage'), tree = vs.buildTree(p.files), paths = vs.pathsOf(p.files);
+        return json(res, 200, { portal: publicPortal(p), storage: { virtual: true, root: '/', url: portalApiUrl(p, baseUrl(req)) + '/storage', scheme: '/<topic>/<category>/<group>/<name>', folderCount: tree.folderCount, fileCount: tree.fileCount }, files: p.files.filter(f => f.listed !== false).map(f => ({ ...publicFile(f), accessMode: fileMode(f), path: paths[f.id] || vs.virtualPath(f) })) });
       }
       // Виртуално хранилище (Фаза 8): дърво topic → category → group → файл.
       // `path` е виртуален (/Тема/Категория); физически пътища никога не се показват.

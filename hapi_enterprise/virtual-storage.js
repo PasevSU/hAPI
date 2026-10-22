@@ -136,7 +136,20 @@
     return out;
   }
 
-  const API = { sanitizeSegment, foldersFor, virtualPath, buildTree, resolve, flatten };
+  /**
+   * Каноничните пътища на всички файлове — същите, които връща дървото.
+   * `virtualPath()` дава „идеалния“ път и не знае за дубликати; когато два файла в
+   * една папка се казват еднакво, дървото слага „ (2)“. Затова всеки, който връща
+   * път на конкретен файл (манифест, API), трябва да ползва тази карта, иначе два
+   * файла получават един и същ адрес и клиентът тегли грешния.
+   */
+  function pathsOf(files) {
+    const out = {};
+    for (const entry of flatten(buildTree(files))) if (entry.id) out[entry.id] = entry.path;
+    return out;
+  }
+
+  const API = { sanitizeSegment, foldersFor, virtualPath, pathsOf, buildTree, resolve, flatten };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   if (typeof globalThis !== 'undefined') globalThis.HapiVirtualStorage = API;
 })();

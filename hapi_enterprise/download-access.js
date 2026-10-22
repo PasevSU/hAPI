@@ -100,6 +100,12 @@
       errors.push('max_downloads трябва да е цяло число ≥ 1');
     }
     if (src.window && !normalizeWindow(src.window)) errors.push('window трябва да е {from,to} във формат HH:MM');
+    else if (src.window && normalizeWindow(src.window).from >= normalizeWindow(src.window).to) {
+      // Прозорец, който пресича полунощ (22:00→06:00), не се поддържа: при сечение
+      // на слоеве той става „празен“ и достъпът спира безшумно за цялото денонощие.
+      // По-добре ясна грешка при запис, отколкото заключена врата без обяснение.
+      errors.push('window.from трябва да е преди window.to (прозорец през полунощ не се поддържа — задай два прозореца)');
+    }
     if (src.roles && !Array.isArray(src.roles)) errors.push('roles трябва да е масив');
     if (src.ip && src.ip.allow && !Array.isArray(src.ip.allow)) errors.push('ip.allow трябва да е масив');
     if (src.mode === 'PRIVATE' && (!Array.isArray(src.roles) || src.roles.length === 0)) {
@@ -157,7 +163,10 @@
     };
     for (const p of list) {
       if (rank(p.mode) > rank(out.mode)) out.mode = p.mode;
-      out.roles = [...new Set([...out.roles, ...p.roles])];
+      // Ролите се СЕЧАТ, не се обединяват. При PRIVATE достъп се дава само на роля,
+      // позволена от ВСЕКИ слой; обединение би разрешило повече от най-стриктен слой
+      // (слой „финанси“ + слой „ЧР“ не значи достъп за двете).
+      out.roles = intersectLists(out.roles, p.roles);
       if (p.expires_at) {
         const t = Date.parse(p.expires_at);
         if (!Number.isNaN(t) && (out.expires_at === null || t < Date.parse(out.expires_at))) {
@@ -196,9 +205,11 @@
   function useToken(token, now) {
     const state = tokenState(token, now);
     if (state !== 'active') return { ok: false, reason: state, token: null };
-    const next = Object.assign({}, token, { uses: Number(token.uses || 0) + 1, last_used_at: new Date(
-      now instanceof Date ? now.getTime() : Number(now || Date.now()),
-    ).toISOString() });
+    const next = Object.assign({}, token, {
+      uses: Number(token.uses || 0) + 1, last_used_at: new Date(
+        now instanceof Date ? now.getTime() : Number(now || Date.now()),
+      ).toISOString()
+    });
     return { ok: true, reason: '', token: next };
   }
 
@@ -230,6 +241,9 @@
   function withinWindow(policy, now) {
     if (!policy.window) return { ok: true, reason: '' };
     if (policy.window.empty) return { ok: false, reason: 'window-empty' };
+    // Изкривен прозорец (from >= to) е счупена политика, а не „отворено“ — казваме го
+    // изрично, за да не изглежда като нормален отказ „извън работно време“.
+    if (policy.window.from >= policy.window.to) return { ok: false, reason: 'window-invalid' };
     const d = now instanceof Date ? now : new Date(now || Date.now());
     const hhmm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     const inside = hhmm >= policy.window.from && hhmm < policy.window.to;

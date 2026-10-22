@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-10-22T05:38:00.673Z",
+  "files": 280,
+  "scannedLines": 49219,
+  "total": 7,
+  "open": [],
+  "accepted": [
+    {
+      "file": "hapi_enterprise/download-access.js",
+      "line": 71,
+      "rule": "ternary-bool",
+      "sev": "medium",
+      "segment": "toInt",
+      "code": "verify_on_serve: src.verify_on_serve === false ? false : true,",
+      "why": "`cond ? true : false` е самият `cond`; `cond ? false : true` е отрицание — чете се трудно и крие инверсия",
+      "fix": "напиши директно `cond` / `!cond`"
+    },
+    {
+      "file": "hapi_enterprise/download-access.js",
+      "line": 72,
+      "rule": "ternary-bool",
+      "sev": "medium",
+      "segment": "toInt",
+      "code": "audit: src.audit === false ? false : true,",
+      "why": "`cond ? true : false` е самият `cond`; `cond ? false : true` е отрицание — чете се трудно и крие инверсия",
+      "fix": "напиши директно `cond` / `!cond`"
+    },
+    {
+      "file": "hapi_enterprise/download-access.js",
+      "line": 81,
+      "rule": "ternary-bool",
+      "sev": "medium",
+      "segment": "toInt",
+      "code": "inherits: src.inherits === false ? false : true,",
+      "why": "`cond ? true : false` е самият `cond`; `cond ? false : true` е отрицание — чете се трудно и крие инверсия",
+      "fix": "напиши директно `cond` / `!cond`"
+    },
+    {
+      "file": "hapi_enterprise/public-gateway.js",
+      "line": 118,
+      "rule": "ternary-bool",
+      "sev": "medium",
+      "segment": "normalizePortal",
+      "code": "api: src.api === false ? false : true,",
+      "why": "`cond ? true : false` е самият `cond`; `cond ? false : true` е отрицание — чете се трудно и крие инверсия",
+      "fix": "напиши директно `cond` / `!cond`"
+    },
+    {
+      "file": "hapi_enterprise/public-gateway.js",
+      "line": 119,
+      "rule": "ternary-bool",
+      "sev": "medium",
+      "segment": "normalizePortal",
+      "code": "qr: src.qr === false ? false : true,",
+      "why": "`cond ? true : false` е самият `cond`; `cond ? false : true` е отрицание — чете се трудно и крие инверсия",
+      "fix": "напиши директно `cond` / `!cond`"
+    },
+    {
+      "file": "hapi_enterprise/public-gateway.js",
+      "line": 121,
+      "rule": "ternary-bool",
+      "sev": "medium",
+      "segment": "normalizePortal",
+      "code": "inherit: src.inherit === false ? false : true,",
+      "why": "`cond ? true : false` е самият `cond`; `cond ? false : true` е отрицание — чете се трудно и крие инверсия",
+      "fix": "напиши директно `cond` / `!cond`"
+    },
+    {
+      "file": "hapi_enterprise/server.js",
+      "line": 1467,
+      "rule": "off-by-one-loop",
+      "sev": "critical",
+      "segment": "for",
+      "code": "for (let i = 0; i <= parts.length; i++) {",
+      "why": "цикъл с `<=` върху `.length` минава един елемент отвъд масива (undefined)",
+      "fix": "използвай `<` пред `.length`"
+    }
+  ]
+}

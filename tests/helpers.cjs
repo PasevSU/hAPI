@@ -21,17 +21,37 @@ async function stopChild(child) {
  * Тестовете взимаха `31000 + Math.random() * 2000` и диапазоните им се застъпваха, затова
  * в CI от време на време два теста искаха един и същ порт: сървърът излизаше веднага и
  * оставаше само „сървърът не стартира на N“. Ядрото дава порт, който в момента е свободен.
+ *
+ * ВАЖНО (Windows): `listen(0)` може да върне порт от динамичния диапазон, който после е
+ * ИЗКЛЮЧЕН от системна резервация (Hyper-V / WinNAT: `netsh int ipv4 show excludedportrange`).
+ * Тогава детето пада с `EACCES` при `listen`, макар портът да изглежда свободен. Затова
+ * всеки кандидат се проверява с изрично връзване и се подменя, ако не става.
  */
-async function freePort(host = '127.0.0.1') {
-  return new Promise((resolve, reject) => {
+async function canBind(host, port) {
+  return new Promise((resolve) => {
     const server = net.createServer();
     server.unref();
-    server.once('error', reject);
-    server.listen(0, host, () => {
-      const { port } = server.address();
-      server.close(() => resolve(port));
-    });
+    server.once('error', (e) => resolve({ ok: false, code: e.code }));
+    server.listen(port, host, () => server.close(() => resolve({ ok: true })));
   });
+}
+
+async function freePort(host = '127.0.0.1', { tries = 25 } = {}) {
+  for (let i = 0; i < tries; i++) {
+    const port = await new Promise((resolve, reject) => {
+      const server = net.createServer();
+      server.unref();
+      server.once('error', reject);
+      server.listen(0, host, () => {
+        const { port } = server.address();
+        server.close(() => resolve(port));
+      });
+    });
+    const probe = await canBind(host, port);
+    if (probe.ok) return port;
+    if (!['EACCES', 'EADDRINUSE'].includes(probe.code)) return port; // друга причина — не е наш проблем
+  }
+  throw new Error('няма порт, който може да се върже изрично (изключени диапазони на Windows?)');
 }
 
 /**

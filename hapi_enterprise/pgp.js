@@ -165,7 +165,7 @@ function readPackets(buf) {
         const parts = [];
         let chunk = 1 << (first & 0x1f);
         at += 1;
-        for (;;) {
+        for (; ;) {
           if (at + chunk > buf.length) throw fail('BAD_PACKET', 'Отрязан пакет', 400);
           parts.push(buf.subarray(at, at + chunk));
           at += chunk;
@@ -340,8 +340,11 @@ function parseSecretMpis(key, body) {
     secret.d = body.subarray(at, at + size);
   } else {
     const s = readMpi(body, at); at = s.next;
-    if (s.value.length !== 32) throw fail('BAD_KEY', 'Неочакван размер на Ed25519 секретен ключ');
-    secret.d = s.value;
+    // MPI е цяло число: водещите нулеви БИТОВЕ не се пазят (RFC 4880 §3.2).
+    // Затова 32-байтов секрет, който започва с 0x00, пристига като 31 байта —
+    // това е валиден ключ, не повреда. Допълваме отляво до фиксирания размер.
+    if (s.value.length > 32) throw fail('BAD_KEY', 'Неочакван размер на Ed25519 секретен ключ');
+    secret.d = s.value.length === 32 ? Buffer.from(s.value) : Buffer.concat([Buffer.alloc(32 - s.value.length), s.value]);
   }
   if (key.version === 4 && at + 2 <= body.length) {
     let sum = 0;
@@ -631,7 +634,7 @@ function verifyDetached(data, armoredSignature, armoredPublicKey) {
     // Издател: v4 → Issuer Key ID (16); v6 → Issuer Fingerprint (33).
     let issuer = '';
     const scan = (start, end) => {
-      for (let p = start; p < end; ) {
+      for (let p = start; p < end;) {
         const first = body[p];
         let length;
         let head;

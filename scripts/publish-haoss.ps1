@@ -156,6 +156,34 @@ if (-not $hasGit) {
         }
     }
 }
+# Публичното репо не бива да носи личния имейл на разработчика. Задаваме локално
+# noreply идентичност на собственика върху клонинга, от който публикуваме, и не пипаме
+# глобалните настройки. Прави се ПРЕДИ commit-а, иначе авторът остава личният.
+if ($Execute) {
+    Push-Location $gitDir
+    try {
+        $email = git config user.email 2>$null
+        $userName = git config user.name 2>$null
+    }
+    finally { Pop-Location }
+    if ($email -ne "$owner@users.noreply.github.com" -or $userName -ne $owner) {
+        if ($email) {
+            Write-Host "  заменям локално идентичността $userName <$email> с $owner <$owner@users.noreply.github.com>"
+        }
+        else {
+            Write-Host "  няма git идентичност — задавам локално $owner <$owner@users.noreply.github.com>"
+        }
+        Invoke-Command-Step -Text 'identity' -Exe 'git' -Arguments @('config', 'user.name', $owner) -WorkDir $gitDir | Out-Null
+        Invoke-Command-Step -Text 'identity' -Exe 'git' -Arguments @('config', 'user.email', "$owner@users.noreply.github.com") -WorkDir $gitDir | Out-Null
+    }
+    else {
+        Write-Host "  git идентичност: $userName <$email>"
+    }
+}
+else {
+    Write-Host '  git идентичност: локално се задава noreply на собственика (личният имейл не се публикува)'
+}
+
 Invoke-Command-Step -Text 'add' -Exe 'git' -Arguments @('add', '-A') -WorkDir $gitDir | Out-Null
 
 # Празни commit-и не помагат на никого: при реално изпълнение проверяваме дали има промени.
@@ -180,34 +208,6 @@ if ($Execute) {
 }
 else {
     Write-Host "  `$ git commit -m 'hAPI Enterprise $Version — HACS integration'   (само ако има промени)"
-}
-
-# Публичното репо не бива да носи личния имейл на разработчика. Задаваме локално
-# noreply идентичност на собственика върху клонинга, от който публикуваме, и не пипаме
-# глобалните настройки.
-if ($Execute) {
-    Push-Location $gitDir
-    try {
-        $email = git config user.email 2>$null
-        $userName = git config user.name 2>$null
-    }
-    finally { Pop-Location }
-    if ($email -ne "$owner@users.noreply.github.com" -or $userName -ne $owner) {
-        if ($email) {
-            Write-Host "  заменям локално идентичността $userName <$email> с $owner <$owner@users.noreply.github.com>"
-        }
-        else {
-            Write-Host "  няма git идентичност — задавам локално $owner <$owner@users.noreply.github.com>"
-        }
-        Invoke-Command-Step -Text 'identity' -Exe 'git' -Arguments @('config', 'user.name', $owner) -WorkDir $gitDir | Out-Null
-        Invoke-Command-Step -Text 'identity' -Exe 'git' -Arguments @('config', 'user.email', "$owner@users.noreply.github.com") -WorkDir $gitDir | Out-Null
-    }
-    else {
-        Write-Host "  git идентичност: $userName <$email>"
-    }
-}
-else {
-    Write-Host '  git идентичност: локално се задава noreply на собственика (личният имейл не се публикува)'
 }
 
 # ── 3. GitHub repo ──────────────────────────────────────────────────────────

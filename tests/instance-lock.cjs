@@ -188,7 +188,11 @@ function waitExit(child, ms = 8000) {
     assert.equal(ready.instance.id, 'primary', 'instance id-то е видимо в /ready');
     assert.equal(ready.instance.sid === undefined, true);
 
-    const duplicate = boot(dataDir, port + 300, { INSTANCE_ID: 'duplicate' });
+    // Вторият сървър взима СВОЙ свободен порт: `port + 300` може да попадне в
+    // изключен диапазон на Windows (Hyper-V/WinNAT) и тогава пада с EACCES вместо
+    // с очакваната грешка за ключалката.
+    const duplicatePort = await freePort();
+    const duplicate = boot(dataDir, duplicatePort, { INSTANCE_ID: 'duplicate' });
     const exited = await waitExit(duplicate);
     assert.equal(exited.timedOut, false, 'вторият сървър не остава да работи');
     assert.equal(exited.code, 1, `очаквам код 1, получих ${exited.code}`);
@@ -210,10 +214,11 @@ function waitExit(child, ms = 8000) {
       assert.throws(() => process.kill(lockAfterStop.pid, 0));
     }
 
-    const restarted = boot(dataDir, port + 600, { INSTANCE_ID: 'restarted' });
+    const restartPort = await freePort();
+    const restarted = boot(dataDir, restartPort, { INSTANCE_ID: 'restarted' });
     try {
-      assert.ok(await waitHealthy(`http://127.0.0.1:${port + 600}`), 'рестартът минава след освобождаване');
-      const again = await (await fetch(`http://127.0.0.1:${port + 600}/ready`)).json();
+      assert.ok(await waitHealthy(`http://127.0.0.1:${restartPort}`), 'рестартът минава след освобождаване');
+      const again = await (await fetch(`http://127.0.0.1:${restartPort}/ready`)).json();
       assert.equal(again.instance.id, 'restarted');
     } finally {
       await stopChild(restarted);
