@@ -41,9 +41,9 @@ assert.match(coordinator, /UpdateFailed/, 'coordinator.py: грешките се
 
 // 4. Сензори: ключовете съвпадат с тези в coordinator и в преводите.
 const sensor = read('sensor.py');
-const sensorKeys = [...sensor.matchAll(/(?<![_a-z])key="([a-z_]+)"/g)].map((m) => m[1]);
-assert.equal(sensorKeys.length, 7, 'очакват се 7 сензора, намерени ' + sensorKeys.length);
-for (const key of ['visits', 'downloads', 'files', 'portal_count', 'file_bytes', 'database_bytes', 'telemetry_bytes']) {
+const sensorKeys = [...sensor.matchAll(/(?<![_a-z])key="([a-z_0-9]+)"/g)].map((m) => m[1]);
+assert.equal(sensorKeys.length, 13, 'очакват се 13 сензора, намерени ' + sensorKeys.length);
+for (const key of ['visits', 'downloads', 'files', 'portal_count', 'file_bytes', 'database_bytes', 'telemetry_bytes', 'unique_visitors', 'visitors_new_24h', 'download_visitors', 'denied_total', 'admin_logins', 'countries_known']) {
   assert.ok(sensorKeys.includes(key), 'sensor.py: липсва сензор ' + key);
   assert.ok(coordinator.includes('"' + key + '"'), 'coordinator.py: липсва ключ ' + key);
   assert.ok(consts.includes('PLATFORMS'), 'const.py: платформи');

@@ -9,6 +9,22 @@
 Работа по това, което ни костваше време: панелът не се зареждаше през Home Assistant, проектът
 беше раздвоен на две дървета, а правилата и папките на портала не бяха проверени докрай.
 
+- **Сензори за комуникацията.** Нов `hapi_enterprise/visitor-intel.js` отговаря на въпросите
+  „кой влиза, какво тегли, колко пъти, от кое IP и откъде“: уникални посетители (по хеш от
+  IP+UA), нови за 24 ч/7 дни, изтегляния по файл и по портал, отказани достъпи с причина
+  (`KEY_REQUIRED`/`DISABLED`/`unauthorized`), администраторски влизания, браузър/ОС/устройство,
+  език, реферер, разпределение по дни и часове, най-активните адреси. Шест нови сензора в Home
+  Assistant (`unique_visitors`, `visitors_new_24h`, `download_visitors`, `denied_total`,
+  `admin_logins`, `countries_known`) и нови метрики в `/admin/api/sensors/prometheus`.
+  Приблизителната локация идва **само** от офлайн файл (`GEOIP_DB_PATH` или
+  `<DATA_DIR>/geoip.json`) — модулът не прави нито една външна заявка, което тестът проверява
+  по сорс. IP се пази според режима: `hashed` по подразбиране, `masked` или `full`
+  (`VISITOR_IP_MODE`, `TRUST_PROXY`, `VISITOR_RETENTION_DAYS`). Има срок на пазене и право на
+  изтриване по посетител (`DELETE /admin/api/sensors/visitors/<id>`, влиза в одита). Пълно
+  описание: `documentation/04_FUNCTION_SPECIFICATIONS/VISITOR_SENSORS.md`; тест:
+  `tests/visitor-sensors.cjs` (14 етапа, включително че `X-Forwarded-For` не се вярва без
+  `TRUST_PROXY`).
+
 - **Правилата на портала се взимат и се прилагат.** Нов `tests/portal-rules-applied.cjs` пуска
   жив сървър и проверява точния резултат: скрит портал → `404`, след `visibility: public` →
   `200`; `FREE` сваля без ключ, `KEY_REQUIRED` дава `403` без ключ и `200` с верния (грешен ключ

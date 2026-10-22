@@ -47,7 +47,11 @@ async function startServer({ dataDir, token, port, env, keepData } = {}) {
   for (let i = 0; i < 120; i++) {
     if (child.exitCode !== null) throw new Error('сървърът приключи преждевременно (код ' + child.exitCode + ')' + (stderr ? ': ' + stderr.trim() : ''));
     try {
-      if ((await fetch(base + '/health')).ok) {
+      // Тялото се изчита — неизчетен отговор оставя сокет в пула и при спиране на
+      // сървъра Node отчита „fetch failed“ без никой да го чака.
+      const health = await fetch(base + '/health');
+      await health.arrayBuffer();
+      if (health.ok) {
         ready = true;
         break;
       }

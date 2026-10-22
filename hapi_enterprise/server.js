@@ -147,11 +147,27 @@ const counters = { requests: 0, errors: 0, downloads: 0 };
 const telemetryFile = path.join(root, 'telemetry.jsonl');
 const telemetry = { visits: 0, downloads: 0, byPortal: {}, byFile: {}, byToken: {}, ratings: {}, recent: [] };
 const rawIpEnabled = eff.storeRawIp;
+// Сензори за комуникацията: кой влиза, какво тегли, колко пъти, от кое IP и (само от
+// офлайн файл) приблизителна локация. Без външни заявки — вж. visitor-intel.js.
+const visitorIntel = require('./visitor-intel').create({
+  dir: root,
+  salt: adminToken,
+  ipMode: process.env.VISITOR_IP_MODE === 'full' || (process.env.VISITOR_IP_MODE === undefined && rawIpEnabled) ? 'full' : process.env.VISITOR_IP_MODE === 'masked' ? 'masked' : 'hashed',
+  retentionDays: Number(process.env.VISITOR_RETENTION_DAYS) > 0 ? Number(process.env.VISITOR_RETENTION_DAYS) : 90,
+  geoFile: process.env.GEOIP_DB_PATH || path.join(root, 'geoip.json'),
+  trustProxy: process.env.TRUST_PROXY === 'true',
+});
+const visitorPruneTimer = setInterval(() => { try { const out = visitorIntel.prune(); if (out.removed) log.info('visitors.pruned', { ns: 'sensors', removed: out.removed, retentionDays: out.retentionDays }) } catch (e) { log.warn('visitors.prune.failed', { ns: 'sensors', err: e.message }) } }, 3600000);
+if (visitorPruneTimer.unref) visitorPruneTimer.unref();
+const visitorObserve = (req, data) => { try { return visitorIntel.observe(req, data) } catch (e) { log.warn('visitor.observe.failed', { ns: 'sensors', err: e.message }); return null } };
 const visitorIp = req => { const raw = req.socket.remoteAddress || 'unknown'; return rawIpEnabled ? raw : crypto.createHash('sha256').update(adminToken + ':' + raw).digest('hex').slice(0, 20) };
 const tokenId = (req, url) => { const secret = (req.headers.authorization || '').replace(/^Bearer /i, '') || (url && url.searchParams.get('portal_token')) || ''; return secret ? keyDigest(secret).slice(0, 16) : 'anonymous' };
 let telemetryQueue = Promise.resolve();
 function recordTelemetry(event, req, p, f, url, extra = {}) {
   const entry = { at: new Date().toISOString(), event, portalId: p.id, fileId: f?.id || null, tokenId: tokenId(req, url), visitor: visitorIp(req), ...extra };
+  // Сензорите виждат същото събитие, но с повече контекст (IP, клиент, език, реферер)
+  // и винаги в рамките на своя режим за съхранение на IP.
+  visitorObserve(req, { kind: event === 'download' ? 'download' : event === 'rating' ? 'rating' : 'visit', portal: p || null, file: f || null, status: 200, bytes: extra.bytes || (f ? f.size || 0 : 0) });
   telemetryQueue = telemetryQueue.then(() => fsp.appendFile(telemetryFile, JSON.stringify(entry) + '\n', { mode: 0o600 })).catch(e => console.error('TELEMETRY WRITE FAILED', e.code || e.message));
   applyTelemetry(entry); return telemetryQueue;
 }
@@ -475,11 +491,13 @@ function adminGate(req, res, capability, method) {
   const role = rbac.resolve(req);
   if (role) {
     authFailures.delete(key);
-    if (!rbac.allowed(role, capability || '*', method || req.method)) return fail(res, 403, 'Insufficient role');
+    if (!rbac.allowed(role, capability || '*', method || req.method)) { visitorObserve(req, { kind: 'admin.denied', status: 403, reason: 'insufficient-role' }); return fail(res, 403, 'Insufficient role') }
+    visitorObserve(req, { kind: 'admin.login', status: 200, reason: capability || '*' });
     return true;
   }
   throttleBump(authFailures, key, now);
   throttleBump(authFailures, peer, now);
+  visitorObserve(req, { kind: 'admin.denied', status: 401, reason: 'unauthorized' });
   fail(res, 401, 'Unauthorized'); return false;
 }
 // Входът се ограничава по АКАУНТ, не по IP (същата причина като adminGate: зад Ingress
@@ -881,9 +899,44 @@ async function handler(req, res) {
     // агрегати като /admin/api/sensors, но във формат за директно консумиране.
     if (url.pathname === '/admin/api/sensors/prometheus' && method === 'GET') {
       if (!adminGate(req, res, 'sensors', method)) return;
-      const metricsText = observer.prometheus();
+      const metricsText = observer.prometheus() + visitorIntel.prometheus();
       res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8', 'Content-Length': Buffer.byteLength(metricsText), 'Cache-Control': 'no-store' });
       return res.end(metricsText);
+    }
+    // ── Сензори за комуникацията (кой влиза, какво тегли, откъде) ────────────
+    // Само за административния канал и само в рамките на избрания режим за IP.
+    if (url.pathname === '/admin/api/sensors/visitors' && method === 'GET') {
+      if (!adminGate(req, res, 'sensors', method)) return;
+      const limit = Number(url.searchParams.get('limit') || 50);
+      const sort = String(url.searchParams.get('sort') || 'lastSeen');
+      return json(res, 200, { generatedAt: new Date().toISOString(), ipMode: visitorIntel.ipMode, visitors: visitorIntel.list({ limit, sort }) });
+    }
+    if (url.pathname === '/admin/api/sensors/visitors.csv' && method === 'GET') {
+      if (!adminGate(req, res, 'sensors', method)) return;
+      const csv = visitorIntel.csv();
+      res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Length': Buffer.byteLength(csv), 'Cache-Control': 'no-store', 'Content-Disposition': 'attachment; filename="visitors.csv"' });
+      return res.end(csv);
+    }
+    if (url.pathname === '/admin/api/sensors/geo' && method === 'POST') {
+      if (!adminGate(req, res, 'sensors', method)) return;
+      return json(res, 200, visitorIntel.geo.reload());
+    }
+    {
+      // Профил на един посетител и право на изтриване (чл. 17 GDPR) — по идентификатор.
+      const m = /^\/admin\/api\/sensors\/visitors\/([A-Za-z0-9]{4,64})$/.exec(url.pathname);
+      if (m && method === 'GET') {
+        if (!adminGate(req, res, 'sensors', method)) return;
+        const profile = visitorIntel.profile(m[1]);
+        if (!profile) return fail(res, 404, 'Visitor not found');
+        return json(res, 200, { generatedAt: new Date().toISOString(), ipMode: visitorIntel.ipMode, visitor: profile });
+      }
+      if (m && method === 'DELETE') {
+        if (!adminGate(req, res, 'sensors', method)) return;
+        const out = visitorIntel.forget(m[1]);
+        if (!out.removed) return fail(res, 404, 'Visitor not found');
+        void audit('sensors.visitor.forget', { visitor: m[1] });
+        return json(res, 200, out);
+      }
     }
     if (url.pathname === '/admin/api/sensors' && method === 'GET') {
       if (!adminGate(req, res, 'sensors', method)) return;
@@ -893,7 +946,10 @@ async function handler(req, res) {
       // `observer` е агрегатът без лични данни (комуникация/файлове/извиквания/изтегляния/
       // посещения); `portals`/`recent` остават съвместими със стария формат.
       const observed = observer.snapshot();
-      return json(res, 200, { generatedAt: observed.generatedAt, databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed });
+      // Плоските ключове (`unique_visitors`, `denied_total`, `country_top`…) се четат
+      // директно от HA интеграцията като отделни сензори; подробностите са в `visitors`.
+      const visitors = visitorIntel.sensors();
+      return json(res, 200, { generatedAt: observed.generatedAt, databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
     }
     if (url.pathname === '/admin/api/database/backup' && method === 'POST') {
       if (!adminGate(req, res, 'backup', method)) return;
@@ -1505,7 +1561,7 @@ async function handler(req, res) {
         if (already) return fail(res, 409, 'Already rated in recent activity');
         await recordTelemetry('rating', req, p, f, url, { stars: b.stars }); return json(res, 201, { rated: true });
       }
-      if (tail[0] === 'files' && tail[1]) { const f = p.files.find(x => x.id === tail[1]); if (!f || f.listed === false) return fail(res, 404, 'Not found'); if (tail.length === 2 && method === 'GET') return json(res, 200, publicFile(f)); if (tail.length === 3 && tail[2] === 'qr.svg' && method === 'GET') { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" }); return res.end(qrSvg(fileDownloadUrl(p, f, baseUrl(req)))) } if (tail.length === 3 && tail[2] === 'qr' && method === 'GET') { res.writeHead(301, { 'Location': portalApiUrl(p, baseUrl(req)) + '/files/' + encodeURIComponent(f.id) + '/qr.svg', 'Cache-Control': 'no-store' }); return res.end() } if (tail.length === 3 && tail[2] === 'download' && method === 'GET') { if (fileMode(f) === 'DISABLED') return fail(res, 403, 'Download disabled'); if (fileMode(f) === 'KEY_REQUIRED' && !tokenMatch(f.accessKeys, req.headers['x-file-key'])) return fail(res, 403, 'File key required'); const fp = path.join(filesRoot, p.id, f.id); let stat; try { stat = await fsp.lstat(fp) } catch { return fail(res, 404, 'File unavailable') } if (!stat.isFile()) return fail(res, 404, 'File unavailable'); if (f.encrypted) return serveEncryptedFile(req, res, fp, f, () => { counters.downloads++; observer.download({ ok: true, bytes: f.size || 0 }); void recordTelemetry('download', req, p, f, url); void audit('file.download', { portalId: p.id, fileId: f.id, encrypted: true }) }); return streamDownload(req, res, fp, stat, f.name, () => { counters.downloads++; observer.download({ ok: true, bytes: f.size || 0 }); void recordTelemetry('download', req, p, f, url); void audit('file.download', { portalId: p.id, fileId: f.id }) }) } if (tail.length === 3 && tail[2] === 'preview' && method === 'GET') { if (fileMode(f) === 'DISABLED') return fail(res, 403, 'Preview disabled'); if (fileMode(f) === 'KEY_REQUIRED' && !tokenMatch(f.accessKeys, req.headers['x-file-key'])) return fail(res, 403, 'File key required'); if (!runtime.settings.preview.enabled) return fail(res, 503, 'Preview disabled'); const buf = readPlainBuffer(p, f); if (!buf) return fail(res, 404, 'File unavailable'); const pv = preview.preview(buf, f.name); if (pv.kind === 'inline') { res.writeHead(200, { 'Content-Type': pv.mime, 'Content-Length': buf.length, 'Content-Disposition': 'inline; filename*=UTF-8\'\'' + encodeURIComponent(f.name.replace(/[\r\n]/g, '')), 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); return res.end(buf) } if (pv.kind === 'html') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" }); return res.end(preview.wrap(f.name, pv.html)) } res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); return res.end(pv.text) } if (tail.length === 3 && tail[2] === 'thumbnail.svg' && method === 'GET') { if (fileMode(f) === 'DISABLED') return fail(res, 403, 'Thumbnail disabled'); if (!runtime.settings.preview.thumbnails) return fail(res, 503, 'Thumbnails disabled'); const th = preview.thumbnail(f.name); res.writeHead(200, { 'Content-Type': th.mime, 'Cache-Control': 'public, max-age=3600', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'" }); return res.end(th.data) } } return fail(res, 404, 'Not found')
+      if (tail[0] === 'files' && tail[1]) { const f = p.files.find(x => x.id === tail[1]); if (!f || f.listed === false) return fail(res, 404, 'Not found'); if (tail.length === 2 && method === 'GET') return json(res, 200, publicFile(f)); if (tail.length === 3 && tail[2] === 'qr.svg' && method === 'GET') { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" }); return res.end(qrSvg(fileDownloadUrl(p, f, baseUrl(req)))) } if (tail.length === 3 && tail[2] === 'qr' && method === 'GET') { res.writeHead(301, { 'Location': portalApiUrl(p, baseUrl(req)) + '/files/' + encodeURIComponent(f.id) + '/qr.svg', 'Cache-Control': 'no-store' }); return res.end() } if (tail.length === 3 && tail[2] === 'download' && method === 'GET') { if (fileMode(f) === 'DISABLED') { visitorObserve(req, { kind: 'denied', portal: p, file: f, status: 403, reason: 'DISABLED' }); return fail(res, 403, 'Download disabled') } if (fileMode(f) === 'KEY_REQUIRED' && !tokenMatch(f.accessKeys, req.headers['x-file-key'])) { visitorObserve(req, { kind: 'denied', portal: p, file: f, status: 403, reason: 'KEY_REQUIRED' }); return fail(res, 403, 'File key required') }; const fp = path.join(filesRoot, p.id, f.id); let stat; try { stat = await fsp.lstat(fp) } catch { return fail(res, 404, 'File unavailable') } if (!stat.isFile()) return fail(res, 404, 'File unavailable'); if (f.encrypted) return serveEncryptedFile(req, res, fp, f, () => { counters.downloads++; observer.download({ ok: true, bytes: f.size || 0 }); void recordTelemetry('download', req, p, f, url); void audit('file.download', { portalId: p.id, fileId: f.id, encrypted: true }) }); return streamDownload(req, res, fp, stat, f.name, () => { counters.downloads++; observer.download({ ok: true, bytes: f.size || 0 }); void recordTelemetry('download', req, p, f, url); void audit('file.download', { portalId: p.id, fileId: f.id }) }) } if (tail.length === 3 && tail[2] === 'preview' && method === 'GET') { if (fileMode(f) === 'DISABLED') return fail(res, 403, 'Preview disabled'); if (fileMode(f) === 'KEY_REQUIRED' && !tokenMatch(f.accessKeys, req.headers['x-file-key'])) return fail(res, 403, 'File key required'); if (!runtime.settings.preview.enabled) return fail(res, 503, 'Preview disabled'); const buf = readPlainBuffer(p, f); if (!buf) return fail(res, 404, 'File unavailable'); const pv = preview.preview(buf, f.name); if (pv.kind === 'inline') { res.writeHead(200, { 'Content-Type': pv.mime, 'Content-Length': buf.length, 'Content-Disposition': 'inline; filename*=UTF-8\'\'' + encodeURIComponent(f.name.replace(/[\r\n]/g, '')), 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); return res.end(buf) } if (pv.kind === 'html') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" }); return res.end(preview.wrap(f.name, pv.html)) } res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); return res.end(pv.text) } if (tail.length === 3 && tail[2] === 'thumbnail.svg' && method === 'GET') { if (fileMode(f) === 'DISABLED') return fail(res, 403, 'Thumbnail disabled'); if (!runtime.settings.preview.thumbnails) return fail(res, 503, 'Thumbnails disabled'); const th = preview.thumbnail(f.name); res.writeHead(200, { 'Content-Type': th.mime, 'Cache-Control': 'public, max-age=3600', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'" }); return res.end(th.data) } } return fail(res, 404, 'Not found')
     }
     // FD-6: правилата за експорт и preflight — само за административния канал.
     if (parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'v2' && parts[3] === 'export') {
@@ -2622,6 +2678,6 @@ async function start() {
   // accepting requests, let queued metadata writes finish, then close SQLite so the
   // WAL is checkpointed instead of leaving the shutdown to the kernel.
   let shuttingDown = false;
-  const shutdown = signal => { if (shuttingDown) return; shuttingDown = true; log.info('shutdown', { ns: 'server', signal }); let finished = false; const finish = () => { if (finished) return; finished = true; try { require('./instance-lock').release(root, instanceId); if (sharedMode) require('./instance-lock').leaveShared({ file: lock && lock.file }) } catch (e) { log.warn('instance.release.failed', { ns: 'server', err: e.message }) } try { observer.close() } catch (e) { log.warn('observer.close.failed', { ns: 'server', err: e.message }) } try { metadataStore.close() } catch (e) { log.error('sqlite.close.failed', { ns: 'server', err: e.message }) } process.exit(0) }; const timer = setTimeout(finish, 5000); timer.unref(); let open = servers.length; if (!open) return finish(); for (const s of servers) s.close(() => { if (--open === 0) { clearTimeout(timer); void Promise.resolve(queue).catch(() => { }).then(finish) } }) };
+  const shutdown = signal => { if (shuttingDown) return; shuttingDown = true; log.info('shutdown', { ns: 'server', signal }); let finished = false; const finish = () => { if (finished) return; finished = true; try { require('./instance-lock').release(root, instanceId); if (sharedMode) require('./instance-lock').leaveShared({ file: lock && lock.file }) } catch (e) { log.warn('instance.release.failed', { ns: 'server', err: e.message }) } try { visitorIntel.flush() } catch (e) { log.warn('visitors.flush.failed', { ns: 'server', err: e.message }) } try { observer.close() } catch (e) { log.warn('observer.close.failed', { ns: 'server', err: e.message }) } try { metadataStore.close() } catch (e) { log.error('sqlite.close.failed', { ns: 'server', err: e.message }) } process.exit(0) }; const timer = setTimeout(finish, 5000); timer.unref(); let open = servers.length; if (!open) return finish(); for (const s of servers) s.close(() => { if (--open === 0) { clearTimeout(timer); void Promise.resolve(queue).catch(() => { }).then(finish) } }) };
   process.on('SIGTERM', () => shutdown('SIGTERM')); process.on('SIGINT', () => shutdown('SIGINT'))
 } start().catch(e => { console.error(e); process.exit(1) });

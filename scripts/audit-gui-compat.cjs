@@ -54,6 +54,7 @@ const COMPAT = [
   ['addon-changelog', 'CHANGELOG на add-on-а е синхронизиран'],
   ['gateway-server', 'публичният gateway като отделен listener'],
   ['portal-rules-applied', 'правилата на портала се взимат и се прилагат на живо'],
+  ['visitor-sensors', 'сензори за комуникацията: кой влиза, какво тегли, от кое IP и откъде'],
   ['ingress-isolation', 'ingress каналът не пуска чужди пътища'],
   ['ingress-auth', 'самоличността през ingress'],
   ['ingress-panel-load', 'панелът се зарежда през ingress: документ + всички ресурси'],
