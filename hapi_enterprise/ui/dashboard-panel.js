@@ -42,11 +42,16 @@
           <div class="dash-grid" id="dash-cards"></div>
           <p class="hint" id="dash-hint"></p>
         </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Кой влиза</h2></div>
+        <div class="panel-body" id="dash-visitors"></div>
       </section>`;
 
     const cards = view.querySelector('#dash-cards');
     const badge = view.querySelector('#dash-badge');
     const hint = view.querySelector('#dash-hint');
+    const visitBox = view.querySelector('#dash-visitors');
 
     const [portals, sensors, jobs, audit] = await Promise.all([
       api('/admin/api/portals'),
@@ -87,6 +92,27 @@
     if (!audit.ok) problems.push('одитната проверка не отговаря');
     if (chain && chain.valid === false) problems.push('одитната верига е нарушена');
     hint.textContent = problems.length ? 'Внимание: ' + problems.join(' · ') : '';
+
+    // Комуникация: кратко резюме на сензорите с врата към панела „Кой влиза“.
+    const intel = sensors.ok && sensors.data ? sensors.data.visitorsIntel : null;
+    if (intel) {
+      visitBox.innerHTML = `
+        <div class="dash-grid">
+          ${card('Уникални посетители', String(intel.unique_visitors || 0), 'по хеш от IP + клиент')}
+          ${card('Отказани достъпи', String(intel.denied_total || 0), 'провери причините в панела')}
+          ${card('Държава (топ)', intel.country_top || '—', intel.countries_known ? intel.countries_known + ' държави' : 'няма офлайн база')}
+          ${card('Админ. влизания', String(intel.admin_logins || 0), 'успешни')}
+        </div>
+        <div class="row-actions">
+          <button type="button" class="btn" data-nav="visitors">Виж всички</button>
+        </div>`;
+      const go = visitBox.querySelector('button[data-nav="visitors"]');
+      if (go) go.addEventListener('click', () => {
+        if (window.HapiUI && typeof window.HapiUI.go === 'function') window.HapiUI.go('visitors');
+      });
+    } else {
+      visitBox.innerHTML = '<p class="hint">Сензорите за посетители не са достъпни с този токен.</p>';
+    }
   }
 
   function mountAbout(view) {

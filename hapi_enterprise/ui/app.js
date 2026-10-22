@@ -301,6 +301,17 @@
     renderView();
   }
 
-  window.HapiUI = { toast, t, getLang: () => lang, setLang };
+  // Панелите могат да водят към друг панел (напр. „Виж всички“ от таблото), без да
+  // знаят как е устроена навигацията. `go` е единствената такава врата.
+  function go(id) {
+    if (!NAV.some((n) => n.id === id)) return false;
+    current = id;
+    history.replaceState(null, '', `#${id}`);
+    renderNav();
+    renderView();
+    return true;
+  }
+
+  window.HapiUI = { toast, t, getLang: () => lang, setLang, go };
   document.addEventListener('DOMContentLoaded', boot);
 })();

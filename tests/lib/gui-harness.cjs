@@ -118,6 +118,7 @@ function mountUi(server, { lang = 'bg', modules = [] } = {}) {
   const copied = [];
   const confirmations = [];
   const prompts = [];
+  const navigations = [];
   const winTarget = {};
   const location = {
     protocol: 'http:',
@@ -197,6 +198,7 @@ function mountUi(server, { lang = 'bg', modules = [] } = {}) {
     t: (key) => key,
     getLang: () => lang,
     setLang: () => { },
+    go: (id) => { navigations.push(String(id)); return true },
   };
   vm.createContext(sandbox);
   const run = (file, dir) => {
@@ -214,6 +216,7 @@ function mountUi(server, { lang = 'bg', modules = [] } = {}) {
     copied,
     confirmations,
     prompts,
+    navigations,
     run: (file) => run(file, uiDir),
     /** Нов контейнер, монтиран в body — както `#view` в app.js. */
     container() {

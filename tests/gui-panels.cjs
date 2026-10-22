@@ -61,7 +61,7 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
 
     // ── 2. Всеки панел се монтира и рисува очакваното ───────────────────────────
     const NAV = [
-      { id: 'dashboard', mount: (h) => w.HapiDashboardPanel.mount(h), expect: ['Портали', 'Файлове в порталите', 'Одитна верига'] },
+      { id: 'dashboard', mount: (h) => w.HapiDashboardPanel.mount(h), expect: ['Портали', 'Файлове в порталите', 'Одитна верига', 'Кой влиза', 'Уникални посетители'] },
       { id: 'about', mount: (h) => w.HapiDashboardPanel.mountAbout(h), expect: ['Относно hAPI Enterprise', 'Версия'] },
       { id: 'portals', mount: (h) => w.FilesManagerPanel.mount(h), expect: ['Портали', 'gui-portal', 'Портал от GUI теста'] },
       { id: 'contacts', mount: (h) => w.ContactsPanel.mount(h), expect: ['Контакти', 'Нов контакт'] },
@@ -95,6 +95,16 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       }
     } finally {
       console.error = realError;
+    }
+
+    // ── 2б. Таблото води към панела „Кой влиза“ (една врата: HapiUI.go) ─────────
+    {
+      const host = ui.container();
+      w.HapiDashboardPanel.mount(host);
+      await waitFor(() => host.querySelector('button[data-nav="visitors"]'), { label: 'бутонът „Виж всички“' });
+      host.querySelector('button[data-nav="visitors"]').click();
+      assert.deepEqual(ui.navigations, ['visitors'], 'таблото иска панела „Кой влиза“');
+      host.remove();
     }
 
     // ── 3. СЪЗДАВАНЕ ПРЕЗ ИНТЕРФЕЙСА: контакт, после дело ──────────────────────
