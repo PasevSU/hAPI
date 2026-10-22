@@ -143,13 +143,14 @@ const tokenMatch = (items, secret) => { if (!secret) return false; const digest 
 const auditPath = path.join(root, 'audit.jsonl');
 const retention = require('./retention').create({ filesRoot, auditPath, getSettings: () => runtime.settings });
 const audit = (event, details = {}) => { void auditChain.append(event, details).catch(e => console.error('AUDIT CHAIN FAILURE', e)); return fsp.appendFile(auditPath, JSON.stringify({ at: new Date().toISOString(), event, ...details }) + '\n', { mode: 0o600 }).catch(e => console.error('AUDIT FAILURE', e)) };
-const counters = { requests: 0, errors: 0, downloads: 0 };
+const counters = { requests: 0, errors: 0, downloads: 0, rateLimited: 0 };
 const telemetryFile = path.join(root, 'telemetry.jsonl');
 const telemetry = { visits: 0, downloads: 0, byPortal: {}, byFile: {}, byToken: {}, ratings: {}, recent: [] };
 const rawIpEnabled = eff.storeRawIp;
 // Сензори за комуникацията: кой влиза, какво тегли, колко пъти, от кое IP и (само от
 // офлайн файл) приблизителна локация. Без външни заявки — вж. visitor-intel.js.
-const visitorIntel = require('./visitor-intel').create({
+const visitorModule = require('./visitor-intel');
+const visitorIntel = visitorModule.create({
   dir: root,
   salt: adminToken,
   ipMode: process.env.VISITOR_IP_MODE === 'full' || (process.env.VISITOR_IP_MODE === undefined && rawIpEnabled) ? 'full' : process.env.VISITOR_IP_MODE === 'masked' ? 'masked' : 'hashed',
@@ -160,6 +161,41 @@ const visitorIntel = require('./visitor-intel').create({
 const visitorPruneTimer = setInterval(() => { try { const out = visitorIntel.prune(); if (out.removed) log.info('visitors.pruned', { ns: 'sensors', removed: out.removed, retentionDays: out.retentionDays }) } catch (e) { log.warn('visitors.prune.failed', { ns: 'sensors', err: e.message }) } }, 3600000);
 if (visitorPruneTimer.unref) visitorPruneTimer.unref();
 const visitorObserve = (req, data) => { try { return visitorIntel.observe(req, data) } catch (e) { log.warn('visitor.observe.failed', { ns: 'sensors', err: e.message }); return null } };
+
+// ── Лимит на честотата за ПУБЛИЧНИТЕ маршрути ────────────────────────────────
+// Публичният портал е отворен за целия интернет, значи и за скриптове. Без лимит
+// един клиент може да поиска един и същ файл хиляди пъти: това товари диска, пълни
+// одита и сензорите и не се различава от обикновена заявка. Лимитът е ПО КЛИЕНТ
+// (адрес), не глобален — един посетител не бива да заключва осталите.
+//
+//   PUBLIC_RATE_LIMIT      — заявки на прозорец (0 = изключен; по подразбиране 120)
+//   PUBLIC_RATE_WINDOW_MS  — дължина на прозореца (по подразбиране 60 000)
+//
+// `Range` заявките НЕ се броят: браузърът пуска няколко за ЕДНО сваляне и
+// наказването на продължението би счупило големите файлове.
+const PUBLIC_RATE_LIMIT = Number(process.env.PUBLIC_RATE_LIMIT) > 0 ? Number(process.env.PUBLIC_RATE_LIMIT) : (process.env.PUBLIC_RATE_LIMIT === '0' ? 0 : 120);
+const PUBLIC_RATE_WINDOW_MS = Number(process.env.PUBLIC_RATE_WINDOW_MS) > 0 ? Number(process.env.PUBLIC_RATE_WINDOW_MS) : 60000;
+const PUBLIC_RATE_PREFIXES = ['/api/v1/p/', '/api/public/v1/', '/p/', '/qr/', '/s/'];
+const publicRateHits = new Map();
+const isPublicPortalPath = (pathname) => PUBLIC_RATE_PREFIXES.some((prefix) => pathname === prefix.slice(0, -1) || pathname.startsWith(prefix));
+function publicRateGate(req, url) {
+  if (!PUBLIC_RATE_LIMIT) return { blocked: false };
+  if (!isPublicPortalPath(url.pathname)) return { blocked: false };
+  if (String(req.headers.range || '').trim()) return { blocked: false };
+  const { ip } = visitorModule.clientIp(req, { trustProxy: process.env.TRUST_PROXY === 'true' });
+  const key = ip || 'unknown';
+  const now = Date.now();
+  let entry = publicRateHits.get(key);
+  if (!entry || now - entry.since >= PUBLIC_RATE_WINDOW_MS) {
+    entry = { since: now, count: 0 };
+    publicRateHits.set(key, entry);
+    // Картата не бива да расте безкрайно: старите записи се махат.
+    if (publicRateHits.size > 4096) { for (const [k, v] of publicRateHits) { if (now - v.since >= PUBLIC_RATE_WINDOW_MS) publicRateHits.delete(k) } }
+  }
+  entry.count++;
+  if (entry.count > PUBLIC_RATE_LIMIT) return { blocked: true, retryAfter: Math.max(1, Math.ceil((entry.since + PUBLIC_RATE_WINDOW_MS - now) / 1000)) };
+  return { blocked: false };
+}
 const visitorIp = req => { const raw = req.socket.remoteAddress || 'unknown'; return rawIpEnabled ? raw : crypto.createHash('sha256').update(adminToken + ':' + raw).digest('hex').slice(0, 20) };
 const tokenId = (req, url) => { const secret = (req.headers.authorization || '').replace(/^Bearer /i, '') || (url && url.searchParams.get('portal_token')) || ''; return secret ? keyDigest(secret).slice(0, 16) : 'anonymous' };
 let telemetryQueue = Promise.resolve();
@@ -769,6 +805,15 @@ async function handler(req, res) {
     if (req.method === 'OPTIONS') { res.writeHead(isAdminListener && corsOrigin ? 204 : 404, { 'Content-Length': '0' }); return res.end() }
     const parts = url.pathname.split('/').filter(Boolean); const method = req.method; counters.requests++; if (req.hapiPublicOnly && (parts[0] === 'admin' || parts[0] === 'ui')) return fail(res, 404, 'Not found'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Referrer-Policy', 'no-referrer'); if (!isAdminListener) res.setHeader('X-Frame-Options', 'DENY');
     for (const [k, v] of Object.entries(apiVersion.headers(url))) res.setHeader(k, v);
+    // Лимит на честотата за публичните маршрути — преди всякаква работа по заявката.
+    const publicRate = publicRateGate(req, url);
+    if (publicRate.blocked) {
+      counters.rateLimited++;
+      visitorObserve(req, { kind: 'denied', status: 429, reason: 'RATE_LIMIT' });
+      res.setHeader('Retry-After', String(publicRate.retryAfter || 60));
+      res.setHeader('Cache-Control', 'no-store');
+      return fail(res, 429, 'Too many requests');
+    }
     if (url.pathname === '/api/v1/auth/login' && method === 'POST') {
       if (!loginPeerGate(req, res)) return;
       const b = await parse(req); const username = clean(b.username), password = String(b.password || '');
