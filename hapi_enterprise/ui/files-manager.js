@@ -22,10 +22,11 @@
     { id: 'versions', label: 'Версии', icon: 'versions' },
     { id: 'metadata', label: 'Метаданни', icon: 'metadata' },
     { id: 'rename', label: 'Преименувай', icon: 'rename' },
-    { id: 'move', label: 'Премести', icon: 'move', planned: true },
-    { id: 'copy', label: 'Копирай', icon: 'copy', planned: true },
     { id: 'access', label: 'Достъп', icon: 'access' },
     { id: 'share', label: 'Сподели / QR', icon: 'share' },
+    { id: 'signedUrl', label: 'Подписан URL', icon: 'access' },
+    { id: 'receipt', label: 'Разписка', icon: 'package' },
+    { id: 'verifyReceipt', label: 'Провери разписка', icon: 'lock' },
     { id: 'delete', label: 'Изтрий', icon: 'delete' },
     { id: 'encrypt', label: 'Шифровай', icon: 'encrypt', info: 'Шифроването се избира при качване.' },
     { id: 'package', label: 'Пакет (ZIP)', icon: 'package' },
@@ -332,8 +333,7 @@
       ${state.contacts
         .map(
           (c) =>
-            `<option value="${esc(c.id)}" ${currentId === c.id ? 'selected' : ''}>${esc(contactLabel(c))}${
-              c.email ? ` — ${esc(c.email)}` : ''
+            `<option value="${esc(c.id)}" ${currentId === c.id ? 'selected' : ''}>${esc(contactLabel(c))}${c.email ? ` — ${esc(c.email)}` : ''
             }</option>`,
         )
         .join('')}
@@ -380,12 +380,12 @@
       state.contacts = state.contacts.map((c) =>
         c.id === existing.id
           ? normalizeContact({
-              ...c,
-              name: c.name || fields.name,
-              phone: c.phone || fields.phone,
-              organization: c.organization || fields.organization,
-              extras: [...c.extras, ...extras.filter((x) => !c.extras.some((y) => y.key === x.key))],
-            })
+            ...c,
+            name: c.name || fields.name,
+            phone: c.phone || fields.phone,
+            organization: c.organization || fields.organization,
+            extras: [...c.extras, ...extras.filter((x) => !c.extras.some((y) => y.key === x.key))],
+          })
           : c,
       );
       return existing.id;
@@ -429,8 +429,7 @@
       ${state.cases
         .map(
           (c) =>
-            `<option value="${esc(c.id)}" ${currentId === c.id ? 'selected' : ''}>${esc(caseLabel(c))}${
-              c.category ? ` · ${esc(c.category)}` : ''
+            `<option value="${esc(c.id)}" ${currentId === c.id ? 'selected' : ''}>${esc(caseLabel(c))}${c.category ? ` · ${esc(c.category)}` : ''
             }</option>`,
         )
         .join('')}
@@ -477,13 +476,13 @@
       state.cases = state.cases.map((c) =>
         c.id === existing.id
           ? normalizeCase({
-              ...c,
-              title: c.title || payload.title || c.number,
-              category: c.category || payload.category,
-              subject: c.subject || payload.subject,
-              contactId: c.contactId || payload.contactId,
-              extras: [...c.extras, ...payload.extras.filter((x) => !c.extras.some((y) => y.key === x.key))],
-            })
+            ...c,
+            title: c.title || payload.title || c.number,
+            category: c.category || payload.category,
+            subject: c.subject || payload.subject,
+            contactId: c.contactId || payload.contactId,
+            extras: [...c.extras, ...payload.extras.filter((x) => !c.extras.some((y) => y.key === x.key))],
+          })
           : c,
       );
       return existing.id;
@@ -1095,6 +1094,11 @@
       render();
       return openPanelModal();
     }
+    if (id === 'signedUrl' || id === 'receipt' || id === 'verifyReceipt') {
+      state.panel = id;
+      render();
+      return openPanelModal();
+    }
     if (id === 'delete') return removeFile(f);
     if (id === 'lock') return toggleLock(f);
     if (id === 'package') return buildPackage();
@@ -1273,11 +1277,10 @@
       <form id="fm-note-form">
         <div class="field"><label>Бележка към файла (до 2000 знака)</label>
           <textarea name="notes" rows="4" maxlength="2000" placeholder="Напр. какво съдържа файлът, кой го е подписал, къде е оригиналът">${esc(
-            f.notes || '',
-          )}</textarea>
-          <small class="hint">${
-            f.notes ? 'Бележката се показва под картата на файла.' : 'Файлът още няма бележка — добави я тук.'
-          }</small>
+      f.notes || '',
+    )}</textarea>
+          <small class="hint">${f.notes ? 'Бележката се показва под картата на файла.' : 'Файлът още няма бележка — добави я тук.'
+      }</small>
         </div>
         <div class="u-row u-row-2">
           <button type="submit" class="btn btn-sm btn-primary">${f.notes ? 'Запази бележката' : 'Добави бележка'}</button>
@@ -1421,7 +1424,7 @@
         }),
       );
       state.panel = 'actions';
-      return demoMutate(`качен ${name}`, () => {});
+      return demoMutate(`качен ${name}`, () => { });
     }
     const buffer = await file.arrayBuffer();
     const r = await api(`${P()}/files`, {
@@ -1486,66 +1489,60 @@
     host.innerHTML = `
       <div class="page-title">
         <h1>Портали &amp; файлове</h1>
-        <p>${
-          openP
-            ? 'Папки → файлове → контролен панел; в края на страницата се връщаш към списъка.'
-            : 'Портал → API и QR → списък с файлове → контролен панел под избрания файл'
-        }</p>
+        <p>${openP
+        ? 'Папки → файлове → контролен панел; в края на страницата се връщаш към списъка.'
+        : 'Портал → API и QR → списък с файлове → контролен панел под избрания файл'
+      }</p>
         <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'свързан' : 'демо (без backend)'}</span>
       </div>
 
       <section class="panel">
         <div class="panel-head">
-          <h2>${
-            openP
-              ? `Портал: ${esc(openP.title)}`
-              : `Портали (${state.portals.length}) · файлове: ${totalFiles}`
-          }</h2>
-          ${
-            openP
-              ? `<div class="u-row u-row-1">
+          <h2>${openP
+        ? `Портал: ${esc(openP.title)}`
+        : `Портали (${state.portals.length}) · файлове: ${totalFiles}`
+      }</h2>
+          ${openP
+        ? `<div class="u-row u-row-1">
                    <button type="button" class="btn btn-sm" id="pf-test" title="${esc(base() || 'демо режим')}">Връзка</button>
                  </div>`
-              : `<div class="u-row u-row-2">
+        : `<div class="u-row u-row-2">
                    <button type="button" class="btn btn-sm btn-primary" id="pf-new">Нов портал</button>
                    <button type="button" class="btn btn-sm" id="pf-test" title="${esc(base() || 'демо режим')}">Връзка</button>
                  </div>`
-          }
+      }
         </div>
         <div class="panel-body">
           ${!openP && state.newPortal ? newPortalForm() : ''}
-          ${
-            openP
-              ? ''
-              : `<div class="fm-toolbar u-mb">
+          ${openP
+        ? ''
+        : `<div class="fm-toolbar u-mb">
             <input id="pf-search" placeholder="Търси портал по име, slug или бележка" value="${esc(state.portalQuery)}" />
             <select id="pf-sort">
               ${[
-                ['-date', 'Дата ↓ (най-нови)'],
-                ['date', 'Дата ↑ (най-стари)'],
-                ['title', 'Име A→Я'],
-                ['-title', 'Име Я→A'],
-              ]
-                .map(([v, l]) => `<option value="${v}" ${state.portalSort === v ? 'selected' : ''}>${l}</option>`)
-                .join('')}
+          ['-date', 'Дата ↓ (най-нови)'],
+          ['date', 'Дата ↑ (най-стари)'],
+          ['title', 'Име A→Я'],
+          ['-title', 'Име Я→A'],
+        ]
+          .map(([v, l]) => `<option value="${v}" ${state.portalSort === v ? 'selected' : ''}>${l}</option>`)
+          .join('')}
             </select>
             <label class="hint row-check"><input type="checkbox" id="pf-notes-only" ${state.notesOnly ? 'checked' : ''}/> само с бележки</label>
           </div>`
-          }
+      }
           <div class="pf-portals u-mt">
-            ${
-              list.length
-                ? list.map((x) => portalCard(x, state.portals.indexOf(x), Boolean(openP))).join('')
-                : '<p class="hint">Няма портал по това търсене.</p>'
-            }
+            ${list.length
+        ? list.map((x) => portalCard(x, state.portals.indexOf(x), Boolean(openP))).join('')
+        : '<p class="hint">Няма портал по това търсене.</p>'
+      }
           </div>
-          ${
-            openP
-              ? `<div class="u-row u-row-1 u-mt">
+          ${openP
+        ? `<div class="u-row u-row-1 u-mt">
                    <button type="button" class="btn btn-primary" data-close-portal>← Списък с портали</button>
                  </div>`
-              : ''
-          }
+        : ''
+      }
           ${state.error ? `<p class="err-list">${esc(state.error)}</p>` : ''}
         </div>
       </section>`;
@@ -1561,58 +1558,51 @@
     const kase = caseOf(x.caseId);
     return `<article class="pf-portal ${single ? 'pf-open pf-single' : ''}" data-portal="${i}">
                   <div class="pf-portal-head">
-                    ${
-                      single
-                        ? `<h3 class="pf-portal-title">${esc(x.title)}</h3>`
-                        : `<button type="button" class="link-btn pf-portal-name" data-open-portal="${i}">▸ ${esc(
-                            x.title,
-                          )}</button>`
-                    }
-                    <span class="flag-badge ${flagOf(x.flag).cls}" title="Флаг: ${esc(flagOf(x.flag).label)}">${
-                      flagOf(x.flag).icon
-                    } ${esc(flagOf(x.flag).label)}</span>
+                    ${single
+        ? `<h3 class="pf-portal-title">${esc(x.title)}</h3>`
+        : `<button type="button" class="link-btn pf-portal-name" data-open-portal="${i}">▸ ${esc(
+          x.title,
+        )}</button>`
+      }
+                    <span class="flag-badge ${flagOf(x.flag).cls}" title="Флаг: ${esc(flagOf(x.flag).label)}">${flagOf(x.flag).icon
+      } ${esc(flagOf(x.flag).label)}</span>
                     <span class="chip ${x.visibility === 'public' ? 'ok' : ''}" title="Видимост">${esc(x.visibility)}</span>
                     <code class="fm-code" title="Политика за достъп">${esc(x.access)}</code>
-                    ${
-                      api
-                        ? `<span class="state-chip ok">API/QR</span><span class="chip">${esc(
-                            (api.at || '').slice(0, 16).replace('T', ' '),
-                          )}</span>`
-                        : '<span class="state-chip warn">няма API/QR</span>'
-                    }
+                    ${api
+        ? `<span class="state-chip ok">API/QR</span><span class="chip">${esc(
+          (api.at || '').slice(0, 16).replace('T', ' '),
+        )}</span>`
+        : '<span class="state-chip warn">няма API/QR</span>'
+      }
                     ${apiMenu((api && api.refs && api.refs.apiUrl) || '', 'api.json', 'api.json')}
                     <button type="button" class="fm-ico-btn pf-pkg-btn" data-pkg-portal="${i}" title="Изтегли пакета (ZIP с всички файлове от хранилището: ${esc(
-                      x.storage_root || '/share',
-                    )})" aria-label="Изтегли пакета">${ICON.download}</button>
+        x.storage_root || '/share',
+      )})" aria-label="Изтегли пакета">${ICON.download}</button>
                   </div>
                   <hr class="u-divider" />
                   <p class="fm-file-sub">${ICON.topic} категория: <code>${esc(
-                    x.category || 'без категория',
-                  )}</code> · <strong>Относно:</strong> ${esc(x.subject || 'не е посочено')}</p>
-                  <p class="fm-file-sub">${ico('person')} <strong>Контакт:</strong> ${
-                    ctc
-                      ? `${esc(contactLabel(ctc))}${ctc.phone ? ` · ${ICON.phone} ${esc(ctc.phone)}` : ''}${ctc.email ? ` · ${ICON.mail} ${esc(ctc.email)}` : ''}`
-                      : '<span class="hint">без контакт — добави от настройките на портала</span>'
-                  }</p>
-                  <p class="fm-file-sub">${ico('case')} <strong>Дело:</strong> ${
-                    kase
-                      ? `${esc(caseLabel(kase))}${kase.category ? ` · ${esc(kase.category)}` : ''}${
-                          kase.subject ? ` · Относно: ${esc(kase.subject)}` : ''
-                        }`
-                      : '<span class="hint">без дело — добави от настройките на портала</span>'
-                  }</p>
-                  ${
-                    (ctc && ctc.extras.length) || (kase && kase.extras.length)
-                      ? `<div class="fm-ico-row u-grid u-grid-chips">${[...(ctc ? ctc.extras : []), ...(kase ? kase.extras : [])]
-                          .map((y) => chip('•', y.key, y.value, `${y.key}: ${y.value}`))
-                          .join('')}</div>`
-                      : ''
-                  }
+        x.category || 'без категория',
+      )}</code> · <strong>Относно:</strong> ${esc(x.subject || 'не е посочено')}</p>
+                  <p class="fm-file-sub">${ico('person')} <strong>Контакт:</strong> ${ctc
+        ? `${esc(contactLabel(ctc))}${ctc.phone ? ` · ${ICON.phone} ${esc(ctc.phone)}` : ''}${ctc.email ? ` · ${ICON.mail} ${esc(ctc.email)}` : ''}`
+        : '<span class="hint">без контакт — добави от настройките на портала</span>'
+      }</p>
+                  <p class="fm-file-sub">${ico('case')} <strong>Дело:</strong> ${kase
+        ? `${esc(caseLabel(kase))}${kase.category ? ` · ${esc(kase.category)}` : ''}${kase.subject ? ` · Относно: ${esc(kase.subject)}` : ''
+        }`
+        : '<span class="hint">без дело — добави от настройките на портала</span>'
+      }</p>
+                  ${(ctc && ctc.extras.length) || (kase && kase.extras.length)
+        ? `<div class="fm-ico-row u-grid u-grid-chips">${[...(ctc ? ctc.extras : []), ...(kase ? kase.extras : [])]
+          .map((y) => chip('•', y.key, y.value, `${y.key}: ${y.value}`))
+          .join('')}</div>`
+        : ''
+      }
                   <p class="fm-file-sub">${ICON.id} id: <code>${esc(x.id)}</code> · slug: <code>${esc(
-                    x.slug,
-                  )}</code> · ${ICON.size} файлове: ${x.files.length} · ${ICON.folder} <code>${esc(
-                    x.storage_root || '/share',
-                  )}</code></p>
+        x.slug,
+      )}</code> · ${ICON.size} файлове: ${x.files.length} · ${ICON.folder} <code>${esc(
+        x.storage_root || '/share',
+      )}</code></p>
                   <div class="fm-ico-row u-grid u-grid-chips">
                     ${chip(ICON.created, 'Дата на създаване', x.createdAt || '—', fmtDate(x.createdAt))}
                     ${x.notes ? chip(ICON.modified, 'Бележки', x.notes, 'има бележка') : ''}
@@ -1620,13 +1610,12 @@
                   </div>
                   ${x.notes ? `<p class="fm-file-notes">${ICON.modified} ${esc(x.notes)}</p>` : ''}
                   <hr class="u-divider" />
-                  ${
-                    single
-                      ? ''
-                      : `<div class="u-row u-row-1">
+                  ${single
+        ? ''
+        : `<div class="u-row u-row-1">
                            <button type="button" class="btn btn-sm" data-open-portal="${i}">⚙ Отвори портала</button>
                          </div>`
-                  }
+      }
                   ${single ? `<div class="pf-panel-body">${portalDetail(x)}</div>` : ''}
                 </article>`;
   }
@@ -1660,10 +1649,10 @@
         <div class="field"><label>${ICON.folder} Папка с файлове в хранилището</label>
           <input name="storage_root" list="pf-roots" value="/share" maxlength="240" placeholder="/share/portal-files" />
           <datalist id="pf-roots">${[...new Set(['/share', '/media', ...state.portals.map((x) => x.storage_root || '/share')])]
-            .filter(Boolean)
-            .sort()
-            .map((r) => `<option value="${esc(r)}"></option>`)
-            .join('')}</datalist>
+        .filter(Boolean)
+        .sort()
+        .map((r) => `<option value="${esc(r)}"></option>`)
+        .join('')}</datalist>
           <small class="hint">Само под /share или /media. Пътят се пази към портала (storage_root).</small>
         </div>
         <div class="field"><label>${ICON.folder} Качи файловете от папка на компютъра</label>
@@ -1957,9 +1946,51 @@
         return sharePane(f);
       case 'note':
         return notePane(f);
+      case 'signedUrl':
+        return signedUrlPane(f);
+      case 'receipt':
+        return receiptPane(f);
+      case 'verifyReceipt':
+        return verifyReceiptPane(f);
       default:
         return actionsPane(f);
     }
+  }
+
+  // ── Подписан URL, разписка и проверка на разписка ─────────────────────
+  // Три реални административни маршрута, които преди съществуваха само в API-то.
+  function signedUrlPane(f) {
+    return `<form class="fm-form" data-signed-url>
+      <p class="hint">Подписан URL важи само за файлове с публичен достъп (FREE); за защитени файлове
+        add-on-ът отказва с 403. Ключът за подпис се сменя от „Контролен панел → Сигурност“.</p>
+      <div class="field"><label>Валидност (секунди, 1–86400)</label>
+        <input name="ttlSeconds" type="number" min="1" max="86400" value="300" required />
+      </div>
+      <button type="submit" class="btn btn-primary">Издай подписан URL</button>
+      <output class="fm-out" data-signed-url-out aria-live="polite"></output>
+    </form>`;
+  }
+
+  function receiptPane(f) {
+    return `<form class="fm-form" data-receipt>
+      <p class="hint">Разписката е HMAC-SHA256 върху SHA-256 на файла и момента на издаване. Тя се
+        проверява с текущия ключ на портала — смяна на ключа прави старите разписки непроверими.</p>
+      <div class="u-row u-row-2">
+        <button type="submit" class="btn btn-primary">Издай разписка</button>
+      </div>
+      <output class="fm-out" data-receipt-out aria-live="polite"></output>
+    </form>`;
+  }
+
+  function verifyReceiptPane(f) {
+    return `<form class="fm-form" data-verify-receipt>
+      <p class="hint">Постави разписката (JSON или низ), за да провериш дали е издадена от този портал.</p>
+      <div class="field"><label>Разписка</label>
+        <textarea name="receipt" rows="5" required placeholder='{"fileId":"…","sha256":"…","issuedAt":"…","mac":"…"}'></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Провери</button>
+      <output class="fm-out" data-verify-receipt-out aria-live="polite"></output>
+    </form>`;
   }
 
   /** Меню за API: показва адреса, при натискане → копирай / отвори / изтегли. */
@@ -2144,6 +2175,78 @@
       q('#fm-copy-link').addEventListener('click', () => copyText(webLink(current()), 'Адресът е копиран'));
     }
     if (q('#fm-create-key')) q('#fm-create-key').addEventListener('click', createKey);
+    // Подписан URL, разписка и проверка — трите реални маршрута под файла.
+    if (q('[data-signed-url]')) {
+      q('[data-signed-url]').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const f = current();
+        const out = q('[data-signed-url-out]');
+        const ttlSeconds = Number(event.target.ttlSeconds.value);
+        if (!f) return;
+        if (!Number.isInteger(ttlSeconds) || ttlSeconds < 1 || ttlSeconds > 86400) {
+          out.textContent = 'Валидността трябва да е цяло число между 1 и 86400 секунди.';
+          out.className = 'fm-out err';
+          return;
+        }
+        out.textContent = 'Издавам…';
+        out.className = 'fm-out';
+        const r = await api(`${P()}/files/${encodeURIComponent(f.id)}/signed-url`, { method: 'POST', json: { ttlSeconds } });
+        if (!r.ok) {
+          out.textContent = r.error || `HTTP ${r.status}`;
+          out.className = 'fm-out err';
+          return;
+        }
+        out.textContent = `${location.origin}${r.data.path}`;
+        out.className = 'fm-out ok';
+        copyText(`${location.origin}${r.data.path}`, 'Подписаният URL е копиран');
+      });
+    }
+    if (q('[data-receipt]')) {
+      q('[data-receipt]').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const f = current();
+        const out = q('[data-receipt-out]');
+        if (!f) return;
+        out.textContent = 'Издавам…';
+        out.className = 'fm-out';
+        const r = await api(`${P()}/files/${encodeURIComponent(f.id)}/sign`, { method: 'POST', json: {} });
+        if (!r.ok) {
+          out.textContent = r.error || `HTTP ${r.status}`;
+          out.className = 'fm-out err';
+          return;
+        }
+        const receipt = typeof r.data.receipt === 'string' ? r.data.receipt : JSON.stringify(r.data.receipt);
+        out.textContent = receipt;
+        out.className = 'fm-out ok';
+        copyText(receipt, 'Разписката е копирана');
+      });
+    }
+    if (q('[data-verify-receipt]')) {
+      q('[data-verify-receipt]').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const f = current();
+        const out = q('[data-verify-receipt-out]');
+        if (!f) return;
+        const raw = event.target.receipt.value.trim();
+        if (!raw) return;
+        let receipt = raw;
+        try {
+          receipt = JSON.parse(raw);
+        } catch {
+          /* оставяме низа — сървърът решава валиден ли е */
+        }
+        const r = await api(`${P()}/files/${encodeURIComponent(f.id)}/verify-signature`, { method: 'POST', json: { receipt } });
+        if (!r.ok) {
+          out.textContent = r.error || `HTTP ${r.status}`;
+          out.className = 'fm-out err';
+          return;
+        }
+        out.textContent = r.data.valid
+          ? `Разписката е валидна · ключ ${r.data.keyId || '—'}`
+          : `Разписката е НЕВАЛИДНА: ${r.data.reason || 'несъответствие'}`;
+        out.className = 'fm-out ' + (r.data.valid ? 'ok' : 'err');
+      });
+    }
     wireHashHandlers(root);
     if (q('#fm-back')) {
       q('#fm-back').addEventListener('click', () => {
@@ -2325,15 +2428,14 @@
     return `
       <div class="fm-actions">
         ${ACTIONS.concat(EXTRA_ACTIONS)
-          .map(
-            (a) =>
-              `<button type="button" class="btn fm-action ${a.id === 'lock' && f.locked ? 'fm-action-on' : ''}" data-act="${
-                a.id
-              }" ${a.planned ? 'disabled title="Планирано (v2)"' : ''}><span aria-hidden="true">${ico(a.icon)}</span> ${esc(
-                a.label,
-              )}${a.planned ? ' <small>v2</small>' : ''}</button>`,
-          )
-          .join('')}
+        .map(
+          (a) =>
+            `<button type="button" class="btn fm-action ${a.id === 'lock' && f.locked ? 'fm-action-on' : ''}" data-act="${a.id
+            }" ${a.planned ? 'disabled title="Планирано (v2)"' : ''}><span aria-hidden="true">${ico(a.icon)}</span> ${esc(
+              a.label,
+            )}${a.planned ? ' <small>v2</small>' : ''}</button>`,
+        )
+        .join('')}
       </div>
       <div class="u-row u-row-2 u-mt">
         ${apiMenu(webLink(f), f.name, 'файл')}
@@ -2358,15 +2460,14 @@
         <dt>${ICON.uploaded} Качен</dt><dd>${esc(f.uploadedAt || '—')}</dd>
         <dt>${ICON.modified} Последна промяна</dt><dd>${esc(f.modifiedAt || '—')}</dd>
         <dt>${ICON.hash} SHA-256</dt><dd>${f.sha256 ? `<code class="fm-hash">${esc(f.sha256)}</code>` : '—'}</dd>
-        <dt>${ICON.locked} Заключване</dt><dd>${
-          f.locked ? `заключен от ${esc(f.lockedBy || 'admin')}` : 'не е заключен'
-        }</dd>
+        <dt>${ICON.locked} Заключване</dt><dd>${f.locked ? `заключен от ${esc(f.lockedBy || 'admin')}` : 'не е заключен'
+      }</dd>
         <dt>DL URL</dt><dd class="fm-url"><code>${esc(webLink(f))}</code><button type="button" class="fm-ico-btn fm-copy-btn" data-copy="${esc(
-          webLink(f),
-        )}" title="Копирай адреса" aria-label="Копирай адреса за изтегляне">${ICON.copy}</button></dd>
+        webLink(f),
+      )}" title="Копирай адреса" aria-label="Копирай адреса за изтегляне">${ICON.copy}</button></dd>
         <dt>QR URL</dt><dd class="fm-url"><code>${esc(qrUrl(f))}</code><button type="button" class="fm-ico-btn fm-copy-btn" data-copy="${esc(
-          qrUrl(f),
-        )}" title="Копирай адреса" aria-label="Копирай адреса на QR кода">${ICON.copy}</button></dd>
+        qrUrl(f),
+      )}" title="Копирай адреса" aria-label="Копирай адреса на QR кода">${ICON.copy}</button></dd>
       </dl>
       ${hashStack(f)}
       ${state.lastAction ? `<p class="hint">Последно действие: ${esc(state.lastAction)}</p>` : ''}`;
@@ -2375,22 +2476,21 @@
   function versionsPane(f) {
     const v = state.versions;
     return `
-      ${
-        !v
-          ? '<p class="hint">Зареждане…</p>'
-          : v.error
-            ? `<p class="err-list">${esc(v.error)}</p>`
-            : `<p class="hint">Текуща версия ${v.current ? v.current.version : f.version} · ${fmtSize(
-                v.current ? v.current.size : f.size,
-              )}${v.demo ? ' · демо' : ''}</p>
+      ${!v
+        ? '<p class="hint">Зареждане…</p>'
+        : v.error
+          ? `<p class="err-list">${esc(v.error)}</p>`
+          : `<p class="hint">Текуща версия ${v.current ? v.current.version : f.version} · ${fmtSize(
+            v.current ? v.current.size : f.size,
+          )}${v.demo ? ' · демо' : ''}</p>
                <table class="grid">
                  <thead><tr><th>Версия</th><th>Размер</th><th>Дата</th><th></th></tr></thead>
                  <tbody>${(v.versions || [])
-                   .map(
-                     (x) => `<tr><td>v${x.version}</td><td>${fmtSize(x.size)}</td><td>${esc(fmtDate(x.uploadedAt))}</td>
+            .map(
+              (x) => `<tr><td>v${x.version}</td><td>${fmtSize(x.size)}</td><td>${esc(fmtDate(x.uploadedAt))}</td>
                        <td><button type="button" class="btn btn-sm" data-restore="${x.version}">Възстанови</button></td></tr>`,
-                   )
-                   .join('') || '<tr><td colspan="4" class="hint">Няма предишни версии</td></tr>'}</tbody>
+            )
+            .join('') || '<tr><td colspan="4" class="hint">Няма предишни версии</td></tr>'}</tbody>
                </table>
                <h4 class="u-mt">Нова версия</h4>
                <div class="field"><label>Файл</label><input type="file" id="fm-version-file" /></div>
@@ -2438,45 +2538,40 @@
       : loading
         ? '<p class="hint">Изчисляване на хешовете…</p>'
         : h
-          ? `<p class="hint">Изчислени от съдържанието${
-              f.encrypted ? ' (след декриптиране)' : ''
-            } · ${fmtSize(h.size)} (${h.size} B) · ${esc(fmtDate(h.computedAt))} · ${values.length} алгоритъма</p>
+          ? `<p class="hint">Изчислени от съдържанието${f.encrypted ? ' (след декриптиране)' : ''
+          } · ${fmtSize(h.size)} (${h.size} B) · ${esc(fmtDate(h.computedAt))} · ${values.length} алгоритъма</p>
              <dl class="fm-meta">
                <dt>Регистриран SHA-256<br /><small class="hint">при качване</small></dt>
-               <dd class="fm-url"><code class="fm-hash">${esc(f.sha256 || '—')}</code>${
-                 f.sha256
-                   ? `<button type="button" class="fm-ico-btn fm-copy-btn" data-copy="${esc(
-                       f.sha256,
-                     )}" title="Копирай регистрирания SHA-256" aria-label="Копирай регистрирания SHA-256">${ICON.copy}</button>`
-                   : ''
-               }</dd>
+               <dd class="fm-url"><code class="fm-hash">${esc(f.sha256 || '—')}</code>${f.sha256
+            ? `<button type="button" class="fm-ico-btn fm-copy-btn" data-copy="${esc(
+              f.sha256,
+            )}" title="Копирай регистрирания SHA-256" aria-label="Копирай регистрирания SHA-256">${ICON.copy}</button>`
+            : ''
+          }</dd>
                ${values
-                 .map(
-                   (a) =>
-                     `<dt>${esc(HASH_LABELS[a] || a)}<br /><small class="hint">${HASH_BITS[a] || ''} бита · ${
-                       (h.hashes[a] || '').length
-                     } hex</small></dt>
+            .map(
+              (a) =>
+                `<dt>${esc(HASH_LABELS[a] || a)}<br /><small class="hint">${HASH_BITS[a] || ''} бита · ${(h.hashes[a] || '').length
+                } hex</small></dt>
                       <dd class="fm-url"><code class="fm-hash">${esc(h.hashes[a])}</code><button type="button" class="fm-ico-btn fm-copy-btn" data-copy="${esc(
-                        h.hashes[a],
-                      )}" title="Копирай ${esc(HASH_LABELS[a] || a)}" aria-label="Копирай ${esc(
-                        HASH_LABELS[a] || a,
-                      )}">${ICON.copy}</button></dd>`,
-                 )
-                 .join('')}
+                  h.hashes[a],
+                )}" title="Копирай ${esc(HASH_LABELS[a] || a)}" aria-label="Копирай ${esc(
+                  HASH_LABELS[a] || a,
+                )}">${ICON.copy}</button></dd>`,
+            )
+            .join('')}
              </dl>
-             ${
-               h.match
-                 ? '<p class="state-chip ok u-mt">SHA-256 съвпада с регистрирания при качване</p>'
-                 : `<p class="err-list">${esc(h.warning || 'SHA-256 не съвпада с регистрирания при качване')}</p>`
-             }
+             ${h.match
+            ? '<p class="state-chip ok u-mt">SHA-256 съвпада с регистрирания при качване</p>'
+            : `<p class="err-list">${esc(h.warning || 'SHA-256 не съвпада с регистрирания при качване')}</p>`
+          }
              <div class="u-row u-row-3 u-mt">
                <button type="button" class="btn btn-sm" id="fm-hash-copy">${ICON.copy} Копирай всички</button>
                <button type="button" class="btn btn-sm" id="fm-hash-file">${ICON.download} checksums.txt</button>
                <button type="button" class="btn btn-sm" id="fm-hash-stack">${ICON.refresh} Изчисли отново</button>
              </div>`
-          : `<p class="hint">Пълният набор хешове се изчислява от съдържанието на файла${
-              f.encrypted ? ' (след декриптиране)' : ''
-            }.</p>
+          : `<p class="hint">Пълният набор хешове се изчислява от съдържанието на файла${f.encrypted ? ' (след декриптиране)' : ''
+          }.</p>
              <div class="u-row u-row-1 u-mt">
                <button type="button" class="btn" id="fm-hash-stack">${ICON.refresh} Изчисли всички хешове</button>
              </div>`;
@@ -2548,8 +2643,8 @@
       <form id="fm-access-form">
         <div class="field"><label>Политика</label>
           <select name="mode">${['FREE', 'KEY_REQUIRED', 'DISABLED']
-            .map((m) => `<option ${m === f.accessMode ? 'selected' : ''}>${m}</option>`)
-            .join('')}</select>
+        .map((m) => `<option ${m === f.accessMode ? 'selected' : ''}>${m}</option>`)
+        .join('')}</select>
         </div>
         <div class="checks"><label><input type="checkbox" name="listed" ${f.listed ? 'checked' : ''}/> Показва се в публичния каталог</label></div>
         <p class="hint">Порталната политика остава в сила: файлът не може да е по-достъпен от портала.</p>
@@ -2565,12 +2660,11 @@
         <button type="button" class="btn btn-sm" id="fm-copy-link">${ICON.copy} Копирай адреса</button>
         <button type="button" class="btn btn-sm" id="fm-create-key">Нов ключ</button>
       </div>
-      ${
-        state.issuedKey
-          ? `<div class="field"><label>Ключ (показва се само веднъж)</label><input readonly value="${esc(
-              state.issuedKey,
-            )}" /></div><p class="hint">Подава се като <code>X-Portal-Key</code>.</p>`
-          : ''
+      ${state.issuedKey
+        ? `<div class="field"><label>Ключ (показва се само веднъж)</label><input readonly value="${esc(
+          state.issuedKey,
+        )}" /></div><p class="hint">Подава се като <code>X-Portal-Key</code>.</p>`
+        : ''
       }
       <p class="hint">Ако файлът е скрит (не е listed), адресът работи само с ключ.</p>`;
   }
@@ -2695,6 +2789,47 @@
       q('#pf-copy-refs').addEventListener('click', () =>
         copyText(JSON.stringify(state.api[portal().id].refs, null, 2), 'Препратките са копирани'),
       );
+    }
+    // Сигурност на портала: ротация на ключа и проверка за цялост (реални административни
+    // маршрути; без тях функциите съществуваха само в API).
+    const securityOut = q('#pf-security-out');
+    const say = (text, kind) => {
+      if (!securityOut) return toast(text, kind);
+      securityOut.textContent = text;
+      securityOut.className = 'pf-security-out ' + (kind || '');
+    };
+    if (q('#pf-rotate-key')) {
+      q('#pf-rotate-key').addEventListener('click', async () => {
+        const p = portal();
+        if (!p) return;
+        if (!connected()) return say('Демо: смяната на ключа става от add-on-а', 'err');
+        if (!window.confirm(`Да обновя ли ключа за подпис на „${p.title}“? Всички издадени досега подписани URL-и спират да важат.`)) return;
+        const r = await api(`${P()}/signing-key`, { method: 'POST', json: {} });
+        if (!r.ok) return say(r.error || `HTTP ${r.status}`, 'err');
+        say('Ключът е обновен — старите подписани URL-и са невалидни.', 'ok');
+      });
+    }
+    if (q('#pf-integrity')) {
+      q('#pf-integrity').addEventListener('click', async () => {
+        if (!connected()) return say('Демо: проверката се изпълнява от add-on-а', 'err');
+        say('Проверявам SHA-256 на файловете…', '');
+        const r = await api(`${P()}/integrity`);
+        if (!r.ok) return say(r.error || `HTTP ${r.status}`, 'err');
+        const summary = r.data.summary || {};
+        say(
+          `Проверени ${r.data.checked ?? summary.checked ?? 0} файла · съвпадат ${summary.ok ?? 0} · разминават се ${summary.mismatch ?? 0} · липсват ${summary.missing ?? 0}`,
+          (summary.mismatch || summary.missing) ? 'err' : 'ok',
+        );
+      });
+    }
+    if (q('#pf-integrity-job')) {
+      q('#pf-integrity-job').addEventListener('click', async () => {
+        if (!connected()) return say('Демо: фоновата проверка се пуска от add-on-а', 'err');
+        const r = await api(`${P()}/integrity-jobs`, { method: 'POST', json: {} });
+        if (!r.ok) return say(r.error || `HTTP ${r.status}`, 'err');
+        const jobId = r.data.jobId || r.data.id || '';
+        say(`Фоновата проверка е в опашката${jobId ? ` (задача ${jobId})` : ''}. Прогресът е в „Настройки → Задачи“.`, 'ok');
+      });
     }
 
     if (q('#fm-search')) {
@@ -3058,17 +3193,17 @@
     if (connected()) {
       // Свързан режим: списъкът идва от add-on-а, демо данните не се смесват с реалните.
       loadContacts()
-        .catch(() => {})
+        .catch(() => { })
         .then(loadCases)
-        .catch(() => {})
+        .catch(() => { })
         .then(loadPortals)
-        .catch(() => {})
+        .catch(() => { })
         .then(reload)
-        .catch(() => {})
+        .catch(() => { })
         .then(loadConnection)
-        .catch(() => {})
+        .catch(() => { })
         .then(loadTree)
-        .catch(() => {})
+        .catch(() => { })
         .then(render);
       return;
     }

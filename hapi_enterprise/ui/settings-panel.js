@@ -162,8 +162,8 @@
       ? ''
       : `<div class="set-keys">
           ${keys
-            .map(
-              (k) => `<div class="set-key">
+        .map(
+          (k) => `<div class="set-key">
             <div class="set-key-line">
               <span class="chip">${esc(k.label || 'PGP ключ')}</span>
               <span class="state-chip ${Number(k.version) === 6 ? 'ok' : 'warn'}">OpenPGP v${Number(k.version) || 4}</span>
@@ -175,8 +175,8 @@
             <p class="hint">${esc(k.fingerprint || '')}</p>
             <div class="u-row u-row-1"><button type="button" class="btn" data-pgp-remove="${esc(k.id)}" ${on ? '' : 'disabled'}>Премахни</button></div>
           </div>`,
-            )
-            .join('')}
+        )
+        .join('')}
         </div>`;
     const autosignControls = !keys.length
       ? ''
@@ -189,19 +189,18 @@
               </select>
               <small class="hint">Всеки създаден пакет се подписва автоматично (ZIP + .asc).</small>
             </div>
-            ${
-              keys.length > 1
-                ? `<div class="field"><label>Ключ за подписване</label>
+            ${keys.length > 1
+        ? `<div class="field"><label>Ключ за подписване</label>
               <select id="set-pgp-keyid" ${on ? '' : 'disabled'}>
                 ${keys
-                  .map(
-                    (k) =>
-                      `<option value="${esc(k.id)}" ${p.settings.signKeyId === k.id ? 'selected' : ''}>${esc(k.label)} · ${esc(k.keyId)}</option>`,
-                  )
-                  .join('')}
+          .map(
+            (k) =>
+              `<option value="${esc(k.id)}" ${p.settings.signKeyId === k.id ? 'selected' : ''}>${esc(k.label)} · ${esc(k.keyId)}</option>`,
+          )
+          .join('')}
               </select></div>`
-                : ''
-            }
+        : ''
+      }
           </div>`;
     return `
       <section class="panel u-mt">
@@ -216,9 +215,8 @@
           </div>
           <div class="field u-mt">
             <label>PGP ключ (armored)</label>
-            <textarea id="set-pgp-key" rows="6" spellcheck="false" placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----" ${
-              on ? '' : 'disabled'
-            }></textarea>
+            <textarea id="set-pgp-key" rows="6" spellcheck="false" placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----" ${on ? '' : 'disabled'
+      }></textarea>
             <small class="hint">Публичната част се извлича автоматично от секретния блок.</small>
           </div>
           <div class="u-row u-row-1 u-mt">
@@ -237,9 +235,8 @@
     if (state.health === 'unauthorized') return '<span class="state-chip err">неоторизиран</span> провери токена';
     if (state.health === 'no-connection') return '<span class="state-chip err">няма връзка</span> провери адреса';
     if (state.health === 'error') return '<span class="state-chip warn">грешка</span> сървърът отговори с грешка';
-    return `<span class="state-chip ok">свързан</span> роля <code>${esc(state.role || '—')}</code>${
-      state.ingress ? ' · през Home Assistant Ingress' : ''
-    }`;
+    return `<span class="state-chip ok">свързан</span> роля <code>${esc(state.role || '—')}</code>${state.ingress ? ' · през Home Assistant Ingress' : ''
+      }`;
   }
 
   function render() {
@@ -275,20 +272,17 @@
       </section>
 
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Публичен адрес за API и QR</h2><span class="badge ${state.publicBaseUrl ? 'ok' : 'demo'}">${
-          state.publicBaseUrl ? 'зададен' : 'не е зададен'
-        }</span></div>
+        <div class="panel-head"><h2>Публичен адрес за API и QR</h2><span class="badge ${state.publicBaseUrl ? 'ok' : 'demo'}">${state.publicBaseUrl ? 'зададен' : 'не е зададен'
+      }</span></div>
         <div class="panel-body">
           <p class="hint">По този адрес се строят препратките в api.json, openapi.json и QR кодовете. В Home Assistant това е адресът, на който е достъпен публичният gateway (напр. <code>http://192.168.50.4:8088</code>). Ако е празно, използва се адресът на интерфейса — при Ingress той не е публично достъпен.</p>
           <div class="u-grid u-grid-fields">
             <div class="field">
               <label>Публичен адрес</label>
-              <input id="set-public" value="${esc(state.publicBaseUrl)}" placeholder="http://192.168.50.4:8088" ${
-                isAdmin ? '' : 'disabled'
-              } />
-              <small class="hint">${
-                isAdmin ? 'Само http/https, до 200 знака.' : 'Само роля admin може да променя тази настройка.'
-              }</small>
+              <input id="set-public" value="${esc(state.publicBaseUrl)}" placeholder="http://192.168.50.4:8088" ${isAdmin ? '' : 'disabled'
+      } />
+              <small class="hint">${isAdmin ? 'Само http/https, до 200 знака.' : 'Само роля admin може да променя тази настройка.'
+      }</small>
             </div>
           </div>
           <div class="u-row u-row-1 u-mt">
@@ -298,6 +292,21 @@
       </section>
 
       ${pgpSection()}
+
+      <section class="panel u-mt">
+        <div class="panel-head"><h2>Миграция на хранилището</h2><span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'само при нужда' : 'изисква връзка'
+      }</span></div>
+        <div class="panel-body">
+          <p class="hint">Анализът показва какво ще се промени, без да пипа нищо. Dry run минава през същите
+            стъпки и също не записва. Реалното пускане пита за изписване на <code>MIGRATE</code>.</p>
+          <div class="u-row u-row-3">
+            <button type="button" class="btn" id="set-migrate-analyze" ${connected() ? '' : 'disabled'}>Анализ</button>
+            <button type="button" class="btn" id="set-migrate-dry" ${connected() ? '' : 'disabled'}>Dry run</button>
+            <button type="button" class="btn btn-primary" id="set-migrate-run" ${connected() ? '' : 'disabled'}>Пусни миграцията</button>
+          </div>
+          <pre class="tree u-mt" id="set-migrate-out" aria-live="polite">—</pre>
+        </div>
+      </section>
 
       <section class="panel u-mt">
         <div class="panel-head"><h2>Къде се пази</h2></div>
@@ -314,6 +323,35 @@
 
   function wire() {
     const q = (sel) => host.querySelector(sel);
+    // Миграция: анализът е GET, dry run и реалното пускане са POST с {dryRun}.
+    const migrateOut = () => q('#set-migrate-out');
+    const showMigration = (payload) => {
+      const out = migrateOut();
+      if (!out) return;
+      out.textContent = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+    };
+    if (q('#set-migrate-analyze')) {
+      q('#set-migrate-analyze').addEventListener('click', async () => {
+        showMigration('Анализирам…');
+        const r = await api('/admin/api/v2/migrate');
+        showMigration(r.ok ? r.data : r.error || `HTTP ${r.status}`);
+      });
+    }
+    const runMigration = async (dryRun) => {
+      showMigration(dryRun ? 'Dry run…' : 'Мигрирам…');
+      const r = await api('/admin/api/v2/migrate', { method: 'POST', json: { dryRun } });
+      if (!r.ok) return showMigration(r.error || `HTTP ${r.status}`);
+      showMigration(r.data);
+      toast(dryRun ? 'Dry run приключи — нищо не е записано' : 'Миграцията приключи', 'ok');
+    };
+    if (q('#set-migrate-dry')) q('#set-migrate-dry').addEventListener('click', () => void runMigration(true));
+    if (q('#set-migrate-run')) {
+      q('#set-migrate-run').addEventListener('click', () => {
+        const answer = window.prompt('Реалната миграция променя данните. За потвърждение изпиши MIGRATE:');
+        if (answer !== 'MIGRATE') return toast('Миграцията е отказана', 'err');
+        void runMigration(false);
+      });
+    }
     q('#set-save').addEventListener('click', () => {
       const base = q('#set-base').value.trim().replace(/\/$/, '');
       const token = q('#set-token').value.trim();

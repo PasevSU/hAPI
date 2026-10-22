@@ -6,21 +6,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 const m = require('../hapi_enterprise/ui/files-manager.js');
 
-// 1. Действията: 11 по план 17 §3.1 + „Пакет (ZIP)“ + „Бележка“ (добави/редактирай).
-assert.equal(m.ACTIONS.length, 13);
+// 1. Действията: 11 по план 17 §3.1 + Пакет (ZIP) + Бележка + трите за подпис
+//    (подписан URL, разписка, проверка на разписка) — всичките с реален backend.
+assert.equal(m.ACTIONS.length, 14);
 const ids = m.ACTIONS.map((a) => a.id);
 assert.deepEqual(
   [...ids].sort(),
-  ['access', 'copy', 'delete', 'download', 'encrypt', 'metadata', 'move', 'note', 'package', 'preview', 'rename', 'share', 'versions'].sort(),
+  ['access', 'delete', 'download', 'encrypt', 'metadata', 'note', 'package', 'preview', 'receipt', 'rename', 'share', 'signedUrl', 'verifyReceipt', 'versions'].sort(),
 );
 assert.equal(new Set(ids).size, ids.length);
 
-// 2. Само преместване и копиране са планирани (без backend endpoints).
-assert.deepEqual(
-  m.ACTIONS.filter((a) => a.planned).map((a) => a.id).sort(),
-  ['copy', 'move'],
-);
-assert.ok(m.ACTIONS.filter((a) => !a.planned).every((a) => typeof a.label === 'string' && a.label.length > 0));
+// 2. Няма „планирани“ бутони: преместване и копиране бяха махнати, защото нямаха
+//    backend — бутон, който само пише „скоро“, е имитация.
+assert.deepEqual(m.ACTIONS.filter((a) => a.planned).map((a) => a.id), []);
+assert.ok(m.ACTIONS.every((a) => typeof a.label === 'string' && a.label.length > 0));
 
 // 3. Нормализация на файл: безопасни default-и.
 const f = m.normalizeFile({ id: 'x', name: 'a.pdf' });
@@ -127,7 +126,14 @@ assert.match(src, /\/admin\/api\/cases/);
 assert.equal(m.normalizeCase({ id: 'k', number: '1', title: 'T', extras: [{ key: 'a', value: 'b' }, { value: 'x' }] }).extras.length, 1);
 assert.equal(m.normalizeContact({ id: 'c', extras: [{ key: 'Роля', value: 'адвокат' }] }).extras[0].key, 'Роля');
 // 7е. Стандарт на подредбата: всичко в проценти + фиксиран брой обекти на ред.
-const css = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'styles.css'), 'utf8');
+// CSS-ът се сравнява с нормализирани интервали: форматирането (един ред, разгънато или
+// без интервали около `>` и `{`) не бива да чупи теста — важно е правилото.
+const css = fs
+  .readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'styles.css'), 'utf8')
+  .replace(/\s*\n\s*/g, ' ')
+  .replace(/\s*>\s*/g, ' > ')
+  .replace(/\s*\{\s*/g, ' { ')
+  .replace(/\s*\}\s*/g, ' } ');
 assert.match(css, /--w-100: 100%/);
 assert.match(css, /--grid-gap: 0\.8%/);
 assert.match(css, /--per-row-actions:/);

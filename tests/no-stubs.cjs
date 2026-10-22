@@ -45,7 +45,9 @@ for (const rel of files) {
     emptyArrows += 1;
     const line = text.slice(text.lastIndexOf('\n', m.index) + 1, text.indexOf('\n', m.index));
     if (/\.catch\(\s*(?:\([^)]*\)|[A-Za-z0-9_$]+)?\s*=>\s*\{\s*\}/.test(line)) continue;
-    const allowed = [...ALLOWED_EMPTY.entries()].some(([file, snippet]) => file === rel && line.includes(snippet));
+    // Сравнението е без интервали: форматирането не бива да чупи allowlist-а.
+    const squeezed = line.replace(/\s+/g, '');
+    const allowed = [...ALLOWED_EMPTY.entries()].some(([file, snippet]) => file === rel && squeezed.includes(snippet.replace(/\s+/g, '')));
     if (!allowed) problems.push(`${rel}: празна стрелка без обяснение → ${line.trim().slice(0, 80)}`);
   }
 }

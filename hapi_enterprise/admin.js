@@ -1253,8 +1253,26 @@ async function _loadHierRecords() {
     const t3 = document.createElement('td'); t3.textContent = Object.entries(r.fields || {}).map(([k, v]) => k + ': ' + String(v)).join(' · ') || '—';
     const t4 = document.createElement('td');
     const ed = node('button', t('Редактирай')); ed.type = 'button'; ed.onclick = () => _openHierRecordEditor(r);
+    // Записът може да смени групата си (associate) или да остане без група (detach) —
+    // иначе двете административни функции съществуваха само в API-то.
+    const move = node('button', t('Свържи')); move.type = 'button'; move.onclick = () => action(async () => {
+      const all = (await api('/admin/api/v2/groups')).groups || [];
+      const target = window.prompt(t('Група (id, slug или име) за записа ') + r.id, _hierGroupId || '');
+      if (target == null) return;
+      const match = all.find(g => g.id === target || g.slug === target || g.name === target);
+      if (!match) { toast(t('Няма такава група'), 'error'); return }
+      await api('/admin/api/v2/records/' + r.id + '/associate', 'POST', { groupId: match.id });
+      await _loadHierRecords();
+      toast(t('Записът е свързан с ') + (match.name || match.slug || match.id), 'success');
+    });
+    const detach = node('button', t('Отдели')); detach.type = 'button'; detach.onclick = () => action(async () => {
+      if (!confirm(t('Да отделя ли записа от групата? ') + r.id)) return;
+      await api('/admin/api/v2/records/' + r.id + '/detach', 'POST', {});
+      await _loadHierRecords();
+      toast(t('Записът е отделен от групата'), 'success');
+    });
     const del = node('button', t('Изтрий')); del.type = 'button'; del.className = 'danger'; del.onclick = () => action(async () => { if (!confirm(t('Изтриване на запис ') + r.id + '?')) return; await api('/admin/api/v2/records/' + r.id, 'DELETE'); await _loadHierRecords() });
-    t4.append(ed, del); tr.append(t1, t2, t3, t4); tbody.append(tr);
+    t4.append(ed, move, detach, del); tr.append(t1, t2, t3, t4); tbody.append(tr);
   }
   tbl.append(tbody); wrap.append(tbl); box.append(wrap);
 }

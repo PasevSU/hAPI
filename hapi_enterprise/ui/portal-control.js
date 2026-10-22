@@ -12,15 +12,13 @@
     return `
       <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="control">
         <div class="pf-block-head">
-          <h5><button type="button" class="link-btn pf-block-tog" data-pf-control-tog aria-expanded="${open}" title="${
-            open ? 'Сгъни' : 'Разгъни'
-          } контролния панел">${ico(open ? 'chevronDown' : 'chevronRight')} Контролен панел на портала: ${esc(
-            p.title,
-          )}</button></h5>
+          <h5><button type="button" class="link-btn pf-block-tog" data-pf-control-tog aria-expanded="${open}" title="${open ? 'Сгъни' : 'Разгъни'
+      } контролния панел">${ico(open ? 'chevronDown' : 'chevronRight')} Контролен панел на портала: ${esc(
+        p.title,
+      )}</button></h5>
         </div>
-        ${
-          open
-            ? `<div class="pf-block-body">
+        ${open
+        ? `<div class="pf-block-body">
           <div class="two-col">
             <form id="pf-settings">
               <div class="field"><label>Заглавие</label><input name="title" value="${esc(p.title)}" maxlength="160" /></div>
@@ -28,13 +26,13 @@
               <div class="field"><label>Относно</label><input name="subject" value="${esc(p.subject || '')}" maxlength="200" /></div>
               <div class="field"><label>Категория</label><input name="category" value="${esc(p.category || '')}" maxlength="120" list="pf-cats-set" />
                 <datalist id="pf-cats-set">${[...new Set(state.portals.map((x) => x.category).filter(Boolean))]
-                  .sort()
-                  .map((c) => `<option value="${esc(c)}"></option>`)
-                  .join('')}</datalist></div>
+          .sort()
+          .map((c) => `<option value="${esc(c)}"></option>`)
+          .join('')}</datalist></div>
               <div class="field"><label>Флаг</label>
                 <select name="flag">${FLAGS.map(
-                  (f) => `<option value="${f.id}" ${(p.flag || 'none') === f.id ? 'selected' : ''}>${f.icon} ${esc(f.label)}</option>`,
-                ).join('')}</select>
+            (f) => `<option value="${f.id}" ${(p.flag || 'none') === f.id ? 'selected' : ''}>${f.icon} ${esc(f.label)}</option>`,
+          ).join('')}</select>
               </div>
               <div class="field"><label>${ico('person')} Контакт</label>
                 ${contactSelect(p.contactId || '')}
@@ -49,10 +47,10 @@
               <div class="field"><label>${ICON.folder} Папка с файлове (storage_root)</label>
                 <input name="storage_root" value="${esc(p.storage_root || '/share')}" maxlength="240" list="pf-roots-set" />
                 <datalist id="pf-roots-set">${[...new Set(['/share', '/media', ...state.portals.map((x) => x.storage_root || '/share')])]
-                  .filter(Boolean)
-                  .sort()
-                  .map((r) => `<option value="${esc(r)}"></option>`)
-                  .join('')}</datalist>
+          .filter(Boolean)
+          .sort()
+          .map((r) => `<option value="${esc(r)}"></option>`)
+          .join('')}</datalist>
                 <small class="hint">Само под /share или /media.</small>
               </div>
               <div class="field"><label>Описание</label><textarea name="description" rows="2">${esc(p.description)}</textarea></div>
@@ -68,19 +66,16 @@
             </form>
             <div>
               <div class="u-row u-row-3">
-                ${
-                  api
-                    ? `<button type="button" class="btn btn-sm" id="pf-dl-api">${ICON.download} api.json</button>
+                ${api
+          ? `<button type="button" class="btn btn-sm" id="pf-dl-api">${ICON.download} api.json</button>
                        <button type="button" class="btn btn-sm" id="pf-dl-openapi">${ICON.download} openapi.json</button>
                        <button type="button" class="btn btn-sm" id="pf-copy-refs">${ICON.copy} Копирай препратките</button>`
-                    : ''
-                }
+          : ''
+        }
               </div>
-              ${
-                api
-                  ? `<div class="pf-qr">${
-                      qrSvg(api.qrUrl) ? `<div class="qf-svg">${qrSvg(api.qrUrl)}</div>` : '<p class="hint">QR SVG не е наличен в тази среда.</p>'
-                    }
+              ${api
+          ? `<div class="pf-qr">${qrSvg(api.qrUrl) ? `<div class="qf-svg">${qrSvg(api.qrUrl)}</div>` : '<p class="hint">QR SVG не е наличен в тази среда.</p>'
+          }
                        <dl class="fm-meta">
                          <dt>API</dt><dd><code>${esc(api.refs.apiUrl || '')}</code></dd>
                          <dt>Манифест</dt><dd><code>${esc(api.refs.manifestUrl || '')}</code></dd>
@@ -91,13 +86,26 @@
                          <dt>Генерирано</dt><dd>${esc((api.at || '').slice(0, 19).replace('T', ' '))}</dd>
                          <dt>Файлове в API</dt><dd>${p.files.length}</dd>
                        </dl></div>`
-                  : '<p class="hint">API и QR се създават заедно с портала — тук се появяват автоматично.</p>'
-              }
+          : '<p class="hint">API и QR се създават заедно с портала — тук се появяват автоматично.</p>'
+        }
+              <div class="pf-security">
+                <h6>${ico('lock')} Сигурност на портала</h6>
+                <p class="hint">Ключът за подпис важи за подписаните URL адреси; проверката за цялост сравнява
+                  SHA-256 на всеки файл с регистрирания в портала.</p>
+                <div class="u-row u-row-2">
+                  <button type="button" class="btn btn-sm" id="pf-rotate-key" title="Нов ключ за подпис: старите подписани URL-и спират да важат">Обнови ключа за подпис</button>
+                  <button type="button" class="btn btn-sm" id="pf-integrity" title="Провери SHA-256 на всички файлове в портала">Провери целостта</button>
+                </div>
+                <div class="u-row u-row-2 u-mt">
+                  <button type="button" class="btn btn-sm" id="pf-integrity-job" title="Фонова проверка с прогрес">Пусни фонова проверка</button>
+                </div>
+                <output class="pf-security-out" id="pf-security-out" aria-live="polite"></output>
+              </div>
             </div>
           </div>
         </div>`
-            : ''
-        }
+        : ''
+      }
       </section>`;
   }
 

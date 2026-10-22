@@ -46,6 +46,7 @@ assert.deepEqual(unused, [], `неизползвани икони (мъртъв 
 assert.equal(/<image|xlink:href|href="https?:|url\(https?:/.test(iconsSrc), false, 'спрайтът е изцяло локален');
 const css = fs.readFileSync(path.join(uiDir, 'styles.css'), 'utf8');
 assert.match(css, /\.ui-ico \{[\s\S]*?stroke: currentColor;/, 'иконите наследяват цвета на текста');
-assert.match(css, /\.ui-ico \{[\s\S]*?width: 1\.05em; height: 1\.05em;/, 'иконите се оразмеряват спрямо шрифта');
+// Форматирането (един ред или разгънато) не бива да чупи теста — важно е правилото.
+assert.match(css, /\.ui-ico \{[\s\S]*?width: 1\.05em;\s*height: 1\.05em;/, 'иконите се оразмеряват спрямо шрифта');
 
 console.log(`PASS ui-icons: ${defined.size} икони — всички дефинирани и използвани`);
