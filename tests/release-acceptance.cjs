@@ -88,7 +88,16 @@ assert.match(tarText('report-stamp.js'), /stampReport/, 'report-stamp.js не и
 assert.match(tarText('report-stamp.js'), /closingDigest/, 'report-stamp.js не изчислява затварящ хеш');
 assert.match(tarText('pdf-writer.js'), /qrMatrix/, 'pdf-writer.js не рисува векторен QR');
 assert.match(tarText('report-render.js'), /Произход на манифеста/, 'report-render.js не носи произхода на манифеста');
-assert.match(tarText('server.js'), /X-PDF-SHA256/, 'сървърът не връща отпечатък на готовия PDF');
+// HTTP слоят е монолитът + компонентите в `routes/` (отчетите вече са там).
+const httpSurface = [...tarEntries.keys()]
+  .filter((key) => key === `${lib.ADDON_DIR}/server.js` || key.startsWith(`${lib.ADDON_DIR}/routes/`))
+  .map((key) => tarEntries.get(key).toString('utf8'))
+  .join('\n');
+assert.ok(
+  [...tarEntries.keys()].some((key) => key.startsWith(`${lib.ADDON_DIR}/routes/`) && key.endsWith('.js')),
+  'в архива липсват HTTP компонентите (routes/) — сървърът няма да стартира',
+);
+assert.match(httpSurface, /X-PDF-SHA256/, 'сървърът не връща отпечатък на готовия PDF');
 const dockerfile = tarText('Dockerfile');
 assert.match(dockerfile, /report-stamp\.js/, 'Dockerfile не копира report-stamp.js — контейнерът ще падне');
 

@@ -27,6 +27,9 @@
 
 - `ui/api-base.js` е единственото място, което разпознава префикса
   (`/api/hassio_ingress/<token>`, `/hassio/ingress/<token>`, `/app/<token>`, `/hapi/<token>`);
+- сървърът отрязва СЪЩИТЕ форми (`server.js`, ingress блокът): `/app/<slug>` е линкът,
+  който Home Assistant дава към панела, и без отрязване `/app/<slug>/admin/api/…` връща 404;
+  чужд път под префикса не се „оправя“ — остава 404;
 - панелите взимат базовия адрес от `window.hapiApiBase()`, а генераторът — от
   `location.pathname`;
 - `hapi.apiBase` (Настройки → Връзка) остава с предимство (standalone/външен адрес);

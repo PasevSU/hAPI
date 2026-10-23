@@ -22,6 +22,9 @@ COPY config.yaml /app/config.yaml
 # Enterprise Control Center (статика, сервира се на /ui/...). Build context-ът на
 # Supervisor е ТАЗИ папка, затова UI-ят задължително живее вътре в нея.
 COPY ui /app/ui/
+# HTTP компонентите (routes/*.js): всеки поема свой дял от API-то, за да не расте
+# `server.js` като монолит. Без този ред сървърът не стартира (MODULE_NOT_FOUND).
+COPY routes /app/routes/
 # Evidence View порталът (QR): копира се в <HA config>/www/hapi/data при старт.
 COPY evidence-portal /app/evidence-portal/
 # PasevSU Document Generator (статика, сервира се на /generator/).

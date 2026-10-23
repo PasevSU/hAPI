@@ -1,22 +1,23 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.37**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.39**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.37
+## 0.69.39
 
-Обновяването вече се вижда и в Home Assistant, а не само в GitHub.
+`server.js` спира да бъде монолит: HTTP слоят се разделя на компоненти.
 
-- **Нов сензор „Версия на add-on-а“** (`sensor.…_version`): показва версията, която add-on-ът
-  **реално** работи. Тя идва от самия add-on (`/admin/api/sensors` → `version`), а не от
-  инсталирания някога файл.
-- **Нов сензор „Съвпадение на add-on и интеграция“** (`…_sync`, enum): `ok` / `mismatch` /
-  `unknown`. При `mismatch` атрибутите `addon_version` и `integration_version` показват кое е
-  старо — тоест дали да се обнови add-on-ът от Add-on Store или интеграцията през HACS.
-  Преди това едната половина можеше да е обновена, а другата не, без това да се вижда.
-- **Поправена грешна версия:** телеметрията връщаше `v2` (`apiVersion.VERSION.CURRENT` —
-  версията на API-то) вместо продуктовата. Сега `server.js` чете `config.yaml` — единственият
-  източник на истина, който вече се копира в образа (`COPY config.yaml`) — и същата стойност
-  ползват и сензорите, и блокът „Системни данни“ в отчета.
-- Устройството в HA носи `sw_version` на интеграцията (преди беше празно).
-- Преводи на EN/BG за новите сензори и състоянията им; договорът се пази от
-  `tests/ha-integration-flow.cjs` (15 сензора) и `tests/ui-version.cjs`.
+- Отчетите и генераторът вече са отделни файлове: `hapi_enterprise/routes/reports.js`
+  (`/admin/api/v2/reports/{render,package,sign}`, `rfc3161` + `verify`) и
+  `hapi_enterprise/routes/generator.js` (`/admin/api/generator/templates`). Кодът е
+  преместен 1:1 — нито един маршрут не е променен.
+- Един договор за всички: `create(deps)` → `handle({ req, res, url, parts, method })`,
+  който връща `true` (заявката е негова и е приключена) или `false` (следващият я поема).
+  Зависимостите се подават изрично — компонентът не пипа база, портали или файлове,
+  ако не са му дадени.
+- `server.js` падна от 2971 на 2727 реда; таванът се пази от `tests/server-structure.cjs`
+  и **само се намалява** — нов маршрут отива в компонент.
+- Тестът хваща и втората класическа грешка при изнасяне: `require('./…')` от `routes/`
+  гледа в `routes/`, а не в `hapi_enterprise/` (точно това даде 500 при отчетите,
+  докато не се поправи на `../`).
+- `Dockerfile` копира `routes/`; `hapi_enterprise/routes/README.md` описва договора и
+  следващите кандидати (sensors, core, ui-assets, portals, settings).

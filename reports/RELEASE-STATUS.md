@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.37
+# Състояние на изданието — hAPI Enterprise 0.69.39
 
-Версия: **0.69.37** · клон `main`
+Версия: **0.69.39** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,41 +14,42 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **210/210** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.37 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 341 файла · 57625 реда · **0** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 337 файла · 57261 реда · critical: 0 · high: 0 · medium: 0 · low: 151 — чисто |
+| Тестове | `node scripts/test-matrix.cjs` | **211/211** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.39 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 345 файла · 57873 реда · **0** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 341 файла · 57509 реда · critical: 0 · high: 0 · medium: 0 · low: 151 — чисто |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 24 RBAC способности, 33 опции, 210 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 24 RBAC способности, 33 опции, 211 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.37.tar.gz` | add-on архив (138 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.37.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.39.tar.gz` | add-on архив (141 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.39.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.37
+## 3. Какво влезе във 0.69.39
 
-Обновяването вече се вижда и в Home Assistant, а не само в GitHub.
+`server.js` спира да бъде монолит: HTTP слоят се разделя на компоненти.
 
-- **Нов сензор „Версия на add-on-а“** (`sensor.…_version`): показва версията, която add-on-ът
-  **реално** работи. Тя идва от самия add-on (`/admin/api/sensors` → `version`), а не от
-  инсталирания някога файл.
-- **Нов сензор „Съвпадение на add-on и интеграция“** (`…_sync`, enum): `ok` / `mismatch` /
-  `unknown`. При `mismatch` атрибутите `addon_version` и `integration_version` показват кое е
-  старо — тоест дали да се обнови add-on-ът от Add-on Store или интеграцията през HACS.
-  Преди това едната половина можеше да е обновена, а другата не, без това да се вижда.
-- **Поправена грешна версия:** телеметрията връщаше `v2` (`apiVersion.VERSION.CURRENT` —
-  версията на API-то) вместо продуктовата. Сега `server.js` чете `config.yaml` — единственият
-  източник на истина, който вече се копира в образа (`COPY config.yaml`) — и същата стойност
-  ползват и сензорите, и блокът „Системни данни“ в отчета.
-- Устройството в HA носи `sw_version` на интеграцията (преди беше празно).
-- Преводи на EN/BG за новите сензори и състоянията им; договорът се пази от
-  `tests/ha-integration-flow.cjs` (15 сензора) и `tests/ui-version.cjs`.
+- Отчетите и генераторът вече са отделни файлове: `hapi_enterprise/routes/reports.js`
+  (`/admin/api/v2/reports/{render,package,sign}`, `rfc3161` + `verify`) и
+  `hapi_enterprise/routes/generator.js` (`/admin/api/generator/templates`). Кодът е
+  преместен 1:1 — нито един маршрут не е променен.
+- Един договор за всички: `create(deps)` → `handle({ req, res, url, parts, method })`,
+  който връща `true` (заявката е негова и е приключена) или `false` (следващият я поема).
+  Зависимостите се подават изрично — компонентът не пипа база, портали или файлове,
+  ако не са му дадени.
+- `server.js` падна от 2971 на 2727 реда; таванът се пази от `tests/server-structure.cjs`
+  и **само се намалява** — нов маршрут отива в компонент.
+- Тестът хваща и втората класическа грешка при изнасяне: `require('./…')` от `routes/`
+  гледа в `routes/`, а не в `hapi_enterprise/` (точно това даде 500 при отчетите,
+  докато не се поправи на `../`).
+- `Dockerfile` копира `routes/`; `hapi_enterprise/routes/README.md` описва договора и
+  следващите кандидати (sensors, core, ui-assets, portals, settings).
 
 ## 4. Как се проверява наново
 

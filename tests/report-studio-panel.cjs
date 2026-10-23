@@ -158,7 +158,9 @@ assert.equal(/BEGIN CERTIFICATE/.test(preview), false, 'в preview няма фа
 assert.equal(/tsaToken\s*[:=]\s*['"][^'"]+['"]/.test(ui('report-studio.js')), false, 'интерфейсът не си измисля TSA токен');
 
 // ── 4. Маршрутите, които панелът вика, съществуват в сървъра ──────────────────────
-const server = read('hapi_enterprise/server.js');
+// Гледа се ЦЕЛИЯТ HTTP слой (server.js + routes/): отчетите вече са компонент и
+// проверка само на монолита би „открила“ загубен маршрут, който работи.
+const server = require('./lib/http-surface.cjs').source();
 const studio = ui('report-studio.js');
 for (const route of ["'/admin/api/v2/reports/render'", "'/admin/api/v2/rfc3161'"]) {
   assert.ok(studio.includes(route), 'панелът вика ' + route);

@@ -225,7 +225,8 @@ assert.throws(() => cms.signDetached({ data: pdfBytes, keyPem: identity.keyPem }
     assert.equal(cms.verifyDetached({ data: rendered, cms: Buffer.from(signData.cmsBase64, 'base64') }).ok, true, 'модулът приема подписа от HTTP');
 
     // ── 6. Няма фалшиви твърдения в кода ────────────────────────────────────────
-    const serverSrc = fs.readFileSync(path.join(root, 'hapi_enterprise', 'server.js'), 'utf8');
+    // Целият HTTP слой: отчетите и CMS проверката вече живеят в components (routes/).
+    const serverSrc = require('./lib/http-surface.cjs').source(root);
     assert.match(serverSrc, /parts\[3\] === 'reports' && parts\[4\] === 'sign'/, 'сървърът има маршрут за подпис');
     assert.match(serverSrc, /parts\[3\] === 'cms' && parts\[4\] === 'verify'/, 'сървърът има маршрут за проверка');
     verifyNoFakeClaims();

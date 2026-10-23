@@ -139,6 +139,20 @@ const adm = 18498;
     const connection = await fetch(base + INGRESS + '/admin/api/connection', { headers: ha });
     assert.equal(connection.status, 200, 'панелът не може да прочете връзката през ingress');
 
+    // 3в. Формата, която Home Assistant дава като линк към панела (`/app/<slug>`), се
+    //     отрязва по същия начин. Иначе `/app/<slug>/admin/api/…` връща 404 и панелът
+    //     изглежда зареден, но празен.
+    const appBase = '/app/99438e72_hapi_enterprise';
+    const appRoot = await fetch(base + appBase, { redirect: 'manual', headers: ha });
+    assert.equal(appRoot.status, 302, 'коренът на /app/<slug> трябва да пренасочи към панела');
+    assert.equal(appRoot.headers.get('location'), appBase + '/ui/', 'пренасочването губи префикса /app/<slug>');
+    const appDoc = await fetch(base + appBase + '/ui/', { headers: ha });
+    assert.equal(appDoc.status, 200, 'панелът се сервира и под /app/<slug>');
+    const appApi = await fetch(base + appBase + '/admin/api/generator/templates', { headers: ha });
+    assert.equal(appApi.status, 200, 'API-то работи под /app/<slug>');
+    // Чужд път не се „оправя“: `/app/<slug>/neshto` остава 404, а не става `/neshto`.
+    assert.equal((await fetch(base + appBase + '/neshto', { headers: ha })).status, 404, 'непознат път под /app/<slug> остава 404');
+
     // 4. Страницата на генератора се отваря под префикса и сочи относителни ресурси.
     const page = await fetch(base + INGRESS + '/generator/');
     assert.equal(page.status, 200, 'генераторът не се отваря през ingress');
