@@ -21,6 +21,8 @@ const ROOT = path.join(__dirname, '..');
 const rules = require(path.join(ROOT, 'hapi_enterprise', 'export-rules.js'));
 const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
+let step = 'старт';
+
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-parallel-'));
   const port = await freePort();
@@ -46,14 +48,17 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
     assert(ready, 'сървърът трябва да стартира');
 
     // Пакет от ~1 MiB случайни байтове (не се свиват, размерът е предвидим).
+    step = 'портал';
     const payload = crypto.randomBytes(1024 * 1024);
     const portal = (await call('/admin/api/portals', 'POST', JSON.stringify({ slug: 'par', title: 'Паралел', category: 'Правни дела' }), { 'Content-Type': 'application/json' })).value;
     assert.ok(portal.id, 'порталът е създаден');
     assert.equal((await call(`/admin/api/portals/${portal.id}/files`, 'POST', payload, { 'X-File-Name': 'golqm.bin' })).status, 201, 'файлът е качен');
+    step = 'пакет';
     const pkg = (await call('/admin/api/packages', 'POST', JSON.stringify({ portalId: portal.id, compression: 'none' }), { 'Content-Type': 'application/json' })).value;
     assert.ok(pkg.id, 'пакетът е създаден');
 
     // ── 1. Сървърът обявява паралелизъм ─────────────────────────────────────
+    step = 'проба';
     const url = `${base}/admin/api/packages/${pkg.id}/download`;
     const probe = async () => {
       const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token, Range: 'bytes=0-0' } });
@@ -84,6 +89,7 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
     assert.equal(report.chunks.reduce((n, c) => n + c.bytes, 0), pkg.size, 'покритието е пълно');
 
     // ── 3. Паралелизмът не заобикаля ограничението на скоростта ─────────────
+    step = 'ограничение';
     await call('/admin/api/packages/settings', 'PATCH', JSON.stringify({ rateKbps: 256, parallelChunks: 4 }), { 'Content-Type': 'application/json' });
     const expectedMs = (pkg.size / (256 * 1024)) * 1000;
     const parStart = Date.now();
@@ -102,6 +108,7 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
     assert.ok(seqMs >= expectedMs * 0.6, `един поток също е ограничен (${seqMs} ms)`);
 
     // ── 4. Настройката се пази и се валидира ────────────────────────────────
+    step = 'валидация';
     const patched = await call('/admin/api/packages/settings', 'PATCH', JSON.stringify({ parallelChunks: 8 }), { 'Content-Type': 'application/json' });
     assert.equal(patched.value.parallelChunks, 8, 'осем паралелни заявки се приемат');
     const head8 = await probe();
@@ -129,6 +136,7 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
     fs.rmSync(dir, { recursive: true, force: true });
   }
 })().catch((e) => {
-  process.stderr.write('FAIL parallel-transfers: ' + (e && e.message ? e.message : e) + '\n');
+  const cause = e && e.cause ? ` (причина: ${e.cause.code || e.cause.message})` : '';
+  process.stderr.write(`FAIL parallel-transfers [етап: ${step}]: ${e && e.message ? e.message : e}${cause}\n`);
   process.exitCode = 1;
 });
