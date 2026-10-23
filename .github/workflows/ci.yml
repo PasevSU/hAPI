@@ -35,15 +35,18 @@ jobs:
             echo "== $f =="
             # Таван от 300 s за тест: тест, който не излезе (напр. оставен сирак държи
             # тръбите), НЕ бива да заключва целия job за 10+ минути без лог.
-            timeout -k 10 300 node "$f"
-            code=$?
-            if [ "$code" -ne 0 ]; then
-              if [ "$code" -eq 124 ]; then
+            # `|| status=$?` не е завъртулка: job-ът върви с `bash -e`, а голо
+            # `timeout ... node` при провал прекратява целия цикъл след ПЪРВИЯ паднал
+            # тест (случи се: спря на pgp-engine и никой не разбра за останалите).
+            status=0
+            timeout -k 10 300 node "$f" || status=$?
+            if [ "$status" -ne 0 ]; then
+              if [ "$status" -eq 124 ]; then
                 echo "::error::TIMEOUT $f (300 s) — тестът не излезе"
               fi
               # Името се показва като анотация: иначе провалът се вижда само като код 1
               # в края и трябва да се гадае кой тест е (случвало се е).
-              echo "::error::FAILED $f (exit $code)"
+              echo "::error::FAILED $f (exit $status)"
               failed=1
             fi
           done

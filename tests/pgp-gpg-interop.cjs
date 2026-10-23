@@ -97,6 +97,59 @@ if (v6Supported) {
 // Уверяваме се, че v6 ключът не се е объркал с v4 (v4 подпис не минава с v6 ключ).
 assert.equal(pgp.verifyDetached(data, pgp.signDetached(data, pgp.generate({ algorithm: 'ed25519' }).secretArmored).armored, v6.publicArmored).valid, false);
 
+// ── 4. Криптиране: gpg → hAPI и компресията ────────────────────────────
+// GnuPG компресира преди криптиране (zlib по подразбиране), а hAPI чете само SEIPD v1
+// без компресия. Тук се проверява, че такова съобщение се ОТКАЗВА с точен код, а
+// `--compress-algo none` минава.
+// Ключът се прави с gpg, а не с нашия генератор: gpg отказва да криптира към ключ без
+// self-signature с ключови флагове („Unusable public key“) — ограничение на gpg, не на hAPI.
+// Версията на gpg решава формата: 2.4 пише SEIPD v1, а 2.5 по подразбиране AEAD/OCB.
+// И двата изхода са ясни кодове, затова тестът твърди кода, който отговаря на ФАЙЛА,
+// а не гадае според версията.
+const homeEnc = path.join(tmp, 'gpg-enc');
+fs.mkdirSync(homeEnc, { recursive: true });
+const runEnc = gpgIn(homeEnc);
+const encUid = 'Interop Enc <enc@example.test>';
+runEnc(['--rfc4880', '--quick-generate-key', encUid, 'rsa2048', 'encr', '0']);
+const encSecret = runEnc(['--armor', '--export-secret-keys', encUid]);
+const plainFile = path.join(tmp, 'plain.txt');
+fs.writeFileSync(plainFile, data);
+
+/** Кодът, с който hAPI отказва съобщението (или 'OK', ако го отвори). */
+const outcomeOf = (file) => {
+  try {
+    pgp.decryptMessage(fs.readFileSync(file, 'utf8'), encSecret, '');
+    return 'OK';
+  } catch (e) {
+    return e.code || 'NO_CODE';
+  }
+};
+/** Форматът на файла се чете от самите пакети, а не се предполага. */
+const formOf = (file) => {
+  const packets = pgp.readPackets(pgp.dearmor(fs.readFileSync(file, 'utf8')).data);
+  if (packets.some((p) => p.tag === 20)) return 'aead';
+  if (packets.some((p) => p.tag === 18)) return 'seipd1';
+  return 'other';
+};
+
+const compFile = path.join(tmp, 'compressed.gpg');
+runEnc(['--armor', '--encrypt', '--trust-model', 'always', '--recipient', encUid, '--compress-algo', 'zlib', '--output', compFile, plainFile]);
+const plainGpg = path.join(tmp, 'uncompressed.gpg');
+runEnc(['--armor', '--encrypt', '--trust-model', 'always', '--recipient', encUid, '--compress-algo', 'none', '--output', plainGpg, plainFile]);
+const form = formOf(compFile);
+if (form === 'seipd1') {
+  assert.equal(outcomeOf(compFile), 'UNSUPPORTED_COMPRESSION', 'компресирано съобщение (SEIPD v1) трябва да даде UNSUPPORTED_COMPRESSION');
+  assert.equal(outcomeOf(plainGpg), 'OK', 'съобщение от gpg без компресия трябва да се отвори');
+  console.log('pgp-gpg-interop: gpg → hAPI — SEIPD v1 без компресия се отваря, с компресия дава UNSUPPORTED_COMPRESSION');
+} else {
+  // gpg 2.5: AEAD и за двете — отказът пак трябва да е точен, не обща грешка.
+  assert.equal(form, 'aead', `непознат формат от gpg: ${form}`);
+  assert.equal(outcomeOf(compFile), 'UNSUPPORTED_AEAD', 'AEAD съобщение от gpg трябва да даде UNSUPPORTED_AEAD');
+  assert.equal(outcomeOf(plainGpg), 'UNSUPPORTED_AEAD', 'AEAD съобщение от gpg трябва да даде UNSUPPORTED_AEAD');
+  console.log('pgp-gpg-interop: инсталираният gpg пише AEAD/OCB — gpg → hAPI криптиране се отказва с UNSUPPORTED_AEAD');
+}
+
+
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log('pgp-gpg-interop OK');
 process.exit(0);

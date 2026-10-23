@@ -1298,15 +1298,18 @@ function decryptMessage(armored, armoredSecretKey, passphrase) {
     }
     prefixLength = inner[block + 2] === sessionAlgo ? block + 3 : block + 2;
   }
-  const result = stripWrappingPackets(inner.subarray(prefixLength, inner.length - 22));
-  // Компресия вътре в шифротекста не се поддържа — по-добре ясен код, отколкото смет.
-  if (result.length && result[0] & 0x80) {
-    const tag = result[0] & 0x40 ? result[0] & 0x3f : (result[0] >> 2) & 0x0f;
+  const wrapped = inner.subarray(prefixLength, inner.length - 22);
+  // Компресията се разпознава по ПЪРВИЯ ПАКЕТ след префикса, а НЕ по резултата след
+  // разопаковането: там вече стои самият открит текст и всеки байт с вдигнат висок бит
+  // може случайно да изглежда като заглавка на пакет (видяно в CI: 4 KiB случайни данни
+  // дадоха UNSUPPORTED_COMPRESSION с шанс ~2% на пускане, тестът падаше произволно).
+  if (wrapped.length && wrapped[0] & 0x80) {
+    const tag = wrapped[0] & 0x40 ? wrapped[0] & 0x3f : (wrapped[0] >> 2) & 0x0f;
     if (tag === 8) {
       throw fail('UNSUPPORTED_COMPRESSION', 'Съобщението е компресирано преди криптиране — криптирай без компресия (`gpg -z 0` или hAPI)');
     }
   }
-  return result;
+  return stripWrappingPackets(wrapped);
 }
 
 module.exports = {

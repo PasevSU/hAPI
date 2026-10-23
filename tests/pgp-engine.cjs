@@ -51,6 +51,20 @@ const sealedBinary = pgp.encryptToKey(binary, rsa.publicArmored);
 assert.deepEqual(pgp.decryptMessage(sealedBinary.armored, rsa.secretArmored, ''), binary);
 ok('4 KiB двоични данни');
 
+// ── 2b. Открит текст, който ИЗГЛЕЖДА като заглавка на компресиран пакет ────────
+// Регресия от CI: проверката за компресия гледаше резултата СЛЕД разопаковането, т.е.
+// самия открит текст — 4 KiB случайни данни падаха с UNSUPPORTED_COMPRESSION с шанс ~2%
+// на пускане (стария формат 0xA3 и новия 0xC8 са точно такива заглавки).
+for (const first of [0xa3, 0xc8, 0xa0, 0xff]) {
+  const looksCompressed = Buffer.concat([Buffer.from([first]), crypto.randomBytes(64)]);
+  assert.deepEqual(
+    pgp.decryptMessage(pgp.encryptToKey(looksCompressed, rsa.publicArmored).armored, rsa.secretArmored, ''),
+    looksCompressed,
+    `данни, започващи с 0x${first.toString(16)}, трябва да се върнат непроменени`,
+  );
+}
+ok('данни, които приличат на компресиран пакет, не се бъркат с компресия');
+
 // ── 3. INV-P4: подправен шифротекст → отказ ──────────────────────────────────
 const raw = armorBody(sealed.armored);
 const tampered = Buffer.from(raw);
