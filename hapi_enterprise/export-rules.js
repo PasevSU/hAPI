@@ -378,14 +378,18 @@
       format,
       sha: cfg.verifySha256,
       target,
-      text: `Избрани категории: ${cfg.contents.length} · Формат: ${format} · SHA-256: ${
-        cfg.verifySha256 ? 'Включена' : 'Изключена'
-      } · Цел: ${target}`,
+      text: `Избрани категории: ${cfg.contents.length} · Формат: ${format} · SHA-256: ${cfg.verifySha256 ? 'Включена' : 'Изключена'
+        } · Цел: ${target}`,
     };
   }
 
+  // Кое е РЕАЛНО готово. Списъкът е изричен, за да не се обявява способност за готова
+  // със самата си наличност в масива: `compression` е готова от 0.69.51 (нива 0–9, 0 =
+  // без компресия; виж `packager.compressionLevel`), останалите още не са.
+  const READY = { compression: { implemented: true, status: 'ready' } };
+
   function capabilities() {
-    return CAPABILITIES.map((c) => Object.assign({}, c, { implemented: false, status: 'planned' }));
+    return CAPABILITIES.map((c) => Object.assign({}, c, READY[c.id] || { implemented: false, status: 'planned' }));
   }
 
   function validateRules(rules) {

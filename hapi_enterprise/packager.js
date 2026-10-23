@@ -35,6 +35,21 @@ const available = (() => {
 
 const bad = (message, status) => Object.assign(new Error(message), { status: status || 400 });
 
+// Нивата на компресия са ИМЕНУВАНИ, за да не зависи договорът от числата на zlib.
+// `none` = без компресия (важно за вече компресирани файлове и за отстраняване на
+// проблеми), `fast`/`default`/`max` = 1/6/9. Непознато ниво е грешка, не подразбиране.
+const COMPRESSION_LEVELS = { none: 0, store: 0, fast: 1, default: 6, normal: 6, max: 9, best: 9 };
+function compressionLevel(value) {
+  if (value === undefined || value === null || value === '') return 6;
+  if (Number.isInteger(value)) {
+    if (value < 0 || value > 9) throw bad('Нивото на компресия е от 0 до 9', 400);
+    return value;
+  }
+  const named = COMPRESSION_LEVELS[String(value).toLowerCase()];
+  if (named === undefined) throw bad('Невалидно ниво на компресия: ' + value, 400);
+  return named;
+}
+
 function sha256(buf) {
   return crypto.createHash('sha256').update(buf).digest('hex');
 }
@@ -90,8 +105,9 @@ function create({ root }) {
    *           пакет не слага файлове с ключ/забранени, а манифестът казва кои са те).
    * origin:   'public' — пакетът е поискан от публичната страница, не от администратора.
    */
-  async function build({ portal, files, sign, now, ttlHours, excluded, origin }) {
+  async function build({ portal, files, sign, now, ttlHours, excluded, origin, compression }) {
     const list = Array.isArray(files) ? files : [];
+    const level = compressionLevel(compression);
     if (!list.length) throw bad('Пакетът е празен — няма файлове', 400);
     if (list.length > MAX_FILES) throw bad(`Твърде много файлове (макс. ${MAX_FILES})`, 413);
     const total = list.reduce((sum, f) => sum + (f && f.data ? f.data.length : 0), 0);
@@ -142,6 +158,9 @@ function create({ root }) {
       schema_version: '1.1',
       package_id: id,
       created_at: createdAt,
+      // Нивото се записва в индекса: получателят вижда С КАКВО е направен архивът,
+      // а не гадае от размера. 0 значи „без компресия“ (ZIP method 0).
+      compression: { level, method: level === 0 ? 0 : 8, name: level === 0 ? 'store' : 'deflate' },
       hash_algorithms: available,
       portal: portal
         ? {
@@ -195,7 +214,7 @@ function create({ root }) {
       { name: 'hashes/checksums.txt', data: Buffer.from(checksums, 'utf8') },
       ...entries,
     ];
-    const zipBuffer = ooxml.zip(zipEntries);
+    const zipBuffer = ooxml.zip(zipEntries, { level });
     const zipSha256 = sha256(zipBuffer);
     const slug = safeName((portal && portal.slug) || 'package').replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 60);
     const fileName = `${slug}-${stamp(now instanceof Date ? now : new Date())}.zip`;
@@ -232,6 +251,7 @@ function create({ root }) {
       storageRoot: portal ? portal.storage_root || '' : '',
       bytes: total,
       entries: zipEntries.length,
+      compression: { level, method: level === 0 ? 0 : 8, name: level === 0 ? 'store' : 'deflate' },
       signature: signed
         ? { ...signature, keyId: signed.keyId, fingerprint: signed.fingerprint, hash: signed.hash, signedAt: signed.createdAt }
         : signature,

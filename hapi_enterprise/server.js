@@ -1940,7 +1940,7 @@ async function handler(req, res) {
           sign = { secretArmored, keyId: key.keyId, label: key.label };
         }
         let meta;
-        try { meta = await packager.build({ portal: p, files, sign, ttlHours: settings.ttlHours }) } catch (e) { return fail(res, e.status || 500, e.message) }
+        try { meta = await packager.build({ portal: p, files, sign, ttlHours: settings.ttlHours, compression: b.compression }) } catch (e) { return fail(res, e.status || 500, e.message) }
         if (signFallback) meta.signingFallback = signFallback;
         await packager.prune({ maxAgeHours: settings.ttlHours, maxCount: settings.maxKept }).catch(() => { });
         void audit('package.build', { portalId: p.id, packageId: meta.id, files: meta.files, signed: meta.hasSignature, sha256: meta.sha256, signingFallback: signFallback ? signFallback.used : null });

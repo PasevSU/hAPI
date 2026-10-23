@@ -26,7 +26,7 @@
     // Отговорът от add-on-а: правила и последен preflight.
     srv: { rules: null, rulesError: '', preflight: null, preflightError: '', busy: false },
     // Реален експорт (свързан режим): портал и последен пакет.
-    pkg: { portalId: '', last: null, error: '', loaded: false },
+    pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default' },
   };
 
   const base = () =>
@@ -230,6 +230,13 @@
                 ${(state.pkg.portals || []).map((p) => `<option value="${esc(p.id)}" ${state.pkg.portalId === p.id ? 'selected' : ''}>${esc(p.title)} (${esc(p.slug)})</option>`).join('')}
               </select>
             </div>
+            <div class="field"><label>Компресия на пакета</label>
+              <select id="ec-pkg-compression" ${connected() ? '' : 'disabled'}>
+                <option value="none" ${state.pkg.compression === 'none' ? 'selected' : ''}>Без компресия (0)</option>
+                <option value="default" ${state.pkg.compression === 'default' ? 'selected' : ''}>Обичайна (6)</option>
+                <option value="max" ${state.pkg.compression === 'max' ? 'selected' : ''}>Максимална (9)</option>
+              </select>
+            </div>
           </div>
           <div class="u-row u-row-4 u-mt">
             <button type="button" class="btn btn-primary" id="ec-pkg-build" ${connected() ? '' : 'disabled'}>Създай и изтегли пакета</button>
@@ -380,7 +387,7 @@
     if (!p.portalId) return toast('Избери портал', 'err');
     p.error = '';
     // `sign`/`keyId` не се подават: add-on-ът прилага запазените настройки от „Настройки“.
-    const r = await api('/admin/api/packages', { method: 'POST', json: { portalId: p.portalId } });
+    const r = await api('/admin/api/packages', { method: 'POST', json: { portalId: p.portalId, compression: p.compression } });
     if (!r.ok) {
       p.error = r.error || `HTTP ${r.status}`;
       toast(p.error, 'err');
@@ -400,6 +407,7 @@
       q('#ec-pkg-portal').addEventListener('change', (e) => {
         p.portalId = e.target.value;
       });
+      if (q('#ec-pkg-compression')) q('#ec-pkg-compression').addEventListener('change', (e) => { p.compression = e.target.value; });
       q('#ec-pkg-build').addEventListener('click', () => buildPackage());
       q('#ec-pkg-zip').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/download`, p.last.fileName));
       q('#ec-pkg-asc').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/signature`, `${p.last.fileName}.asc`));

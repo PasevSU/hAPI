@@ -101,7 +101,9 @@ assert.equal(api.decideFile({ portal: publicPortal, file: freeFile, permission: 
 const payload = api.exportRulesPayload();
 assert.equal(payload.export_profiles.profiles.length, 12);
 assert.equal(payload.capabilities.length, 6);
-assert.ok(payload.capabilities.every((c) => c.implemented === false));
+// Само компресията е готова (0.69.51); останалите пет са изрично планирани.
+assert.deepEqual(payload.capabilities.filter((c) => c.implemented).map((c) => c.id), ['compression']);
+assert.ok(payload.capabilities.filter((c) => c.id !== 'compression').every((c) => c.implemented === false));
 assert.deepEqual(payload.access.levels, ACC.LEVELS);
 assert.equal(payload.public_gateway.public.port, 8088);
 

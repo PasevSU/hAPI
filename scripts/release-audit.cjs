@@ -123,7 +123,13 @@ lines.push('');
 function plannedExportCapabilities() {
   const src = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'export-rules.js'), 'utf8');
   const block = (/const CAPABILITIES = \[([\s\S]*?)\n {2}\];/.exec(src) || ['', ''])[1];
-  return [...block.matchAll(/\{\s*id:\s*'([a-z_]+)',\s*label:\s*'([^']+)'/g)].map((m) => ({ id: m[1], label: m[2] }));
+  // Готовите се обявяват в `READY` — иначе отчетът би твърдял „планирано“ за нещо, което
+  // работи. Точно тази разлика беше поправена в 0.69.51 (компресия).
+  const readyBlock = (/const READY = \{([\s\S]*?)\n {2}\};/.exec(src) || ['', ''])[1];
+  const ready = new Set([...readyBlock.matchAll(/([a-z_]+):\s*\{\s*implemented:\s*true/g)].map((m) => m[1]));
+  return [...block.matchAll(/\{\s*id:\s*'([a-z_]+)',\s*label:\s*'([^']+)'/g)]
+    .map((m) => ({ id: m[1], label: m[2] }))
+    .filter((c) => !ready.has(c.id));
 }
 
 function plannedReportObjects() {

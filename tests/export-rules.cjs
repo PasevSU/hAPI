@@ -98,10 +98,18 @@ assert.equal(R.validateConfig({ mode: 'nope' }).errors.some((e) => e.code === 'm
 assert.equal(R.validateConfig({ mode: 'report', contents: [], format: 'zip', location: 'folder', onConflict: 'unique' }).errors.some((e) => e.code === 'contents-empty'), true);
 assert.equal(R.validateConfig({ ...R.normalizeConfig({ mode: 'report' }), packageId: 'bad' }).errors.some((e) => e.code === 'package-id'), true);
 
-// 9. Capabilities: всичко нереализирано е изрично планирано.
+// 9. Capabilities: готово е САМО това, което наистина работи.
+// `compression` стана реална в 0.69.51 (нива 0–9, 0 = без компресия) — виж
+// `tests/package-compression.cjs`. Останалите пет остават изрично „планирано“.
 const caps = R.capabilities();
 assert.equal(caps.length, 6);
-assert.ok(caps.every((c) => c.implemented === false && c.status === 'planned'));
+const ready = caps.filter((c) => c.implemented).map((c) => c.id);
+assert.deepEqual(ready, ['compression'], 'готова е само компресията');
+assert.equal(caps.find((c) => c.id === 'compression').status, 'ready');
+assert.ok(
+  caps.filter((c) => c.id !== 'compression').every((c) => c.implemented === false && c.status === 'planned'),
+  'останалите са планирани'
+);
 
 // 10. Глобалните правила са валидни и съдържат забрана за презапис на доказателства.
 assert.equal(R.validateRules(R.DEFAULT_RULES).ok, true);
