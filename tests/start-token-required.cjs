@@ -13,7 +13,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync, spawn } = require('node:child_process');
-const { freePort } = require('./helpers.cjs');
+const { freePort, stopTree } = require('./helpers.cjs');
 
 const ENTRY = path.join(__dirname, '../hapi_enterprise/start.js');
 const STRONG = 'token-required-test-0123456789abcdef';
@@ -80,13 +80,12 @@ async function runToHealth(options, preExistingToken) {
     }
     return 0;
   };
-  const stop = async () => {
-    child.kill('SIGKILL');
-    await new Promise((r) => {
-      child.once('exit', r);
-      setTimeout(r, 3000);
-    });
-  };
+  // Не SIGKILL върху entrypoint-а: той пуска сървъра като свое дете със `stdio: 'inherit'`
+  // и сиракът държи тръбите отворени → тестът отпечатва „ok“, но процесът не излиза
+  // (видяно в CI: 9 минути висящ job). stopTree праща SIGTERM, после убива pid-а от
+  // заключването на инстанцията и затваря тръбите.
+  const storageBase = path.join(c.storageRoot, 'addon_config', 'hapi_enterprise');
+  const stop = () => stopTree(child, { storageBase });
   return { ...c, port, child, health, stop, stderr: () => stderr };
 }
 

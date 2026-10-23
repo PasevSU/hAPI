@@ -24,14 +24,24 @@ if (!files.length) {
 
 const failures = [];
 const start = Date.now();
+// Таван за един тест. Без него висящ тест (напр. оставен сирак държи тръбите) заключва
+// целия пакет безкрайно; в CI това вече се случи. 300 s е много над най-бавния тест.
+const TEST_TIMEOUT_MS = 300000;
 for (const f of files) {
   const t0 = Date.now();
   process.stdout.write(`\n=== ${f} ===\n`);
-  const res = spawnSync(process.execPath, [path.join(dir, f)], { cwd: root, stdio: 'inherit' });
+  const res = spawnSync(process.execPath, [path.join(dir, f)], {
+    cwd: root,
+    stdio: 'inherit',
+    timeout: TEST_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
+  });
   const ms = Date.now() - t0;
   if (res.status !== 0) {
-    failures.push({ file: f, status: res.status, ms });
-    console.log(`FAIL ${f} (exit ${res.status}, ${ms}ms)`);
+    const timedOut = Boolean(res.error && res.error.code === 'ETIMEDOUT');
+    const status = timedOut ? `timeout ${TEST_TIMEOUT_MS}ms` : res.status ?? res.signal;
+    failures.push({ file: f, status, ms });
+    console.log(`FAIL ${f} (exit ${status}, ${ms}ms)`);
   } else {
     console.log(`PASS ${f} (${ms}ms)`);
   }

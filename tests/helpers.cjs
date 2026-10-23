@@ -1,6 +1,8 @@
 'use strict';
 
 const net = require('node:net');
+const fs = require('node:fs');
+const path = require('node:path');
 
 async function stopChild(child) {
   if (!child || child.exitCode !== null || child.signalCode !== null) return;
@@ -13,6 +15,65 @@ async function stopChild(child) {
   ]);
   clearTimeout(timer);
   if (!stopped) throw new Error(`Child process ${child.pid} did not stop`);
+}
+
+/**
+ * Убива сървъра-сирак по pid-а от заключването на инстанцията.
+ *
+ * `start.js` пуска сървъра като СВОЕ дете, затова убиването на entrypoint-а не убива
+ * сървъра. Затова заключването `<storageBase>/.hapi-instance.json` е единственият
+ * надежден източник на pid-а, който още държи портовете и тръбите на теста.
+ */
+function reapInstance(storageBase) {
+  let pid = 0;
+  try {
+    const lock = JSON.parse(fs.readFileSync(path.join(storageBase, '.hapi-instance.json'), 'utf8'));
+    if (lock && Number.isInteger(lock.pid)) pid = lock.pid;
+  } catch {
+    return false; // няма заключване — сървърът вече е спрял
+  }
+  if (!pid || pid === process.pid) return false;
+  try {
+    process.kill(pid);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Спира дете и каквото то е оставило след себе си.
+ *
+ * `child.kill('SIGKILL')` убива само ПРЕПРАТКАТА (`start.js`), а тя пуска сървъра със
+ * `stdio: 'inherit'`. На POSIX сиракът остава да държи тръбите на теста отворени и
+ * процесът на теста НИКОГА не излиза, макар тестът да е минал — точно това заключи
+ * CI за 9 минути (20:10:45 → отмяна), защото преди това тестът падаше преди `stop()`.
+ * Затова: първо SIGTERM (entrypoint-ът го предава надолу и сървърът спира чисто),
+ * после SIGKILL, после убиваме pid-а от заключването и освобождаваме тръбите.
+ */
+async function stopTree(child, { storageBase = null, timeoutMs = 5000 } = {}) {
+  const waitExit = (ms) =>
+    new Promise((resolve) => {
+      if (!child || child.exitCode !== null || child.signalCode !== null) return resolve(true);
+      const timer = setTimeout(() => resolve(false), ms);
+      child.once('exit', () => {
+        clearTimeout(timer);
+        resolve(true);
+      });
+    });
+  if (child && child.exitCode === null && child.signalCode === null) {
+    child.kill('SIGTERM');
+    if (!(await waitExit(timeoutMs))) {
+      child.kill('SIGKILL');
+      await waitExit(1000);
+    }
+  }
+  if (storageBase) reapInstance(storageBase);
+  // Отворен handle към тръба = процесът на теста не излиза. Затваряме изрично.
+  for (const stream of [child && child.stdout, child && child.stderr]) {
+    if (stream && typeof stream.destroy === 'function') stream.destroy();
+  }
+  await new Promise((r) => setTimeout(r, 50));
 }
 
 /**
@@ -106,4 +167,4 @@ async function waitHealthy(child, base, { attempts = 160, delay = 50, stderr = n
   throw new Error(`сървърът не стартира на ${base} (изчакани ${attempts} опита)${tail()}`);
 }
 
-module.exports = { stopChild, freePort, waitHealthy };
+module.exports = { stopChild, stopTree, reapInstance, freePort, waitHealthy };

@@ -33,10 +33,17 @@ jobs:
           failed=0
           for f in tests/*.cjs; do
             echo "== $f =="
-            if ! node "$f"; then
+            # Таван от 300 s за тест: тест, който не излезе (напр. оставен сирак държи
+            # тръбите), НЕ бива да заключва целия job за 10+ минути без лог.
+            timeout -k 10 300 node "$f"
+            code=$?
+            if [ "$code" -ne 0 ]; then
+              if [ "$code" -eq 124 ]; then
+                echo "::error::TIMEOUT $f (300 s) — тестът не излезе"
+              fi
               # Името се показва като анотация: иначе провалът се вижда само като код 1
               # в края и трябва да се гадае кой тест е (случвало се е).
-              echo "::error::FAILED $f"
+              echo "::error::FAILED $f (exit $code)"
               failed=1
             fi
           done
