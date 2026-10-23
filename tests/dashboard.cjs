@@ -49,4 +49,25 @@ const portalFiles = read('hapi_enterprise/ui/portal-files.js');
 assert.equal(/\ba\.planned\b/.test(portalFiles), false, 'менюто на файла не показва „скоро“');
 assert.equal(/soon|скоро<\/small>/.test(portalFiles), false);
 
-console.log('PASS dashboard: реални данни от API-то, без демо числа и без „планирано“ редове');
+// 7. Таблото е и ВХОД към всички раздели, а не само числа.
+// Дефектът, който това пази (0.69.45): таблото показваше 10 карти и нито едно действие —
+// изглеждаше, че „опциите липсват“, макар да са в менюто на един клик. Списъкът НЕ се
+// дублира в панела: идва от NAV през `HapiUI.nav()`, за да не изостава при нова секция.
+assert.match(app, /window\.HapiUI = \{[^}]*nav: \(\) => NAV/, 'app.js трябва да издава NAV през HapiUI.nav()');
+assert.match(dashboard, /HapiUI\.nav\(\)/, 'таблото взима списъка на разделите от навигацията');
+assert.match(dashboard, /data-goto="/, 'всеки раздел е бутон на таблото');
+assert.match(dashboard, /HapiUI\.go\(button\.dataset\.goto\)/, 'бутоните наистина сменят раздела');
+const navIds = [...app.matchAll(/\{ id: '([a-z0-9_-]+)',\s*ico:/g)].map((m) => m[1]);
+assert.ok(navIds.length >= 15, 'навигацията трябва да има поне 15 секции, а е ' + navIds.length);
+assert.ok(dashboard.includes("item.id !== 'dashboard'"), 'таблото не слага бутон към себе си');
+
+// 8. Ресурсите са от РЕАЛЕН маршрут, не измислени.
+assert.match(dashboard, /\/admin\/api\/diagnostics/, 'ресурсите идват от /admin/api/diagnostics');
+for (const field of ['heapUsedBytes', 'rssBytes', 'activeDownloadStreams', 'effectiveDownloadStreams', 'storage']) {
+  assert.ok(dashboard.includes(field), 'таблото показва ' + field + ' от диагностиката');
+  assert.ok(dashboard.includes(field) ? true : true);
+}
+assert.match(dashboard, /badge .*err|'badge ' \+/, 'липсващо хранилище се маркира като проблем');
+assert.match(read('hapi_enterprise/ui/styles.css'), /\.quick-grid \{/, 'бързият достъп има стил');
+
+console.log('PASS dashboard: реални данни от API-то · вход към ' + (navIds.length - 1) + ' раздела · ресурси от диагностиката');

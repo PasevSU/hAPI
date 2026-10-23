@@ -315,6 +315,6 @@
     return true;
   }
 
-  window.HapiUI = { toast, t, getLang: () => lang, setLang, go };
+  window.HapiUI = { toast, t, getLang: () => lang, setLang, go, nav: () => NAV.map((item) => ({ id: item.id, ico: item.ico })) };
   document.addEventListener('DOMContentLoaded', boot);
 })();

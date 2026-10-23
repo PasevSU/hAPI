@@ -1251,6 +1251,17 @@ input[type="radio"] {
   box-shadow: var(--shadow);
 }
 
+/* Бърз достъп от таблото: един бутон за всеки раздел от менюто. */
+.quick-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick-grid .btn {
+  flex: 0 1 auto;
+}
+
 .dash-label {
   font-size: var(--fs-11);
   color: var(--muted);

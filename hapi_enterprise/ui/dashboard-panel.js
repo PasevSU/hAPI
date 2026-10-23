@@ -47,6 +47,17 @@
         </div>
       </section>
       <section class="panel">
+        <div class="panel-head"><h2>Всички раздели</h2><span class="badge" id="dash-quick-count">—</span></div>
+        <div class="panel-body">
+          <div class="quick-grid" id="dash-quick"></div>
+          <p class="hint">Същите раздели като в менюто — таблото е и вход към тях. Броят идва от навигацията, не от отделен списък.</p>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Ресурси и хранилище</h2><span class="badge" id="dash-res-badge">—</span></div>
+        <div class="panel-body" id="dash-res"></div>
+      </section>
+      <section class="panel">
         <div class="panel-head"><h2>Кой влиза</h2></div>
         <div class="panel-body" id="dash-visitors"></div>
       </section>
@@ -61,12 +72,37 @@
     const visitBox = view.querySelector('#dash-visitors');
     const reportBox = view.querySelector('#dash-reports');
     const reportState = view.querySelector('#dash-report-state');
+    const quickBox = view.querySelector('#dash-quick');
+    const quickCount = view.querySelector('#dash-quick-count');
+    const resBox = view.querySelector('#dash-res');
+    const resBadge = view.querySelector('#dash-res-badge');
 
-    const [portals, sensors, jobs, audit] = await Promise.all([
+    // ── Всички раздели: един бутон за всяка точка от менюто ──────────────────
+    // Списъкът НЕ се дублира тук: идва от NAV в app.js през `HapiUI.nav()`. Така нова
+    // секция в менюто се появява на таблото без втори списък, който да изостане.
+    const nav = (window.HapiUI && typeof window.HapiUI.nav === 'function') ? window.HapiUI.nav() : [];
+    const targets = nav.filter((item) => item.id !== 'dashboard');
+    if (quickBox) {
+      quickBox.innerHTML = targets
+        .map((item) => `<button type="button" class="btn" data-goto="${esc(item.id)}">${esc(window.HapiUI.t(item.id))}</button>`)
+        .join('');
+      for (const button of quickBox.querySelectorAll('button[data-goto]')) {
+        button.addEventListener('click', () => {
+          if (window.HapiUI && typeof window.HapiUI.go === 'function') window.HapiUI.go(button.dataset.goto);
+        });
+      }
+      if (quickCount) {
+        quickCount.className = 'badge';
+        quickCount.textContent = targets.length + ' раздела';
+      }
+    }
+
+    const [portals, sensors, jobs, audit, diagnostics] = await Promise.all([
       api('/admin/api/portals'),
       api('/admin/api/sensors'),
       api('/admin/api/jobs'),
       api('/admin/api/audit/verify'),
+      api('/admin/api/diagnostics'),
     ]);
 
     if (portals.offline) {
@@ -102,6 +138,46 @@
     if (!audit.ok) problems.push('одитната проверка не отговаря');
     if (chain && chain.valid === false) problems.push('одитната верига е нарушена');
     hint.textContent = problems.length ? 'Внимание: ' + problems.join(' · ') : '';
+
+    // ── Ресурси и хранилище: какво още може да се поиска от add-on-а ─────────
+    // Всичко идва от `/admin/api/diagnostics` — същият маршрут, който ползва
+    // „Настройки → Диагностика“. Тук няма изчислени „на око“ стойности.
+    if (resBox) {
+      const diag = diagnostics.ok && diagnostics.data ? diagnostics.data : null;
+      if (!diag) {
+        resBadge.className = 'badge err';
+        resBadge.textContent = diagnostics.offline ? 'няма връзка' : 'HTTP ' + diagnostics.status;
+        resBox.innerHTML = '<p class="hint">Диагностиката не е достъпна с този токен — ресурсите се виждат в „Настройки → Диагностика“.</p>';
+      } else {
+        const mb = (bytes) => (Number(bytes) / 1048576).toFixed(1) + ' MB';
+        const storage = Array.isArray(diag.storage) ? diag.storage : [];
+        const okRoots = storage.filter((s) => s.available && s.writable).length;
+        const badRoots = storage.filter((s) => !s.available || !s.writable).map((s) => s.name + (s.error ? ' (' + s.error + ')' : ''));
+        const traffic = diag.traffic || {};
+        const load = traffic.load || {};
+        resBadge.className = 'badge ' + (badRoots.length ? 'err' : 'ok');
+        resBadge.textContent = badRoots.length ? 'хранилище: проблем' : 'хранилище: готово';
+        resBox.innerHTML = `
+          <div class="dash-grid">
+            ${card('Heap', mb(diag.runtime ? diag.runtime.heapUsedBytes : 0), 'от ' + mb(diag.runtime ? diag.runtime.heapTotalBytes : 0))}
+            ${card('Памет (RSS)', mb(diag.runtime ? diag.runtime.rssBytes : 0), diag.runtime ? 'Node ' + diag.runtime.node : '')}
+            ${card('Работи от', Math.floor((diag.uptimeSeconds || 0) / 60) + ' мин', diag.generatedAt ? 'към ' + String(diag.generatedAt).replace('T', ' ').slice(0, 16) : '')}
+            ${card('Изтегляния', String(traffic.activeDownloadStreams || 0) + ' / ' + String(traffic.effectiveDownloadStreams || 0), 'активни / ефективен лимит')}
+            ${card('Хранилища', okRoots + ' / ' + storage.length, badRoots.length ? 'липсва: ' + badRoots.join(', ') : 'всички достъпни и записваеми')}
+            ${card('Натоварване', load.level != null ? String(load.level) : '—', load.effective != null ? 'ефективен паралелизъм ' + load.effective : 'без данни')}
+          </div>
+          <div class="row-actions">
+            <button type="button" class="btn" data-goto="storage">Хранилища</button>
+            <button type="button" class="btn" data-goto="security">Сигурност</button>
+            <button type="button" class="btn" data-goto="backups">Резервни копия</button>
+          </div>`;
+        for (const button of resBox.querySelectorAll('button[data-goto]')) {
+          button.addEventListener('click', () => {
+            if (window.HapiUI && typeof window.HapiUI.go === 'function') window.HapiUI.go(button.dataset.goto);
+          });
+        }
+      }
+    }
 
     // Комуникация: кратко резюме на сензорите с врата към панела „Кой влиза“.
     const intel = sensors.ok && sensors.data ? sensors.data.visitorsIntel : null;
