@@ -86,21 +86,27 @@
 
 ```dotenv
 # /homeassistant/_openpgpV6/.env.example  (копирай на .env и попълни; права 0600)
-# Парола на private.asc. Без нея частният ключ не се отваря и четенето на криптирани пътища
+# Парола на частния ключ. Без нея ключът не се отваря и четенето на криптирани пътища
 # се отказва с ясна грешка, вместо да върне боклук.
 HAPI_PGP_KEY_PASS=
-# Папката с ключовете — път от гледна точка на контейнера (по подразбиране
-# /homeassistant/_openpgpV6, после /config/_openpgpV6).
-HAPI_PGP_KEYS_DIR=/homeassistant/_openpgpV6
-# Кой подключ да се ползва за криптиране. Празно = правилото по-горе.
+# (по избор) кой подключ да се ползва за криптиране. Празно = правилото по-горе.
 HAPI_PGP_STORAGE_KEY_ID=
 ```
 
+Пътищата до самите ключове **не се задават тук**, а като опции на add-on-а
+(`pgp_path_public`, `pgp_path_secret`, `pgp_path_pass`), защото `.env` се намира по пътя от
+`pgp_path_pass`. Стандартната таблица с четирите полета е в
+[`installation-layout.md`](../08_USER_GUIDES/installation-layout.md#41-задължителни-полета-при-старт-стандартни-настройки).
+
 ### Откъде идва паролата — в този ред
 
-1. опция на add-on-а `pgp_key_pass` (тип `password`, пази се в `/data/options.json`);
-2. env променлива `PGP_KEY_PASS` (ако add-on-ът се пуска извън Supervisor);
-3. `/homeassistant/_openpgpV6/.env` → `HAPI_PGP_KEY_PASS`.
+1. опция на add-on-а `pgp_key_pass` — самата парола като стойност (пази се в `/data/options.json`);
+2. файлът, посочен от `pgp_path_pass` (напр. `/homeassistant/_openpgpV6/.env` → `HAPI_PGP_KEY_PASS`);
+3. env променлива `PGP_KEY_PASS` (ако add-on-ът се пуска извън Supervisor).
+
+**`pgp_path_pass` е път до файл, не до пример.** Сочи към `.env` (права `0600`). Ако сочи към
+`.env.example`, паролата е празна и стартът трябва да откаже с `PASSPHRASE_REQUIRED` — шаблонът
+не е тайна и не бива да съдържа стойност.
 
 **`!secret hapi_pgp_key_pass` НЕ работи тук и това не е пропуск.** Home Assistant замества
 `!secret` само в YAML, който сам зарежда (`configuration.yaml`, `packages/`). Опциите на add-on-а
@@ -269,8 +275,8 @@ HAPI_PGP_STORAGE_KEY_ID=
 ## Свързани документи
 
 - [`STORAGE_LAYOUT.md`](../01_AS_IS_ARCHITECTURE/STORAGE_LAYOUT.md) — къде стои всеки файл.
-- [`INTEGRATION_CONTRACTS.md`](INTEGRATION_CONTRACTS.md) — маршрути и полета (вкл. `pgp_key_pass`,
-  `pgp_keys_dir`, `/admin/api/pgp/keyring`).
+- [`INTEGRATION_CONTRACTS.md`](INTEGRATION_CONTRACTS.md) — маршрути и полета (вкл. `pgp_path_public`,
+  `pgp_path_secret`, `pgp_path_pass`, `pgp_key_pass`, `/admin/api/pgp/keyring`).
 - [`TEST_CASE_CATALOG.md`](../06_TESTING/TEST_CASE_CATALOG.md) — редовете T-PGP-*.
 - [`installation-layout.md`](../08_USER_GUIDES/installation-layout.md) — **коя папка къде отива при инсталация** (вкл. кой `/config` е кой).
 - [`EVIDENCE_VIEW_PORTAL.md`](../04_FUNCTION_SPECIFICATIONS/EVIDENCE_VIEW_PORTAL.md) — порталът, който показва файловете и данните.

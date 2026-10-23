@@ -17,26 +17,44 @@
 
 ## 2. Сложи файловете на място
 
+В Home Assistant (Samba / File editor) това е `/config/_openpgpV6`. В **контейнера на add-on-а**
+същата папка е `/homeassistant/_openpgpV6` — затова опциите долу съдържат пълни пътища, а не „папка“.
+
 ```
-/config/_openpgpV6/public.asc     ← публичен ключ (armored)
-/config/_openpgpV6/private.asc    ← частен ключ (armored), защитен с парола
-/config/_openpgpV6/.env           ← паролата (по избор; по-добре я задай като опция)
-/config/_openpgpV6/.env.example   ← шаблон, без стойности
+/homeassistant/_openpgpV6/public.asc     ← публичен ключ (armored)
+/homeassistant/_openpgpV6/secret.asc     ← частен ключ (armored), защитен с парола
+/homeassistant/_openpgpV6/.env           ← паролата (HAPI_PGP_KEY_PASS=…), права 600
+/homeassistant/_openpgpV6/.env.example   ← шаблон, БЕЗ стойност; никога не се ползва като източник
 ```
 
-Права: `chmod 600 /config/_openpgpV6/private.asc /config/_openpgpV6/.env`.
+Името на файла е свободно (`secret.asc` или `private.asc`); важното е пътят в опцията да сочи към
+него.
 
-## 3. Задай паролата
+Права: `chmod 600 /homeassistant/_openpgpV6/secret.asc /homeassistant/_openpgpV6/.env`.
 
-Два начина, като първият е по-добър:
+## 3. Задай четирите полета (стандартни настройки)
 
-- **Опция на add-on-а** `pgp_key_pass` (Configuration → hAPI Enterprise). Пази се в
-  `/data/options.json`, отделно от ключа.
-- **`.env`** в същата папка: `HAPI_PGP_KEY_PASS=…` (ако не ползваш Supervisor).
+Въвеждат се в Configuration на add-on-а. Имената отляво са стандартът (същите като в `secrets.yaml`),
+а вдясно е къде отива стойността:
 
-`!secret hapi_pgp_key_pass` **не се поддържа** за add-on-а: Home Assistant замества `!secret`
-само в YAML, който сам зарежда, а опциите на add-on-а идват от `/data/options.json`. Ако искаш
-стойността да не стои в опциите, подай я през env променлива `PGP_KEY_PASS`.
+| `!secret` име | Опция | Стойност |
+| --- | --- | --- |
+| `hapi_token` | `token` | самият админ токен, ≥ 24 знака |
+| `hapi_pgp_path_public` | `pgp_path_public` | `/homeassistant/_openpgpV6/public.asc` |
+| `hapi_pgp_path_secret` | `pgp_path_secret` | `/homeassistant/_openpgpV6/secret.asc` |
+| `hapi_pgp_path_pass` | `pgp_path_pass` | `/homeassistant/_openpgpV6/.env` |
+
+Паролата може и директно като стойност: опция `pgp_key_pass` (тя има предимство пред файла).
+
+> **Две капана:**
+> 1. `pgp_path_pass` трябва да сочи към **`.env`**, не към `.env.example` — примерният файл е с
+>    празна стойност и стартът отказва с `PASSPHRASE_REQUIRED`.
+> 2. `!secret` **не се разширява** в опциите на add-on-а (HA замества `!secret` само в YAML,
+>    който сам зарежда). Имената горе са стандарт за именуване, а в полетата влизат стойности.
+>    Ако напишеш буквално `!secret hapi_token`, той се отхвърля като слаб токен.
+
+Ако не ползваш Supervisor, същото идва от env: `PGP_KEY_PASS`, `PGP_PATH_PUBLIC`,
+`PGP_PATH_SECRET`, `PGP_PATH_PASS`.
 
 ## 4. Рестартирай и провери
 
