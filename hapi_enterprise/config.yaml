@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.69.42"
+version: "0.69.43"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"

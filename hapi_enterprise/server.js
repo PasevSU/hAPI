@@ -85,15 +85,8 @@ const secretLinks = require('./secret-links');
 const secretPage = require('./secret-page');
 // Последователен достъп на тайна по id: два едновременни прегледа не бива да минат
 // и двата покрай лимита за прегледи (add-on-ът е един процес, значи това е достатъчно).
-const secretLocks = new Map();
-const withSecretLock = async (id, fn) => {
-  const previous = secretLocks.get(id) || Promise.resolve();
-  let release;
-  const current = new Promise((resolve) => { release = resolve });
-  secretLocks.set(id, previous.then(() => current));
-  await previous;
-  try { return await fn() } finally { release(); if (secretLocks.get(id) === current) secretLocks.delete(id) }
-};
+// Ключалката живее в отделен модул, защото изчистването ѝ е нетривиално — виж secret-lock.js.
+const withSecretLock = require('./secret-lock').create();
 const preview = require('./preview').create();
 const versioning = require('./versioning').create();
 const notify = require('./notify').create();
@@ -2588,7 +2581,7 @@ async function handler(req, res) {
         }
       } return fail(res, 404, 'Not found')
     } return fail(res, 404, 'Not found')
-  } catch (e) { req.log.error('unhandled', { err: e && e.message ? e.message : 'Internal error', status: e && e.status || 500, code: e && e.code }); if (!e || !e.status || e.status >= 500) void errorLog.append('error', 'http', e && e.message ? e.message : 'Internal error'); return fail(res, e && e.status || 500, e && e.status ? e.message : 'Internal error') }
+  } catch (e) { const status = e && e.status || 500, message = e && e.message ? e.message : 'Internal error'; if (status >= 500) { req.log.error('unhandled', { err: message, status, code: e && e.code }); void errorLog.append('error', 'http', message) } else req.log.warn('request.rejected', { err: message, status }); return fail(res, status, e && e.status ? message : 'Internal error') }
 }
 // Ключов пакет на диска (<storage>/keys/<N>-<отпечатък>/public.asc|private.asc) се
 // импортира при старт: без презапис, без дубликати. Ролите идват от subkeys/*.json,

@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.42
+# Състояние на изданието — hAPI Enterprise 0.69.43
 
-Версия: **0.69.42** · клон `main`
+Версия: **0.69.43** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,47 +14,44 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **212/212** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.42 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 347 файла · 58285 реда · **0** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 343 файла · 57921 реда · critical: 0 · high: 0 · medium: 0 · low: 151 — чисто |
+| Тестове | `node scripts/test-matrix.cjs` | **215/215** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.43 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 351 файла · 58567 реда · **0** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 347 файла · 58203 реда · critical: 0 · high: 0 · medium: 0 · low: 151 — чисто |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 24 RBAC способности, 33 опции, 212 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 24 RBAC способности, 33 опции, 215 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.42.tar.gz` | add-on архив (141 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.42.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.43.tar.gz` | add-on архив (142 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.43.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.42
+## 3. Какво влезе във 0.69.43
 
-Тестовете за панела вече проверяват РЕШЕНИЕТО на браузъра, а не само отговора на сървъра.
+Одит на целия код: три дефекта, намерени с живи проби срещу работещия сървър.
 
-- **Защо:** дефектът от 0.69.40 (`frame-ancestors 'none'` върху UI-я) мина през цялата
-  серия — документът беше 200, 23/23 ресурса се зареждаха, CSP имаше. Никой тест не
-  проверяваше дали браузърът има право да покаже документа в рамка, а панелът на add-on-а
-  в Home Assistant е точно рамка.
-- **Нов тест `tests/panel-framing.cjs`:**
-  - `tests/lib/csp-frame.cjs` — истински оценител на `frame-ancestors` по CSP3
-    (`'none'`, `'self'`, `*`, схема, host, порт по подразбиране, шаблон `*.host`,
-    няколко политики се налагат заедно); 15 случая.
-  - статичен скенер: ВСЯКО `res.writeHead` с `text/html` в `server.js` и `routes/*.js`
-    трябва да носи изрична политика с `frame-ancestors` — нова HTML повърхност без
-    решение чупи теста.
-  - жив сървър в ingress режим: панелът се вгражда от Home Assistant през
-    `/api/hassio_ingress/<token>` И през `/app/<slug>`, не се вгражда от чужд origin;
-    генераторът — същото; публичният портал — никъде.
-- **Поправени пропуски, които тестът намери веднага:** три HTML отговора нямаха решение
-  за вграждане — публичната начална страница (`/`) и QR-страницата вече са с
-  `frame-ancestors 'none'`, прегледът на файл — с `'self'`.
-- Доказано и в реален браузър: при същия origin панелът се рисува (Dashboard, 0.69.41),
-  при чужд origin Chrome отказва с „violates … frame-ancestors 'self'“ и рамката остава
-  празна — точно иконата, която потребителят виждаше.
+- **Теч на памет в ключалката на тайните.** `server.js` слагаше в Map
+  `previous.then(() => current)`, а изчистваше записа само при `get(id) === current` —
+  условие, което никога не е вярно. Всеки преглед на тайна оставяше запис завинаги;
+  изчистването беше мъртъв код. Ключалката е изнесена в `secret-lock.js`, помни точно
+  опашката, която влиза в Map, и я маха в `finally`. `server.js` падна до 2720 реда.
+- **500 вместо 400 за невалиден вход.** `POST /admin/api/qr-artifacts` с липсващ или
+  невалиден `qrId` връщаше `{"error":"Internal error"}` (500) и записваше „unhandled“
+  в лога. Сега `createArtifacts` хвърля с `status: 400` и клиентът вижда причината.
+- **Грешките на клиента се записваха като `ERROR … unhandled`.** Всяко очаквано
+  „Invalid JSON“/„Invalid case number“ пълнеше дневника като сървърна грешка и удавяше
+  истинските 500-ци. Сега 4xx е `warn` (`request.rejected`), а `error` + централизиран
+  дневник остава само за 5xx.
+- Тестове: `tests/secret-lock.cjs` (сериализация + 550 достъпа без остатък),
+  `tests/error-logging.cjs` (4xx не е ERROR), `tests/api-input-errors.cjs` (23 невалидни
+  входа срещу живия сървър — нито един 5xx, нито един „unhandled“), разширен
+  `tests/runtime-config.cjs` (отказът е 400 с причина). `tests/docker-runtime.cjs`
+  потвърждава, че новият модул влиза в образа — без него add-on-ът не стартира.
 
 ## 4. Как се проверява наново
 
