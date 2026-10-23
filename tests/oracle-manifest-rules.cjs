@@ -58,7 +58,12 @@ const pathOf = (errors, code) => (errors.find((e) => e.code === code) || {}).pat
 
   const unknownType = manifest.validate({ blocks: [START, { id: 'x', type: 'nope' }, STOP] });
   assert.equal(pathOf(unknownType.errors, 'UNKNOWN_BLOCK_TYPE'), 'blocks[1].type', 'пътят сочи ТОЧНО невалидния блок и полето');
-  assert.match(unknownType.errors.find((e) => e.code === 'UNKNOWN_BLOCK_TYPE').message, /title, text, table, image, qr, separator, signature, metadata, hash-table/, 'съобщението изброява позволените типове');
+  // Съобщението изброява позволените типове — и то ТЕЗИ ОТ СХЕМАТА, а не ръчно копие,
+  // което остарява при добавяне на нов блок (така се хвана пропуск при 0.69.35).
+  const unknownMessage = unknownType.errors.find((e) => e.code === 'UNKNOWN_BLOCK_TYPE').message;
+  for (const type of manifest.ELEMENT_TYPES) {
+    assert.ok(unknownMessage.includes(type), 'съобщението изброява позволените типове, липсва: ' + type);
+  }
 
   const middle = manifest.validate({ blocks: [START, { ...START, id: 's2', label: 'S2' }, STOP] });
   assert.ok(codeOf(middle.errors).includes('SYSTEM_BLOCK_IN_MIDDLE'), 'втори системен блок в средата се отказва');

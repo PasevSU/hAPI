@@ -768,6 +768,13 @@
       html += field('Подзаглавие', `<input id="p-subtitle" value="${esc(block.subtitle || '')}" />`);
     } else if (block.type === 'text') {
       html += field('Текст', `<textarea id="p-value" rows="4">${esc(block.value || '')}</textarea>`);
+    } else if (block.type === 'subtitle') {
+      html += field('Подзаглавие', `<input id="p-value" value="${esc(block.value || '')}" />`);
+    } else if (block.type === 'legal') {
+      html += field('Текст на декларацията', `<textarea id="p-value" rows="5">${esc(block.value || '')}</textarea>`);
+      html += `<p class="hint">Празно поле → в PDF-а се печата стандартната декларация на системата.</p>`;
+    } else if (block.type === 'pagebreak') {
+      html += `<p class="hint">Започва нова страница при печат и в PDF — съдържанието след блока отива на следващия лист.</p>`;
     } else if (block.type === 'qr') {
       html += field('Стойност (URL)', `<input id="p-value" value="${esc(block.value || '')}" />`);
     } else if (block.type === 'table') {
@@ -910,6 +917,21 @@
         }
         if (block.type === 'text') {
           return previewSection(block.label || 'Текст', `<div>${esc(block.value || '')}</div>`);
+        }
+        if (block.type === 'subtitle') {
+          return `<div class="pv-sub pv-section">${esc(block.value || block.label || 'Подзаглавие')}</div>`;
+        }
+        if (block.type === 'pagebreak') {
+          // Видима граница: в PDF-а това е реално нова страница, тук само се отбелязва.
+          return `<div class="pv-pagebreak"><span>нова страница</span></div>`;
+        }
+        if (block.type === 'legal') {
+          return previewSection(
+            block.label || 'Правна декларация',
+            `<div class="pv-legal">${esc(
+              block.value || 'Стандартната декларация на hAPI Enterprise се печата в PDF-а.',
+            )}</div>`,
+          );
         }
         if (block.type === 'metadata') {
           const items = block.items || [];

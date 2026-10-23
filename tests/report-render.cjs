@@ -90,4 +90,48 @@ const land = M.template('land');
 land.page.orientation = 'landscape';
 assert.throws(() => R.renderPdf(land), (e) => e.code === 'UNSUPPORTED_ORIENTATION');
 
+// 10. Подзаглавие, нова страница и правна декларация (0.69.35).
+const extra = M.template();
+extra.blocks.splice(
+  1,
+  0,
+  { id: 'sub1', type: 'subtitle', value: 'Раздел втори' },
+  { id: 'legal1', type: 'legal' },
+  { id: 'pb1', type: 'pagebreak' },
+);
+const extraBlocks = R.toPdfBlocks(extra, {});
+assert.ok(
+  extraBlocks.some((b) => b.type === 'h2' && b.text === 'Раздел втори'),
+  'подзаглавието е истинско h2, не уголемен параграф',
+);
+const pbIndex = extraBlocks.findIndex((b) => b.type === 'pagebreak');
+assert.ok(pbIndex > 0, 'новата страница е отделен блок');
+const legalText = extraBlocks
+  .filter((b) => b.type === 'p')
+  .map((b) => b.text)
+  .find((t) => /hAPI Enterprise/.test(t));
+assert.ok(legalText && legalText.length > 80, 'декларацията има текст по подразбиране, а не празен блок');
+// Собствен текст заменя стандартния; празният блок не се губи от манифеста.
+const customLegal = M.template();
+customLegal.blocks.splice(1, 0, { id: 'legal2', type: 'legal', value: 'Самостоятелна декларация.' });
+assert.ok(
+  R.toPdfBlocks(customLegal, {}).some((b) => b.type === 'p' && b.text === 'Самостоятелна декларация.'),
+  'собственият текст на декларацията се печата',
+);
+const extraPdf = R.renderPdf(extra, {});
+assert.ok(Buffer.isBuffer(extraPdf), 'новите блокове дават валиден PDF');
+// Броят страници се мери СРЕЩУ същия манифест без прекъсването: базовият шаблон вече
+// може да е на два листа, затова „повече от едно“ не доказва нищо.
+const noBreak = M.template();
+noBreak.blocks.splice(1, 0,
+  { id: 'sub1', type: 'subtitle', value: 'Раздел втори' },
+  { id: 'legal1', type: 'legal' },
+);
+const pageCount = (buf) => Number((buf.toString('latin1').match(/\/Count (\d+)/) || [])[1]);
+assert.equal(
+  pageCount(extraPdf),
+  pageCount(R.renderPdf(noBreak, {})) + 1,
+  'прекъсването на страница добавя точно един лист',
+);
+
 console.log('report-render OK');

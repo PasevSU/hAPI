@@ -10,6 +10,13 @@ const M = require('./report-manifest');
 const pdfWriter = require('./pdf-writer');
 
 const PLACEHOLDER = '—';
+// Текстът по подразбиране за „Правна декларация“: казва каквото е вярно за всеки отчет,
+// без да обещава заверка, която системата не извършва. Блокът може да се замени със свой
+// текст — тогава се печата той.
+const LEGAL_DEFAULT =
+  'Документът е издаден от електронната система hAPI Enterprise и отразява данните към момента на издаване. ' +
+  'Произходът на съдържанието се проверява по SHA-256 на манифеста, посочен в отчета. ' +
+  'Заверка на самоличност и на ръчен подпис се извършва извън системата, освен ако в отчета изрично не е отбелязано друго.';
 
 function bad(message, code, status = 400) {
   return Object.assign(new Error(message), { code, status });
@@ -98,6 +105,19 @@ function toPdfBlocks(manifest, options = {}) {
         if (block.value) out.push({ type: 'h1', text: String(block.value) });
         if (block.subtitle) out.push({ type: 'p', text: String(block.subtitle) });
         out.push({ type: 'hr' });
+        break;
+      case 'subtitle':
+        // Заглавие на раздел: истинско `h2` в PDF-а, а не уголемен параграф — така
+        // структурата на отчета се вижда и от програми, които четат PDF-а.
+        out.push({ type: 'h2', text: String(block.value || block.label || 'Подзаглавие') });
+        break;
+      case 'pagebreak':
+        // Ръчно прекъсване: pdf-writer започва нова страница на този блок.
+        out.push({ type: 'pagebreak' });
+        break;
+      case 'legal':
+        heading(block.label || 'Правна декларация');
+        out.push({ type: 'p', text: block.value ? String(block.value) : LEGAL_DEFAULT });
         break;
       case 'text':
         heading(block.label);

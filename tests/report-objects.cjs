@@ -8,7 +8,7 @@ const M = require('../hapi_enterprise/report-manifest.js');
 for (const o of objects.ready()) {
   assert.ok(M.ELEMENT_TYPES.includes(o.type), `ready тип не е в схемата: ${o.type}`);
 }
-assert.equal(objects.ready().length, 9);
+assert.equal(objects.ready().length, 12);
 
 // 2. Системните обекти са точно START/STOP.
 assert.deepEqual(objects.system().map((o) => o.type).sort(), [M.START, M.STOP].sort());
@@ -18,7 +18,12 @@ for (const o of objects.planned()) {
   assert.equal(M.ELEMENT_TYPES.includes(o.type), false, `planned тип е в схемата: ${o.type}`);
   assert.equal(objects.isReady(o.type), false);
 }
-assert.equal(objects.planned().length, 8);
+assert.equal(objects.planned().length, 5);
+assert.deepEqual(
+  objects.planned().map((o) => o.type).sort(),
+  ['certificate', 'columns', 'data-block', 'dynamic', 'logo'],
+  'остават само наистина несвършените обекти',
+);
 
 // 4. Всяка категория съществува и всеки обект е в нея.
 for (const o of objects.OBJECTS) {
@@ -35,7 +40,10 @@ assert.deepEqual(objects.byCategory('tables').map((o) => o.type).sort(), ['hash-
 assert.equal(objects.label('rfc3161-start'), 'RFC 3161 START');
 assert.equal(objects.label('pagebreak'), 'Нова страница');
 assert.equal(objects.isReady('table'), true);
-assert.equal(objects.isReady('pagebreak'), false);
+assert.equal(objects.isReady('pagebreak'), true, 'нова страница вече е готов блок');
+assert.equal(objects.isReady('subtitle'), true, 'подзаглавие вече е готов блок');
+assert.equal(objects.isReady('legal'), true, 'правната декларация вече е готов блок');
+assert.equal(objects.isReady('columns'), false, 'колоните остават планирани');
 assert.equal(objects.get('nope'), null);
 
 // 7. Defaults съдържат това, което newBlock очаква.

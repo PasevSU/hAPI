@@ -2704,6 +2704,38 @@ input[type="radio"] {
   color: #667085;
 }
 
+/* Блок „Подзаглавие“: заглавие на раздел (в PDF-а е истинско h2, не параграф). */
+.a4 .pv-section {
+  text-align: left;
+  font-weight: 700;
+  font-size: 92%;
+  color: #0b3b63;
+}
+
+/* Блок „Нова страница“: в PDF-а започва нов лист; тук само се отбелязва границата. */
+.a4 .pv-pagebreak {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 66%;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.a4 .pv-pagebreak::before,
+.a4 .pv-pagebreak::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed #98a2b3;
+}
+
+/* Блок „Правна декларация“. */
+.a4 .pv-legal {
+  font-size: 74%;
+  color: #475467;
+}
+
 .a4 .pv-marker {
   display: flex;
   justify-content: space-between;

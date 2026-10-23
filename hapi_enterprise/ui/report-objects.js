@@ -22,7 +22,7 @@
   const OBJECTS = [
     { type: 'title', category: 'text', label: 'Заглавие & титул', icon: 'T', status: 'ready', defaults: { value: 'Заглавие на отчета' } },
     { type: 'text', category: 'text', label: 'Текст', icon: '¶', status: 'ready', defaults: { value: '' } },
-    { type: 'subtitle', category: 'text', label: 'Подзаглавие', icon: 'ᴛ', status: 'planned' },
+    { type: 'subtitle', category: 'text', label: 'Подзаглавие', icon: 'ᴛ', status: 'ready', defaults: { value: 'Подзаглавие' } },
     { type: 'metadata', category: 'data', label: 'Метаданни', icon: '☰', status: 'ready', defaults: { items: [{ key: 'Ключ', value: 'Стойност' }] } },
     { type: 'data-block', category: 'data', label: 'Системни данни', icon: '▤', status: 'planned' },
     { type: 'table', category: 'tables', label: 'Таблица', icon: '▦', status: 'ready', defaults: { source: 'records:1000', columns: ['name'] } },
@@ -35,9 +35,9 @@
     { type: 'rfc3161-start', category: 'certificate', label: 'RFC 3161 START', icon: '▶', status: 'system', locked: true },
     { type: 'rfc3161-stop', category: 'certificate', label: 'RFC 3161 STOP', icon: '■', status: 'system', locked: true },
     { type: 'separator', category: 'layout', label: 'Разделител', icon: '—', status: 'ready', defaults: {} },
-    { type: 'pagebreak', category: 'layout', label: 'Нова страница', icon: '⤓', status: 'planned' },
+    { type: 'pagebreak', category: 'layout', label: 'Нова страница', icon: '⤓', status: 'ready', defaults: {} },
     { type: 'columns', category: 'layout', label: 'Колони', icon: '▥', status: 'planned' },
-    { type: 'legal', category: 'legal', label: 'Правна декларация', icon: '§', status: 'planned' },
+    { type: 'legal', category: 'legal', label: 'Правна декларация', icon: '§', status: 'ready', defaults: { value: '' } },
     { type: 'dynamic', category: 'dynamic', label: 'Динамичен блок', icon: '⚙', status: 'planned' },
   ];
 

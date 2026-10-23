@@ -23,11 +23,14 @@ const STOP = 'rfc3161-stop';
 const SYSTEM_TYPES = [START, STOP];
 const ELEMENT_TYPES = [
   'title',
+  'subtitle',
   'text',
+  'legal',
   'table',
   'image',
   'qr',
   'separator',
+  'pagebreak',
   'signature',
   'metadata',
   'hash-table',
