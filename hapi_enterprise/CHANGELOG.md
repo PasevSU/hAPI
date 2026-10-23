@@ -1,31 +1,24 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.49**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.50**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.49
+## 0.69.50
 
-Един договор за адресите и за директорията — и един модул, който ги строи.
+Одит на всички издания: какво е имало и го няма, и какво е обещано и го няма.
 
-- **Проблемът (измерен, не предположен):** адресите се строеха на **седем места по три
-  различни правила** — `portalApiUrl`/`portalLandingUrl` в `server.js`, `'/s/' + id` в
-  `send.js`, HTML проектите относително и веднъж с наклон в края, веднъж без,
-  `${prefix}/manifest` в `api-spec.js`, `downloadUrl` в `server.js` и `report-scope.js`, и
-  три различни „базови адреса“ в панела (`portals.js`, `secret-share.js`,
-  `files-manager.js`). Затова един и същ портал имаше различен запис според секцията.
-- **Ново:** `hapi_enterprise/links.js` — единственото място за адреси (чист модул, работи и
-  в браузър): `portalLandingPath` (`/p/<id>`), `portalApiPath` (`/api/v1/p/<slug>`),
-  `portalApiFilePath`, `htmlProjectPath` (`/site/<slug>/<projectId>/`),
-  `htmlProjectBasePath` (същият без наклон — за `Location`/`Cookie`), `sendPath` (`/s/<id>`),
-  `secretLink` (`…/secret#<id><ключ>`), `adminApiPath`, `baseFromRequest`,
-  `baseFromLocation`. Всички места в сървъра и панела вече ги ползват.
-- **Поправени разминавания:** HTML проектът се връщаше относително и без наклон, а се
-  сервираше с наклон; `sends` в `send.js` беше относително, а в `server.js` — абсолютно;
-  `publicPortal.urls` строеше `manifest`/`openapi.json`/`qr.svg`/`package` с `+`.
-- **Договор:** нов `documentation/02_TO_BE_ARCHITECTURE/LINK_AND_STORAGE_CONTRACT.md` —
-  таблица на всички адреси, правилата (относителен път, id срещу slug, наклон за папка,
-  базов адрес от заявка/страница) и **подредбата на DATA_DIR** (файлове, прикачени, api,
-  html-projects, secrets, tsa, backups, keys, jobs, qr-records, generator) + договорът за
-  криптираната връзка: целият път и ключът живеят след `#`, сървърът вижда само `sha256(id)`.
-- **Тест:** `tests/links-contract.cjs` — форми и кодиране, базов адрес от заявка и от
-  страница (вкл. Ingress префикс), статична забрана някой друг файл да строи тези адреси, и
-  жива проверка: адресите, които сървърът връща, съвпадат с builder-а и отговарят.
+- **Нов инструмент:** `node scripts/release-audit.cjs` сравнява ВСЕКИ таг (55 тага) с
+  текущото дърво по файлове, функции по модул, секции в панела и опции на add-on-а и пише
+  `reports/RELEASE-AUDIT.md`. Не е гейт — отчет за хора.
+- **Резултат за историята:** файлове 142 → 149, функции 1430 → 1468, секции 17 (без
+  промяна), опции 33 (без промяна) от v0.69.37 до сега. Няма тихо изчезнал файл или
+  функция: 13-те „липсващи“ файла и 11-те функции имат документирани заместници
+  (`portal_enterprise` → `hapi_enterprise`, `admin.js` → `ui/` в 0.69.8, `withSecretLock` →
+  `secret-lock.js`, `merge/mergeLists/equal/giveUp` → `reconcile()`, `loginGate` → вход
+  само през Supervisor/loopback, `visitor_trust_proxy` → конзолата + `TRUST_PROXY`).
+- **Резултат за обещаното:** кодът сам обявява какво още не е направено — 6 експортни
+  способности (`compression`, `split_archive`, `rate_limit`, `parallel_transfers`,
+  `encrypt_package`, `resume_transfer`), 4 типа обекти в Report Studio (`logo`,
+  `certificate`, `columns`, `dynamic`) и 5 документирани функции (FD-7 SMB, FD-8 USB,
+  FD-9 Save Template, RS-06 veraPDF, W8/F9 Windows Edition).
+- Проверките гледат КОД, не коментари и не етикети: „SMB / NAS“ е име на местоназначение,
+  а „валидатор като veraPDF“ е описание на липсата — и двете не се броят за реализация.
