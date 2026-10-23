@@ -62,14 +62,16 @@
 
 ## 4. Рестартирай и провери
 
-След рестарт виж състоянието (⏳ 0.69.67 — маршрутът още не съществува):
+След рестарт виж състоянието (маршрутът съществува от 0.69.67):
 
 ```
 GET /admin/api/pgp/keyring
 ```
 
-Очаквано: `available: true`, `encryptionKeyId` = подключът `encrypt-storage`, `hasPrivate: true`,
-`passphraseAccepted: true`. Отговорът **никога** не съдържа паролата или част от ключа.
+Очаквано: `available: true`, `canDecrypt: true`, `storageKeyId` = подключът `encrypt-storage`,
+`primaryKeyId` = основният ключ, `passphraseSource`: `option` (от `pgp_key_pass`) или `file`
+(първият ред на `pgp_path_pass`), `reason` празно. Отговорът **никога** не съдържа паролата,
+пътя до файла или част от ключа (`INV-P7`).
 
 ## 5. Включи криптирането
 
