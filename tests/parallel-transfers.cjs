@@ -57,8 +57,11 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
     const url = `${base}/admin/api/packages/${pkg.id}/download`;
     const probe = async () => {
       const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token, Range: 'bytes=0-0' } });
-      await r.body.cancel().catch(() => { /* тялото не ни трябва */ });
-      return { status: r.status, headers: r.headers };
+      // Тялото се чете докрай: прекратен отговор оставя мъртва връзка в пула и следващата
+      // заявка пада с „fetch failed“ (виждано на Linux в CI).
+      const headers = r.headers;
+      await r.arrayBuffer();
+      return { status: r.status, headers };
     };
     const head = await probe();
     assert.equal(head.status, 206, 'Range 0-0 връща частично съдържание');

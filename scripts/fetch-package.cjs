@@ -28,6 +28,8 @@ function arg(argv, name) {
 
 // Проба с Range 0-0 вместо HEAD: сървърът маршрутизира само GET, а частичната заявка
 // дава и размера (Content-Range), и поддръжката на Range — без да тегли файла.
+// Тялото се ЧЕТЕ докрай (1 байт), а не се прекратява: прекратен отговор оставя
+// полуотворена връзка в пула на клиента и следващата заявка пада с „fetch failed“.
 async function probe(url, token) {
   const res = await fetch(url, { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), Range: 'bytes=0-0' } });
   if (res.status !== 206 && res.status !== 200) throw new Error(`пробата върна ${res.status}`);
@@ -38,7 +40,7 @@ async function probe(url, token) {
     ranges: res.status === 206 || (res.headers.get('accept-ranges') || '').toLowerCase().includes('bytes'),
     chunks: Number(res.headers.get('x-parallel-chunks')) || 0,
   };
-  if (res.body && typeof res.body.cancel === 'function') await res.body.cancel().catch(() => { /* тялото не ни трябва */ });
+  await res.arrayBuffer(); // прочитаме 1-2 байта, за да не остане висяща връзка
   return info;
 }
 
