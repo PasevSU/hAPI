@@ -33,11 +33,23 @@ let step = 'старт';
     stdio: 'ignore',
   });
   const base = `http://127.0.0.1:${port}`;
-  const call = async (p, method = 'GET', data, headers = {}) => {
+  const once = async (p, method = 'GET', data, headers = {}) => {
     const r = await fetch(base + p, { method, headers: { Authorization: 'Bearer ' + token, ...headers }, body: data });
     const type = r.headers.get('content-type') || '';
     const value = type.includes('application/json') ? await r.json() : await r.arrayBuffer();
     return { status: r.status, value, headers: r.headers };
+  };
+  // При пауза (докато текат дъщерните процеси на CLI) сървърът затваря бездействащата
+  // връзка (keep-alive 5 s), а клиентът може да я вземе от пула си и да падне с
+  // UND_ERR_SOCKET. Това е свойство на КЛИЕНТА, не на продукта — затова се повтаря веднъж.
+  const call = async (p, method = 'GET', data, headers = {}) => {
+    try {
+      return await once(p, method, data, headers);
+    } catch (e) {
+      if (!/fetch failed|UND_ERR_SOCKET/i.test(String(e && e.message))) throw e;
+      await new Promise((r) => setTimeout(r, 200));
+      return once(p, method, data, headers);
+    }
   };
   try {
     let ready = false;
@@ -61,9 +73,13 @@ let step = 'старт';
     step = 'проба';
     const url = `${base}/admin/api/packages/${pkg.id}/download`;
     const probe = async () => {
-      const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token, Range: 'bytes=0-0' } });
-      // Тялото се чете докрай: прекратен отговор оставя мъртва връзка в пула и следващата
-      // заявка пада с „fetch failed“ (виждано на Linux в CI).
+      const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token, Range: 'bytes=0-0' } }).catch(async (e) => {
+        // същата причина като в `call`: мъртва връзка от пула след пауза
+        if (!/fetch failed|UND_ERR_SOCKET/i.test(String(e && e.message))) throw e;
+        await new Promise((res) => setTimeout(res, 200));
+        return fetch(url, { headers: { Authorization: 'Bearer ' + token, Range: 'bytes=0-0' } });
+      });
+      // Тялото се чете докрай: прекратен отговор оставя мъртва връзка в пула.
       const headers = r.headers;
       await r.arrayBuffer();
       return { status: r.status, headers };
