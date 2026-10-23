@@ -100,14 +100,15 @@ assert.equal(R.validateConfig({ ...R.normalizeConfig({ mode: 'report' }), packag
 
 // 9. Capabilities: готово е САМО това, което наистина работи.
 // `compression` стана реална в 0.69.51 (нива 0–9, 0 = без компресия) — виж
-// `tests/package-compression.cjs`. Останалите пет остават изрично „планирано“.
+// `tests/package-compression.cjs`; `encrypt_package` в 0.69.52 (hapiPKG1, AES-256-GCM)
+// — виж `tests/package-encryption.cjs`. Останалите четири остават изрично „планирано“.
 const caps = R.capabilities();
 assert.equal(caps.length, 6);
 const ready = caps.filter((c) => c.implemented).map((c) => c.id);
-assert.deepEqual(ready, ['compression'], 'готова е само компресията');
+assert.deepEqual(ready, ['compression', 'encrypt_package'], 'готови са компресията и криптирането');
 assert.equal(caps.find((c) => c.id === 'compression').status, 'ready');
 assert.ok(
-  caps.filter((c) => c.id !== 'compression').every((c) => c.implemented === false && c.status === 'planned'),
+  caps.filter((c) => !c.implemented).every((c) => c.status === 'planned'),
   'останалите са планирани'
 );
 

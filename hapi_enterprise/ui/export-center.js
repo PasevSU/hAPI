@@ -26,7 +26,7 @@
     // Отговорът от add-on-а: правила и последен preflight.
     srv: { rules: null, rulesError: '', preflight: null, preflightError: '', busy: false },
     // Реален експорт (свързан режим): портал и последен пакет.
-    pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default' },
+    pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default', encryption: 'none', password: '', generatedPassword: '' },
   };
 
   const base = () =>
@@ -89,6 +89,73 @@
       lines.push(`${last ? '└──' : '├──'} ${e.kind === 'folder' ? `${e.path}/` : e.path}`);
     });
     return lines.join('\n');
+  }
+
+  /** Панелът „Пакет и PGP подпис“ — отделна функция, за да остане разметката четима. */
+  function packagePanelHtml() {
+    const p = state.pkg;
+    const dis = connected() ? '' : 'disabled';
+    const off = connected() && p.encryption === 'password' ? '' : 'disabled';
+    const badge = connected() ? '<span class="badge ok">реален експорт</span>' : '<span class="badge demo">изисква връзка</span>';
+    const portals = (p.portals || [])
+      .map((x) => `<option value="${esc(x.id)}" ${p.portalId === x.id ? 'selected' : ''}>${esc(x.title)} (${esc(x.slug)})</option>`)
+      .join('');
+    const option = (value, current, label) => `<option value="${value}" ${current === value ? 'selected' : ''}>${label}</option>`;
+    const stateLine = !connected()
+      ? 'Демо: създаването на пакет изисква свързан add-on.'
+      : p.error
+        ? esc(p.error)
+        : p.last
+          ? lastPackageHtml(p)
+          : 'Избери портал и натисни „Създай и изтегли пакета“.';
+    return `
+      <section class="panel u-mt">
+        <div class="panel-head"><h2>Пакет и PGP подпис</h2>${badge}</div>
+        <div class="panel-body">
+          <p class="hint">Пакетът е ZIP с <code>PACKAGE_INDEX.json</code>, <code>hashes/sha256sum.txt</code>, манифест и оригиналите. Дали се подписва с PGP се задава в <strong>„Настройки → PGP ключ и автоподписване“</strong> — тук не се пита.</p>
+          <div class="u-grid u-grid-fields">
+            <div class="field"><label>Портал</label>
+              <select id="ec-pkg-portal" ${dis}>${portals}</select>
+            </div>
+            <div class="field"><label>Компресия на пакета</label>
+              <select id="ec-pkg-compression" ${dis}>
+                ${option('none', p.compression, 'Без компресия (0)')}
+                ${option('default', p.compression, 'Обичайна (6)')}
+                ${option('max', p.compression, 'Максимална (9)')}
+              </select>
+            </div>
+            <div class="field"><label>Криптиране на пакета</label>
+              <select id="ec-pkg-encryption" ${dis}>
+                ${option('none', p.encryption, 'Без криптиране')}
+                ${option('password', p.encryption, 'С парола (AES-256-GCM)')}
+              </select>
+            </div>
+            <div class="field"><label>Парола за пакета</label>
+              <input type="password" id="ec-pkg-password" autocomplete="new-password" placeholder="минимум 8 знака · празно = генерирана"
+                value="${esc(p.password)}" ${off} />
+            </div>
+          </div>
+          <div class="u-row u-row-4 u-mt">
+            <button type="button" class="btn btn-primary" id="ec-pkg-build" ${dis}>Създай и изтегли пакета</button>
+            <button type="button" class="btn" id="ec-pkg-zip" ${p.last ? '' : 'disabled'}>Свали ZIP</button>
+            <button type="button" class="btn" id="ec-pkg-asc" ${p.last && p.last.hasSignature ? '' : 'disabled'}>Свали .asc</button>
+            <button type="button" class="btn" id="ec-pkg-verify" ${p.last && p.last.hasSignature ? '' : 'disabled'}>Провери подписа</button>
+          </div>
+          <p class="hint" id="ec-pkg-state">${stateLine}</p>
+        </div>
+      </section>`;
+  }
+
+  function lastPackageHtml(p) {
+    const last = p.last;
+    const sig = last.hasSignature ? `подпис ${esc(last.signature.keyId)}` : 'без подпис';
+    const enc = last.hasEncryption ? `криптиран (${esc(last.encryption.cipher)})` : 'без криптиране';
+    const pass = p.generatedPassword
+      ? ` · <strong>генерирана парола: <code>${esc(p.generatedPassword)}</code></strong> (показва се само сега)`
+      : '';
+    const head = `Последен пакет: <code>${esc(last.fileName)}</code> · ${last.files} файла`;
+    const sum = `SHA-256 <code>${esc(String(last.sha256).slice(0, 8))}</code>`;
+    return `${head} · ${sum} · ${sig} · ${enc}${pass}`;
   }
 
   function render() {
@@ -219,43 +286,7 @@
         </div>
       </section>
 
-      <section class="panel u-mt">
-        <div class="panel-head"><h2>Пакет и PGP подпис</h2><span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'реален експорт' : 'изисква връзка'
-      }</span></div>
-        <div class="panel-body">
-          <p class="hint">Пакетът е ZIP с <code>PACKAGE_INDEX.json</code>, <code>hashes/sha256sum.txt</code>, манифест и оригиналите. Дали се подписва с PGP се задава в <strong>„Настройки → PGP ключ и автоподписване“</strong> — тук не се пита.</p>
-          <div class="u-grid u-grid-fields">
-            <div class="field"><label>Портал</label>
-              <select id="ec-pkg-portal" ${connected() ? '' : 'disabled'}>
-                ${(state.pkg.portals || []).map((p) => `<option value="${esc(p.id)}" ${state.pkg.portalId === p.id ? 'selected' : ''}>${esc(p.title)} (${esc(p.slug)})</option>`).join('')}
-              </select>
-            </div>
-            <div class="field"><label>Компресия на пакета</label>
-              <select id="ec-pkg-compression" ${connected() ? '' : 'disabled'}>
-                <option value="none" ${state.pkg.compression === 'none' ? 'selected' : ''}>Без компресия (0)</option>
-                <option value="default" ${state.pkg.compression === 'default' ? 'selected' : ''}>Обичайна (6)</option>
-                <option value="max" ${state.pkg.compression === 'max' ? 'selected' : ''}>Максимална (9)</option>
-              </select>
-            </div>
-          </div>
-          <div class="u-row u-row-4 u-mt">
-            <button type="button" class="btn btn-primary" id="ec-pkg-build" ${connected() ? '' : 'disabled'}>Създай и изтегли пакета</button>
-            <button type="button" class="btn" id="ec-pkg-zip" ${state.pkg.last ? '' : 'disabled'}>Свали ZIP</button>
-            <button type="button" class="btn" id="ec-pkg-asc" ${state.pkg.last && state.pkg.last.hasSignature ? '' : 'disabled'}>Свали .asc</button>
-            <button type="button" class="btn" id="ec-pkg-verify" ${state.pkg.last && state.pkg.last.hasSignature ? '' : 'disabled'}>Провери подписа</button>
-          </div>
-          <p class="hint" id="ec-pkg-state">${!connected()
-        ? 'Демо: създаването на пакет изисква свързан add-on.'
-        : state.pkg.error
-          ? esc(state.pkg.error)
-          : state.pkg.last
-            ? `Последен пакет: <code>${esc(state.pkg.last.fileName)}</code> · ${state.pkg.last.files} файла · SHA-256 <code>${esc(
-              String(state.pkg.last.sha256).slice(0, 8),
-            )}</code> · ${state.pkg.last.hasSignature ? `подпис ${esc(state.pkg.last.signature.keyId)}` : 'без подпис'}`
-            : 'Избери портал и натисни „Създай и изтегли пакета“.'
-      }</p>
-        </div>
-      </section>
+      ${packagePanelHtml()}
 
       <section class="panel u-mt">
         <div class="panel-head">
@@ -387,13 +418,19 @@
     if (!p.portalId) return toast('Избери портал', 'err');
     p.error = '';
     // `sign`/`keyId` не се подават: add-on-ът прилага запазените настройки от „Настройки“.
-    const r = await api('/admin/api/packages', { method: 'POST', json: { portalId: p.portalId, compression: p.compression } });
+    const body = { portalId: p.portalId, compression: p.compression };
+    if (p.encryption === 'password') {
+      body.encryption = 'password';
+      if (p.password) body.password = p.password;
+    }
+    const r = await api('/admin/api/packages', { method: 'POST', json: body });
     if (!r.ok) {
       p.error = r.error || `HTTP ${r.status}`;
       toast(p.error, 'err');
       return render();
     }
     p.last = r.data;
+    p.generatedPassword = r.data.generatedPassword || '';
     toast(`Пакет ${r.data.fileName} · ${r.data.files} файла`, 'ok');
     render();
     await download(`${base()}/admin/api/packages/${r.data.id}/download`, r.data.fileName);
@@ -408,6 +445,13 @@
         p.portalId = e.target.value;
       });
       if (q('#ec-pkg-compression')) q('#ec-pkg-compression').addEventListener('change', (e) => { p.compression = e.target.value; });
+      if (q('#ec-pkg-encryption')) {
+        q('#ec-pkg-encryption').addEventListener('change', (e) => {
+          p.encryption = e.target.value;
+          render();
+        });
+      }
+      if (q('#ec-pkg-password')) q('#ec-pkg-password').addEventListener('input', (e) => { p.password = e.target.value; });
       q('#ec-pkg-build').addEventListener('click', () => buildPackage());
       q('#ec-pkg-zip').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/download`, p.last.fileName));
       q('#ec-pkg-asc').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/signature`, `${p.last.fileName}.asc`));

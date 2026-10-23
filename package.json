@@ -1,6 +1,6 @@
 {
   "name": "hapi-enterprise",
-  "version": "1.0.0",
+  "version": "0.69.52",
   "private": true,
   "description": "hAPI Enterprise — документи и портали между Home Assistant и Windows",
   "scripts": {

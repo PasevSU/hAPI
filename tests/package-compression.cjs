@@ -79,7 +79,7 @@ function firstEntryMethod(buf) {
   const compression = caps.find((c) => c.id === 'compression');
   assert.equal(compression.implemented, true, 'compression е обявена за готова');
   assert.equal(compression.status, 'ready', 'compression има статус ready');
-  const stillPlanned = caps.filter((c) => c.id !== 'compression');
+  const stillPlanned = caps.filter((c) => c.id !== 'compression' && c.id !== 'encrypt_package');
   assert.deepEqual(stillPlanned.filter((c) => c.implemented), [], 'останалите още не са готови');
 
   fs.rmSync(dir, { recursive: true, force: true });

@@ -18,6 +18,7 @@ const crypto = require('node:crypto');
 const ooxml = require('./ooxml');
 const rules = require('./export-rules');
 const pgp = require('./pgp');
+const pkgcrypto = require('./package-crypto');
 
 const MAX_FILES = 5000;
 const MAX_TOTAL_BYTES = 256 * 1024 * 1024;
@@ -52,6 +53,21 @@ function compressionLevel(value) {
 
 function sha256(buf) {
   return crypto.createHash('sha256').update(buf).digest('hex');
+}
+
+// Криптиране на ЦЕЛИЯ пакет (не на отделен файл). Режимът е именуван; непознат режим е
+// 400, а не тихо „без криптиране“. Ако липсва парола, add-on-ът генерира такава и я връща
+// ЕДИН път в отговора — на диска паролата не се записва никъде.
+const ENCRYPTION_MODES = ['none', 'password'];
+function encryptionSpec(value, password) {
+  if (value === undefined || value === null || value === '' || value === false) return null;
+  const mode = value === true ? 'password' : String(value).toLowerCase();
+  if (!ENCRYPTION_MODES.includes(mode)) throw bad('Непознат режим на криптиране: ' + value, 400);
+  if (mode === 'none') return null;
+  const given = String(password == null ? '' : password);
+  if (given && given.length < pkgcrypto.MIN_PASSWORD) throw bad(`Паролата трябва да е поне ${pkgcrypto.MIN_PASSWORD} знака`, 400);
+  if (given.length > pkgcrypto.MAX_PASSWORD) throw bad(`Паролата е по-дълга от ${pkgcrypto.MAX_PASSWORD} знака`, 400);
+  return { mode, password: given };
 }
 
 /** Всички налични хешове на буфер (един проход на алгоритъм, но върху памет). */
@@ -105,9 +121,12 @@ function create({ root }) {
    *           пакет не слага файлове с ключ/забранени, а манифестът казва кои са те).
    * origin:   'public' — пакетът е поискан от публичната страница, не от администратора.
    */
-  async function build({ portal, files, sign, now, ttlHours, excluded, origin, compression }) {
+  async function build({ portal, files, sign, now, ttlHours, excluded, origin, compression, encryption, password }) {
     const list = Array.isArray(files) ? files : [];
     const level = compressionLevel(compression);
+    // Криптирането се решава ПРЕДИ писането: невалидна парола трябва да върне 400, а не
+    // да остави половин пакет на диска.
+    const sealSpec = encryptionSpec(encryption, password);
     if (!list.length) throw bad('Пакетът е празен — няма файлове', 400);
     if (list.length > MAX_FILES) throw bad(`Твърде много файлове (макс. ${MAX_FILES})`, 413);
     const total = list.reduce((sum, f) => sum + (f && f.data ? f.data.length : 0), 0);
@@ -216,13 +235,35 @@ function create({ root }) {
     ];
     const zipBuffer = ooxml.zip(zipEntries, { level });
     const zipSha256 = sha256(zipBuffer);
+    // ── Криптиране на целия пакет (AES-256-GCM, scrypt) ──────────────────────
+    // Плаща се само ако е поискано. `sha256` в индекса остава хешът на ZIP-а ПРЕДИ
+    // криптиране, за да може получателят да свери съдържанието след разшифроване;
+    // хешът на самия доставян файл е в `encryption.sha256`.
+    let payload = zipBuffer;
+    let sealed = null;
+    let generatedPassword = '';
+    if (sealSpec) {
+      generatedPassword = sealSpec.password ? '' : pkgcrypto.generatePassword();
+      payload = await pkgcrypto.encrypt(zipBuffer, sealSpec.password || generatedPassword);
+      sealed = {
+        ...pkgcrypto.describe(),
+        mode: sealSpec.mode,
+        bytes: payload.length,
+        packageBytes: zipBuffer.length,
+        sha256: sha256(payload),
+        packageSha256: zipSha256,
+        passwordGenerated: Boolean(generatedPassword),
+      };
+    }
     const slug = safeName((portal && portal.slug) || 'package').replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 60);
-    const fileName = `${slug}-${stamp(now instanceof Date ? now : new Date())}.zip`;
+    const fileName = `${slug}-${stamp(now instanceof Date ? now : new Date())}.zip${sealed ? '.enc' : ''}`;
 
     let signed = null;
     let armored = '';
     if (sign && sign.secretArmored) {
-      const result = pgp.signDetached(zipBuffer, sign.secretArmored);
+      // Подписът покрива ДОСТАВЯНИЯ файл (шифротекста, ако има криптиране) — иначе
+      // получателят не може да провери това, което държи в ръка.
+      const result = pgp.signDetached(payload, sign.secretArmored);
       armored = result.armored;
       signed = {
         keyId: result.keyId,
@@ -239,7 +280,9 @@ function create({ root }) {
     const meta = {
       id,
       fileName,
-      size: zipBuffer.length,
+      // `size` е размерът на ДОСТАВЯНИЯ файл (контейнерът, ако има криптиране) — това е
+      // числото, което трябва да съвпада с това, което получателят изтегля.
+      size: payload.length,
       sha256: zipSha256,
       createdAt,
       expiresAt: new Date(Date.parse(createdAt) + ttl * 3600_000).toISOString(),
@@ -252,6 +295,8 @@ function create({ root }) {
       bytes: total,
       entries: zipEntries.length,
       compression: { level, method: level === 0 ? 0 : 8, name: level === 0 ? 'store' : 'deflate' },
+      encryption: sealed,
+      hasEncryption: Boolean(sealed),
       signature: signed
         ? { ...signature, keyId: signed.keyId, fingerprint: signed.fingerprint, hash: signed.hash, signedAt: signed.createdAt }
         : signature,
@@ -260,10 +305,11 @@ function create({ root }) {
     if (origin) meta.origin = String(origin);
     if (skipped.length) meta.excluded = skipped.length;
 
-    await writeAtomic(zipPath(id), zipBuffer);
+    await writeAtomic(zipPath(id), payload);
     if (armored) await writeAtomic(sigPath(id), Buffer.from(armored, 'utf8'));
     await writeAtomic(metaPath(id), Buffer.from(JSON.stringify(meta, null, 2), 'utf8'));
-    return meta;
+    // Паролата се връща САМО тук и само когато е генерирана — в <id>.json я няма.
+    return generatedPassword ? { ...meta, generatedPassword } : meta;
   }
 
   async function readMeta(id) {

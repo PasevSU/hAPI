@@ -386,7 +386,10 @@
   // Кое е РЕАЛНО готово. Списъкът е изричен, за да не се обявява способност за готова
   // със самата си наличност в масива: `compression` е готова от 0.69.51 (нива 0–9, 0 =
   // без компресия; виж `packager.compressionLevel`), останалите още не са.
-  const READY = { compression: { implemented: true, status: 'ready' } };
+  const READY = {
+    compression: { implemented: true, status: 'ready' },
+    encrypt_package: { implemented: true, status: 'ready' },
+  };
 
   function capabilities() {
     return CAPABILITIES.map((c) => Object.assign({}, c, READY[c.id] || { implemented: false, status: 'planned' }));
