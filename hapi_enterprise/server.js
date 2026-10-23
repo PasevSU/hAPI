@@ -770,6 +770,10 @@ const reportsRoutes = require('./routes/reports').create({
 
 const generatorRoutes = require('./routes/generator').create({ generator, adminGate, audit, json, fail, parse });
 const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion });
+const linkCheck = require('./routes/link-check').create({
+  json, fail, parse, audit, adminGate, baseUrl,
+  publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
+});
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
 const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update });
 async function handler(req, res) {
@@ -2106,6 +2110,8 @@ async function handler(req, res) {
     }
     if (parts[0] === 'admin' && parts[1] === 'api') {
       if (await adminDocs.handle({ req, res, url, method })) return;
+      // Проверка дали публичният адрес наистина се отваря — компонент `routes/link-check.js`.
+      if (await linkCheck.handle({ req, res, url, method })) return;
       if (!adminGate(req, res, 'portals', method)) return; if (parts[2] === 'taxonomy' && parts.length === 3) {
         const tx = () => ({ categories: [...((db.taxonomy || {}).categories || [])], groups: [...((db.taxonomy || {}).groups || [])] });
         if (method === 'GET') return json(res, 200, tx());

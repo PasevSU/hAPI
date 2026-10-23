@@ -71,8 +71,17 @@ assert.match(directory, /data-case/);
 assert.match(directory, /class="u-row u-row-2/);
 
 // 5. Публичните препратки ползват публичния адрес, а не Ingress пътя.
-assert.match(filesManager, /const publicBase = \(\) => \(state\.publicBaseUrl \|\| base\(\)/);
-assert.match(filesManager, /buildApiRecord\(portalObj, \{ baseUrl: publicBase\(\) \}\)/);
+// От 0.69.66 `publicBase()` НЕ измисля адрес (преди падаше към
+// `https://portal.example.com`), а `linkBase()` дава един източник за връзките:
+// публичният адрес, а когато няма такъв — адресът на панела.
+assert.match(filesManager, /const publicBase = \(\) => String\(state\.publicBaseUrl \|\| ''\)/);
+assert.match(filesManager, /const linkBase = \(\) => publicBase\(\) \|\| base\(\)/);
+assert.match(filesManager, /buildApiRecord\(portalObj, \{ baseUrl: linkBase\(\) \}\)/);
+assert.ok(!filesManager.includes('https://portal.example.com'), 'панелът не измисля публичен адрес');
+// Подписаният URL се строи на `linkBase()`, не на `location.origin` — под Ingress
+// `location.origin` е адресът на Home Assistant и получателят получава 401/404.
+assert.match(filesManager, /state\.signed\[f\.id\] = linkBase\(\) \+ r\.data\.path/);
+assert.ok(!filesManager.includes('${location.origin}${r.data.path}'), 'подписаният URL не се строи от location.origin');
 // Адресът за изтегляне вече е ПОДПИСАН (за FREE) или администраторски — старият gateway
 // път искаше ключ и в браузър даваше 403 (вж. tests/file-link-works.cjs).
 assert.match(filesManager, /files\/\$\{f\.id\}\/signed-url/);

@@ -725,9 +725,17 @@
   const defaultBase = () =>
     window.hapiApiBase ? window.hapiApiBase() : (location.protocol === 'file:' ? '' : location.origin + ingressPrefix());
   const base = () => (localStorage.getItem('hapi.apiBase') || defaultBase()).replace(/\/$/, '');
-  // Адрес за ПУБЛИЧНИТЕ препратки (api.json, QR). При Home Assistant Ingress
-  // адресът на интерфейса не е публичен, затова се ползва сървърната настройка.
-  const publicBase = () => (state.publicBaseUrl || base() || 'https://portal.example.com').replace(/\/$/, '');
+  // Адрес за ПУБЛИЧНИТЕ препратки (api.json, QR, подписан URL). При Home Assistant
+  // Ingress адресът на интерфейса не е публичен — той иска вход в HA, затова се ползва
+  // сървърната настройка `limits.publicBaseUrl`.
+  //
+  // Празен string означава „няма публичен адрес“ и НЕ се замества с примерен такъв —
+  // така се получаваше връзка, която никога не се отваря. Тогава външна връзка не се
+  // показва, а се казва какво липсва.
+  const publicBase = () => String(state.publicBaseUrl || '').replace(/\/+$/, '');
+  // Адрес за препратки, които важат и за администратор (QR, api.json, дървото):
+  // публичният, а когато няма такъв — адресът на панела (работи само с вход в HA).
+  const linkBase = () => publicBase() || base();
   // Къде на диска е папката на портала. Показва се, за да може човек да я намери в /share
   // (add-on-ът държи СВОИТЕ байтове в data директорията, а папката на портала е огледалото
   // с истинските имена — вж. `portal-folder.js`).
@@ -784,6 +792,16 @@
       }
     }
     return { ok: res.ok, status: res.status, error: res.ok ? '' : (data && data.error) || `HTTP ${res.status}`, data };
+  }
+  /**
+   * Проверява дали даден публичен адрес наистина се отваря (сървърът го вика DNS + HTTP).
+   * Връща { ok, status, reason } — `reason` е с думи, готов за показване.
+   */
+  async function checkLink(link) {
+    if (!link) return { ok: false, status: 0, reason: 'няма адрес за проверка' };
+    const r = await api('/admin/api/links/check', { method: 'POST', json: { url: link } });
+    if (!r.ok || !r.data) return { ok: false, status: 0, reason: r.error || 'проверката не мина' };
+    return r.data;
   }
   const P = () => `/admin/api/portals/${encodeURIComponent(portal().id)}`;
   const FP = (f) => `${P()}/files/${encodeURIComponent(f.id)}`;
@@ -1014,13 +1032,13 @@
         visibility: p.visibility,
         access: p.access,
       };
-      const record = spec.buildApiRecord(portalObj, { baseUrl: publicBase() });
-      const openapi = spec.buildOpenApi(portalObj, { baseUrl: publicBase() });
+      const record = spec.buildApiRecord(portalObj, { baseUrl: linkBase() });
+      const openapi = spec.buildOpenApi(portalObj, { baseUrl: linkBase() });
       const refs = record.references || {};
-      const qrUrl = refs.qrUrl || `${publicBase()}/api/v1/p/${p.slug}/qr.svg`;
+      const qrUrl = refs.qrUrl || `${linkBase()}/api/v1/p/${p.slug}/qr.svg`;
       // „Адрес на портала“ е ЧОВЕШКАТА страница (там води QR кодът), не JSON API-то.
       // Адресира се с ID на портала: връзката не издава името и не се чупи при преименуване.
-      const landing = refs.landingUrl || `${publicBase()}/p/${p.id || p.slug}`;
+      const landing = refs.landingUrl || `${linkBase()}/p/${p.id || p.slug}`;
       state.api[p.id] = { record, openapi, refs, qrUrl, landing, at: new Date().toISOString() };
       if (!quiet) toast('API и QR са генерирани за портала', 'ok');
       return state.api[p.id];
@@ -1716,7 +1734,9 @@
     if (!connected() || signedLink(f) || (f.accessMode || 'FREE') !== 'FREE') return;
     const r = await api(`${P()}/files/${f.id}/signed-url`, { method: 'POST', json: { ttlSeconds: 3600 } });
     if (!r.ok || !r.data || !r.data.path) return;
-    state.signed[f.id] = base() + r.data.path;
+    // Адресът се строи на ПУБЛИЧНИЯ базов адрес, не на адреса на панела: под Ingress
+    // адресът на панела иска вход в Home Assistant и получателят няма да го отвори.
+    state.signed[f.id] = linkBase() + r.data.path;
     render();
   }
   // QR кодът НЕ е отделен адрес: той СЪДЪРЖА адреса за изтегляне и се рисува тук, в панела.
@@ -1810,7 +1830,7 @@
   /** Една карта на портал: в списъка се разгъва, а в самостоятелен изглед е „страница“. */
   function portalCard(x, i, single) {
     const api = state.api[x.id];
-    const land = (api && api.landing) || `${publicBase()}/p/${x.id || x.slug}`;
+    const land = (api && api.landing) || `${linkBase()}/p/${x.id || x.slug}`;
     const ctc = contactOf(x.contactId);
     const kase = caseOf(x.caseId);
     return `<article class="pf-portal ${single ? 'pf-open pf-single' : ''}" data-portal="${i}">
@@ -1939,7 +1959,7 @@
     if (!p) return '';
     const demo = Boolean(state.tree.data && state.tree.data.demo);
     const tail = demo ? 'storage' : 'tree' + (suffix === false ? '' : '/api.json');
-    return `${publicBase()}/api/v1/p/${encodeURIComponent(p.slug)}/${tail}?path=${encodeURIComponent(treePath(rel))}`;
+    return `${linkBase()}/api/v1/p/${encodeURIComponent(p.slug)}/${tail}?path=${encodeURIComponent(treePath(rel))}`;
   }
 
   /** Демо дърво: папките идват от метаданните (тема → категория → група). */
@@ -2486,9 +2506,22 @@
           out.className = 'fm-out err';
           return;
         }
-        out.textContent = `${location.origin}${r.data.path}`;
+        const origin = linkBase();
+        const link = `${origin}${r.data.path}`;
+        out.textContent = link;
         out.className = 'fm-out ok';
-        copyText(`${location.origin}${r.data.path}`, 'Подписаният URL е копиран');
+        copyText(link, 'Подписаният URL е копиран');
+        // Веднага се проверява дали адресът НАИСТИНА се отваря: верен подпис не значи
+        // достъпен адрес (DNS, сертификат, затворен порт). Причината се изписва до връзката,
+        // вместо човек да я разбере от получателя.
+        out.textContent = `${link} · проверявам…`;
+        const v = await checkLink(link);
+        if (v.ok) {
+          out.textContent = `${link} · проверен ${v.status} · ${v.latencyMs} ms`;
+          return;
+        }
+        out.textContent = `${link} · НЕ СЕ ОТВАРЯ: ${v.reason}${publicBase() ? '' : ' (задай Публичен адрес в Настройки → Връзка)'}`;
+        out.className = 'fm-out err';
       });
     }
     if (q('[data-receipt]')) {
