@@ -321,8 +321,10 @@ assert.match(serverSrc, /const portalRoot\s*=/);
 // 0.69.62: без изричен storage_root порталът получава СОБСТВЕНА папка `/share/<slug>`,
 // иначе експлорерът показва целия /share (стотици чужди папки), а не файловете на портала.
 assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\s*\|\|\s*'\/share\/'\s*\+\s*slug\)/);
-assert.match(serverSrc, /fsp\.mkdir\(path\.resolve\(portalRoot\(p\.storage_root\)\),\s*\{\s*recursive:\s*true\s*\}\)/);
-assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\)/);
+// 0.69.63: папката на портала се създава от модула `portal-folder` (там отиват и файловете).
+assert.match(serverSrc, /await portalFolder\.ensure\(p\)/);
+assert.match(serverSrc, /if \(p\.storage_root === '\/share' \|\| p\.storage_root === '\/media'\)/);
+assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*\{\s*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\);\s*await portalFolder\.ensure\(p\)/);
 assert.match(serverSrc, /contactId:\s*portalContact\(db,\s*b\.contactId\)/);
 assert.match(serverSrc, /if\s*\(b\.contactId\s*!==\s*undefined\)\s*p\.contactId\s*=\s*portalContact\(db,\s*b\.contactId\)/);
 assert.match(serverSrc, /if\s*\(b\.caseId\s*!==\s*undefined\)\s*p\.caseId\s*=\s*portalCase\(db,\s*b\.caseId\)/);

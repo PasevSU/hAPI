@@ -136,7 +136,7 @@
   },
   "hapi_enterprise/server.js": {
     "no-control-regex": {
-      "count": 4
+      "count": 3
     },
     "no-useless-assignment": {
       "count": 3

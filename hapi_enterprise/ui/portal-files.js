@@ -156,10 +156,10 @@
           <span class="fm-ico-actions">
             <button type="button" class="fm-ico-btn" data-import-folder title="Прикачи папка с файлове в ${esc(
       treePath(scope),
-    )}">${ico('attachFolder')}</button>
+    )}">${ico('attachFolder')} <span class="fm-ico-label">цяла папка</span></button>
             <button type="button" class="fm-ico-btn" data-attach-file title="Прикачи файл в ${esc(
       treePath(scope),
-    )}">${ICON.upload}</button>
+    )}">${ICON.upload} <span class="fm-ico-label">един файл</span></button>
             <button type="button" class="fm-ico-btn ${state.filters ? 'on' : ''}" data-toggle-filters aria-expanded="${state.filters
       }" title="Панел филтри">${ICON.filters}</button>
           </span>

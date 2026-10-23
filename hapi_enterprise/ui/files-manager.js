@@ -728,6 +728,14 @@
   // Адрес за ПУБЛИЧНИТЕ препратки (api.json, QR). При Home Assistant Ingress
   // адресът на интерфейса не е публичен, затова се ползва сървърната настройка.
   const publicBase = () => (state.publicBaseUrl || base() || 'https://portal.example.com').replace(/\/$/, '');
+  // Къде на диска е папката на портала. Показва се, за да може човек да я намери в /share
+  // (add-on-ът държи СВОИТЕ байтове в data директорията, а папката на портала е огледалото
+  // с истинските имена — вж. `portal-folder.js`).
+  function portalFolderPath(x) {
+    const root = String((x && x.storage_root) || '/share').replace(/\/+$/, '');
+    if (root === '/share' || root === '/media') return `${root}/${(x && x.slug) || ''}`;
+    return root;
+  }
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
   const connected = () => Boolean(base());
   /** Роля и публичен адрес от add-on-а (един път при монтиране). */
@@ -1851,9 +1859,9 @@
       }
                   <p class="fm-file-sub">${ICON.id} id: <code>${esc(x.id)}</code> · slug: <code>${esc(
         x.slug,
-      )}</code> · ${ICON.size} файлове: ${x.files.length} · ${ICON.folder} <code>${esc(
-        x.storage_root || '/share',
-      )}</code></p>
+      )}</code> · ${ICON.size} файлове: ${x.files.length} · ${ICON.folder} папка на портала <code>${esc(
+        portalFolderPath(x),
+      )}</code> · ${ICON.folder} хранилище <code>${esc(x.storage_root || '/share')}</code></p>
                   <div class="fm-ico-row u-grid u-grid-chips">
                     ${chip(ICON.created, 'Дата на създаване', x.createdAt || '—', fmtDate(x.createdAt))}
                     ${x.notes ? chip(ICON.modified, 'Бележки', x.notes, 'има бележка') : ''}

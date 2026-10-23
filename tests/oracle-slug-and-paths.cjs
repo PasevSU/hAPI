@@ -46,7 +46,8 @@ const json = async (url) => {
     // ── 1. Преди преименуването: директорията съществува с ТОЧНО тези артефакти ─
     assert.deepEqual(listing(), ['oracle-old'], 'има точно една API директория — на стария slug');
     const artifacts = fs.readdirSync(path.join(apiRoot, 'oracle-old')).sort();
-    assert.deepEqual(artifacts, ['api.json', 'openapi.json', 'qr.svg'], 'артефактите са точно тези три');
+    // 0.69.63: до машинните файлове има и човешката страница на портала.
+    assert.deepEqual(artifacts, ['api.json', 'openapi.json', 'portal.html', 'qr.svg'], 'артефактите са точно тези четири');
     const apiJsonBefore = JSON.parse(fs.readFileSync(path.join(apiRoot, 'oracle-old', 'api.json'), 'utf8'));
     assert.ok(JSON.stringify(apiJsonBefore).includes('/api/v1/p/oracle-old'), 'api.json сочи стария slug');
     assert.equal((await json(server.base + '/api/v1/p/oracle-old')).status, 200, 'старият публичен адрес работи преди смяната');
@@ -69,7 +70,7 @@ const json = async (url) => {
     assert.equal(patched.data.id, portal.id, 'идентификаторът НЕ се променя (връзките остават валидни)');
     assert.deepEqual(listing(), ['oracle-new', 'oracle-taken'], 'старата API директория я НЯМА, новата съществува');
     const newArtifacts = fs.readdirSync(path.join(apiRoot, 'oracle-new')).sort();
-    assert.deepEqual(newArtifacts, ['api.json', 'openapi.json', 'qr.svg'], 'артефактите са ПРЕМЕСТЕНИ, не изгубени');
+    assert.deepEqual(newArtifacts, ['api.json', 'openapi.json', 'portal.html', 'qr.svg'], 'артефактите са ПРЕМЕСТЕНИ, не изгубени');
     const apiJsonAfter = JSON.parse(fs.readFileSync(path.join(apiRoot, 'oracle-new', 'api.json'), 'utf8'));
     assert.ok(JSON.stringify(apiJsonAfter).includes('/api/v1/p/oracle-new'), 'преместеният api.json вече сочи НОВИЯ slug');
     assert.equal(JSON.stringify(apiJsonAfter).includes('/api/v1/p/oracle-old'), false, 'в артефакта не е останал старият slug');
