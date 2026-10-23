@@ -1,15 +1,17 @@
 'use strict';
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
 const ooxml=require('../hapi_enterprise/ooxml.js');
 (async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'portal-cab-'));
- const token='cabinet-test-admin-secret-2026-q9',pub=18311,B=`http://127.0.0.1:${pub}`;
+ // Портът се взима от ядрото: фиксираният 18311 може да е зает от предишен тест, който
+ // не е освободил процеса си, и тогава сървърът просто не пали (видяно в CI).
+ const token='cabinet-test-admin-secret-2026-q9',pub=await freePort(),B=`http://127.0.0.1:${pub}`;
  const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub)},stdio:'pipe'});
  try{
   let ready=false;
-  for(let i=0;i<70;i++){try{if((await fetch(B+'/health')).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,70))}
-  assert(ready,'server startup');
+  for(let i=0;i<300;i++){try{if((await fetch(B+'/health')).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}
+  assert(ready,'server startup (код '+(child.exitCode??child.signalCode)+')');
   const A={authorization:'Bearer '+token},J={...A,'content-type':'application/json'};
   const call=(p,m='GET',b)=>fetch(B+p,{method:m,headers:b===undefined?A:J,body:b===undefined?undefined:JSON.stringify(b)});
   const q=p=>'?path='+encodeURIComponent(p);
