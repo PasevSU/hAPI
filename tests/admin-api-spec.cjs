@@ -63,6 +63,65 @@ for (const [method, p, summary, tag, capability] of spec.ROUTES) {
 const missing = code.filter((r) => !described.has(r.method + ' ' + r.path)).map((r) => r.method + ' ' + r.path);
 assert.deepEqual(missing, [], 'описани са всички административни маршрути от кода; липсват: ' + missing.join(', '));
 
+// ── 2б. Маршрутите на компонентите (`routes/*.js`) ─────────────────────────
+// Те не са литерали в `server.js`, а дял: `/admin/api/v2` + `parts[3]`/`parts[4]`.
+// Затова таблицата тук е изрична, но всяка двойка носи ДОКАЗАТЕЛСТВО — регулярен израз,
+// който трябва да се намери в компонента. Промяна в кода без промяна в договора чупи
+// теста (изчезнало условие), а нов `parts[3] === 'x'` без ред в договора — също.
+const COMPONENT_ROUTES = [
+  // файл, метод, път, котва в кода, условие за метода (в същия или следващ ред)
+  ['reports.js', 'POST', '/admin/api/v2/reports/render', /parts\[3\] === 'reports' && parts\[4\] === 'render'/, "method === 'POST'"],
+  ['reports.js', 'POST', '/admin/api/v2/reports/package', /parts\[3\] === 'reports' && parts\[4\] === 'package'/, "method === 'POST'"],
+  ['reports.js', 'POST', '/admin/api/v2/reports/sign', /parts\[3\] === 'reports' && parts\[4\] === 'sign'/, "method === 'POST'"],
+  ['reports.js', 'POST', '/admin/api/v2/cms/verify', /parts\[3\] === 'cms' && parts\[4\] === 'verify'/, "method === 'POST'"],
+  ['reports.js', 'GET', '/admin/api/v2/rfc3161', /parts\[3\] === 'rfc3161' && parts\.length === 4/, "method === 'GET'"],
+  ['reports.js', 'POST', '/admin/api/v2/rfc3161', /parts\[3\] === 'rfc3161' && parts\.length === 4/, "method !== 'POST'"],
+  ['reports.js', 'GET', '/admin/api/v2/rfc3161/verify', /parts\[3\] === 'rfc3161' && parts\.length === 5 && parts\[4\] === 'verify'/, "['GET', 'POST'].includes(method)"],
+  ['reports.js', 'POST', '/admin/api/v2/rfc3161/verify', /parts\[3\] === 'rfc3161' && parts\.length === 5 && parts\[4\] === 'verify'/, "['GET', 'POST'].includes(method)"],
+  ['generator.js', 'GET', '/admin/api/generator/templates', /parts\[3\] !== 'templates'/, "method === 'GET' && parts.length === 4"],
+  ['generator.js', 'POST', '/admin/api/generator/templates', /parts\[3\] !== 'templates'/, "method === 'POST' && parts.length === 4"],
+  ['generator.js', 'GET', '/admin/api/generator/templates/{name}', /parts\[3\] !== 'templates'/, "method === 'GET' && parts.length === 5"],
+  ['generator.js', 'DELETE', '/admin/api/generator/templates/{name}', /parts\[3\] !== 'templates'/, "method === 'DELETE' && parts.length === 5"],
+];
+
+const routesDir = path.join(ROOT, 'hapi_enterprise', 'routes');
+const componentSrc = (file) => {
+  const full = path.join(routesDir, file);
+  assert.ok(require('node:fs').existsSync(full), 'има компонент ' + file);
+  return require('node:fs').readFileSync(full, 'utf8').replace(/\r\n/g, '\n');
+};
+
+// Доказателството се търси по редове от котвата надолу: така „методът“ може да е на
+// същия ред (`... && method === 'POST'`) или в тялото на блока (RFC 3161). Прозорецът е
+// ограничен, за да не „намери“ метод от съседен дял.
+function evidenceFound(src, anchor, token, window = 40) {
+  const lines = src.split('\n');
+  const at = lines.findIndex((line) => anchor.test(line) && !/^\s*(\/\/|\*)/.test(line));
+  if (at < 0) return false;
+  const scope = lines.slice(at, at + window).join('\n');
+  return scope.includes(token);
+}
+
+for (const [file, method, p, anchor, token] of COMPONENT_ROUTES) {
+  assert.ok(evidenceFound(componentSrc(file), anchor, token), 'доказателството за ' + method + ' ' + p + ' липсва в routes/' + file);
+  assert.ok(described.has(method + ' ' + p), 'описан е ' + method + ' ' + p + ' (routes/' + file + ')');
+}
+
+// Обратната посока за компонентите: всеки `parts[3] === 'x'` в тях трябва да води до
+// поне един описан път — иначе нов дял остава извън договора, без никой да забележи.
+for (const file of ['reports.js', 'generator.js']) {
+  const src = componentSrc(file);
+  const segments = new Set([...src.matchAll(/parts\[3\]\s*===\s*'([^']+)'/g)].map((m) => m[1]));
+  for (const m of src.matchAll(/parts\[3\]\s*!==\s*'([^']+)'/g)) segments.add(m[1]);
+  const owned = COMPONENT_ROUTES.filter((row) => row[0] === file).map((row) => row[2]);
+  for (const seg of segments) {
+    assert.ok(
+      owned.some((p) => p.split('/').includes(seg)),
+      'routes/' + file + ': дялът „' + seg + '“ няма описан маршрут в договора'
+    );
+  }
+}
+
 // ── 3. Нищо описано не е измислено ───────────────────────────────────────────
 // Пътят може да дойде по два начина в кода: като литерал (`pathname === '/admin/api/x'`)
 // или като блок по сегменти (`parts[2] === 'cases'`, после `parts[3] === 'merge'`, а в
@@ -72,9 +131,14 @@ const src = surface.source(ROOT);
 function segmentIsReal(seg) {
   const quoted = "'" + seg + "'";
   if (!src.includes(quoted)) return false;
-  return new RegExp("parts\\[\\d\\]\\s*===\\s*" + quoted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(src) ||
-    new RegExp("act\\s*===\\s*" + quoted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(src) ||
-    src.includes('pathname === ' + quoted);
+  const esc = quoted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // `parts[n] === 'x'` (обикновено), `parts[n] !== 'x'` (генераторът пази останалото с 404),
+  // `act === 'x'` (шкафът, защото `act = parts[3]`), `pathname === '/admin/api/x'`.
+  return (
+    new RegExp('parts\\[\\d\\]\\s*[!=]==\\s*' + esc).test(src) ||
+    new RegExp('act\\s*===\\s*' + esc).test(src) ||
+    src.includes('pathname === ' + quoted)
+  );
 }
 const phantom = [];
 for (const p of describedPaths) {
@@ -93,6 +157,14 @@ assert.equal(doc.servers[0].url, 'https://hapi.example.bg', 'сървърът е
 assert.ok(doc.components.securitySchemes.adminToken, 'има схема за сигурност');
 const opCount = Object.values(doc.paths).reduce((n, entry) => n + Object.keys(entry).length, 0);
 assert.equal(opCount, spec.ROUTES.length, 'всеки ред от таблицата става операция');
+// `operationId` трябва да е уникален — иначе генераторите на клиенти правят един метод за два пътя.
+const ids = new Set();
+for (const [p, entry] of Object.entries(doc.paths)) {
+  for (const [method, op] of Object.entries(entry)) {
+    assert.ok(!ids.has(op.operationId), 'уникален operationId: ' + op.operationId + ' (' + method + ' ' + p + ')');
+    ids.add(op.operationId);
+  }
+}
 for (const [p, entry] of Object.entries(doc.paths)) {
   for (const [method, op] of Object.entries(entry)) {
     assert.ok(op.summary, 'резюме: ' + method + ' ' + p);

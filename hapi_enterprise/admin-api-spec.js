@@ -154,6 +154,25 @@ const ROUTES = [
   ['GET', '/admin/api/v2/migrate', 'Анализ на данни за миграция', 'v2', 'core'],
   ['POST', '/admin/api/v2/migrate', 'Миграция (с dryRun)', 'v2', 'core'],
 
+  // ── Report Studio, CMS подпис и RFC 3161 (routes/reports.js) ─────────────
+  // Тези маршрути не са литерали в `server.js`, а дял на компонент: `/admin/api/v2`
+  // + `parts[3]`/`parts[4]`. Затова ги пази `tests/admin-api-spec.cjs` с изрична
+  // таблица и проверка на доказателството в кода.
+  ['POST', '/admin/api/v2/reports/render', 'Рендер на отчет (PDF) от манифест', 'reports', 'core'],
+  ['POST', '/admin/api/v2/reports/package', 'Пакет с доказателства (PDF + манифест + токени)', 'reports', 'core'],
+  ['POST', '/admin/api/v2/reports/sign', 'Detached CMS подпис на отчет', 'reports', 'core'],
+  ['POST', '/admin/api/v2/cms/verify', 'Проверка на detached CMS подпис', 'reports', 'core'],
+  ['GET', '/admin/api/v2/rfc3161', 'Състояние на RFC 3161 и последни токени', 'reports', 'core'],
+  ['POST', '/admin/api/v2/rfc3161', 'Времеви печат START/STOP', 'reports', 'core'],
+  ['GET', '/admin/api/v2/rfc3161/verify', 'Проверка на запазените .tsr файлове', 'reports', 'core'],
+  ['POST', '/admin/api/v2/rfc3161/verify', 'Проверка на запазените .tsr файлове (повторно)', 'reports', 'core'],
+
+  // ── Document Generator (routes/generator.js) ─────────────────────────────
+  ['GET', '/admin/api/generator/templates', 'Списък на шаблоните', 'generator', 'generator'],
+  ['POST', '/admin/api/generator/templates', 'Запис на шаблон', 'generator', 'generator'],
+  ['GET', '/admin/api/generator/templates/{name}', 'Един шаблон (HTML като текст)', 'generator', 'generator'],
+  ['DELETE', '/admin/api/generator/templates/{name}', 'Изтриване на шаблон', 'generator', 'generator'],
+
   // ── v2: публично API на портал ────────────────────────────────────────────
   ['GET', '/admin/api/v2/portals/{portalId}/api', 'Готов ли е публичният API на портала', 'v2', 'core'],
   ['POST', '/admin/api/v2/portals/{portalId}/api', 'Генериране на API файлове и QR', 'v2', 'core'],
@@ -177,6 +196,8 @@ const TAGS = [
   ['catalog', 'Дела, променливи, указател'],
   ['cabinet', 'Шкаф (файлове на сървъра)'],
   ['v2', 'Документооборот v2 (core)'],
+  ['reports', 'Отчети, CMS подпис и RFC 3161'],
+  ['generator', 'Document Generator (шаблони)'],
 ];
 
 const ok = (what) => ({ description: what });
