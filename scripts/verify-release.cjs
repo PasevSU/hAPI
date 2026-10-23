@@ -372,11 +372,15 @@ check('S11', 'Сигурност: няма тайни и вътрешни адр
     }
   }
   assert(offenders.length === 0, 'намерени тайни:\n  ' + offenders.join('\n  '));
-  // Празните стойности по подразбиране в options са задължителни. Админ токен вече
-  // няма — ключът е вътрешен и се генерира при първи старт.
-  assert(!Object.prototype.hasOwnProperty.call(addonConfig.options, 'token'), 'options.token трябва да е премахнат (вътрешен ключ)');
+  // 0.69.67: `token` Е опция и е задължителна при старт (иначе няма тихо генериране, което
+  // да скрие липсваща конфигурация). В изданието тя трябва да е ПРАЗНА — стойност тук би
+  // значи „работещ тайна по подразбиране“, точно това, което не бива да ships.
+  assert(Object.prototype.hasOwnProperty.call(addonConfig.options, 'token'), 'липсва опция token (задължителна от 0.69.67)');
+  // Празно е „няма стойност“ — проверява се с truthiness, не със сравнение на тайна.
+  assert(!addonConfig.options.token, 'options.token трябва да е празен по подразбиране');
+  assert(!/CHANGE_TO_RANDOM/i.test(String(addonConfig.options.token || '')), 'options.token не бива да носи стойност-заглушка');
   assert(addonConfig.options.password === null || addonConfig.options.password === '', 'options.password трябва да е празен по подразбиране');
-  return 'няма частни ключове, JWT, токени и ключове';
+  return 'няма частни ключове, JWT, токени и ключове; token е празен по подразбиране';
 });
 
 // ── S12. Публичен портал ────────────────────────────────────────────────────
@@ -415,10 +419,12 @@ check('S13', 'start.js: старт на чист JS без изтичане на
   assert(/nodeMajor\s*<\s*22/.test(entry) && /nodeMinor\s*<\s*13/.test(entry), 'липсва гейт за Node >=22.13');
   assert(/spawn\(process\.execPath,\s*\[SERVER\]/.test(entry), 'сървърът не се стартира като дете на entrypoint-а');
   assert(/SIGTERM/.test(entry), 'липсва подаване на SIGTERM към сървъра (graceful stop)');
-  assert(/ADMIN_TOKEN/.test(entry), 'липсва генериране на ADMIN_TOKEN');
-  assert(/\/data\/admin-token/.test(entry), 'липсва постоянен файл за ADMIN_TOKEN');
-  assert(/0o600/.test(entry), 'файлът с токена трябва да се създава с права 0600');
-  assert(!/console\.(log|info)\([^\n]*ADMIN_TOKEN/.test(entry), 'entrypoint-ът не бива да отпечатва ADMIN_TOKEN');
+  // 0.69.67: токенът е ВХОД, не изход. Entrypoint-ът не бива да генерира и да записва
+  // тайна — без `token` стартът се отказва с ясен код.
+  assert(/ADMIN_TOKEN_REQUIRED/.test(entry), 'липсва отказ ADMIN_TOKEN_REQUIRED при липсващ токен');
+  assert(!/\brandomBytes\b|\brandomUUID\b/.test(entry), 'entrypoint-ът не бива да генерира тайна');
+  assert(!/writeFileSync\([^)]*admin-token/.test(entry), 'entrypoint-ът не бива да записва admin-token');
+  assert(/console\.error/.test(entry) && !/console\.(log|info)\([^\n]*ADMIN_TOKEN/.test(entry), 'entrypoint-ът не бива да отпечатва ADMIN_TOKEN');
   assert(/PUBLIC_BASE_URL/.test(entry), 'липсва PUBLIC_BASE_URL от public_domain');
   assert(/INGRESS_MODE/.test(entry), 'липсва INGRESS_MODE=true');
   assert(/storagePreflight/.test(entry), 'липсва storage preflight преди старта');
