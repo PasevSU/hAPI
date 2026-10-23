@@ -8,6 +8,24 @@
 | `/api/v2`    | schema-validated API (Phase 6–7 target) |
 | `/verify/v1` | public evidence verification (Phase 7)  |
 
+### Договор за административното API (от 0.69.46)
+
+`GET /admin/api/openapi.json` връща OpenAPI 3.1 за административната повърхност:
+метод, път, резюме, таг, капацитет за RBAC (`x-hapi-capability`), параметри по пътя и
+отговори 200/401/403/429. Изисква токен (`Authorization: Bearer …`) или самоличност от
+Ingress — договорът показва и правата, затова не е публичен.
+
+- **Източник:** `hapi_enterprise/admin-api-spec.js` (таблица `ROUTES`).
+- **Сверка:** `tests/admin-api-spec.cjs` изважда от кода всеки маршрут, записан като
+  `url.pathname === '/admin/api/…'`, и изисква същите двойки метод+път да са в таблицата —
+  в двете посоки. Нова пътека без ред чупи теста; ред без пътека също.
+- **Обхват:** второ ниво (`/admin/api/<ресурс>`) и блоковете `/v2` (core, export), `/pgp`,
+  `/packages`, `/cases`, `/variables`, `/directory`, `/cabinet`, `/taxonomy`, `/portals`.
+  Подресурсите с динамични id-та (`/admin/api/v2/records/{recordId}`, `/admin/api/portals/{id}/…`)
+  се описват на ниво блок: договорът дава операциите с параметри, а точният набор от
+  подпътища остава в кода и в панела.
+- **Публичното** портално API има отделен договор — `api-spec.js` (OpenAPI 3.1 на портал).
+
 ## HA add-on contract
 
 | Interface      | Detail                                                                    |

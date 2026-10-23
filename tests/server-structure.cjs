@@ -51,7 +51,19 @@ for (const file of components) {
   );
 }
 assert.ok(!/parts\[3\] === 'reports'/.test(server), 'server.js: отчетите пак са в монолита — изнесени са в routes/reports.js');
-assert.ok(!/parts\[2\] === 'generator'/.test(server), 'server.js: генераторът пак е в монолита — изнесен е в routes/generator.js');
+assert.ok(!/parts\[2\] === 'generator'/.test(server), 'server.js: генераторът пак са в монолита — изнесен е в routes/generator.js');
+
+// ── 2б. Всяко извикване на компонент е `await` ──────────────────────────────
+// `handle` е `async` по договора, значи връща Promise, а Promise е ВИНАГИ истина.
+// `if (routes.x.handle(...)) return;` без `await` поглъща заявката и не отговаря —
+// клиентът виси до таймаут. Точно това се случи при 0.69.46 и се хвана само по
+// 180-секундния таймаут на серията; тук се хваща за милисекунди.
+const handleCalls = server
+  .split('\n')
+  .filter((line) => /\.handle\(/.test(line) && !/^\s*(\/\/|\*)/.test(line));
+assert.ok(handleCalls.length >= 2, 'намирам извикванията на компонентите в server.js (' + handleCalls.length + ')');
+const notAwaited = handleCalls.filter((line) => !/\bawait\b/.test(line));
+assert.deepEqual(notAwaited, [], 'server.js: извикване на компонент без await (Promise е винаги истина)');
 
 // ── 3. Таван на монолита: само надолу ───────────────────────────────────────
 // 2971 преди изнасянето → 2727 след отчетите и генератора → 2720 след ключалката на
