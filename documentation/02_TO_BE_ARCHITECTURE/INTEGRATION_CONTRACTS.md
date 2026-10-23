@@ -295,15 +295,15 @@ Assistant. На `/api/…` там отговаря HA, не add-on-ът.
 познава по име на файл. `secret.asc` и `private.asc` са равностойни: важното е пътят да сочи към
 файла.
 
-| Ключ                         | Вид        | По подразбиране                | Значение                                                                          |
-| ---------------------------- | ---------- | ------------------------------ | --------------------------------------------------------------------------------- |
-| `hapi_token` (опция `token`) | `password` | **задължително при старт** (⏳) | админ токенът; **отказ при старт** без него (`ADMIN_TOKEN_REQUIRED`); днес при липса се генерира и пази в `/data/admin-token` (0600) |
-| `pgp_path_public`            | низ        | *празно* (PGP е по избор)      | пълен път до публичния ключ                                                       |
-| `pgp_path_secret`            | низ        | *празно*                       | пълен път до частния ключ (файлът може да е `secret.asc` или `private.asc`)         |
-| `pgp_path_pass`              | низ        | *празно*                       | пълен път до **файла** с паролата (`HAPI_PGP_KEY_PASS=…`), не до `.env.example`   |
-| `pgp_key_pass`               | `password` | —                              | самата парола като стойност — с предимство пред `pgp_path_pass`                   |
-| `pgp_encrypt_paths`          | bool       | `false`                        | включва L1 (криптирани вътрешни пътища); **изисква зареден ключ**                 |
-| `pgp_encrypt_workdir`        | bool       | `false`                        | включва L2 (криптирана работна папка); **изисква зареден ключ**                   |
+| Ключ                         | Вид        | По подразбиране              | Значение                                                                                                       |
+| ---------------------------- | ---------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `hapi_token` (опция `token`) | `password` | **задължително при старт** ✅ | админ токенът; **отказ при старт** без него (`ADMIN_TOKEN_REQUIRED`); не се генерира и не се записва в `/data` |
+| `pgp_path_public`            | низ        | *празно* (PGP е по избор)    | пълен път до публичния ключ                                                                                    |
+| `pgp_path_secret`            | низ        | *празно*                     | пълен път до частния ключ (файлът може да е `secret.asc` или `private.asc`)                                    |
+| `pgp_path_pass`              | низ        | *празно*                     | пълен път до **файла** с паролата (`HAPI_PGP_KEY_PASS=…`), не до `.env.example`                                |
+| `pgp_key_pass`               | `password` | —                            | самата парола като стойност — с предимство пред `pgp_path_pass`                                                |
+| `pgp_encrypt_paths`          | bool       | `false`                      | включва L1 (криптирани вътрешни пътища); **изисква зареден ключ**                                              |
+| `pgp_encrypt_workdir`        | bool       | `false`                      | включва L2 (криптирана работна папка); **изисква зареден ключ**                                                |
 
 **PGP е по избор, токенът — не.** Липсващи ключове не спират add-on-а: `GET /admin/api/pgp/keyring`
 връща `200` с `available: false` и `reason`. Включването на `pgp_encrypt_*` без зареден ключ е
@@ -330,7 +330,7 @@ add-on-а — виж бележката за `!secret` в [`PGP_KEYRING_AND_WORK
 `NO_ENCRYPTION_KEY`, `UNSUPPORTED_CURVE`, `S2K_ARGON2_UNSUPPORTED`, `MDC_MISMATCH`, `WEAK_KEY`;
 при недостъпен ключ за четене — `503` с `KEYRING_UNAVAILABLE`.
 
-**Инварианти:** INV-P1…INV-P8 в [`PGP_KEYRING_AND_WORK_FOLDER.md`](PGP_KEYRING_AND_WORK_FOLDER.md#инварианти-пазят-се-от-тестове).
+**Инварианти:** INV-P1…INV-P9 в [`PGP_KEYRING_AND_WORK_FOLDER.md`](PGP_KEYRING_AND_WORK_FOLDER.md#инварианти-пазят-се-от-тестове).
 Пазят се от `tests/pgp-engine.cjs`, `tests/pgp-keyring.cjs` и `tests/pgp-path-encryption.cjs`
 (⏳, влизат в `TEST_CASE_CATALOG.md` като T-PGP-01…03).
 

@@ -5,6 +5,43 @@ configuration:
   password:
     name: Console password
     description: Optional console password for standalone deployments; Home Assistant users sign in with their own account.
+  token:
+    name: Admin token (required)
+    description: >-
+      Required at start. At least 24 characters, not a placeholder and not a repetition pattern.
+      The add-on refuses to start without it (ADMIN_TOKEN_REQUIRED) and never generates one by itself.
+      In secrets.yaml this value is named hapi_token, but Home Assistant does not expand !secret in
+      add-on options — enter the value itself here.
+  pgp_path_public:
+    name: PGP public key path (optional)
+    description: >-
+      Full path inside the container, e.g. /homeassistant/_openpgpV6/public.asc. Optional: if left
+      empty (or the file is missing) the add-on starts normally and PGP stays unavailable.
+  pgp_path_secret:
+    name: PGP secret key path (optional)
+    description: >-
+      Full path to the passphrase-protected secret key, e.g. /homeassistant/_openpgpV6/secret.asc
+      (private.asc works too). Needed for reading encrypted paths and for work-folder decryption.
+  pgp_path_pass:
+    name: PGP passphrase file path (optional)
+    description: >-
+      Full path to the file that holds HAPI_PGP_KEY_PASS=..., e.g. /homeassistant/_openpgpV6/.env.
+      Point it at .env, never at .env.example (the template has an empty value).
+  pgp_key_pass:
+    name: PGP passphrase (optional)
+    description: >-
+      The passphrase itself, kept in /data/options.json. Takes precedence over pgp_path_pass.
+      Never printed in logs and never returned by the API.
+  pgp_encrypt_paths:
+    name: Encrypt internal file paths
+    description: >-
+      Stores storagePathEnc (PGP-encrypted) instead of the plaintext path in db.json. Requires a
+      loaded key — enabling it without a key refuses to start (PGP_SECRET_KEY_REQUIRED).
+  pgp_encrypt_workdir:
+    name: Encrypt the portal work folder
+    description: >-
+      Encrypts the file contents in the portal work folder (AES-256-GCM with a per-file key wrapped
+      by PGP). Requires a loaded key. Without the key and passphrase the files cannot be read.
   db_name:
     name: Database and portal name
     description: Name used for the first portal and for the database file.

@@ -190,7 +190,7 @@
       warnings.push('Публичният порт не е публикуван: порталът не е достъпен отвън.');
     }
     if (p.status === 'active' && gw.public.require_https && !gw.public.domain) {
-      warnings.push('Няма публичен домейн — публичните адреси са само проектен пример.');
+      warnings.push('Няма публичен домейн — публичните адреси остават относителни (без хост).');
     }
     return { ok: errors.length === 0, errors, warnings, portal: p };
   }
@@ -200,7 +200,11 @@
     // Същият origin като Home Assistant: адресите са относителни и наследяват
     // неговия домейн, порт и TLS (reverse proxy на същия host/port).
     if (gw.public.relative) return '';
-    const host = gw.public.domain || 'portal.example.com';
+    const host = gw.public.domain;
+    // Без домейн НЯМА публичен адрес: не се измисля. Измисленият адрес дава връзка,
+    // която никога не се отваря, а причината не се вижда от никъде (същото като W7).
+    // Затова резултатът е относителен път, а панелът казва какво липсва.
+    if (!host) return '';
     return `${gw.public.require_https ? 'https' : 'http'}://${host}`;
   }
 

@@ -76,6 +76,34 @@ const MEANING = {
     en: 'Empty: a random password is generated on first start and written to `api-credentials.txt` (mode 0600).',
     bg: 'Празно: при първи старт се генерира случайна парола и се записва в `api-credentials.txt` (права 0600).',
   },
+  token: {
+    en: 'Empty: the add-on refuses to start (`ADMIN_TOKEN_REQUIRED`). 24+ characters, no placeholder and no repetition pattern. Set it with `!secret hapi_token` so the value stays in `secrets.yaml`. It is never printed and never written to `/data`.',
+    bg: 'Празно: add-on-ът отказва старт (`ADMIN_TOKEN_REQUIRED`). 24+ знака, без шаблон и без повторение. Задава се с `!secret hapi_token`, за да стои стойността в `secrets.yaml`. Не се печата и не се записва в `/data`.',
+  },
+  pgp_path_public: {
+    en: 'Empty: PGP is off (the server still starts). Path may point to `public.asc`, `pubring.asc` or a `_openpgpV6` file; read-only.',
+    bg: 'Празно: PGP е изключен (сървърът пак стартира). Пътят може да сочи към `public.asc`, `pubring.asc` или файл от `_openpgpV6`; само за четене.',
+  },
+  pgp_path_secret: {
+    en: 'Empty: no encryption/layer-2 keys are loaded. Read-only; the add-on never writes into this file.',
+    bg: 'Празно: не се зареждат ключове за криптиране/слой 2. Само за четене; add-on-ът никога не пише в този файл.',
+  },
+  pgp_path_pass: {
+    en: 'Empty: no passphrase file, so the `pgp_key_pass` option (or none) is used. The file is read, never written.',
+    bg: 'Празно: няма файл с парола, ползва се опцията `pgp_key_pass` (или нищо). Файлът се чете, никога не се записва.',
+  },
+  pgp_key_pass: {
+    en: 'Empty: the secret key is treated as unprotected. Prefer `!secret hapi_pgp_path_pass` pointing at a file over putting the passphrase here.',
+    bg: 'Празно: секретният ключ се приема за незащитен. По-добре `!secret hapi_pgp_path_pass` към файл, отколкото паролата да стои тук.',
+  },
+  pgp_encrypt_paths: {
+    en: '`false`: storage paths stay in plaintext in the database; `true` requires a loaded secret key or the start fails with `PGP_SECRET_KEY_REQUIRED`.',
+    bg: '`false`: пътищата в базата остават в открит вид; `true` изисква зареден секретен ключ, иначе стартът пада с `PGP_SECRET_KEY_REQUIRED`.',
+  },
+  pgp_encrypt_workdir: {
+    en: '`false`: work files are encrypted with the internal key only; `true` wraps them with the PGP key (layer 2) and needs a loaded secret key.',
+    bg: '`false`: работните файлове се криптират само с вътрешния ключ; `true` ги обвива с PGP ключа (слой 2) и иска зареден секретен ключ.',
+  },
   db_name: {
     en: 'Names the first portal (`Files`, slug `files`). Change it before the first start to get another name.',
     bg: 'Именува първия портал (`Files`, slug `files`). Сменя се преди първия старт, ако трябва друго име.',

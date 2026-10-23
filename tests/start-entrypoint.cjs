@@ -5,8 +5,8 @@
 // test boots the real entrypoint the same way the Supervisor does and verifies the
 // three things a shell script used to guarantee:
 //   1. a storage preflight ran and DATA_DIR points at the prepared storage;
-//   2. ADMIN_TOKEN is generated and persisted in the add-on data dir (mode 0600),
-//      and never printed;
+//   2. ADMIN_TOKEN comes from the `token` option (mandatory since 0.69.67), is never
+//      printed, and is never generated or persisted by the entrypoint;
 //   3. SIGTERM reaches the server so the process exits cleanly (0), which is what
 //      `timeout: 30` + cold backup in config.yaml rely on.
 const assert = require('node:assert/strict');
@@ -16,6 +16,8 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 
 const ENTRY = path.join(__dirname, '../hapi_enterprise/start.js');
+// Токенът е задължителен вход от 0.69.67; стойността тук е тестова, не се копира никъде.
+const TOKEN = 'entry-test-token-0123456789abcdef';
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-entry-'));
 const dataDir = path.join(tmp, 'data');
 const storageRoot = path.join(tmp, 'storage');
@@ -24,7 +26,12 @@ fs.mkdirSync(dataDir, { recursive: true });
 fs.mkdirSync(path.join(storageRoot, 'addon_config'), { recursive: true });
 fs.writeFileSync(
   path.join(dataDir, 'options.json'),
-  JSON.stringify({ storage_location: 'addon_config', storage_subdirectory: 'hapi_enterprise', memory_limit_mb: 0 }),
+  JSON.stringify({
+    token: TOKEN,
+    storage_location: 'addon_config',
+    storage_subdirectory: 'hapi_enterprise',
+    memory_limit_mb: 0,
+  }),
 );
 
 const { freePort } = require('./helpers.cjs');
@@ -100,15 +107,12 @@ const reapServer = async (storageBase) => {
 
     assert.ok(fs.existsSync(path.join(storageBase, '.portal-enterprise-storage')), 'storage preflight не е създал хранилището');
 
-    // 2. Токенът е генериран, записан и не изтича в лога.
-    const tokenFile = path.join(dataDir, 'admin-token');
-    assert.ok(fs.existsSync(tokenFile), 'липсва генериран admin-token');
-    const token = fs.readFileSync(tokenFile, 'utf8');
-    assert.match(token, /^[0-9a-f]{64}$/, 'admin-token трябва да е 32 случайни байта (hex)');
-    if (process.platform !== 'win32') {
-      assert.equal(fs.statSync(tokenFile).mode & 0o777, 0o600, 'admin-token трябва да е 0600');
-    }
-    assert.ok(!stderr.includes(token), 'entrypoint-ът не бива да печата токена');
+    // 2. Токенът идва от опцията, пази админа и НЕ се генерира/записва от entrypoint-а.
+    assert.ok(
+      !fs.existsSync(path.join(dataDir, 'admin-token')),
+      'entrypoint-ът не бива да създава admin-token — токенът е задължителен вход',
+    );
+    assert.ok(!stderr.includes(TOKEN), 'entrypoint-ът не бива да печата токена');
 
     // 3. SIGTERM → сървърът спира, entrypoint-ът не виси.
     const outcome = await stop();
@@ -120,7 +124,7 @@ const reapServer = async (storageBase) => {
     }
     await reapServer(storageBase);
 
-    console.log('PASS entrypoint: storage preflight, генериран admin-token (0600), спиране при SIGTERM');
+    console.log('PASS entrypoint: storage preflight, токен от опцията (без генериране), спиране при SIGTERM');
   } catch (e) {
     if (child) child.kill('SIGKILL');
     await reapServer(storageBase);

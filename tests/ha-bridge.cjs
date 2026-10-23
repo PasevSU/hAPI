@@ -1,4 +1,10 @@
-const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'); const base = path.join(__dirname, '..'); const py = fs.readFileSync(path.join(base, 'custom_components/hapi_enterprise/__init__.py'), 'utf8'); const cfg = fs.readFileSync(path.join(base, 'hapi_enterprise/config.yaml'), 'utf8'); const run = fs.readFileSync(path.join(base, 'hapi_enterprise/start.js'), 'utf8'); assert.match(py, /requires_auth = False/); assert.match(py, /_ALLOWED.fullmatch\(tail\)/); assert.match(py, /X-Portal-Key/); assert.doesNotMatch(py, /backend \+ "\/admin/); assert.match(cfg, /8099\/tcp: null/); assert.doesNotMatch(cfg, /token:\s*""/, 'админ токенът вече не е опция'); assert.doesNotMatch(cfg, /token:\s*password\?/, 'няма schema за админ токен'); assert.match(cfg, /db_name:\s*str\?/); assert.match(cfg, /backup_folder:\s*str\?/); assert.match(run, /\/data\/admin-token/); assert.match(run, /REQUIRE_PORTAL_TOKEN\s*=\s*'true'/); assert.doesNotMatch(run, /Admin token:/); assert.doesNotMatch(run, /options\.token/, 'start.js не чете потребителски токен');// PG-6: публичният gateway се излага на IP/порта на Home Assistant (без HA сесия).
+const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'); const base = path.join(__dirname, '..'); const py = fs.readFileSync(path.join(base, 'custom_components/hapi_enterprise/__init__.py'), 'utf8'); const cfg = fs.readFileSync(path.join(base, 'hapi_enterprise/config.yaml'), 'utf8'); const run = fs.readFileSync(path.join(base, 'hapi_enterprise/start.js'), 'utf8'); assert.match(py, /requires_auth = False/); assert.match(py, /_ALLOWED.fullmatch\(tail\)/); assert.match(py, /X-Portal-Key/); assert.doesNotMatch(py, /backend \+ "\/admin/); assert.match(cfg, /8099\/tcp: null/);
+// 0.69.67: токенът Е опция и е задължителен при старт (обърнат договор спрямо по-старото „няма опция“).
+assert.match(cfg, /^\s{2}token:\s*""$/m, 'опцията `token` трябва да съществува и да е празна по подразбиране');
+assert.match(cfg, /token:\s*password\?/, 'схемата трябва да приема `token` като password');
+assert.match(run, /ADMIN_TOKEN_REQUIRED/, 'стартът трябва да отказва без токен');
+assert.match(run, /optionText\('token'\)/, 'токенът се чете от опцията');
+assert.match(cfg, /db_name:\s*str\?/); assert.match(cfg, /backup_folder:\s*str\?/); assert.match(run, /\/data\/admin-token/); assert.match(run, /REQUIRE_PORTAL_TOKEN\s*=\s*'true'/); assert.doesNotMatch(run, /Admin token:/);// PG-6: публичният gateway се излага на IP/порта на Home Assistant (без HA сесия).
 assert.match(py, /url = "\/api\/public\/v1\/\{tail:\.\*\}"/);
 assert.match(py, /api:hapi_enterprise:gateway/);
 assert.match(py, /hass\.http\.register_view\(PublicGateway\(\)\)/);
@@ -24,4 +30,4 @@ assert.doesNotMatch(views, /read_text\(/, 'view handler-ите не четат �
 assert.match(py, /\|storage\)\)\?\$/, 'storage е разрешен в bridge whitelist-а');
 assert.match(py, /allowed = \{[^}]*"path"/, 'path се препредава за virtual storage');
 
-console.log('PASS HA bridge contract and auto-provisioned admin token (NOT runtime integration)');
+console.log('PASS HA bridge contract: токенът е задължителна опция, портът 8099 е само за интеграцията');

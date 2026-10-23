@@ -41,6 +41,13 @@ ports_description:
   8099/tcp: "Internal API (opt-in only; keep it unpublished)"
   8088/tcp: "Public API Gateway (internal; reverse proxy on the same host/port as Home Assistant)"
 options:
+  token: ""
+  pgp_path_public: ""
+  pgp_path_secret: ""
+  pgp_path_pass: ""
+  pgp_key_pass: ""
+  pgp_encrypt_paths: false
+  pgp_encrypt_workdir: false
   username: ""
   password: ""
   db_name: "Files"
@@ -84,6 +91,13 @@ options:
 schema:
   username: str?
   password: password?
+  token: password?
+  pgp_path_public: str?
+  pgp_path_secret: str?
+  pgp_path_pass: str?
+  pgp_key_pass: password?
+  pgp_encrypt_paths: bool?
+  pgp_encrypt_workdir: bool?
   db_name: str?
   backup_folder: str?
   backup_mirror: str?

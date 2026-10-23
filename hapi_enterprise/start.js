@@ -16,7 +16,6 @@
 //      Supervisor да стигне до него (graceful shutdown на SQLite).
 const fs = require('node:fs');
 const path = require('node:path');
-const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
 const storagePreflight = require('./storage-preflight');
 
@@ -44,8 +43,8 @@ try {
 }
 
 // ── 2. Опции на add-on-а ────────────────────────────────────────────────────
-// Липсващ/невалиден options.json не е фатал: всички стойности имат default в
-// server.js, а token се генерира. Така add-on-ът пали и при ръчен старт.
+// Липсващ/невалиден options.json не е фатален за останалите стойности (всяка има default в
+// server.js), НО токенът вече е задължителен: без него стартът се отказва (виж §3).
 function readOptions() {
   try {
     const parsed = JSON.parse(fs.readFileSync(OPTIONS_PATH, 'utf8'));
@@ -62,39 +61,45 @@ const optionText = (key) => {
 };
 
 // ── 3. ADMIN_TOKEN ──────────────────────────────────────────────────────────
+// Токенът е ЗАДЪЛЖИТЕЛЕН. Две причини: (1) той е вътрешният мастер ключ (AES-256-GCM,
+// HMAC на подписаните URL-и, одит верига); (2) тихото генериране скриваше липсваща
+// конфигурация — точно това не бива да се прави. Затова: без опция `token` add-on-ът
+// отказва старт. Чете се САМО вече записан `/data/admin-token` (за инсталации от преди
+// 0.69.67), но нов никога не се създава.
 function isWeakToken(token) {
   return (
     typeof token !== 'string' ||
     token.length < 24 ||
     token === PLACEHOLDER_TOKEN ||
+    token.startsWith('!secret') || // буквално въведен !secret не е стойност
     /^(.{1,8})\1{3,}$/.test(token)
   );
 }
 
-function resolveAdminToken() {
-  // Няма потребителски токен. Ключът е ВЪТРЕШЕН мастер ключ (AES-256-GCM,
-  // HMAC на подписаните URL-и, PGP материал, одит верига): генерира се веднъж и
-  // не се показва никъде. Хората влизат през Ingress с HA самоличност.
+/** Връща токена от опцията, иначе от вече записания файл; иначе `null` (стартът отказва). */
+function resolveAdminToken(optionToken) {
+  const fromOptions = typeof optionToken === 'string' ? optionToken.trim() : '';
+  if (!isWeakToken(fromOptions)) return fromOptions;
+  if (fromOptions) {
+    fail(
+      'ADMIN_TOKEN_REQUIRED: the "token" option is too weak (needs 24+ characters, no placeholder and no repetition pattern)',
+    );
+  }
   const tokenFile = path.join(ADDON_DATA_DIR, 'admin-token');
   try {
     const saved = fs.readFileSync(tokenFile, 'utf8').trim();
     if (!isWeakToken(saved)) return saved;
   } catch {
-    /* липсващ файл е нормален първи старт */
+    /* няма записан токен — това е грешка в конфигурацията, не повод за генериране */
   }
-
-  const generated = crypto.randomBytes(32).toString('hex');
-  try {
-    fs.mkdirSync(ADDON_DATA_DIR, { recursive: true });
-    fs.writeFileSync(tokenFile, generated, { mode: 0o600 });
-  } catch (e) {
-    fail('Cannot persist the internal key in ' + tokenFile + ': ' + e.message);
-  }
-  return generated;
+  fail(
+    'ADMIN_TOKEN_REQUIRED: set the "token" option (24+ characters) in the add-on configuration. ' +
+    'The add-on no longer generates a token by itself.',
+  );
 }
 
 const env = { ...process.env };
-env.ADMIN_TOKEN = resolveAdminToken();
+env.ADMIN_TOKEN = resolveAdminToken(optionText('token'));
 
 // ── 4. Options → env ────────────────────────────────────────────────────────
 // Празна стойност НЕ се подава, за да остане в сила default-ът на сървъра.
@@ -127,6 +132,25 @@ for (const [envKey, optionKey] of OPTION_ENV) {
   // Нулевите дни и празните низове не се предават: 0 значи „подразбиране“, не „0 дни“.
   if (!value || value === '0') continue;
   env[envKey] = value;
+}
+
+// PGP е ПО ИЗБОР: пътищата се подават, само когато са зададени. Сървърът зарежда ключовете
+// от тях; ако ги няма, стартира нормално и `keyring` казва, че PGP е недостъпен.
+const PGP_PATH_ENV = [
+  ['PGP_PATH_PUBLIC', 'pgp_path_public'],
+  ['PGP_PATH_SECRET', 'pgp_path_secret'],
+  ['PGP_PATH_PASS', 'pgp_path_pass'],
+  ['PGP_KEY_PASS', 'pgp_key_pass'],
+];
+for (const [envKey, optionKey] of PGP_PATH_ENV) {
+  const value = optionText(optionKey);
+  if (value) env[envKey] = value;
+}
+// Флаговете се подават винаги (включително `false`), за да е ясно какво е избрано.
+for (const flag of ['pgp_encrypt_paths', 'pgp_encrypt_workdir']) {
+  const raw = options[flag];
+  if (raw === undefined || raw === null || raw === '') continue;
+  env[flag.toUpperCase()] = raw === true || raw === 'true' ? 'true' : 'false';
 }
 
 // Публичният базов адрес (QR кодове, абсолютни адреси) идва от `public_domain`.

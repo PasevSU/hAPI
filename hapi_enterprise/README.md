@@ -89,9 +89,13 @@ sensors) is installed through HACS from the same repository — see
 
 - Home Assistant OS or Home Assistant Supervised (the add-on needs the Supervisor).
 - Architecture `amd64` or `aarch64`.
-- No credential to prepare: the console authenticates with the Home Assistant user who
-  opens it. There is no admin token in the options — the encryption and signing key is
-  generated once, stored in `/data/admin-token` and never shown.
+- **One mandatory field: `token`.** The console still authenticates with the Home Assistant
+  user who opens it, but the add-on also needs an internal key for encryption, signed-URL
+  HMAC and the audit chain. Put it in `secrets.yaml` as `hapi_token` (24+ characters) and
+  reference it with `!secret hapi_token`. Without it the add-on **refuses to start**
+  (`ADMIN_TOKEN_REQUIRED`); it is never printed and never written to `/data`.
+- **PGP is optional.** The `pgp_*` fields load keys you already have; leave them empty and the
+  add-on still starts with `keyring.available = false`.
 
 ## Recommended settings before you install
 
@@ -192,6 +196,13 @@ this tab. Options apply on add-on restart.
 
 | Setting | Key | Default | What the default means |
 | --- | --- | --- | --- |
+| Admin token (required) | `token` | — | Empty: the add-on refuses to start (`ADMIN_TOKEN_REQUIRED`). 24+ characters, no placeholder and no repetition pattern. Set it with `!secret hapi_token` so the value stays in `secrets.yaml`. It is never printed and never written to `/data`. |
+| PGP public key path (optional) | `pgp_path_public` | — | Empty: PGP is off (the server still starts). Path may point to `public.asc`, `pubring.asc` or a `_openpgpV6` file; read-only. |
+| PGP secret key path (optional) | `pgp_path_secret` | — | Empty: no encryption/layer-2 keys are loaded. Read-only; the add-on never writes into this file. |
+| PGP passphrase file path (optional) | `pgp_path_pass` | — | Empty: no passphrase file, so the `pgp_key_pass` option (or none) is used. The file is read, never written. |
+| PGP passphrase (optional) | `pgp_key_pass` | — | Empty: the secret key is treated as unprotected. Prefer `!secret hapi_pgp_path_pass` pointing at a file over putting the passphrase here. |
+| Encrypt internal file paths | `pgp_encrypt_paths` | `false` | `false`: storage paths stay in plaintext in the database; `true` requires a loaded secret key or the start fails with `PGP_SECRET_KEY_REQUIRED`. |
+| Encrypt the portal work folder | `pgp_encrypt_workdir` | `false` | `false`: work files are encrypted with the internal key only; `true` wraps them with the PGP key (layer 2) and needs a loaded secret key. |
 | Console user name | `username` | — | Empty: a standalone console user `api` is created on first start. Under Ingress the Home Assistant account is used. |
 | Console password | `password` | — | Empty: a random password is generated on first start and written to `api-credentials.txt` (mode 0600). |
 | Database and portal name | `db_name` | `Files` | Names the first portal (`Files`, slug `files`). Change it before the first start to get another name. |
@@ -420,9 +431,9 @@ Scrape example (Home Assistant or any Prometheus-compatible agent):
   metrics_path: /admin/api/sensors/prometheus
   authorization:
     type: Bearer
-    # The add-on has no user-facing token. This is the internal key, generated once:
-    # host path /mnt/data/supervisor/addons/data/hapi_enterprise/admin-token
-    credentials: !secret hapi_internal_key
+    # The add-on's internal key is the same value you set in the `token` option, so the
+    # scrape credential lives in secrets.yaml next to it — nothing is written to /data:
+    credentials: !secret hapi_token
   static_configs:
     - targets: ['homeassistant.local:8099']
 ```

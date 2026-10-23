@@ -980,31 +980,11 @@ function publicKeyOf(secretArmored) {
   return armor('PUBLIC', Buffer.concat(out));
 }
 
+/** Последните 8 байта от отпечатъка — това е key ID-то в PKESK v3. */
 function pgpKeyFingerprintHex(key) {
   return Buffer.from(key.fingerprint, 'hex');
 }
 
-/**
- * Кой ключ криптира: RSA подключът за криптиране, ако има такъв, иначе основният RSA.
- * ECDH/X25519 не се поддържа — казва се с думи, вместо да се върне празно.
- */
-function encryptionKeyOf(parsed) {
-  const all = parsed.keys;
-  const sub = all.find((k) => k.kind === 'rsa' && k.isSubkey && ALGO[k.algorithm] && ALGO[k.algorithm].id === 1);
-  const primary = all.find((k) => k.kind === 'rsa' && !k.isSubkey && ALGO[k.algorithm]);
-  const key = sub || primary;
-  if (!key) throw fail('NO_ENCRYPTION_KEY', 'Няма RSA ключ за криптиране (ECDH/X25519 не се поддържа)');
-  return key;
-}
-
-function pgpKeyFingerprintHex(key) {
-  return Buffer.from(key.fingerprint, 'hex');
-}
-
-/**
- * Кой ключ криптира: RSA подключът за криптиране, ако има такъв, иначе основният RSA.
- * ECDH/X25519 не се поддържа — казва се с думи, вместо да се върне празно.
- */
 // X25519/X448 обвивка (RFC 9580 §5.1.6): KEK = HKDF-SHA256/512(eph || получател || shared),
 // salt празен, info „OpenPGP X25519“/„OpenPGP X448“; обвива се САМО сесийният ключ с AES-KW.
 const X_CURVES = {
@@ -1047,6 +1027,68 @@ function encryptionKeyOf(parsed) {
     throw fail('UNSUPPORTED_CURVE', 'Ключът за криптиране е ECDH с именувана крива — hAPI поддържа X25519, X448 и RSA');
   }
   throw fail('NO_ENCRYPTION_KEY', 'Няма ключ за криптиране (X25519, X448 или RSA)');
+}
+
+// ── RSA: PKCS#1 v1.5 ръчно ────────────────────────────────────────────────────
+// OpenSSL 3 отказва PKCS#1 padding при частните операции (`privateEncrypt`), затова
+// padding-ът и модулното степенуване се правят тук. MPI не пази водещи нули, затова
+// резултатът се допълва до дължината на модула в двете посоки — иначе gpg чете счупен блок.
+function pkcs1Pad(payload, size) {
+  if (payload.length > size - 11) throw fail('DATA_TOO_LONG', 'Данните не се побират в един RSA блок');
+  const ps = Buffer.alloc(size - payload.length - 3);
+  for (let i = 0; i < ps.length; i++) {
+    let byte = 0;
+    while (byte === 0) byte = crypto.randomBytes(1)[0];
+    ps[i] = byte;
+  }
+  return Buffer.concat([Buffer.from([0x00, 0x02]), ps, Buffer.from([0x00]), payload]);
+}
+
+/** m^e mod n, допълнено до `size` байта (MPI-то няма водещи нули). */
+function rsaPow(base, exponent, modulus, size) {
+  let result = 1n;
+  let square = base % modulus;
+  let exp = exponent;
+  while (exp > 0n) {
+    if (exp & 1n) result = (result * square) % modulus;
+    square = (square * square) % modulus;
+    exp >>= 1n;
+  }
+  const out = toBuf(result);
+  if (out.length >= size) return out.subarray(out.length - size);
+  return Buffer.concat([Buffer.alloc(size - out.length), out]);
+}
+
+function rsaParameters(jwk, names) {
+  const n = toBig(Buffer.from(jwk.n, 'base64url'));
+  const size = Buffer.from(jwk.n, 'base64url').length;
+  const values = names.map((name) => toBig(Buffer.from(jwk[name], 'base64url')));
+  return { n, size, values };
+}
+
+/** PKCS#1 v1.5 криптиране към публичен RSA ключ (за PKESK). */
+function rsaEncryptPkcs1(keyObject, payload) {
+  const { n, size, values } = rsaParameters(keyObject.export({ format: 'jwk' }), ['e']);
+  return rsaPow(toBig(pkcs1Pad(payload, size)), values[0], n, size);
+}
+
+/** PKCS#1 v1.5 декриптиране с частен RSA ключ; връща само данните след padding-а. */
+function rsaDecryptPkcs1(keyObject, cipherText) {
+  const { n, size, values } = rsaParameters(keyObject.export({ format: 'jwk' }), ['d']);
+  const block = rsaPow(toBig(cipherText), values[0], n, size);
+  if (block[0] !== 0x00 || block[1] !== 0x02) {
+    throw fail('BAD_SESSION_KEY', 'RSA блокът не е PKCS#1 v1.5 тип 2');
+  }
+  const end = block.indexOf(0, 2);
+  if (end < 10) throw fail('BAD_SESSION_KEY', 'RSA блокът е с невалиден padding');
+  return block.subarray(end + 1);
+}
+
+/** Какво носи PKESK при RSA: алгоритъм на шифъра, ключът и 2-байтова контролна сума. */
+function sessionBlob(sessionKey) {
+  let sum = 0;
+  for (const byte of sessionKey) sum = (sum + byte) & 0xffff;
+  return Buffer.concat([Buffer.from([9]), sessionKey, Buffer.from([sum >> 8, sum & 0xff])]);
 }
 
 /**
@@ -1209,7 +1251,8 @@ function decryptMessage(armored, armoredSecretKey, passphrase) {
     let sum = 0;
     for (const byte of sessionKey) sum = (sum + byte) & 0xffff;
     if (sum !== blob.readUInt16BE(1 + info.keyBytes)) throw fail('BAD_SESSION_KEY', 'Контролната сума на сесийния ключ не съвпада');
-    prefixLength = block + 3;
+    // 18 или 19 октета — решава се след декриптирането, по съдържанието (виж по-долу).
+    prefixLength = block + 2;
   } else {
     throw fail('UNSUPPORTED_ALGO', `Неподдържан алгоритъм на ключа за криптиране (${algo})`);
   }
@@ -1241,17 +1284,29 @@ function decryptMessage(armored, armoredSecretKey, passphrase) {
   if (!crypto.timingSafeEqual(inner.subarray(inner.length - 20), want)) {
     throw fail('MDC_MISMATCH', 'Контролната сума не съвпада — съобщението е подменено');
   }
-  // Проверката на префикса е само при RSA: там двата октета наистина повтарят края на
-  // сесийния ключ (RFC 4880 §5.7). При X25519/X448 префиксът е 16 случайни + 2 октета,
-  // които НЕ са от сесийния ключ (проверено срещу OpenPGP.js 6.3.2) — там цялостта се
-  // гарантира от MDC, който вече е проверен по-горе.
-  if (prefixLength === block + 3) {
-    if (!inner.subarray(cipherInfo.block, cipherInfo.block + 2).equals(sessionKey.subarray(sessionKey.length - 2))) {
-      throw fail('BAD_SESSION_KEY', 'Префиксът не отговаря на сесийния ключ');
+  // Префиксът на SEIPD v1: `block` случайни октета + 2 октета за проверка (RFC 4880 §5.7).
+  // Двете проверъчни октета не са еднакви при всички: hAPI и OpenPGP.js повтарят края на
+  // СЕСИЙНИЯ ключ, а GnuPG повтаря последните два октета на самия случаен блок (измерено с
+  // gpg 2.5.24). Приемат се и двете; цялостта така или иначе е доказана от MDC по-горе.
+  // Дължината също не се предполага: GnuPG слага между тях октет с алгоритъма на шифъра.
+  if (algo === 1 || algo === 2) {
+    const repeat = inner.subarray(block, block + 2);
+    const matchesKey = repeat.equals(sessionKey.subarray(sessionKey.length - 2));
+    const matchesPrefix = repeat.equals(inner.subarray(block - 2, block));
+    if (!matchesKey && !matchesPrefix) {
+      throw fail('BAD_SESSION_KEY', 'Префиксът не отговаря нито на сесийния ключ, нито на себе си');
     }
-    if (inner[block + 2] !== sessionAlgo) throw fail('BAD_SESSION_KEY', 'Префиксът не отговаря на шифъра');
+    prefixLength = inner[block + 2] === sessionAlgo ? block + 3 : block + 2;
   }
-  return stripWrappingPackets(inner.subarray(prefixLength, inner.length - 22));
+  const result = stripWrappingPackets(inner.subarray(prefixLength, inner.length - 22));
+  // Компресия вътре в шифротекста не се поддържа — по-добре ясен код, отколкото смет.
+  if (result.length && result[0] & 0x80) {
+    const tag = result[0] & 0x40 ? result[0] & 0x3f : (result[0] >> 2) & 0x0f;
+    if (tag === 8) {
+      throw fail('UNSUPPORTED_COMPRESSION', 'Съобщението е компресирано преди криптиране — криптирай без компресия (`gpg -z 0` или hAPI)');
+    }
+  }
+  return result;
 }
 
 module.exports = {

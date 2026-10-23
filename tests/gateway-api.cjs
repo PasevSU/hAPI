@@ -34,16 +34,23 @@ assert.deepEqual(auditView.roles, ['admin']);
 assert.equal(auditView.visibility, 'hidden');
 assert.equal(api.fileView(vault, { id: 'f3', name: 'Revoked_File.pdf' }, cfg).access, 'DISABLED');
 assert.equal(api.fileView(publicPortal, { id: 'f4', name: 'x.pdf', listed: false }, cfg).visibility, 'hidden');
-
 // 3. Адреси. Публичната страница се адресира с ID на портала (там води QR кодът),
 // JSON API-то — по slug (четим ключ за клиентите).
+// Без зададен домейн НЯМА публичен адрес: адресите са относителни пътища. Измислен
+// хост (`portal.example.com`) не се появява — такава връзка никога не се отваря.
 const urls = api.urlsFor(api.portalView(publicPortal, cfg), cfg);
-assert.equal(urls.landing, 'https://portal.example.com/p/p1/');
-assert.equal(urls.portal, 'https://portal.example.com/api/public/v1/portals/public-notices');
-assert.equal(urls.files, 'https://portal.example.com/api/public/v1/portals/public-notices/files');
+assert.equal(urls.landing, '/p/p1/');
+assert.equal(urls.portal, '/api/public/v1/portals/public-notices');
+assert.equal(urls.files, '/api/public/v1/portals/public-notices/files');
+assert.equal(api.downloadUrlFor(api.fileView(publicPortal, freeFile, cfg), cfg), '/api/public/v1/files/f1/download');
+assert.ok(!JSON.stringify(urls).includes('example.com'), 'без домейн не се измисля хост');
+
+// Със зададен домейн адресите стават абсолютни — това е истинският публичен адрес.
+const withDomain = JSON.parse(JSON.stringify(cfg));
+withDomain.gateway.public.domain = 'portal.example.com';
 assert.equal(
-  api.downloadUrlFor(api.fileView(publicPortal, freeFile, cfg), cfg),
-  'https://portal.example.com/api/public/v1/files/f1/download',
+  api.urlsFor(api.portalView(publicPortal, cfg), withDomain).landing,
+  'https://portal.example.com/p/p1/',
 );
 
 // 4. Решения: публичен файл се изтегля без ключ и без HA сесия.

@@ -5,6 +5,43 @@ configuration:
   password:
     name: Парола за конзолата
     description: Незадължителна парола за standalone инсталации; потребителите на Home Assistant влизат със своя акаунт.
+  token:
+    name: Админ токен (задължителен)
+    description: >-
+      Задължителен при старт. Поне 24 знака, без стойност-заглушка и без очевиден шаблон.
+      Без него add-on-ът отказва старт (ADMIN_TOKEN_REQUIRED) и никога не генерира токен сам.
+      В secrets.yaml стойността се казва hapi_token, но Home Assistant не разширява !secret в
+      опциите на add-on-а — тук се въвежда самата стойност.
+  pgp_path_public:
+    name: Път до публичния PGP ключ (по избор)
+    description: >-
+      Пълен път в контейнера, напр. /homeassistant/_openpgpV6/public.asc. По избор: ако е празно
+      или файлът липсва, add-on-ът стартира нормално и PGP остава недостъпен.
+  pgp_path_secret:
+    name: Път до частния PGP ключ (по избор)
+    description: >-
+      Пълен път до частния ключ, защитен с парола, напр. /homeassistant/_openpgpV6/secret.asc
+      (може и private.asc). Нужен е за четене на криптираните пътища и на работната папка.
+  pgp_path_pass:
+    name: Път до файла с паролата (по избор)
+    description: >-
+      Пълен път до файла с HAPI_PGP_KEY_PASS=…, напр. /homeassistant/_openpgpV6/.env.
+      Сочи към .env, никога към .env.example (шаблонът е с празна стойност).
+  pgp_key_pass:
+    name: Парола на PGP ключа (по избор)
+    description: >-
+      Самата парола, пази се в /data/options.json. Има предимство пред pgp_path_pass.
+      Никога не се печата в лог и не се връща от API-то.
+  pgp_encrypt_paths:
+    name: Криптиране на вътрешните пътища
+    description: >-
+      Пази storagePathEnc (криптиран с PGP) вместо открития път в db.json. Изисква зареден ключ —
+      включване без ключ отказва старт (PGP_SECRET_KEY_REQUIRED).
+  pgp_encrypt_workdir:
+    name: Криптиране на работната папка
+    description: >-
+      Криптира съдържанието в работната папка на портала (AES-256-GCM с ключ за файла, обвит с
+      PGP). Изисква зареден ключ. Без ключ и парола файловете не могат да се прочетат.
   db_name:
     name: Име на базата и портала
     description: Име на първия портал и на файла на базата.

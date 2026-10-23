@@ -250,11 +250,21 @@ check('HA-E01', 'entrypoint', 'blocker', 'Node/SQLite гейт преди ста
   return 'Node ≥ 22.13';
 });
 
-check('HA-E02', 'entrypoint', 'blocker', 'ADMIN_TOKEN: файл 0600, без печат', () => {
-  need(/mode: 0o600/.test(entry), 'токенът не се записва с права 0600');
-  need(/admin-token/.test(entry), 'липсва постоянен файл admin-token');
+check('HA-E02', 'entrypoint', 'blocker', 'ADMIN_TOKEN: задължителен вход, без печат', () => {
+  // 0.69.67: токенът вече НЕ се генерира и НЕ се записва — идва от опцията `token`
+  // (или от стар /data/admin-token за инсталации отпреди 0.69.67).
+  need(/ADMIN_TOKEN_REQUIRED/.test(entry), 'липсва отказ ADMIN_TOKEN_REQUIRED при липсващ токен');
+  need(/optionText\('token'\)/.test(entry), 'токенът не се чете от опцията `token`');
+  need(/env\.ADMIN_TOKEN\s*=/.test(entry), 'ADMIN_TOKEN не се подава към сървъра');
+  need(!/randomBytes|randomUUID/.test(entry), 'entrypoint-ът още генерира тайна вместо да иска конфигурация');
   need(!/console\.(log|info)\([^)]*ADMIN_TOKEN/.test(entry), 'entrypoint-ът печата ADMIN_TOKEN');
-  return '0600, не се печата';
+  return 'от опцията, не се печата';
+});
+
+check('HA-E02b', 'entrypoint', 'blocker', 'PGP е по избор, не блокира старта', () => {
+  need(/PGP_PATH_PUBLIC/.test(entry) && /PGP_PATH_SECRET/.test(entry), 'липсва мост за PGP пътищата');
+  need(/if \(value\) env\[envKey\] = value;/.test(entry), 'празен PGP път не бива да се подава');
+  return 'pgp_path_* → env, само когато са зададени';
 });
 
 check('HA-E03', 'entrypoint', 'blocker', 'storage preflight преди старт', () => {

@@ -292,7 +292,7 @@ curl -i -H "X-Portal-Key: hapi_..." \
 | `403 {"reason":"mode-enabled"}`                   | файлът е `DISABLED`                         | сменете режима през админ API                                              |
 | Public Access Test: `gateway-published`           | `public_gateway` е `false`                  | включете опцията или `PUBLIC_GATEWAY=1`                                    |
 | Public Access Test: `https`                       | няма зададен домейн                         | попълнете `public_domain`                                                  |
-| URL-ите показват `portal.example.com`             | домейнът не е зададен                       | `public_domain` / `PUBLIC_DOMAIN`                                          |
+| URL-ите са относителни (`/p/…`, `/api/public/…`)   | домейнът не е зададен — измислен хост НЕ се слага | `public_domain` / `PUBLIC_DOMAIN` — тогава адресите стават абсолютни          |
 | URL-ите са абсолютни, а искате същия порт като HA | `public_same_origin` е изключен             | включете `public_same_origin` / `PUBLIC_GATEWAY_SAME_ORIGIN=1`             |
 | `https` в Public Access Test при same-origin      | няма домейн, но режимът е относителен       | **не е грешка** — TLS се наследява от HA                                   |
 | `/api/public/...` връща HTML на HA                | nginx не пренасочва пътя                    | добавете `location /api/public/` преди `location /`                        |
