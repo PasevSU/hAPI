@@ -319,12 +319,12 @@ add-on-а — виж бележката за `!secret` в [`PGP_KEYRING_AND_WORK
 | `hapi_pgp_path_secret` | пълен път до частния ключ     | `pgp_path_secret`        |
 | `hapi_pgp_path_pass`   | пълен път до файла с паролата | `pgp_path_pass`          |
 
-**Маршрути (⏳ 0.69.67 — още не съществуват; описани са, за да не се гадае договорът):**
+**Маршрути (✅ 0.69.67 — работят; `tests/pgp-keyring.cjs`):**
 
 | Метод | Път                             | Право | Отговор                                                                                                                                                              |
 | ----- | ------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET   | `/admin/api/pgp/keyring`        | `pgp` | `{ available, keysDir, publicKeyId, encryptionKeyId, algorithm, hasPrivate, passphraseAccepted, encryptPaths, encryptWorkdir }` — **без** парола и без част от ключа |
-| POST  | `/admin/api/pgp/keyring/reload` | `pgp` | препрочита ключовете от диска; `200` с горния обект или `409` с код от таблицата за грешки                                                                           |
+| GET   | `/admin/api/pgp/keyring`        | `pgp` | `{ ok, keyring: { available, canDecrypt, reason, encryptPaths, encryptWorkdir, passphraseSource, keys[], storageKeyId, primaryKeyId } }` — **без** парола, **без** път до файла |
+| POST  | `/admin/api/pgp/keyring/reload` | `pgp` | препрочита ключовете от диска; `200` с горния обект (и одит `pgp.keyring.reload`) или `503 KEYRING_UNAVAILABLE: <код>`                                               |
 
 **Кодове при отказ (същите като в `pgp.js`, не нови):** `PASSPHRASE_REQUIRED`, `PASSPHRASE_WRONG`,
 `NO_ENCRYPTION_KEY`, `UNSUPPORTED_CURVE`, `S2K_ARGON2_UNSUPPORTED`, `MDC_MISMATCH`, `WEAK_KEY`;

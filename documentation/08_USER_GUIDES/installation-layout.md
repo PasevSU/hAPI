@@ -162,10 +162,10 @@ add-on-а**, а не „по-късно от панела“. Стандартн
 | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `token` липсва, < 24 знака или е `!secret …` буквално             | **отказ при старт**: `ADMIN_TOKEN_REQUIRED` (без генериране) — ✅                                                                    |
 | `token` силен, но има стар `/data/admin-token`                    | ползва се опцията; файлът не се презаписва — ✅                                                                                      |
-| PGP пътища липсват (нито един от трите)                           | **старт продължава**, `keyring.available = false` — ✅ (мостът е в `start.js`; самият keyring е ⏳ B2)                                |
-| PGP пътища зададени, но файл/парола липсват                       | **старт продължава**, `available = false`, причината в `keyring.reason` — ⏳ B2                                                      |
-| `pgp_encrypt_paths`/`pgp_encrypt_workdir` = `true`, а ключ липсва | **отказ при старт**: `PGP_SECRET_KEY_REQUIRED` (иначе би се лъгало, че е криптирано) — ⏳ B2                                         |
-| ключът е с Argon2 или неподдържана крива                          | `available = false` + `S2K_ARGON2_UNSUPPORTED` / `UNSUPPORTED_CURVE` — стартът продължава, освен ако криптирането е включено — ⏳ B2 |
+| PGP пътища липсват (нито един от трите)                           | **старт продължава**, `keyring.available = false`, причина `NO_PATHS` — ✅                                                          |
+| PGP пътища зададени, но файл/парола липсват                       | **старт продължава**, `available = false`, причината в `keyring.reason` (`*_UNREADABLE`, `PASSPHRASE_*`) — ✅                         |
+| `pgp_encrypt_paths`/`pgp_encrypt_workdir` = `true`, а ключ липсва | **отказ при опит за криптиране**: `PGP_SECRET_KEY_REQUIRED` (иначе би се лъгало, че е криптирано) — ✅                               |
+| ключът е с Argon2 или неподдържана крива                          | `available = false` + `S2K_ARGON2_UNSUPPORTED` / `UNSUPPORTED_CURVE` — стартът продължава, освен ако криптирането е включено — ✅ |
 
 ## 5. Къде отива порталът, който показва файловете и данните
 
@@ -203,7 +203,7 @@ Evidence View се публикува, защото Home Assistant сервир�
 | Данните са на мястото си      | `GET /admin/api/diagnostics` → `layout.entries` показва `data`, `files`, `internal`, `api`, `portal-folder`, `evidence-portal` с `exists`/`writable` |
 | Порталът на папката се отваря | `/portal.html?folder=<slug>` (личен портал → 404, това е правилното поведение)                                                                       |
 | Evidence View е публикуван    | `GET /admin/api/evidence-portal/status` → целта и хешовете; отваря се на `/local/hapi/data/portal.html?folder=<slug>`                                |
-| Ключовете са намерени         | `GET /admin/api/pgp/keyring` → `available: true` (⏳ 0.69.67)                                                                                         |
+| Ключовете са намерени         | `GET /admin/api/pgp/keyring` → `available: true` (без път и без парола в отговора)                                                                   |
 
 Ако нещо липсва, `layout` казва **кое** и **дали е записваемо** — вместо да се гадае.
 

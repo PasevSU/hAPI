@@ -770,6 +770,10 @@ const reportsRoutes = require('./routes/reports').create({
 
 const generatorRoutes = require('./routes/generator').create({ generator, adminGate, audit, json, fail, parse });
 const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion });
+// PGP ключохранилище (B2): ключовете идват само от изрични пътища; тук се държи една
+// инстанция, за да е еднакъв отговорът „има ли ключ“ за целия сървър.
+const keyring = require('./path-crypto').create({ env: process.env });
+const pgpKeyring = require('./routes/pgp-keyring').create({ json, fail, adminGate, audit, keyring });
 const linkCheck = require('./routes/link-check').create({
   json, fail, parse, audit, adminGate, baseUrl,
   publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
@@ -2112,6 +2116,8 @@ async function handler(req, res) {
       if (await adminDocs.handle({ req, res, url, method })) return;
       // Проверка дали публичният адрес наистина се отваря — компонент `routes/link-check.js`.
       if (await linkCheck.handle({ req, res, url, method })) return;
+      // Състояние на PGP ключовете — компонент `routes/pgp-keyring.js`.
+      if (await pgpKeyring.handle({ req, res, url, method })) return;
       if (!adminGate(req, res, 'portals', method)) return; if (parts[2] === 'taxonomy' && parts.length === 3) {
         const tx = () => ({ categories: [...((db.taxonomy || {}).categories || [])], groups: [...((db.taxonomy || {}).groups || [])] });
         if (method === 'GET') return json(res, 200, tx());

@@ -60,10 +60,15 @@
 Пускане: `node tests/legacy-logic-residue.cjs` (или `--verbose` за всеки ред). Върви и в
 `test-matrix`, защото е в `tests/`.
 
+**След B1+B2 (измерено):** 143 приложни файла · 8 правила · **7 в сила** · 1 инвентар
+(`W3-plaintext-storage-path`, 5 попадения — обхватът на B3) · 0 остатъка в гейта. Правилото
+`W2-key-folder-guess` стана гейт, защото ключовете вече се зареждат само от изричните пътища
+(`path-crypto.js`).
+
 | Бач    | Обхват                                                                       | Приемане                                                                                                                                   |
 | ------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **B1** | W1 + опциите от W2 в `config.yaml` (опции, схема, преводи) и `start.js`      | нов старт без `token` → отказ `ADMIN_TOKEN_REQUIRED`; със силен токен → стартира; `settings-defaults --check` зелен — **готово (0.69.67)** |
-| **B2** | `hapi_enterprise/path-crypto.js` + `GET /admin/api/pgp/keyring` (+`/reload`) | ключовете се зареждат от трите пътя; `available:false` при липса; никаква парола в отговор/лог                                             |
+| **B2** | `hapi_enterprise/path-crypto.js` + `GET /admin/api/pgp/keyring` (+`/reload`) | ключовете се зареждат от трите пътя; `available:false` при липса; никаква парола в отговор/лог — **готово (0.69.67)** |
 | **B3** | W3: `storagePathEnc` + миграция                                              | в `db.json` няма открит `storagePath`; старите записи работят след миграция                                                                |
 | **B4** | W4: криптирана работна папка (DEK + PGP обвивка)                             | файл в папката не се чете без ключ; изтеглянето през add-on-а работи                                                                       |
 | **B5** | W5 + W6: Evidence View публикуване и синхронизация на `app.js`               | публикуваните файлове съвпадат с източника; `data/demo-evidence.json` е на място                                                           |
@@ -94,7 +99,31 @@
 - Документация: `installation-layout.md` §4.1, `INTEGRATION_CONTRACTS.md`, `hapi_enterprise/README.md`.
 
 **Доказано с числа:** `settings-defaults --check` → 40 настройки; `scenario-matrix` → 40 опции,
-232 тестови файла; `ha-compatibility` → 43/43 правила, 0 блокера.
+234 тестови файла; `ha-compatibility` → 43/43 правила, 0 блокера.
+
+### Какво точно е направено в B2 (проверено)
+
+- `hapi_enterprise/path-crypto.js` — ключохранилище с една инстанция за целия сървър:
+  - ключовете идват **само** от `PGP_PATH_PUBLIC`, `PGP_PATH_SECRET`, `PGP_PATH_PASS`,
+    `PGP_KEY_PASS`; никакво търсене по папка и никакво предположение за `/config`;
+  - паролата: опция → файл (първият ред) → нищо; в отговора стои само **източникът**
+    (`option`/`file`/`none`/`empty-file`/`unreadable-file`), никога стойността;
+  - `status()` връща `available`, `canDecrypt`, `reason`, `keys[]` (идентичност, алгоритъм,
+    битове, подключ ли е), `storageKeyId`, `primaryKeyId` — **без път и без парола** (INV-P7);
+  - причини: `NO_PATHS`, `PUBLIC_UNREADABLE`, `SECRET_UNREADABLE`, `PASSPHRASE_REQUIRED`,
+    `PASSPHRASE_WRONG`, `S2K_ARGON2_UNSUPPORTED`, `UNSUPPORTED_CURVE`, `NO_ENCRYPTION_KEY`;
+  - `requireEncryptionKey()` хвърля `PGP_SECRET_KEY_REQUIRED` (503), когато `pgp_encrypt_paths`
+    или `pgp_encrypt_workdir` е включено, а ключ няма — вместо тихо „не криптира“.
+- `hapi_enterprise/routes/pgp-keyring.js`: `GET /admin/api/pgp/keyring` (право `pgp`) и
+  `POST /admin/api/pgp/keyring/reload` с одит `pgp.keyring.reload`; при недостъпни ключове
+  `503 KEYRING_UNAVAILABLE: <код>`. Монтиран в `server.js` (2679/2722 реда).
+- `pgp.js`: експортирани `encryptionKeyOf` и `signingKey` — решението „кой ключ криптира/подписва“
+  живее на едно място, а не се преписва в ключохранилището.
+- Тест `tests/pgp-keyring.cjs` (10 проверки) с тестови ключове в `tests/fixtures/pgp/`
+  (gpg, RSA 2048, парола `fx-pass-2026`): липсващи пътища, само публичен ключ, парола от
+  опция/файл и предимство, грешна/липсваща парола, липсващ/счупен файл, `PGP_SECRET_KEY_REQUIRED`,
+  `reload` и кеш, HTTP `401` без токен / `200` с токен и без тайни в отговора.
+- `Dockerfile`: `path-crypto.js` в `COPY` (иначе `HA-C04` блокира изданието).
 
 ## 3. Правила, които важат за всеки бач
 

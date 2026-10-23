@@ -84,7 +84,7 @@ const RULES = [
   {
     id: 'W2-key-folder-guess',
     batch: 'B2',
-    enforced: false,
+    enforced: true,
     re: /pgp_keys_dir|PGP_KEYS_DIR/,
     why: 'ключовете се търсеха по „папка“ с предположение за /config, което в контейнера е друго',
     fix: 'три пълни пътя: `pgp_path_public`, `pgp_path_secret`, `pgp_path_pass`',
@@ -148,11 +148,11 @@ function run() {
   for (const rule of RULES) {
     const targets = rule.files
       ? files.filter((f) =>
-          rule.files.some((prefix) => {
-            const r = rel(f);
-            return r === prefix || r.startsWith(prefix.endsWith('/') ? prefix : prefix + '/');
-          }),
-        )
+        rule.files.some((prefix) => {
+          const r = rel(f);
+          return r === prefix || r.startsWith(prefix.endsWith('/') ? prefix : prefix + '/');
+        })
+      )
       : files;
     for (const file of targets) {
       const name = rel(file);
@@ -197,14 +197,14 @@ function run() {
       console.log(`      какво трябва: ${h.rule.fix}`);
     }
     throw new Error(
-      `остатъци от старата логика: ${gateHits.length} попадения в ${enforced.length} правила, които вече са гейт`,
+      `остатъци от старата логика: ${gateHits.length} попадения в ${enforced.length} правила, които вече са гейт`
     );
   }
 
   console.log(
     `PASS legacy-logic-residue: ${files.length} приложни файла · ${RULES.length} правила ` +
-      `(${enforced.length} в сила, ${pending.length} инвентар) · 0 остатъка от старата логика` +
-      (invHits.length ? ` · ${invHits.length} попадения чакат своя бач` : ''),
+    `(${enforced.length} в сила, ${pending.length} инвентар) · 0 остатъка от старата логика` +
+    (invHits.length ? ` · ${invHits.length} попадения чакат своя бач` : '')
   );
 }
 

@@ -1318,6 +1318,10 @@ module.exports = {
   parseKeyBlock,
   describe,
   publicKeyOf,
+  // Кой ключ криптира и кой подписва: решенията живеят тук, за да не се разминават
+  // между ключохранилището и двигателя.
+  encryptionKeyOf,
+  signingKey,
   signDetached,
   verifyDetached,
   generate,
