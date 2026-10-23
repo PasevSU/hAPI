@@ -73,7 +73,10 @@ assert.match(directory, /class="u-row u-row-2/);
 // 5. Публичните препратки ползват публичния адрес, а не Ingress пътя.
 assert.match(filesManager, /const publicBase = \(\) => \(state\.publicBaseUrl \|\| base\(\)/);
 assert.match(filesManager, /buildApiRecord\(portalObj, \{ baseUrl: publicBase\(\) \}\)/);
-assert.match(filesManager, /return `\$\{publicBase\(\)\}\/api\/public\/v1\/files/);
+// Адресът за изтегляне вече е ПОДПИСАН (за FREE) или администраторски — старият gateway
+// път искаше ключ и в браузър даваше 403 (вж. tests/file-link-works.cjs).
+assert.match(filesManager, /files\/\$\{f\.id\}\/signed-url/);
+assert.match(filesManager, /Администраторски адрес за изтегляне/);
 assert.match(filesManager, /\/admin\/api\/connection/);
 
 // 5б. RFC 3161 START / STOP блокът (порт от HASH_REPORT): TSA URL-и, два бутона

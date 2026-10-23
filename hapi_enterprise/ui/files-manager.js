@@ -233,6 +233,8 @@
     lastAction: '',
     // Публичен адрес за API/QR (сървърна настройка limits.publicBaseUrl).
     publicBaseUrl: '',
+    // Издадени подписани адреси за изтегляне (по id на файл) — важат 1 час.
+    signed: {},
     connectionLoaded: false,
   };
 
@@ -1687,8 +1689,25 @@
     render();
   }
 
+  // Адресът, който панелът ПОКАЗВА, трябва да се отваря в браузър. Затова:
+  //   • FREE файл → подписан адрес (sig + expires), който не иска заглавки;
+  //   • защитен файл → администраторски адрес (изисква вход в панела).
+  // Пътят на публичния gateway (`/api/public/…`) иска ключ и в браузър дава 403 — затова
+  // вече не се показва като „публичен адрес“.
+  const signedLink = (f) => state.signed[f.id] || '';
   function webLink(f) {
-    return `${publicBase()}/api/public/v1/files/${encodeURIComponent(f.id)}/download`;
+    const signed = signedLink(f);
+    if (signed) return signed;
+    if ((f.accessMode || 'FREE') === 'FREE') return '';
+    return `${base()}/admin/api/portals/${encodeURIComponent(portal().id)}/files/${encodeURIComponent(f.id)}/download`;
+  }
+  /** Издава (веднъж) подписан адрес за FREE файл и прерисува панела. */
+  async function ensureSigned(f) {
+    if (!connected() || signedLink(f) || (f.accessMode || 'FREE') !== 'FREE') return;
+    const r = await api(`${P()}/files/${f.id}/signed-url`, { method: 'POST', json: { ttlSeconds: 3600 } });
+    if (!r.ok || !r.data || !r.data.path) return;
+    state.signed[f.id] = base() + r.data.path;
+    render();
   }
   function qrUrl(f) {
     return `${publicBase()}/api/v1/p/${encodeURIComponent(portal().slug)}/files/${encodeURIComponent(f.id)}/qr.svg`;
@@ -2876,11 +2895,18 @@
   }
 
   function sharePane(f) {
+    const link = webLink(f);
+    const isFree = (f.accessMode || 'FREE') === 'FREE';
+    // За FREE файл адресът се издава при отваряне на панела (един път) и важи 1 час.
+    if (isFree && !link) void ensureSigned(f);
+    const hint = !isFree
+      ? 'Файлът е защитен: адресът е администраторски и иска вход в панела. За външен получател издай ключ или подписан адрес (файлът трябва да е FREE).'
+      : 'Адресът е подписан (валиден 1 час) и се отваря в браузър без вход. Издай нов от това меню, когато изтече.';
     return `
-      <div class="field"><label>Публичен адрес за изтегляне</label><input readonly value="${esc(webLink(f))}" /></div>
+      <div class="field"><label>${isFree ? 'Подписан адрес за изтегляне' : 'Администраторски адрес за изтегляне'}</label><input readonly value="${esc(link || 'издава се…')}" /></div>
       <div class="field"><label>QR код</label><input readonly value="${esc(qrUrl(f))}" /></div>
       <div class="u-row u-row-2">
-        <button type="button" class="btn btn-sm" id="fm-copy-link">${ICON.copy} Копирай адреса</button>
+        <button type="button" class="btn btn-sm" id="fm-copy-link" ${link ? '' : 'disabled'}>${ICON.copy} Копирай адреса</button>
         <button type="button" class="btn btn-sm" id="fm-create-key">Нов ключ</button>
       </div>
       ${state.issuedKey
@@ -2889,7 +2915,7 @@
         )}" /></div><p class="hint">Подава се като <code>X-Portal-Key</code>.</p>`
         : ''
       }
-      <p class="hint">Ако файлът е скрит (не е listed), адресът работи само с ключ.</p>`;
+      <p class="hint">${hint}</p>`;
   }
 
   function uploadForm() {
