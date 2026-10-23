@@ -1940,7 +1940,7 @@ async function handler(req, res) {
           sign = { secretArmored, keyId: key.keyId, label: key.label };
         }
         let meta;
-        try { meta = await packager.build({ portal: p, files, sign, ttlHours: settings.ttlHours, compression: b.compression, encryption: b.encryption, password: b.password }) } catch (e) { return fail(res, e.status || 500, e.message) }
+        try { meta = await packager.build({ portal: p, files, sign, ttlHours: settings.ttlHours, compression: b.compression, encryption: b.encryption, password: b.password, split: b.split }) } catch (e) { return fail(res, e.status || 500, e.message) }
         if (signFallback) meta.signingFallback = signFallback;
         await packager.prune({ maxAgeHours: settings.ttlHours, maxCount: settings.maxKept }).catch(() => { });
         void audit('package.build', { portalId: p.id, packageId: meta.id, files: meta.files, signed: meta.hasSignature, sha256: meta.sha256, signingFallback: signFallback ? signFallback.used : null, encrypted: Boolean(meta.hasEncryption), compression: meta.compression.name });
@@ -1965,8 +1965,8 @@ async function handler(req, res) {
         return json(res, 200, meta);
       }
       if (parts.length === 5 && parts[4] === 'download' && method === 'GET') {
-        const a = await packager.artifact(parts[3], 'zip'); if (!a) return fail(res, 404, 'Not found');
-        return streamDownload(req, res, a.file, a.stat, a.name, () => { void audit('package.download', { packageId: a.meta.id, size: a.meta.size }) });
+        const part = Number(url.searchParams.get('part')) || 0, a = await packager.artifact(parts[3], 'zip', part); if (!a) return fail(res, part ? 404 : 409, part ? 'Няма такава част' : 'Пакетът е разделен на части — подай ?part=N (виж split в метаданните)');
+        return streamDownload(req, res, a.file, a.stat, a.name, () => { void audit('package.download', { packageId: a.meta.id, size: a.stat.size, part }) });
       }
       if (parts.length === 5 && parts[4] === 'signature' && method === 'GET') {
         const a = await packager.artifact(parts[3], 'signature'); if (!a) return fail(res, 404, 'Not found');
@@ -1975,14 +1975,14 @@ async function handler(req, res) {
         return res.end(text);
       }
       if (parts.length === 5 && parts[4] === 'verify' && method === 'POST') {
-        const a = await packager.artifact(parts[3], 'zip'); if (!a) return fail(res, 404, 'Not found');
+        const a = await packager.artifact(parts[3], 'zip', 0, { allowSplit: true }); if (!a) return fail(res, 404, 'Not found');
         const sigArtifact = await packager.artifact(parts[3], 'signature');
         const b = await parse(req);
         let publicArmored = clean(b.publicArmored);
         if (!publicArmored) { const key = (db.pgpKeys || []).find(k => k.keyId === a.meta.signature.keyId) || null; publicArmored = key ? key.publicArmored : '' }
         if (!sigArtifact) return json(res, 200, { valid: false, reason: 'NO_SIGNATURE' });
         if (!publicArmored) return fail(res, 400, 'Липсва публичен ключ за проверка');
-        const zipBuf = await fsp.readFile(a.file);
+        const zipBuf = await packager.payload(parts[3]);
         const armored = await fsp.readFile(sigArtifact.file, 'utf8');
         const out = pgp.verifyDetached(zipBuf, armored, publicArmored);
         void audit('package.verify', { packageId: a.meta.id, valid: out.valid, reason: out.reason || '' });

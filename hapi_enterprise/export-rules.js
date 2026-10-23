@@ -388,6 +388,7 @@
   // без компресия; виж `packager.compressionLevel`), останалите още не са.
   const READY = {
     compression: { implemented: true, status: 'ready' },
+    split_archive: { implemented: true, status: 'ready' },
     encrypt_package: { implemented: true, status: 'ready' },
   };
 

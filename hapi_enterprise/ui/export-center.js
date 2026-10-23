@@ -26,7 +26,7 @@
     // Отговорът от add-on-а: правила и последен preflight.
     srv: { rules: null, rulesError: '', preflight: null, preflightError: '', busy: false },
     // Реален експорт (свързан режим): портал и последен пакет.
-    pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default', encryption: 'none', password: '', generatedPassword: '' },
+    pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default', encryption: 'none', password: '', generatedPassword: '', split: 'none' },
   };
 
   const base = () =>
@@ -134,6 +134,14 @@
               <input type="password" id="ec-pkg-password" autocomplete="new-password" placeholder="минимум 8 знака · празно = генерирана"
                 value="${esc(p.password)}" ${off} />
             </div>
+            <div class="field"><label>Размер на частта</label>
+              <select id="ec-pkg-split" ${dis}>
+                ${option('none', p.split, 'Без разделяне')}
+                ${option('10', p.split, 'Части по 10 MB')}
+                ${option('50', p.split, 'Части по 50 MB')}
+                ${option('100', p.split, 'Части по 100 MB')}
+              </select>
+            </div>
           </div>
           <div class="u-row u-row-4 u-mt">
             <button type="button" class="btn btn-primary" id="ec-pkg-build" ${dis}>Създай и изтегли пакета</button>
@@ -150,12 +158,15 @@
     const last = p.last;
     const sig = last.hasSignature ? `подпис ${esc(last.signature.keyId)}` : 'без подпис';
     const enc = last.hasEncryption ? `криптиран (${esc(last.encryption.cipher)})` : 'без криптиране';
+    const split = last.hasSplit
+      ? `${last.split.count} части по ${Math.round(last.split.partBytes / 1024 / 1024)} MB`
+      : 'един файл';
     const pass = p.generatedPassword
       ? ` · <strong>генерирана парола: <code>${esc(p.generatedPassword)}</code></strong> (показва се само сега)`
       : '';
     const head = `Последен пакет: <code>${esc(last.fileName)}</code> · ${last.files} файла`;
     const sum = `SHA-256 <code>${esc(String(last.sha256).slice(0, 8))}</code>`;
-    return `${head} · ${sum} · ${sig} · ${enc}${pass}`;
+    return `${head} · ${sum} · ${sig} · ${enc} · ${split}${pass}`;
   }
 
   function render() {
@@ -423,6 +434,7 @@
       body.encryption = 'password';
       if (p.password) body.password = p.password;
     }
+    if (p.split !== 'none') body.split = { partMb: Number(p.split) };
     const r = await api('/admin/api/packages', { method: 'POST', json: body });
     if (!r.ok) {
       p.error = r.error || `HTTP ${r.status}`;
@@ -433,7 +445,14 @@
     p.generatedPassword = r.data.generatedPassword || '';
     toast(`Пакет ${r.data.fileName} · ${r.data.files} файла`, 'ok');
     render();
-    await download(`${base()}/admin/api/packages/${r.data.id}/download`, r.data.fileName);
+    // Разделен пакет се тегли част по част: всяка част има собствен номер и име.
+    if (r.data.hasSplit) {
+      for (const part of r.data.split.parts) {
+        await download(`${base()}/admin/api/packages/${r.data.id}/download?part=${part.index}`, part.name);
+      }
+    } else {
+      await download(`${base()}/admin/api/packages/${r.data.id}/download`, r.data.fileName);
+    }
     if (r.data.hasSignature) await download(`${base()}/admin/api/packages/${r.data.id}/signature`, `${r.data.fileName}.asc`);
   }
 
@@ -452,6 +471,7 @@
         });
       }
       if (q('#ec-pkg-password')) q('#ec-pkg-password').addEventListener('input', (e) => { p.password = e.target.value; });
+      if (q('#ec-pkg-split')) q('#ec-pkg-split').addEventListener('change', (e) => { p.split = e.target.value; });
       q('#ec-pkg-build').addEventListener('click', () => buildPackage());
       q('#ec-pkg-zip').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/download`, p.last.fileName));
       q('#ec-pkg-asc').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/signature`, `${p.last.fileName}.asc`));

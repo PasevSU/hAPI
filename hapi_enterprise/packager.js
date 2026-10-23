@@ -11,7 +11,6 @@
 //
 // На диска: <DATA_DIR>/packages/<id>.zip (+ <id>.zip.asc) и <id>.json (метаданни).
 // Всички записи са атомарни (tmp + rename), с права 0600.
-const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -77,6 +76,34 @@ function hashAll(buf) {
   return out;
 }
 
+// Разделяне на ДОСТАВЯНИЯ файл на части с еднакъв размер — за среди с лимит на
+// трансфера (напр. 25 MB на съобщение). Частите се пишат до пълния файл, който в този
+// случай НЕ се пази: иначе разделянето не пести нищо.
+const MIN_PART_BYTES = 1024 * 1024;
+const MAX_PART_BYTES = 1024 * 1024 * 1024;
+function splitSpec(value) {
+  if (value === undefined || value === null || value === '' || value === false || value === 0) return 0;
+  let bytes;
+  if (typeof value === 'object') {
+    if (value.partBytes !== undefined) bytes = Number(value.partBytes);
+    else if (value.partMb !== undefined) bytes = Math.round(Number(value.partMb) * 1024 * 1024);
+  } else if (typeof value === 'number') {
+    bytes = value; // число = байтове, за да няма двусмислие
+  } else {
+    const m = /^(\d+(?:\.\d+)?)\s*(mb)?$/i.exec(String(value).trim());
+    if (m) bytes = Math.round(Number(m[1]) * (m[2] ? 1024 * 1024 : 1));
+  }
+  if (!Number.isInteger(bytes) || bytes < MIN_PART_BYTES || bytes > MAX_PART_BYTES) {
+    throw bad(`Размерът на част е от 1 MiB до 1 GiB (подадено: ${JSON.stringify(value)})`, 400);
+  }
+  return bytes;
+}
+
+/** Име на част: <файл>.part001 — три цифри минимум, за да се подреждат лексикографски. */
+function partName(fileName, index, count) {
+  return `${fileName}.part${String(index).padStart(Math.max(3, String(count).length), '0')}`;
+}
+
 function stamp(date) {
   const d = date || new Date();
   const p = (n) => String(n).padStart(2, '0');
@@ -121,12 +148,13 @@ function create({ root }) {
    *           пакет не слага файлове с ключ/забранени, а манифестът казва кои са те).
    * origin:   'public' — пакетът е поискан от публичната страница, не от администратора.
    */
-  async function build({ portal, files, sign, now, ttlHours, excluded, origin, compression, encryption, password }) {
+  async function build({ portal, files, sign, now, ttlHours, excluded, origin, compression, encryption, password, split }) {
     const list = Array.isArray(files) ? files : [];
     const level = compressionLevel(compression);
     // Криптирането се решава ПРЕДИ писането: невалидна парола трябва да върне 400, а не
     // да остави половин пакет на диска.
     const sealSpec = encryptionSpec(encryption, password);
+    const partBytes = splitSpec(split);
     if (!list.length) throw bad('Пакетът е празен — няма файлове', 400);
     if (list.length > MAX_FILES) throw bad(`Твърде много файлове (макс. ${MAX_FILES})`, 413);
     const total = list.reduce((sum, f) => sum + (f && f.data ? f.data.length : 0), 0);
@@ -258,6 +286,25 @@ function create({ root }) {
     const slug = safeName((portal && portal.slug) || 'package').replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 60);
     const fileName = `${slug}-${stamp(now instanceof Date ? now : new Date())}.zip${sealed ? '.enc' : ''}`;
 
+    // ── Разделяне на части ──────────────────────────────────────────────────
+    // Делен се само файлът, който получателят тегли (шифротекстът, когато има криптиране).
+    // Пълният файл НЕ се записва на диска, ако е разделен.
+    const splitParts = [];
+    if (partBytes && payload.length > partBytes) {
+      const count = Math.ceil(payload.length / partBytes);
+      for (let i = 1; i <= count; i++) {
+        const chunk = payload.subarray((i - 1) * partBytes, Math.min(i * partBytes, payload.length));
+        splitParts.push({
+          index: i,
+          name: partName(fileName, i, count),
+          file: `${id}.part-${String(i).padStart(String(count).length, '0')}`,
+          size: chunk.length,
+          sha256: sha256(chunk),
+          data: chunk,
+        });
+      }
+    }
+
     let signed = null;
     let armored = '';
     if (sign && sign.secretArmored) {
@@ -297,6 +344,16 @@ function create({ root }) {
       compression: { level, method: level === 0 ? 0 : 8, name: level === 0 ? 'store' : 'deflate' },
       encryption: sealed,
       hasEncryption: Boolean(sealed),
+      // Разделянето се вижда от метаданните: колко части, с какъв размер и с какъв хеш е
+      // всяка — иначе получателят няма как да разбере дали редът е верен.
+      split: splitParts.length
+        ? {
+          partBytes,
+          count: splitParts.length,
+          parts: splitParts.map((p) => ({ index: p.index, name: p.name, file: p.file, size: p.size, sha256: p.sha256 })),
+        }
+        : null,
+      hasSplit: splitParts.length > 0,
       signature: signed
         ? { ...signature, keyId: signed.keyId, fingerprint: signed.fingerprint, hash: signed.hash, signedAt: signed.createdAt }
         : signature,
@@ -305,7 +362,9 @@ function create({ root }) {
     if (origin) meta.origin = String(origin);
     if (skipped.length) meta.excluded = skipped.length;
 
-    await writeAtomic(zipPath(id), payload);
+    // Пълният файл и частите се изключват взаимно: разделен пакет не пази цялото копие.
+    if (splitParts.length) for (const part of splitParts) await writeAtomic(path.join(dir, part.file), part.data);
+    else await writeAtomic(zipPath(id), payload);
     if (armored) await writeAtomic(sigPath(id), Buffer.from(armored, 'utf8'));
     await writeAtomic(metaPath(id), Buffer.from(JSON.stringify(meta, null, 2), 'utf8'));
     // Паролата се връща САМО тук и само когато е генерирана — в <id>.json я няма.
@@ -342,16 +401,51 @@ function create({ root }) {
     return out;
   }
 
-  async function artifact(id, kind) {
+  async function artifact(id, kind, part, opts) {
     const meta = await readMeta(id);
     if (!meta) return null;
-    const file = kind === 'signature' ? sigPath(meta.id) : zipPath(meta.id);
+    const index = Number(part) || 0;
+    let file;
+    let name;
+    if (kind === 'signature') {
+      if (index) return null;
+      file = sigPath(meta.id);
+      name = `${meta.fileName}.asc`;
+    } else if (meta.hasSplit) {
+      // Разделен пакет: единственият начин да се вземе е по номер на част. `allowSplit`
+      // е за проверката на подписа — тя се нуждае от метаданните, не от файла.
+      const entry = (meta.split.parts || []).find((x) => x.index === index);
+      if (!entry) return opts && opts.allowSplit ? { meta, file: '', name: meta.fileName, parts: meta.split.count } : null;
+      file = path.join(dir, entry.file);
+      name = entry.name;
+    } else {
+      if (index) return null;
+      file = zipPath(meta.id);
+      name = meta.fileName;
+    }
     try {
       const stat = await fsp.stat(file);
       if (!stat.isFile()) return null;
-      return { file, stat, meta, name: kind === 'signature' ? `${meta.fileName}.asc` : meta.fileName };
+      return { file, stat, meta, name, part: index };
     } catch {
       return null;
+    }
+  }
+
+  /** Байтовете на доставяния файл: целият ZIP или слепените части по ред. */
+  async function payload(id) {
+    const meta = await readMeta(id);
+    if (!meta) return null;
+    if (meta.hasSplit) {
+      const chunks = [];
+      for (const entry of meta.split.parts || []) chunks.push(await fsp.readFile(path.join(dir, entry.file)));
+      return Buffer.concat(chunks);
+    }
+    try {
+      return await fsp.readFile(zipPath(meta.id));
+    } catch (e) {
+      if (e.code === 'ENOENT') return null;
+      throw e;
     }
   }
 
@@ -359,6 +453,7 @@ function create({ root }) {
     const meta = await readMeta(id);
     if (!meta) return { removed: false, id };
     await fsp.rm(zipPath(meta.id), { force: true });
+    for (const part of (meta.split && meta.split.parts) || []) await fsp.rm(path.join(dir, part.file), { force: true });
     await fsp.rm(sigPath(meta.id), { force: true });
     await fsp.rm(metaPath(meta.id), { force: true });
     return { removed: true, id: meta.id };
@@ -384,7 +479,7 @@ function create({ root }) {
     return { removed, kept };
   }
 
-  return { dir, build, list, readMeta, artifact, remove, prune, limits: { MAX_FILES, MAX_TOTAL_BYTES } };
+  return { dir, build, list, readMeta, artifact, payload, remove, prune, limits: { MAX_FILES, MAX_TOTAL_BYTES, MIN_PART_BYTES, MAX_PART_BYTES } };
 }
 
 module.exports = { create, sha256, safeName, limits: { MAX_FILES, MAX_TOTAL_BYTES } };

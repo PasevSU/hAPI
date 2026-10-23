@@ -99,13 +99,12 @@ assert.equal(R.validateConfig({ mode: 'report', contents: [], format: 'zip', loc
 assert.equal(R.validateConfig({ ...R.normalizeConfig({ mode: 'report' }), packageId: 'bad' }).errors.some((e) => e.code === 'package-id'), true);
 
 // 9. Capabilities: готово е САМО това, което наистина работи.
-// `compression` стана реална в 0.69.51 (нива 0–9, 0 = без компресия) — виж
-// `tests/package-compression.cjs`; `encrypt_package` в 0.69.52 (hapiPKG1, AES-256-GCM)
-// — виж `tests/package-encryption.cjs`. Останалите четири остават изрично „планирано“.
+// `compression` — 0.69.51 (нива 0–9), `encrypt_package` — 0.69.52 (hapiPKG1, AES-256-GCM),
+// `split_archive` — 0.69.53 (части с поискан размер). Останалите три са „планирано“.
 const caps = R.capabilities();
 assert.equal(caps.length, 6);
 const ready = caps.filter((c) => c.implemented).map((c) => c.id);
-assert.deepEqual(ready, ['compression', 'encrypt_package'], 'готови са компресията и криптирането');
+assert.deepEqual(ready, ['compression', 'split_archive', 'encrypt_package'], 'готови са компресията, разделянето и криптирането');
 assert.equal(caps.find((c) => c.id === 'compression').status, 'ready');
 assert.ok(
   caps.filter((c) => !c.implemented).every((c) => c.status === 'planned'),
