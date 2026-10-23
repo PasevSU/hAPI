@@ -313,6 +313,22 @@ Assistant. На `/api/…` там отговаря HA, не add-on-ът.
 Пазят се от `tests/pgp-engine.cjs`, `tests/pgp-keyring.cjs` и `tests/pgp-path-encryption.cjs`
 (⏳, влизат в `TEST_CASE_CATALOG.md` като T-PGP-01…03).
 
+## Evidence View — порталът, който показва файловете и данните (⏳)
+
+Пакетът `hapi_enterprise/evidence-portal/` (статичен HTML + ES модули) се публикува в
+`<HA config>/www/hapi/data/` и се отваря на `/local/hapi/data/portal.html?folder=<slug>`. Днес
+има само публикуване и демо данни; двата маршрута по-долу са **планирани** и не съществуват в
+кода — описани са, за да не се гадае договорът:
+
+| Метод | Път                               | Връща                                                                                                                                |
+| ----- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| GET   | `/api/evidence/<folder>/manifest` | само разрешените метаданни (`items` по схемата в [`EVIDENCE_VIEW_PORTAL.md`](../04_FUNCTION_SPECIFICATIONS/EVIDENCE_VIEW_PORTAL.md)) |
+| POST  | `/api/evidence/<folder>/access`   | `{ fileId, action }` → `{ url }` с еднократен краткотраен токен, само при успех                                                      |
+
+Правила: `folder`/`fileId` никога не се превръщат в път на файловата система; slug-ът не е
+автентикация; `no-store` за частните отговори; административните API-та остават отделно.
+Пълното описание: [`EVIDENCE_VIEW_PORTAL.md`](../04_FUNCTION_SPECIFICATIONS/EVIDENCE_VIEW_PORTAL.md).
+
 ## Windows contract
 
 | Interface | Detail                            |
