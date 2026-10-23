@@ -52,21 +52,33 @@ function paced(bytesPerSec) {
  *
  * Защо е нужен: ако всеки поток има собствен ограничител, четири паралелни Range заявки
  * дават четири пъти по-голяма скорост и ограничението се заобикаля просто с паралелизъм.
- * Затова `reserve()` е общ брояч: всеки блок „резервира“ време от един и същ график.
+ * Затова `reserve()` е ОБЩ за всички потоци.
+ *
+ * Моделът е кофа с жетони: кратък „запас“ за началото (до 32 KiB), но дългът НЕ се губи —
+ * средната скорост остава ограничена дори когато заявката е голяма.
+ * Малките отговори (до 64 KiB) не влизат в бюджета: иначе една проба от 1 байт след голямо
+ * теглене чака секунди и връзката пада (виждано на Linux: UND_ERR_SOCKET).
  */
 function createBudget(bytesPerSec) {
   if (!Number.isFinite(bytesPerSec) || bytesPerSec <= 0) return null;
-  let startedAt = 0;
-  let sent = 0;
+  const capacity = Math.max(8 * 1024, Math.min(32 * 1024, bytesPerSec));
+  let tokens = capacity;
+  let last = Date.now();
+  const refill = () => {
+    const now = Date.now();
+    tokens = Math.min(capacity, tokens + ((now - last) / 1000) * bytesPerSec);
+    last = now;
+  };
   return {
     /** Колко ms трябва да се изчака преди подаването на този блок. */
     reserve(bytes) {
-      if (!startedAt) startedAt = Date.now();
-      sent += bytes;
-      return Math.max(0, Math.round((sent / bytesPerSec) * 1000) - (Date.now() - startedAt));
+      refill();
+      tokens -= bytes;
+      return tokens >= 0 ? 0 : Math.round((-tokens / bytesPerSec) * 1000);
     },
-    get sent() { return sent },
+    get sent() { return capacity - tokens },
     bytesPerSec,
+    capacity,
   };
 }
 

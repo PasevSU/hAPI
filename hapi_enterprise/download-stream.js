@@ -104,7 +104,10 @@ function create(deps) {
       ...(opts && opts.parallelChunks ? { 'X-Parallel-Chunks': String(opts.parallelChunks) } : {}),
     });
     if (onStart) onStart();
-    throttle.paceStream(stream, res, bytesPerSec, budget);
+    // Бюджетът се включва само за реални трансфери: малък Range (проба) не бива да чака
+    // опашката на голямо теглене.
+    const budgetForThis = budget && end - start + 1 > 64 * 1024 ? budget : null;
+    throttle.paceStream(stream, res, bytesPerSec, budgetForThis);
   }
 
   return { stream, acquire, release, active: () => active };
