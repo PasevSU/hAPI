@@ -48,11 +48,46 @@ function paced(bytesPerSec) {
 }
 
 /**
+ * ОБЩ бюджет за скорост — един за всички потоци на даден пакет.
+ *
+ * Защо е нужен: ако всеки поток има собствен ограничител, четири паралелни Range заявки
+ * дават четири пъти по-голяма скорост и ограничението се заобикаля просто с паралелизъм.
+ * Затова `reserve()` е общ брояч: всеки блок „резервира“ време от един и същ график.
+ */
+function createBudget(bytesPerSec) {
+  if (!Number.isFinite(bytesPerSec) || bytesPerSec <= 0) return null;
+  let startedAt = 0;
+  let sent = 0;
+  return {
+    /** Колко ms трябва да се изчака преди подаването на този блок. */
+    reserve(bytes) {
+      if (!startedAt) startedAt = Date.now();
+      sent += bytes;
+      return Math.max(0, Math.round((sent / bytesPerSec) * 1000) - (Date.now() - startedAt));
+    },
+    get sent() { return sent },
+    bytesPerSec,
+  };
+}
+
+/** Transform, който черпи от ОБЩ бюджет (ако е даден) вместо да брои сам. */
+function pacedByBudget(budget) {
+  if (!budget) return null;
+  return new Transform({
+    transform(chunk, _enc, cb) {
+      const due = budget.reserve(chunk.length);
+      if (due > 0) setTimeout(() => cb(null, chunk), due);
+      else cb(null, chunk);
+    },
+  });
+}
+
+/**
  * Свързва източник към получател с ограничение. Връща true, ако е включен ограничител —
  * така тестът и диагностиката виждат дали ограничението е активно, а не го предполагат.
  */
-function paceStream(source, target, bytesPerSec) {
-  const limiter = paced(bytesPerSec);
+function paceStream(source, target, bytesPerSec, budget) {
+  const limiter = budget ? pacedByBudget(budget) : paced(bytesPerSec);
   if (!limiter) {
     source.pipe(target);
     return false;
@@ -61,4 +96,4 @@ function paceStream(source, target, bytesPerSec) {
   return true;
 }
 
-module.exports = { spec, paced, paceStream, MIN_KBPS, MAX_KBPS };
+module.exports = { spec, paced, pacedByBudget, createBudget, paceStream, MIN_KBPS, MAX_KBPS };

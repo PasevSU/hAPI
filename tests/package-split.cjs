@@ -128,8 +128,8 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
   assert.equal(caps.find((c) => c.id === 'split_archive').status, 'ready');
   assert.deepEqual(
     caps.filter((c) => c.implemented).map((c) => c.id),
-    ['compression', 'split_archive', 'rate_limit', 'encrypt_package'],
-    'точно четири готови способности'
+    ['compression', 'split_archive', 'rate_limit', 'parallel_transfers', 'encrypt_package'],
+    'точно пет готови способности'
   );
 
   // ── 8. Изтриването маха и частите ────────────────────────────────────────

@@ -100,11 +100,11 @@ assert.equal(R.validateConfig({ ...R.normalizeConfig({ mode: 'report' }), packag
 
 // 9. Capabilities: готово е САМО това, което наистина работи.
 // `compression` — 0.69.51, `encrypt_package` — 0.69.52, `split_archive` — 0.69.53,
-// `rate_limit` — 0.69.54. Останалите две са „планирано“.
+// `rate_limit` — 0.69.54, `parallel_transfers` — 0.69.55. Остава една планирана.
 const caps = R.capabilities();
 assert.equal(caps.length, 6);
 const ready = caps.filter((c) => c.implemented).map((c) => c.id);
-assert.deepEqual(ready, ['compression', 'split_archive', 'rate_limit', 'encrypt_package'], 'готови са четирите реални способности');
+assert.deepEqual(ready, ['compression', 'split_archive', 'rate_limit', 'parallel_transfers', 'encrypt_package'], 'готови са петте реални способности');
 assert.equal(caps.find((c) => c.id === 'compression').status, 'ready');
 assert.ok(
   caps.filter((c) => !c.implemented).every((c) => c.status === 'planned'),

@@ -133,8 +133,8 @@ async function runThrough(bytesPerSec, totalBytes) {
     assert.equal(caps.find((c) => c.id === 'rate_limit').status, 'ready');
     assert.deepEqual(
       caps.filter((c) => c.implemented).map((c) => c.id),
-      ['compression', 'split_archive', 'rate_limit', 'encrypt_package'],
-      'точно четири готови способности'
+      ['compression', 'split_archive', 'rate_limit', 'parallel_transfers', 'encrypt_package'],
+      'точно пет готови способности'
     );
 
     process.stdout.write(

@@ -26,7 +26,7 @@
     // Отговорът от add-on-а: правила и последен preflight.
     srv: { rules: null, rulesError: '', preflight: null, preflightError: '', busy: false },
     // Реален експорт (свързан режим): портал и последен пакет.
-    pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default', encryption: 'none', password: '', generatedPassword: '', split: 'none', rateKbps: 0 },
+    pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default', encryption: 'none', password: '', generatedPassword: '', split: 'none', rateKbps: 0, parallelChunks: 4 },
   };
 
   const base = () =>
@@ -148,6 +148,14 @@
                 ${option('128', String(p.rateKbps), '128 KB/s')}
                 ${option('512', String(p.rateKbps), '512 KB/s')}
                 ${option('2048', String(p.rateKbps), '2 MB/s')}
+              </select>
+            </div>
+            <div class="field"><label>Паралелни заявки</label>
+              <select id="ec-pkg-parallel" ${dis}>
+                ${option('1', String(p.parallelChunks), '1 (един поток)')}
+                ${option('2', String(p.parallelChunks), '2 потока')}
+                ${option('4', String(p.parallelChunks), '4 потока')}
+                ${option('8', String(p.parallelChunks), '8 потока')}
               </select>
             </div>
           </div>
@@ -429,6 +437,8 @@
     if (list.ok && list.data) {
       p.last = (list.data.packages || [])[0] || null;
       if (list.data.settings) p.rateKbps = Number(list.data.settings.rateKbps) || 0;
+      if (list.data.settings && Number(list.data.settings.parallelChunks)) p.parallelChunks = Number(list.data.settings.parallelChunks);
+      if (list.data.settings && Number(list.data.settings.parallelChunks)) p.parallelChunks = Number(list.data.settings.parallelChunks);
     }
     p.loaded = true;
     render();
@@ -489,6 +499,15 @@
           if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
           p.rateKbps = rateKbps;
           toast(rateKbps ? `Ограничение: ${rateKbps} KB/s` : 'Ограничението е изключено', 'ok');
+        });
+      }
+      if (q('#ec-pkg-parallel')) {
+        q('#ec-pkg-parallel').addEventListener('change', async (e) => {
+          const parallelChunks = Number(e.target.value) || 1;
+          const r = await api('/admin/api/packages/settings', { method: 'PATCH', json: { parallelChunks } });
+          if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
+          p.parallelChunks = parallelChunks;
+          toast(`Паралелни заявки: ${parallelChunks}`, 'ok');
         });
       } q('#ec-pkg-build').addEventListener('click', () => buildPackage());
       q('#ec-pkg-zip').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/download`, p.last.fileName));

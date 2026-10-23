@@ -112,8 +112,8 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
   assert.equal(enc.status, 'ready');
   assert.deepEqual(
     caps.filter((c) => c.implemented).map((c) => c.id),
-    ['compression', 'split_archive', 'rate_limit', 'encrypt_package'],
-    'точно четири готови способности'
+    ['compression', 'split_archive', 'rate_limit', 'parallel_transfers', 'encrypt_package'],
+    'точно пет готови способности'
   );
 
   fs.rmSync(dir, { recursive: true, force: true });

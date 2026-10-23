@@ -1,10 +1,9 @@
 # Одит на изданията — какво е имало и го няма
 
-Сравнение на всички тагове (59) с `HEAD` (98adbc9).
+Сравнение на всички тагове (60) с `HEAD` (c8ffd96).
 
 | Таг | файлове | функции | секции в панела | опции |
 | --- | --- | --- | --- | --- |
-| v0.69.42 | 144 | 1436 | 17 | 33 |
 | v0.69.43 | 145 | 1437 | 17 | 33 |
 | v0.69.44 | 146 | 1441 | 17 | 33 |
 | v0.69.45 | 146 | 1442 | 17 | 33 |
@@ -16,7 +15,8 @@
 | v0.69.51 | 149 | 1469 | 17 | 33 |
 | v0.69.52 | 150 | 1484 | 17 | 33 |
 | v0.69.53 | 150 | 1487 | 17 | 33 |
-| **HEAD** | **150** | **1487** | **17** | **33** |
+| v0.69.54 | 152 | 1495 | 17 | 33 |
+| **HEAD** | **152** | **1495** | **17** | **33** |
 
 ## Изчезнали файлове
 - `custom_components/portal_enterprise/__init__.py` (имаше го в v0.54.0)
@@ -37,6 +37,9 @@
 - `hapi_enterprise/ooxml.js:t` (имаше я в v0.69.13)
 - `hapi_enterprise/pdf-writer.js:rows` (имаше я в v0.63.0)
 - `hapi_enterprise/preview.js:rows` (имаше я в v0.69.13)
+- `hapi_enterprise/server.js:releaseDownloadSlot` (имаше я в v0.69.53)
+- `hapi_enterprise/server.js:acquireDownloadSlot` (имаше я в v0.69.53)
+- `hapi_enterprise/server.js:streamDownload` (имаше я в v0.69.53)
 - `hapi_enterprise/server.js:loginGate` (имаше я в v0.69.14)
 - `hapi_enterprise/ui/app.js:statsHtml` (имаше я в v0.67.0)
 - `hapi_enterprise/ui/app.js:tableHtml` (имаше я в v0.67.0)
@@ -58,7 +61,6 @@
 
 | id | Какво липсва |
 | --- | --- |
-| `parallel_transfers` | Паралелни трансфери |
 | `resume_transfer` | Възобновяване на прекъснат трансфер |
 
 ### Б.2 Report Studio (`ui/report-objects.js`) — изключени типове

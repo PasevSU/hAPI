@@ -1726,7 +1726,7 @@ async function handler(req, res) {
       return fail(res, 404, 'Not found');
     }
     // PGP ключове и автоподписване на експортни пакети.
-    const packageSettings = () => { const s = db.packageSettings || {}; return { autoSign: s.autoSign === true, signKeyId: String(s.signKeyId || ''), ttlHours: Number.isFinite(s.ttlHours) ? s.ttlHours : 72, maxKept: Number.isFinite(s.maxKept) ? s.maxKept : 50, rateKbps: Number.isFinite(s.rateKbps) && s.rateKbps > 0 ? s.rateKbps : 0 } };
+    const packageSettings = () => { const s = db.packageSettings || {}; return { autoSign: s.autoSign === true, signKeyId: String(s.signKeyId || ''), ttlHours: Number.isFinite(s.ttlHours) ? s.ttlHours : 72, maxKept: Number.isFinite(s.maxKept) ? s.maxKept : 50, rateKbps: Number.isFinite(s.rateKbps) && s.rateKbps > 0 ? s.rateKbps : 0, parallelChunks: Number.isInteger(s.parallelChunks) && s.parallelChunks >= 1 ? s.parallelChunks : 4 } };
     const pgpKeyView = k => ({ id: k.id, label: k.label, userId: k.userId, algorithm: k.algorithm, bits: k.bits, version: Number(k.version) || 4, keyId: k.keyId, fingerprint: k.fingerprint, createdAt: k.createdAt, addedAt: k.addedAt, hasSecret: Boolean(k.secretEnc), source: k.source || 'console', roles: Array.isArray(k.roles) ? k.roles : [] });
     const pgpKeyById = id => (db.pgpKeys || []).find(k => k.id === id) || null;
     const signerFor = (keyId) => { const list = db.pgpKeys || []; const wanted = String(keyId || '').trim().toLowerCase(); const key = wanted ? list.find(k => k.id === keyId || k.keyId === keyId || String(k.fingerprint || '').toLowerCase() === wanted) : list[0]; return key || null };
@@ -1915,6 +1915,9 @@ async function handler(req, res) {
         if (b.maxKept !== undefined) { const max = Number(b.maxKept); if (!Number.isInteger(max) || max < 1 || max > 1000) return fail(res, 400, 'Invalid maxKept'); next.maxKept = max }
         // 0 = без ограничение; стойността е в KB/s и се прилага към самия поток при сваляне.
         if (b.rateKbps !== undefined) { const kbps = Number(b.rateKbps); if (!Number.isInteger(kbps) || kbps < 0 || kbps > 1048576) return fail(res, 400, 'Invalid rateKbps'); next.rateKbps = kbps }
+        // Колко паралелни Range заявки обявяваме на получателя (1–8). Ограничението на
+        // скоростта остава ОБЩО за пакета, за да не се заобикаля с паралелизъм.
+        if (b.parallelChunks !== undefined) { const chunks = Number(b.parallelChunks); if (!Number.isInteger(chunks) || chunks < 1 || chunks > 8) return fail(res, 400, 'Invalid parallelChunks'); next.parallelChunks = chunks }
         return json(res, 200, await update(() => { db.packageSettings = next; void audit('package.settings', next); return next }));
       }
       if (parts.length === 4 && method === 'GET') {
@@ -1924,7 +1927,7 @@ async function handler(req, res) {
       }
       if (parts.length === 5 && parts[4] === 'download' && method === 'GET') {
         const part = Number(url.searchParams.get('part')) || 0, a = await packager.artifact(parts[3], 'zip', part); if (!a) return fail(res, part ? 404 : 409, part ? 'Няма такава част' : 'Пакетът е разделен на части — подай ?part=N (виж split в метаданните)');
-        return streamDownload(req, res, a.file, a.stat, a.name, () => { void audit('package.download', { packageId: a.meta.id, size: a.stat.size, part }) }, { bytesPerSec: settings.rateKbps * 1024 });
+        return streamDownload(req, res, a.file, a.stat, a.name, () => { void audit('package.download', { packageId: a.meta.id, size: a.stat.size, part }) }, { bytesPerSec: settings.rateKbps * 1024, budgetKey: a.meta.id, parallelChunks: settings.parallelChunks });
       }
       if (parts.length === 5 && parts[4] === 'signature' && method === 'GET') {
         const a = await packager.artifact(parts[3], 'signature'); if (!a) return fail(res, 404, 'Not found');

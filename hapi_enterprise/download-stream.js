@@ -13,6 +13,20 @@ function create(deps) {
   const waitMs = Number(deps.waitMs) || 15000;
   const maxWaiters = 4096;
   let active = 0;
+  // Бюджетите са ПО ЕДИН на пакет (ключ), за да не се заобикаля ограничението с паралелни
+  // Range заявки. Нова стойност на ограничението → нов бюджет.
+  const budgets = new Map();
+  function budgetFor(key, bytesPerSec) {
+    if (!bytesPerSec) return null;
+    const current = budgets.get(key);
+    if (current && current.bytesPerSec === bytesPerSec && Date.now() - current.createdAt < 300000) return current.budget;
+    const budget = throttle.createBudget(bytesPerSec);
+    budgets.set(key, { budget, bytesPerSec, createdAt: Date.now() });
+    if (budgets.size > 512) {
+      for (const [k, v] of budgets) if (Date.now() - v.createdAt >= 300000) budgets.delete(k);
+    }
+    return budget;
+  }
   // Краткотрайна опашка: 2–3 едновременни линка не получават 503, а изчакват слот.
   // 503 се връща само ако опашката не бъде обслужена в рамките на `waitMs`.
   const waiters = [];
@@ -49,6 +63,7 @@ function create(deps) {
    */
   async function stream(req, res, fp, stat, name, onStart, opts) {
     const bytesPerSec = (opts && opts.bytesPerSec) || 0;
+    const budget = opts && opts.budgetKey ? budgetFor(opts.budgetKey, bytesPerSec) : null;
     if (!(await acquire())) {
       res.setHeader('Retry-After', '3');
       return deps.fail(res, 503, 'Download capacity reached');
@@ -86,9 +101,10 @@ function create(deps) {
       'X-Content-Type-Options': 'nosniff',
       // Ограничението се обявява в отговора, за да не е „скрито“ поведение.
       ...(bytesPerSec > 0 ? { 'X-RateLimit-BytesPerSec': String(bytesPerSec) } : {}),
+      ...(opts && opts.parallelChunks ? { 'X-Parallel-Chunks': String(opts.parallelChunks) } : {}),
     });
     if (onStart) onStart();
-    throttle.paceStream(stream, res, bytesPerSec);
+    throttle.paceStream(stream, res, bytesPerSec, budget);
   }
 
   return { stream, acquire, release, active: () => active };
