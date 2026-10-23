@@ -90,19 +90,46 @@ function entries(ctx) {
 }
 
 async function statOf(entry) {
-  if (!entry.path || entry.path.includes('<')) return { ...entry, checked: false };
+  if (!entry.abs || entry.abs.includes('<')) return { ...entry, checked: false };
   try {
-    const st = await fsp.stat(entry.path);
-    const writable = st.isDirectory() ? await fsp.access(entry.path, fs.constants.W_OK).then(() => true, () => false) : false;
+    const st = await fsp.stat(entry.abs);
+    const writable = st.isDirectory() ? await fsp.access(entry.abs, fs.constants.W_OK).then(() => true, () => false) : false;
     return { ...entry, checked: true, exists: true, isDirectory: st.isDirectory(), writable };
   } catch (e) {
     return { ...entry, checked: true, exists: false, writable: false, error: e.code || 'UNAVAILABLE' };
   }
 }
 
-/** Картата с реални проверки на диска. */
+/**
+ * Замества абсолютните корени с токени: диагностиката показва КЪДЕ е нещото спрямо
+ * познатите корени, но не издава пътя на машината (това е договор на `/admin/api/diagnostics`).
+ */
+function redact(value, ctx) {
+  const pairs = [
+    [String((ctx || {}).root || ''), '<данни>'],
+    [String((ctx || {}).appDir || ''), '<приложение>'],
+    [String((ctx || {}).apiRoot || ''), '<данни>/api'],
+    [String((ctx || {}).filesRoot || ''), '<данни>/files'],
+    [String((ctx || {}).internalRoot || ''), '<данни>/internal'],
+  ].filter(([from]) => from);
+  let out = String(value == null ? '' : value);
+  for (const [from, to] of pairs) {
+    if (out === from || out.startsWith(from + path.sep) || out.startsWith(from + '/')) out = to + out.slice(from.length);
+  }
+  return out.split(path.sep).join('/');
+}
+
+/** Картата с реални проверки на диска (пътищата са с токени, не абсолютни). */
 async function check(ctx) {
-  const list = await Promise.all(entries(ctx).map(statOf));
+  const list = [];
+  // Обикновен цикъл с `await`: `map(async …)` не изчаква и редът на записите не е гарантиран.
+  for (const entry of entries(ctx)) {
+    const abs = entry.path.includes('<') ? entry.path : path.resolve(entry.path);
+    const checked = await statOf({ ...entry, abs });
+    delete checked.abs;
+    checked.path = redact(checked.path, ctx);
+    list.push(checked);
+  }
   return { generatedAt: new Date().toISOString(), entries: list, routes: ROUTES };
 }
 
