@@ -10,11 +10,10 @@
 // метод+път да са в таблицата по-долу. Нова административна пътека без ред тук чупи
 // теста; ред без пътека в кода също. Затова таблицата не може да „изостане“ тихо.
 //
-// Обхват: всички маршрути от първо ниво на `/admin/api/` и блоковете под
-// `/admin/api/v2/` (core, export), `/pgp`, `/packages`, `/cases`, `/variables`,
-// `/directory`, `/cabinet`, `/taxonomy`, `/portals`. Подресурсите на порталите и
-// файловете (динамични id-та, десетки пътища) се описват на ниво блок — виж
-// `documentation/02_TO_BE_ARCHITECTURE/INTEGRATION_CONTRACTS.md`.
+// Обхват: всички маршрути от първо ниво на `/admin/api/`, блоковете под `/admin/api/v2`
+// (core, export), `/pgp`, `/packages`, `/cases`, `/variables`, `/directory`, `/cabinet`,
+// `/taxonomy`, `/portals`, компонентите `routes/reports.js` и `routes/generator.js`, както и
+// подресурсите с динамични id-та (портал → дърво/файлове/бележки/прикачени/HTML проекти).
 const VERSION_SOURCE = 'hapi_enterprise/config.yaml';
 
 // [метод, път, резюме, таг, капацитет за RBAC]
@@ -92,6 +91,7 @@ const ROUTES = [
   ['GET', '/admin/api/pgp/keys/{keyId}/public', 'Публичната част на ключ', 'export', 'pgp'],
   ['GET', '/admin/api/packages', 'Експортни пакети', 'export', 'packages'],
   ['POST', '/admin/api/packages', 'Създаване на експортeн пакет', 'export', 'packages'],
+  ['GET', '/admin/api/packages/{packageId}/signature', 'Detached подпис на пакета', 'export', 'packages'],
   ['PATCH', '/admin/api/packages/settings', 'Настройки на пакетите (автоподписване, срок)', 'export', 'packages'],
   ['GET', '/admin/api/v2/export/rules', 'Правила за експорт', 'export', 'core'],
   ['POST', '/admin/api/v2/export/preflight', 'Предварителна проверка на експорт', 'export', 'core'],
@@ -178,6 +178,61 @@ const ROUTES = [
   ['POST', '/admin/api/v2/portals/{portalId}/api', 'Генериране на API файлове и QR', 'v2', 'core'],
   ['DELETE', '/admin/api/v2/portals/{portalId}/api', 'Премахване на API файловете', 'v2', 'core'],
 
+  // ── подресурси на портала (динамични id-та) ────────────────────────────────
+  // Тези пътища не са литерали, а дял в `server.js` (`parts[3]`/`parts[4]`/`parts[6]`).
+  // `tests/admin-api-spec.cjs` ги пази с котва в кода и изричен списък на още
+  // неописаните дялове (KNOWN_GAPS), за да не изглежда договорът по-пълен, отколкото е.
+  ['GET', '/admin/api/portals/{portalId}', 'Един портал с неговите файлове', 'portals', 'portals'],
+  ['PATCH', '/admin/api/portals/{portalId}', 'Промяна на портал', 'portals', 'portals'],
+  ['DELETE', '/admin/api/portals/{portalId}', 'Изтриване на портал', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/api-info', 'Препратки към публичното API на портала', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/integrity', 'Проверка на целостта на файловете на портала', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/integrity-jobs', 'Задача за проверка на целостта (фоново)', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/taxonomy', 'Категории и групи, налични за портала', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/signing-key', 'Издаване на ключ за подписване на файловете на портала', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/notes', 'Бележки на портала', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/notes', 'Нова бележка', 'portals', 'portals'],
+  ['PATCH', '/admin/api/portals/{portalId}/notes/{noteId}', 'Промяна на бележка', 'portals', 'portals'],
+  ['DELETE', '/admin/api/portals/{portalId}/notes/{noteId}', 'Изтриване на бележка', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/attachments', 'Прикачени файлове към портала', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/attachments', 'Ново прикачване', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/attachments/{attachmentId}/download', 'Изтегляне на прикачен файл', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/html-projects', 'Регистрирани HTML проекти', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/html-projects', 'Регистриране на HTML проект', 'portals', 'portals'],
+  ['DELETE', '/admin/api/portals/{portalId}/html-projects/{projectId}', 'Премахване на HTML проект', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/html', 'Публикуване на HTML към портала', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/tree', 'Дървото на папката на портала', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/tree/folder', 'Нова папка в дървото', 'portals', 'portals'],
+  ['PATCH', '/admin/api/portals/{portalId}/tree/folder', 'Флагове на папка (видима, медийна, заключена)', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/tree/upload', 'Качване на файл в дървото на папката', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/tree/comment', 'Коментар към възел от дървото', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/tree/register', 'Регистриране на външен файл в дървото', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/tree/api.json', 'API карта на папката като JSON', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/files', 'Файловете на портала (страницирани)', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files', 'Качване на файл в портала', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files/bulk-access', 'Права за достъп на много файлове наведнъж', 'files', 'portals'],
+  ['PATCH', '/admin/api/portals/{portalId}/files/{fileId}', 'Промяна на име/описание на файл', 'files', 'portals'],
+  ['DELETE', '/admin/api/portals/{portalId}/files/{fileId}', 'Изтриване на файл', 'files', 'portals'],
+  ['PATCH', '/admin/api/portals/{portalId}/files/{fileId}/access', 'Политика за достъп на файл', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files/{fileId}/access-keys', 'Нов ключ за достъп до файл', 'files', 'portals'],
+  ['DELETE', '/admin/api/portals/{portalId}/files/{fileId}/access-keys/{keyId}', 'Отнемане на ключ за достъп', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files/{fileId}/sends', 'Ново изпращане на файл', 'files', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/files/{fileId}/sends', 'Изпращанията на файла', 'files', 'portals'],
+  ['DELETE', '/admin/api/portals/{portalId}/files/{fileId}/sends/{sendId}', 'Отмяна на изпращане', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files/{fileId}/signed-url', 'Подписан адрес за изтегляне', 'files', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/files/{fileId}/download', 'Изтегляне на файл', 'files', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/files/{fileId}/hashes', 'Отпечатъци на файла', 'files', 'portals'],
+  ['PATCH', '/admin/api/portals/{portalId}/files/{fileId}/metadata', 'Метаданни на файла', 'files', 'portals'],
+  ['PATCH', '/admin/api/portals/{portalId}/files/{fileId}/lock', 'Заключване или отключване на файл', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files/{fileId}/sign', 'Електронен подпис на файл (receipt)', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files/{fileId}/verify-signature', 'Проверка на подписа на файл', 'files', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/files/{fileId}/preview', 'Преглед на файла', 'files', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/files/{fileId}/thumbnail.svg', 'Миниатюра на файла (SVG)', 'files', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/files/{fileId}/versions', 'Версии на файла', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files/{fileId}/versions', 'Нова версия на файл', 'files', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/files/{fileId}/versions/{versionId}/download', 'Изтегляне на конкретна версия', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files/{fileId}/versions/{versionId}/restore', 'Връщане към конкретна версия', 'files', 'portals'],
+
   // ── самият договор ────────────────────────────────────────────────────────
   ['GET', '/admin/api/openapi.json', 'Тази спецификация', 'system', 'whoami'],
 ];
@@ -195,6 +250,7 @@ const TAGS = [
   ['export', 'Експорт, PGP и пакети'],
   ['catalog', 'Дела, променливи, указател'],
   ['cabinet', 'Шкаф (файлове на сървъра)'],
+  ['files', 'Файлове на порталите'],
   ['v2', 'Документооборот v2 (core)'],
   ['reports', 'Отчети, CMS подпис и RFC 3161'],
   ['generator', 'Document Generator (шаблони)'],

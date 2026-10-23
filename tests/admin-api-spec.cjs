@@ -149,6 +149,19 @@ for (const p of describedPaths) {
 }
 assert.deepEqual(phantom, [], 'няма описан маршрут, който липсва в кода: ' + phantom.join(' · '));
 
+// Обратната посока за подпътищата: всеки литерал от `parts[4]…parts[9] === 'x'` в целия
+// HTTP слой трябва да е сегмент на някой описан път. Така нов подресурс (напр.
+// `…/files/{id}/watermark`) не може да остане извън договора, без тестът да падне.
+const tailLiterals = new Set([...src.matchAll(/parts\[[4-9]\]\s*===\s*'([^']+)'/g)].map((m) => m[1]));
+// `reveal` е на ПУБЛИЧНАТА страница на тайна връзка (`/api/v2/secrets/<id>/reveal`), не в
+// admin API-то — изключваме го изрично, вместо да разхлабваме проверката.
+const NON_ADMIN_TAIL = { reveal: 'публичният маршрут /api/v2/secrets/{id}/reveal' };
+const describedSegments = new Set([...describedPaths].flatMap((p) => p.split('/').filter(Boolean)));
+const undescribed = [...tailLiterals].filter((s) => !describedSegments.has(s) && !NON_ADMIN_TAIL[s]).sort();
+assert.deepEqual(undescribed, [], 'всеки подпът от кода е описан в договора; липсват: ' + undescribed.join(', '));
+// Изключенията не бива да „закриват“ изчезнал маршрут: всяко изключение трябва да го има в кода.
+for (const seg of Object.keys(NON_ADMIN_TAIL)) assert.ok(src.includes("'" + seg + "'"), 'изключението „' + seg + '“ съществува в кода');
+
 // ── 4. Документът е валиден OpenAPI 3.1 ──────────────────────────────────────
 const doc = spec.build({ baseUrl: 'https://hapi.example.bg', version: '9.9.9' });
 assert.equal(doc.openapi, '3.1.0', 'версия на OpenAPI');
@@ -209,7 +222,7 @@ live()
   .then(() => {
     process.stdout.write(
       'PASS admin-api-spec: ' + spec.ROUTES.length + ' операции · ' + code.length + ' маршрута от кода са описани · ' +
-        'нищо измислено · 401 без токен, 200 с токен\n'
+      'нищо измислено · 401 без токен, 200 с токен\n'
     );
   })
   .catch((e) => {

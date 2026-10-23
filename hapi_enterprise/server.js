@@ -789,6 +789,7 @@ const reportsRoutes = require('./routes/reports').create({
 });
 
 const generatorRoutes = require('./routes/generator').create({ generator, adminGate, audit, json, fail, parse });
+const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion });
 async function handler(req, res) {
   try {
     if (req.url.startsWith('//')) req.url = req.url.replace(/^\/{2,}/, '/'); const url = new URL(req.url, 'http://localhost');
@@ -2125,7 +2126,8 @@ async function handler(req, res) {
       }
       return fail(res, 404, 'Not found');
     }
-    if (parts[0] === 'admin' && parts[1] === 'api') { if (await require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion }).handle({ req, res, url, method })) return;
+    if (parts[0] === 'admin' && parts[1] === 'api') {
+      if (await adminDocs.handle({ req, res, url, method })) return;
       if (!adminGate(req, res, 'portals', method)) return; if (parts[2] === 'taxonomy' && parts.length === 3) {
         const tx = () => ({ categories: [...((db.taxonomy || {}).categories || [])], groups: [...((db.taxonomy || {}).groups || [])] });
         if (method === 'GET') return json(res, 200, tx());
