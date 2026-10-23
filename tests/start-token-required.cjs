@@ -56,12 +56,13 @@ async function runToHealth(options, preExistingToken) {
   const c = makeCase(options);
   if (preExistingToken) fs.writeFileSync(path.join(c.dataDir, 'admin-token'), preExistingToken, { mode: 0o600 });
   const port = await freePort();
+  // Административният порт се дава ИЗРИЧНО: иначе start.js пада към 8098 и на CI този порт
+  // може да е зает от предишен тест, който не е освободил процеса си. Тук не се проверява
+  // пазенето с токен през HTTP — то е в tests/auth.cjs.
+  const adminPort = await freePort();
   let stderr = '';
-  // ADMIN_PORT съзнателно НЕ се задава: когато е зададен, админ API-то се мести на
-  // loopback слушателя, а там достъпът е по мрежова позиция, не по токен. Тук искаме да
-  // докажем именно че токенът пази админ пътищата.
   const child = spawn(process.execPath, [ENTRY], {
-    env: baseEnv(c, { PORT: String(port) }),
+    env: baseEnv(c, { PORT: String(port), ADMIN_PORT: String(adminPort) }),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   child.stderr.on('data', (chunk) => {

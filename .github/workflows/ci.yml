@@ -33,7 +33,12 @@ jobs:
           failed=0
           for f in tests/*.cjs; do
             echo "== $f =="
-            node "$f" || failed=1
+            if ! node "$f"; then
+              # Името се показва като анотация: иначе провалът се вижда само като код 1
+              # в края и трябва да се гадае кой тест е (случвало се е).
+              echo "::error::FAILED $f"
+              failed=1
+            fi
           done
           exit $failed
         env:
