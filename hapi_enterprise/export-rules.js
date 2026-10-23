@@ -389,6 +389,7 @@
   const READY = {
     compression: { implemented: true, status: 'ready' },
     split_archive: { implemented: true, status: 'ready' },
+    rate_limit: { implemented: true, status: 'ready' },
     encrypt_package: { implemented: true, status: 'ready' },
   };
 

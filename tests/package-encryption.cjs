@@ -112,13 +112,13 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
   assert.equal(enc.status, 'ready');
   assert.deepEqual(
     caps.filter((c) => c.implemented).map((c) => c.id),
-    ['compression', 'split_archive', 'encrypt_package'],
-    'точно три готови способности'
+    ['compression', 'split_archive', 'rate_limit', 'encrypt_package'],
+    'точно четири готови способности'
   );
 
   fs.rmSync(dir, { recursive: true, force: true });
   process.stdout.write(
-    `PASS package-encryption: hapiPKG1 + AES-256-GCM · ZIP ${one.encryption.packageBytes} B → ${one.size} B · разшифровано съвпада по sha256 · грешна/подправена → 401 · генерирана парола не се пази · CLI работи · 3 готови способности\n`
+    `PASS package-encryption: hapiPKG1 + AES-256-GCM · ZIP ${one.encryption.packageBytes} B → ${one.size} B · разшифровано съвпада по sha256 · грешна/подправена → 401 · генерирана парола не се пази · CLI работи · 4 готови способности\n`
   );
 })().catch((e) => {
   process.stderr.write('FAIL package-encryption: ' + (e && e.message ? e.message : e) + '\n');

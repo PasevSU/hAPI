@@ -287,61 +287,17 @@ function applyTelemetry(e) {
 // file descriptors and memory. Streams use Node's native backpressure.
 const maxDownloadStreams = eff.maxDownloadStreams;
 const loadControl = require('./load-control').create({ base: maxDownloadStreams, min: Math.max(1, Math.min(maxDownloadStreams, 2)) });
-let activeDownloadStreams = 0;
-// Краткотрайна опашка: 2-3 едновременни линка не получават 503, а изчакват слот.
-// 503 се връща само ако опашката не бъде обслужена в рамките на DOWNLOAD_WAIT_MS.
-const downloadWaiters = [];
-const DOWNLOAD_WAIT_MS = Number(process.env.DOWNLOAD_WAIT_MS) || 15000;
-function releaseDownloadSlot() {
-  if (activeDownloadStreams > 0) activeDownloadStreams--;
-  while (downloadWaiters.length && activeDownloadStreams < loadControl.effective) {
-    const next = downloadWaiters.shift();
-    clearTimeout(next.timer);
-    activeDownloadStreams++;
-    next.resolve(true);
-  }
-}
-function acquireDownloadSlot() {
-  loadControl.recalc(counters.requests);
-  if (activeDownloadStreams < loadControl.effective) { activeDownloadStreams++; return Promise.resolve(true) }
-  return new Promise(resolve => {
-    const entry = { resolve };
-    entry.timer = setTimeout(() => {
-      const index = downloadWaiters.indexOf(entry);
-      if (index >= 0) downloadWaiters.splice(index, 1);
-      resolve(false);
-    }, DOWNLOAD_WAIT_MS);
-    if (entry.timer.unref) entry.timer.unref();
-    downloadWaiters.push(entry);
-  });
-}
-async function streamDownload(req, res, fp, stat, name, onStart) {
-  if (!(await acquireDownloadSlot())) { res.setHeader('Retry-After', '3'); return fail(res, 503, 'Download capacity reached') }
-  let released = false;
-  const release = () => { if (!released) { released = true; releaseDownloadSlot() } };
-  let start = 0, end = stat.size - 1, status = 200;
-  const rm = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || ''));
-  if (rm && (rm[1] || rm[2]) && stat.size > 0) {
-    if (rm[1] === '') { start = Math.max(0, stat.size - Number(rm[2])) } else { start = Number(rm[1]); if (rm[2] !== '') end = Math.min(end, Number(rm[2])) }
-    if (start > end || start >= stat.size) { release(); res.writeHead(416, { 'Content-Range': 'bytes */' + stat.size }); return res.end() }
-    status = 206;
-  }
-  const stream = fs.createReadStream(fp, stat.size ? { highWaterMark: 64 * 1024, start, end } : { highWaterMark: 64 * 1024 });
-  stream.once('error', e => { release(); loadControl.recordError(); void errorLog.append('error', 'download-stream', e.code || e.message); log.error('download.stream.failed', { ns: 'download', err: e.code || e.message }); if (!res.headersSent) fail(res, 500, 'Download failed'); else res.destroy(e) });
-  stream.once('close', release);
-  res.once('close', () => { if (!stream.destroyed) stream.destroy(); release() });
-  const rh = status === 206 ? { 'Content-Range': 'bytes ' + start + '-' + end + '/' + stat.size } : {};
-  res.writeHead(status, { ...rh, 'Accept-Ranges': 'bytes', 'Content-Type': 'application/octet-stream', 'Content-Length': end - start + 1, 'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(name.replace(/[\r\n]/g, '')), 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
-  if (onStart) onStart();
-  stream.pipe(res);
-}
+// Слотовете, Range заявките и ограничението на скоростта живеят в download-stream.js.
+// Зависимостите се подават с getters: `fail`/`errorLog`/`log` се дефинират по-долу в файла.
+const downloadStream = require('./download-stream').create({ get fail() { return fail }, loadControl, get errorLog() { return errorLog }, get log() { return log }, fs, requests: () => counters.requests, waitMs: Number(process.env.DOWNLOAD_WAIT_MS) });
+const streamDownload = downloadStream.stream;
 // Encrypted files cannot support byte-range requests (AES-GCM is not seekable), so the
 // plaintext is decrypted into memory and served whole. Opt-in and intended for documents,
 // not large media.
 async function serveEncryptedFile(req, res, fp, f, onStart) {
-  if (!(await acquireDownloadSlot())) { res.setHeader('Retry-After', '3'); return fail(res, 503, 'Download capacity reached') }
+  if (!(await downloadStream.acquire())) { res.setHeader('Retry-After', '3'); return fail(res, 503, 'Download capacity reached') }
   let released = false;
-  const release = () => { if (!released) { released = true; releaseDownloadSlot() } };
+  const release = () => { if (!released) { released = true; downloadStream.release() } };
   let buf; try { buf = fs.readFileSync(fp) } catch { release(); return fail(res, 404, 'File unavailable') }
   let plain; try { plain = fileCrypto.decrypt(buf, adminToken) } catch (e) { release(); log.error('file.decrypt.failed', { ns: 'download', err: e.message }); return fail(res, 500, 'Decryption failed') }
   res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': plain.length, 'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(f.name.replace(/[\r\n]/g, '')), 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
@@ -1126,7 +1082,7 @@ async function handler(req, res) {
         try { const st = await fsp.stat(location); return { name: path.basename(location), available: st.isDirectory(), writable: !!(await fsp.access(location, fs.constants.W_OK).then(() => true).catch(() => false)) } }
         catch (e) { return { name: path.basename(location), available: false, writable: false, error: e.code || 'UNAVAILABLE' } }
       }));
-      return json(res, 200, { generatedAt: new Date().toISOString(), uptimeSeconds: Math.floor(process.uptime()), runtime: { node: process.version, pid: process.pid, rssBytes: mem.rss, heapUsedBytes: mem.heapUsed, heapTotalBytes: mem.heapTotal }, traffic: { ...counters, activeDownloadStreams, maxDownloadStreams, effectiveDownloadStreams: loadControl.effective, load: loadControl.snapshot(counters.requests) }, catalog: { portals: db.portals.length, files: db.portals.reduce((n, p) => n + p.files.length, 0) }, storage });
+      return json(res, 200, { generatedAt: new Date().toISOString(), uptimeSeconds: Math.floor(process.uptime()), runtime: { node: process.version, pid: process.pid, rssBytes: mem.rss, heapUsedBytes: mem.heapUsed, heapTotalBytes: mem.heapTotal }, traffic: { ...counters, activeDownloadStreams: downloadStream.active(), maxDownloadStreams, effectiveDownloadStreams: loadControl.effective, load: loadControl.snapshot(counters.requests) }, catalog: { portals: db.portals.length, files: db.portals.reduce((n, p) => n + p.files.length, 0) }, storage });
     }
     if (url.pathname === '/admin/api/load' && method === 'GET') { if (!adminGate(req, res, 'load', method)) return; return json(res, 200, loadControl.snapshot(counters.requests)) }
     if (url.pathname === '/admin/api/errors' && method === 'GET') {
@@ -1770,7 +1726,7 @@ async function handler(req, res) {
       return fail(res, 404, 'Not found');
     }
     // PGP ключове и автоподписване на експортни пакети.
-    const packageSettings = () => { const s = db.packageSettings || {}; return { autoSign: s.autoSign === true, signKeyId: String(s.signKeyId || ''), ttlHours: Number.isFinite(s.ttlHours) ? s.ttlHours : 72, maxKept: Number.isFinite(s.maxKept) ? s.maxKept : 50 } };
+    const packageSettings = () => { const s = db.packageSettings || {}; return { autoSign: s.autoSign === true, signKeyId: String(s.signKeyId || ''), ttlHours: Number.isFinite(s.ttlHours) ? s.ttlHours : 72, maxKept: Number.isFinite(s.maxKept) ? s.maxKept : 50, rateKbps: Number.isFinite(s.rateKbps) && s.rateKbps > 0 ? s.rateKbps : 0 } };
     const pgpKeyView = k => ({ id: k.id, label: k.label, userId: k.userId, algorithm: k.algorithm, bits: k.bits, version: Number(k.version) || 4, keyId: k.keyId, fingerprint: k.fingerprint, createdAt: k.createdAt, addedAt: k.addedAt, hasSecret: Boolean(k.secretEnc), source: k.source || 'console', roles: Array.isArray(k.roles) ? k.roles : [] });
     const pgpKeyById = id => (db.pgpKeys || []).find(k => k.id === id) || null;
     const signerFor = (keyId) => { const list = db.pgpKeys || []; const wanted = String(keyId || '').trim().toLowerCase(); const key = wanted ? list.find(k => k.id === keyId || k.keyId === keyId || String(k.fingerprint || '').toLowerCase() === wanted) : list[0]; return key || null };
@@ -1957,6 +1913,8 @@ async function handler(req, res) {
         if (b.signKeyId !== undefined) { const keyId = clean(b.signKeyId); if (keyId && !pgpKeyById(keyId)) return fail(res, 400, 'Unknown PGP key'); next.signKeyId = keyId }
         if (b.ttlHours !== undefined) { const ttl = Number(b.ttlHours); if (!Number.isFinite(ttl) || ttl < 1 || ttl > 24 * 365) return fail(res, 400, 'Invalid TTL'); next.ttlHours = ttl }
         if (b.maxKept !== undefined) { const max = Number(b.maxKept); if (!Number.isInteger(max) || max < 1 || max > 1000) return fail(res, 400, 'Invalid maxKept'); next.maxKept = max }
+        // 0 = без ограничение; стойността е в KB/s и се прилага към самия поток при сваляне.
+        if (b.rateKbps !== undefined) { const kbps = Number(b.rateKbps); if (!Number.isInteger(kbps) || kbps < 0 || kbps > 1048576) return fail(res, 400, 'Invalid rateKbps'); next.rateKbps = kbps }
         return json(res, 200, await update(() => { db.packageSettings = next; void audit('package.settings', next); return next }));
       }
       if (parts.length === 4 && method === 'GET') {
@@ -1966,7 +1924,7 @@ async function handler(req, res) {
       }
       if (parts.length === 5 && parts[4] === 'download' && method === 'GET') {
         const part = Number(url.searchParams.get('part')) || 0, a = await packager.artifact(parts[3], 'zip', part); if (!a) return fail(res, part ? 404 : 409, part ? 'Няма такава част' : 'Пакетът е разделен на части — подай ?part=N (виж split в метаданните)');
-        return streamDownload(req, res, a.file, a.stat, a.name, () => { void audit('package.download', { packageId: a.meta.id, size: a.stat.size, part }) });
+        return streamDownload(req, res, a.file, a.stat, a.name, () => { void audit('package.download', { packageId: a.meta.id, size: a.stat.size, part }) }, { bytesPerSec: settings.rateKbps * 1024 });
       }
       if (parts.length === 5 && parts[4] === 'signature' && method === 'GET') {
         const a = await packager.artifact(parts[3], 'signature'); if (!a) return fail(res, 404, 'Not found');

@@ -128,8 +128,8 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
   assert.equal(caps.find((c) => c.id === 'split_archive').status, 'ready');
   assert.deepEqual(
     caps.filter((c) => c.implemented).map((c) => c.id),
-    ['compression', 'split_archive', 'encrypt_package'],
-    'точно три готови способности'
+    ['compression', 'split_archive', 'rate_limit', 'encrypt_package'],
+    'точно четири готови способности'
   );
 
   // ── 8. Изтриването маха и частите ────────────────────────────────────────
@@ -139,7 +139,7 @@ const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
   fs.rmSync(dir, { recursive: true, force: true });
   process.stdout.write(
-    `PASS package-split: ${split.size} B на ${split.split.count} части по ${PART} B · слепеното съвпада по sha256 · без ?part=N е 409-еквивалент · CLI сверява хеша · работи с криптиране · 3 готови способности\n`
+    `PASS package-split: ${split.size} B на ${split.split.count} части по ${PART} B · слепеното съвпада по sha256 · без ?part=N е 409-еквивалент · CLI сверява хеша · работи с криптиране · 4 готови способности\n`
   );
 })().catch((e) => {
   process.stderr.write('FAIL package-split: ' + (e && e.message ? e.message : e) + '\n');

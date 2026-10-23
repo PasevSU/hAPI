@@ -26,7 +26,7 @@
     // Отговорът от add-on-а: правила и последен preflight.
     srv: { rules: null, rulesError: '', preflight: null, preflightError: '', busy: false },
     // Реален експорт (свързан режим): портал и последен пакет.
-    pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default', encryption: 'none', password: '', generatedPassword: '', split: 'none' },
+    pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default', encryption: 'none', password: '', generatedPassword: '', split: 'none', rateKbps: 0 },
   };
 
   const base = () =>
@@ -140,6 +140,14 @@
                 ${option('10', p.split, 'Части по 10 MB')}
                 ${option('50', p.split, 'Части по 50 MB')}
                 ${option('100', p.split, 'Части по 100 MB')}
+              </select>
+            </div>
+            <div class="field"><label>Ограничение на скоростта</label>
+              <select id="ec-pkg-rate" ${dis}>
+                ${option('0', String(p.rateKbps), 'Без ограничение')}
+                ${option('128', String(p.rateKbps), '128 KB/s')}
+                ${option('512', String(p.rateKbps), '512 KB/s')}
+                ${option('2048', String(p.rateKbps), '2 MB/s')}
               </select>
             </div>
           </div>
@@ -418,7 +426,10 @@
       p.portals = Array.isArray(portals.data) ? portals.data : portals.data.portals || [];
       if (!p.portalId && p.portals.length) p.portalId = p.portals[0].id;
     }
-    if (list.ok && list.data) p.last = (list.data.packages || [])[0] || null;
+    if (list.ok && list.data) {
+      p.last = (list.data.packages || [])[0] || null;
+      if (list.data.settings) p.rateKbps = Number(list.data.settings.rateKbps) || 0;
+    }
     p.loaded = true;
     render();
   }
@@ -471,8 +482,15 @@
         });
       }
       if (q('#ec-pkg-password')) q('#ec-pkg-password').addEventListener('input', (e) => { p.password = e.target.value; });
-      if (q('#ec-pkg-split')) q('#ec-pkg-split').addEventListener('change', (e) => { p.split = e.target.value; });
-      q('#ec-pkg-build').addEventListener('click', () => buildPackage());
+      if (q('#ec-pkg-split')) q('#ec-pkg-split').addEventListener('change', (e) => { p.split = e.target.value; }); if (q('#ec-pkg-rate')) {
+        q('#ec-pkg-rate').addEventListener('change', async (e) => {
+          const rateKbps = Number(e.target.value) || 0;
+          const r = await api('/admin/api/packages/settings', { method: 'PATCH', json: { rateKbps } });
+          if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
+          p.rateKbps = rateKbps;
+          toast(rateKbps ? `Ограничение: ${rateKbps} KB/s` : 'Ограничението е изключено', 'ok');
+        });
+      } q('#ec-pkg-build').addEventListener('click', () => buildPackage());
       q('#ec-pkg-zip').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/download`, p.last.fileName));
       q('#ec-pkg-asc').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/signature`, `${p.last.fileName}.asc`));
       q('#ec-pkg-verify').addEventListener('click', async () => {
