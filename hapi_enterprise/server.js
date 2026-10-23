@@ -2108,7 +2108,7 @@ async function handler(req, res) {
           const b = await parse(req), slug = clean(b.slug), title = clean(b.title); if (!validSlug(slug) || !title || title.length > 160) return fail(res, 400, 'Invalid title or slug');
           // Видимостта се задава още при създаването (формата я има), не само после с PATCH.
           const visibility = b.visibility === undefined ? 'private' : String(b.visibility); if (!['private', 'public'].includes(visibility)) return fail(res, 400, 'Invalid visibility');
-          return json(res, 201, await update(async () => { if (getPortal(slug)) throw Object.assign(new Error('Slug exists'), { status: 409 }); const p = { id: id(), slug, title, description: clean(b.description).slice(0, 2000), notesText: clean(b.notes).slice(0, 2000), category: clean(b.category).slice(0, 120), subject: clean(b.subject).slice(0, 200), flag: portalFlag(b.flag), storage_root: portalRoot(b.storage_root), contactId: portalContact(db, b.contactId), caseId: portalCase(db, b.caseId), visibility, createdAt: new Date().toISOString(), files: [] }; await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true }); db.portals.push(p); await writeApiDir(p, baseUrl(req)); void audit('portal.update', { portalId: p.id }); return adminPortal(p) }))
+          return json(res, 201, await update(async () => { if (getPortal(slug)) throw Object.assign(new Error('Slug exists'), { status: 409 }); const p = { id: id(), slug, title, description: clean(b.description).slice(0, 2000), notesText: clean(b.notes).slice(0, 2000), category: clean(b.category).slice(0, 120), subject: clean(b.subject).slice(0, 200), flag: portalFlag(b.flag), storage_root: portalRoot(b.storage_root || '/share/' + slug), contactId: portalContact(db, b.contactId), caseId: portalCase(db, b.caseId), visibility, createdAt: new Date().toISOString(), files: [] }; await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true }); await fsp.mkdir(path.resolve(portalRoot(p.storage_root)), { recursive: true }).catch(() => { }); db.portals.push(p); await writeApiDir(p, baseUrl(req)); void audit('portal.update', { portalId: p.id }); return adminPortal(p) }))
         }
         if (parts[3] === 'merge' && parts.length === 4 && method === 'POST') {
           const b = await parse(req);
@@ -2172,6 +2172,45 @@ async function handler(req, res) {
           }
           void audit('portal.tree.folder', { portalId: p.id, path: '/' + rel });
           return json(res, 201, { path: '/' + rel, name, parent: '/' + parent, created: true });
+        }
+        // Изтриване на папка в папката на портала (само вътре в storage_root).
+        // Празна → 200; непразна иска ?recursive=1 и отговаря 409 с броя, за да не се
+        // трие съдържание без изрично потвърждение. Заключена папка не се трие.
+        if (parts[4] === 'tree' && parts[5] === 'folder' && parts.length === 6 && method === 'DELETE') {
+          const st = require('./storage-tree');
+          const rel = st.normRel(url.searchParams.get('path') || '');
+          if (rel === null || !rel) return fail(res, 400, 'Invalid path');
+          // Заключването важи и за САМАТА папка, не само за родителите ѝ (иначе точно
+          // заключената папка можеше да се изтрие).
+          const meta = folderMetaOf(p); const locked = lockedAncestor(meta, rel) || (meta['/' + rel] && meta['/' + rel].locked ? '/' + rel : '');
+          if (locked) return fail(res, 409, `Папката ${locked} е заключена`);
+          const rootAbs = path.resolve(portalRoot(p.storage_root || '/share')); const full = path.resolve(rootAbs, ...rel.split('/'));
+          if (!full.startsWith(rootAbs + path.sep)) return fail(res, 400, 'Invalid path');
+          let stat; try { stat = await fsp.lstat(full) } catch { return fail(res, 404, 'Папката не е намерена') }
+          if (!stat.isDirectory()) return fail(res, 400, 'Пътят не е папка');
+          const counts = { files: 0, folders: 0 };
+          const walk = async (dir) => {
+            for (const ent of await fsp.readdir(dir, { withFileTypes: true })) {
+              if (ent.isDirectory()) { counts.folders += 1; await walk(path.join(dir, ent.name)) } else if (ent.isFile()) counts.files += 1;
+            }
+          };
+          try { await walk(full) } catch (e) { return fail(res, 500, 'Съдържанието не може да бъде прочетено: ' + (e.code || 'error')) }
+          const recursive = url.searchParams.get('recursive') === '1'; if (!recursive && (counts.files || counts.folders)) return fail(res, 409, `Папката не е празна: ${counts.files} файла и ${counts.folders} папки`);
+          const prefix = '/' + rel + '/';
+          const registered = p.files.filter(f => String(f.storagePath || '').startsWith(prefix));
+          try { await fsp.rm(full, { recursive: true }) } catch (e) { return fail(res, 500, 'Папката не може да бъде изтрита: ' + (e.code || 'error')) }
+          await update(async () => {
+            // Регистрираните файлове от тази папка отиват със съдържанието си — иначе остават
+            // записи, сочещи към изтрити файлове.
+            for (const f of registered) {
+              p.files = p.files.filter(x => x !== f);
+              await fsp.rm(path.join(filesRoot, p.id, f.id), { force: true }).catch(() => { });
+              await fsp.rm(path.join(internalRoot, p.id, f.id), { recursive: true, force: true }).catch(() => { });
+            }
+            for (const map of [p.folderNotes, p.folderMeta]) for (const key of Object.keys(map || {})) if (key === '/' + rel || key.startsWith(prefix)) delete map[key];
+            void audit('portal.tree.folder.delete', { portalId: p.id, path: '/' + rel, files: counts.files, folders: counts.folders, registered: registered.length, recursive });
+          });
+          return json(res, 200, { path: '/' + rel, deleted: true, files: counts.files, folders: counts.folders, registeredFiles: registered.length, recursive });
         }
         // Флагове на папка: видима / медийна / заключване (пазят се към портала).
         if (parts[4] === 'tree' && parts[5] === 'folder' && parts.length === 6 && method === 'PATCH') {

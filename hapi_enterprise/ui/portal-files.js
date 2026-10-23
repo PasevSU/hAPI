@@ -57,8 +57,8 @@
                              <button type="button" class="fm-ico-btn ${x.listed ? 'on' : 'off'}" data-file-listed="${esc(
       x.id,
     )}" aria-pressed="${x.listed}" title="${x.listed
-        ? 'Видим в публичния каталог — щракни, за да го скриеш'
-        : 'Скрит от публичния каталог — щракни, за да го покажеш'
+      ? 'Видим в публичния каталог — щракни, за да го скриеш'
+      : 'Скрит от публичния каталог — щракни, за да го покажеш'
       }">${x.listed ? ICON.eye : ICON.eyeOff}</button>
                              <button type="button" class="fm-ico-btn ${x.locked ? 'on' : 'off'}" data-file-lock="${esc(
         x.id,
@@ -165,7 +165,7 @@
           </span>
         </div>
         <div class="pf-block-body">
-          <input type="file" id="fm-file-input" class="u-hidden" multiple />
+          <input type="file" id="fm-file-input" class="u-hidden" />
           <input type="file" id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple />
           ${state.filters
         ? `<div class="fm-toolbar">

@@ -318,7 +318,10 @@ assert.match(serverSrc, /subject:\s*p\.subject\s*\|\|\s*''/);
 assert.match(serverSrc, /flag:\s*p\.flag\s*\|\|\s*'none'/);
 assert.match(serverSrc, /const portalFlag\s*=/);
 assert.match(serverSrc, /const portalRoot\s*=/);
-assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\)/);
+// 0.69.62: без изричен storage_root порталът получава СОБСТВЕНА папка `/share/<slug>`,
+// иначе експлорерът показва целия /share (стотици чужди папки), а не файловете на портала.
+assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\s*\|\|\s*'\/share\/'\s*\+\s*slug\)/);
+assert.match(serverSrc, /fsp\.mkdir\(path\.resolve\(portalRoot\(p\.storage_root\)\),\s*\{\s*recursive:\s*true\s*\}\)/);
 assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\)/);
 assert.match(serverSrc, /contactId:\s*portalContact\(db,\s*b\.contactId\)/);
 assert.match(serverSrc, /if\s*\(b\.contactId\s*!==\s*undefined\)\s*p\.contactId\s*=\s*portalContact\(db,\s*b\.contactId\)/);
@@ -433,8 +436,12 @@ assert.match(
 assert.match(src, /data-import-folder title="Прикачи папка с файлове в \$\{esc\(/);
 assert.match(src, /data-attach-file title="Прикачи файл в/);
 assert.match(src, /data-toggle-filters aria-expanded="\$\{\s*state\.filters\s*\}"/);
-assert.match(src, /id="fm-file-input" class="u-hidden" multiple/);
-assert.match(src, /id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple/);
+// „Добави файл“ качва ТОЧНО един файл: многофайловият избор е отделното копче за папка,
+// за да не качва „добави файл“ цяла директория (0.69.62).
+assert.match(src, /id="fm-file-input" class="u-hidden" \/>/);
+assert.match(src, /id="fm-file-input" class="u-hidden" \/>[\s\S]*?id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple/);
+assert.match(src, /Array\.from\(e\.target\.files \|\| \[\]\)\.slice\(0, 1\)/);
+assert.match(src, /Ще се качат \$\{files\.length\}/);
 assert.match(src, /async function uploadToStorage\(folderRel, fileList\)/);
 assert.match(src, /\/tree\/upload\?path=/);
 assert.match(src, /webkitRelativePath/);

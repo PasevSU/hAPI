@@ -1045,7 +1045,9 @@
     const slug = field('slug').trim().toLowerCase();
     const title = field('title').trim();
     const visibility = field('visibility') || 'private';
-    const storageRoot = (field('storage_root').trim() || '/share').replace(/\/+$/, '') || '/share';
+    // Празно поле → собствена папка на портала. С общ /share експлорерът показва ЦЯЛАТА
+    // директория на хранилището, а не файловете на портала (0.69.62).
+    const storageRoot = (field('storage_root').trim() || `/share/${slug}`).replace(/\/+$/, '') || `/share/${slug}`;
     if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) return toast('slug: 2–63 знака, a-z, 0-9, „-“', 'err');
     if (!title) return toast('Заглавието е задължително', 'err');
     if (!/^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(storageRoot) || storageRoot.includes('..'))
@@ -1709,8 +1711,15 @@
     state.signed[f.id] = base() + r.data.path;
     render();
   }
-  function qrUrl(f) {
-    return `${publicBase()}/api/v1/p/${encodeURIComponent(portal().slug)}/files/${encodeURIComponent(f.id)}/qr.svg`;
+  // QR кодът НЕ е отделен адрес: той СЪДЪРЖА адреса за изтегляне и се рисува тук, в панела.
+  // Старото `/api/v1/p/<slug>/files/<id>/qr.svg` искаше токен за частен портал — т.е. и то
+  // не се отваряше в браузър, точно както стария „публичен“ адрес.
+  function qrMarkup(f, link) {
+    if (!link) return '<p class="hint">QR кодът се строи от адреса — издава се…</p>';
+    const svg = qrSvg(link);
+    return svg
+      ? `<div class="qf-svg" data-file-qr="${esc(f.id)}">${svg}</div>`
+      : '<p class="hint">QR SVG не е наличен в тази среда.</p>';
   }
 
   // ── Рендер ───────────────────────────────────────────────────────────────
@@ -1889,13 +1898,13 @@
           ${newCaseFields()}
         </div>
         <div class="field"><label>${ICON.folder} Папка с файлове в хранилището</label>
-          <input name="storage_root" list="pf-roots" value="/share" maxlength="240" placeholder="/share/portal-files" />
+          <input name="storage_root" list="pf-roots" value="" maxlength="240" placeholder="/share/portal-files (празно → /share/<slug>)" />
           <datalist id="pf-roots">${[...new Set(['/share', '/media', ...state.portals.map((x) => x.storage_root || '/share')])]
         .filter(Boolean)
         .sort()
         .map((r) => `<option value="${esc(r)}"></option>`)
         .join('')}</datalist>
-          <small class="hint">Само под /share или /media. Пътят се пази към портала (storage_root).</small>
+          <small class="hint">Само под /share или /media. Ако оставиш полето празно, порталът получава СОБСТВЕНА папка <code>/share/&lt;slug&gt;</code> — иначе експлорерът щеше да показва целия /share.</small>
         </div>
         <div class="field"><label>${ICON.folder} Качи файловете от папка на компютъра</label>
           <input type="file" id="pf-folder" webkitdirectory directory multiple />
@@ -2075,6 +2084,37 @@
     state.tree.open = String((r.data && r.data.path) || '').replace(/^\/+/, '');
     render();
     toast(`Създадена е папка ${r.data.path || value}`, 'ok');
+  }
+
+  /**
+   * Изтрива папка от хранилището на портала.
+   * Празна папка се трие веднага (след потвърждение). Непразна НЕ се трие „на сляпо“:
+   * сървърът връща 409 с броя файлове и чак тогава се пита за изтриване с содержимото.
+   */
+  async function deleteFolder(rel) {
+    const p = portal();
+    const key = String(rel || '').replace(/^\/+|\/+$/g, '');
+    if (!p || !key) return toast('Кореновата папка не се трие', 'err');
+    if (!connected()) return toast('Демо: папки се трият от add-on-а (свързан режим)', 'err');
+    if (!window.confirm(`Изтриване на папката ${treePath(key)}?`)) return;
+    const url = `/admin/api/portals/${encodeURIComponent(p.id)}/tree/folder?path=${encodeURIComponent('/' + key)}`;
+    let r = await api(url, { method: 'DELETE' });
+    if (r.status === 409) {
+      const go = window.confirm(`${r.error || 'Папката не е празна'}\n\nДа изтрия ли папката ЗАЕДНО със съдържанието ѝ?`);
+      if (!go) return;
+      r = await api(`${url}&recursive=1`, { method: 'DELETE' });
+    }
+    if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
+    state.gear = null;
+    if (state.tree.open === key || String(state.tree.open || '').startsWith(`${key}/`)) state.tree.open = '';
+    state.tree.loaded = false;
+    await loadTree(true);
+    render();
+    const dropped = Number(r.data && r.data.registeredFiles) || 0;
+    toast(
+      `Изтрита е папка ${treePath(key)}${dropped ? ` · ${dropped} ${dropped === 1 ? 'регистриран файл' : 'регистрирани файла'}` : ''}`,
+      'ok',
+    );
   }
 
   /** Коментар към папка: пази се към портала; празен текст го изтрива. */
@@ -2681,7 +2721,6 @@
       </div>
       <div class="u-row u-row-2 u-mt">
         ${apiMenu(webLink(f), f.name, 'файл')}
-        ${apiMenu(qrUrl(f), 'qr.svg', 'qr.svg')}
       </div>
       <h4 class="u-mt">Пълни данни</h4>
       <dl class="fm-meta">
@@ -2707,9 +2746,6 @@
         <dt>DL URL</dt><dd class="fm-url"><code>${esc(webLink(f))}</code><button type="button" class="fm-ico-btn fm-copy-btn" data-copy="${esc(
         webLink(f),
       )}" title="Копирай адреса" aria-label="Копирай адреса за изтегляне">${ICON.copy}</button></dd>
-        <dt>QR URL</dt><dd class="fm-url"><code>${esc(qrUrl(f))}</code><button type="button" class="fm-ico-btn fm-copy-btn" data-copy="${esc(
-        qrUrl(f),
-      )}" title="Копирай адреса" aria-label="Копирай адреса на QR кода">${ICON.copy}</button></dd>
       </dl>
       ${hashStack(f)}
       ${state.lastAction ? `<p class="hint">Последно действие: ${esc(state.lastAction)}</p>` : ''}`;
@@ -2904,7 +2940,7 @@
       : 'Адресът е подписан (валиден 1 час) и се отваря в браузър без вход. Издай нов от това меню, когато изтече.';
     return `
       <div class="field"><label>${isFree ? 'Подписан адрес за изтегляне' : 'Администраторски адрес за изтегляне'}</label><input readonly value="${esc(link || 'издава се…')}" /></div>
-      <div class="field"><label>QR код</label><input readonly value="${esc(qrUrl(f))}" /></div>
+      <div class="field"><label>QR код на този адрес</label>${qrMarkup(f, link)}</div>
       <div class="u-row u-row-2">
         <button type="button" class="btn btn-sm" id="fm-copy-link" ${link ? '' : 'disabled'}>${ICON.copy} Копирай адреса</button>
         <button type="button" class="btn btn-sm" id="fm-create-key">Нов ключ</button>
@@ -3269,6 +3305,11 @@
     host.querySelectorAll('[data-folder-pkg]').forEach((el) =>
       el.addEventListener('click', () => void packageFolder(el.dataset.folderPkg || '')),
     );
+    // Изтриване на папка: пита веднъж; ако не е празна, сървърът отговаря 409 с броя
+    // файлове и чак тогава се пита за рекурсивно изтриване (без „тихо“ триене).
+    host.querySelectorAll('[data-folder-delete]').forEach((el) =>
+      el.addEventListener('click', () => void deleteFolder(el.dataset.folderDelete || '')),
+    );
     host.querySelectorAll('[data-register-file]').forEach((el) =>
       el.addEventListener('click', () => void registerStorageFile(el.dataset.registerFile || '')),
     );
@@ -3280,7 +3321,9 @@
     });
     if (q('#fm-file-input')) {
       q('#fm-file-input').addEventListener('change', (e) => {
-        const files = Array.from(e.target.files || []);
+        // Прикачва се ТОЧНО един файл: изборът на много/цяла папка е другото копче
+        // (`data-import-folder`), за да не качва „добави файл“ цяла директория.
+        const files = Array.from(e.target.files || []).slice(0, 1);
         if (files.length) void uploadToStorage(e.target.dataset.target || '', files);
         e.target.value = '';
       });
@@ -3288,8 +3331,15 @@
     if (q('#fm-dir-input')) {
       q('#fm-dir-input').addEventListener('change', (e) => {
         const files = Array.from(e.target.files || []);
-        if (files.length) void uploadToStorage(e.target.dataset.target || '', files);
         e.target.value = '';
+        if (!files.length) return;
+        // Цяла папка се качва само след изрично потвърждение с броя файлове.
+        const first = String((files[0] && files[0].webkitRelativePath) || '').split('/')[0] || 'папка';
+        const target = e.target.dataset.target || '';
+        const ok = window.confirm(
+          `Ще се качат ${files.length} ${files.length === 1 ? 'файл' : 'файла'} от папка „${first}“ в ${treePath(target)}.\n\nПродължи?`,
+        );
+        if (ok) void uploadToStorage(target, files);
       });
     }
 
