@@ -89,6 +89,9 @@ function create(options = {}) {
       isSubkey: !!key.isSubkey,
       canSign: !!key.canSign,
       hasSecret: !!key.secret,
+      // Ролите идват от Key Flags в обвързващия подпис, не от догадка по вида на ключа.
+      keyFlags: typeof key.keyFlags === 'number' ? key.keyFlags : null,
+      roles: Array.isArray(key.roles) ? key.roles : [],
       created: key.created ? new Date(key.created * 1000).toISOString() : null,
     }));
   }
@@ -99,6 +102,7 @@ function create(options = {}) {
     reason,
     keys: [],
     storageKeyId: '',
+    storageKeySource: '',
     primaryKeyId: '',
     ...extra,
   });
@@ -145,12 +149,17 @@ function create(options = {}) {
 
     // Кой ключ криптира: първо от публичния блок (той е този, който получателят вижда),
     // иначе от частния. ECDH с именувана крива дава UNSUPPORTED_CURVE, а не празно.
+    // Редът на избор (0x08 → 0x04 → по вид) и неговият източник идват от `storageKeyOf`,
+    // за да не е мълчаливо кое правило е сработило.
     let storageKeyId = '';
+    let storageKeySource = '';
     let reason = '';
     for (const parsed of [publicParsed, secretParsed]) {
       if (!parsed) continue;
       try {
-        storageKeyId = pgp.encryptionKeyOf(parsed).keyId;
+        const choice = pgp.storageKeyOf(parsed);
+        storageKeyId = choice.key.keyId;
+        storageKeySource = choice.source;
         reason = '';
         break;
       } catch (err) {
@@ -176,6 +185,7 @@ function create(options = {}) {
       reason,
       keys: shown ? describeKeys(shown) : [],
       storageKeyId,
+      storageKeySource,
       primaryKeyId: primary ? primary.keyId : '',
     };
   }

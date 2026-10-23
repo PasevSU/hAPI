@@ -119,7 +119,7 @@ assert.deepEqual(stale, [], 'маркер „⏳ ' + version + '“ за веч�
 
 // 7. Полетата, които ръководството обещава, съществуват в `status()` на ключохранилището.
 const keyringCode = read('hapi_enterprise/path-crypto.js');
-for (const field of ['available', 'canDecrypt', 'storageKeyId', 'primaryKeyId', 'passphraseSource', 'reason']) {
+for (const field of ['available', 'canDecrypt', 'storageKeyId', 'storageKeySource', 'primaryKeyId', 'passphraseSource', 'reason']) {
   // Полетата се срещат и като `field: стойност`, и като съкратен запис `field,`.
   const fieldRe = new RegExp('(^|[\\s{,])' + field + '\\s*[:,}]');
   assert.ok(

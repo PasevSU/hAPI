@@ -20,13 +20,13 @@
   {
     "file": "hapi_enterprise/pgp.js",
     "rule": "md5-sha1",
-    "line": 1147,
+    "line": 1247,
     "reason": "MDC за SEIPD v1 е SHA-1 по RFC 4880 §5.13 — друг алгоритъм прави съобщението нечетимо за gpg и OpenPGP.js. Цялостта на самите данни на hAPI се пази с AES-256-GCM/SHA-256 извън този слой."
   },
   {
     "file": "hapi_enterprise/pgp.js",
     "rule": "md5-sha1",
-    "line": 1283,
+    "line": 1383,
     "reason": "Проверката на MDC при декриптиране — същата причина: SHA-1 е част от формата SEIPD v1 и се сравнява в постоянно време (timingSafeEqual)."
   },
   {

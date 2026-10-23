@@ -69,9 +69,10 @@ GET /admin/api/pgp/keyring
 ```
 
 Очаквано: `available: true`, `canDecrypt: true`, `storageKeyId` = подключът `encrypt-storage`,
-`primaryKeyId` = основният ключ, `passphraseSource`: `option` (от `pgp_key_pass`) или `file`
-(първият ред на `pgp_path_pass`), `reason` празно. Отговорът **никога** не съдържа паролата,
-пътя до файла или част от ключа (`INV-P7`).
+`storageKeySource`: `key-flags` (избран по роля), `key-flags-comms` (има само comms ключ) или
+`kind` (ключ без флагове — правило по вид), `primaryKeyId` = основният ключ, `passphraseSource`:
+`option` (от `pgp_key_pass`) или `file` (първият ред на `pgp_path_pass`), `reason` празно.
+Отговорът **никога** не съдържа паролата, пътя до файла или част от ключа (`INV-P7`).
 
 ## 5. Включи криптирането
 

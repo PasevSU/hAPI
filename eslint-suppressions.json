@@ -92,7 +92,7 @@
   },
   "hapi_enterprise/pgp.js": {
     "no-unused-vars": {
-      "count": 2
+      "count": 1
     }
   },
   "hapi_enterprise/portal.js": {

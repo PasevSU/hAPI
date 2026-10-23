@@ -51,6 +51,10 @@ const keyringWith = (env) => create({ env });
   assert.match(s.storageKeyId, /^[0-9A-F]{16}$/, 'трябва да има ключ за криптиране');
   assert.equal(s.keys.length, 1);
   assert.equal(s.keys[0].algorithm, 'RSA');
+  // Ролята идва от Key Flags в self-sig (0x0F), а изборът на ключ казва ЗАЩО е този ключ.
+  assert.equal(s.keys[0].keyFlags, 0x0f, 'фикстурата носи 0x0F (certify+sign+comms+storage)');
+  assert.deepEqual(s.keys[0].roles, ['certify', 'sign', 'encrypt-comms', 'encrypt-storage']);
+  assert.equal(s.storageKeySource, 'key-flags', 'ключът е избран по роля encrypt-storage');
   ok('само публичен ключ → може да криптира, не може да декриптира');
 }
 

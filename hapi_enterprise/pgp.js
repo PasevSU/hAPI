@@ -586,6 +586,25 @@ function parseKeyBlock(text, options) {
     } else if (p.tag === 13 && !userId) {
       userId = p.body.toString('utf8');
       current = null;
+    } else if (p.tag === 2) {
+      // Key Flags (подпакет 27) живеят в САМОТО обвързващо подписано пространство. Тук се
+      // взимат от hashed частта (тя е подписана) и се закачат за собственика на подписа:
+      // 0x18/0x19 — подключът, 0x13 — основният ключ. Без това „кой ключ криптира“ се
+      // решаваше само по вида му, а документът казва storage ролята.
+      const flags = signatureKeyFlags(p.body);
+      const sigType = p.body[1];
+      const owner =
+        sigType === 0x18 || sigType === 0x19
+          ? current && current.isSubkey
+            ? current
+            : null
+          : sigType === 0x13
+            ? keys.find((k) => !k.isSubkey) || null
+            : null;
+      if (owner && flags !== undefined) {
+        owner.keyFlags = flags;
+        owner.roles = rolesOfKeyFlags(flags);
+      }
     }
   }
   if (!keys.length) throw fail('NO_KEY', 'В блока няма ключов пакет');
@@ -599,6 +618,100 @@ function signingKey(parsed) {
   const candidates = parsed.keys.filter((k) => k.secret && k.canSign);
   if (!candidates.length) throw fail('NO_SECRET_KEY', 'Няма секретен ключ за подписване');
   return candidates.find((k) => !k.isSubkey) || candidates[0];
+}
+
+// ── Key Flags (подпакет 27): кой ключ какво има право да прави ────────────────
+// Битовете са от RFC 4880 §5.2.3.21 / RFC 9580 §5.2.3.25. Ролите са същите имена,
+// с които документът описва ключовия пакет — за да няма втори речник.
+const KEY_FLAG_ROLES = [
+  [0x01, 'certify'],
+  [0x02, 'sign'],
+  [0x04, 'encrypt-comms'],
+  [0x08, 'encrypt-storage'],
+  [0x20, 'authenticate'],
+];
+
+function rolesOfKeyFlags(flags) {
+  if (typeof flags !== 'number') return [];
+  return KEY_FLAG_ROLES.filter(([bit]) => flags & bit).map(([, role]) => role);
+}
+
+/**
+ * Key Flags от hashed подпакетите на подпис. Различават се по заглавката:
+ * v4 — 2-октетна дължина на подпакетите след 6-октетна заглавка;
+ * v6 — 4-октетна дължина след 8-октетна заглавка (RFC 9580 §5.2.3).
+ * Връща undefined, когато подписът е в непознат формат или няма подпакет 27.
+ */
+function signatureKeyFlags(body) {
+  if (!body || body.length < 6) return undefined;
+  const version = body[0];
+  let at;
+  let end;
+  if (version === 4) {
+    at = 6;
+    end = Math.min(body.length, at + body.readUInt16BE(4));
+  } else if (version === 6) {
+    if (body.length < 8) return undefined;
+    at = 8;
+    end = Math.min(body.length, at + body.readUInt32BE(4));
+  } else {
+    return undefined;
+  }
+  let flags;
+  while (at < end) {
+    const first = body[at];
+    let length; let headerLen;
+    if (first < 192) {
+      length = first;
+      headerLen = 1;
+    } else if (first < 255) {
+      if (at + 1 >= end) return flags;
+      length = ((first - 192) << 8) + body[at + 1] + 192;
+      headerLen = 2;
+    } else {
+      if (at + 4 >= end) return flags;
+      length = body.readUInt32BE(at + 1);
+      headerLen = 5;
+    }
+    at += headerLen;
+    if (!length || at + length > end) break;
+    const type = body[at] & 0x7f; // най-високият бит значи „критичен“, не е част от типа
+    if (type === 27) flags = body[at + 1];
+    at += length;
+  }
+  return flags;
+}
+
+/**
+ * Кой ключ криптира вътрешните данни (роля `encrypt-storage`).
+ *
+ * Редът е договорен и се вижда в `source`, за да не е мълчалив избор:
+ *   1. ключ с бит 0x08 (`encrypt-storage`) — това е ключът за данни в покой;
+ *   2. ключ с бит 0x04 (`encrypt-comms`) — по-добре от нищо, но се казва, че е comms;
+ *   3. правилото по вид (първият X25519/X448, иначе RSA) — за стари ключове без флагове.
+ * Никога не се хвърля заради самите флагове: липсващият ключ е единствената причина за отказ.
+ */
+function storageKeyOf(parsed) {
+  const keys = (parsed && parsed.keys) || [];
+  const capable = (k) => k && (k.kind === 'x25519' || k.kind === 'x448' || k.kind === 'rsa');
+  const byFlag = (bit) => keys.find((k) => capable(k) && typeof k.keyFlags === 'number' && (k.keyFlags & bit));
+  const storage = byFlag(0x08);
+  if (storage) return { key: storage, source: 'key-flags' };
+  const comms = byFlag(0x04);
+  if (comms) return { key: comms, source: 'key-flags-comms' };
+  const montgomery = keys.find((k) => k.kind === 'x25519' || k.kind === 'x448');
+  if (montgomery) return { key: montgomery, source: 'kind' };
+  const rsa = keys.find((k) => k.kind === 'rsa');
+  if (rsa) return { key: rsa, source: 'kind' };
+  if (keys.some((k) => k.kind === 'ecdh')) {
+    throw fail('UNSUPPORTED_CURVE', 'Ключът за криптиране е ECDH с именувана крива — hAPI поддържа X25519, X448 и RSA');
+  }
+  throw fail('NO_ENCRYPTION_KEY', 'Няма ключ за криптиране (X25519, X448 или RSA)');
+}
+
+/** Съвместим изход: същият ключ, който връщаше преди `storageKeyOf`. */
+function encryptionKeyOf(parsed) {
+  return storageKeyOf(parsed).key;
 }
 
 function describe(parsed) {
@@ -720,7 +833,7 @@ function selfCertification(key, userId, created) {
   const uid = Buffer.from(userId, 'utf8');
   const uidLength = Buffer.alloc(4);
   uidLength.writeUInt32BE(uid.length, 0);
-  const keyFlags = subpacket(27, Buffer.from([0x03])); // certify + sign
+  const keyFlags = subpacket(27, Buffer.from([0x0f])); // certify + sign + comms + storage
   const primaryUid = subpacket(25, Buffer.from([0x01]));
   return buildSignatureBody({
     key,
@@ -1014,19 +1127,6 @@ function aesKeyWrap(cipherName, kek, payload, encrypt) {
   const iv = Buffer.from('A6A6A6A6A6A6A6A6', 'hex');
   const made = encrypt ? crypto.createCipheriv(cipherName, kek, iv) : crypto.createDecipheriv(cipherName, kek, iv);
   return Buffer.concat([made.update(payload), made.final()]);
-}
-
-/** Кой ключ криптира: X25519/X448 (v6), после RSA. ECDH с именувана крива не се поддържа. */
-function encryptionKeyOf(parsed) {
-  const all = parsed.keys;
-  const montgomery = all.find((k) => k.kind === 'x25519' || k.kind === 'x448');
-  if (montgomery) return montgomery;
-  const rsa = all.find((k) => k.kind === 'rsa');
-  if (rsa) return rsa;
-  if (all.some((k) => k.kind === 'ecdh')) {
-    throw fail('UNSUPPORTED_CURVE', 'Ключът за криптиране е ECDH с именувана крива — hAPI поддържа X25519, X448 и RSA');
-  }
-  throw fail('NO_ENCRYPTION_KEY', 'Няма ключ за криптиране (X25519, X448 или RSA)');
 }
 
 // ── RSA: PKCS#1 v1.5 ръчно ────────────────────────────────────────────────────
@@ -1324,6 +1424,8 @@ module.exports = {
   // Кой ключ криптира и кой подписва: решенията живеят тук, за да не се разминават
   // между ключохранилището и двигателя.
   encryptionKeyOf,
+  storageKeyOf,
+  rolesOfKeyFlags,
   signingKey,
   signDetached,
   verifyDetached,
