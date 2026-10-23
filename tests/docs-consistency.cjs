@@ -6,7 +6,11 @@
 //  - локалните markdown връзки в основните документи сочат съществуващи файлове;
 //  - не се споменават скриптове/инсталатори, които не съществуват в хранилището
 //    (освен ако не са изрично отбелязани като отделна дистрибуция);
-//  - документът за паритет на функциите описва пренесените модули.
+//  - документът за паритет на функциите описва пренесените модули;
+//  - няма „⏳ <текущата версия>“ — това е обещание за ВЕЧЕ излязла версия (остарял маркер);
+//  - ръководството за ключовете не описва полета, които `status()` не връща.
+//    (В 0.69.67 там стояха `encryptionKeyId`, `hasPrivate`, `passphraseAccepted` — и трите
+//    измислени; човек, който ги търси в отговора, стига до „счупен keyring“.)
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -90,6 +94,42 @@ assert.match(parity, /portal_enterprise/, 'FEATURE_PARITY.md: трябва да 
 const hacsGuide = read('documentation/08_USER_GUIDES/install-hacs.md');
 for (const needle of ['Settings → Devices & Services', 'configuration.yaml', 'сензора', 'hacs.json']) {
   assert.ok(hacsGuide.includes(needle), 'install-hacs.md: липсва „' + needle + '“');
+}
+
+// 6. Никъде в документацията не стои „⏳ <текущата версия>“: това значи „предстои в
+//    изданието, което вече е излязло“. Бъдещето се пише „⏳ след <версия>“.
+const docFiles = [];
+(function walk(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full);
+    else if (/\.md$/.test(entry.name)) docFiles.push(full);
+  }
+})(path.join(root, 'documentation'));
+docFiles.push(path.join(root, 'README.md'), path.join(root, 'BG.md'), path.join(root, 'DE.md'));
+const staleVersion = new RegExp('⏳\\s*' + version.replace(/[.]/g, '\\.'));
+const stale = [];
+for (const file of docFiles) {
+  const text = fs.readFileSync(file, 'utf8');
+  text.split('\n').forEach((line, i) => {
+    if (staleVersion.test(line)) stale.push(`${path.relative(root, file)}:${i + 1}`);
+  });
+}
+assert.deepEqual(stale, [], 'маркер „⏳ ' + version + '“ за вече излязла версия (пиши „⏳ след ' + version + '“): ' + stale.join(', '));
+
+// 7. Полетата, които ръководството обещава, съществуват в `status()` на ключохранилището.
+const keyringCode = read('hapi_enterprise/path-crypto.js');
+for (const field of ['available', 'canDecrypt', 'storageKeyId', 'primaryKeyId', 'passphraseSource', 'reason']) {
+  // Полетата се срещат и като `field: стойност`, и като съкратен запис `field,`.
+  const fieldRe = new RegExp('(^|[\\s{,])' + field + '\\s*[:,}]');
+  assert.ok(
+    fieldRe.test(keyringCode),
+    'path-crypto.js: липсва поле ' + field + ', което ръководството за ключовете обещава',
+  );
+}
+const keyGuide = read('documentation/08_USER_GUIDES/pgp-keys-setup.md');
+for (const invented of ['encryptionKeyId', 'hasPrivate', 'passphraseAccepted']) {
+  assert.ok(!keyGuide.includes(invented), 'pgp-keys-setup.md: поле ' + invented + ' не съществува в status()');
 }
 
 console.log(`docs-consistency OK: ${docs.length} документа на версия ${version}, без счупени връзки`);
