@@ -24,7 +24,7 @@
     { type: 'text', category: 'text', label: 'Текст', icon: '¶', status: 'ready', defaults: { value: '' } },
     { type: 'subtitle', category: 'text', label: 'Подзаглавие', icon: 'ᴛ', status: 'ready', defaults: { value: 'Подзаглавие' } },
     { type: 'metadata', category: 'data', label: 'Метаданни', icon: '☰', status: 'ready', defaults: { items: [{ key: 'Ключ', value: 'Стойност' }] } },
-    { type: 'data-block', category: 'data', label: 'Системни данни', icon: '▤', status: 'planned' },
+    { type: 'data-block', category: 'data', label: 'Системни данни', icon: '▤', status: 'ready', defaults: {} },
     { type: 'table', category: 'tables', label: 'Таблица', icon: '▦', status: 'ready', defaults: { source: 'records:1000', columns: ['name'] } },
     { type: 'hash-table', category: 'tables', label: 'Hash таблица', icon: '#', status: 'ready', defaults: { algorithms: ['SHA256'] } },
     { type: 'image', category: 'media', label: 'Изображение', icon: '▣', status: 'ready', defaults: {} },

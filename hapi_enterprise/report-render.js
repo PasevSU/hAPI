@@ -34,6 +34,28 @@ function jpegFrom(block) {
   }
 }
 
+// Системни данни: факти, които сървърът знае за СЕБЕ СИ (версия, среда, съхранение).
+// Без подадени стойности се печата „—“ — отчетът няма да измисли версия или път.
+// Пътищата идват само относителни: абсолютен път не бива да изтича в документ.
+function systemRows(manifest, options) {
+  const s = (options && options.system) || {};
+  const rows = [['Показател', 'Стойност']];
+  const add = (key, value) => {
+    const shown = value === null || value === undefined || value === '' ? PLACEHOLDER : String(value);
+    rows.push([key, shown]);
+  };
+  add('Система', s.product || 'hAPI Enterprise');
+  add('Версия', s.version);
+  add('Схема на манифеста', `report-studio/v${manifest.schemaVersion === undefined ? 1 : manifest.schemaVersion}`);
+  add('Профил', manifest.profile);
+  add('Издаден', s.issuedAt);
+  add('Среда', s.node);
+  add('База данни', s.database);
+  add('Времеви печат (TSA)', s.tsa);
+  add('Блокове', Array.isArray(manifest.blocks) ? manifest.blocks.length : 0);
+  return rows;
+}
+
 // data: { "records:1000": [["Иван", "..."], ...] }  (без заглавен ред)
 function tableRows(block, data) {
   const columns = (Array.isArray(block.columns) ? block.columns : []).map(String);
@@ -118,6 +140,10 @@ function toPdfBlocks(manifest, options = {}) {
       case 'legal':
         heading(block.label || 'Правна декларация');
         out.push({ type: 'p', text: block.value ? String(block.value) : LEGAL_DEFAULT });
+        break;
+      case 'data-block':
+        heading(block.label || 'Системни данни');
+        out.push({ type: 'table', header: true, rows: systemRows(manifest, options) });
         break;
       case 'text':
         heading(block.label);

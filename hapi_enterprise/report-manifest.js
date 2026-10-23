@@ -26,6 +26,7 @@ const ELEMENT_TYPES = [
   'subtitle',
   'text',
   'legal',
+  'data-block',
   'table',
   'image',
   'qr',

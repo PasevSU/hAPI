@@ -141,6 +141,21 @@ const htmlProjectsRoot = path.join(root, 'html-projects');
 // PasevSU Document Generator: индексът на шаблоните се строи от диска при всяка заявка
 // (виж generator.js) — затова добавяне/изтриване на *.html не иска build-index.
 const generator = require('./generator').create({ root });
+/**
+ * Фактите за блока „Системни данни“ в отчет: само това, което сървърът наистина знае.
+ * Нарочно НЕ влизат абсолютни пътища — отчетът може да излезе от системата. Липсваща
+ * стойност остава празна и в PDF-а се печата „—“ (никаква измислена версия или път).
+ */
+function reportSystemInfo({ issuedAt = null, tsa = '' } = {}) {
+  return {
+    product: 'hAPI Enterprise',
+    version: apiVersion.VERSION.CURRENT,
+    issuedAt: issuedAt || new Date().toISOString().slice(0, 19) + 'Z',
+    node: process.version,
+    database: runtime.databaseRelative,
+    tsa,
+  };
+}
 const accessModes = ['FREE', 'KEY_REQUIRED', 'DISABLED'];
 const fileMode = f => f.accessMode || 'FREE';
 const validExpiry = v => v === null || typeof v === 'string' && Number.isFinite(Date.parse(v)) && Date.parse(v) > Date.now();
@@ -2115,7 +2130,11 @@ async function handler(req, res) {
           // носи), рендирането е детерминирано — същите входни данни дават същия PDF и
           // същия отпечатък. Затова стойността се уважава И се връща в заглавка.
           const issuedAt = (payload && (payload.createdAt || payload.issuedAt)) || null;
-          const pdf = reportRender.renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, watermark: payload && payload.watermark, stamps, createdAt: issuedAt });
+          const system = reportSystemInfo({
+            issuedAt,
+            tsa: wantTsa ? (stamps && stamps.ok ? 'издаден' : 'неуспешен') : cryptoOptions.tsaEnabled ? 'включен, не е поискан' : 'изключен',
+          });
+          const pdf = reportRender.renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, watermark: payload && payload.watermark, stamps, createdAt: issuedAt, system });
           const digest = require('./report-manifest').digest(manifest) || '';
           // RS-06: отпечатък на ГОТОВИЯ PDF. Не може да стои вътре в себе си, затова се връща
           // като хедър и влиза в одита — така „този файл е този отчет“ се проверява с sha256sum.
@@ -2161,7 +2180,8 @@ async function handler(req, res) {
             const readyBefore = Boolean(stamps && stamps.ok && stamps.start && stamps.start.token && stamps.stop && stamps.stop.token);
             const statusWord = draft ? 'DRAFT' : readyBefore ? null : 'INCOMPLETE';
             const watermark = payload && payload.watermark !== undefined ? payload.watermark : statusWord === null ? undefined : statusWord;
-            pdf = require('./report-render').renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, watermark, stamps, createdAt: issuedAt });
+            const system = reportSystemInfo({ issuedAt, tsa: wantTsa ? (stamps && stamps.ok ? 'издаден' : 'неуспешен') : cryptoOptions.tsaEnabled ? 'включен, не е поискан' : 'изключен' });
+            pdf = require('./report-render').renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, watermark, stamps, createdAt: issuedAt, system });
           }
           // Подпис: иска се изрично и изисква ключ в заявката, както при `/reports/sign`.
           let cms = null;

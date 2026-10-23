@@ -800,6 +800,8 @@
       }
     } else if (block.type === 'metadata') {
       html += field('Двойки (ключ=стойност, по един ред)', `<textarea id="p-items" rows="4">${esc((block.items || []).map((i) => `${i.key}=${i.value}`).join('\n'))}</textarea>`);
+    } else if (block.type === 'data-block') {
+      html += `<p class="hint">Системни данни: версия, среда, база данни и състояние на TSA. Стойностите ги попълва сървърът при генериране — в прегледа стоят като „—“.</p>`;
     } else if (block.type === 'signature') {
       html += `<p class="hint">Подписът се издава само при реално генериране (RS-05). В preview се показва „не е издаден“.</p>`;
     } else if (block.type === 'separator') {
@@ -940,6 +942,16 @@
             `<table><tbody>${items
               .map((i) => `<tr><th class="w45">${esc(i.key)}</th><td>${esc(i.value)}</td></tr>`)
               .join('')}</tbody></table>`,
+          );
+        }
+        if (block.type === 'data-block') {
+          // Прегледът НЕ измисля версия или път: сървърът ги попълва при генериране.
+          return previewSection(
+            block.label || 'Системни данни',
+            `<table><tbody>${['Версия', 'Среда', 'База данни', 'TSA']
+              .map((k) => `<tr><th class="w45">${esc(k)}</th><td>—</td></tr>`)
+              .join('')}</tbody></table>
+             <div class="pv-note">стойностите идват от сървъра при генериране</div>`,
           );
         }
         if (block.type === 'table') {

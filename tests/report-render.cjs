@@ -134,4 +134,32 @@ assert.equal(
   'прекъсването на страница добавя точно един лист',
 );
 
+// 11. Системни данни: стойностите идват от сървъра; без тях не се измислят.
+const withSystem = M.template();
+withSystem.blocks.splice(1, 0, { id: 'sys1', type: 'data-block' });
+const systemTable = (opts) =>
+  R.toPdfBlocks(withSystem, opts).find((b) => b.type === 'table' && b.rows[0][0] === 'Показател');
+const filledSystem = systemTable({
+  system: { version: '9.9.9', issuedAt: '2026-01-02T03:04:05Z', node: 'v22.16.0', database: 'db.json', tsa: 'издаден' },
+});
+assert.ok(filledSystem, 'блокът дава таблица „Показател/Стойност“');
+const valueOf = (k) => (filledSystem.rows.find((r) => r[0] === k) || [])[1];
+assert.equal(valueOf('Версия'), '9.9.9');
+assert.equal(valueOf('Среда'), 'v22.16.0');
+assert.equal(valueOf('Времеви печат (TSA)'), 'издаден');
+assert.equal(valueOf('База данни'), 'db.json');
+assert.equal(valueOf('Блокове'), String(withSystem.blocks.length));
+const blankSystem = systemTable({});
+assert.ok(blankSystem, 'без данни от сървъра блокът пак се рендира');
+assert.equal(
+  (blankSystem.rows.find((r) => r[0] === 'Версия') || [])[1],
+  '—',
+  'без данни от сървъра не се измисля версия',
+);
+assert.equal(
+  (blankSystem.rows.find((r) => r[0] === 'База данни') || [])[1],
+  '—',
+  'абсолютен път не изтича в отчета',
+);
+
 console.log('report-render OK');
