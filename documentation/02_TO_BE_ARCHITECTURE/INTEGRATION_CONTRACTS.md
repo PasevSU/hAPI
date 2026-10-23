@@ -283,6 +283,36 @@ Assistant. На `/api/…` там отговаря HA, не add-on-ът.
 - В панела резултатът се показва до самата връзка: „проверен 206 · 12 ms“ или „НЕ СЕ ОТВАРЯ:
   <причина>“; при липсващ публичен адрес се добавя „задай Публичен адрес в Настройки → Връзка“.
 
+### PGP ключове и криптиране на работната папка (0.69.67)
+
+Пълното описание — роли на ключовете, крипто параметри, граници и работни пътища — е в
+[`PGP_KEYRING_AND_WORK_FOLDER.md`](PGP_KEYRING_AND_WORK_FOLDER.md). Тук е само **договорът**,
+който клиентите виждат.
+
+**Настройки (влизат в `config/settings.json` и в опциите на add-on-а):**
+
+| Ключ                  | Вид        | По подразбиране      | Значение                                                                                 |
+| --------------------- | ---------- | -------------------- | ---------------------------------------------------------------------------------------- |
+| `pgp_keys_dir`        | низ        | `/config/_openpgpV6` | папката с `public.asc` / `private.asc`                                                   |
+| `pgp_key_pass`        | `password` | — (празно)           | парола на `private.asc`; резерва: env `PGP_KEY_PASS`, после `.env` → `HAPI_PGP_KEY_PASS` |
+| `pgp_encrypt_paths`   | bool       | `false`              | включва L1 (криптирани вътрешни пътища)                                                  |
+| `pgp_encrypt_workdir` | bool       | `false`              | включва L2 (криптирана работна папка)                                                    |
+
+**Маршрути (⏳ 0.69.67 — още не съществуват; описани са, за да не се гадае договорът):**
+
+| Метод | Път                             | Право | Отговор                                                                                                                                                              |
+| ----- | ------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET   | `/admin/api/pgp/keyring`        | `pgp` | `{ available, keysDir, publicKeyId, encryptionKeyId, algorithm, hasPrivate, passphraseAccepted, encryptPaths, encryptWorkdir }` — **без** парола и без част от ключа |
+| POST  | `/admin/api/pgp/keyring/reload` | `pgp` | препрочита ключовете от диска; `200` с горния обект или `409` с код от таблицата за грешки                                                                           |
+
+**Кодове при отказ (същите като в `pgp.js`, не нови):** `PASSPHRASE_REQUIRED`, `PASSPHRASE_WRONG`,
+`NO_ENCRYPTION_KEY`, `UNSUPPORTED_CURVE`, `S2K_ARGON2_UNSUPPORTED`, `MDC_MISMATCH`, `WEAK_KEY`;
+при недостъпен ключ за четене — `503` с `KEYRING_UNAVAILABLE`.
+
+**Инварианти:** INV-P1…INV-P8 в [`PGP_KEYRING_AND_WORK_FOLDER.md`](PGP_KEYRING_AND_WORK_FOLDER.md#инварианти-пазят-се-от-тестове).
+Пазят се от `tests/pgp-engine.cjs`, `tests/pgp-keyring.cjs` и `tests/pgp-path-encryption.cjs`
+(⏳, влизат в `TEST_CASE_CATALOG.md` като T-PGP-01…03).
+
 ## Windows contract
 
 | Interface | Detail                            |

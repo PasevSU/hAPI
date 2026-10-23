@@ -6,11 +6,13 @@
 //     Ed448 v6 (28 — четене/проверка); версии 4 и 6 (RFC 9580);
 //   • подпис: binary document (тип 0x00), v4 подпис за v4 ключ, v6 подпис за v6 ключ
 //     (salt, 4-октетни дължини, Issuer Fingerprint, без Issuer Key ID), ASCII armor с CRC24;
-//   • проверка на подпис с публичен ключ (включително подключове).
+//   • проверка на подпис с публичен ключ (включително подключове);
+//   • криптиране до публичен ключ (PKESK + SEIPD v1 с MDC, AES-256) и декриптиране със
+//     секретен ключ, включително ключ, защитен с парола (S2K iterated-salted).
 //
 // Извън обхвата (връща ясна грешка, не тих fallback):
-//   • криптирани секретни ключове (S2K/парола/Argon2) — експортирай ключа без парола;
-//   • AEAD/SEIPD, ECDH/X25519, генериране на Ed448 ключове.
+//   • S2K тип 4 (Argon2) — иска се gpg 2.4+ с `--s2k-mode 3` или ключ без парола;
+//   • AEAD/SEIPD v2, ECDH/X25519, генериране на Ed448 ключове.
 const crypto = require('node:crypto');
 const zlib = require('node:zlib');
 
@@ -18,12 +20,17 @@ const ARMOR = {
   SIGNATURE: ['-----BEGIN PGP SIGNATURE-----', '-----END PGP SIGNATURE-----'],
   PUBLIC: ['-----BEGIN PGP PUBLIC KEY BLOCK-----', '-----END PGP PUBLIC KEY BLOCK-----'],
   PRIVATE: ['-----BEGIN PGP PRIVATE KEY BLOCK-----', '-----END PGP PRIVATE KEY BLOCK-----'],
+  MESSAGE: ['-----BEGIN PGP MESSAGE-----', '-----END PGP MESSAGE-----'],
 };
 
 const ALGO = {
   1: { id: 1, name: 'RSA', kind: 'rsa', sign: true },
   3: { id: 3, name: 'RSA (sign only)', kind: 'rsa', sign: true },
+  18: { id: 18, name: 'ECDH', kind: 'ecdh', sign: false },
+  19: { id: 19, name: 'ECDSA', kind: 'ecdsa', sign: true },
   22: { id: 22, name: 'EdDSA (Ed25519)', kind: 'eddsa', sign: true }, // legacy, само v4
+  25: { id: 25, name: 'X25519', kind: 'x25519', sign: false },
+  26: { id: 26, name: 'X448', kind: 'x448', sign: false },
   27: { id: 27, name: 'Ed25519', kind: 'eddsa', sign: true }, // RFC 9580, v6
   28: { id: 28, name: 'Ed448', kind: 'ed448', sign: true }, // RFC 9580, v6
 };
@@ -226,7 +233,7 @@ function readPackets(buf) {
 
 // ── Ключове ──────────────────────────────────────────────────────────────────
 /** Дължина на публичния ключов материал за алгоритъм (v6). */
-const RAW_KEY_BYTES = { eddsa: 32, ed448: 57 };
+const RAW_KEY_BYTES = { eddsa: 32, ed448: 57, x25519: 32, x448: 56 };
 
 /**
  * Чете ключов пакет (v4 или v6). v4: version|created|algo|MPI…;
@@ -255,6 +262,23 @@ function parseKeyBody(body) {
       const e = readMpi(body, at); at = e.next;
       key.n = n.value;
       key.e = e.value;
+    } else if (info.kind === 'x25519' || info.kind === 'x448') {
+      const size = RAW_KEY_BYTES[info.kind];
+      if (materialLen !== size) throw fail('BAD_KEY', `Неочаквана дължина на ${info.name} ключ (${materialLen})`);
+      key.point = body.subarray(at, at + size);
+      at += size;
+    } else if (info.kind === 'ecdh' || info.kind === 'ecdsa') {
+      // v6 ECDH/ECDSA: OID на кривата, MPI точка, а при ECDH — и KDF параметри.
+      const oidLength = body[at];
+      key.curveOid = body.subarray(at + 1, at + 1 + oidLength).toString('hex');
+      at += 1 + oidLength;
+      const point = readMpi(body, at); at = point.next;
+      key.point = point.value;
+      if (info.kind === 'ecdh' && at < end) {
+        const kdfLength = body[at];
+        key.kdf = body.subarray(at, at + 1 + kdfLength);
+        at += 1 + kdfLength;
+      }
     } else {
       const size = RAW_KEY_BYTES[info.kind];
       if (materialLen !== size) throw fail('BAD_KEY', `Неочаквана дължина на ${info.name} ключ (${materialLen})`);
@@ -276,7 +300,29 @@ function parseKeyBody(body) {
     const raw = point.value;
     if (raw.length !== 33 || raw[0] !== 0x40) throw fail('BAD_KEY', 'Неочакван формат на Ed25519 публичен ключ');
     key.point = raw.subarray(1);
+  } else if (info.kind === 'ecdh') {
+    // v4 ECDH (RFC 6637 §8): OID на кривата, MPI точка, KDF параметри (дължина, запазен,
+    // хеш, шифър). Ползва се за криптиране; ключът не се подписва.
+    const oidLength = body[at];
+    at += 1 + oidLength;
+    const point = readMpi(body, at); at = point.next;
+    key.point = point.value;
+    if (at < body.length) {
+      const kdfLength = body[at];
+      key.kdf = body.subarray(at, at + 1 + kdfLength);
+      at += 1 + kdfLength;
+    }
+  } else if (info.kind === 'ecdsa') {
+    // v4 ECDSA: OID на кривата + MPI точка. Само се разчита (за да не спира разборът на
+    // целия блок); подпис с него не се прави.
+    const oidLength = body[at];
+    at += 1 + oidLength;
+    const point = readMpi(body, at); at = point.next;
+    key.point = point.value;
+  } else if (RAW_KEY_BYTES[info.kind] && info.kind !== 'x25519' && info.kind !== 'x448') {
+    throw fail('UNSUPPORTED_ALGORITHM', `${info.name} се поддържа само във v6 ключ`);
   } else {
+    // v4 X25519/X448 не съществуват — само във v6 (по-горе).
     throw fail('UNSUPPORTED_ALGORITHM', `${info.name} се поддържа само във v6 ключ`);
   }
   key.bodyLength = at;
@@ -314,44 +360,156 @@ function u32(n) {
   return b;
 }
 
-function parseSecretMpis(key, body) {
+function parseSecretMpis(key, body, passphrase) {
   let at = key.bodyLength;
   if (at >= body.length) throw fail('BAD_KEY', 'Липсва секция на секретния ключ');
   const usage = body[at];
+  let source = body;
   if (usage !== 0) {
-    throw fail(
-      'ENCRYPTED_KEY',
-      'Секретният ключ е защитен с парола. Експортирай го без парола (gpg --export-secret-keys без passphrase) или го качи като отделен ключ.',
-      400,
-    );
+    // Ключ, защитен с парола: S2K → CFB → MPI (+ SHA-1 или 2-байтова сума).
+    const opened = openSecretSection(key, body, passphrase);
+    source = opened.plain;
+    at = 0;
+  } else {
+    at += 1;
   }
-  at += 1;
   const secret = {};
   if (key.kind === 'rsa') {
-    const d = readMpi(body, at); at = d.next;
-    const p = readMpi(body, at); at = p.next;
-    const q = readMpi(body, at); at = q.next;
-    const u = readMpi(body, at); at = u.next;
+    const d = readMpi(source, at); at = d.next;
+    const p = readMpi(source, at); at = p.next;
+    const q = readMpi(source, at); at = q.next;
+    const u = readMpi(source, at); at = u.next;
     secret.d = d.value; secret.p = p.value; secret.q = q.value; secret.u = u.value;
   } else if (key.version === 6) {
     // v6: секретът е суров (без MPI) и БЕЗ контролна сума (RFC 9580 §5.5.3).
     const size = RAW_KEY_BYTES[key.kind];
-    if (at + size > body.length) throw fail('BAD_KEY', 'Отрязан секретен ключ (v6)');
-    secret.d = body.subarray(at, at + size);
+    if (at + size > source.length) throw fail('BAD_KEY', 'Отрязан секретен ключ (v6)');
+    secret.d = source.subarray(at, at + size);
   } else {
-    const s = readMpi(body, at); at = s.next;
+    const s = readMpi(source, at); at = s.next;
     // MPI е цяло число: водещите нулеви БИТОВЕ не се пазят (RFC 4880 §3.2).
     // Затова 32-байтов секрет, който започва с 0x00, пристига като 31 байта —
     // това е валиден ключ, не повреда. Допълваме отляво до фиксирания размер.
     if (s.value.length > 32) throw fail('BAD_KEY', 'Неочакван размер на Ed25519 секретен ключ');
     secret.d = s.value.length === 32 ? Buffer.from(s.value) : Buffer.concat([Buffer.alloc(32 - s.value.length), s.value]);
   }
-  if (key.version === 4 && at + 2 <= body.length) {
+  if (key.version === 4 && at + 2 <= source.length) {
     let sum = 0;
-    for (let i = key.bodyLength + 1; i < at; i++) sum = (sum + body[i]) & 0xffff;
-    if (sum !== body.readUInt16BE(at)) throw fail('BAD_KEY', 'Контролна сума на секретния ключ не съвпада');
+    for (let i = usage === 0 ? key.bodyLength + 1 : 0; i < at; i++) sum = (sum + source[i]) & 0xffff;
+    if (sum !== source.readUInt16BE(at)) throw fail('BAD_KEY', 'Контролна сума на секретния ключ не съвпада');
   }
   return secret;
+}
+
+// ── S2K (ключ, защитен с парола) ─────────────────────────────────────────────
+// RFC 4880 §3.7.1: S2K тип 0 (прост), 1 (солен), 3 (итериран и солен). Тип 4 (Argon2,
+// RFC 9580) не се поддържа — казва се с думи, вместо да се върне безсмислена грешка.
+const S2K_HASHES = { 1: 'md5', 2: 'sha1', 3: 'ripemd160', 8: 'sha256', 9: 'sha384', 10: 'sha512', 11: 'sha224' };
+// Шифри, които Node може да ползва директно. CAST5/BLOWFISH/IDEA липсват в Node —
+// тогава се казва кой шифър липсва, вместо да се декриптира боклук.
+const SYM_CIPHERS = {
+  7: { name: 'aes-128-cfb', keyBytes: 16, block: 16, label: 'AES-128' },
+  8: { name: 'aes-192-cfb', keyBytes: 24, block: 16, label: 'AES-192' },
+  9: { name: 'aes-256-cfb', keyBytes: 32, block: 16, label: 'AES-256' },
+};
+
+/** Повтаря `source`, докато се запълнят `total` байта — без O(n²) конкатенации. */
+function repeatTo(source, total) {
+  const out = Buffer.alloc(total);
+  for (let off = 0; off < total; off += source.length) {
+    source.copy(out, off, 0, Math.min(source.length, total - off));
+  }
+  return out;
+}
+
+/** Извежда ключ по S2K спецификацията (започва с байта на типа). */
+function s2kDerive(spec, passphrase, keyBytes) {
+  const type = spec[0];
+  const hashName = S2K_HASHES[spec[1]];
+  if (!hashName) throw fail('UNSUPPORTED_HASH', `Неподдържан хеш за S2K (${spec[1]})`);
+  let salt = Buffer.alloc(0);
+  let count = 0;
+  if (type === 1) salt = spec.subarray(2, 10);
+  if (type === 3) {
+    salt = spec.subarray(2, 10);
+    const coded = spec[10];
+    count = (16 + (coded & 15)) << ((coded >> 4) + 6);
+  }
+  const source = type === 0 ? passphrase : Buffer.concat([salt, passphrase]);
+  if (!source.length) throw fail('PASSPHRASE_REQUIRED', 'Празна парола за секретния ключ');
+  const total = type === 3 ? count : source.length;
+  const data = repeatTo(source, total);
+  const parts = [];
+  let have = 0;
+  while (have < keyBytes) {
+    // За следващите хешове входът се предшества от (i−1) нулеви октета (RFC 4880 §3.7.1.1).
+    const input = parts.length ? Buffer.concat([Buffer.alloc(parts.length), data]) : data;
+    const digest = crypto.createHash(hashName).update(input).digest();
+    parts.push(digest);
+    have += digest.length;
+  }
+  return Buffer.concat(parts).subarray(0, keyBytes);
+}
+
+/** Отваря секцията на секретния ключ, защитена с парола. Връща {plain} (без сумата). */
+function openSecretSection(key, body, passphrase) {
+  const usage = body[key.bodyLength];
+  if (usage !== 254 && usage !== 255) {
+    throw fail('UNSUPPORTED_KEY_USAGE', `Неподдържан режим на защита на секретния ключ (${usage})`);
+  }
+  const encryptedText = typeof passphrase === 'string' ? passphrase : '';
+  if (!encryptedText) {
+    throw fail('PASSPHRASE_REQUIRED', 'Секретният ключ е защитен с парола (S2K) — нужна е паролата (опция `pgp_key_pass` или `PGP_KEY_PASS`)');
+  }
+  let at = key.bodyLength + 1;
+  // RFC 9580 §5.5.3: при v6 след байта за използване има 1 октет „колко байта следват“
+  // (общата дължина на S2K параметрите), а след шифъра — още един октет за дължината
+  // на самата S2K спецификация. Без тях разборът се размества и паролата „не пасва“.
+  if (key.version === 6) at += 1;
+  const symAlgo = body[at]; at += 1;
+  const cipher = SYM_CIPHERS[symAlgo];
+  if (!cipher) throw fail('UNSUPPORTED_CIPHER', `Неподдържан шифър за секретния ключ (${symAlgo}) — hAPI поддържа AES-128/192/256`);
+  if (key.version === 6) at += 1;
+  const type = body[at];
+  const specLength = type === 0 ? 2 : type === 1 ? 10 : type === 3 ? 11 : 0;
+  if (!specLength) {
+    if (type === 4) throw fail('S2K_ARGON2_UNSUPPORTED', 'Секретният ключ е защитен с Argon2 (S2K тип 4) — hAPI поддържа iterated-salted (тип 3). Експортирай ключа с `--s2k-mode 3` или без парола.');
+    throw fail('UNSUPPORTED_S2K', `Неподдържан S2K тип (${type})`);
+  }
+  const spec = body.subarray(at, at + specLength); at += specLength;
+  if (at + cipher.block > body.length) throw fail('BAD_KEY', 'Отрязан секретен ключ (IV)');
+  const iv = body.subarray(at, at + cipher.block); at += cipher.block;
+  const keyBytes = s2kDerive(spec, Buffer.from(encryptedText, 'utf8'), cipher.keyBytes);
+  let plain;
+  try {
+    const decipher = crypto.createDecipheriv(cipher.name, keyBytes, iv);
+    plain = Buffer.concat([decipher.update(body.subarray(at)), decipher.final()]);
+  } catch {
+    throw fail('PASSPHRASE_WRONG', 'Паролата на секретния ключ не е вярна');
+  }
+  if (usage === 255) {
+    if (plain.length < 21) throw fail('BAD_KEY', 'Отрязан секретен ключ (SHA-1)');
+    const data = plain.subarray(0, plain.length - 20);
+    const given = plain.subarray(plain.length - 20);
+    const want = crypto.createHash('sha1').update(data).digest();
+    if (!crypto.timingSafeEqual(given, want)) throw fail('PASSPHRASE_WRONG', 'Паролата на секретния ключ не е вярна');
+    return { plain: data };
+  }
+  // gpg 2.5 пише usage=254, но слага SHA-1 контрола (20 октета), а не 2-байтовата сума,
+  // която RFC 4880 описва за 254 (проверено с реален ключ). Затова не се гадае по байта:
+  // първо се пробва SHA-1 (по-строгата), после 2-байтовата сума.
+  if (plain.length >= 21) {
+    const data = plain.subarray(0, plain.length - 20);
+    const want = crypto.createHash('sha1').update(data).digest();
+    if (crypto.timingSafeEqual(plain.subarray(plain.length - 20), want)) return { plain: data };
+  }
+  if (plain.length >= 3) {
+    const data = plain.subarray(0, plain.length - 2);
+    let sum = 0;
+    for (const byte of data) sum = (sum + byte) & 0xffff;
+    if (sum === plain.readUInt16BE(plain.length - 2)) return { plain: data };
+  }
+  throw fail('PASSPHRASE_WRONG', 'Паролата на секретния ключ не е вярна');
 }
 
 const b64u = (buf) => Buffer.from(buf).toString('base64url');
@@ -402,7 +560,10 @@ function publicKeyObject(key) {
 }
 
 /** Чете armored ключов блок (публичен или секретен). Връща {keys:[...], userId, kind}. */
-function parseKeyBlock(text) {
+/** Чете armored ключов блок (публичен или секретен). Връща {keys:[...], userId, kind}.
+ *  `options.passphrase` отключва секретен ключ, защитен с парола (S2K). */
+function parseKeyBlock(text, options) {
+  const passphrase = options && typeof options.passphrase === 'string' ? options.passphrase : '';
   const { data, kind } = dearmor(text);
   if (data.length > MAX_KEY_BYTES) throw fail('KEY_TOO_LARGE', 'Ключът е твърде голям');
   const packets = readPackets(data);
@@ -419,7 +580,7 @@ function parseKeyBlock(text) {
     } else if (p.tag === 5 || p.tag === 7) {
       const key = parseKeyBody(p.body);
       key.isSubkey = p.tag === 7;
-      key.secret = parseSecretMpis(key, p.body);
+      key.secret = parseSecretMpis(key, p.body, passphrase);
       keys.push(key);
       current = key;
     } else if (p.tag === 13 && !userId) {
@@ -819,6 +980,280 @@ function publicKeyOf(secretArmored) {
   return armor('PUBLIC', Buffer.concat(out));
 }
 
+function pgpKeyFingerprintHex(key) {
+  return Buffer.from(key.fingerprint, 'hex');
+}
+
+/**
+ * Кой ключ криптира: RSA подключът за криптиране, ако има такъв, иначе основният RSA.
+ * ECDH/X25519 не се поддържа — казва се с думи, вместо да се върне празно.
+ */
+function encryptionKeyOf(parsed) {
+  const all = parsed.keys;
+  const sub = all.find((k) => k.kind === 'rsa' && k.isSubkey && ALGO[k.algorithm] && ALGO[k.algorithm].id === 1);
+  const primary = all.find((k) => k.kind === 'rsa' && !k.isSubkey && ALGO[k.algorithm]);
+  const key = sub || primary;
+  if (!key) throw fail('NO_ENCRYPTION_KEY', 'Няма RSA ключ за криптиране (ECDH/X25519 не се поддържа)');
+  return key;
+}
+
+function pgpKeyFingerprintHex(key) {
+  return Buffer.from(key.fingerprint, 'hex');
+}
+
+/**
+ * Кой ключ криптира: RSA подключът за криптиране, ако има такъв, иначе основният RSA.
+ * ECDH/X25519 не се поддържа — казва се с думи, вместо да се върне празно.
+ */
+// X25519/X448 обвивка (RFC 9580 §5.1.6): KEK = HKDF-SHA256/512(eph || получател || shared),
+// salt празен, info „OpenPGP X25519“/„OpenPGP X448“; обвива се САМО сесийният ключ с AES-KW.
+const X_CURVES = {
+  25: { crv: 'X25519', size: 32, hash: 'sha256', info: 'OpenPGP X25519', kekBytes: 16, wrap: 'id-aes128-wrap' },
+  26: { crv: 'X448', size: 56, hash: 'sha512', info: 'OpenPGP X448', kekBytes: 32, wrap: 'id-aes256-wrap' },
+};
+
+function okpPublic(point, curve) {
+  return crypto.createPublicKey({ key: { kty: 'OKP', crv: curve, x: Buffer.from(point).toString('base64url') }, format: 'jwk' });
+}
+
+function okpPrivate(point, secret, curve) {
+  return crypto.createPrivateKey({
+    key: { kty: 'OKP', crv: curve, x: Buffer.from(point).toString('base64url'), d: Buffer.from(secret).toString('base64url') },
+    format: 'jwk',
+  });
+}
+
+/** KEK за Montgomery крива: входът на HKDF е ефимерният ключ, ключът на получателя и общата тайна. */
+function kekFor(curve, ephemeralPublic, recipientPoint, shared) {
+  const ikm = Buffer.concat([ephemeralPublic, recipientPoint, shared]);
+  return Buffer.from(crypto.hkdfSync(curve.hash, ikm, Buffer.alloc(0), Buffer.from(curve.info, 'utf8'), curve.kekBytes));
+}
+
+/** AES Key Wrap (RFC 3394) — нативната поддръжка на OpenSSL. */
+function aesKeyWrap(cipherName, kek, payload, encrypt) {
+  const iv = Buffer.from('A6A6A6A6A6A6A6A6', 'hex');
+  const made = encrypt ? crypto.createCipheriv(cipherName, kek, iv) : crypto.createDecipheriv(cipherName, kek, iv);
+  return Buffer.concat([made.update(payload), made.final()]);
+}
+
+/** Кой ключ криптира: X25519/X448 (v6), после RSA. ECDH с именувана крива не се поддържа. */
+function encryptionKeyOf(parsed) {
+  const all = parsed.keys;
+  const montgomery = all.find((k) => k.kind === 'x25519' || k.kind === 'x448');
+  if (montgomery) return montgomery;
+  const rsa = all.find((k) => k.kind === 'rsa');
+  if (rsa) return rsa;
+  if (all.some((k) => k.kind === 'ecdh')) {
+    throw fail('UNSUPPORTED_CURVE', 'Ключът за криптиране е ECDH с именувана крива — hAPI поддържа X25519, X448 и RSA');
+  }
+  throw fail('NO_ENCRYPTION_KEY', 'Няма ключ за криптиране (X25519, X448 или RSA)');
+}
+
+/**
+ * Криптира данни до публичен ключ и връща armored `PGP MESSAGE`.
+ *   • X25519/X448: PKESK v3 `[eph][дължина][алгоритъм][AES-KW(ключ)]` (RFC 9580 §5.1.6);
+ *   • RSA: PKESK v3 с MPI и PKCS#1 v1.5.
+ * Вътре винаги е SEIPD v1 с MDC — това чете и gpg.
+ */
+function encryptToKey(data, armoredPublicKey) {
+  const payload = Buffer.isBuffer(data) ? data : Buffer.from(String(data == null ? '' : data), 'utf8');
+  if (!payload.length) throw fail('INVALID_DATA', 'Няма данни за криптиране');
+  const parsed = parseKeyBlock(armoredPublicKey);
+  const key = encryptionKeyOf(parsed);
+  const sessionKey = crypto.randomBytes(32);
+  let pkesk;
+
+  if (key.kind === 'x25519' || key.kind === 'x448') {
+    const curve = X_CURVES[key.algo];
+    if (!curve) throw fail('UNSUPPORTED_ALGO', `Неподдържана крива (${key.algo})`);
+    const ephemeral = crypto.generateKeyPairSync(curve.crv.toLowerCase());
+    const ephemeralPublic = Buffer.from(ephemeral.publicKey.export({ format: 'jwk' }).x, 'base64url');
+    const shared = crypto.diffieHellman({ privateKey: ephemeral.privateKey, publicKey: okpPublic(key.point, curve.crv) });
+    const wrapped = aesKeyWrap(curve.wrap, kekFor(curve, ephemeralPublic, key.point, shared), sessionKey, true);
+    // „дължината“ покрива октета на алгоритъма и обвития ключ — при v3 PKESK алгоритъмът
+    // е ИЗВЪН обвивката (проверено срещу OpenPGP.js 6.3.2).
+    pkesk = packet(1, Buffer.concat([
+      Buffer.from([3]),
+      Buffer.from(key.keyId, 'hex'),
+      Buffer.from([key.algo]),
+      ephemeralPublic,
+      Buffer.from([1 + wrapped.length, 9]),
+      wrapped,
+    ]));
+  } else {
+    const bits = key.n.length * 8;
+    if (bits < 2048) throw fail('WEAK_KEY', `Твърде малък RSA ключ за криптиране (${bits} бита, нужно е ≥ 2048)`);
+    const encrypted = rsaEncryptPkcs1(publicKeyObject(key), sessionBlob(sessionKey));
+    pkesk = packet(1, Buffer.concat([
+      Buffer.from([3]),
+      pgpKeyFingerprintHex(key).subarray(-8),
+      Buffer.from([1]),
+      writeMpi(encrypted),
+    ]));
+  }
+
+  // Префикс: 16 случайни октета + 2 октета от сесийния ключ. При X25519 алгоритъмът е в
+  // PKESK, затова тук няма трети октет (18, не 19 байта).
+  const block = 16;
+  const prefix = Buffer.concat([crypto.randomBytes(block), sessionKey.subarray(30, 32)]);
+  // Данните влизат в литерален пакет (tag 11), както правят gpg и OpenPGP.js: без него
+  // потокът от пакети е невалиден и чуждите четци спират преди края (MDC изглежда счупен).
+  const literal = packet(11, Buffer.concat([Buffer.from([0x62, 0x00]), Buffer.alloc(4), payload]));
+  const content = Buffer.concat([prefix, literal]);
+  // MDC (RFC 4880 §5.13): SHA-1 върху ЦЯЛОТО, включително двата октета 0xD3 0x14.
+  const mdcHeader = Buffer.from([0xd3, 0x14]);
+  const mdc = crypto.createHash('sha1').update(Buffer.concat([content, mdcHeader])).digest();
+  const inner = Buffer.concat([content, mdcHeader, mdc]);
+  const cipher = crypto.createCipheriv('aes-256-cfb', sessionKey, Buffer.alloc(block, 0));
+  const sealed = Buffer.concat([cipher.update(inner), cipher.final()]);
+  const seipd = packet(18, Buffer.concat([Buffer.from([1]), sealed]));
+  return {
+    armored: armor('MESSAGE', Buffer.concat([pkesk, seipd])),
+    keyId: key.keyId,
+    fingerprint: key.fingerprint,
+    algorithm: key.kind === 'rsa' ? `RSA ${key.n.length * 8}` : key.algorithm,
+    bytes: payload.length,
+  };
+}
+
+/**
+ * Маха обвивките, които инструментите слагат вътре в шифротекста: литерален пакет
+ * (tag 11) и padding (tag 21). hAPI криптира самите данни, затова при него няма нищо.
+ */
+function stripWrappingPackets(buffer) {
+  let rest = buffer;
+  for (let guard = 0; guard < 4; guard++) {
+    if (!rest.length) return rest;
+    const newFormat = (rest[0] & 0x40) !== 0;
+    const tag = newFormat ? rest[0] & 0x3f : (rest[0] >> 2) & 0x0f;
+    let bodyStart;
+    if (newFormat) {
+      const first = rest[1];
+      if (first < 192) bodyStart = 2;
+      else if (first < 224) bodyStart = 3;
+      else bodyStart = 6;
+    } else {
+      bodyStart = 1 + (1 << (rest[0] & 3));
+    }
+    if (tag === 21) return stripWrappingPackets(Buffer.alloc(0));
+    if (tag !== 11) return rest;
+    const nameLength = rest[bodyStart + 1] || 0;
+    return rest.subarray(bodyStart + 2 + nameLength + 4);
+  }
+  return rest;
+}
+
+/**
+ * Декриптира `PGP MESSAGE` от hAPI, gpg или OpenPGP.js. Секретният ключ може да е
+ * защитен с парола — тогава `passphrase` е задължителна. MDC се проверява винаги.
+ */
+function decryptMessage(armored, armoredSecretKey, passphrase) {
+  const parsed = parseKeyBlock(armoredSecretKey, { passphrase: passphrase || '' });
+  const { data } = dearmor(armored);
+  const packets = readPackets(data);
+  const pkesk = packets.find((p) => p.tag === 1);
+  if (!pkesk) throw fail('NOT_ENCRYPTED', 'Съобщението няма PKESK пакет (криптирано е само с парола)');
+  const version = pkesk.body[0];
+  if (version !== 3 && version !== 6) throw fail('UNSUPPORTED_PKESK', `Неподдържана версия на PKESK (${version})`);
+  let at = 1;
+  let keyId = '';
+  if (version === 6) {
+    const length = pkesk.body[at]; at += 1;
+    if (length) {
+      at += 1; // версия на ключа
+      keyId = pkesk.body.subarray(at, at + 8).toString('hex');
+      at += length - 1;
+    }
+  } else {
+    keyId = pkesk.body.subarray(at, at + 8).toString('hex');
+    at += 8;
+  }
+  const algo = pkesk.body[at]; at += 1;
+  const secret = parsed.keys.find((k) => k.secret && k.keyId.toLowerCase() === keyId) || parsed.keys.find((k) => k.secret);
+  if (!secret) throw fail('NO_SECRET_KEY', 'Секретният ключ не съдържа този ключ за криптиране');
+
+  let sessionKey;
+  let sessionAlgo;
+  let prefixLength;
+  const block = 16;
+
+  if (algo === 25 || algo === 26) {
+    const curve = X_CURVES[algo];
+    const ephemeral = pkesk.body.subarray(at, at + curve.size); at += curve.size;
+    const size = pkesk.body[at]; at += 1;
+    sessionAlgo = pkesk.body[at]; at += 1;
+    const wrapped = pkesk.body.subarray(at, at + size - 1);
+    const shared = crypto.diffieHellman({
+      privateKey: okpPrivate(secret.point, secret.secret.d, curve.crv),
+      publicKey: okpPublic(ephemeral, curve.crv),
+    });
+    try {
+      sessionKey = aesKeyWrap(curve.wrap, kekFor(curve, ephemeral, secret.point, shared), wrapped, false);
+    } catch {
+      throw fail('BAD_SESSION_KEY', 'Сесийният ключ не може да бъде развит с този ключ');
+    }
+    prefixLength = block + 2;
+  } else if (algo === 1 || algo === 2) {
+    const encrypted = readMpi(pkesk.body, at).value;
+    let blob;
+    try {
+      blob = rsaDecryptPkcs1(privateKeyObject(secret, secret.secret), encrypted);
+    } catch (e) {
+      throw fail('BAD_SESSION_KEY', e && e.message ? e.message : 'Сесийният ключ не може да бъде разчетен с този ключ');
+    }
+    if (blob.length < 4) throw fail('BAD_SESSION_KEY', 'Сесийният ключ е отрязан');
+    sessionAlgo = blob[0];
+    const info = SYM_CIPHERS[sessionAlgo];
+    if (!info) throw fail('UNSUPPORTED_CIPHER', `Неподдържан шифър на съобщението (${sessionAlgo})`);
+    sessionKey = blob.subarray(1, 1 + info.keyBytes);
+    let sum = 0;
+    for (const byte of sessionKey) sum = (sum + byte) & 0xffff;
+    if (sum !== blob.readUInt16BE(1 + info.keyBytes)) throw fail('BAD_SESSION_KEY', 'Контролната сума на сесийния ключ не съвпада');
+    prefixLength = block + 3;
+  } else {
+    throw fail('UNSUPPORTED_ALGO', `Неподдържан алгоритъм на ключа за криптиране (${algo})`);
+  }
+
+  const cipherInfo = SYM_CIPHERS[sessionAlgo];
+  if (!cipherInfo) throw fail('UNSUPPORTED_CIPHER', `Неподдържан шифър на съобщението (${sessionAlgo})`);
+  const seipd = packets.find((p) => p.tag === 18);
+  if (!seipd) {
+    const aead = packets.find((p) => p.tag === 20);
+    if (aead) {
+      const names = { 1: 'EAX', 2: 'OCB', 3: 'GCM' };
+      throw fail('UNSUPPORTED_AEAD', `Съобщението е AEAD/${names[aead.body[2]] || aead.body[2]} — hAPI чете SEIPD v1. Криптирай с hAPI или с инструмент, който пише SEIPD v1.`);
+    }
+    throw fail('UNSUPPORTED_FORMAT', 'Липсва SEIPD пакет (компресирано съобщение не се поддържа)');
+  }
+  if (seipd.body[0] !== 1) throw fail('UNSUPPORTED_FORMAT', `Неподдържана версия на SEIPD (${seipd.body[0]})`);
+  let inner;
+  try {
+    const decipher = crypto.createDecipheriv(cipherInfo.name, sessionKey, Buffer.alloc(cipherInfo.block, 0));
+    inner = Buffer.concat([decipher.update(seipd.body.subarray(1)), decipher.final()]);
+  } catch {
+    throw fail('DECRYPT_FAILED', 'Съобщението не може да бъде декриптирано');
+  }
+  if (inner.length < prefixLength + 22) throw fail('BAD_MESSAGE', 'Отрязано съобщение');
+  if (inner[inner.length - 22] !== 0xd3 || inner[inner.length - 21] !== 0x14) {
+    throw fail('MDC_MISSING', 'Липсва контрола за цялост (MDC) — съобщението е подменено или от стар формат');
+  }
+  const want = crypto.createHash('sha1').update(inner.subarray(0, inner.length - 20)).digest();
+  if (!crypto.timingSafeEqual(inner.subarray(inner.length - 20), want)) {
+    throw fail('MDC_MISMATCH', 'Контролната сума не съвпада — съобщението е подменено');
+  }
+  // Проверката на префикса е само при RSA: там двата октета наистина повтарят края на
+  // сесийния ключ (RFC 4880 §5.7). При X25519/X448 префиксът е 16 случайни + 2 октета,
+  // които НЕ са от сесийния ключ (проверено срещу OpenPGP.js 6.3.2) — там цялостта се
+  // гарантира от MDC, който вече е проверен по-горе.
+  if (prefixLength === block + 3) {
+    if (!inner.subarray(cipherInfo.block, cipherInfo.block + 2).equals(sessionKey.subarray(sessionKey.length - 2))) {
+      throw fail('BAD_SESSION_KEY', 'Префиксът не отговаря на сесийния ключ');
+    }
+    if (inner[block + 2] !== sessionAlgo) throw fail('BAD_SESSION_KEY', 'Префиксът не отговаря на шифъра');
+  }
+  return stripWrappingPackets(inner.subarray(prefixLength, inner.length - 22));
+}
+
 module.exports = {
   armor,
   dearmor,
@@ -831,5 +1266,7 @@ module.exports = {
   signDetached,
   verifyDetached,
   generate,
+  encryptToKey,
+  decryptMessage,
   ALGO,
 };
