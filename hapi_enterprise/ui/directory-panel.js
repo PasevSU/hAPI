@@ -18,7 +18,8 @@
   const state = { contacts: [], cases: [], fields: [], query: '', error: '', editing: null, contactsLoaded: false, casesLoaded: false };
 
   const el = (s) => (location.protocol === 'file:' ? '' : location.origin);
-  const base = () => (localStorage.getItem('hapi.apiBase') || el()).replace(/\/$/, '');
+  // Ingress: адресът на add-on-а е origin + `/api/hassio_ingress/<token>` (виж api-base.js).
+  const base = () => (window.hapiApiBase ? window.hapiApiBase() : localStorage.getItem('hapi.apiBase') || el()).replace(/\/$/, '');
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
   const connected = () => Boolean(base());
 
@@ -127,20 +128,19 @@
       <h4>${editing ? 'Редактиране на контакт' : 'Нов контакт'}</h4>
       <div class="u-grid u-grid-fields">
         <div class="field"><label>Име</label><input name="f_name" value="${esc(fields.name || '')}" maxlength="120" placeholder="Мария Иванова" /></div>
-        <div class="field"><label>Имейл (задължителен)</label><input name="email" value="${esc(editing ? editing.email : '')}" maxlength="190" placeholder="name@example.com" ${
-          editing ? 'readonly' : ''
-        } /></div>
+        <div class="field"><label>Имейл (задължителен)</label><input name="email" value="${esc(editing ? editing.email : '')}" maxlength="190" placeholder="name@example.com" ${editing ? 'readonly' : ''
+      } /></div>
         <div class="field"><label>Телефон</label><input name="f_phone" value="${esc(fields.phone || '')}" maxlength="25" placeholder="+359 88 123 4567" /></div>
         <div class="field"><label>Организация</label><input name="f_organization" value="${esc(fields.organization || '')}" maxlength="120" /></div>
         ${extraKeys
-          .slice(0, 4)
-          .map(
-            (f) =>
-              `<div class="field"><label>${esc(f.label || f.key)}</label><input name="f_${esc(f.key)}" value="${esc(
-                fields[f.key] || '',
-              )}" maxlength="120" /></div>`,
-          )
-          .join('')}
+        .slice(0, 4)
+        .map(
+          (f) =>
+            `<div class="field"><label>${esc(f.label || f.key)}</label><input name="f_${esc(f.key)}" value="${esc(
+              fields[f.key] || '',
+            )}" maxlength="120" /></div>`,
+        )
+        .join('')}
       </div>
       <p class="hint">Полета по желание:</p>
       ${extrasEditor(extrasOf(editing))}
@@ -162,17 +162,16 @@
         ${meta.map((m) => `<span class="chip">${esc(m)}</span>`).join('')}
         <span class="state-chip ok">контакт</span>
       </div>
-      ${
-        extras.length
-          ? `<div class="fm-ico-row u-grid u-grid-chips">${extras
-              .map(
-                (x) =>
-                  `<span class="fm-ico" title="${esc(`${x.key}: ${x.value}`)}"><span class="fm-ico-g">•</span><span class="fm-ico-v">${esc(
-                    `${x.key}: ${x.value}`,
-                  )}</span></span>`,
-              )
-              .join('')}</div>`
-          : '<p class="fm-file-sub">няма полета по желание</p>'
+      ${extras.length
+        ? `<div class="fm-ico-row u-grid u-grid-chips">${extras
+          .map(
+            (x) =>
+              `<span class="fm-ico" title="${esc(`${x.key}: ${x.value}`)}"><span class="fm-ico-g">•</span><span class="fm-ico-v">${esc(
+                `${x.key}: ${x.value}`,
+              )}</span></span>`,
+          )
+          .join('')}</div>`
+        : '<p class="fm-file-sub">няма полета по желание</p>'
       }
       <p class="fm-file-sub">id: <code>${esc(shortId(c.id))}</code> · създаден ${esc(iso(c.createdAt))}</p>
       <div class="u-row u-row-2 u-mt">
@@ -198,10 +197,9 @@
         <h1>Контакти</h1>
         <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? `${state.contacts.length} контакта` : 'демо'}</span>
       </div>
-      ${
-        connected()
-          ? ''
-          : '<section class="panel"><div class="panel-body"><p class="hint">Демо режим: списъкът с контакти се зарежда от add-on-а. Задай адрес и токен в „Настройки“.</p></div></section>'
+      ${connected()
+        ? ''
+        : '<section class="panel"><div class="panel-body"><p class="hint">Демо режим: списъкът с контакти се зарежда от add-on-а. Задай адрес и токен в „Настройки“.</p></div></section>'
       }
       <section class="panel">
         <div class="panel-head"><h2>${state.editing ? 'Редакция' : 'Нов контакт'}</h2><span class="badge">контакти</span></div>
@@ -341,13 +339,12 @@
           <select name="contactId">
             <option value="">— без контакт —</option>
             ${state.contacts
-              .map(
-                (x) =>
-                  `<option value="${esc(x.id)}" ${c.contactId === x.id ? 'selected' : ''}>${esc(contactName(x))}${
-                    x.email ? ` — ${esc(x.email)}` : ''
-                  }</option>`,
-              )
-              .join('')}
+        .map(
+          (x) =>
+            `<option value="${esc(x.id)}" ${c.contactId === x.id ? 'selected' : ''}>${esc(contactName(x))}${x.email ? ` — ${esc(x.email)}` : ''
+            }</option>`,
+        )
+        .join('')}
           </select>
         </div>
       </div>
@@ -370,17 +367,16 @@
         ${c.subject ? `<span class="chip">ℹ ${esc(c.subject)}</span>` : ''}
         <span class="state-chip ${contact ? 'ok' : 'warn'}">${contact ? esc(contactName(contact)) : 'без контакт'}</span>
       </div>
-      ${
-        extras.length
-          ? `<div class="fm-ico-row u-grid u-grid-chips">${extras
-              .map(
-                (x) =>
-                  `<span class="fm-ico" title="${esc(`${x.key}: ${x.value}`)}"><span class="fm-ico-g">•</span><span class="fm-ico-v">${esc(
-                    `${x.key}: ${x.value}`,
-                  )}</span></span>`,
-              )
-              .join('')}</div>`
-          : ''
+      ${extras.length
+        ? `<div class="fm-ico-row u-grid u-grid-chips">${extras
+          .map(
+            (x) =>
+              `<span class="fm-ico" title="${esc(`${x.key}: ${x.value}`)}"><span class="fm-ico-g">•</span><span class="fm-ico-v">${esc(
+                `${x.key}: ${x.value}`,
+              )}</span></span>`,
+          )
+          .join('')}</div>`
+        : ''
       }
       <p class="fm-file-sub">id: <code>${esc(shortId(c.id))}</code> · създадено ${esc(iso(c.createdAt))}</p>
       <div class="u-row u-row-2 u-mt">
@@ -404,10 +400,9 @@
         <h1>Дела</h1>
         <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? `${state.cases.length} дела` : 'демо'}</span>
       </div>
-      ${
-        connected()
-          ? ''
-          : '<section class="panel"><div class="panel-body"><p class="hint">Демо режим: делата се зареждат от add-on-а. Задай адрес и токен в „Настройки“.</p></div></section>'
+      ${connected()
+        ? ''
+        : '<section class="panel"><div class="panel-body"><p class="hint">Демо режим: делата се зареждат от add-on-а. Задай адрес и токен в „Настройки“.</p></div></section>'
       }
       <section class="panel">
         <div class="panel-head"><h2>${state.editing ? 'Редакция' : 'Ново дело'}</h2><span class="badge">дела</span></div>

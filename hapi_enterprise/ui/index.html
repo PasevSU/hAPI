@@ -48,6 +48,10 @@
          bootstrap.js избира базовия път: /hapi_enterprise/... през HTTP сървъра и
          ../ при отваряне от диска (file://), за да работят и двата режима. -->
   <script src="bootstrap.js"></script>
+  <!-- Базов адрес за API заявките: под HA Ingress add-on-ът НЕ е на location.origin,
+       а на /api/hassio_ingress/<token>. Без този помощник панелът се зарежда, но
+       всички заявки отиват в Home Assistant и връщат 404. -->
+  <script src="api-base.js"></script>
   <script src="data.js"></script>
   <script src="icons.js"></script>
   <script src="app.js"></script>

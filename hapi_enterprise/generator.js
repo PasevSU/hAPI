@@ -33,6 +33,10 @@ function titleOf(html, file) {
 function create({ root } = {}) {
   if (!root) throw Error('generator: необходим е root (DATA_DIR)');
   const dir = path.join(root, 'generator', 'temp');
+  // Началните шаблони са ЧАСТ ОТ ИЗДАНИЕТО (`generator/templates`), но се копират в
+  // работната папка при първи старт. Иначе генераторът се отваря празен и изглежда
+  // счупен: на add-on няма как да се сложи файл в образа без пресъздаване.
+  const seedDir = path.join(__dirname, 'generator', 'templates');
 
   function ensureDir() {
     fs.mkdirSync(dir, { recursive: true });
@@ -85,7 +89,54 @@ function create({ root } = {}) {
 
   /** Индексът, който генераторът чете. `live: true` казва, че не е файл, а моментна снимка. */
   function index() {
-    return { version: 1, live: true, folder: 'generator/temp', templates: list() };
+    // `folderPath` е реалният път на диска — показва се в интерфейса, за да знае
+    // човек къде да сложи/изтегли шаблон, без да гадае къде е DATA_DIR на add-on-а.
+    return { version: 1, live: true, folder: 'generator/temp', folderPath: dir, templates: list() };
+  }
+
+  /**
+   * Копира началните шаблони от изданието в работната папка.
+   * Само при липсваща или празна папка и НИКОГА не презаписва: шаблон, който човек е
+   * редактирал, не бива да се връща към фабричния при рестарт.
+   * @returns {{copied:string[], dir:string, skipped:boolean}}
+   */
+  function seed() {
+    if (String(process.env.GENERATOR_SEED || '').toLowerCase() === 'off') return { copied: [], dir, skipped: true };
+    let existing = [];
+    try {
+      existing = fs.readdirSync(dir).filter((f) => NAME_RE.test(f) && !f.startsWith('.'));
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+    }
+    if (existing.length) return { copied: [], dir, skipped: true }; // вече има шаблони — не се пипа
+    let names = [];
+    try {
+      names = fs.readdirSync(seedDir).filter((f) => NAME_RE.test(f) && !f.startsWith('.')).sort();
+    } catch (e) {
+      if (e.code === 'ENOENT') return { copied: [], dir, skipped: true }; // издание без начални шаблони
+      throw e;
+    }
+    if (!names.length) return { copied: [], dir, skipped: true };
+    ensureDir();
+    const copied = [];
+    for (const file of names) {
+      const target = path.join(dir, file);
+      if (fs.existsSync(target)) continue;
+      const body = fs.readFileSync(path.join(seedDir, file));
+      if (body.length > MAX_BYTES) continue;
+      const tmp = path.join(dir, '.' + file + '.' + crypto.randomBytes(6).toString('hex') + '.tmp');
+      try {
+        fs.writeFileSync(tmp, body, { flag: 'wx', mode: 0o600 });
+        fs.renameSync(tmp, target);
+        copied.push(file);
+      } catch (e) {
+        try {
+          fs.unlinkSync(tmp);
+        } catch { /* временният файл може вече да не съществува */ }
+        throw e;
+      }
+    }
+    return { copied, dir, skipped: false };
   }
 
   function read(name) {
@@ -135,7 +186,7 @@ function create({ root } = {}) {
     return { file, ...index() };
   }
 
-  return { dir, list, index, read, save, remove, MAX_BYTES };
+  return { dir, list, index, read, save, remove, seed, MAX_BYTES };
 }
 
 module.exports = { create, titleOf, NAME_RE, MAX_BYTES };

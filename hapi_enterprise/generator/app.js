@@ -8,13 +8,23 @@
 //
 // Сигурност: съдържанието на шаблона се сервира като `text/plain` и се почиства ТУК, преди
 // да влезе в редактора — скриптове, форми, вградени рамки и `on*` атрибути се махат.
-const API = '/admin/api/generator/templates';
+// Адресът на add-on-а не е коренът на Home Assistant: под Ingress приложението се
+// сервира на `/api/hassio_ingress/<token>/generator/`, затова абсолютно
+// `/admin/api/...` стига до HA и връща 404. Префиксът се взема от адреса на документа;
+// старите форми (/app, /hapi, /hassio/ingress) остават поддържани.
+const API = (() => {
+  const match = /^\/(?:api\/hassio_ingress|hassio\/ingress|app|hapi)\/[A-Za-z0-9_-]+/.exec(String(location.pathname || ''));
+  return (match ? match[0] : '') + '/admin/api/generator/templates';
+})();
 const ALLOWED = /^[A-Za-z0-9_.-]+\.html$/;
 
 const $ = (selector) => document.querySelector(selector);
 const editor = $('#editor');
 const status = $('#status');
 let catalog = [];
+// Реалният път на диска идва от сървъра: така човек знае къде да сложи шаблон,
+// вместо да гадае къде е DATA_DIR на add-on-а.
+let folderPath = 'generator/temp';
 let selectedRange = null;
 
 const message = (text) => {
@@ -42,8 +52,9 @@ async function refresh() {
     const data = await request(API);
     if (!data || !Array.isArray(data.templates)) throw new Error('Невалиден индекс от сървъра');
     catalog = data.templates.filter((item) => item && ALLOWED.test(item.file));
+    folderPath = data.folderPath || data.folder || 'generator/temp';
     render();
-    message(`Заредени ${catalog.length} шаблона (жив индекс от ${data.folder || 'generator/temp'})`);
+    message(`Заредени ${catalog.length} ${catalog.length === 1 ? 'шаблон' : 'шаблона'} · папка: ${folderPath}`);
   } catch (e) {
     message('Индексът не е достъпен: ' + e.message);
   }
@@ -57,7 +68,7 @@ function render() {
   if (!visible.length) {
     const empty = document.createElement('p');
     empty.className = 'empty';
-    empty.textContent = 'Няма шаблони. Качи .html файл с „＋ Шаблон“.';
+    empty.textContent = `Няма шаблони в ${folderPath}. Качи .html файл с „＋ Шаблон“ или го копирай в тази папка.`;
     list.append(empty);
     return;
   }

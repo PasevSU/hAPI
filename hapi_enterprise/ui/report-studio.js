@@ -12,6 +12,14 @@
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const toast = (msg, kind) => window.HapiUI && window.HapiUI.toast(msg, kind);
+  // Адресът на add-on-а НЕ е `location.origin` под HA Ingress (там е
+  // `<origin>/api/hassio_ingress/<token>`). Затова всяка заявка минава през общия
+  // помощник от api-base.js; локалното изчисление е само резервен вариант.
+  const apiUrl = (path) => {
+    if (typeof window.hapiApiUrl === 'function') return window.hapiApiUrl(path);
+    const base = localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin);
+    return String(base).replace(/\/+$/, '') + path;
+  };
 
   const OBJ = globalThis.HapiReportObjects;
   const TYPE_LABEL = OBJ ? Object.fromEntries(OBJ.OBJECTS.map((o) => [o.type, o.label])) : {};
@@ -404,7 +412,7 @@
     try {
       const payload = { manifest: result.manifest, draft, tsa: !draft && state.tsaEnabled !== false };
       const send = (token) =>
-        fetch('/admin/api/v2/reports/package', {
+        fetch(apiUrl('/admin/api/v2/reports/package'), {
           method: 'POST',
           headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify(payload),
@@ -463,7 +471,7 @@
     if (location.protocol === 'file:') throw new Error('backend недостъпен (file://)');
     const init = options || {};
     const send = (token) =>
-      fetch(path, {
+      fetch(apiUrl(path), {
         ...init,
         headers: {
           'content-type': 'application/json',
@@ -557,7 +565,7 @@
       throw e;
     }
     const send = (token) =>
-      fetch('/admin/api/v2/reports/render', {
+      fetch(apiUrl('/admin/api/v2/reports/render'), {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ manifest }),

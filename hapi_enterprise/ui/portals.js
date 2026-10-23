@@ -22,8 +22,9 @@
     const saved = localStorage.getItem('hapi.apiBase');
     if (saved) return saved;
     if (location.protocol !== 'file:') {
-      // През Ingress пътят на add-on-а е част от адреса (напр. /app/<slug>).
-      const m = String(location.pathname || '').match(/^\/(?:app|hapi|hassio\/ingress)\/[^/]+/);
+      // През Ingress add-on-ът е на `/api/hassio_ingress/<token>` (старите форми: /app, /hapi).
+      if (typeof window.hapiApiBase === 'function') return window.hapiApiBase();
+      const m = String(location.pathname || '').match(/^\/(?:api\/hassio_ingress|hassio\/ingress|app|hapi)\/[^/]+/);
       return location.origin + (m ? m[0] : '');
     }
     return data().defaultBaseUrl || 'http://homeassistant.local:8099';
@@ -255,8 +256,8 @@
       <li class="vs-folder">📁 ${esc(node.name)}
         <small>${plural(node.files.length, 'файл', 'файла')}${node.folders.length ? `, ${plural(node.folders.length, 'папка', 'папки')}` : ''}</small>
         <ul>${node.folders.map(nodeHtml).join('')}${node.files
-          .map((f) => `<li class="vs-file">📄 ${esc(f.name)} <code>${esc(f.path)}</code></li>`)
-          .join('')}</ul>
+        .map((f) => `<li class="vs-file">📄 ${esc(f.name)} <code>${esc(f.path)}</code></li>`)
+        .join('')}</ul>
       </li>`;
     out.innerHTML = `
       <table class="grid">

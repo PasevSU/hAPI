@@ -30,7 +30,8 @@
 
   const storedBase = () => localStorage.getItem('hapi.apiBase') || '';
   const storedToken = () => sessionStorage.getItem('hapiAdminToken') || '';
-  const defaultBase = () => (location.protocol === 'file:' ? '' : location.origin);
+  const defaultBase = () =>
+    window.hapiApiBase ? window.hapiApiBase() : (location.protocol === 'file:' ? '' : location.origin);
   const effectiveBase = () => (state.base || storedBase() || defaultBase()).replace(/\/$/, '');
   const connected = () => Boolean(effectiveBase());
 

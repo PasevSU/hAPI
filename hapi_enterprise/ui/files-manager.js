@@ -715,10 +715,13 @@
 
   // ── Връзка ───────────────────────────────────────────────────────────────
   function ingressPrefix() {
-    const m = String(location.pathname || '').match(/^\/(?:app|hapi|hassio\/ingress)\/[^/]+/);
+    // Home Assistant подава `/api/hassio_ingress/<token>`; старите форми се пазят.
+    if (typeof window.hapiIngressPrefix === 'function') return window.hapiIngressPrefix();
+    const m = String(location.pathname || '').match(/^\/(?:api\/hassio_ingress|hassio\/ingress|app|hapi)\/[^/]+/);
     return m ? m[0] : '';
   }
-  const defaultBase = () => (location.protocol === 'file:' ? '' : location.origin + ingressPrefix());
+  const defaultBase = () =>
+    window.hapiApiBase ? window.hapiApiBase() : (location.protocol === 'file:' ? '' : location.origin + ingressPrefix());
   const base = () => (localStorage.getItem('hapi.apiBase') || defaultBase()).replace(/\/$/, '');
   // Адрес за ПУБЛИЧНИТЕ препратки (api.json, QR). При Home Assistant Ingress
   // адресът на интерфейса не е публичен, затова се ползва сървърната настройка.

@@ -54,7 +54,13 @@ assert.match(src, /hapi\.apiBase/);
 
 // 5. Демо режимът е честен: file:// не прави мрежови заявки и не твърди трансфер.
 assert.match(src, /location\.protocol === 'file:'/);
-assert.match(src, /app\|hapi\|hassio/);
+// Ingress: разпознават се и `/api/hassio_ingress/<token>` (истинската форма на HA), и
+// старите `/hassio/ingress/`, `/app/`, `/hapi/`. Адресът идва от общия помощник api-base.js.
+assert.match(src, /api\\\/hassio_ingress/);
+assert.match(src, /hassio\\\/ingress/);
+assert.match(src, /app\|hapi/);
+assert.match(src, /window\.hapiIngressPrefix/);
+assert.match(src, /window\.hapiApiBase/);
 assert.match(src, /async function testConnection/);
 assert.equal((src.match(/Демо:/g) || []).length >= 3, true);
 

@@ -7,6 +7,7 @@ admin listener като панела.
 | Нещо            | Къде                                                                                     |
 | --------------- | ---------------------------------------------------------------------------------------- |
 | Приложение      | `hapi_enterprise/generator/{index.html,app.js,style.css}`                                |
+| Начални шаблони | `hapi_enterprise/generator/templates/*.html` (копират се веднъж при първи старт)         |
 | Шаблони         | `<storage>/generator/temp/*.html` (в add-on-а: `/config/hapi_enterprise/generator/temp`) |
 | Индекс и записи | `hapi_enterprise/generator.js` + маршрути в `server.js`                                  |
 | Тест            | `tests/generator-app.cjs`                                                                |
@@ -28,17 +29,24 @@ admin listener като панела.
 - **INV-G4 — Достъп.** Приложението е само на административния listener (Ingress). API-то е
   зад capability `generator`: четене — всяка роля; качване/изтриване — `admin` или `operator`.
   Без самоличност → `401`, с недостатъчна роля → `403`.
-- **INV-G5 — Нищо вградено.** Пакетът не съдържа шаблони. Празната `temp/` е състоянието по
-  подразбиране, а не липсваща функция.
+- **INV-G5 — Начални шаблони, без намеса в чужди.** Изданието носи
+  `generator/templates/*.html` (`blank`, `protocol`, `report`) и ги копира в работната папка
+  **само** когато тя липсва или е празна. Съществуващ шаблон никога не се презаписва — нито
+  при рестарт, нито при обновяване, защото това би върнало фабричното съдържание върху чужд
+  труд. `GENERATOR_SEED=off` изключва копирането. Индексът връща и `folderPath` — реалния път
+  на диска, който интерфейсът показва, за да не се гадае къде е папката в add-on-а.
+- **INV-G6 — Адресът идва от документа.** Генераторът вика API-то през ingress префикса
+  (`/api/hassio_ingress/<token>/admin/api/…`); абсолютен `/admin/api/…` стига до Home
+  Assistant и връща 404. Виж `INTEGRATION_CONTRACTS.md` (INV-C1).
 
 ## API
 
-| Метод    | Път                                     | Какво прави                                                         |
-| -------- | --------------------------------------- | ------------------------------------------------------------------- |
-| `GET`    | `/admin/api/generator/templates`        | `{version, live, folder, templates:[{file,title,bytes,updatedAt}]}` |
-| `GET`    | `/admin/api/generator/templates/<file>` | съдържанието като `text/plain`                                      |
-| `POST`   | `/admin/api/generator/templates`        | `{name, html, overwrite?}` → нов индекс                             |
-| `DELETE` | `/admin/api/generator/templates/<file>` | трие и връща новия индекс                                           |
+| Метод    | Път                                     | Какво прави                                                                     |
+| -------- | --------------------------------------- | ------------------------------------------------------------------------------- |
+| `GET`    | `/admin/api/generator/templates`        | `{version, live, folder, folderPath, templates:[{file,title,bytes,updatedAt}]}` |
+| `GET`    | `/admin/api/generator/templates/<file>` | съдържанието като `text/plain`                                                  |
+| `POST`   | `/admin/api/generator/templates`        | `{name, html, overwrite?}` → нов индекс                                         |
+| `DELETE` | `/admin/api/generator/templates/<file>` | трие и връща новия индекс                                                       |
 
 Одитът пази `generator.template.save` (файл, байтове, брой шаблони) и
 `generator.template.delete` (файл, брой) — без съдържание на шаблона.

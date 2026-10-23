@@ -9,7 +9,10 @@
 (function () {
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const base = () => (localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin)).replace(/\/$/, '');
+  const base = () =>
+    (window.hapiApiBase
+      ? window.hapiApiBase()
+      : localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin)).replace(/\/$/, '');
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
 
   async function api(path, method = 'GET') {

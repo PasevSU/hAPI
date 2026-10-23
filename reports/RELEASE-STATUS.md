@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.33
+# Състояние на изданието — hAPI Enterprise 0.69.34
 
-Версия: **0.69.33** · клон `main`
+Версия: **0.69.34** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,46 +14,49 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **209/209** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.33 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 339 файла · 56949 реда · **0** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 335 файла · 56585 реда · critical: 0 · high: 0 · medium: 0 · low: 151 — чисто |
+| Тестове | `node scripts/test-matrix.cjs` | **210/210** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.34 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 341 файла · 57281 реда · **0** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 337 файла · 56917 реда · critical: 0 · high: 0 · medium: 0 · low: 151 — чисто |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 24 RBAC способности, 33 опции, 209 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 24 RBAC способности, 33 опции, 210 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.33.tar.gz` | add-on архив (134 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.33.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.34.tar.gz` | add-on архив (138 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.34.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.33
+## 3. Какво влезе във 0.69.34
 
-Затваря се последният отворен слот от W7: отчетът вече може да излезе като **пакет с
-доказателства**, а статусът му не се закръгля нагоре.
+Поправка на счупеното в 0.69.33: панелът се зареждаше, но **нищо в него не работеше** под
+Home Assistant Ingress, а генераторът се отваряше празен.
 
-- **`POST /admin/api/v2/reports/package`** връща ZIP с `report.pdf`, `manifest.json`,
-  `evidence.json`, наличните `tsa/start.tsr`, `tsa/stop.tsr`, `signature.p7s` и
-  `SHA256SUMS.txt`. PDF-ът се рендира от същия манифест (детерминирано), или се подава готов
-  с `pdfBase64`, ако вече е подписан.
-- **Три статуса, без украса:** `READY` само при налични START и STOP токени (и подпис, ако е
-  поискан); `INCOMPLETE` с изброени `missing`; `DRAFT` за чернова — тя не се подпечатва.
-  При рендиране от сървъра водният знак е `DRAFT`/`INCOMPLETE`, когато пакетът не е `READY`.
-- **Нов `hapi_enterprise/report-package.js`** (INV-E1…E5 в
-  `documentation/04_FUNCTION_SPECIFICATIONS/REPORT_EVIDENCE_PACKAGE.md`); `SHA256SUMS.txt`
-  покрива всеки файл в пакета, а `evidence.json` носи `manifestSha256` и `pdfSha256`.
-- **Панелът** получи „Чернова (DRAFT)“, бутон „Пакет с доказателства“ и бадж със статуса;
-  обяснението в панела вече не казва, че подписът и TSA са „RS-05“ — те са налични.
-- **Поправен капан:** списъкът с липси пътуваше в HTTP заглавка като кирилица, което убива
-  връзката (`ERR_INVALID_CHAR`). Сега `X-Evidence-Missing` е URL-кодиран, а пълният текст е в
-  `evidence.json`; тестът проверява точно това.
-- **Нов `tests/report-package.cjs`:** класификацията (включително „половин“ TSA и липсващ
-  подпис), съдържанието на ZIP-а, верността на сумите, 401 без токен и статус в заглавка.
-- `Dockerfile` копира `report-package.js`.
+- **Адресът на API-то идва от документа.** Всички панели строяха адреса като
+  `location.origin`. Под Ingress документът живее на `/api/hassio_ingress/<token>/ui/`, а
+  add-on-ът е под същия префикс — значи `https://<ha>/admin/api/…` отива в Home Assistant и
+  връща 404. Сега един помощник (`ui/api-base.js`) разпознава префикса, а панелите,
+  Report Studio и генераторът минават през него. Старите форми (`/app/<token>`,
+  `/hapi/<token>`, `/hassio/ingress/<token>`) остават валидни, ръчно зададеният
+  `hapi.apiBase` запазва предимство, а при `file://` адресът остава празен (демо режим).
+- **Report Studio не беше изключение:** трите директни заявки (пакет, рендер, RFC 3161)
+  ползваха абсолютни пътища и затова новият бутон „Пакет с доказателства“ не можеше да
+  стигне до сървъра точно там, където се ползва.
+- **Генераторът вече не е празен.** Изданието носи начални шаблони
+  (`generator/templates/{blank,protocol,report}.html`) и ги копира в работната папка само
+  при липсваща или празна папка; съществуващ шаблон никога не се презаписва
+  (`GENERATOR_SEED=off` изключва копирането). Интерфейсът показва реалния път на папката
+  (`folderPath`), за да не се гадае къде е в add-on-а.
+- **Нов `tests/ingress-api-base.cjs`:** единични случаи за всички форми на префикса,
+  standalone и `file://`, жива проверка, че API-то на генератора и панела отговаря под
+  префикса, и правило, че в клиентския код няма абсолютни `/admin/…` заявки.
+- `tests/generator-app.cjs` пази новия договор: начални шаблони, `folderPath`, без презапис,
+  изключване чрез среда.
+- Договори: INV-C1 в `INTEGRATION_CONTRACTS.md`, INV-G5/G6 в `DOCUMENT_GENERATOR.md`.
 
 ## 4. Как се проверява наново
 

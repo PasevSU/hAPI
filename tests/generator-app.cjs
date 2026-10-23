@@ -11,6 +11,7 @@
 //   • достъпът е само за административния listener: без токен → 401.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
 
@@ -24,11 +25,16 @@ const API = '/admin/api/generator/templates';
     const anon = await fetch(server.base + API);
     assert.equal(anon.status, 401, 'индексът иска автентикация');
 
-    // ── 2. Празен индекс ─────────────────────────────────────────────────────
-    const empty = await server.api(API);
-    assert.equal(empty.status, 200, 'с токен индексът се дава');
-    assert.deepEqual(empty.data.templates, [], 'преди качване няма шаблони');
-    assert.equal(empty.data.live, true, 'индексът е жив, не файл');
+    // ── 2. Началните шаблони са налице при първи старт ───────────────────────
+    // Генератор без нито един шаблон е неизползваем: на add-on няма как да се сложи
+    // файл в образа, затова изданието носи начални шаблони и ги копира веднъж.
+    const initial = await server.api(API);
+    assert.equal(initial.status, 200, 'с токен индексът се дава');
+    assert.equal(initial.data.live, true, 'индексът е жив, не файл');
+    const starters = initial.data.templates.map((t) => t.file).sort();
+    assert.deepEqual(starters, ['blank.html', 'protocol.html', 'report.html'], 'началните шаблони се копират при първи старт');
+    assert.ok(path.isAbsolute(initial.data.folderPath || ''), 'индексът показва реалния път на папката');
+    assert.equal(initial.data.folderPath, dir, 'пътят сочи работната папка на генератора');
 
     // ── 3. Статиката на генератора се сервира с твърди заглавки ──────────────
     const page = await fetch(server.base + '/generator/');
@@ -49,9 +55,10 @@ const API = '/admin/api/generator/templates';
       html: '<!doctype html><title>Договор за наем</title><p>Страни</p>',
     });
     assert.equal(created.status, 200, 'шаблонът се качва: ' + JSON.stringify(created.data));
-    assert.equal(created.data.templates.length, 1, 'индексът връща един шаблон');
-    assert.equal(created.data.templates[0].file, 'dogovor.html');
-    assert.equal(created.data.templates[0].title, 'Договор за наем', 'заглавието идва от <title>');
+    assert.equal(created.data.templates.length, starters.length + 1, 'индексът връща началните шаблони + новия');
+    const uploaded = created.data.templates.find((t) => t.file === 'dogovor.html');
+    assert(uploaded, 'каченият шаблон е в индекса');
+    assert.equal(uploaded.title, 'Договор за наем', 'заглавието идва от <title>');
 
     // ── 5. Съдържанието се чете като текст, не като страница ─────────────────
     const one = await fetch(server.base + API + '/dogovor.html', {
@@ -67,7 +74,7 @@ const API = '/admin/api/generator/templates';
     assert.equal(duplicate.status, 409, 'съществуващ шаблон не се презаписва тихо');
     const replaced = await server.api(API, 'POST', { name: 'dogovor.html', html: '<title>Ново заглавие</title>', overwrite: true });
     assert.equal(replaced.status, 200, 'с overwrite се заменя');
-    assert.equal(replaced.data.templates[0].title, 'Ново заглавие');
+    assert.equal(replaced.data.templates.find((t) => t.file === 'dogovor.html').title, 'Ново заглавие');
 
     // ── 7. Опасни имена и не-HTML се отказват ────────────────────────────────
     for (const name of ['../izvan.html', 'podpapka/x.html', 'dokument.txt', '.skrit.html', 'x.html.exe']) {
@@ -85,17 +92,36 @@ const API = '/admin/api/generator/templates';
     const live = await server.api(API);
     assert.equal(live.status, 200);
     const files = live.data.templates.map((t) => t.file).sort();
-    assert.deepEqual(files, ['dogovor.html', 'ot-disk.html'], 'файлът от диска влиза в индекса веднага');
+    assert.deepEqual(files, [...starters, 'dogovor.html', 'ot-disk.html'].sort(), 'файлът от диска влиза в индекса веднага');
     const fromDisk = live.data.templates.find((t) => t.file === 'ot-disk.html');
     assert.equal(fromDisk.title, 'Сложен на диска', 'заглавието се чете от самия файл');
 
     // ── 9. Изтриване → изчезва от индекса; повторно → 404 ────────────────────
     const removed = await server.api(API + '/ot-disk.html', 'DELETE');
     assert.equal(removed.status, 200, 'шаблонът се изтрива');
-    assert.deepEqual(removed.data.templates.map((t) => t.file), ['dogovor.html'], 'след изтриване остава един');
+    assert.deepEqual(removed.data.templates.map((t) => t.file).sort(), [...starters, 'dogovor.html'].sort(), 'след изтриване остават началните и качения');
     const again = await server.api(API + '/ot-disk.html', 'DELETE');
     assert.equal(again.status, 404, 'липсващ шаблон не се изтрива „успешно“');
     assert.equal(fs.existsSync(path.join(dir, 'ot-disk.html')), false, 'файлът е махнат от диска');
+
+    // ── 10. Сийдът не презаписва и може да се изключи ────────────────────────
+    // Редактиран шаблон не бива да се връща към фабричния при рестарт.
+    const factory = require('../hapi_enterprise/generator');
+    const rescanned = factory.create({ root: server.dir }).seed();
+    assert.deepEqual(rescanned.copied, [], 'съществуващи шаблони не се презаписват');
+    assert.equal(rescanned.skipped, true, 'при налични шаблони сийдът не прави нищо');
+
+    const emptyRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-gen-empty-'));
+    process.env.GENERATOR_SEED = 'off';
+    let off;
+    try {
+      off = factory.create({ root: emptyRoot }).seed();
+    } finally {
+      delete process.env.GENERATOR_SEED;
+    }
+    assert.equal(off.skipped, true, 'сийдът може да се изключи с GENERATOR_SEED=off');
+    assert.equal(fs.existsSync(path.join(emptyRoot, 'generator', 'temp')), false, 'при изключен сийд папка не се създава');
+    fs.rmSync(emptyRoot, { recursive: true, force: true });
 
     console.log(
       'PASS generator-app: жив индекс без build-index · качване/замяна/изтриване · text/plain + nosniff · имената и пътищата се проверяват · 401 без токен',

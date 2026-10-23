@@ -276,7 +276,10 @@
   function updateBar() {
     const bar = $('#bar-center');
     if (!bar) return;
-    const url = localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin);
+    // Под HA Ingress адресът на add-on-а включва префикса (`/api/hassio_ingress/<token>`).
+    const url = window.hapiApiBase
+      ? window.hapiApiBase()
+      : localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin);
     const token = sessionStorage.getItem('hapiAdminToken');
     bar.textContent = !url ? t('noBackend') : token ? t('barConnected') : t('barNoToken');
   }

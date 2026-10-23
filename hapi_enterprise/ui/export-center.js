@@ -29,7 +29,10 @@
     pkg: { portalId: '', last: null, error: '', loaded: false },
   };
 
-  const base = () => (localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin)).replace(/\/$/, '');
+  const base = () =>
+    (window.hapiApiBase
+      ? window.hapiApiBase()
+      : localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin)).replace(/\/$/, '');
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
   const connected = () => Boolean(base());
   async function api(path, opts) {
