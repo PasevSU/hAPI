@@ -141,6 +141,7 @@
   /** Адресът, под който живее публичната страница (същият префикс като панела). */
   function publicBase(explicit, loc) {
     if (explicit) return String(explicit).replace(/\/+$/, '');
+    if (globalThis.HapiLinks) return globalThis.HapiLinks.baseFromLocation(loc || globalThis.location || {});
     const where = loc || globalThis.location;
     if (!where || typeof where !== 'object') return '';
     if (where.protocol === 'file:') return '';
@@ -201,7 +202,7 @@
     const base = publicBase(opts.base, opts.location);
     const fragment = secretId + bytesToB64u(keyBytes);
     return {
-      link: base + path + '#' + fragment,
+      link: globalThis.HapiLinks ? globalThis.HapiLinks.secretLink({ base, path, id: secretId, key: bytesToB64u(keyBytes) }) : base + path + '#' + fragment,
       fragment,
       path,
       id: secretId,

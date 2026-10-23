@@ -88,7 +88,7 @@ function adminView(rec) {
     lastAccessAt: rec.lastAccessAt || null,
     disabled: Boolean(rec.disabled),
     protected: isProtected(rec),
-    url: '/s/' + rec.id,
+    url: require('./links').sendPath(rec.id),
   };
 }
 

@@ -128,7 +128,9 @@
   function downloadUrl(portal, file) {
     const slug = text(portal && portal.slug);
     const id = text(file && file.id);
-    return slug && id ? '/api/v1/p/' + encodeURIComponent(slug) + '/files/' + encodeURIComponent(id) + '/download' : '';
+    // Същият builder като сървъра (`links.js` се зарежда преди панела) — без втори формат.
+    if (!slug || !id || !globalThis.HapiLinks) return '';
+    return globalThis.HapiLinks.portalApiFilePath({ slug }, 'files/' + encodeURIComponent(id) + '/download');
   }
 
   function stamp(at) {

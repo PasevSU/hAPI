@@ -22,7 +22,8 @@
     const saved = localStorage.getItem('hapi.apiBase');
     if (saved) return saved;
     if (location.protocol !== 'file:') {
-      // През Ingress add-on-ът е на `/api/hassio_ingress/<token>` (старите форми: /app, /hapi).
+      // Едно правило за всички адреси: `links.js` (зарежда се преди този файл).
+      if (window.HapiLinks) return window.HapiLinks.baseFromLocation(location);
       if (typeof window.hapiApiBase === 'function') return window.hapiApiBase();
       const m = String(location.pathname || '').match(/^\/(?:api\/hassio_ingress|hassio\/ingress|app|hapi)\/[^/]+/);
       return location.origin + (m ? m[0] : '');

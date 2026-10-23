@@ -55,7 +55,7 @@ const gatewayApi = require('./gateway-api');
 gatewayApi.setLogger(log);
 const configProfiles = require('./config-profiles').create(root);
 const storageCheck = require('./storage-check');
-const apiVersion = require('./api-version');
+const apiVersion = require('./api-version'); const links = require('./links');
 const signer = require('./signer');
 const pgp = require('./pgp');
 const packager = require('./packager').create({ root });
@@ -649,11 +649,11 @@ const publicPortal = p => ({
   fileCount: p.files.filter(f => f.listed !== false).length,
   contact: (() => { const c = publicContact(p.contactId); return c ? { ...c, email: withVars(c.email), name: withVars(c.name) } : null })(),
   urls: {
-    landing: portalLandingUrl(p, ''), api: portalApiUrl(p, ''), manifest: portalApiUrl(p, '') + '/manifest', openapi: portalApiUrl(p, '') + '/openapi.json', qr: portalApiUrl(p, '') + '/qr.svg',
+    landing: portalLandingUrl(p, ''), api: portalApiUrl(p, ''), manifest: links.portalApiFilePath(p, 'manifest'), openapi: links.portalApiFilePath(p, 'openapi.json'), qr: links.portalApiFilePath(p, 'qr.svg'),
     // Какво точно кодира QR кодът — публичната страница, не JSON API-то.
     qrTarget: portalLandingUrl(p, ''),
     // Пакетът на целия портал (PP-12): адресът се вижда, за да знае страницата къде да поиска.
-    package: portalApiUrl(p, '') + '/package'
+    package: links.portalApiFilePath(p, 'package')
   },
   // Какво може да влезе в публичния пакет — сметнато ТУК, за да не гадае страницата.
   package: (() => {
@@ -715,10 +715,10 @@ const signedValid = (url, p, f) => { const expires = Number(url.searchParams.get
 
 const apiRoot = path.join(root, 'api'); const cabinet = require('./cabinet').create({ root, maxBytes: () => runtime.effective().maxUploadBytes, localOpen: process.env.HAPI_LOCAL_OPEN === '1' }); const isLoopback = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress); const fileNameHeader = req => { const v = String(req.headers['x-file-name'] || ''); try { return clean(decodeURIComponent(v)) } catch { return clean(v) } };
 function baseUrl(req) { const env = runtime.effective().publicBaseUrl; if (env) return env; const h = req && (req.headers['x-forwarded-host'] || req.headers.host); if (!h || !/^[A-Za-z0-9.\-:\[\]]{1,255}$/.test(String(h).split(',')[0].trim())) return ''; const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim(); return (proto === 'https' ? 'https' : 'http') + '://' + String(h).split(',')[0].trim() }
-function portalApiUrl(p, base) { return (base || '') + '/api/v1/p/' + encodeURIComponent(p.slug) }
+function portalApiUrl(p, base) { return links.withBase(base, links.portalApiPath(p)) }
 // Публичната страница се адресира с ИДЕНТИФИКАТОРА на портала (не с името/slug):
 // QR кодът не издава „говорещото“ име, а и връзката остава валидна при смяна на slug.
-function portalLandingUrl(p, base) { return (base || '') + '/p/' + encodeURIComponent(p.id || p.slug) }
+function portalLandingUrl(p, base) { return links.withBase(base, links.portalLandingPath(p)) }
 function fileDownloadUrl(p, f, base) { return portalApiUrl(p, base) + '/files/' + encodeURIComponent(f.id) + '/download' }
 // Търсене на „Бърз линк“ по id без значение от портала и файла.
 const findSend = sendId => {
@@ -1399,7 +1399,7 @@ async function handler(req, res) {
     // а административните API-та си изискват Bearer токен. Allowlist — без произволни пътища.
     const UI_FILES = (() => {
       const files = { '/ui': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/index.html': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/styles.css': ['ui/styles.css', 'text/css; charset=utf-8'], '/ui/manifest.example.json': ['ui/manifest.example.json', 'application/json; charset=utf-8'] };
-      for (const f of ['api-base.js', 'bootstrap.js', 'app.js', 'icons.js', 'data.js', 'i18n.js', 'report-objects.js', 'report-scope.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'dashboard-panel.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js', 'export-center.js', 'public-gateway.js', 'visitors-panel.js']) files['/ui/' + f] = ['ui/' + f, 'text/javascript; charset=utf-8'];
+      for (const f of ['links.js', 'api-base.js', 'bootstrap.js', 'app.js', 'icons.js', 'data.js', 'i18n.js', 'report-objects.js', 'report-scope.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'dashboard-panel.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js', 'export-center.js', 'public-gateway.js', 'visitors-panel.js']) files['/ui/' + f] = [f === 'links.js' ? f : 'ui/' + f, 'text/javascript; charset=utf-8'];
       for (const f of ['report-manifest.js', 'api-spec.js', 'virtual-storage.js', 'storage-tree.js', 'export-rules.js', 'export-manager.js', 'download-access.js', 'public-gateway.js', 'qrcode.js']) files['/hapi_enterprise/' + f] = ['hapi_enterprise/' + f, 'text/javascript; charset=utf-8'];
       // PasevSU Document Generator — самостоятелно приложение под `/generator/`.
       files['/generator'] = ['generator/index.html', 'text/html; charset=utf-8'];
@@ -1428,7 +1428,7 @@ async function handler(req, res) {
     if (parts[0] === 'site' && parts.length >= 3 && method === 'GET') {
       const p = getPortal(parts[1]); if (!p) return fail(res, 404, 'Not found');
       const project = (p.htmlProjects || []).find(x => x.id === parts[2]); if (!project || !project.enabled) return fail(res, 404, 'Not found');
-      const prefix = '/site/' + encodeURIComponent(p.slug) + '/' + project.id;
+      const prefix = links.htmlProjectBasePath(p, project.id);
       const cookieName = 'pe_site_' + project.id;
       const cookies = Object.fromEntries((req.headers.cookie || '').split(';').map(v => { const i = v.indexOf('='); return i < 0 ? ['', ''] : [v.slice(0, i).trim(), v.slice(i + 1).trim()] }));
       const verifySession = () => { const token = cookies[cookieName]; if (!token) return false; const s = metadataStore.getSession(keyDigest(token)); return !!(s && (s.scopes || []).includes('read')) };
@@ -2179,8 +2179,8 @@ async function handler(req, res) {
           const isLocal = /^https?:\/\/(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?)/i.test(base);
           // Таг за Home Assistant Companion (NFC/QR) и universal link: адресите идват от
           // share-links.js, за да има едно място за формата и за автоматизацията.
-          const links = require('./share-links').build({ slug: p.slug, title: p.title, landingUrl });
-          return json(res, 200, { id: p.id, slug: p.slug, landingUrl, apiUrl, directory: 'api/' + p.slug, qr: qrSvg(landingUrl), qrTarget: landingUrl, baseIsLocal: isLocal, base, links })
+          const shareLinks = require('./share-links').build({ slug: p.slug, title: p.title, landingUrl });
+          return json(res, 200, { id: p.id, slug: p.slug, landingUrl, apiUrl, directory: 'api/' + p.slug, qr: qrSvg(landingUrl), qrTarget: landingUrl, baseIsLocal: isLocal, base, links: shareLinks })
         }
         // Дървото на папката на портала (експлорер): папки → подпапки → файлове.
         // Всяка папка има собствен адрес в API-то (виж `tree/api.json`).
@@ -2365,12 +2365,12 @@ async function handler(req, res) {
             return created;
           });
           const base = String(runtime.effective().publicBaseUrl || baseUrl(req)).replace(/\/+$/, '');
-          return json(res, 201, { ...sendLite.adminView(rec), url: base + '/s/' + rec.id });
+          return json(res, 201, { ...sendLite.adminView(rec), url: links.withBase(base, links.sendPath(rec.id)) });
         }
         if (parts[4] === 'files' && parts[6] === 'sends' && parts.length === 7 && method === 'GET') {
           const f = p.files.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'File not found');
           const base = String(runtime.effective().publicBaseUrl || baseUrl(req)).replace(/\/+$/, '');
-          return json(res, 200, { sends: (f.sends || []).map(s => ({ ...sendLite.adminView(s), url: base + '/s/' + s.id })) });
+          return json(res, 200, { sends: (f.sends || []).map(s => ({ ...sendLite.adminView(s), url: links.withBase(base, links.sendPath(s.id)) })) });
         }
         if (parts[4] === 'files' && parts[6] === 'sends' && parts.length === 8 && method === 'DELETE') {
           const f = p.files.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'File not found');
@@ -2459,7 +2459,7 @@ async function handler(req, res) {
             if (!actual.startsWith(base + path.sep) || !index.startsWith(actual + path.sep)) return fail(res, 400, 'Unsafe project folder');
             if ((p.htmlProjects || []).some(x => x.folder === folder)) return fail(res, 409, 'Project already registered');
             const project = await update(() => { const item = { id: id(), title, folder, enabled: true, createdAt: new Date().toISOString() }; p.htmlProjects ??= []; p.htmlProjects.push(item); void audit('html.project.register', { portalId: p.id, projectId: item.id }); return item });
-            return json(res, 201, { ...project, url: '/site/' + p.slug + '/' + project.id + '/' });
+            return json(res, 201, { ...project, url: links.htmlProjectPath(p, project.id) });
           }
         }
         if (parts[4] === 'html-projects' && parts.length === 6 && method === 'DELETE') {
@@ -2478,7 +2478,7 @@ async function handler(req, res) {
             await fsp.writeFile(path.join(filesRoot, p.id, f.id), data, { flag: 'wx', mode: 0o600 });
             p.files.push(f); const mirroredHtml = await storeMirrored(p.id, f.id, data); if (mirroredHtml) f.mirror = mirroredHtml; observer.fileUpload({ bytes: data.length, encrypted: false }); if (mirroredHtml === 'failed') observer.mirrorFailed(); void audit('html.publish', { portalId: p.id, fileId: f.id, mirror: mirroredHtml || 'disabled' }); return publicFile(f);
           }, async f => { await fsp.rm(path.join(filesRoot, p.id, f.id), { force: true }); await removeMirrored(p.id, f.id) });
-          return json(res, 201, { ...result, publishStatus: 'stored', security: 'attachment-only', downloadUrl: '/api/v1/p/' + encodeURIComponent(p.slug) + '/files/' + result.id + '/download' });
+          return json(res, 201, { ...result, publishStatus: 'stored', security: 'attachment-only', downloadUrl: links.portalApiFilePath(p, 'files/' + result.id + '/download') });
         }
         if (parts[4] === 'files' && parts.length === 5 && method === 'POST') { const rawName = String(req.headers['x-file-name'] || ''); let decoded; try { decoded = decodeURIComponent(rawName) } catch { decoded = rawName } const filename = clean(decoded); if (!filename || filename.length > 240 || /[\/\r\n\0]/.test(filename)) return fail(res, 400, 'Invalid X-File-Name'); const encHeader = req.headers['x-file-encrypt']; const wantEncrypt = encHeader !== undefined && String(encHeader).trim() !== '' ? String(encHeader) === '1' : cryptoOptions.encryptFiles; const data = await body(req, runtime.effective().maxUploadBytes); return json(res, 201, await update(async () => { const f = { id: id(), name: filename, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex'), uploadedAt: new Date().toISOString(), category: runtime.settings.data.defaultCategory, group: runtime.settings.data.defaultGroup }; const stored = wantEncrypt ? fileCrypto.encrypt(data, adminToken) : data; if (wantEncrypt) { f.encrypted = true; f.storedSize = stored.length } await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true }); await fsp.writeFile(path.join(filesRoot, p.id, f.id), stored, { flag: 'wx', mode: 0o600 }); p.files.push(f); const mirrored = await storeMirrored(p.id, f.id, stored); if (mirrored) f.mirror = mirrored; observer.fileUpload({ bytes: stored.length, encrypted: !!f.encrypted }); if (mirrored === 'failed') observer.mirrorFailed(); void audit('file.upload', { portalId: p.id, fileId: f.id, encrypted: !!f.encrypted, mirror: mirrored || 'disabled' }); return publicFile(f) }, async f => { await fsp.rm(path.join(filesRoot, p.id, f.id), { force: true }); await removeMirrored(p.id, f.id) })) }
         if (parts[4] === 'files' && parts[5]) {

@@ -17,6 +17,9 @@ globalThis.sessionStorage = {
 };
 const navigations = [];
 globalThis.window = { HapiUI: { go: (id) => navigations.push(String(id)) } };
+// Реалната зависимост на панела: `links.js` се зарежда преди `report-scope.js` (виж
+// `ui/index.html`), затова и тук го зареждаме — адресът за изтегляне идва само оттам.
+globalThis.HapiLinks = require('../hapi_enterprise/links.js');
 
 const S = require('../hapi_enterprise/ui/report-scope.js');
 const M = require('../hapi_enterprise/report-manifest.js');

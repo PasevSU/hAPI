@@ -51,6 +51,9 @@ assert.ok(uiStart > 0, 'server.js: липсва UI_FILES allowlist');
 const uiBlock = serverSrc.slice(uiStart, serverSrc.indexOf('})();', uiStart));
 const assets = new Set();
 for (const m of uiBlock.matchAll(/'((?:ui|hapi_enterprise)\/[A-Za-z0-9._-]+)'/g)) assets.add(m[1]);
+// `links.js` е ЕДИН файл за сървъра и за панела: сервира се на `/ui/links.js`, но живее в
+// корена на add-on-а. Затова проверката повтаря същото правило, вместо да иска копие в ui/.
+const linksFromRoot = /f === 'links\.js' \? f : 'ui\/' \+ f/.test(uiBlock);
 for (const line of uiBlock.split('\n')) {
   const prefix = /files\['\/ui\/'\s*\+\s*f\]/.test(line)
     ? 'ui/'
@@ -59,7 +62,7 @@ for (const line of uiBlock.split('\n')) {
       : null;
   if (prefix === null) continue;
   const list = line.slice(line.indexOf('['), line.lastIndexOf(']') + 1);
-  for (const m of list.matchAll(/'([A-Za-z0-9._-]+\.js)'/g)) assets.add(prefix + m[1]);
+  for (const m of list.matchAll(/'([A-Za-z0-9._-]+\.js)'/g)) assets.add(linksFromRoot && m[1] === 'links.js' ? m[1] : prefix + m[1]);
 }
 assert.ok(assets.size >= 20, 'UI_FILES трябва да съдържа поне 20 асета, намерени ' + assets.size);
 for (const asset of assets) {
