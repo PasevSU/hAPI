@@ -1927,7 +1927,7 @@ async function handler(req, res) {
       }
       if (parts.length === 5 && parts[4] === 'download' && method === 'GET') {
         const part = Number(url.searchParams.get('part')) || 0, a = await packager.artifact(parts[3], 'zip', part); if (!a) return fail(res, part ? 404 : 409, part ? 'Няма такава част' : 'Пакетът е разделен на части — подай ?part=N (виж split в метаданните)');
-        return streamDownload(req, res, a.file, a.stat, a.name, () => { void audit('package.download', { packageId: a.meta.id, size: a.stat.size, part }) }, { bytesPerSec: settings.rateKbps * 1024, budgetKey: a.meta.id, parallelChunks: settings.parallelChunks });
+        return streamDownload(req, res, a.file, a.stat, a.name, () => { void audit('package.download', { packageId: a.meta.id, size: a.stat.size, part }) }, { bytesPerSec: settings.rateKbps * 1024, budgetKey: a.meta.id, parallelChunks: settings.parallelChunks, etag: '"' + (a.meta.encryption ? a.meta.encryption.sha256 : a.meta.sha256) + '"' });
       }
       if (parts.length === 5 && parts[4] === 'signature' && method === 'GET') {
         const a = await packager.artifact(parts[3], 'signature'); if (!a) return fail(res, 404, 'Not found');

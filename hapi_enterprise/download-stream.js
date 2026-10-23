@@ -73,7 +73,14 @@ function create(deps) {
     let start = 0;
     let end = stat.size - 1;
     let status = 200;
-    const rm = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || ''));
+    // ETag описва СЪДЪРЖАНИЕТО (sha256), не времето: при възобновяване трябва да е ясно,
+    // че продължаваме същия файл, а не парче от друг.
+    const etag = (opts && opts.etag) || '';
+    const ifRange = String(req.headers['if-range'] || '').trim();
+    // If-Range с чужда стойност означава „файлът е друг“ — тогава Range НЕ се прилага и
+    // клиентът получава цялия файл отначало (точно както иска HTTP).
+    const rangeAllowed = !ifRange || !etag || ifRange === etag;
+    const rm = rangeAllowed ? /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || '')) : null;
     if (rm && (rm[1] || rm[2]) && stat.size > 0) {
       if (rm[1] === '') { start = Math.max(0, stat.size - Number(rm[2])) } else { start = Number(rm[1]); if (rm[2] !== '') end = Math.min(end, Number(rm[2])) }
       if (start > end || start >= stat.size) { releaseOnce(); res.writeHead(416, { 'Content-Range': 'bytes */' + stat.size }); return res.end() }
@@ -94,6 +101,7 @@ function create(deps) {
     res.writeHead(status, {
       ...rh,
       'Accept-Ranges': 'bytes',
+      ...(etag ? { ETag: etag } : {}),
       'Content-Type': 'application/octet-stream',
       'Content-Length': end - start + 1,
       'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(name.replace(/[\r\n]/g, '')),

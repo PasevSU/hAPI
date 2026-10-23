@@ -101,9 +101,8 @@ assert.equal(api.decideFile({ portal: publicPortal, file: freeFile, permission: 
 const payload = api.exportRulesPayload();
 assert.equal(payload.export_profiles.profiles.length, 12);
 assert.equal(payload.capabilities.length, 6);
-// Готови са компресията, разделянето, ограничението на скоростта, паралелните трансфери и
-// криптирането; остава само възобновяването на трансфер.
-assert.deepEqual(payload.capabilities.filter((c) => c.implemented).map((c) => c.id), ['compression', 'split_archive', 'rate_limit', 'parallel_transfers', 'encrypt_package']);
+// Всички шест способности са готови (0.69.51–0.69.59) — няма планирани.
+assert.deepEqual(payload.capabilities.filter((c) => c.implemented).map((c) => c.id), ['compression', 'split_archive', 'rate_limit', 'parallel_transfers', 'encrypt_package', 'resume_transfer']);
 assert.ok(payload.capabilities.filter((c) => !c.implemented).every((c) => c.status === 'planned'));
 assert.deepEqual(payload.access.levels, ACC.LEVELS);
 assert.equal(payload.public_gateway.public.port, 8088);

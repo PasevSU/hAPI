@@ -69,7 +69,7 @@ const assert = require('node:assert/strict');
     assert.equal(rules.value.public_gateway.public.port, 8088);
     assert.equal(rules.value.public_gateway.public.published, true, 'PUBLIC_GATEWAY=1 публикува порта');
     assert.equal(rules.value.public_gateway.public.domain, 'gateway.test', 'PUBLIC_DOMAIN се прилага');
-    assert.deepEqual(rules.value.capabilities.filter((c) => c.implemented).map((c) => c.id), ['compression', 'split_archive', 'rate_limit', 'parallel_transfers', 'encrypt_package'], 'пет способности са готови');
+    assert.deepEqual(rules.value.capabilities.filter((c) => c.implemented).map((c) => c.id), ['compression', 'split_archive', 'rate_limit', 'parallel_transfers', 'encrypt_package', 'resume_transfer'], 'всички шест способности са готови');
     assert.ok(rules.value.capabilities.filter((c) => !c.implemented).every((c) => c.status === 'planned'));
 
     // 2. Preflight изчислява пакета и форсира SHA-256 за доказателствен режим.

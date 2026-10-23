@@ -392,6 +392,7 @@
     rate_limit: { implemented: true, status: 'ready' },
     parallel_transfers: { implemented: true, status: 'ready' },
     encrypt_package: { implemented: true, status: 'ready' },
+    resume_transfer: { implemented: true, status: 'ready' },
   };
 
   function capabilities() {
