@@ -19,13 +19,12 @@
 Argon2 S2K, ECDH с именувана крива. Те имат точни кодове (`UNSUPPORTED_AEAD`,
 `S2K_ARGON2_UNSUPPORTED`, `UNSUPPORTED_CURVE`) и това е договореното поведение, не дефект.
 
-> **Готово в кода, но НЕ в изданието 0.69.67:** изборът на подключ по Key Flags
-> (`0x08` encrypt-storage → `0x04` encrypt-comms → по вид ключ) е реализиран в
-> `storageKeyOf()` (`hapi_enterprise/pgp.js`) и се вижда като `storageKeySource` в
-> `GET /admin/api/pgp/keyring`. Доказателство: `tests/pgp-keyflags.cjs` (6 проверки, включително
-> „два подключа: comms `0x04` и storage `0x08` → избран е storage“) и `tests/pgp-keyring.cjs`
-> (`storageKeySource: 'key-flags'`). Тагът `v0.69.67` е публикуван **преди** тази промяна, затова
-> тя излиза в следващото издание; ред 10 в договора е ✅ с тази бележка.
+> **Готово и в изданието 0.69.68:** изборът на подключ по Key Flags
+> (`0x08` encrypt-storage → `0x04` encrypt-comms → по вид ключ) е в `storageKeyOf()`
+> (`hapi_enterprise/pgp.js`) и се вижда като `storageKeySource` в `GET /admin/api/pgp/keyring`.
+> Доказателство: `tests/pgp-keyflags.cjs` (6 проверки, включително „два подключа: comms `0x04`
+> и storage `0x08` → избран е storage“) и `tests/pgp-keyring.cjs`
+> (`storageKeySource: 'key-flags'`). Ред 10 в договора е ✅.
 
 ## 1. Ротация/пре-обвиване (`INV-P5`) — най-малкият останал риск
 
