@@ -86,3 +86,38 @@ try {
 } finally {
   fs.rmSync(dir, { recursive: true, force: true });
 }
+
+// ── 5. Генераторът е ИДЕМПОТЕНТЕН: едно пускане поправя произволно развалена таблица ──
+// Защо: при 0.69.42 и 0.69.44 скриптът пишеше таблиците, а `--check` веднага след това
+// казваше „остаряла“ — тоест поправката изискваше второ пускане. Това чупи изданието
+// точно на стъпката „поправи и продължи“, затова тук се проверява с РАЗВАЛЕН вход:
+// разваляме блока, пускаме скрипта ВЕДНЪЖ и искаме файлът да стане байт по байт същият.
+const TARGETS = ['hapi_enterprise/README.md', 'BG.md'];
+const backups = new Map(TARGETS.map((f) => [f, fs.readFileSync(path.join(root, f))]));
+const runScript = (args) => spawnSync(process.execPath, [path.join(root, 'scripts', 'settings-defaults.cjs'), ...args], { cwd: root, encoding: 'utf8' });
+try {
+  for (const f of TARGETS) {
+    const file = path.join(root, f);
+    const original = fs.readFileSync(file, 'utf8');
+    const start = original.indexOf('<!-- SETTINGS-DEFAULTS:START');
+    const end = original.indexOf('<!-- SETTINGS-DEFAULTS:END -->');
+    assert.ok(start >= 0 && end > start, f + ': липсват маркерите на генерирания блок');
+    // Разваляме стойност в първия табличен ред и добавяме чужд ред — както би направил човек.
+    const block = original.slice(start, end).replace(/(\| `[^`]+` \|) `[^`]+`/, '$1 `СЧУПЕНО`') + '| боклук | ред |\n';
+    fs.writeFileSync(file, original.slice(0, start) + block + original.slice(end));
+  }
+  assert.notEqual(runScript(['--check']).status, 0, '--check трябва да хване развалената таблица');
+
+  const fix = runScript([]);
+  assert.equal(fix.status, 0, 'поправката минава: ' + (fix.stderr || ''));
+
+  const recheck = runScript(['--check']);
+  assert.equal(recheck.status, 0, 'ЕДНО пускане трябва да стига — иначе „поправи и продължи“ оставя остаряла таблица: ' + (recheck.stderr || ''));
+
+  for (const f of TARGETS) {
+    assert.deepEqual(fs.readFileSync(path.join(root, f)), backups.get(f), f + ': след една поправка файлът трябва да е точно както преди развалянето');
+  }
+  console.log('PASS settings-defaults-idempotent: развалена таблица се поправя с ЕДНО пускане и файлът става байт по байт същият');
+} finally {
+  for (const [f, bytes] of backups) fs.writeFileSync(path.join(root, f), bytes);
+}

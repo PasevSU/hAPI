@@ -59,6 +59,25 @@ jobs:
         env:
           CI: "true"
 
+  lint:
+    name: Lint (eslint · Node 22)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      # Dev зависимостите са само eslint/prettier — add-on-ът и тестовете работят без тях.
+      - name: Install dev dependencies
+        run: npm ci --no-audit --no-fund
+
+      # `eslint-suppressions.json` е базовата линия за наследените находки: тя пази
+      # днешното състояние, а НОВА находка (нов файл, нов ред) чупи работата.
+      - name: ESLint (нов код трябва да е чист)
+        run: npm run lint
+
   build-addon:
     name: Add-on image (всички обявени архитектури)
     runs-on: ubuntu-latest

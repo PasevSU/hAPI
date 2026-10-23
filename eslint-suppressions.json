@@ -1,0 +1,785 @@
+{
+  "hapi_enterprise/audit-chain.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/cabinet.js": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/core-store.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/evidence-portal.js": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/export-manager.js": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/export-rules.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/gateway-api.js": {
+    "no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/generator.js": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 3
+    }
+  },
+  "hapi_enterprise/generator/app.js": {
+    "no-redeclare": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/instance-lock.js": {
+    "no-unsafe-finally": {
+      "count": 2
+    },
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/logger.js": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/ooxml.js": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/packager.js": {
+    "no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/pdf-writer.js": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 5
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/pgp.js": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "hapi_enterprise/portal.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/qrcode.js": {
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "hapi_enterprise/routes/reports.js": {
+    "no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/runtime-config.js": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "no-useless-escape": {
+      "count": 4
+    }
+  },
+  "hapi_enterprise/secret-links.js": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "hapi_enterprise/secret-view.js": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/server.js": {
+    "no-control-regex": {
+      "count": 4
+    },
+    "no-useless-assignment": {
+      "count": 3
+    },
+    "no-useless-escape": {
+      "count": 7
+    }
+  },
+  "hapi_enterprise/share-links.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/shared-data.js": {
+    "no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/storage-preflight.js": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/storage-tree.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/ui/api-base.js": {
+    "no-unused-vars": {
+      "count": 3
+    }
+  },
+  "hapi_enterprise/ui/bootstrap.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/ui/directory-panel.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/ui/files-manager.js": {
+    "no-unused-vars": {
+      "count": 5
+    },
+    "no-useless-assignment": {
+      "count": 4
+    }
+  },
+  "hapi_enterprise/ui/portal-files.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/ui/report-sign.js": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/virtual-storage.js": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "hapi_enterprise/visitor-intel.js": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "scripts/bad-code-scan.cjs": {
+    "no-useless-assignment": {
+      "count": 1
+    },
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "scripts/dev-dashboard.cjs": {
+    "no-empty": {
+      "count": 3
+    }
+  },
+  "scripts/export-tracked.cjs": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "scripts/pre-push-audit.cjs": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "scripts/release-status.cjs": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/access-policy.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/admin-throttle.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/api-generation.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/api-rules-connection.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/audit-chain.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/audit-export.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/audit.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/auth.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/backup-api.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/backup-mirror.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/backup-restore.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/backup-schedule.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/bulk-access.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/cabinet-merge-taxonomy.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/chaos-resilience.cjs": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/concurrent-links.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/config-profiles.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/core-api-version.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/core-groups.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/core-migration.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/core-orphan.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/core-profiles.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/core-qr-file.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/core-repository.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/core-signer.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/core-variables.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/crypto-options.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/data-settings.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/diagnostics.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/directory-organizations.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/directory-variables.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/edge-runtime.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/enterprise-lifecycle.cjs": {
+    "no-useless-assignment": {
+      "count": 3
+    }
+  },
+  "tests/enterprise.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/error-log.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/file-encryption.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/files-manager.cjs": {
+    "no-regex-spaces": {
+      "count": 1
+    }
+  },
+  "tests/full-journey-office.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/full-journey.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/gateway-server.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/html-projects.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/html-publish.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/ingress-auth.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/ingress-isolation.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/instance-lock.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/integrity.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/internal.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/interpolate.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/job-manager.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/job-persistence.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "tests/lib/csp-frame.cjs": {
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "tests/lib/gui-harness.cjs": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/logs-api.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/oracle-rbac-matrix.cjs": {
+    "no-unused-vars": {
+      "count": 2
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/oracle-slug-and-paths.cjs": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/package-api.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/pagination.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/pgp-bundle.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/pgp-gpg-interop.cjs": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/portal-api-qr.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/portal-page-contract.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/portal-page-render.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/preview.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/public-package.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/qr-dispatch.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/rbac-default-matrix.cjs": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/rbac-sso.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/rbac.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/readiness-integrity.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/readiness.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/release-archive-paths.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/report-api.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/report-package.cjs": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "tests/report-render.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/report-scope.cjs": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "tests/report-tsa-e2e.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/retention-audit.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/retention.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/rfc3161-api.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/rollback.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/runtime-limits.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/search-api.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/secret-links.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/sensor-settings.cjs": {
+    "no-empty": {
+      "count": 3
+    }
+  },
+  "tests/sensors-telemetry.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/sensors.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/share-links.cjs": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/signing-fallback.cjs": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/signing.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/smoke.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/sqlite-snapshot-safety.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/storage-check.cjs": {
+    "no-empty": {
+      "count": 2
+    }
+  },
+  "tests/storage-mirror.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/storage-tree-api.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/taxonomy.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  },
+  "tests/tsa-breaker.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/tsa-evidence.cjs": {
+    "no-empty": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/ui-navigation.cjs": {
+    "no-regex-spaces": {
+      "count": 1
+    }
+  },
+  "tests/versioning.cjs": {
+    "no-empty": {
+      "count": 1
+    }
+  }
+}

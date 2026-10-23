@@ -43,12 +43,12 @@ const cryptoOptions = {
   tlsKey: optionValue('TLS_KEY', 'tls_key', ''),
 };
 const rbac = require('./rbac').create({ adminToken, operatorToken, viewerToken, userRoles: parseRoles(process.env.USER_ROLES || addonOptions.user_roles), groupRoles: parseRoles(process.env.GROUP_ROLES || addonOptions.group_roles), defaultRole: process.env.DEFAULT_ROLE || 'admin' });
-const errorLog = require('./error-log').create(root);
 // Сензори: комуникация, файлове, извиквания, изтегляния, посещения. Агрегати без
 // лични данни; състоянието се записва в <DATA_DIR>/sensors.json и оцелява рестарт.
 const observer = require('./observer').create({ dir: root });
 // Structured debug log: option `log_level`, overridable with LOG_LEVEL for troubleshooting.
 const log = require('./logger').create({ dir: root, level: process.env.LOG_LEVEL || addonOptions.log_level || 'info', maxBytes: process.env.LOG_MAX_BYTES, maxFiles: process.env.LOG_MAX_FILES, maxEntries: process.env.LOG_MAX_ENTRIES });
+const errorLog = require('./error-log').create(root); require('./process-guards').install({ log, errorLog });
 // Правилата за достъп се зареждат от директория (виж gateway-api.js); логерът се
 // подава, за да не остава незабелязан fallback към вградените стойности.
 const gatewayApi = require('./gateway-api');

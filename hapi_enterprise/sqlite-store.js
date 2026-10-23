@@ -60,7 +60,7 @@ function open(jsonPath) {
   // `save(payload)` — безусловен запис (възстановяване от архив, начален seed).
   // `save(payload, revision)` — запис САМО ако ревизията е още `revision`; иначе
   // `STORE_CONFLICT` (код 409), за да може извикващият да прочете наново и да опита пак.
-  function save(v, expectedRevision) { // eslint-disable-line
+  function save(v, expectedRevision) {
     validate(v); db.exec('BEGIN IMMEDIATE');
     try {
       if (expectedRevision === undefined || expectedRevision === null) replace.run(JSON.stringify(v));

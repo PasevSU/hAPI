@@ -22,7 +22,9 @@
     "settings:check": "node scripts/settings-defaults.cjs --check",
     "publish:haoss": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/publish-haoss.ps1",
     "audit": "node scripts/pre-push-audit.cjs",
-    "lint": "eslint hapi_enterprise tests custom_components scripts",
+    "lint": "eslint hapi_enterprise tests custom_components scripts --max-warnings=0",
+    "lint:baseline": "eslint hapi_enterprise tests custom_components scripts --suppress-all",
+    "lint:prune": "eslint hapi_enterprise tests custom_components scripts --prune-suppressions",
     "lint:fix": "eslint hapi_enterprise tests custom_components scripts --fix",
     "format": "prettier --write \"**/*.{js,cjs,mjs,json,css,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{js,cjs,mjs,json,css,yml,yaml}\""

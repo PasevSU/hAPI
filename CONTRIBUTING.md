@@ -68,6 +68,34 @@ failures exit non-zero and are listed explicitly. The JSON report lands in
 `config.yaml` must be referenced by at least one test, and each scenario area in its map
 must keep a living owner file. A new endpoint without a test fails the suite immediately.
 
+## Lint (a real gate since 0.69.44)
+
+```bash
+npm ci            # dev dependencies: eslint only
+npm run lint      # what CI runs; must exit 0
+```
+
+`eslint.config.mjs` declares **three environments**: Node (server + tests), browser
+(`hapi_enterprise/ui/**`, `portal.js`, the generator, the integration's portal view) and
+ESM (`**/*.mjs`, Evidence View assets). Before 0.69.44 the browser files were checked with
+Node globals, which produced 406 false `no-undef` errors — the reason nobody ran lint and
+why `ci.yml` had no lint step at all.
+
+`eslint-suppressions.json` is the **baseline** for findings that already existed: it keeps
+legacy code quiet without hiding anything (each suppressed count is visible in that file).
+New code is judged by the full rules — a new violation fails `npm run lint`. Never add a
+file to the baseline to make a failure go away; fix it or discuss it. Refresh the baseline
+only after deliberately paying down debt:
+
+```bash
+npm run lint:baseline   # rewrite the baseline (review the diff!)
+npm run lint:prune      # drop entries that no longer apply
+```
+
+`prettier --check` is deliberately **not** a gate: the tree is not prettier-formatted and
+reformatting it would bury every real change. Run `npm run format` on the files you touch
+if you want it.
+
 The full suite is asserted by `tests/docker-runtime.cjs` (module completeness in the
 `Dockerfile`).
 
