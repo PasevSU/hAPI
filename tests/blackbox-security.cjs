@@ -222,13 +222,22 @@ const b64u = (b) => Buffer.from(b).toString('base64url');
     const portalPage = await call('/p/bb-portal');
     if (portalPage.status === 200) {
       assert.match(portalPage.headers.get('content-security-policy') || '', /default-src/, 'порталът има CSP');
+      assert.match(portalPage.headers.get('content-security-policy') || '', /frame-ancestors 'none'/, 'публичният портал не се вгражда в iframe');
       assert.equal(portalPage.headers.get('x-content-type-options'), 'nosniff');
     }
     const secretPage = await call('/secret/' + linkId);
     assert.equal(secretPage.status, 200, 'страницата за тайна се сервира');
     assert.equal(/<script>[^<]/.test(secretPage.text), false, 'няма inline скрипт в страницата за тайна');
     assert.match(secretPage.headers.get('content-security-policy') || '', /frame-ancestors 'none'/, 'не се вгражда в iframe');
-    console.log('· страници: CSP и nosniff, без inline скрипт');
+    // Панелът на add-on-а в Home Assistant е IFRAME към ingress адреса, тоест UI-ят
+    // ТРЯБВА да се вгражда от същия origin. С `frame-ancestors 'none'` браузърът
+    // отказваше да покаже документа и екранът оставаше напълно празен (INV-C2).
+    const uiPage = await call('/ui/index.html');
+    assert.equal(uiPage.status, 200, 'UI-ят се сервира');
+    const panelCsp = uiPage.headers.get('content-security-policy') || '';
+    assert.match(panelCsp, /frame-ancestors 'self'/, 'UI-ят се вгражда от същия origin — панелът на HA е iframe');
+    assert.equal(/frame-ancestors 'none'/.test(panelCsp), false, 'UI-ят не е заключен срещу вграждане');
+    console.log('· страници: CSP и nosniff, без inline скрипт; UI-ят е вградим от същия origin, публичните страници — не');
 
     console.log('PASS blackbox-security: 8 атакувани повърхности, всички откази коректни');
   } finally {

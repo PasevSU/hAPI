@@ -10,13 +10,13 @@
 
 ## HA add-on contract
 
-| Interface      | Detail                                                   |
-| -------------- | -------------------------------------------------------- |
-| Ingress        | `/` → 302 към `<ingress>/ui/` (панелът)                  |
-| Panel          | `panel_custom` → admin                                   |
-| HACS component | fail-closed read bridge `/api/hapi_enterprise/v1/{tail}` |
-| Storage        | `/data` add-on volume (config-specified)                 |
-| Secrets        | `secrets.yaml` (optional, dev)                           |
+| Interface      | Detail                                                                    |
+| -------------- | ------------------------------------------------------------------------- |
+| Ingress        | `/` → 302 към `<ingress>/ui/` (панелът)                                   |
+| Panel          | ingress панел на add-on-а (`panel_title` / `panel_icon`) → iframe на UI-я |
+| HACS component | fail-closed read bridge `/api/hapi_enterprise/v1/{tail}`                  |
+| Storage        | `/data` add-on volume (config-specified)                                  |
+| Secrets        | `secrets.yaml` (optional, dev)                                            |
 
 ### Адрес на API-то от панела (INV-C1)
 
@@ -37,6 +37,20 @@
 
 Проверява се от `tests/ingress-api-base.cjs` (единични случаи за всички форми на
 префикса + жива проверка, че API-то отговаря под префикса).
+
+### Вграждане на панела (INV-C2)
+
+Панелът на add-on-а е `iframe` към ingress адреса, затова документът на UI-я се сервира
+с `Content-Security-Policy: … frame-ancestors 'self'`. `frame-ancestors 'none'` заключва
+страницата срещу ВСЯКА рамка — включително панела на Home Assistant — и резултатът е
+празен екран без съобщение за грешка (дефект, поправен в 0.69.41).
+
+- `'self'` пази защитата от чужд clickjacking (вграждане от друга страница е отказано),
+  но позволява на Home Assistant да покаже панела — ingress е на същия origin.
+- Публичните страници остават заключени: `/p/<id>` (порталът), `/secret/<id>` и
+  `/api/hapi_enterprise/portal/<slug>` в интеграцията носят `frame-ancestors 'none'` —
+  те не се вграждат никъде.
+- Проверява се от `tests/blackbox-security.cjs`: UI-ят има `'self'`, публичните — `'none'`.
 
 ## Windows contract
 

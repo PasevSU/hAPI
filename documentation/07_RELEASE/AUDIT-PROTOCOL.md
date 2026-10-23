@@ -84,12 +84,12 @@
 8. TSA: `parseResponse` хвърля на боклук, `stamp` отказва с `status ≥ 500` и `attempts`, `normalizeUrl` отказва `file:` / `ftp:` / креди.
 9. Тайни връзки: на диска няма ключ, id или шифротекст; файлът е `0600`.
 10. `download-access`: причини, изтекъл срок, `uses` / `max_uses`, `one_time`.
-11. CSP: 13 политики, нито една с `unsafe-inline` / `unsafe-eval`; `SECRET_CSP` има `frame-ancestors 'none'`.
+11. CSP: 13 политики, нито една с `unsafe-inline` / `unsafe-eval`; `SECRET_CSP` има `frame-ancestors 'none'`; UI-ят на add-on-а е с `frame-ancestors 'self'`, защото панелът на Home Assistant е iframe (INV-C2).
 12. (обединено с горните) проверка, че `script-src` не допуска вграден код.
 
 **`tests/blackbox-security.cjs`** — 8 атакувани повърхности по мрежата:
 
-401 без ключ / грешен ключ / празен / `Basic` / ключ в заявката; права на viewer (200 GET, 403 POST, 403 settings); 7 варианта за излизане от папка + NUL; `/ui/…/../server.js`; CSP на `/admin` и `nosniff` на `/admin.js`; `X-Request-Id` (невалиден → генериран, 4000 знака не се отразяват); невалиден JSON (400), 300 KB (413), `PUT` (404); тайни връзки (PBKDF2 плик, проба без консумация, 403 при грешно доказателство, второ откриване 404/410, чисто на диска); подправен `audit-chain.jsonl` → `/admin/api/audit/verify` връща `valid:false`, `integrity:'FAILED'`; CSP на портала и на страницата за тайна връзка, без вграден `<script>`.
+401 без ключ / грешен ключ / празен / `Basic` / ключ в заявката; права на viewer (200 GET, 403 POST, 403 settings); 7 варианта за излизане от папка + NUL; `/ui/…/../server.js`; CSP на `/admin` и `nosniff` на `/admin.js`; `X-Request-Id` (невалиден → генериран, 4000 знака не се отразяват); невалиден JSON (400), 300 KB (413), `PUT` (404); тайни връзки (PBKDF2 плик, проба без консумация, 403 при грешно доказателство, второ откриване 404/410, чисто на диска); подправен `audit-chain.jsonl` → `/admin/api/audit/verify` връща `valid:false`, `integrity:'FAILED'`; CSP на портала и на страницата за тайна връзка (и двете с `frame-ancestors 'none'`), CSP на `/ui/index.html` с `frame-ancestors 'self'` (панелът на HA е iframe), без вграден `<script>`.
 
 ## 7. Два нови гейта
 

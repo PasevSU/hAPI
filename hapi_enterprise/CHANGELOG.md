@@ -1,13 +1,18 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.40**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.41**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.40
+## 0.69.41
 
-Издание за обновяване: **няма промяна в поведението**. Вдигната е само версията, за да
-предложи Home Assistant (Add-on Store) и HACS ъпдейт до нея.
+Панелът в Home Assistant вече се отваря — причината беше забрана за вграждане в iframe.
 
-- Причина: версията беше вдигната в работното копие, но не беше качена — `main` в GitHub
-  още носеше 0.69.39, а Supervisor строи add-on-а точно от default клона. Тоест версията
-  в `hapi_enterprise/config.yaml` на `main` е единственото, което Home Assistant вижда.
-- Съдържание: същият код като 0.69.39 (компоненти в `routes/`), същите тестове — 211/211.
+- **Дефект:** всички файлове на административния UI (`/ui/*`) се сервираха с
+  `Content-Security-Policy: … frame-ancestors 'none'`. Панелът на add-on-а в Home Assistant
+  е iframe, тоест браузърът отказваше да покаже документа и екранът оставаше напълно
+  празен (сива страница с икона, без съобщение за грешка).
+- **Поправка:** `frame-ancestors 'self'` — вграждане от същия origin е разрешено (ingress
+  е на адреса на Home Assistant), чужд сайт остава отказан. Публичните страници
+  (`/p/<id>`, `/secret/<id>`, порталът в интеграцията) остават с `'none'`.
+- Договор: INV-C2 в `documentation/02_TO_BE_ARCHITECTURE/INTEGRATION_CONTRACTS.md`.
+- Тест: `tests/blackbox-security.cjs` изисква `'self'` за UI-я и `'none'` за публичните
+  страници — ако някой върне забраната, тестът пада.

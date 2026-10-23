@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.40
+# Състояние на изданието — hAPI Enterprise 0.69.41
 
-Версия: **0.69.40** · клон `main`
+Версия: **0.69.41** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **211/211** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.40 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 345 файла · 57873 реда · **0** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 341 файла · 57509 реда · critical: 0 · high: 0 · medium: 0 · low: 151 — чисто |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.41 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 345 файла · 57882 реда · **0** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 341 файла · 57518 реда · critical: 0 · high: 0 · medium: 0 · low: 151 — чисто |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,19 +27,24 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.40.tar.gz` | add-on архив (141 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.40.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.41.tar.gz` | add-on архив (141 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.41.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.40
+## 3. Какво влезе във 0.69.41
 
-Издание за обновяване: **няма промяна в поведението**. Вдигната е само версията, за да
-предложи Home Assistant (Add-on Store) и HACS ъпдейт до нея.
+Панелът в Home Assistant вече се отваря — причината беше забрана за вграждане в iframe.
 
-- Причина: версията беше вдигната в работното копие, но не беше качена — `main` в GitHub
-  още носеше 0.69.39, а Supervisor строи add-on-а точно от default клона. Тоест версията
-  в `hapi_enterprise/config.yaml` на `main` е единственото, което Home Assistant вижда.
-- Съдържание: същият код като 0.69.39 (компоненти в `routes/`), същите тестове — 211/211.
+- **Дефект:** всички файлове на административния UI (`/ui/*`) се сервираха с
+  `Content-Security-Policy: … frame-ancestors 'none'`. Панелът на add-on-а в Home Assistant
+  е iframe, тоест браузърът отказваше да покаже документа и екранът оставаше напълно
+  празен (сива страница с икона, без съобщение за грешка).
+- **Поправка:** `frame-ancestors 'self'` — вграждане от същия origin е разрешено (ingress
+  е на адреса на Home Assistant), чужд сайт остава отказан. Публичните страници
+  (`/p/<id>`, `/secret/<id>`, порталът в интеграцията) остават с `'none'`.
+- Договор: INV-C2 в `documentation/02_TO_BE_ARCHITECTURE/INTEGRATION_CONTRACTS.md`.
+- Тест: `tests/blackbox-security.cjs` изисква `'self'` за UI-я и `'none'` за публичните
+  страници — ако някой върне забраната, тестът пада.
 
 ## 4. Как се проверява наново
 

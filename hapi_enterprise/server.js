@@ -1425,7 +1425,7 @@ async function handler(req, res) {
     if (method === 'GET' && UI_FILES[url.pathname]) {
       const [rel, type] = UI_FILES[url.pathname]; const file = uiFile(rel);
       if (!file) { req.log.warn('ui.asset.missing', { ns: 'ui', asset: rel }); return fail(res, 404, 'Not found') }
-      res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data: blob:; frame-src blob:; object-src blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" });
+      res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data: blob:; frame-src blob:; object-src blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'" /* INV-C2: панелът на HA е iframe към ingress адреса; 'none' даваше празен екран */ });
       return res.end(fs.readFileSync(file));
     }
     if (url.pathname === '/' && method === 'GET') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" }); return res.end('<!doctype html><html lang="bg"><meta charset="utf-8"><title>hAPI Enterprise</title><style>body{font:16px system-ui;background:#101827;color:#fff;max-width:800px;margin:5rem auto;padding:1rem}a{color:#7dd3fc}</style><h1>hAPI Enterprise</h1><p>Public API: <a href="/api/v1/portals">/api/v1/portals</a></p><p>Административните операции изискват Bearer токен.</p></html>') }
