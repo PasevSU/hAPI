@@ -91,15 +91,28 @@ const RULES = [
   },
   {
     // L1 не се проверява текстово (шифротекстът зависи от ключ), затова правилото пази
-    // СЛОЯ: всички вътрешни пътища минават през `storagePathField`/`storagePathOf`.
+    // СЛОЯ: всички вътрешни пътища минават през `keyring.pathField`/`keyring.pathOf`.
     // Самото поведение се доказва от `tests/pgp-path-encryption.cjs`.
     id: 'W3-l1-layer',
     batch: 'B3',
     enforced: true,
     files: ['hapi_enterprise/server.js'],
-    expect: /storagePathField\([\s\S]*storagePathOf\(/,
+    // Записът и четенето са на различни места във файла, затова се искат и двете.
+    expect: [/keyring\.pathField\(/, /keyring\.pathOf\(/],
     why: 'пътят се записваше направо, без слой — при включено L1 това оставя открит път в базата',
-    fix: 'запис през `storagePathField()`, четене през `storagePathOf()`',
+    fix: 'запис през `keyring.pathField()`, четене през `keyring.pathOf()`',
+  },
+  {
+    // L2 не се проверява текстово (зависи от ключ), затова правилото пази СЛОЯ: записът и
+    // четенето на работната папка минават през `workdirIo`. Поведението се доказва от
+    // `tests/pgp-workdir-encryption.cjs`.
+    id: 'W4-l2-layer',
+    batch: 'B4',
+    enforced: true,
+    files: ['hapi_enterprise/server.js'],
+    expect: /workdirIo\.pack\([\s\S]*workdirIo\.read\(/,
+    why: 'файловете в работната папка се пишеха и четяха направо, без слой — при включено L2 това оставя открито съдържание',
+    fix: 'запис през `workdirIo.pack()`, четене през `workdirIo.read()` (контейнер + PGP-обвит DEK)',
   },
 ];
 
@@ -163,9 +176,12 @@ function run() {
       if (allowed(name, rule.id)) continue;
       const text = fs.readFileSync(file, 'utf8');
       // Правило с `expect` не търси лош ред, а проверява, че слоят ГО ИМА (напр. че
-      // пътищата минават през `storagePathField`/`storagePathOf`). Липсата е попадение.
+      // пътищата минават през `keyring.pathField`/`keyring.pathOf`). Липсата е попадение.
       if (rule.expect) {
-        if (!rule.expect.test(text)) hits.push({ rule, file: name, line: 1, code: 'липсва ' + rule.expect });
+        const expectations = Array.isArray(rule.expect) ? rule.expect : [rule.expect];
+        for (const expected of expectations) {
+          if (!expected.test(text)) hits.push({ rule, file: name, line: 1, code: 'липсва ' + expected });
+        }
         continue;
       }
       const lines = text.split('\n');

@@ -209,18 +209,15 @@ function create(options = {}) {
   }
 
   /**
-   * L1: криптира вътрешен път (`storagePath` → `storagePathEnc`). Извиква се само когато
-   * `pgp_encrypt_paths` е включено; иначе шифротекст без ключ само би объркал четенето.
+   * Обвива текст с PGP ключа (например DEK за L2). Без политика — политиката е на слоя
+   * отгоре (`sealPath` за L1); L2 няма причина да зависи от `pgp_encrypt_paths`.
    */
-  function sealPath(plain) {
+  function wrapSecret(plain) {
     const value = text(plain);
     if (!value) return '';
     const state = status();
-    if (!state.encryptPaths) {
-      throw Object.assign(new Error('L1 е изключено (`pgp_encrypt_paths`)'), { code: 'PGP_PATHS_DISABLED', status: 409 });
-    }
     if (!material || !material.publicText) {
-      throw Object.assign(new Error('Няма ключ за криптиране на пътища'), {
+      throw Object.assign(new Error('Няма ключ за криптиране'), {
         code: 'PGP_SECRET_KEY_REQUIRED',
         status: 503,
         detail: state.reason || 'NO_PATHS',
@@ -229,14 +226,14 @@ function create(options = {}) {
     return pgp.encryptToKey(Buffer.from(value, 'utf8'), material.publicText).armored;
   }
 
-  /** L1: връща открития път. Без ключ/парола дава точна грешка, не празен низ. */
-  function openPath(armored) {
+  /** Развива обвит с PGP текст; без частен ключ дава `PGP_KEY_LOCKED`, не празен низ. */
+  function unwrapSecret(armored) {
     const value = text(armored);
     if (!value) return '';
     const state = status();
     if (!material || !material.secretText) {
-      throw Object.assign(new Error('Пътят е криптиран, но няма частен ключ'), {
-        code: 'STORAGE_PATH_LOCKED',
+      throw Object.assign(new Error('Няма частен ключ за развиване'), {
+        code: 'PGP_KEY_LOCKED',
         status: 503,
         detail: state.reason || 'NO_PATHS',
       });
@@ -244,10 +241,37 @@ function create(options = {}) {
     try {
       return pgp.decryptMessage(value, material.secretText, material.passphrase).toString('utf8');
     } catch (err) {
-      throw Object.assign(new Error('Пътят не може да се декриптира: ' + ((err && err.code) || 'unknown')), {
-        code: 'STORAGE_PATH_LOCKED',
+      throw Object.assign(new Error('Обвитото не може да се развие: ' + ((err && err.code) || 'unknown')), {
+        code: 'PGP_KEY_LOCKED',
         status: 503,
         detail: (err && err.code) || '',
+      });
+    }
+  }
+
+  /**
+   * L1: криптира вътрешен път (`storagePath` → `storagePathEnc`). Извиква се само когато
+   * `pgp_encrypt_paths` е включено; иначе шифротекст без ключ само би объркал четенето.
+   */
+  function sealPath(plain) {
+    const state = status();
+    if (!text(plain)) return '';
+    if (!state.encryptPaths) {
+      throw Object.assign(new Error('L1 е изключено (`pgp_encrypt_paths`)'), { code: 'PGP_PATHS_DISABLED', status: 409 });
+    }
+    return wrapSecret(plain);
+  }
+
+  /** L1: връща открития път. Без ключ/парола дава точна грешка, не празен низ. */
+  function openPath(armored) {
+    if (!text(armored)) return '';
+    try {
+      return unwrapSecret(armored);
+    } catch (err) {
+      throw Object.assign(new Error('Пътят не може да се декриптира: ' + ((err && err.detail) || err.code)), {
+        code: 'STORAGE_PATH_LOCKED',
+        status: 503,
+        detail: (err && err.detail) || '',
       });
     }
   }
@@ -283,13 +307,29 @@ function create(options = {}) {
     return { sealed, already, failed };
   }
 
+  /** L1: откритият вътрешен път на запис (записът минава през `pathField`). */
+  function pathOf(file) {
+    if (!file) return '';
+    if (file.storagePath) return file.storagePath;
+    return file.storagePathEnc ? openPath(file.storagePathEnc) : '';
+  }
+
+  /** L1: каквото влиза в записа — шифротекст при включено L1, иначе открит път. */
+  function pathField(plain) {
+    return status().encryptPaths ? { storagePathEnc: sealPath(plain) } : { storagePath: plain };
+  }
+
   return {
     status,
     reload,
     requireEncryptionKey,
     sealPath,
     openPath,
+    wrapSecret,
+    unwrapSecret,
     sealAll,
+    pathOf,
+    pathField,
     passphraseSource: () => resolvePassphrase().source,
   };
 }

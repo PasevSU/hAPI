@@ -12,7 +12,7 @@
 // Договор: `handle()` връща `true`, когато заявката е за този компонент (и е приключена),
 // и `false`, когато трябва да я поеме следващият компонент.
 function create(deps) {
-  const { json, fail, adminGate, audit, keyring, sealStoragePaths } = deps;
+  const { json, fail, adminGate, audit, keyring, sealStoragePaths, sealWorkdir } = deps;
 
   /** Препрочита и одитира — общо за `reload`. */
   async function reloadAndReport(req, res) {
@@ -58,6 +58,25 @@ function create(deps) {
         return true;
       }
       await audit('pgp.paths.seal', result);
+      json(res, 200, { ok: true, ...result });
+      return true;
+    }
+    // L2 миграция: откритите файлове в работните папки стават контейнери. Изисква
+    // `confirm=1`, защото пипа файловете на потребителя; копие се прави преди промяната.
+    if (url.pathname === '/admin/api/pgp/seal-workdir' && method === 'POST') {
+      if (!adminGate(req, res, 'pgp', method)) return true;
+      if (url.searchParams.get('confirm') !== '1') {
+        fail(res, 400, 'SEAL_WORKDIR_NEEDS_CONFIRM: добави ?confirm=1 (действието пипа файловете в работните папки)');
+        return true;
+      }
+      let result;
+      try {
+        result = await sealWorkdir();
+      } catch (err) {
+        fail(res, err.status || 500, (err.code ? err.code + ': ' : '') + err.message);
+        return true;
+      }
+      await audit('pgp.workdir.seal', result);
       json(res, 200, { ok: true, ...result });
       return true;
     }

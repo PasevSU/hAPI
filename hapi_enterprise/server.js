@@ -665,22 +665,7 @@ const normalizeTaxonomy = (input, base = {}) => {
   }
   return out;
 };
-/**
- * L1 (0.69.67): вътрешният път на файл. Когато `pgp_encrypt_paths` е включено, в записа
- * стои само `storagePathEnc`, а откритият път се извежда тук. Без ключ/парола това е
- * `STORAGE_PATH_LOCKED` (503) — по-добре ясна грешка, отколкото празен път, който тихо
- * чупи изтеглянето.
- */
-function storagePathOf(f) {
-  if (!f) return '';
-  if (f.storagePath) return f.storagePath;
-  return f.storagePathEnc ? keyring.openPath(f.storagePathEnc) : '';
-}
-/** Каквото влиза в записа: при L1 — шифротекст, иначе открит път (документирано поведение). */
-function storagePathField(plain) {
-  return keyring.status().encryptPaths ? { storagePathEnc: keyring.sealPath(plain) } : { storagePath: plain };
-}
-const publicFile = f => ({ id: f.id, name: f.name, size: f.size, sha256: f.sha256, version: Number(f.version) || 1, uploadedAt: f.uploadedAt, createdAt: f.createdAt || f.uploadedAt || '', modifiedAt: f.modifiedAt || f.uploadedAt || '', locked: !!f.locked, lockedBy: f.lockedBy || '', accessMode: fileMode(f), listed: f.listed !== false, encrypted: !!f.encrypted, notes: f.notes || '', storagePath: storagePathOf(f), ...normalizeTaxonomy({}, f) });
+const publicFile = f => ({ id: f.id, name: f.name, size: f.size, sha256: f.sha256, version: Number(f.version) || 1, uploadedAt: f.uploadedAt, createdAt: f.createdAt || f.uploadedAt || '', modifiedAt: f.modifiedAt || f.uploadedAt || '', locked: !!f.locked, lockedBy: f.lockedBy || '', accessMode: fileMode(f), listed: f.listed !== false, encrypted: !!f.encrypted, notes: f.notes || '', storagePath: keyring.pathOf(f), ...normalizeTaxonomy({}, f) });
 const filePage = (files, url) => {
   const q = (url.searchParams.get('q') || '').trim().toLocaleLowerCase();
   const rawLimit = url.searchParams.get('limit') || '50', rawOffset = url.searchParams.get('offset') || '0';
@@ -802,13 +787,29 @@ async function sealStoragePaths() {
   const counts = await update(async () => keyring.sealAll(db.portals));
   return { ...counts, backup: path.basename(copy.destination), backupBytes: copy.bytes };
 }
-const pgpKeyring = require('./routes/pgp-keyring').create({ json, fail, adminGate, audit, keyring, sealStoragePaths });
+/** L2 миграция: откритите файлове в работните папки стават контейнери (с копие преди това). */
+const workdirIo = require('./workdir-io').create({ fsp, keyring });
+const sealWorkdir = async () => {
+  // Свеж прочит ПРЕДИ файловата работа: `db` се обвързва при четене, а миграцията не бива
+  // да върви по празен списък само защото този процес още не е чел базата.
+  sharedData.sync();
+  return require('./workdir-migrate')
+    .create({
+      fsp,
+      path,
+      portalRoot,
+      keyring,
+      backupRoot: path.join(root, 'internal', 'workdir-backup'),
+    })
+    .sealPortals(db.portals);
+};
+const pgpKeyring = require('./routes/pgp-keyring').create({ json, fail, adminGate, audit, keyring, sealStoragePaths, sealWorkdir });
 const linkCheck = require('./routes/link-check').create({
   json, fail, parse, audit, adminGate, baseUrl,
   publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
 });
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
-const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, storagePathOf });
+const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring });
 async function handler(req, res) {
   try {
     if (req.url.startsWith('//')) req.url = req.url.replace(/^\/{2,}/, '/'); const url = new URL(req.url, 'http://localhost');
@@ -1828,7 +1829,9 @@ async function handler(req, res) {
           if (out.length >= maxFiles) throw Object.assign(new Error(`Твърде много файлове в хранилището (макс. ${maxFiles})`), { status: 413 });
           const stat = await fsp.stat(full); bytes += stat.size;
           if (bytes > maxBytes) throw Object.assign(new Error(`Хранилището надвишава ${Math.round(maxBytes / 1048576)} MB`), { status: 413 });
-          out.push({ name: entry.name, path: `storage/${next}`, data: await fsp.readFile(full), source: 'storage' });
+          // L2: криптиран файл се разпознава по заглавката и се отваря с ключа; откритите
+          // (стари) файлове се четат както са.
+          out.push({ name: entry.name, path: `storage/${next}`, data: await workdirIo.read(full), source: 'storage' });
         }
       }
       await walk(sub ? path.join(base, ...sub.split('/')) : base, sub);
@@ -1870,7 +1873,10 @@ async function handler(req, res) {
           if (!entry.isFile()) continue;
           if (entries.length >= maxEntries) { truncated = true; return }
           const stat = await fsp.stat(path.join(dir, entry.name)).catch(() => null);
-          entries.push({ path: next, size: stat ? stat.size : 0, modifiedAt: stat ? stat.mtime.toISOString() : '' });
+          // L2: при криптирана работна папка се показва ОРИГИНАЛНИЯТ размер (от заглавката),
+          // а не размерът на контейнера — иначе списъкът изглежда сгрешен.
+          const sealedSize = stat ? await workdirIo.size(path.join(dir, entry.name)).catch(() => null) : null;
+          entries.push({ path: next, size: stat ? (sealedSize == null ? stat.size : sealedSize) : 0, modifiedAt: stat ? stat.mtime.toISOString() : '' });
         }
       }
       await walk(base, '', 0);
@@ -2234,7 +2240,8 @@ async function handler(req, res) {
           if (exists && !overwrite) return fail(res, 409, 'Файлът вече съществува');
           try {
             await fsp.mkdir(path.dirname(full), { recursive: true });
-            await fsp.writeFile(full, data);
+            // L2: при `pgp_encrypt_workdir` на диска отива контейнер, не откритото съдържание.
+            await fsp.writeFile(full, workdirIo.pack(data));
           } catch (e) { return fail(res, 500, `Файлът не може да бъде записан: ${e.code || e.message}`) }
           void audit('portal.tree.upload', { portalId: p.id, path: '/' + rel, size: data.length, overwritten: exists });
           return json(res, 201, { path: '/' + rel, name, parent: '/' + rel.split('/').slice(0, -1).join('/'), size: data.length, overwritten: exists });
@@ -2267,7 +2274,7 @@ async function handler(req, res) {
           // две папки могат да имат едноименни файлове и това са различни документи. Записи от
           // преди 0.69.20 (без `storagePath`) се сравняват по име, за да не се дублират.
           const storagePath = '/' + rel;
-          const already = p.files.some(f => (storagePathOf(f) ? storagePathOf(f) === storagePath : String(f.name || '').toLowerCase() === name.toLowerCase()));
+          const already = p.files.some(f => (keyring.pathOf(f) ? keyring.pathOf(f) === storagePath : String(f.name || '').toLowerCase() === name.toLowerCase()));
           if (already) return fail(res, 409, 'Файл с това име вече е регистриран в портала');
           const root = portalRoot(p.storage_root || '/share');
           const rootAbs = path.resolve(root);
@@ -2276,11 +2283,13 @@ async function handler(req, res) {
           let stat; try { stat = await fsp.lstat(full) } catch { return fail(res, 404, 'Файлът не е намерен') }
           if (!stat.isFile()) return fail(res, 400, 'Пътят не е файл');
           if (stat.size > runtime.effective().maxUploadBytes) return fail(res, 413, 'Файлът е твърде голям за регистриране');
-          const data = await fsp.readFile(full);
+          // L2: четенето минава през `workdirIo`, за да работи и с криптирани файлове —
+          // SHA-256 и вътрешното копие са върху ОТКРИТОТО съдържание.
+          const data = await workdirIo.read(full);
           return json(res, 201, await update(async () => {
             // L1 (0.69.67): при `pgp_encrypt_paths` в записа стои САМО шифротекстът —
             // откритият път се извежда при четене, за да не влиза в базата.
-            const f = { id: id(), name, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex'), uploadedAt: new Date().toISOString(), category: runtime.settings.data.defaultCategory, group: runtime.settings.data.defaultGroup, ...storagePathField(storagePath) };
+            const f = { id: id(), name, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex'), uploadedAt: new Date().toISOString(), category: runtime.settings.data.defaultCategory, group: runtime.settings.data.defaultGroup, ...keyring.pathField(storagePath) };
             await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true });
             await fsp.writeFile(path.join(filesRoot, p.id, f.id), data, { flag: 'wx', mode: 0o600 });
             p.files.push(f);

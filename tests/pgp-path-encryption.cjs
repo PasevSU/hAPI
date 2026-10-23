@@ -26,9 +26,9 @@ const TOKEN = 'path-encryption-token-0123456789';
 const cases = [];
 const ok = (label) => cases.push(label);
 
-// `storage_root` винаги е под /share, затова тестът работи в собствена папка там —
-// същият подход като в `tests/storage-tree-api.cjs`.
-const shareBase = path.join(path.parse(os.tmpdir()).root, 'share');
+// `/share` се разресолва спрямо устройството на ТЕКУЩАТА директория (сървърът наследява
+// cwd), затова базата се взима от cwd — на Windows os.tmpdir() е на друго устройство.
+const shareBase = path.join(path.parse(process.cwd()).root, 'share');
 let shareBaseOk = true;
 try {
   fs.mkdirSync(shareBase, { recursive: true });

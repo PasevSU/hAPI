@@ -89,6 +89,7 @@ const ROUTES = [
   ['GET', '/admin/api/pgp/keyring', 'Състояние на ключовете от pgp_path_* (без път и без парола)', 'export', 'pgp'],
   ['POST', '/admin/api/pgp/keyring/reload', 'Препрочитане на ключовете от диска (одитира се)', 'export', 'pgp'],
   ['POST', '/admin/api/pgp/seal-paths', 'Еднократна L1 миграция: откритите вътрешни пътища стават шифротекст (с копие на базата)', 'export', 'pgp'],
+  ['POST', '/admin/api/pgp/seal-workdir', 'Еднократна L2 миграция: файловете в работните папки стават контейнери (иска ?confirm=1)', 'export', 'pgp'],
   ['GET', '/admin/api/pgp/keys', 'PGP ключове и настройки на пакетите', 'export', 'pgp'],
   ['POST', '/admin/api/pgp/keys', 'Прикачване на PGP ключ', 'export', 'pgp'],
   ['POST', '/admin/api/pgp/keys/import', 'Внасяне на ключове от пакет', 'export', 'pgp'],

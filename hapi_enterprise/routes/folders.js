@@ -9,7 +9,7 @@
 // Договор: `handle()` връща `true`, когато заявката е за този компонент (и е приключена),
 // и `false`, когато трябва да я поеме следващият компонент.
 function create(deps) {
-  const { json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, storagePathOf } = deps;
+  const { json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring } = deps;
 
   function notMatching(parts, method) {
     const target = parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'tree' && parts[5] === 'folder' && parts.length === 6;
@@ -140,9 +140,9 @@ function create(deps) {
       return true;
     }
     const prefix = '/' + rel + '/';
-    // L1 (0.69.67): пътят се взима през `storagePathOf` — при криптирани пътища
+    // L1 (0.69.67): пътят се взима през `keyring.pathOf` — при криптирани пътища
     // `f.storagePath` не съществува и директното четене би изпуснало файловете.
-    const registered = p.files.filter((f) => String(storagePathOf(f) || '').startsWith(prefix));
+    const registered = p.files.filter((f) => String(keyring.pathOf(f) || '').startsWith(prefix));
     try {
       await fsp.rm(full, { recursive: true });
     } catch (e) {
