@@ -665,7 +665,22 @@ const normalizeTaxonomy = (input, base = {}) => {
   }
   return out;
 };
-const publicFile = f => ({ id: f.id, name: f.name, size: f.size, sha256: f.sha256, version: Number(f.version) || 1, uploadedAt: f.uploadedAt, createdAt: f.createdAt || f.uploadedAt || '', modifiedAt: f.modifiedAt || f.uploadedAt || '', locked: !!f.locked, lockedBy: f.lockedBy || '', accessMode: fileMode(f), listed: f.listed !== false, encrypted: !!f.encrypted, notes: f.notes || '', storagePath: f.storagePath || '', ...normalizeTaxonomy({}, f) });
+/**
+ * L1 (0.69.67): вътрешният път на файл. Когато `pgp_encrypt_paths` е включено, в записа
+ * стои само `storagePathEnc`, а откритият път се извежда тук. Без ключ/парола това е
+ * `STORAGE_PATH_LOCKED` (503) — по-добре ясна грешка, отколкото празен път, който тихо
+ * чупи изтеглянето.
+ */
+function storagePathOf(f) {
+  if (!f) return '';
+  if (f.storagePath) return f.storagePath;
+  return f.storagePathEnc ? keyring.openPath(f.storagePathEnc) : '';
+}
+/** Каквото влиза в записа: при L1 — шифротекст, иначе открит път (документирано поведение). */
+function storagePathField(plain) {
+  return keyring.status().encryptPaths ? { storagePathEnc: keyring.sealPath(plain) } : { storagePath: plain };
+}
+const publicFile = f => ({ id: f.id, name: f.name, size: f.size, sha256: f.sha256, version: Number(f.version) || 1, uploadedAt: f.uploadedAt, createdAt: f.createdAt || f.uploadedAt || '', modifiedAt: f.modifiedAt || f.uploadedAt || '', locked: !!f.locked, lockedBy: f.lockedBy || '', accessMode: fileMode(f), listed: f.listed !== false, encrypted: !!f.encrypted, notes: f.notes || '', storagePath: storagePathOf(f), ...normalizeTaxonomy({}, f) });
 const filePage = (files, url) => {
   const q = (url.searchParams.get('q') || '').trim().toLocaleLowerCase();
   const rawLimit = url.searchParams.get('limit') || '50', rawOffset = url.searchParams.get('offset') || '0';
@@ -773,13 +788,27 @@ const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseU
 // PGP ключохранилище (B2): ключовете идват само от изрични пътища; тук се държи една
 // инстанция, за да е еднакъв отговорът „има ли ключ“ за целия сървър.
 const keyring = require('./path-crypto').create({ env: process.env });
-const pgpKeyring = require('./routes/pgp-keyring').create({ json, fail, adminGate, audit, keyring });
+/**
+ * L1 миграция (0.69.67): откритите `storagePath` стават `storagePathEnc`. Прави копие на
+ * базата ПРЕДИ промяната (с проверка за цялост) и е идемпотентна — втори пуск не намира
+ * какво да смени. Без включено L1 отказва: иначе би „криптирала“ без ключ.
+ */
+async function sealStoragePaths() {
+  if (!keyring.status().encryptPaths) {
+    throw Object.assign(new Error('L1 е изключено (`pgp_encrypt_paths`)'), { code: 'PGP_PATHS_DISABLED', status: 409 });
+  }
+  const backup = path.join(backupsDir, 'pre-l1-' + new Date().toISOString().replace(/[:.]/g, '-') + '.sqlite');
+  const copy = metadataStore.backup(backup);
+  const counts = await update(async () => keyring.sealAll(db.portals));
+  return { ...counts, backup: path.basename(copy.destination), backupBytes: copy.bytes };
+}
+const pgpKeyring = require('./routes/pgp-keyring').create({ json, fail, adminGate, audit, keyring, sealStoragePaths });
 const linkCheck = require('./routes/link-check').create({
   json, fail, parse, audit, adminGate, baseUrl,
   publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
 });
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
-const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update });
+const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, storagePathOf });
 async function handler(req, res) {
   try {
     if (req.url.startsWith('//')) req.url = req.url.replace(/^\/{2,}/, '/'); const url = new URL(req.url, 'http://localhost');
@@ -2238,7 +2267,7 @@ async function handler(req, res) {
           // две папки могат да имат едноименни файлове и това са различни документи. Записи от
           // преди 0.69.20 (без `storagePath`) се сравняват по име, за да не се дублират.
           const storagePath = '/' + rel;
-          const already = p.files.some(f => (f.storagePath ? f.storagePath === storagePath : String(f.name || '').toLowerCase() === name.toLowerCase()));
+          const already = p.files.some(f => (storagePathOf(f) ? storagePathOf(f) === storagePath : String(f.name || '').toLowerCase() === name.toLowerCase()));
           if (already) return fail(res, 409, 'Файл с това име вече е регистриран в портала');
           const root = portalRoot(p.storage_root || '/share');
           const rootAbs = path.resolve(root);
@@ -2249,7 +2278,9 @@ async function handler(req, res) {
           if (stat.size > runtime.effective().maxUploadBytes) return fail(res, 413, 'Файлът е твърде голям за регистриране');
           const data = await fsp.readFile(full);
           return json(res, 201, await update(async () => {
-            const f = { id: id(), name, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex'), uploadedAt: new Date().toISOString(), category: runtime.settings.data.defaultCategory, group: runtime.settings.data.defaultGroup, storagePath };
+            // L1 (0.69.67): при `pgp_encrypt_paths` в записа стои САМО шифротекстът —
+            // откритият път се извежда при четене, за да не влиза в базата.
+            const f = { id: id(), name, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex'), uploadedAt: new Date().toISOString(), category: runtime.settings.data.defaultCategory, group: runtime.settings.data.defaultGroup, ...storagePathField(storagePath) };
             await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true });
             await fsp.writeFile(path.join(filesRoot, p.id, f.id), data, { flag: 'wx', mode: 0o600 });
             p.files.push(f);

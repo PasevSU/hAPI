@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **235/235** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **236/236** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.66 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 389 файла · 65626 реда · **0** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 385 файла · 65262 реда · critical: 0 · high: 0 · medium: 1 · low: 168 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 390 файла · 66068 реда · **0** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 386 файла · 65704 реда · critical: 0 · high: 0 · medium: 1 · low: 169 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 40 опции, 235 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 40 опции, 236 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 

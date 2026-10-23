@@ -12,7 +12,7 @@
 // Договор: `handle()` връща `true`, когато заявката е за този компонент (и е приключена),
 // и `false`, когато трябва да я поеме следващият компонент.
 function create(deps) {
-  const { json, fail, adminGate, audit, keyring } = deps;
+  const { json, fail, adminGate, audit, keyring, sealStoragePaths } = deps;
 
   /** Препрочита и одитира — общо за `reload`. */
   async function reloadAndReport(req, res) {
@@ -45,6 +45,21 @@ function create(deps) {
     if (url.pathname === '/admin/api/pgp/keyring/reload' && method === 'POST') {
       if (!adminGate(req, res, 'pgp', method)) return true;
       return reloadAndReport(req, res);
+    }
+    // L1 миграция: откритите вътрешни пътища стават шифротекст. Копие на базата се прави
+    // преди промяната, а резултатът (без пътища!) влиза в одита.
+    if (url.pathname === '/admin/api/pgp/seal-paths' && method === 'POST') {
+      if (!adminGate(req, res, 'pgp', method)) return true;
+      let result;
+      try {
+        result = await sealStoragePaths();
+      } catch (err) {
+        fail(res, err.status || 500, (err.code ? err.code + ': ' : '') + err.message);
+        return true;
+      }
+      await audit('pgp.paths.seal', result);
+      json(res, 200, { ok: true, ...result });
+      return true;
     }
     return false;
   }

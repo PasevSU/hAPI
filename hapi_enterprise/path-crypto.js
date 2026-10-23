@@ -54,6 +54,9 @@ function create(options = {}) {
   const env = options.env || process.env;
   const readFile = options.readFile || ((file) => fs.readFileSync(file, 'utf8'));
   let cache = null;
+  // Материалът за криптиране (armored текст + парола) стои САМО тук и никога не излиза
+  // в `status()`: L1 (вътрешните пътища) се нуждае от него, а отговорът по HTTP — не.
+  let material = null;
 
   const flags = () => ({
     encryptPaths: isOn(env[ENV.encryptPaths]),
@@ -102,6 +105,7 @@ function create(options = {}) {
 
   /** Зарежда състоянието. Никога не хвърля — причината отива в `reason`. */
   function load() {
+    material = null;
     const { encryptPaths, encryptWorkdir } = flags();
     const meta = { encryptPaths, encryptWorkdir, passphraseSource: resolvePassphrase().source };
     const publicPath = text(env[ENV.public]);
@@ -109,8 +113,8 @@ function create(options = {}) {
     if (!publicPath && !secretPath) return empty('NO_PATHS', meta);
 
     let publicParsed = null;
+    let publicText = '';
     if (publicPath) {
-      let publicText;
       try {
         publicText = String(readFile(publicPath));
       } catch {
@@ -124,8 +128,8 @@ function create(options = {}) {
     }
 
     let secretParsed = null;
+    let secretText = '';
     if (secretPath) {
-      let secretText;
       try {
         secretText = String(readFile(secretPath));
       } catch {
@@ -156,6 +160,15 @@ function create(options = {}) {
 
     const shown = secretParsed || publicParsed;
     const primary = shown && shown.primary ? shown.primary : null;
+    // Материалът за L1: armored текст (за `encryptToKey`/`decryptMessage`) и паролата.
+    // Публичният текст се взима от публичния файл, а ако няма такъв — се извежда от частния,
+    // за да може един-единствен файл да стига за криптиране и декриптиране.
+    material = {
+      publicText: publicParsed ? publicText : secretParsed ? pgp.publicKeyOf(secretText) : '',
+      secretText: secretParsed ? secretText : '',
+      passphrase: secretParsed ? resolvePassphrase().value : '',
+      storageKeyId,
+    };
     return {
       ...meta,
       available: true,
@@ -174,6 +187,7 @@ function create(options = {}) {
 
   function reload() {
     cache = null;
+    material = null;
     return status();
   }
 
@@ -194,7 +208,90 @@ function create(options = {}) {
     throw err;
   }
 
-  return { status, reload, requireEncryptionKey, passphraseSource: () => resolvePassphrase().source };
+  /**
+   * L1: криптира вътрешен път (`storagePath` → `storagePathEnc`). Извиква се само когато
+   * `pgp_encrypt_paths` е включено; иначе шифротекст без ключ само би объркал четенето.
+   */
+  function sealPath(plain) {
+    const value = text(plain);
+    if (!value) return '';
+    const state = status();
+    if (!state.encryptPaths) {
+      throw Object.assign(new Error('L1 е изключено (`pgp_encrypt_paths`)'), { code: 'PGP_PATHS_DISABLED', status: 409 });
+    }
+    if (!material || !material.publicText) {
+      throw Object.assign(new Error('Няма ключ за криптиране на пътища'), {
+        code: 'PGP_SECRET_KEY_REQUIRED',
+        status: 503,
+        detail: state.reason || 'NO_PATHS',
+      });
+    }
+    return pgp.encryptToKey(Buffer.from(value, 'utf8'), material.publicText).armored;
+  }
+
+  /** L1: връща открития път. Без ключ/парола дава точна грешка, не празен низ. */
+  function openPath(armored) {
+    const value = text(armored);
+    if (!value) return '';
+    const state = status();
+    if (!material || !material.secretText) {
+      throw Object.assign(new Error('Пътят е криптиран, но няма частен ключ'), {
+        code: 'STORAGE_PATH_LOCKED',
+        status: 503,
+        detail: state.reason || 'NO_PATHS',
+      });
+    }
+    try {
+      return pgp.decryptMessage(value, material.secretText, material.passphrase).toString('utf8');
+    } catch (err) {
+      throw Object.assign(new Error('Пътят не може да се декриптира: ' + ((err && err.code) || 'unknown')), {
+        code: 'STORAGE_PATH_LOCKED',
+        status: 503,
+        detail: (err && err.code) || '',
+      });
+    }
+  }
+
+  /**
+   * L1 миграция: минава през всички портали и заменя откритите `storagePath` с
+   * `storagePathEnc`. Идемпотентна е — втори пуск не намира какво да смени.
+   * Не пипа диска и базата: викащият решава кога да запише (в транзакция).
+   */
+  function sealAll(portals) {
+    if (!Array.isArray(portals)) throw Object.assign(new Error('Липсва списък с портали'), { status: 400 });
+    let sealed = 0;
+    let already = 0;
+    let failed = 0;
+    for (const portal of portals) {
+      for (const file of (portal && portal.files) || []) {
+        if (!file) continue;
+        if (!file.storagePath) {
+          if (file.storagePathEnc) already++;
+          continue;
+        }
+        try {
+          file.storagePathEnc = sealPath(file.storagePath);
+          delete file.storagePath;
+          sealed++;
+        } catch {
+          // Един нечетим запис не бива да спира миграцията на останалите; броят се връща,
+          // за да се види, че има остатък (и повторният пуск ще опита пак).
+          failed++;
+        }
+      }
+    }
+    return { sealed, already, failed };
+  }
+
+  return {
+    status,
+    reload,
+    requireEncryptionKey,
+    sealPath,
+    openPath,
+    sealAll,
+    passphraseSource: () => resolvePassphrase().source,
+  };
 }
 
 module.exports = { create, ENV, KEY_ERRORS };

@@ -134,18 +134,21 @@ const keyringWith = (env) => create({ env });
 
 // ── 9. Препрочитане: смяна на пътя се вижда след reload ────────────────────
 {
-  const k = keyringWith({});
+  // Собствена среда, за да не зависи тестът от това какво има в обвивката на машината
+  // (напр. PGP_PATH_SECRET от ръчен пуск би направил „липсва публичен път“ невалиден случай).
+  const env = { ...process.env };
+  for (const key of Object.values(ENV)) delete env[key];
+  const k = keyringWith(env);
   assert.equal(k.status().available, false);
-  process.env[ENV.public] = PUBLIC;
+  env[ENV.public] = PUBLIC;
   try {
-    // `env` е същият обект, който подаваме — сменяме стойността и препрочитаме.
-    const live = create({ env: process.env });
+    const live = create({ env });
     assert.equal(live.status().available, true);
-    process.env[ENV.public] = '';
+    env[ENV.public] = '';
     assert.equal(live.status().available, true, 'кешът пази старото състояние до reload');
     assert.equal(live.reload().available, false, 'reload препрочита от средата');
   } finally {
-    delete process.env[ENV.public];
+    delete env[ENV.public];
   }
   ok('reload препрочита; кешът не се сменя сам');
 }

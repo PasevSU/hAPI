@@ -90,12 +90,16 @@ const RULES = [
     fix: 'три пълни пътя: `pgp_path_public`, `pgp_path_secret`, `pgp_path_pass`',
   },
   {
-    id: 'W3-plaintext-storage-path',
+    // L1 не се проверява текстово (шифротекстът зависи от ключ), затова правилото пази
+    // СЛОЯ: всички вътрешни пътища минават през `storagePathField`/`storagePathOf`.
+    // Самото поведение се доказва от `tests/pgp-path-encryption.cjs`.
+    id: 'W3-l1-layer',
     batch: 'B3',
-    enforced: false,
-    re: /\bstoragePath\s*:\s/,
-    why: 'вътрешният път стои в открит вид в db.json (полетата `storagePath`)',
-    fix: '`storagePathEnc` (PGP съобщение); откритият път съществува само в паметта',
+    enforced: true,
+    files: ['hapi_enterprise/server.js'],
+    expect: /storagePathField\([\s\S]*storagePathOf\(/,
+    why: 'пътят се записваше направо, без слой — при включено L1 това оставя открит път в базата',
+    fix: 'запис през `storagePathField()`, четене през `storagePathOf()`',
   },
 ];
 
@@ -157,7 +161,14 @@ function run() {
     for (const file of targets) {
       const name = rel(file);
       if (allowed(name, rule.id)) continue;
-      const lines = fs.readFileSync(file, 'utf8').split('\n');
+      const text = fs.readFileSync(file, 'utf8');
+      // Правило с `expect` не търси лош ред, а проверява, че слоят ГО ИМА (напр. че
+      // пътищата минават през `storagePathField`/`storagePathOf`). Липсата е попадение.
+      if (rule.expect) {
+        if (!rule.expect.test(text)) hits.push({ rule, file: name, line: 1, code: 'липсва ' + rule.expect });
+        continue;
+      }
+      const lines = text.split('\n');
       for (let i = 0; i < lines.length; i++) {
         if (rule.re.test(lines[i])) {
           hits.push({ rule, file: name, line: i + 1, code: lines[i].trim().slice(0, 140) });
