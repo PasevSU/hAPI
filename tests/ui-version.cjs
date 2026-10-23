@@ -77,3 +77,11 @@ assert.ok(
 // 5. Сървърът сервира bootstrap.js — иначе панелът в Home Assistant остава без ядра.
 const server = read('hapi_enterprise/server.js');
 assert.ok(/'bootstrap\.js'/.test(server), 'server.js: allowlist-ът на /ui/ не съдържа bootstrap.js');
+
+// 6. Работещият add-on съобщава ПРОДУКТОВАТА си версия (за сензора в HA и за отчета).
+//    `apiVersion.VERSION.CURRENT` е версията на API-то („v2“) — не на продукта.
+assert.match(server, /function addonVersion\(\)/, 'server.js: липсва четене на версията от config.yaml');
+assert.match(server, /version: addonVersion\(\) \|\| apiVersion\.VERSION\.CURRENT/, 'server.js: телеметрията не ползва продуктовата версия');
+assert.match(server, /version: addonVersion\(\) \|\| apiVersion\.VERSION\.CURRENT/, 'server.js: отчетът не ползва продуктовата версия');
+const docker = read('hapi_enterprise/Dockerfile');
+assert.match(docker, /^COPY config\.yaml /m, 'Dockerfile: config.yaml не се копира — add-on-ът не може да каже версията си');

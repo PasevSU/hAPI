@@ -15,6 +15,10 @@ WORKDIR /app
 COPY api-registry.js api-spec.js api-version.js audit-chain.js cabinet.js cases.js cms-sign.js config-profiles.js container.js core-store.js directory.js download-access.js error-log.js event-bus.js export-manager.js export-rules.js file-crypto.js gateway-api.js generator.js instance-lock.js interpolate.js job-manager.js load-control.js logger.js migration-bridge.js notify.js observer.js ooxml.js packager.js pdf-writer.js pgp.js plugins.js portal.css portal.html portal.js preview.js public-gateway.js public-package.js qrcode.js rbac.js readiness.js registry.js report-manifest.js report-package.js report-render.js report-stamp.js repository.js retention.js runtime-config.js secret-links.js secret-page.js secret-view.js send.js server.js share-links.js shared-data.js signer.js sqlite-repository.js sqlite-store.js start.js storage-check.js storage-migrate.js storage-preflight.js storage-tree.js tsa-client.js versioning.js virtual-storage.js visitor-intel.js evidence-portal.js x509.js portal-i18n.js /app/
 COPY fonts /app/fonts/
 COPY rules /app/rules/
+# Версията на add-on-а се чете от ТОЗИ файл (единственият източник на истина), за да
+# може работещият add-on да каже коя версия е — вместо да я твърди ръчно поддържан низ.
+# Supervisor строи от същото копие, така че няма как да се разминат.
+COPY config.yaml /app/config.yaml
 # Enterprise Control Center (статика, сервира се на /ui/...). Build context-ът на
 # Supervisor е ТАЗИ папка, затова UI-ят задължително живее вътре в нея.
 COPY ui /app/ui/

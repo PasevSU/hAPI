@@ -42,11 +42,32 @@ assert.match(coordinator, /UpdateFailed/, 'coordinator.py: грешките се
 // 4. Сензори: ключовете съвпадат с тези в coordinator и в преводите.
 const sensor = read('sensor.py');
 const sensorKeys = [...sensor.matchAll(/(?<![_a-z])key="([a-z_0-9]+)"/g)].map((m) => m[1]);
-assert.equal(sensorKeys.length, 13, 'очакват се 13 сензора, намерени ' + sensorKeys.length);
-for (const key of ['visits', 'downloads', 'files', 'portal_count', 'file_bytes', 'database_bytes', 'telemetry_bytes', 'unique_visitors', 'visitors_new_24h', 'download_visitors', 'denied_total', 'admin_logins', 'countries_known']) {
+assert.equal(sensorKeys.length, 15, 'очакват се 15 сензора, намерени ' + sensorKeys.length);
+for (const key of ['visits', 'downloads', 'files', 'portal_count', 'file_bytes', 'database_bytes', 'telemetry_bytes', 'unique_visitors', 'visitors_new_24h', 'download_visitors', 'denied_total', 'admin_logins', 'countries_known', 'version', 'sync']) {
   assert.ok(sensorKeys.includes(key), 'sensor.py: липсва сензор ' + key);
-  assert.ok(coordinator.includes('"' + key + '"'), 'coordinator.py: липсва ключ ' + key);
+  // `sync` не идва от payload-а: смята се в sensor.py от version + версията на
+  // интеграцията. Затова не се търси в координатора.
+  if (key !== 'sync') assert.ok(coordinator.includes('"' + key + '"'), 'coordinator.py: липсва ключ ' + key);
   assert.ok(consts.includes('PLATFORMS'), 'const.py: платформи');
+}
+
+// 4б. Версия и синхрон: в HA се вижда КОЯ версия работи add-on-ът и дали съвпада с
+// интеграцията. Без това едната половина може да е обновена, а другата не — и това
+// не се вижда отникъде.
+assert.match(sensor, /from homeassistant\.loader import async_get_integration/, 'sensor.py: версията на интеграцията идва от loader, а не е твърдо кодирана');
+assert.match(sensor, /EntityCategory\.DIAGNOSTIC/, 'сензорите за версия са диагностични');
+assert.match(sensor, /options=\["ok", "mismatch", "unknown"\]/, 'sync е enum с ясни състояния');
+assert.match(sensor, /addon_version/, 'sensor.py: показва версията на add-on-а, не инсталираната някога');
+assert.match(coordinator, /"version": "version"/, 'coordinator.py: картографира version от телеметрията');
+const addonServer = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'server.js'), 'utf8');
+assert.match(addonServer, /version: addonVersion\(\) \|\| apiVersion\.VERSION\.CURRENT, generatedAt/, 'add-on-ът връща продуктовата си версия в /admin/api/sensors');
+for (const lang of ['en', 'bg']) {
+  const dict = json(path.posix.join('translations', lang + '.json'));
+  const sync = dict.entity.sensor.sync;
+  assert.ok(sync && sync.state, `${lang}: липсват състоянията на sync`);
+  for (const state of ['ok', 'mismatch', 'unknown']) {
+    assert.ok(sync.state[state], `${lang}: липсва състояние ${state} за sync`);
+  }
 }
 
 // 5. Config flow: валидация срещу същите граници и грешки, които преводите очакват.

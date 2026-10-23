@@ -141,6 +141,24 @@ const htmlProjectsRoot = path.join(root, 'html-projects');
 // PasevSU Document Generator: индексът на шаблоните се строи от диска при всяка заявка
 // (виж generator.js) — затова добавяне/изтриване на *.html не иска build-index.
 const generator = require('./generator').create({ root });
+let cachedAddonVersion = null;
+/**
+ * Версията на add-on-а — от `config.yaml` (единственият източник на истина). Файлът
+ * се копира в образа (виж Dockerfile), затова работещият add-on може да каже коя
+ * версия е. `apiVersion.VERSION.CURRENT` е версията на API-то („v2“), не на продукта —
+ * точно това объркване стоеше в телеметрията.
+ */
+function addonVersion() {
+  if (cachedAddonVersion !== null) return cachedAddonVersion;
+  try {
+    const text = fs.readFileSync(path.join(__dirname, 'config.yaml'), 'utf8');
+    const match = /^version:\s*"?([0-9][0-9A-Za-z.\-]*)"?\s*$/m.exec(text);
+    cachedAddonVersion = match ? match[1] : '';
+  } catch {
+    cachedAddonVersion = '';
+  }
+  return cachedAddonVersion;
+}
 /**
  * Фактите за блока „Системни данни“ в отчет: само това, което сървърът наистина знае.
  * Нарочно НЕ влизат абсолютни пътища — отчетът може да излезе от системата. Липсваща
@@ -149,7 +167,7 @@ const generator = require('./generator').create({ root });
 function reportSystemInfo({ issuedAt = null, tsa = '' } = {}) {
   return {
     product: 'hAPI Enterprise',
-    version: apiVersion.VERSION.CURRENT,
+    version: addonVersion() || apiVersion.VERSION.CURRENT,
     issuedAt: issuedAt || new Date().toISOString().slice(0, 19) + 'Z',
     node: process.version,
     database: runtime.databaseRelative,
@@ -1057,7 +1075,7 @@ async function handler(req, res) {
       // Показва се само това, което панелът рисува: режим, прокси, срок, път до геобазата
       // и дали тя е заредена. Вътрешният `geoFile` не се разкрива.
       const sensorConfig = { ipMode: visitorIntel.config.ipMode, trustProxy: visitorIntel.config.trustProxy, retentionDays: visitorIntel.config.retentionDays, geoipPath: runtime.effective().sensors.geoipPath, geoLoaded: Boolean(visitorIntel.geo && visitorIntel.geo.status && visitorIntel.geo.status.loaded) };
-      return json(res, 200, { generatedAt: observed.generatedAt, databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, sensorSettings: sensorConfig, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
+      return json(res, 200, { version: addonVersion() || apiVersion.VERSION.CURRENT, generatedAt: observed.generatedAt, databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, sensorSettings: sensorConfig, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
     }
     if (url.pathname === '/admin/api/database/backup' && method === 'POST') {
       if (!adminGate(req, res, 'backup', method)) return;
