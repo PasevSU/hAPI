@@ -51,6 +51,13 @@
   `/api/hapi_enterprise/portal/<slug>` в интеграцията носят `frame-ancestors 'none'` —
   те не се вграждат никъде.
 - Проверява се от `tests/blackbox-security.cjs`: UI-ят има `'self'`, публичните — `'none'`.
+- Проверява се и от `tests/panel-framing.cjs`, който НЕ търси текст, а прилага правилото:
+  оценител на `frame-ancestors` минава случаите none/self/\*/схема/порт/няколко политики,
+  статичен скенер изисква изрична политика от ВСЯКА HTML повърхност в сървъра, а живият
+  сървър минава през двата адреса, които Home Assistant дава. Доказано е и в реален
+  браузър (Chrome): при същия origin панелът се рисува, при чужд — конзолата казва
+  „Framing … violates the following Content Security Policy directive: frame-ancestors 'self'“
+  и рамката остава празна (същата икона, която потребителят виждаше).
 
 ## Windows contract
 
