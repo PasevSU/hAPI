@@ -123,7 +123,7 @@
 | **B3** | W3: `storagePathEnc` + миграция                                              | в `db.json` няма открит `storagePath`; старите записи работят след миграция — **готово (0.69.67, при `pgp_encrypt_paths`)** |
 | **B4** | W4: криптирана работна папка (DEK + PGP обвивка)                             | изтеглянето през add-on-а работи — **готово (0.69.67, при `pgp_encrypt_workdir`)** |
 | **B5** | W5 + W6: Evidence View публикуване и синхронизация на `app.js`               | публикуват се каноничните файлове И `data/demo-evidence.json`; `app.js` има `loadManifest()` — **готово (0.69.67)** |
-| **B6** | издание 0.69.67                                                              | 4 артефакта, всички гейтове 0, публикуван Release                                                                                          |
+| **B6** | издание 0.69.67                                                              | 4 артефакта, всички гейтове 0, публикуван Release — **готово (0.69.67)**                                                                   |
 
 Зависимости: B2 → B3 → B4 (всеки следващ ползва ключа от предишния). B5 е независим. B1 е първи,
 защото без mandatory токен останалото няма смисъл.
@@ -175,6 +175,58 @@
   опция/файл и предимство, грешна/липсваща парола, липсващ/счупен файл, `PGP_SECRET_KEY_REQUIRED`,
   `reload` и кеш, HTTP `401` без токен / `200` с токен и без тайни в отговора.
 - `Dockerfile`: `path-crypto.js` в `COPY` (иначе `HA-C04` блокира изданието).
+
+### Какво точно е направено в B5 (проверено)
+
+- `hapi_enterprise/evidence-portal.js`: `FILES` вече съдържа `data/demo-evidence.json`;
+  `deploy()` създава и подпапка `data/` (иначе fallback-ът на фронтенда беше 404).
+- `hapi_enterprise/evidence-portal/data/demo-evidence.json` — валиден манифест с 3 записа
+  (PDF с парола, папка с безплатен DOCX, заключена PNG) и истински SHA-256 стойности.
+- `hapi_enterprise/evidence-portal/assets/app.js` (9 972 B): `loadManifest()` вика
+  `GET /api/evidence/<id>/manifest` с `credentials: 'include'` и `cache: 'no-store'`; при
+  не-OK отговор и `id === 'demo-evidence'` пада към `./data/demo-evidence.json`; за друга
+  папка показва „Пакетът не е намерен или нямате достъп до него.“ — без да издава дали
+  папката съществува.
+- Тест `tests/evidence-portal-publish.cjs` (5 проверки): пакетът съдържа файла и фронтендът
+  го търси; публикуват се всички файлове с еднакви хешове; втори пуск не пише нищо;
+  развален файл се вижда в статуса и се поправя сам; демо данните са валиден манифест.
+
+**Честно ограничение:** прикачената версия на `app.js` (10 127 B) не беше налична в
+работната папка, затова в репото стои 9 972 B версия със същото поведение (`loadManifest`,
+fallback, Consent Gate преди данни). Разликата в размера е форматиране, не липсваща функция.
+
+### Какво точно е направено в B6 (проверено)
+
+- Версията е 0.69.67 в осемте места (`config.yaml` е източникът, после
+  `custom_components/hapi_enterprise/manifest.json`, `hapi_enterprise/ui/data.js`,
+  `package.json`, баджовете в `README.md`, `BG.md`, `DE.md`, `hapi_enterprise/README.md`),
+  `sync-addon-changelog` и `settings-defaults --check` са зелени, отчетът е регенериран
+  последен (`release-status` → `--check`).
+- **Измерено локално:** `node scripts/run-tests.cjs` → **238/238** за 198.8 s;
+  `verify-release` → **20/20**; `audit-gui-compat` → 100 %; `logic-audit --gate` → 0 critical/high;
+  `bad-code-scan --gate` → 0 critical/high; `legacy-logic-residue` → 11 правила в сила, 0 попадения;
+  `server-structure` → 2719/2722 реда.
+- **Артефакти (GH Release v0.69.67, 4 файла + суми):** `hapi_enterprise-0.69.67.tar.gz`
+  1 635 127 B (159 записа), `hapi_enterprise-integration-0.69.67.zip` 228 049 B (22 файла),
+  `RELEASE.json` 33 983 B, `repository.yaml` 87 B, `SHA256SUMS.txt` 364 B. Свалени от
+  изданието и сверени: **4/4 съвпадат** с `SHA256SUMS.txt`.
+- **Workflow-и:** CI `40020763998` ✅ · Release v0.69.67 `40020767723` ✅ · CodeQL `40020763916` ✅.
+
+**Два дефекта, намерени от самите гейтове по време на B6 (и поправени):**
+
+1. `tests/start-token-required.cjs` убиваше entrypoint-а със `SIGKILL`, а `start.js` пуска
+   сървъра като СВОЕ дете със `stdio: 'inherit'` → сиракът държеше тръбите и тестът
+   отпечатваше „ok“, но процесът не излизаше: CI вися 9 минути (20:10:45 → отмяна в 20:19:17).
+   Поправка: `stopTree()` в `tests/helpers.cjs` (SIGTERM → SIGKILL → pid от
+   `.hapi-instance.json` → затваряне на тръбите). За да не се повтори: таван 300 s на тест
+   в `ci.yml` (`timeout -k 10 300` + `::error::TIMEOUT`) и в `scripts/run-tests.cjs`.
+2. `decryptMessage()` проверяваше за компресиран пакет СЛЕД разопаковането, т.е. гледаше
+   самия открит текст; всеки байт с вдигнат висок бит може случайно да изглежда като
+   заглавка (0xA3/0xC8) → `UNSUPPORTED_COMPRESSION` с шанс ~2 % на пускане за 4 KiB
+   случайни данни. Поправка: проверката е върху ПЪРВИЯ ПАКЕТ след SEIPD префикса.
+   Добавен е детерминистичен случай в `tests/pgp-engine.cjs` и интероп случай в
+   `tests/pgp-gpg-interop.cjs` (gpg 2.4 пише SEIPD v1 → `UNSUPPORTED_COMPRESSION` при
+   компресия и успех при `--compress-algo none`; gpg 2.5 пише AEAD/OCB → `UNSUPPORTED_AEAD`).
 
 ## 3. Правила, които важат за всеки бач
 
