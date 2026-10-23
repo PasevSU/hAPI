@@ -155,6 +155,17 @@
         const badRoots = storage.filter((s) => !s.available || !s.writable).map((s) => s.name + (s.error ? ' (' + s.error + ')' : ''));
         const traffic = diag.traffic || {};
         const load = traffic.load || {};
+        // Структурата на файловете идва от същия отговор (`layout`), за да не се гадае къде
+        // е portal.html или папката на портала: всяко място е с път и състояние.
+        const layout = diag.layout && Array.isArray(diag.layout.entries) ? diag.layout.entries : [];
+        const layoutRows = layout
+          .map(
+            (e) =>
+              `<tr><th>${esc(e.label)}</th><td><code>${esc(e.path)}</code>${e.checked ? (e.exists ? ' <span class="state-chip ok">има</span>' : ' <span class="state-chip err">липсва</span>') : ' <span class="hint">за всеки портал</span>'
+              }<br/><small class="hint">${esc(e.note || '')}</small></td></tr>`,
+          )
+          .join('');
+        const layoutRoutes = diag.layout && Array.isArray(diag.layout.routes) ? diag.layout.routes : [];
         resBadge.className = 'badge ' + (badRoots.length ? 'err' : 'ok');
         resBadge.textContent = badRoots.length ? 'хранилище: проблем' : 'хранилище: готово';
         resBox.innerHTML = `
@@ -166,6 +177,16 @@
             ${card('Хранилища', okRoots + ' / ' + storage.length, badRoots.length ? 'липсва: ' + badRoots.join(', ') : 'всички достъпни и записваеми')}
             ${card('Натоварване', load.level != null ? String(load.level) : '—', load.effective != null ? 'ефективен паралелизъм ' + load.effective : 'без данни')}
           </div>
+          ${layoutRows
+            ? `<details class="u-mt"><summary>Къде какво стои (структура на файловете)</summary>
+                  <table class="grid"><tbody>${layoutRows}</tbody></table>
+                  ${layoutRoutes.length
+              ? `<p class="hint">Адреси: ${layoutRoutes.map((r) => `<code>${esc(r.url)}</code> — ${esc(r.serves)}`).join(' · ')}</p>`
+              : ''
+            }
+                </details>`
+            : ''
+          }
           <div class="row-actions">
             <button type="button" class="btn" data-goto="storage">Хранилища</button>
             <button type="button" class="btn" data-goto="security">Сигурност</button>
