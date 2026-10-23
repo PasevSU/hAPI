@@ -170,7 +170,13 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
       if (!kind) throw Error('Only JPEG and PNG images are supported (convert other formats first)');
       const sz = kind === 'jpeg' ? jpegSize(data) : pngSize(data);
       const dw = Math.min(Number(b.width) || sz.w, maxW);
-      const dh = Math.min(Number(b.height) || (sz.h * dw / sz.w), A4.h - M.t - M.b);
+      // `maxHeight` е таван в точки: при лого картинката не бива да изяде страницата,
+      // дори когато е с много висока резолюция.
+      const dh = Math.min(
+        Number(b.height) || (sz.h * dw / sz.w),
+        Number(b.maxHeight) || A4.h - M.t - M.b,
+        A4.h - M.t - M.b,
+      );
       if (y - dh < M.b) newPage();
       const imgN = images.length + 1;
       images.push(kind === 'jpeg' ? { data, w: sz.w, h: sz.h } : { ...pngStream(data, sz), w: sz.w, h: sz.h });
@@ -205,6 +211,33 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
       ops.push('0 G');
       y = top - size - 10;
       if (b.caption) { draw('regular', 9, M.l, y, String(b.caption)); y -= 13 }
+      continue;
+    }
+    if (b.type === 'columns') {
+      // Колони в ОФОРМЛЕНИЕТО: един ред от 1–4 клетки без рамки, всяка със собствен
+      // пренос на текста. Това не е „вестникарска“ колона през няколко страници —
+      // блокът се събира на една страница; ако не се побира, започва нова.
+      const cols = (Array.isArray(b.cols) ? b.cols : [])
+        .filter(c => c && (String(c.text || '').trim() || String(c.title || '').trim()))
+        .slice(0, 4);
+      if (!cols.length) continue;
+      const count = cols.length, gap = 14;
+      const colW = (maxW - gap * (count - 1)) / count;
+      const size = 10, lead = 14, titleLead = 15;
+      const cells = cols.map(c => ({
+        title: String(c.title || ''),
+        lines: wrap('regular', size, String(c.text || ''), colW),
+      }));
+      const height = Math.max(...cells.map(c => (c.title ? titleLead : 0) + Math.max(1, c.lines.length) * lead));
+      if (y - height < M.b) newPage();
+      const top = y;
+      cells.forEach((cell, i) => {
+        const x = M.l + i * (colW + gap);
+        let yy = top;
+        if (cell.title) { draw('bold', 10.5, x, yy - 11, cell.title); yy -= titleLead }
+        for (const ln of cell.lines) { if (ln) draw('regular', size, x, yy - 10, ln); yy -= lead }
+      });
+      y = top - height - 6;
       continue;
     }
     if (b.type === 'table') {

@@ -31,6 +31,20 @@ function create(deps) {
   const fsp = require('node:fs/promises');
   const path = require('node:path');
 
+  // Сертификатите за блок „Сертификат (X.509)“ идват от тялото (`certificates`), а при
+  // пакет с доказателства — и CMS сертификатът, с който се подписва PDF-ът. Така в
+  // отчета попада ИСТИНСКИЯТ сертификат, а не описание на такъв.
+  function certificatesFor(payload) {
+    const given = payload && payload.certificates && typeof payload.certificates === 'object' ? payload.certificates : {};
+    const out = {};
+    for (const [ref, pem] of Object.entries(given)) {
+      if (/^[A-Za-z0-9_-]{1,64}$/.test(ref) && typeof pem === 'string') out[ref] = pem;
+    }
+    const cmsPem = payload && payload.cms && payload.cms.certPem;
+    if (typeof cmsPem === 'string' && cmsPem.trim()) out.cms = out.cms || cmsPem;
+    return out;
+  }
+
   async function handle({ req, res, url, parts, method }) {
     if (!(parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'v2')) return false;
     // `cms` е част от СЪЩИЯ дял: проверката на detached подписа върви по същите байтове,
@@ -75,7 +89,7 @@ function create(deps) {
           issuedAt,
           tsa: wantTsa ? (stamps && stamps.ok ? 'издаден' : 'неуспешен') : cryptoOptions.tsaEnabled ? 'включен, не е поискан' : 'изключен',
         });
-        const pdf = reportRender.renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, watermark: payload && payload.watermark, stamps, createdAt: issuedAt, system });
+        const pdf = reportRender.renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, certificates: (payload && payload.certificates) || {}, watermark: payload && payload.watermark, stamps, createdAt: issuedAt, system });
         const digest = require('../report-manifest').digest(manifest) || '';
         // RS-06: отпечатък на ГОТОВИЯ PDF. Не може да стои вътре в себе си, затова се връща
         // като хедър и влиза в одита — така „този файл е този отчет“ се проверява с sha256sum.
@@ -122,7 +136,7 @@ function create(deps) {
           const statusWord = draft ? 'DRAFT' : readyBefore ? null : 'INCOMPLETE';
           const watermark = payload && payload.watermark !== undefined ? payload.watermark : statusWord === null ? undefined : statusWord;
           const system = reportSystemInfo({ issuedAt, tsa: wantTsa ? (stamps && stamps.ok ? 'издаден' : 'неуспешен') : cryptoOptions.tsaEnabled ? 'включен, не е поискан' : 'изключен' });
-          pdf = require('../report-render').renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, watermark, stamps, createdAt: issuedAt, system });
+          pdf = require('../report-render').renderPdf(manifest, { data: (payload && payload.data) || {}, hashes: (payload && payload.hashes) || {}, certificates: certificatesFor(payload), watermark, stamps, createdAt: issuedAt, system });
         }
         // Подпис: иска се изрично и изисква ключ в заявката, както при `/reports/sign`.
         let cms = null;

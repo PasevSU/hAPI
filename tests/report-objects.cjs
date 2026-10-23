@@ -8,20 +8,22 @@ const M = require('../hapi_enterprise/report-manifest.js');
 for (const o of objects.ready()) {
   assert.ok(M.ELEMENT_TYPES.includes(o.type), `ready тип не е в схемата: ${o.type}`);
 }
-assert.equal(objects.ready().length, 13);
+assert.equal(objects.ready().length, 17, '17 готови обекта: 13 предишни + лого, сертификат, колони, динамичен блок');
 
 // 2. Системните обекти са точно START/STOP.
 assert.deepEqual(objects.system().map((o) => o.type).sort(), [M.START, M.STOP].sort());
 
 // 3. Планираните обекти не се добавят (не са в схемата) — без фиктивни функции.
+// 0.69.61: списъкът е празен, защото последните четири обекта имат валидация и
+// реален рендер в PDF-а (`tests/report-objects-real.cjs` го мери).
 for (const o of objects.planned()) {
   assert.equal(M.ELEMENT_TYPES.includes(o.type), false, `planned тип е в схемата: ${o.type}`);
   assert.equal(objects.isReady(o.type), false);
 }
-assert.equal(objects.planned().length, 4);
+assert.equal(objects.planned().length, 0, 'няма планирани обекти — всичко в библиотеката работи');
 assert.deepEqual(
-  objects.planned().map((o) => o.type).sort(),
-  ['certificate', 'columns', 'dynamic', 'logo'],
+  objects.OBJECTS.filter((o) => o.status === 'planned').map((o) => o.type),
+  [],
   'остават само наистина несвършените обекти',
 );
 
@@ -44,12 +46,19 @@ assert.equal(objects.isReady('pagebreak'), true, 'нова страница ве
 assert.equal(objects.isReady('subtitle'), true, 'подзаглавие вече е готов блок');
 assert.equal(objects.isReady('legal'), true, 'правната декларация вече е готов блок');
 assert.equal(objects.isReady('data-block'), true, 'системните данни вече са готов блок');
-assert.equal(objects.isReady('columns'), false, 'колоните остават планирани');
+assert.equal(objects.isReady('columns'), true, 'колоните вече се добавят');
+assert.equal(objects.isReady('logo'), true, 'логото вече се добавя');
+assert.equal(objects.isReady('certificate'), true, 'сертификатът вече се добавя');
+assert.equal(objects.isReady('dynamic'), true, 'динамичният блок вече се добавя');
 assert.equal(objects.get('nope'), null);
 
 // 7. Defaults съдържат това, което newBlock очаква.
 assert.deepEqual(objects.get('table').defaults.columns, ['name']);
 assert.ok(objects.get('hash-table').defaults.algorithms.includes('SHA256'));
 assert.ok(Array.isArray(objects.get('metadata').defaults.items));
+assert.equal(objects.get('columns').defaults.columns.length, 2, 'колоните тръгват с две');
+assert.equal(objects.get('dynamic').defaults.aggregate, 'count', 'динамичният блок тръгва с брой');
+assert.equal(objects.get('certificate').defaults.ref, 'cms', 'сертификатът тръгва с CMS сертификата');
+assert.equal(objects.get('logo').defaults.widthMm, 40, 'логото тръгва 40 мм широко');
 
 console.log('report-objects OK');

@@ -8,8 +8,13 @@
 
 const M = require('./report-manifest');
 const pdfWriter = require('./pdf-writer');
+const nodeCrypto = require('node:crypto');
 
 const PLACEHOLDER = '—';
+// 1 мм = 72/25.4 pt (единицата на PDF writer-а). Размерите на логото се задават в мм,
+// защото така мисли човекът, който подрежда отчета.
+const MM_TO_PT = 72 / 25.4;
+const LOGO_MAX_HEIGHT_MM = 24;
 // Текстът по подразбиране за „Правна декларация“: казва каквото е вярно за всеки отчет,
 // без да обещава заверка, която системата не извършва. Блокът може да се замени със свой
 // текст — тогава се печата той.
@@ -22,16 +27,85 @@ function bad(message, code, status = 400) {
   return Object.assign(new Error(message), { code, status });
 }
 
-function jpegFrom(block) {
+/** JPEG или PNG от блока — и двете се вграждат от pdf-writer без прекодиране. */
+function imageBytes(block) {
   const raw = block && (block.data || block.dataUrl);
   if (typeof raw !== 'string' || !raw) return null;
   const base64 = raw.startsWith('data:') ? raw.slice(raw.indexOf(',') + 1) : raw;
   try {
     const buf = Buffer.from(base64, 'base64');
-    return buf.length && buf[0] === 0xff && buf[1] === 0xd8 ? buf : null;
+    if (buf.length < 8) return null;
+    if (buf[0] === 0xff && buf[1] === 0xd8) return buf;
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return buf;
+    return null;
   } catch {
     return null;
   }
+}
+
+// ── Сертификат (X.509) ────────────────────────────────────────────────────────
+// Печатат се САМО стойности, които се четат от истински сертификат, подаден при
+// генерирането. Ако такъв няма, блокът казва „не е предоставен“ — не се рисува
+// измислен субект или отпечатък (ADR-0025).
+function certificateRows(pem) {
+  if (typeof pem !== 'string' || !pem.trim()) return null;
+  let cert;
+  try {
+    cert = new nodeCrypto.X509Certificate(pem);
+  } catch {
+    return null;
+  }
+  const flat = (v) => String(v == null ? '' : v).split('\n').map((s) => s.trim()).filter(Boolean).join(', ');
+  const key = cert.publicKey || {};
+  const details = key.asymmetricKeyDetails || {};
+  const keyInfo = [key.asymmetricKeyType, details.modulusLength ? `${details.modulusLength} бита` : details.namedCurve || ''].filter(Boolean).join(' · ');
+  let selfSigned;
+  try {
+    selfSigned = cert.checkIssued(cert) ? 'да' : 'не';
+  } catch {
+    selfSigned = PLACEHOLDER;
+  }
+  return [
+    ['Поле', 'Стойност'],
+    ['Субект', flat(cert.subject)],
+    ['Издател', flat(cert.issuer)],
+    ['Сериен номер', cert.serialNumber || PLACEHOLDER],
+    ['Валиден от', cert.validFrom || PLACEHOLDER],
+    ['Валиден до', cert.validTo || PLACEHOLDER],
+    ['Публичен ключ', keyInfo || PLACEHOLDER],
+    ['Самоподписан', selfSigned],
+    ['SHA-256 отпечатък', cert.fingerprint256 || PLACEHOLDER],
+  ];
+}
+
+// ── Динамичен блок ────────────────────────────────────────────────────────────
+// Стойността се СМЯТА от данните по време на рендиране; в манифеста стои само
+// заявката (източник + агрегат). Без данни стойността е „—“.
+function dynamicValue(rows, aggregate, field) {
+  if (aggregate === 'count') return String(rows.length);
+  const numbers = rows
+    .map((row) => (Array.isArray(row) ? row[field] : row))
+    .map((v) => (typeof v === 'number' ? v : Number(String(v == null ? '' : v).replace(/\s|\u00a0/g, '').replace(',', '.'))))
+    .filter((v) => Number.isFinite(v));
+  if (!numbers.length) return PLACEHOLDER;
+  const total = numbers.reduce((a, b) => a + b, 0);
+  const value = aggregate === 'sum' ? total : aggregate === 'min' ? Math.min(...numbers) : aggregate === 'max' ? Math.max(...numbers) : total / numbers.length;
+  return String(Math.round(value * 1000) / 1000);
+}
+
+function dynamicRows(block, data) {
+  const source = String(block.source || '');
+  const rows = data && Array.isArray(data[source]) ? data[source] : [];
+  const aggregate = String(block.aggregate || 'count');
+  const field = Number.isInteger(block.field) ? block.field : 0;
+  const names = { count: 'брой редове', sum: 'сума', min: 'минимум', max: 'максимум', avg: 'средно' };
+  return [
+    ['Показател', 'Стойност'],
+    ['Източник', source || PLACEHOLDER],
+    ['Агрегат', `${aggregate} — ${names[aggregate] || aggregate}`],
+    ['Редове в източника', String(rows.length)],
+    ['Стойност', dynamicValue(rows, aggregate, field)],
+  ];
 }
 
 // Системни данни: факти, които сървърът знае за СЕБЕ СИ (версия, среда, съхранение).
@@ -73,6 +147,8 @@ function toPdfBlocks(manifest, options = {}) {
   // RS-05: реалните RFC 3161 записи идват от `report-stamp.stampReport()`. Когато ги няма,
   // отчетът остава с честното изречение „не е издаден“ — нищо не се дописва.
   const stamps = options.stamps && typeof options.stamps === 'object' ? options.stamps : null;
+  // Сертификатите идват отвън (напр. CMS сертификатът, с който се подписва пакетът).
+  const certificates = options.certificates && typeof options.certificates === 'object' ? options.certificates : {};
   const stampRows = (phase) => {
     const section = stamps && stamps[phase];
     const fields = section && Array.isArray(section.fields) ? section.fields : null;
@@ -184,9 +260,57 @@ function toPdfBlocks(manifest, options = {}) {
         });
         break;
       case 'image': {
-        const jpeg = jpegFrom(block);
+        const jpeg = imageBytes(block);
         if (jpeg) out.push({ type: 'image', data: jpeg, width: block.width, height: block.height });
         else out.push({ type: 'p', text: `Изображение „${block.label || 'без етикет'}“: няма вградени JPEG данни.` });
+        break;
+      }
+      case 'logo': {
+        // Логото е малко изображение в самото оформление. Когато в манифеста има само
+        // адрес (branding.logo), той НЕ се изтегля по мрежата при печат — казва се какво липсва.
+        const img = imageBytes(block);
+        if (img) {
+          const widthMm = Number(block.widthMm) || 40;
+          const heightMm = Math.min(Number(block.heightMm) || LOGO_MAX_HEIGHT_MM, LOGO_MAX_HEIGHT_MM);
+          out.push({ type: 'image', data: img, width: widthMm * MM_TO_PT, maxHeight: heightMm * MM_TO_PT });
+        } else {
+          const ref = String((manifest.branding && manifest.branding.logo) || '');
+          out.push({
+            type: 'p',
+            text: ref
+              ? `Лого: в манифеста има само адрес (${ref}), не и изображение — то се вгражда при подреждане.`
+              : `Лого „${block.label || 'без етикет'}“: няма вградено изображение (JPEG или PNG).`,
+          });
+        }
+        break;
+      }
+      case 'certificate': {
+        heading(block.label || 'Сертификат');
+        const ref = String(block.ref || '');
+        const rows = certificateRows(certificates[ref]);
+        out.push(
+          rows
+            ? { type: 'table', header: true, rows }
+            : {
+              type: 'p',
+              text: `Сертификат „${ref || PLACEHOLDER}“: не е предоставен при генерирането, затова не се печата.`,
+            },
+        );
+        break;
+      }
+      case 'columns': {
+        // Колоните са един ред от клетки без рамки; текстът се пренася във всяка колона.
+        heading(block.label);
+        const cols = (Array.isArray(block.columns) ? block.columns : []).map((c) => ({
+          title: String((c && c.title) || ''),
+          text: String((c && c.text) || ''),
+        }));
+        out.push({ type: 'columns', cols });
+        break;
+      }
+      case 'dynamic': {
+        heading(block.label || 'Динамичен блок');
+        out.push({ type: 'table', header: true, rows: dynamicRows(block, data) });
         break;
       }
       case 'signature':
@@ -242,4 +366,4 @@ function renderPdf(input, options = {}) {
   });
 }
 
-module.exports = { toPdfBlocks, renderPdf, PLACEHOLDER };
+module.exports = { toPdfBlocks, renderPdf, certificateRows, dynamicRows, imageBytes, PLACEHOLDER };

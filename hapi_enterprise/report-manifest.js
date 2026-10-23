@@ -35,6 +35,10 @@ const ELEMENT_TYPES = [
   'signature',
   'metadata',
   'hash-table',
+  'logo',
+  'certificate',
+  'columns',
+  'dynamic',
 ];
 const HASH_ALGORITHMS = ['CRC32', 'MD5', 'SHA1', 'SHA256', 'SHA512'];
 const PAGE_FORMATS = ['A4', 'A5', 'LETTER'];
@@ -45,6 +49,17 @@ const BLOCK_ID = /^[a-z][a-z0-9_-]{0,63}$/;
 const TABLE_SOURCE = /^(records|variables|group):[A-Za-z0-9_-]{1,64}$/;
 const MAX_BLOCKS = 200;
 const MAX_COLUMNS = 32;
+// Лого: изображението Е част от оформлението, затова е в манифеста като base64.
+// Таванът е изричен — 512 000 знака base64 (~384 KB картинка), за да остане отчетът
+// преносим, а заявката да се събере в лимита на тялото.
+const MAX_LOGO_CHARS = 512000;
+const IMAGE_DATA_URL = /^data:image\/(jpeg|png);base64,/i;
+// Сертификатът НЕ се съхранява в манифеста (виж FORBIDDEN_KEYS) — блокът само
+// посочва име, по което сървърът подава реалния сертификат при генериране.
+const CERT_REF = /^[A-Za-z0-9_-]{1,64}$/;
+const MAX_LAYOUT_COLUMNS = 4;
+const MAX_COLUMN_TEXT = 4000;
+const AGGREGATES = ['count', 'sum', 'min', 'max', 'avg'];
 
 const DEFAULT_PAGE = { format: 'A4', orientation: 'portrait', marginsMm: [15, 15, 15, 15] };
 const DEFAULT_BRANDING = { organization: '', logo: '', qr: false };
@@ -172,6 +187,83 @@ function validateBlock(block, index, seen) {
         code: 'INVALID_TABLE_COLUMNS',
         message: `Колоните трябва да са 1–${MAX_COLUMNS} непразни имена.`,
       });
+    }
+  }
+  if (type === 'logo') {
+    // Логото е или вградено изображение, или нищо. Адрес във `branding.logo` не е
+    // изображение — рендерът го казва честно, вместо да нарисува празно място.
+    const raw = block.data !== undefined ? block.data : block.dataUrl;
+    if (raw !== undefined && raw !== null && raw !== '') {
+      if (typeof raw !== 'string') {
+        errors.push({ path: `${at}.data`, code: 'INVALID_LOGO_DATA', message: 'Логото трябва да е base64 низ.' });
+      } else if (raw.length > MAX_LOGO_CHARS) {
+        errors.push({ path: `${at}.data`, code: 'LOGO_TOO_LARGE', message: `Логото е над ${MAX_LOGO_CHARS} знака (base64).` });
+      } else if (raw.startsWith('data:') && !IMAGE_DATA_URL.test(raw)) {
+        errors.push({ path: `${at}.data`, code: 'INVALID_LOGO_DATA', message: 'Приемат се само data:image/jpeg или data:image/png.' });
+      }
+    }
+    for (const key of ['widthMm', 'heightMm']) {
+      if (block[key] === undefined || block[key] === null) continue;
+      if (!isNumber(block[key]) || block[key] < 5 || block[key] > 500) {
+        errors.push({ path: `${at}.${key}`, code: 'INVALID_LOGO_SIZE', message: `${key} е число между 5 и 500 (мм).` });
+      }
+    }
+  }
+  if (type === 'certificate') {
+    if (!CERT_REF.test(text(block.ref))) {
+      errors.push({
+        path: `${at}.ref`,
+        code: 'INVALID_CERT_REF',
+        message: 'Посочи ref на сертификата (A–Z, a–z, 0–9, „_“, „-“; до 64 знака).',
+      });
+    }
+  }
+  if (type === 'columns') {
+    const cols = block.columns;
+    if (!Array.isArray(cols) || cols.length < 1 || cols.length > MAX_LAYOUT_COLUMNS) {
+      errors.push({
+        path: `${at}.columns`,
+        code: 'INVALID_COLUMNS',
+        message: `Колоните са 1–${MAX_LAYOUT_COLUMNS} на брой.`,
+      });
+    } else {
+      cols.forEach((col, ci) => {
+        const okShape = isObject(col) && text(col.text) && text(col.text).length <= MAX_COLUMN_TEXT && (!col.title || text(col.title).length <= 80);
+        if (!okShape) {
+          errors.push({
+            path: `${at}.columns[${ci}]`,
+            code: 'INVALID_COLUMNS',
+            message: `Всяка колона има текст (до ${MAX_COLUMN_TEXT} знака) и по избор заглавие (до 80).`,
+          });
+        }
+      });
+    }
+  }
+  if (type === 'dynamic') {
+    if (!TABLE_SOURCE.test(text(block.source))) {
+      errors.push({
+        path: `${at}.source`,
+        code: 'INVALID_DYNAMIC_SOURCE',
+        message: 'Източникът на динамичния блок е records:<id> | variables:<id> | group:<id>.',
+      });
+    }
+    const aggregate = text(block.aggregate) || 'count';
+    if (!AGGREGATES.includes(aggregate)) {
+      errors.push({
+        path: `${at}.aggregate`,
+        code: 'INVALID_DYNAMIC_AGGREGATE',
+        message: `Агрегатът е един от: ${AGGREGATES.join(', ')}.`,
+      });
+    } else if (aggregate !== 'count') {
+      // Без номер на колона „сума“ не значи нищо — отказва се, вместо да се познае.
+      const field = block.field;
+      if (!Number.isInteger(field) || field < 0 || field >= MAX_COLUMNS) {
+        errors.push({
+          path: `${at}.field`,
+          code: 'INVALID_DYNAMIC_FIELD',
+          message: `За „${aggregate}“ посочи колона field (0–${MAX_COLUMNS - 1}).`,
+        });
+      }
     }
   }
   if (type === 'hash-table') {
@@ -405,9 +497,12 @@ const API = {
   SYSTEM_TYPES,
   ELEMENT_TYPES,
   HASH_ALGORITHMS,
+  AGGREGATES,
   PAGE_FORMATS,
   ORIENTATIONS,
   FORBIDDEN_KEYS,
+  MAX_LAYOUT_COLUMNS,
+  MAX_LOGO_CHARS,
   normalize,
   validate,
   check,

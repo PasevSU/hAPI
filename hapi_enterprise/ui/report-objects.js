@@ -6,6 +6,10 @@
 //   system  — START/STOP, не се добавят ръчно (заключени)
 //   planned — вижда се, но е изключен (v2), за да няма фиктивни функции
 //
+// 0.69.61: последните четири обекта (лого, сертификат, колони, динамичен блок) станаха
+// готови — всеки има валидация в манифеста и реален рендер в PDF-а, затова списъкът
+// „планирано“ е празен.
+//
 // Чист JS (UMD) — работи в браузъра и в тестовете.
 (function () {
   const CATEGORIES = [
@@ -29,16 +33,16 @@
     { type: 'hash-table', category: 'tables', label: 'Hash таблица', icon: '#', status: 'ready', defaults: { algorithms: ['SHA256'] } },
     { type: 'image', category: 'media', label: 'Изображение', icon: '▣', status: 'ready', defaults: {} },
     { type: 'qr', category: 'media', label: 'QR код', icon: '▤', status: 'ready', defaults: { value: '' } },
-    { type: 'logo', category: 'media', label: 'Лого', icon: '◉', status: 'planned' },
+    { type: 'logo', category: 'media', label: 'Лого', icon: '◉', status: 'ready', defaults: { widthMm: 40, heightMm: 18 } },
     { type: 'signature', category: 'certificate', label: 'Подпис', icon: '✎', status: 'ready', defaults: {} },
-    { type: 'certificate', category: 'certificate', label: 'Сертификат (X.509)', icon: '✔', status: 'planned' },
+    { type: 'certificate', category: 'certificate', label: 'Сертификат (X.509)', icon: '✔', status: 'ready', defaults: { ref: 'cms' } },
     { type: 'rfc3161-start', category: 'certificate', label: 'RFC 3161 START', icon: '▶', status: 'system', locked: true },
     { type: 'rfc3161-stop', category: 'certificate', label: 'RFC 3161 STOP', icon: '■', status: 'system', locked: true },
     { type: 'separator', category: 'layout', label: 'Разделител', icon: '—', status: 'ready', defaults: {} },
     { type: 'pagebreak', category: 'layout', label: 'Нова страница', icon: '⤓', status: 'ready', defaults: {} },
-    { type: 'columns', category: 'layout', label: 'Колони', icon: '▥', status: 'planned' },
+    { type: 'columns', category: 'layout', label: 'Колони', icon: '▥', status: 'ready', defaults: { columns: [{ title: 'Колона 1', text: '' }, { title: 'Колона 2', text: '' }] } },
     { type: 'legal', category: 'legal', label: 'Правна декларация', icon: '§', status: 'ready', defaults: { value: '' } },
-    { type: 'dynamic', category: 'dynamic', label: 'Динамичен блок', icon: '⚙', status: 'planned' },
+    { type: 'dynamic', category: 'dynamic', label: 'Динамичен блок', icon: '⚙', status: 'ready', defaults: { source: 'records:1000', aggregate: 'count', field: 0 } },
   ];
 
   const byType = new Map(OBJECTS.map((o) => [o.type, o]));

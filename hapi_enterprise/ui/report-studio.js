@@ -802,6 +802,43 @@
       html += field('Двойки (ключ=стойност, по един ред)', `<textarea id="p-items" rows="4">${esc((block.items || []).map((i) => `${i.key}=${i.value}`).join('\n'))}</textarea>`);
     } else if (block.type === 'data-block') {
       html += `<p class="hint">Системни данни: версия, среда, база данни и състояние на TSA. Стойностите ги попълва сървърът при генериране — в прегледа стоят като „—“.</p>`;
+    } else if (block.type === 'logo') {
+      html += field('Ширина (мм)', `<input id="p-logo-w" type="number" min="5" max="500" value="${Number(block.widthMm) || 40}" />`);
+      html += field('Височина (мм, таван 24)', `<input id="p-logo-h" type="number" min="5" max="24" value="${Number(block.heightMm) || 18}" />`);
+      html += field(
+        'Изображение (data:image/png;base64,…)',
+        `<textarea id="p-data" rows="3" placeholder="data:image/png;base64,iVBORw0…">${esc(block.data || block.dataUrl || '')}</textarea>`,
+      );
+      html += `<p class="hint">Логото е ЧАСТ от отчета: вграденото изображение влиза в PDF-а. Адрес в „Организация → лого“ не се тегли по мрежата при печат.</p>`;
+    } else if (block.type === 'certificate') {
+      html += field('Сертификат (ref)', `<input id="p-ref" value="${esc(block.ref || 'cms')}" placeholder="cms" />`);
+      html += `<p class="hint">Печатат се субект, издател, срок и SHA-256 отпечатък на РЕАЛНИЯ сертификат,
+        който сървърът подава под това име при генериране (<code>cms</code> е сертификатът на подписа).
+        Ако няма такъв, в PDF-а пише „не е предоставен“ — не се рисува измислен сертификат.</p>`;
+    } else if (block.type === 'columns') {
+      const cols = block.columns || [];
+      html += `<h4 class="u-mt">Колони (1–4)</h4>`;
+      cols.forEach((col, i) => {
+        html += `<div class="field"><label>Колона ${i + 1}</label>
+          <div class="u-row u-row-2">
+            <input data-lcol-title="${i}" value="${esc(col.title || '')}" placeholder="заглавие" />
+            <button type="button" class="btn btn-sm" data-lcol="del" data-i="${i}" ${cols.length <= 1 ? 'disabled' : ''} title="Изтрий колоната">✕</button>
+          </div>
+          <textarea data-lcol-text="${i}" rows="3" placeholder="текст">${esc(col.text || '')}</textarea></div>`;
+      });
+      html += `<div class="u-row u-row-2"><button type="button" class="btn btn-sm" id="p-addlcol" ${cols.length >= 4 ? 'disabled' : ''
+        }>Добави колона</button></div>
+        <p class="hint">Колоните се печатат един до друг, без рамки; текстът се пренася във всяка колона.</p>`;
+    } else if (block.type === 'dynamic') {
+      html += field('Източник', `<input id="p-source" value="${esc(block.source || '')}" placeholder="records:1000" />`);
+      html += field(
+        'Агрегат',
+        `<select id="p-aggregate">${['count', 'sum', 'min', 'max', 'avg']
+          .map((a) => `<option value="${a}" ${(block.aggregate || 'count') === a ? 'selected' : ''}>${a}</option>`)
+          .join('')}</select>`,
+      );
+      html += field('Колона за смятане (0 = първа)', `<input id="p-field" type="number" min="0" max="31" value="${Number.isInteger(block.field) ? block.field : 0}" />`);
+      html += `<p class="hint">Стойността се СМЯТА от данните при генериране. Без данни в източника се печата „—“.</p>`;
     } else if (block.type === 'signature') {
       html += `<p class="hint">Подписът се издава само при реално генериране (RS-05). В preview се показва „не е издаден“.</p>`;
     } else if (block.type === 'separator') {
@@ -862,6 +899,54 @@
         onChange(block.id, { algorithms: [...algs] });
       });
     });
+    const logoWidth = els.props.querySelector('#p-logo-w');
+    if (logoWidth) logoWidth.addEventListener('change', () => onChange(block.id, { widthMm: Number(logoWidth.value) || 40 }));
+    const logoHeight = els.props.querySelector('#p-logo-h');
+    if (logoHeight) logoHeight.addEventListener('change', () => onChange(block.id, { heightMm: Math.min(24, Number(logoHeight.value) || 18) }));
+    const logoData = els.props.querySelector('#p-data');
+    if (logoData) logoData.addEventListener('input', () => onChange(block.id, { data: logoData.value.trim() }));
+    const certRef = els.props.querySelector('#p-ref');
+    if (certRef) certRef.addEventListener('input', () => onChange(block.id, { ref: certRef.value.trim() }));
+    const aggregate = els.props.querySelector('#p-aggregate');
+    if (aggregate) aggregate.addEventListener('change', () => onChange(block.id, { aggregate: aggregate.value }));
+    const dynField = els.props.querySelector('#p-field');
+    if (dynField) dynField.addEventListener('change', () => onChange(block.id, { field: Number(dynField.value) || 0 }));
+    const setBlockColumns = (mutate, keepHistory) => {
+      const cols = (block.columns || []).map((c) => ({ title: c.title || '', text: c.text || '' }));
+      mutate(cols);
+      if (keepHistory) pushHistory();
+      block.columns = cols;
+      refresh({ keepProps: true });
+    };
+    els.props.querySelectorAll('[data-lcol-title]').forEach((input) => {
+      input.addEventListener('input', () =>
+        setBlockColumns((cols) => {
+          cols[Number(input.dataset.lcolTitle)].title = input.value;
+        }),
+      );
+    });
+    els.props.querySelectorAll('[data-lcol-text]').forEach((area) => {
+      area.addEventListener('input', () =>
+        setBlockColumns((cols) => {
+          cols[Number(area.dataset.lcolText)].text = area.value;
+        }),
+      );
+    });
+    els.props.querySelectorAll('[data-lcol]').forEach((btn) => {
+      btn.addEventListener('click', () =>
+        setBlockColumns((cols) => {
+          if (cols.length > 1) cols.splice(Number(btn.dataset.i), 1);
+        }, true),
+      );
+    });
+    const addLayoutCol = els.props.querySelector('#p-addlcol');
+    if (addLayoutCol) {
+      addLayoutCol.addEventListener('click', () =>
+        setBlockColumns((cols) => {
+          if (cols.length < 4) cols.push({ title: `Колона ${cols.length + 1}`, text: '' });
+        }, true),
+      );
+    }
   }
 
   function wireCommon() {
@@ -975,6 +1060,49 @@
         }
         if (block.type === 'image') {
           return previewSection(block.label || 'Изображение', `<div class="pv-img"></div>`);
+        }
+        if (block.type === 'logo') {
+          // Прегледът показва ИСТИНСКОТО изображение, ако е вградено — иначе казва, че липсва.
+          const raw = block.data || block.dataUrl || '';
+          const src = raw ? (/^data:image\/(jpeg|png);base64,/i.test(raw) ? raw : `data:image/png;base64,${raw}`) : '';
+          return previewSection(
+            block.label || 'Лого',
+            src
+              ? `<div class="pv-img"><img alt="лого" style="max-height:80px" src="${esc(src)}" /></div>`
+              : `<div class="pv-note">няма вградено изображение — в PDF-а пише „няма вградено изображение“</div>`,
+          );
+        }
+        if (block.type === 'certificate') {
+          return previewSection(
+            block.label || 'Сертификат (X.509)',
+            `<table><tbody>${['Субект', 'Издател', 'Валиден до', 'SHA-256']
+              .map((k) => `<tr><th class="w45">${esc(k)}</th><td>—</td></tr>`)
+              .join('')}</tbody></table>
+             <div class="pv-note">сертификат „${esc(block.ref || 'cms')}“ се подава от сървъра при генериране</div>`,
+          );
+        }
+        if (block.type === 'columns') {
+          const cols = block.columns || [];
+          return previewSection(
+            block.label || 'Колони',
+            `<div class="u-row" style="gap:12px">${cols
+              .map(
+                (c) =>
+                  `<div style="flex:1"><b>${esc(c.title || '')}</b><div>${esc(c.text || '')}</div></div>`,
+              )
+              .join('')}</div>`,
+          );
+        }
+        if (block.type === 'dynamic') {
+          return previewSection(
+            block.label || 'Динамичен блок',
+            `<table><tbody>
+              <tr><th class="w45">Източник</th><td>${esc(block.source || '—')}</td></tr>
+              <tr><th class="w45">Агрегат</th><td>${esc(block.aggregate || 'count')}</td></tr>
+              <tr><th class="w45">Стойност</th><td>—</td></tr>
+             </tbody></table>
+             <div class="pv-note">стойността се смята от данните при генериране</div>`,
+          );
         }
         if (block.type === 'qr') {
           return `<div class="pv-qr" title="QR placeholder"></div>`;
