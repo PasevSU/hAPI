@@ -1,0 +1,66 @@
+{
+  "title": "Доказателства (демонстрация)",
+  "items": [
+    {
+      "id": "f1",
+      "type": "file",
+      "name": "Договор_17.pdf",
+      "extension": "pdf",
+      "bytes": 248320,
+      "created": "2026-09-02T09:12:00Z",
+      "modified": "2026-09-14T16:40:00Z",
+      "sha256": "9f2c1d0e7a4b6c8d1e3f5a7b9c0d2e4f6a8b0c1d3e5f7a9b0c2d4e6f8a0b1c3d",
+      "sha512": "",
+      "protection": "Парола + одит",
+      "access": "password",
+      "software": {
+        "name": "ChronoSeal",
+        "license": "Комерсиен",
+        "version": "4.2"
+      }
+    },
+    {
+      "id": "d1",
+      "type": "folder",
+      "name": "Приложения",
+      "children": [
+        {
+          "id": "f2",
+          "type": "file",
+          "name": "Приложение_1.docx",
+          "extension": "other",
+          "bytes": 51200,
+          "created": "2026-09-03T10:00:00Z",
+          "modified": "2026-09-03T10:00:00Z",
+          "sha256": "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
+          "sha512": "",
+          "protection": "Само одит",
+          "access": "free",
+          "software": {
+            "name": "hAPI Enterprise",
+            "license": "Собствен",
+            "version": "0.69.67"
+          }
+        }
+      ]
+    },
+    {
+      "id": "f3",
+      "type": "file",
+      "name": "Снимка_екран.png",
+      "extension": "png",
+      "bytes": 903168,
+      "created": "2026-09-10T12:30:00Z",
+      "modified": "2026-09-10T12:30:00Z",
+      "sha256": "5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
+      "sha512": "",
+      "protection": "Заключен",
+      "access": "locked",
+      "software": {
+        "name": "—",
+        "license": "—",
+        "version": "—"
+      }
+    }
+  ]
+}

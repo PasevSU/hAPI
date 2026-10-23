@@ -25,4 +25,21 @@ function render() {
   app.replaceChildren(); const panel = $('section', 'panel'); const head = $('header', 'head'); const title = $('div'); title.append($('h1', '', `📁 ${state.manifest.title}`), $('p', '', `Изолиран пакет: ${id} · Само предоставените материали`)); const tools = $('div', 'tools'); const expand = $('button', 'tool', 'Разгъни всички'); expand.onclick = () => { const walk = nodes => nodes.forEach(n => { if (n.type === 'folder') { state.expanded.add(n.id); walk(n.children || []) } }); walk(state.manifest.items); render() }; tools.append(expand); head.append(title, tools); panel.append(head);
   const wrap = $('div', 'tablewrap'); const table = $('table'); const thead = $('thead'); const tr = $('tr'); for (const col of ['Име', 'Размер', 'Създаден на', 'Променен на', 'SHA-256', 'Достъп', 'Действия']) tr.append($('th', '', col)); thead.append(tr); table.append(thead); const body = $('tbody'); for (const node of state.manifest.items) addRow(node, 0, body); table.append(body); wrap.append(table); panel.append(wrap); const legend = $('div', 'legend'); for (const s of ['🔓 Свободен', '🔐 С парола', '🔒 Заключен', '🛡️ Ниво на защита', '◈ Лицензиран софтуер', '👁 Преглед', '↓ Изтегляне', '⧉ Копиране на хеш']) legend.append($('span', '', s)); panel.append(legend); app.append(panel); detail(); app.append($('p', 'message', 'Демонстрационен интерфейс: действителният контрол на достъпа, паролите и файловете се осигурява от сървърния Evidence API.'))
 }
-async function init() { await requireConsent(); try { const r = await fetch(`/api/evidence/${encodeURIComponent(id)}/manifest`, { credentials: 'include', cache: 'no-store' }); if (!r.ok) throw Error('API not available'); state.manifest = await r.json() } catch { if (id !== 'demo-evidence') { app.textContent = 'Пакетът не е намерен или нямате достъп до него.'; return } const r = await fetch('./data/demo-evidence.json'); state.manifest = await r.json() } state.expanded = new Set(state.manifest.items.filter(n => n.type === 'folder').map(n => n.id)); render() }; init();
+/**
+ * Манифестът на пакета. Редът е: сървърният API (`GET /api/evidence/<id>/manifest`), а при
+ * липсващ API — демо данните от `./data/demo-evidence.json`, но САМО за демо пакета. За
+ * истински пакет липсата на API е грешка и се казва с думи, вместо да се покаже чужда
+ * демонстрация. Съгласието се пита ПРЕДИ това (виж `init`).
+ */
+async function loadManifest() {
+  // Мрежова грешка се третира като „API не е налично“ — не се хвърля вътре в catch,
+  // за да не се губи причината и за да няма вложени опити.
+  const r = await fetch(`/api/evidence/${encodeURIComponent(id)}/manifest`, { credentials: 'include', cache: 'no-store' }).catch(() => null);
+  if (r && r.ok) return await r.json();
+  // Демо данните са САМО за демо пакета; за истински пакет липсата на API е грешка.
+  if (id !== 'demo-evidence') throw Error('API not available');
+  const demo = await fetch('./data/demo-evidence.json', { cache: 'no-store' }).catch(() => null);
+  if (!demo || !demo.ok) throw Error('демо данните липсват (./data/demo-evidence.json)');
+  return await demo.json();
+}
+async function init() { await requireConsent(); try { state.manifest = await loadManifest() } catch { app.textContent = 'Пакетът не е намерен или нямате достъп до него.'; return } state.expanded = new Set(state.manifest.items.filter(n => n.type === 'folder').map(n => n.id)); render() }; init();

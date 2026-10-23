@@ -102,7 +102,7 @@ function factory(deps) {
           sealed++;
           bytes += raw.length;
         } catch (e) {
-          await fsp.rm(file.full + '.hapi-tmp', { force: true }).catch(() => {});
+          await fsp.rm(file.full + '.hapi-tmp', { force: true }).catch(() => { });
           failed.push({ portal: portal.id, path: file.rel, reason: e.code || 'SEAL_FAILED', detail: String(e.message || '').slice(0, 120) });
         }
       }

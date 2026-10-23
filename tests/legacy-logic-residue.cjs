@@ -110,9 +110,30 @@ const RULES = [
     batch: 'B4',
     enforced: true,
     files: ['hapi_enterprise/server.js'],
-    expect: /workdirIo\.pack\([\s\S]*workdirIo\.read\(/,
+    expect: [/workdirIo\.pack\(/, /workdirIo\.read\(/],
     why: 'файловете в работната папка се пишеха и четяха направо, без слой — при включено L2 това оставя открито съдържание',
     fix: 'запис през `workdirIo.pack()`, четене през `workdirIo.read()` (контейнер + PGP-обвит DEK)',
+  },
+  {
+    // W5: публикуването трябва да включва `data/demo-evidence.json` — фронтендът го търси
+    // при отпаднал API, а преди това се копираше само плоската подредба (404 за демото).
+    id: 'W5-demo-data-published',
+    batch: 'B5',
+    enforced: true,
+    files: ['hapi_enterprise/evidence-portal.js'],
+    expect: [/data\/demo-evidence\.json/],
+    why: 'публикуваше се само плоската подредба, а фронтендът пада към `./data/demo-evidence.json`',
+    fix: '`data/demo-evidence.json` е в списъка на пакета и се публикува',
+  },
+  {
+    // W6: фронтендът трябва да има `loadManifest()` и fallback към демо данните.
+    id: 'W6-loadmanifest',
+    batch: 'B5',
+    enforced: true,
+    files: ['hapi_enterprise/evidence-portal/assets/app.js'],
+    expect: [/async function loadManifest\(/, /\.\/data\/demo-evidence\.json/],
+    why: 'в репото стоеше по-стар фронтенд без `loadManifest()` и без fallback',
+    fix: '`loadManifest()` с API → `./data/demo-evidence.json` само за демо пакета',
   },
 ];
 

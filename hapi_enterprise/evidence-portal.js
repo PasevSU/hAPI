@@ -15,9 +15,22 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-// Файловете на пакета. Демо-данните са `sample-evidence.json` (не в `data/`): папка
-// `data/` се пропуска от експорта на хранилището, а този файл трябва да е част от изданието.
-const FILES = ['portal.html', 'README.md', 'assets/app.js', 'assets/consent.js', 'assets/style.css', 'sample-evidence.json'];
+// Файловете на пакета. Демо-данните се публикуват в ДВЕ подредби, защото фронтендът ги
+// търси по два начина:
+//   • `data/demo-evidence.json` — пътят, който `assets/app.js` ползва при отпаднал API
+//     (`fetch('./data/demo-evidence.json')`). Без него демо страницата дава 404 и това е
+//     точно дефектът W5: публикуваше се само плоската подредба;
+//   • `sample-evidence.json` — плоската подредба, за съвместимост със стари връзки/документи.
+// Папка `data/` не се изключва от `.gitignore` (там е `/data/` само за корена на репото).
+const FILES = [
+  'portal.html',
+  'README.md',
+  'assets/app.js',
+  'assets/consent.js',
+  'assets/style.css',
+  'sample-evidence.json',
+  'data/demo-evidence.json',
+];
 const SUBPATH = path.join('www', 'hapi', 'data');
 // За съобщения: винаги с прави наклонени черти, за да е еднакво на Windows и в контейнера.
 const SUBPATH_TEXT = 'www/hapi/data';
