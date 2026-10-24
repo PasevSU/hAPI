@@ -308,7 +308,7 @@ check('HA-I04', 'ingress', 'blocker', 'относителни asset URL в ingre
 check('HA-I05', 'ingress', 'blocker', 'CSP съответства на HTML', () => {
   const withInlineStyle = [`${ADDON}/ui/index.html`].filter((f) => /<style[\s>]|style="/.test(read(f)));
   if (withInlineStyle.length) need(/style-src 'unsafe-inline'/.test(server), 'inline стилове без style-src unsafe-inline');
-  need(!/<style[\s>]|style="/.test(read(`${ADDON}/portal.html`)), 'portal.html има inline стилове, а CSP е style-src self');
+  need(!/<style[\s>]|style="/.test(read(`${ADDON}/portal/portal.html`)), 'portal.html има inline стилове, а CSP е style-src self');
   return withInlineStyle.length ? 'unsafe-inline където е нужно' : 'стриктно';
 });
 

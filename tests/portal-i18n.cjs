@@ -7,9 +7,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
-const I = require(path.join(ROOT, 'hapi_enterprise', 'portal-i18n.js'));
-const html = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'portal.html'), 'utf8');
-const js = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'portal.js'), 'utf8');
+const I = require(path.join(ROOT, 'hapi_enterprise', 'portal', 'portal-i18n.js'));
+const html = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'portal', 'portal.html'), 'utf8');
+const js = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'portal', 'portal.js'), 'utf8');
 
 const keysOf = (lang) => Object.keys(I.dictionary(lang));
 const CYRILLIC = /[А-Яа-яЁё]/;

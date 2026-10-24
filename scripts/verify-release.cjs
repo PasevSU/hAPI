@@ -150,9 +150,9 @@ check('S03', 'Add-on: всички файлове за стартиране са
     'logger.js',
     'rules/download_rules.json',
     'rules/public_gateway.json',
-    'portal.html',
-    'portal.js',
-    'portal.css',
+    'portal/portal.html',
+    'portal/portal.js',
+    'portal/portal.css',
     'qrcode.js',
     'runtime-config.js',
     'storage-preflight.js',
@@ -385,8 +385,8 @@ check('S11', 'Сигурност: няма тайни и вътрешни адр
 
 // ── S12. Публичен портал ────────────────────────────────────────────────────
 check('S12', 'Портал: адаптивни текстове и сигурно рендиране', () => {
-  const html = readText(path.join(addonDir, 'portal.html'));
-  const js = readText(path.join(addonDir, 'portal.js'));
+  const html = readText(path.join(addonDir, 'portal/portal.html'));
+  const js = readText(path.join(addonDir, 'portal/portal.js'));
   const server = readText(path.join(addonDir, 'server.js'));
   for (const id of ['title', 'files', 'qr', 'status', 'empty', 'count', 'toolbar', 'qr-note', 'foot-note', 'portal-url']) {
     assert(html.includes(`id="${id}"`), 'portal.html липсва id="' + id + '"');
@@ -394,7 +394,7 @@ check('S12', 'Портал: адаптивни текстове и сигурн�
   // 0.69.24: съществителните и текстовете живеят в речника (portal-i18n.js); в portal.js
   // остава само изборът им по вид (`nounOf`). Изискваме и двата файла — иначе страницата
   // би показала ключове вместо думи.
-  const i18nJs = readText(path.join(addonDir, 'portal-i18n.js'));
+  const i18nJs = readText(path.join(addonDir, 'portal/portal-i18n.js'));
   for (const marker of ['buildProfile', 'applyWording', 'KIND_BY_EXT', 'nounOf', 'X-File-Key', 'I18N']) {
     assert(js.includes(marker), 'portal.js липсва ' + marker);
   }

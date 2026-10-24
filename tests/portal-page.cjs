@@ -33,7 +33,7 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
     // Всеки вид артефакт трябва да има съществително НА ВСЕКИ ЕЗИК, иначе страницата
     // би показала „undefined“ вместо „документи“/„documents“/„Dokumente“.
     // Съществителните живеят в речника (portal-i18n.js), затова се проверяват там.
-    const i18n = require('../hapi_enterprise/portal-i18n.js');
+    const i18n = require('../hapi_enterprise/portal/portal-i18n.js');
     const kindValues = new Set([...((script.match(/const KIND_BY_EXT = \{([\s\S]*?)\};/) || [])[1] || '').matchAll(/:\s*"([a-z]+)"/g)].map(m => m[1]));
     assert.ok(kindValues.size >= 4, `видовете артефакти са разпознати (${kindValues.size})`);
     for (const kind of kindValues) {

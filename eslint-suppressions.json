@@ -95,7 +95,7 @@
       "count": 1
     }
   },
-  "hapi_enterprise/portal.js": {
+  "hapi_enterprise/portal/portal.js": {
     "no-unused-vars": {
       "count": 1
     }

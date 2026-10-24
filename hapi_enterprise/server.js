@@ -1489,7 +1489,7 @@ async function handler(req, res) {
       const portal = resolvePortal(parts[1]); if (!portal) return fail(res, 404, 'Not found');
       if ((requirePortalToken || portal.visibility !== 'public') && !portalAuthorized(req, portal, 'read', url)) return fail(res, 404, 'Not found');
       void recordTelemetry('visit', req, portal, null, url);
-      const html = fs.readFileSync(path.join(__dirname, 'portal.html'));
+      const html = fs.readFileSync(path.join(__dirname, 'portal', 'portal.html'));
       // inline стилове не се allow-ват; QR кодът е локален SVG (img-src 'self').
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
       return res.end(html);
@@ -1509,15 +1509,15 @@ async function handler(req, res) {
       // Речникът на публичната страница (BG/EN/DE) — отделен файл, за да се проверява
       // от тест и за да не се пълни portal.js с 200 реда текстове.
       res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
-      return res.end(fs.readFileSync(path.join(__dirname, 'portal-i18n.js')));
+      return res.end(fs.readFileSync(path.join(__dirname, 'portal', 'portal-i18n.js')));
     }
     if (url.pathname === '/portal.js' && method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
-      return res.end(fs.readFileSync(path.join(__dirname, 'portal.js')));
+      return res.end(fs.readFileSync(path.join(__dirname, 'portal', 'portal.js')));
     }
     if (url.pathname === '/portal.css' && method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
-      return res.end(fs.readFileSync(path.join(__dirname, 'portal.css')));
+      return res.end(fs.readFileSync(path.join(__dirname, 'portal', 'portal.css')));
     }
     if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'portals' && parts.length === 3 && method === 'GET') return requirePortalToken ? fail(res, 404, 'Not found') : json(res, 200, { portals: db.portals.filter(p => p.visibility === 'public').map(publicPortal) });
     // Public API Gateway (PG-6): отделен канал, отделна токен схема и централни правила за достъп.

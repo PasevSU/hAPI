@@ -42,7 +42,7 @@ function entries(ctx) {
       label: 'Код на add-on-а (в Docker образа)',
       path: base.appDir,
       kind: 'dir',
-      note: 'server.js, ui/, portal.html (страницата), fonts/, rules/ — чете се от образа, не се редактира',
+      note: 'server.js, ui/, portal/ (страницата), fonts/, rules/ — чете се от образа, не се редактира',
     },
     {
       id: 'data',

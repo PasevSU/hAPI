@@ -14,7 +14,7 @@
 
 | Какво                                     | Къде е на диска                                      | На кой адрес се вижда         |
 | ----------------------------------------- | ---------------------------------------------------- | ----------------------------- |
-| Страницата на add-on-а (evidence портал)  | `/app/portal.html` (в Docker образа, до `server.js`) | `/p/<slug>`, `/p/<portal-id>` |
+| Страницата на add-on-а (публичен портал)  | `/app/portal/portal.html` (в Docker образа, в собствена папка) | `/p/<slug>`, `/p/<portal-id>` |
 | Генерираната страница на конкретен портал | `<данни>/api/<slug>/portal.html`                     | `/portal.html?folder=<slug>`  |
 
 Другите адреси, които струва да се знаят: `/ui/` (панелът), `/api/v1/p/<slug>/api.json`
@@ -28,7 +28,8 @@
 
 ```
 /app                      ← кодът на add-on-а (идва от образа; не се пипа)
-  server.js  start.js  portal.html  portal.js  portal.css
+  server.js  start.js
+  portal/                 ← ЦЕЛИЯТ публичен портал: portal.html, portal.js, portal.css, portal-i18n.js
   ui/                     ← панелът (Enterprise Control Center), сервира се на /ui/
   fonts/  rules/  translations/
 
@@ -89,7 +90,7 @@
 
 | `id` в `layout.entries` | Какво означава                                                    |
 | ----------------------- | ----------------------------------------------------------------- |
-| `app`                   | кодът на add-on-а в образа (`/app`: server.js, ui/, portal.html)  |
+| `app`                   | кодът на add-on-а в образа (`/app`: server.js, ui/, portal/)      |
 | `data`                  | данните на процеса (база, ключове, одит)                          |
 | `files`                 | байтовете на качените файлове по id (`files/<portalId>/<fileId>`) |
 | `internal`              | версии и вътрешни артефакти (`internal/<portalId>/<fileId>/…`)    |

@@ -50,7 +50,7 @@ const root = path.join(__dirname, '..');
     assert.equal(byId['portal-folder'].checked, false, 'папката на портала е относителна (за всеки портал своя)');
 
     // ── 3. Двете значения на portal.html съществуват реално ────────────────
-    const appPage = path.join(root, 'hapi_enterprise', 'portal.html');
+    const appPage = path.join(root, 'hapi_enterprise', 'portal', 'portal.html');
     assert.equal(fs.existsSync(appPage), true, 'страницата на add-on-а е в образа: ' + appPage);
     const portalRes = await server.api('/admin/api/portals', 'POST', { slug: 'layout-' + Date.now().toString(36), title: 'Структура' });
     assert.equal(portalRes.status, 201, 'порталът се създава: ' + JSON.stringify(portalRes.data).slice(0, 160));
@@ -65,7 +65,7 @@ const root = path.join(__dirname, '..');
     const doc = fs.readFileSync(path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'STORAGE_LAYOUT.md'), 'utf8');
     for (const id of ids) assert.ok(doc.includes(id), `документът споменава „${id}“`);
     for (const url of routeUrls) assert.ok(doc.includes(url), `документът споменава адреса ${url}`);
-    for (const fragment of ['/app/portal.html', 'api/<slug>/portal.html', '/share/<slug>', '/config/www/hapi/data/']) {
+    for (const fragment of ['/app/portal/portal.html', 'api/<slug>/portal.html', '/share/<slug>', '/config/www/hapi/data/']) {
       assert.ok(doc.includes(fragment), `документът показва пътя ${fragment}`);
     }
     assert.match(doc, /portal\.html` е ДВЕ неща/, 'документът изрично обяснява двете значения на portal.html');

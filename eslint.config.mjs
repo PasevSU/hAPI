@@ -31,8 +31,9 @@ export default [
   {
     files: [
       'hapi_enterprise/ui/**/*.js',
-      'hapi_enterprise/portal.js',
-      'hapi_enterprise/portal-i18n.js',
+      // Целият публичен портал живее в своя папка (страница, скрипт, речник) — браузърни
+      // глобални, както UI-я; дотогава беше в корена и се изброяваше по име.
+      'hapi_enterprise/portal/**/*.js',
       'hapi_enterprise/secret-view.js',
       'hapi_enterprise/generator/**/*.js',
       'custom_components/**/*.js'
