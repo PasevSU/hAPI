@@ -17,6 +17,7 @@ const crypto = require('node:crypto');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const ooxml = require('./ooxml');
+const contentId = require('./content-id');
 
 /** Максимална дълбочина: коренът е ниво 0, разрешени са нива 1, 2 и 3. */
 const MAX_DEPTH = 3;
@@ -128,6 +129,9 @@ function manifestFor({ portal, revision, files, archiveId, note }) {
   return {
     schema_version: 1,
     kind: 'qr-manifest',
+    // §12: `manifest_id` е звеното между отчета и QR-а. Стабилен е за ревизията (един QR =
+    // един манифест), без да зависи от самия хаш на манифеста (иначе би се самопроменил).
+    manifest_id: 'MF-' + revision.id,
     portal_id: portal.id,
     portal_slug: portal.slug,
     contract: revision.contract || 'order',
@@ -143,6 +147,9 @@ function manifestFor({ portal, revision, files, archiveId, note }) {
       const reg = byPath.get(f.path);
       return {
         path: f.path,
+        // §11: идентичността на съдържанието върви с байтовете. Записаната печели (за да не
+        // се смени вече публикувана идентичност); при стари записи се смята от самия файл.
+        content_id: (reg && reg.contentId) || contentId.of({ portalId: portal.id, sha256: f.sha256, size: f.size }),
         sha256: f.sha256,
         size_bytes: f.size,
         published: true,

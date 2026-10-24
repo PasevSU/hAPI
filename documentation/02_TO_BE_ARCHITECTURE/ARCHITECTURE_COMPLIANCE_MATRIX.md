@@ -21,7 +21,7 @@
 | 7 | Старите QR остават проследими | `previousQrId`, `previousManifestHash`, `GET …/qr/{qrId}` | `portal-qr-archive` | ✅ |
 | 8 | Публикуван файл не може да изчезне незабелязано | `listed:false` → 404; режими + основание | `portal-order`, `portal-rules-applied` | 🟡 (виж §5, ред 1) |
 | 9 | Заключен публикуван файл остава видим с основание | `folderFilesOf` + `lockReasonOf`, `403` при изтегляне | `portal-order` | ✅ |
-| 10 | Номер в комбинирания отчет ↔ едно съдържание | няма връзка | — | ⛔ (виж §5, ред 2) |
+| 10 | Номер в комбинирания отчет ↔ едно съдържание | `content-id.js` (`CT-…`), `f.contentId`, `content_id` в манифеста + `manifest_id` | `content-id` (две версии под едно име → два идентификатора) | ✅ |
 | 11 | Порталът е източникът на събитията и сензорите | `observer.js`, `decision-sensors.js`, `portal-qr.stats()` | `visitor-sensors`, `decision-sensors`, `ha-integration-flow` | ✅ |
 | 12 | Публичният клиент не получава физически пътища | отдава се само файл по относителен път; `realpath` проверка | `portal-order` (.. и %2e%2e → 400), `public-route-allowlist` | ✅ |
 
@@ -57,7 +57,7 @@
 
 | # | Липсва | Какво значи | Следваща стъпка |
 | --- | --- | --- | --- |
-| 2 | `report_entry_id → content_id` | номерът в отчета не сочи версия | поле `contentId` при публикуване + тест за две версии |
+
 | 3 | Договор `file` като самостоятелна страница | има QR към файл, но не и страница с неговия списък | `serveFile()` до `serveOrder()` |
 | 4 | Изолация на недоверен HTML | CSP има, sandbox няма | отделен origin/iframe с `sandbox` |
 | 5 | Възстановяване от архив | архивът се сваля, но няма „върни това състояние“ | `POST …/qr/{qrId}/restore` (изрично, с нов QR) |
@@ -69,6 +69,7 @@
 | --- | --- | --- |
 | `ARCHIVE_NOT_TAMPERED` — подмяна в архива се вижда без човешка сверка | `portal-integrity.js` (8 проверки по ред), `POST …/qr/verify`, `qr.integrity` в `/admin/api/sensors` | `portal-integrity` (байтове · манифест · файл вътре · одит · сензор) |
 | `ORDER_URL_COLON` — `/portal.html:<папка>` без пренаписване в прокси | `routes/portal-storage.js` (разчита пътя и подава `order`), `public-route-allowlist.js` | `portal-order` (корен, подпапка, непозната папка → 404), `public-route-allowlist` |
+| `IMMUTABLE_CONTENT_ID` — съдържанието, не името, определя идентичността | `content-id.js`, `contentId` във файла, `content_id` + `manifest_id` в манифеста, `Content ID` в отчетния запис | `content-id` (две версии под едно име · верига `content_id → sha256 → manifest_id → qr_id`) |
 
 Външен пакет `hapi-evidence-portal v1.2` е сверен файл по файл — виж `EVIDENCE_PORTAL_V1.2_REVIEW.md`.
 
@@ -100,4 +101,4 @@
 | 11 | Невалиден или прекратен QR | `portal-qr-archive` (404 / 410 с основание, без съдържание) | ✅ |
 | 12 | Разкриване на абсолютен файлов път през API | `portal-order` (`..` и `%2e%2e` → 400/404), `public-route-allowlist` | ✅ |
 | 13 | Изпълнение на опасен HTML | `html-publish` (CSP), `portal-page-contract`, `panel-framing` | 🟡 CSP има, изолиран контекст (sandbox) — не (вж. §5, ред 4) |
-| 14 | Несъответствие между комбинирания отчет и манифеста | — | ⛔ няма `content_id` (вж. §5, ред 2) |
+| 14 | Несъответствие между комбинирания отчет и манифеста | `content-id` (`content_id` в отчета и в манифеста; две версии → два идентификатора) | ✅ |

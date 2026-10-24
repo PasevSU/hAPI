@@ -207,6 +207,7 @@ function create(deps) {
         id: r.id, revision: r.seq, createdAt: r.createdAt,
         archivedAt: r.archivedAt || null, blockedAt: r.blockedAt || null,
         manifestHash: r.manifestHash || null,
+        manifestId: r.manifestId || (r.manifestHash ? 'MF-' + r.id : null),
         previousQrId: r.previousQrId || null,
         nextQrId: (reg.revisions.find((n) => n.previousQrId === r.id) || {}).id || null,
         archive: archive

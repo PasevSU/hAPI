@@ -53,7 +53,8 @@ function create(deps) {
       revisions: reg.revisions.map((r) => ({
         id: r.id, revision: r.seq, contract: r.contract, createdAt: r.createdAt,
         previousQrId: r.previousQrId || null, previousManifestHash: r.previousManifestHash || null,
-        manifestHash: r.manifestHash || null, archiveId: r.archiveId || null,
+        manifestHash: r.manifestHash || null, manifestId: r.manifestId || null,
+        archiveId: r.archiveId || null,
         archivedAt: r.archivedAt || null, blockedAt: r.blockedAt || null, blockReason: r.blockReason || null,
       })),
       archives: reg.archives,
@@ -114,6 +115,7 @@ function create(deps) {
         active.archiveId = archiveId;
         active.manifest = built.manifest;
         active.manifestHash = manifestHash;
+        active.manifestId = built.manifest.manifest_id;
         const next = {
           id: qr.qrIdOf(active.seq + 1), seq: active.seq + 1, portalId: p.id, contract: active.contract || 'order',
           previousQrId: active.id, previousManifestHash: active.manifestHash, createdAt: saved.createdAt,

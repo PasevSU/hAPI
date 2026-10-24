@@ -119,6 +119,7 @@
       ['Размер', fmtSize(file && file.size)],
       ['Версия', String((file && file.version) || 1)],
       ['Политика', file && (file.accessMode || 'FREE')],
+      ['Content ID', file && file.contentId],
       ['SHA-256 (регистриран при качване)', file && file.sha256],
       ['Качен', file && file.uploadedAt],
       ['Тема / категория', [file && file.topic, file && file.category].filter(Boolean).join(' / ')],
