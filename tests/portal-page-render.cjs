@@ -42,6 +42,10 @@ const { createDocument } = require('./lib/dom-stub.cjs');
     // ── Монтиране: истинският HTML на страницата + истинският portal.js ───────────────
     const html = await (await fetch(`${base}/p/${portalId}`)).text();
     const bodyHtml = html.slice(html.indexOf('<body>') + '<body>'.length, html.indexOf('</body>'));
+    // Адресите идват от сървъра през `#hapi-boot` (data-base/data-api) — затова
+    // \"бут\" е част от body и се монтира заедно с останалата страница.
+    assert.ok(/id="hapi-boot"[^>]*data-api="\/api\/v1\/p\/render-demo"/.test(html), 'сървърът подава пътя на API-то на страницата');
+    assert.ok(/id="hapi-boot"[^>]*data-base="http:\/\/127\.0\.0\.1:\d+"/.test(html), 'сървърът подава базовия адрес на страницата');
     const doc = createDocument({ lang: 'bg' });
     doc.body.innerHTML = bodyHtml;
 
@@ -96,6 +100,13 @@ const { createDocument } = require('./lib/dom-stub.cjs');
     const linkCodes = [...doc.body.querySelectorAll('.file-link')].map((p) => p.querySelector('code').textContent);
     assert.equal(linkCodes.length, 2, 'два файла показват адрес (забраненият — не)');
     for (const code of linkCodes) assert.match(code, /\/api\/v1\/p\/(render-demo|[0-9a-f]+)\/files\/[^/]+\/download$/);
+    // Адресът е АБСОЛЮТЕН и е с базовия адрес от сървъра, а не с `location.origin`: това е
+    // линкът, който посетителят копира и праща нататък (правило 6 от договора за адресите).
+    for (const code of linkCodes) assert.ok(code.startsWith(base + '/api/v1/p/'), 'адресът за изтегляне е абсолютен: ' + code);
+    const shownUrl = doc.getElementById('portal-url').textContent;
+    assert.equal(shownUrl, `${base}/p/${portalId}`, 'изписаният адрес на портала е абсолютен и е по id');
+    doc.getElementById('copy-link').click();
+    await waitFor(() => copied.includes(shownUrl), { label: 'копиране на адреса на портала' });
 
     // ── PP-05: „Изтегли“ е истински линк с download; ключът е поле + бутон ──────────
     const anchors = doc.body.querySelectorAll('a.btn-primary').filter((a) => a.getAttribute('download'));

@@ -12,6 +12,12 @@
 </head>
 
 <body>
+  <!-- Адресите НЕ се строят в страницата. Сървърът записва тук базовия адрес и пътя на
+       публичното API, изчислени от hapi_enterprise/links.js (единственият builder). Така
+       копираният линк е абсолютен и верен и когато страницата е зад прокси с префикс
+       (вж. documentation/02_TO_BE_ARCHITECTURE/LINK_AND_STORAGE_CONTRACT.md, правило 6). -->
+  <div id="hapi-boot" hidden data-base="{{BASE}}" data-api="{{API}}"></div>
+
   <a class="skip" href="#files" id="skip" data-i18n="nav.skip.content">Към съдържанието</a>
 
   <header class="hero">

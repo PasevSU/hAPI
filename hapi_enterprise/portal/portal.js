@@ -52,12 +52,26 @@ function ensureDictionary() {
   }
 }
 ensureDictionary();
-// Ключът на портала от адреса: /p/<id портала> (приема се и /p/<slug>). API-то приема
-// и двете, затова страницата не се нуждае от втора заявка, за да намери slug-а.
-const key = decodeURIComponent((location.pathname.split("/")[2] || "").trim());
+// ── Адреси (LINK_AND_STORAGE_CONTRACT.md, правила 2, 4 и 6) ──────────────────
+// Страницата НЕ строи адреси: сървърът записва в `#hapi-boot` базовия адрес и пътя на
+// публичното API, изчислени от hapi_enterprise/links.js. Затова всеки линк, който
+// посетителят копира, е абсолютен и верен и зад прокси с префикс — докато
+// `location.origin + "/p/"` даваше адрес без префикса.
+const boot = (() => {
+  const el = $("hapi-boot");
+  const data = (el && el.dataset) || {};
+  const trim = (v) =>
+    String(v == null ? "" : v)
+      .trim()
+      .replace(/\/+$/, "");
+  return { base: trim(data.base), api: trim(data.api) };
+})();
 // Токен за частен портал (от линка/QR) — с него се отварят и защитените портали.
 const token = new URL(location.href).searchParams.get("portal_token") || "";
-const apiBase = "/api/v1/p/" + encodeURIComponent(key);
+const apiBase = boot.api;
+/** Абсолютен адрес за копиране и споделяне: базовият адрес идва от сървъра. */
+const absolute = (path) =>
+  (boot.base || String(location.origin || "")) + String(path || "");
 const withAuth = (path) =>
   apiBase + path + (token ? (path.includes("?") ? "&" : "?") + "portal_token=" + encodeURIComponent(token) : "");
 
@@ -302,7 +316,7 @@ async function downloadFile(file, key) {
 
 /** Абсолютен адрес за изтегляне на файл (пази порталния токен, ако има такъв). */
 const downloadUrlFor = (file) =>
-  location.origin + withAuth("/files/" + encodeURIComponent(file.id) + "/download");
+  absolute(withAuth("/files/" + encodeURIComponent(file.id) + "/download"));
 
 /**
  * Резюме на портала (PP-03/PP-06): какво представлява и какво съдържа —
@@ -563,7 +577,7 @@ function paintPortal(data) {
   const manifestUrl = urls.manifest || apiBase + "/manifest";
   // PP-01: идентификаторът на портала — видим и копируем. Адресът се променя със slug-а,
   // id-то остава същият, затова то е това, което се казва по телефон/в поддръжка.
-  const portalId = String(data.id || key);
+  const portalId = String(data.id || "");
   const idEl = $("portal-id");
   idEl.textContent = portalId;
   idEl.title = T("header.portalId") + ": " + portalId;
@@ -571,8 +585,11 @@ function paintPortal(data) {
   $("api-link").href = apiUrl + (token ? "?portal_token=" + encodeURIComponent(token) : "");
   $("manifest-link").href = manifestUrl + (token ? "?portal_token=" + encodeURIComponent(token) : "");
   $("qr").src = (urls.qr || apiBase + "/qr.svg") + (token ? "?portal_token=" + encodeURIComponent(token) : "");
-  $("portal-url").textContent = location.origin + "/p/" + key;
-  $("copy-link").addEventListener("click", () => copy(location.origin + "/p/" + key, T("header.copyLink.ok")));
+  // Адресът на страницата идва от сървъра (`urls.landing`, по id) — той е този, който се
+  // копира и споделя, затова е абсолютен.
+  const landingUrl = urls.landing ? absolute(urls.landing) : String(location.href).split(/[?#]/)[0];
+  $("portal-url").textContent = landingUrl;
+  $("copy-link").addEventListener("click", () => copy(landingUrl, T("header.copyLink.ok")));
 
   // PP-12: пакетът се предлага само когато има файлове без ключ и е включен в add-on-а.
   const pkg = data.package || {};
@@ -622,7 +639,7 @@ function setLanguage(value) {
     applyLanguage();
     const langSelect = $("lang");
     if (langSelect) langSelect.addEventListener("change", (e) => setLanguage(e.target.value));
-    if (!key) throw new Error(T("error.noPortal"));
+    if (!apiBase) throw new Error(T("error.noPortal"));
     const [portalRes, filesRes] = await Promise.all([
       fetch(withAuth(""), { referrerPolicy: "no-referrer" }),
       fetch(withAuth("/files?limit=" + MAX_LISTED), { referrerPolicy: "no-referrer" }),

@@ -87,6 +87,11 @@ const suspects = surface
   .concat(
     fs.readdirSync(path.join(ROOT, 'hapi_enterprise', 'ui')).filter((f) => f.endsWith('.js')).map((f) => path.join(ROOT, 'hapi_enterprise', 'ui', f))
   )
+  // Публичният портал също НЕ строи адреси: базовият адрес и пътят на API-то идват от
+  // сървъра (`#hapi-boot`), за да не се разминават с builder-а (правила 4 и 6).
+  .concat(
+    fs.readdirSync(path.join(ROOT, 'hapi_enterprise', 'portal')).filter((f) => f.endsWith('.js')).map((f) => path.join(ROOT, 'hapi_enterprise', 'portal', f))
+  )
   .concat([path.join(ROOT, 'hapi_enterprise', 'send.js'), path.join(ROOT, 'hapi_enterprise', 'api-spec.js')]);
 const offenders = [];
 for (const file of suspects) {

@@ -1489,7 +1489,8 @@ async function handler(req, res) {
       const portal = resolvePortal(parts[1]); if (!portal) return fail(res, 404, 'Not found');
       if ((requirePortalToken || portal.visibility !== 'public') && !portalAuthorized(req, portal, 'read', url)) return fail(res, 404, 'Not found');
       void recordTelemetry('visit', req, portal, null, url);
-      const html = fs.readFileSync(path.join(__dirname, 'portal', 'portal.html'));
+      // Адресите се строят ТУК (links.js): база от public_base_url/заявката, не от location.origin.
+      const html = fs.readFileSync(path.join(__dirname, 'portal', 'portal.html'), 'utf8').replace('{{BASE}}', htmlEsc(baseUrl(req))).replace('{{API}}', htmlEsc(links.portalApiPath(portal)));
       // inline стилове не се allow-ват; QR кодът е локален SVG (img-src 'self').
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
       return res.end(html);
