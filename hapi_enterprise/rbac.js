@@ -40,7 +40,7 @@ const CAPABILITIES = {
   whoami: { admin: true, operator: 'read', viewer: 'read' },
   users: { admin: true }
 };
-function create({ adminToken, operatorToken, viewerToken, userRoles = {}, groupRoles = {}, defaultRole = 'admin' }) {
+function create({ adminToken, operatorToken, viewerToken, userRoles = {}, groupRoles = {}, defaultRole = 'admin', ssoRole = null }) {
   // Администраторските права са ПО ПОДРАЗБИРАНЕ: профилите (user_roles/group_roles) са
   // незадължителни и само коригират ролята надолу (напр. {"bob":"viewer"}).
   const fallback = ['admin', 'operator', 'viewer'].includes(defaultRole) ? defaultRole : 'admin';
@@ -66,6 +66,11 @@ function create({ adminToken, operatorToken, viewerToken, userRoles = {}, groupR
     if (safeEqual(given, adminToken)) return 'admin';
     if (operatorToken && safeEqual(given, operatorToken)) return 'operator';
     if (viewerToken && safeEqual(given, viewerToken)) return 'viewer';
+    // SSO сесия (OIDC): ролята идва от скоупите на сесията, които сървърът е издал след
+    // ПРОВЕРЕН ID token. Без такъв вход функцията връща `null` — това е само последна стъпка,
+    // след токените и Ingress, за да не се разширяват правата по погрешка.
+    const sso = typeof ssoRole === 'function' ? ssoRole(req) : null;
+    if (sso) return sso;
     return resolveIngress(req);
   }
   function allowed(role, capability, method) {

@@ -43,7 +43,7 @@ const cryptoOptions = {
   tlsCert: optionValue('TLS_CERT', 'tls_cert', ''),
   tlsKey: optionValue('TLS_KEY', 'tls_key', ''),
 };
-const rbac = require('./rbac').create({ adminToken, operatorToken, viewerToken, userRoles: parseRoles(process.env.USER_ROLES || addonOptions.user_roles), groupRoles: parseRoles(process.env.GROUP_ROLES || addonOptions.group_roles), defaultRole: process.env.DEFAULT_ROLE || 'admin' });
+const rbac = require('./rbac').create({ adminToken, operatorToken, viewerToken, userRoles: parseRoles(process.env.USER_ROLES || addonOptions.user_roles), groupRoles: parseRoles(process.env.GROUP_ROLES || addonOptions.group_roles), defaultRole: process.env.DEFAULT_ROLE || 'admin', ssoRole: (req) => ssoRoleOf(req) });
 // Сензори: комуникация, файлове, извиквания, изтегляния, посещения. Агрегати без
 // лични данни; състоянието се записва в <DATA_DIR>/sensors.json и оцелява рестарт.
 const observer = require('./observer').create({ dir: root });
@@ -56,7 +56,7 @@ const gatewayApi = require('./gateway-api');
 gatewayApi.setLogger(log);
 const configProfiles = require('./config-profiles').create(root);
 const storageCheck = require('./storage-check');
-const apiVersion = require('./api-version'); const links = require('./links'); const contentIds = require('./content-id'); const portalAccess = require('./portal-access'); const publicRoutes = require('./public-route-allowlist'); const decisionSensors = require('./decision-sensors').create();
+const apiVersion = require('./api-version'); const links = require('./links'); const contentIds = require('./content-id'); const oidcLib = require('./oidc'); const portalAccess = require('./portal-access'); const publicRoutes = require('./public-route-allowlist'); const decisionSensors = require('./decision-sensors').create();
 const signer = require('./signer');
 const pgp = require('./pgp');
 const packager = require('./packager').create({ root });
@@ -690,7 +690,7 @@ const getPortal = s => db.portals.find(p => p.slug === s);
 const resolvePortal = key => { const k = String(key || ''); if (!k) return null; return db.portals.find(p => p.slug === k) || db.portals.find(p => p.id === k) || null };
 const adminPortal = p => ({ ...publicPortal(p), tokenRequired: !!requirePortalToken, accessQuery: p.visibility === 'public' || requirePortalToken ? '' : portalAccess.issue(p.signingSecret || adminToken, p.id).query, accessExpires: p.visibility === 'public' || requirePortalToken ? null : portalAccess.issue(p.signingSecret || adminToken, p.id).expires, contactId: p.contactId || '', contact: contactById(db, p.contactId), caseId: p.caseId || '', case: require('./cases').caseView(db, p.caseId), htmlProjects: (p.htmlProjects || []).map(x => ({ ...x })), files: p.files.map(f => ({ ...publicFile(f), accessKeys: (f.accessKeys || []).map(k => ({ id: k.id, createdAt: k.createdAt, expiresAt: k.expiresAt || null })), sends: (f.sends || []).map(s => sendLite.adminView(s)) })) });
 const bearerToken = req => ((req.headers.authorization || '').replace(/^Bearer\s+/i, '')).trim();
-const resolveSession = (req, url) => { const token = bearerToken(req) || ((url && url.searchParams.get('portal_token')) || ''); if (!token) return null; return metadataStore.getSession(keyDigest(token)) };
+const resolveSession = (req, url) => { const token = bearerToken(req) || oidcLib.cookie(req, 'hapi_sso') || ((url && url.searchParams.get('portal_token')) || ''); if (!token) return null; return metadataStore.getSession(keyDigest(token)) }; function ssoRoleOf(req) { const token = oidcLib.cookie(req, 'hapi_sso'); if (!token) return null; const session = metadataStore.getSession(keyDigest(token)); if (!session) return null; const scopes = session.scopes || []; if (scopes.includes('admin')) return 'admin'; return scopes.length ? 'viewer' : null }
 const signedValid = (url, p, f) => { const expires = Number(url.searchParams.get('expires')), sig = url.searchParams.get('sig') || ''; if (!Number.isSafeInteger(expires) || expires <= Math.floor(Date.now() / 1000) || expires > Math.floor(Date.now() / 1000) + 86400 || !/^[a-f0-9]{64}$/.test(sig)) return false; const expected = crypto.createHmac('sha256', p.signingSecret || adminToken).update(`${p.id}:${f.id}:${expires}`).digest('hex'); return safeEqual(sig, expected) };
 
 const apiRoot = path.join(root, 'api'); const cabinet = require('./cabinet').create({ root, maxBytes: () => runtime.effective().maxUploadBytes, localOpen: process.env.HAPI_LOCAL_OPEN === '1' }); const isLoopback = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress); const fileNameHeader = req => { const v = String(req.headers['x-file-name'] || ''); try { return clean(decodeURIComponent(v)) } catch { return clean(v) } };
@@ -772,7 +772,7 @@ const generatorRoutes = require('./routes/generator').create({ generator, adminG
 const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion });
 // Публични токени за портал (Stage D) и изтегляне на файл от ПАПКАТА му (един вход, не адрес за всеки файл).
 const portalTokens = require('./routes/portal-tokens').create({ json, fail, parse, audit, adminGate, store: metadataStore, policy: portalPolicy, resolvePortal, baseUrl, portalPath: (p) => links.portalLandingPath(p), randomToken: (prefix) => prefix + crypto.randomBytes(32).toString('base64url') });
-const qrRegistry = require('./portal-qr'); const integrityRegistry = require('./portal-integrity'); const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr: qrRegistry, archiveRoot: path.join(root, 'archives'), db: () => db }); const portalQr = require('./routes/portal-qr').create({ json, fail, parse, audit, fsp, path, portalRoot, update, qr: qrRegistry, integrity: integrityRegistry, archiveRoot: path.join(root, 'archives'), adminGate, db: () => db });
+const qrRegistry = require('./portal-qr'); const integrityRegistry = require('./portal-integrity'); const oidcRoutes = require('./routes/oidc').create({ json, fail, audit, oidc: oidcLib, metadataStore, keyDigest, newSessionToken, cookieSecure: (req) => portalPolicy.isSecureRequest(req), baseUrl }); const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr: qrRegistry, archiveRoot: path.join(root, 'archives'), db: () => db }); const portalQr = require('./routes/portal-qr').create({ json, fail, parse, audit, fsp, path, portalRoot, update, qr: qrRegistry, integrity: integrityRegistry, archiveRoot: path.join(root, 'archives'), adminGate, db: () => db });
 // PGP ключохранилище (B2): ключовете идват само от изрични пътища; тук се държи една
 // инстанция, за да е еднакъв отговорът „има ли ключ“ за целия сървър.
 const keyring = require('./path-crypto').create({ env: process.env });
@@ -930,7 +930,7 @@ async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       return fail(res, 429, 'Too many requests');
     }
-    if (await portalTokens.handle({ req, res, url, parts, method })) return; if (await portalStorage.handle({ req, res, url, parts, method })) return;
+    if (await portalTokens.handle({ req, res, url, parts, method })) return; if (await portalStorage.handle({ req, res, url, parts, method })) return; if (await oidcRoutes.handle({ req, res, url, method })) return;
     if (url.pathname === '/api/v1/auth/login' && method === 'POST') {
       if (!loginPeerGate(req, res)) return;
       const b = await parse(req); const username = clean(b.username), password = String(b.password || '');

@@ -70,6 +70,7 @@
 | `IMMUTABLE_CONTENT_ID` — съдържанието, не името, определя идентичността | `content-id.js`, `contentId` във файла, `content_id` + `manifest_id` в манифеста, `Content ID` в отчетния запис | `content-id` (две версии под едно име · верига `content_id → sha256 → manifest_id → qr_id`) |
 | `RESTORE_FROM_ARCHIVE` — връщане към старо състояние без загуба | `POST …/qr/{qrId}/restore`: проверка → предпазен архив → запис на байтовете; излишните НЕ се трият | `portal-qr-restore` (предпазен архив · точни байтове · `keptExtra` · повреден архив → 409) |
 | `PORTAL_PING` — връзката до портала е проверима | `GET /api/v1/p/<slug>/ping` (право `read`, без съдържание) | `portal-qr-restore` (200 · активен QR · договори · непознат портал → 404) |
+| `OIDC_PKCE_LOGIN` — вход през външен доставчик без тайна в адреса | `oidc.js` (PKCE S256, RS256, state/nonce), `routes/oidc.js`, бисквитка `hapi_sso` | `oidc-login` (поток · state веднъж · роля от групи · `alg none`/изтекъл отказ) |
 
 Външен пакет `hapi-evidence-portal v1.2` е сверен файл по файл — виж `EVIDENCE_PORTAL_V1.2_REVIEW.md`.
 

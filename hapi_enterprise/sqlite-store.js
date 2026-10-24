@@ -68,7 +68,9 @@ function open(jsonPath) {
   const deletePortalUsersStmt = db.prepare('DELETE FROM user_portals WHERE portal_id=?');
   const selectUserPortals = db.prepare('SELECT portal_id FROM user_portals WHERE username=? ORDER BY portal_id');
   const selectPortalUsers = db.prepare('SELECT username FROM user_portals WHERE portal_id=? ORDER BY username');
-  const parseScopes = v => { try { const a = JSON.parse(v); return Array.isArray(a) ? a.filter(s => s === 'read' || s === 'download') : ['read', 'download'] } catch { return ['read', 'download'] } };
+  // `admin` е валиден скоуп: досега се отрязваше и това правеше невъзможен административен
+  // достъп през сесия (напр. OIDC), дори когато потребителят е записан с него.
+  const parseScopes = v => { try { const a = JSON.parse(v); return Array.isArray(a) ? a.filter(s => s === 'read' || s === 'download' || s === 'admin') : ['read', 'download'] } catch { return ['read', 'download'] } };
   const nowIso = () => new Date().toISOString();
   function validate(v) { if (!v || !Array.isArray(v.portals)) throw Error('Invalid metadata payload'); if (!Array.isArray(v.qrArtifacts)) v.qrArtifacts = []; return v }
   // Повредени метаданни не бива да излизат като гол `SyntaxError` от JSON.parse:

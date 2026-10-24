@@ -170,8 +170,14 @@ flowchart LR
 и **нищо от съдържанието** (без файлове и хешове). Служи за проверка на връзката от външен
 клиент, преди той да поиска `qr.json` или страница.
 
-## 8. Сензори и Home Assistant
-1. `observer.js` записва заявките (нормализирани маршрути — токенът не влиза в името на маршрута).
+## 7г. Вход през външен доставчик (OIDC)
+
+`GET /api/v1/auth/oidc/login` → 302 към доставчика (PKCE `S256`, `state`, `nonce`) →
+`GET /api/v1/auth/oidc/callback` → код → токен → **проверка на ID token** (`RS256`, `iss`,
+`aud`, `exp`, `nonce`) → роля от групите → обикновена hAPI сесия + HttpOnly бисквитка
+`hapi_sso`. Токенът не влиза в адреса. Подробности и настройки: `OIDC_LOGIN.md`.
+
+## 8. Сензори и Home Assistant1. `observer.js` записва заявките (нормализирани маршрути — токенът не влиза в името на маршрута).
 2. `portal-policy.snapshot()` дава броячите за достъп, `portal-qr.stats(db)` — за QR/архиви/заключени файлове, `decision-sensors.evaluate()` — решението „какво да провериш“.
 3. `/admin/api/sensors` връща едно тяло: `security`, `qr`, `guidance`, телеметрия.
 4. `custom_components/hapi_enterprise/coordinator.py` превежда блоковете към entity ключове (`_normalize_security`, `_normalize_qr`, `_normalize_guidance`); `sensor.py`/`binary_sensor.py` само ги показват.
