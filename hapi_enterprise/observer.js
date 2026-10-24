@@ -51,6 +51,10 @@ function normalizePath(pathname) {
     .replace(/^\/qr\/[^/]+/, '/qr/:slug')
     .replace(/^\/p\/[^/]+/, '/p/:slug')
     .replace(/^\/site\/[^/]+\/[^/]+/, '/site/:portal/:project')
+    // `/t/<token>` е ПУБЛИЧЕН вход по токен. Без това токенът отиваше в името на
+    // маршрута и оттам в `sensors.json` и в `/admin/api/sensors` — точно това, което
+    // Stage D забранява. Нормализира се ПРЕДИ всичко останало по пътя.
+    .replace(/^\/t\/[^/]+/, '/t/:token')
     .replace(/^\/admin\/api\/portals\/[^/]+/, '/admin/api/portals/:id')
     .replace(/^\/admin\/api\/packages\/[^/]+/, '/admin/api/packages/:id')
     .replace(/^\/admin\/api\/pgp\/keys\/[^/]+/, '/admin/api/pgp/keys/:id');
@@ -81,6 +85,11 @@ function create({ dir, flushMs = 5000, maxRoutes = 200, sampleSize = 512 } = {})
         state.downloads = { ...emptyState().downloads, ...(saved.downloads || {}) };
         state.visits = { ...emptyState().visits, ...(saved.visits || {}) };
         state.visits.portals = { ...((saved.visits && saved.visits.portals) || {}) };
+        // Стар запис може да носи токен в името на маршрута (преди нормализацията на
+        // `/t/<token>`). Такъв ключ се изтрива, за да не остане тайна на диска.
+        for (const key of Object.keys(saved.routes || {})) {
+          if (/\/(pt_|ps_|pu_|fk_)[A-Za-z0-9_-]{8,}/.test(key)) delete saved.routes[key];
+        }
       }
     } catch {
       /* първи старт или повреден файл: започваме чисто */

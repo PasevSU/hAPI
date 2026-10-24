@@ -114,6 +114,8 @@ async function verifyPortalFiles(p, ctx) {
   return { portalId: p.id, summary, files: results, verified: summary.VERIFIED === results.length && results.length === p.files.length };
 }
 const dbPath = runtime.databasePath, filesRoot = path.join(root, 'files'), internalRoot = path.join(root, 'internal'); let db = { portals: [], qrArtifacts: [] }; let queue = Promise.resolve(); const metadataStore = require('./sqlite-store').open(dbPath);
+// Една политика за достъп до портал (Stage D): идентичност → портал → ресурс → действие.
+const portalPolicy = require('./portal-policy').create({ store: metadataStore, requireToken: requirePortalToken, signedPortal: (url, p) => portalAccess.allow(url, p, { requireToken: requirePortalToken, fallbackSecret: adminToken }), onDeny: (d) => void audit('portal.access.denied', d) });
 // Споделени данни между процесите: `bind` кара `db` да сочи към това, което е В БАЗАТА
 // (включително след запис на друг процес), а `transaction` пази записа с междупроцесна
 // ключалка. Заключването е в data директорията, за да е едно за всички процеси върху нея.
@@ -690,7 +692,6 @@ const resolvePortal = key => { const k = String(key || ''); if (!k) return null;
 const adminPortal = p => ({ ...publicPortal(p), tokenRequired: !!requirePortalToken, accessQuery: p.visibility === 'public' || requirePortalToken ? '' : portalAccess.issue(p.signingSecret || adminToken, p.id).query, accessExpires: p.visibility === 'public' || requirePortalToken ? null : portalAccess.issue(p.signingSecret || adminToken, p.id).expires, contactId: p.contactId || '', contact: contactById(db, p.contactId), caseId: p.caseId || '', case: require('./cases').caseView(db, p.caseId), htmlProjects: (p.htmlProjects || []).map(x => ({ ...x })), files: p.files.map(f => ({ ...publicFile(f), accessKeys: (f.accessKeys || []).map(k => ({ id: k.id, createdAt: k.createdAt, expiresAt: k.expiresAt || null })), sends: (f.sends || []).map(s => sendLite.adminView(s)) })) });
 const bearerToken = req => ((req.headers.authorization || '').replace(/^Bearer\s+/i, '')).trim();
 const resolveSession = (req, url) => { const token = bearerToken(req) || ((url && url.searchParams.get('portal_token')) || ''); if (!token) return null; return metadataStore.getSession(keyDigest(token)) };
-const portalAuthorized = (req, p, scope = 'read', url) => { const s = resolveSession(req, url); return !!(s && (s.scopes || []).includes(scope)) };
 const signedValid = (url, p, f) => { const expires = Number(url.searchParams.get('expires')), sig = url.searchParams.get('sig') || ''; if (!Number.isSafeInteger(expires) || expires <= Math.floor(Date.now() / 1000) || expires > Math.floor(Date.now() / 1000) + 86400 || !/^[a-f0-9]{64}$/.test(sig)) return false; const expected = crypto.createHmac('sha256', p.signingSecret || adminToken).update(`${p.id}:${f.id}:${expires}`).digest('hex'); return safeEqual(sig, expected) };
 
 const apiRoot = path.join(root, 'api'); const cabinet = require('./cabinet').create({ root, maxBytes: () => runtime.effective().maxUploadBytes, localOpen: process.env.HAPI_LOCAL_OPEN === '1' }); const isLoopback = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress); const fileNameHeader = req => { const v = String(req.headers['x-file-name'] || ''); try { return clean(decodeURIComponent(v)) } catch { return clean(v) } };
@@ -770,6 +771,8 @@ const reportsRoutes = require('./routes/reports').create({
 
 const generatorRoutes = require('./routes/generator').create({ generator, adminGate, audit, json, fail, parse });
 const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion });
+// Публични токени за един портал (Stage D) — издаване, отнемане и вход по `/t/<token>`.
+const portalTokens = require('./routes/portal-tokens').create({ json, fail, parse, audit, adminGate, store: metadataStore, policy: portalPolicy, resolvePortal, baseUrl, portalPath: (p) => links.portalLandingPath(p), randomToken: (prefix) => prefix + crypto.randomBytes(32).toString('base64url') });
 // PGP ключохранилище (B2): ключовете идват само от изрични пътища; тук се държи една
 // инстанция, за да е еднакъв отговорът „има ли ключ“ за целия сървър.
 const keyring = require('./path-crypto').create({ env: process.env });
@@ -927,6 +930,8 @@ async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       return fail(res, 429, 'Too many requests');
     }
+    // Токени за портал: `/t/<token>` е ПУБЛИЧЕН вход, управлението — под `/admin/api`.
+    if (await portalTokens.handle({ req, res, url, parts, method })) return;
     if (url.pathname === '/api/v1/auth/login' && method === 'POST') {
       if (!loginPeerGate(req, res)) return;
       const b = await parse(req); const username = clean(b.username), password = String(b.password || '');
@@ -1114,7 +1119,7 @@ async function handler(req, res) {
       // Показва се само това, което панелът рисува: режим, прокси, срок, път до геобазата
       // и дали тя е заредена. Вътрешният `geoFile` не се разкрива.
       const sensorConfig = { ipMode: visitorIntel.config.ipMode, trustProxy: visitorIntel.config.trustProxy, retentionDays: visitorIntel.config.retentionDays, geoipPath: runtime.effective().sensors.geoipPath, geoLoaded: Boolean(visitorIntel.geo && visitorIntel.geo.status && visitorIntel.geo.status.loaded) };
-      return json(res, 200, { version: addonVersion() || apiVersion.VERSION.CURRENT, generatedAt: observed.generatedAt, databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, sensorSettings: sensorConfig, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
+      return json(res, 200, { version: addonVersion() || apiVersion.VERSION.CURRENT, generatedAt: observed.generatedAt, security: portalPolicy.snapshot(), databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, sensorSettings: sensorConfig, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
     }
     if (url.pathname === '/admin/api/database/backup' && method === 'POST') {
       if (!adminGate(req, res, 'backup', method)) return;
@@ -1451,13 +1456,9 @@ async function handler(req, res) {
       const prefix = links.htmlProjectBasePath(p, project.id);
       const cookieName = 'pe_site_' + project.id;
       const cookies = Object.fromEntries((req.headers.cookie || '').split(';').map(v => { const i = v.indexOf('='); return i < 0 ? ['', ''] : [v.slice(0, i).trim(), v.slice(i + 1).trim()] }));
-      const verifySession = () => { const token = cookies[cookieName]; if (!token) return false; const s = metadataStore.getSession(keyDigest(token)); return !!(s && (s.scopes || []).includes('read')) };
-      // Същата политика като `/p/<id>`: сесия (бисквитка или portal_token) ИЛИ подписан достъп.
-      if ((requirePortalToken || p.visibility !== 'public') && !portalAccess.allow(url, p, { requireToken: requirePortalToken, fallbackSecret: adminToken }) && !verifySession()) {
-        const token = url.searchParams.get('portal_token'); const s = token && metadataStore.getSession(keyDigest(token));
-        if (!s || !(s.scopes || []).includes('read')) return fail(res, 404, 'Not found');
-        res.writeHead(302, { 'Location': prefix + '/', 'Set-Cookie': `${cookieName}=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=${prefix}/; Max-Age=2592000`, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }); return res.end();
-      }
+      // Политиката решава; `?portal_token=` се помни в бисквитка, за да не се носи в адреса.
+      const siteAccess = portalPolicy.decide({ req, url, portal: p, action: 'read', token: cookies[cookieName] || '' }); if (!siteAccess.allowed) return fail(res, 404, 'Not found');
+      if (siteAccess.via === 'user-session' && url.searchParams.get('portal_token')) { res.writeHead(302, { 'Location': prefix + '/', 'Set-Cookie': `${cookieName}=${encodeURIComponent(url.searchParams.get('portal_token'))}; HttpOnly; SameSite=Strict; Path=${prefix}/; Max-Age=2592000`, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }); return res.end() }
       const segments = parts.slice(3); if (segments.some(x => x === '.' || x === '..' || x.includes('\\') || x.includes('\0'))) return fail(res, 404, 'Not found');
       const relative = segments.length ? segments.join('/') : 'index.html';
       const base = path.join(htmlProjectsRoot, project.folder); let baseReal, targetReal, st;
@@ -1486,7 +1487,7 @@ async function handler(req, res) {
     // (приема се и /p/<slug> за стари връзки).
     if (parts[0] === 'p' && (parts.length === 2 || (parts.length === 3 && parts[2] === '')) && method === 'GET') {
       const portal = resolvePortal(parts[1]); if (!portal) return fail(res, 404, 'Not found');
-      if ((requirePortalToken || portal.visibility !== 'public') && !portalAccess.allow(url, portal, { requireToken: requirePortalToken, fallbackSecret: adminToken }) && !portalAuthorized(req, portal, 'read', url)) return fail(res, 404, 'Not found');
+      if (!portalPolicy.decide({ req, url, portal, action: 'read' }).allowed) return fail(res, 404, 'Not found');
       void recordTelemetry('visit', req, portal, null, url);
       // Адресите се строят ТУК (links.js): база от public_base_url/заявката, не от location.origin.
       const html = fs.readFileSync(path.join(__dirname, 'portal', 'portal.html'), 'utf8').replace('{{BASE}}', htmlEsc(baseUrl(req))).replace('{{API}}', htmlEsc(links.portalApiPath(portal)));
@@ -1499,8 +1500,8 @@ async function handler(req, res) {
     // папката се отваря и показва файловете ѝ, вместо да е път до файл на диска.
     if (url.pathname === '/portal.html' && method === 'GET' && url.searchParams.get('folder')) {
       const portal = resolvePortal(url.searchParams.get('folder')); if (!portal) return fail(res, 404, 'Not found');
-      // Същата проверка като `/p/<id>` — сесия ИЛИ подписан достъп (require_portal_token ги изключва).
-      if ((requirePortalToken || portal.visibility !== 'public') && !portalAccess.allow(url, portal, { requireToken: requirePortalToken, fallbackSecret: adminToken }) && !portalAuthorized(req, portal, 'read', url)) return fail(res, 404, 'Not found'); void recordTelemetry('visit', req, portal, null, url);
+      // Същата политика като `/p/<id>` — едно решение за всички входове (portal-policy.js).
+      if (!portalPolicy.decide({ req, url, portal, action: 'read' }).allowed) return fail(res, 404, 'Not found'); void recordTelemetry('visit', req, portal, null, url);
       const html = portalFolder.page(portal, baseUrl(req));
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
       return res.end(html);
@@ -1684,7 +1685,7 @@ async function handler(req, res) {
       return streamDownload(req, res, fp, stat, hit.file.name, onDownload);
     }
     if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'p') {
-      const p = resolvePortal(parts[3]); if (!p) return fail(res, 404, 'Not found'); const tail = parts.slice(4); const downloadRoute = tail[0] === 'files' && tail[2] === 'download'; const fileForSigned = downloadRoute ? p.files.find(f => f.id === tail[1]) : null; const signed = !!(fileForSigned && fileMode(fileForSigned) === 'FREE' && signedValid(url, p, fileForSigned)); const portalSigned = portalAccess.allow(url, p, { requireToken: requirePortalToken, fallbackSecret: adminToken }); if ((requirePortalToken || p.visibility !== 'public') && (!signed || requirePortalToken) && !portalSigned && !portalAuthorized(req, p, downloadRoute ? 'download' : 'read', url)) return fail(res, 404, 'Not found');
+      const p = resolvePortal(parts[3]); if (!p) return fail(res, 404, 'Not found'); const tail = parts.slice(4); const downloadRoute = tail[0] === 'files' && tail[2] === 'download'; const fileForSigned = downloadRoute ? p.files.find(f => f.id === tail[1]) : null; const signed = !!(fileForSigned && fileMode(fileForSigned) === 'FREE' && !requirePortalToken && signedValid(url, p, fileForSigned)); const decision = portalPolicy.decide({ req, url, portal: p, action: downloadRoute ? 'download' : 'read' }); if (!signed && !decision.allowed) return fail(res, 404, 'Not found');
       if (!tail.length && method === 'GET') { observer.visit({ portalId: p.id }); void recordTelemetry('visit', req, p, null, url); return json(res, 200, publicPortal(p)); }
       if (tail[0] === 'openapi.json' && tail.length === 1 && method === 'GET') { try { return json(res, 200, JSON.parse(await fsp.readFile(path.join(apiRoot, p.slug, 'openapi.json'), 'utf8'))) } catch { return json(res, 200, spec(p, baseUrl(req))) } }
       // QR кодът води към ПУБЛИЧНАТА СТРАНИЦА на портала (/p/<slug>), не към JSON API-то:

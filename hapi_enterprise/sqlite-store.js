@@ -18,7 +18,19 @@ function open(jsonPath) {
  CREATE INDEX IF NOT EXISTS file_portal_idx ON file_index(portal_id);
  CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password_hash TEXT NOT NULL, scopes TEXT NOT NULL DEFAULT '["read","download"]', active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE, created_at TEXT NOT NULL, expires_at TEXT);
- CREATE INDEX IF NOT EXISTS sessions_username_idx ON sessions(username);`);
+ CREATE INDEX IF NOT EXISTS sessions_username_idx ON sessions(username);
+ -- Stage D: публичен токен за ЕДИН портал. Пази се само SHA-256 отпечатъкът — самият
+ -- токен съществува един път, в отговора на издаването. Няма FOREIGN KEY към
+ -- portal_index, защото индексът се пресъздава при всеки запис на метаданните
+ -- (ON DELETE CASCADE би изтрил токените). Порталите се проверяват в JS.
+ CREATE TABLE IF NOT EXISTS portal_tokens (id TEXT PRIMARY KEY, portal_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, scopes TEXT NOT NULL, label TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, expires_at TEXT, revoked_at TEXT);
+ CREATE INDEX IF NOT EXISTS portal_tokens_portal_idx ON portal_tokens(portal_id);
+ -- Краткотрайна бисквитка, издадена СЛЕД отваряне на /t/<token>. Живее само докато
+ -- токенът е валиден: отнемането му трие и сесиите (без да се чака срокът).
+ CREATE TABLE IF NOT EXISTS portal_sessions (token_hash TEXT PRIMARY KEY, portal_token_id TEXT NOT NULL REFERENCES portal_tokens(id) ON DELETE CASCADE, portal_id TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL);
+ CREATE INDEX IF NOT EXISTS portal_sessions_token_idx ON portal_sessions(portal_token_id);
+ -- ACL на потребителски акаунт: кои портали вижда. Празно = всички (старото поведение).
+ CREATE TABLE IF NOT EXISTS user_portals (username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE, portal_id TEXT NOT NULL, PRIMARY KEY(username, portal_id));`);
   const get = db.prepare('SELECT payload FROM metadata WHERE id=1');
   const getSnapshot = db.prepare('SELECT payload, revision FROM metadata WHERE id=1');
   const getRevision = db.prepare('SELECT revision FROM metadata WHERE id=1');
@@ -39,6 +51,23 @@ function open(jsonPath) {
   const deleteSessionStmt = db.prepare('DELETE FROM sessions WHERE token_hash=?');
   const deleteUserSessionsStmt = db.prepare('DELETE FROM sessions WHERE username=?');
   const deleteExpiredStmt = db.prepare('DELETE FROM sessions WHERE expires_at IS NOT NULL AND expires_at<=?');
+  const insertPortalToken = db.prepare('INSERT INTO portal_tokens(id,portal_id,token_hash,scopes,label,created_at,expires_at) VALUES(?,?,?,?,?,?,?)');
+  const selectPortalTokenByHash = db.prepare('SELECT id,portal_id,scopes,label,created_at,expires_at,revoked_at FROM portal_tokens WHERE token_hash=?');
+  const selectPortalTokens = db.prepare('SELECT id,portal_id,scopes,label,created_at,expires_at,revoked_at FROM portal_tokens WHERE portal_id=? ORDER BY created_at DESC');
+  const revokePortalTokenStmt = db.prepare('UPDATE portal_tokens SET revoked_at=? WHERE id=? AND revoked_at IS NULL');
+  const insertPortalSession = db.prepare('INSERT INTO portal_sessions(token_hash,portal_token_id,portal_id,created_at,expires_at) VALUES(?,?,?,?,?)');
+  // Сесията се чете ЗАЕДНО с токена: отнемане или смяна на правата важи веднага, без
+  // да се чака срокът на бисквитката.
+  const selectPortalSession = db.prepare('SELECT s.token_hash,s.portal_id,s.expires_at,t.id AS token_id,t.scopes,t.expires_at AS token_expires_at,t.revoked_at FROM portal_sessions s JOIN portal_tokens t ON t.id=s.portal_token_id WHERE s.token_hash=?');
+  const deletePortalSessionStmt = db.prepare('DELETE FROM portal_sessions WHERE token_hash=?');
+  const deletePortalSessionsByToken = db.prepare('DELETE FROM portal_sessions WHERE portal_token_id=?');
+  const deleteExpiredPortalSessions = db.prepare('DELETE FROM portal_sessions WHERE expires_at<=?');
+  const countPortalSessions = db.prepare('SELECT COUNT(*) AS n FROM portal_sessions WHERE expires_at>?');
+  const insertUserPortal = db.prepare('INSERT OR IGNORE INTO user_portals(username,portal_id) VALUES(?,?)');
+  const deleteUserPortalsStmt = db.prepare('DELETE FROM user_portals WHERE username=?');
+  const deletePortalUsersStmt = db.prepare('DELETE FROM user_portals WHERE portal_id=?');
+  const selectUserPortals = db.prepare('SELECT portal_id FROM user_portals WHERE username=? ORDER BY portal_id');
+  const selectPortalUsers = db.prepare('SELECT username FROM user_portals WHERE portal_id=? ORDER BY username');
   const parseScopes = v => { try { const a = JSON.parse(v); return Array.isArray(a) ? a.filter(s => s === 'read' || s === 'download') : ['read', 'download'] } catch { return ['read', 'download'] } };
   const nowIso = () => new Date().toISOString();
   function validate(v) { if (!v || !Array.isArray(v.portals)) throw Error('Invalid metadata payload'); if (!Array.isArray(v.qrArtifacts)) v.qrArtifacts = []; return v }
@@ -156,6 +185,44 @@ function open(jsonPath) {
   function deleteUserSessions(username) { deleteUserSessionsStmt.run(username) }
   function purgeExpiredSessions() { deleteExpiredStmt.run(nowIso()) }
 
-  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, close: () => db.close() };
+  // ── Stage D: публични токени за конкретен портал ───────────────────────────
+  const tokenView = (row) => (row ? { id: row.id, portalId: row.portal_id, scopes: parseScopes(row.scopes), label: row.label || '', createdAt: row.created_at, expiresAt: row.expires_at || null, revokedAt: row.revoked_at || null } : null);
+  function createPortalToken({ id, portalId, tokenHash, scopes, label, expiresAt }) { insertPortalToken.run(id, portalId, tokenHash, JSON.stringify(scopes || ['read']), label || '', nowIso(), expiresAt || null) }
+  function getPortalTokenByHash(tokenHash) { return tokenView(selectPortalTokenByHash.get(tokenHash)) }
+  function listPortalTokens(portalId) { return selectPortalTokens.all(portalId).map(tokenView) }
+  /** Отнемане: токенът спира и ВСИЧКИ сесии, произлезли от него — веднага. */
+  function revokePortalToken(id) { const changed = revokePortalTokenStmt.run(nowIso(), id).changes > 0; if (changed) deletePortalSessionsByToken.run(id); return changed }
+  function createPortalSession(tokenHash, { tokenId, portalId, expiresAt }) { insertPortalSession.run(tokenHash, tokenId, portalId, nowIso(), expiresAt) }
+  function getPortalSession(tokenHash) {
+    const row = selectPortalSession.get(tokenHash);
+    if (!row) return null;
+    const now = Date.now();
+    const dead = row.revoked_at || Date.parse(row.expires_at) <= now || (row.token_expires_at && Date.parse(row.token_expires_at) <= now);
+    if (dead) { deletePortalSessionStmt.run(tokenHash); return null }
+    return { tokenHash: row.token_hash, portalId: row.portal_id, tokenId: row.token_id, scopes: parseScopes(row.scopes), expiresAt: row.expires_at };
+  }
+  function deletePortalSession(tokenHash) { return deletePortalSessionStmt.run(tokenHash).changes > 0 }
+  /** Изчиства изтеклите сесии и изтеклите (неотнети) токени връща като списък за одит. */
+  function purgeExpiredPortalAccess() {
+    const now = nowIso();
+    deleteExpiredPortalSessions.run(now);
+    deleteExpiredStmt.run(now);
+    return { sessions: countPortalSessions.get(now).n };
+  }
+  function setUserPortals(username, portalIds) {
+    deleteUserPortalsStmt.run(username);
+    for (const portalId of portalIds || []) insertUserPortal.run(username, String(portalId));
+    return getUserPortals(username);
+  }
+  function getUserPortals(username) { return selectUserPortals.all(username).map((r) => r.portal_id) }
+  /** ACL откъм портала: кой вижда ТОЗИ портал (правото се дава на потребителя). */
+  function setPortalUsers(portalId, usernames) {
+    deletePortalUsersStmt.run(portalId);
+    for (const username of usernames || []) insertUserPortal.run(String(username), portalId);
+    return getPortalUsers(portalId);
+  }
+  function getPortalUsers(portalId) { return selectPortalUsers.all(portalId).map((r) => r.username) }
+
+  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, createPortalToken, getPortalTokenByHash, listPortalTokens, revokePortalToken, createPortalSession, getPortalSession, deletePortalSession, purgeExpiredPortalAccess, setUserPortals, getUserPortals, setPortalUsers, getPortalUsers, close: () => db.close() };
 }
 module.exports = { open };
