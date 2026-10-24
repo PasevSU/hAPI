@@ -24,7 +24,7 @@ assert.deepEqual(manifest.dependencies, ['http'], 'нужна е само http �
 
 // 2. Константи.
 const consts = read('const.py');
-assert.match(consts, /PLATFORMS = \["sensor"\]/, 'const.py: платформа sensor');
+assert.match(consts, /PLATFORMS = \["sensor", "binary_sensor"\]/, 'const.py: платформи sensor + binary_sensor');
 assert.match(consts, /SENSORS_PATH = "\/admin\/api\/sensors"/, 'const.py: пътят на телеметрията');
 assert.match(consts, /MIN_SCAN_INTERVAL = 10/, 'const.py: минимален интервал');
 assert.match(consts, /MAX_SCAN_INTERVAL = 86400/, 'const.py: максимален интервал');
@@ -42,8 +42,8 @@ assert.match(coordinator, /UpdateFailed/, 'coordinator.py: грешките се
 // 4. Сензори: ключовете съвпадат с тези в coordinator и в преводите.
 const sensor = read('sensor.py');
 const sensorKeys = [...sensor.matchAll(/(?<![_a-z])key="([a-z_0-9]+)"/g)].map((m) => m[1]);
-assert.equal(sensorKeys.length, 15, 'очакват се 15 сензора, намерени ' + sensorKeys.length);
-for (const key of ['visits', 'downloads', 'files', 'portal_count', 'file_bytes', 'database_bytes', 'telemetry_bytes', 'unique_visitors', 'visitors_new_24h', 'download_visitors', 'denied_total', 'admin_logins', 'countries_known', 'version', 'sync']) {
+assert.equal(sensorKeys.length, 20, 'очакват се 20 сензора, намерени ' + sensorKeys.length);
+for (const key of ['visits', 'downloads', 'files', 'portal_count', 'file_bytes', 'database_bytes', 'telemetry_bytes', 'unique_visitors', 'visitors_new_24h', 'download_visitors', 'denied_total', 'admin_logins', 'countries_known', 'version', 'sync', 'health', 'http_error_rate', 'latency_p95', 'download_denial_rate', 'recommended_action']) {
   assert.ok(sensorKeys.includes(key), 'sensor.py: липсва сензор ' + key);
   // `sync` не идва от payload-а: смята се в sensor.py от version + версията на
   // интеграцията. Затова не се търси в координатора.
@@ -70,6 +70,27 @@ for (const lang of ['en', 'bg']) {
   }
 }
 
+// 4в. Решение, не само число (Stage E/F): `guidance` се чете готово, не се преизчислява
+// в интеграцията — иначе панелът и Home Assistant биха могли да показват различен статус.
+assert.match(coordinator, /_normalize_guidance/, 'coordinator.py: превежда блока `guidance`');
+for (const key of ['health', 'http_error_rate', 'latency_p95', 'download_denial_rate', 'recommended_action', 'mirror_problem']) {
+  assert.ok(coordinator.includes('"' + key + '"'), 'coordinator.py: липсва ключ ' + key);
+}
+assert.match(coordinator, /"unknown"/, 'липсващото `guidance` е `unknown`, а не „здраво“');
+assert.match(sensor, /class PortalGuidanceSensor/, 'sensor.py: отделен клас за решението');
+assert.match(sensor, /_to_float/, 'сензорите за проценти и ms приемат дробни стойности');
+assert.match(sensor, /recommended_action/, 'sensor.py: показва и препоръчаното действие');
+
+// 4г. Binary sensors: само две неща, но с правилните типове (`problem`, `connectivity`).
+const binarySensor = read('binary_sensor.py');
+const binarySensorKeys = [...binarySensor.matchAll(/(?<![_a-z])key="([a-z_0-9]+)"/g)].map((m) => m[1]);
+assert.deepEqual(binarySensorKeys, ['mirror_problem', 'api_available'], 'binary_sensor.py: точно двата обекта');
+assert.match(binarySensor, /BinarySensorDeviceClass\.PROBLEM/, '`mirror_problem` е device_class=problem');
+assert.match(binarySensor, /BinarySensorDeviceClass\.CONNECTIVITY/, '`api_available` е device_class=connectivity');
+assert.match(binarySensor, /return True/, '`api_available` остава налична и когато API-то не отговаря');
+assert.match(binarySensor, /mirror_problem/, 'стойността идва от add-on-а, не се смята тук');
+assert.ok(consts.includes('binary_sensor'), 'const.py: платформата е включена');
+
 // 5. Config flow: валидация срещу същите граници и грешки, които преводите очакват.
 const flow = read('config_flow.py');
 assert.match(flow, /class PortalEnterpriseConfigFlow\(ConfigFlow, domain=DOMAIN\)/, 'config_flow.py: класът');
@@ -94,6 +115,12 @@ for (const lang of ['en', 'bg']) {
   }
   for (const key of sensorKeys) {
     assert.ok(dict.entity.sensor[key] && dict.entity.sensor[key].name, `${lang}: липсва име за сензор ${key}`);
+  }
+  for (const key of binarySensorKeys) {
+    assert.ok(
+      dict.entity.binary_sensor && dict.entity.binary_sensor[key] && dict.entity.binary_sensor[key].name,
+      `${lang}: липсва име за binary_sensor ${key}`,
+    );
   }
 }
 

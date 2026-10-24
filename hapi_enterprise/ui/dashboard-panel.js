@@ -115,13 +115,24 @@
     const files = list.reduce((sum, p) => sum + (Array.isArray(p.files) ? p.files.length : 0), 0);
     const publicPortals = list.filter((p) => p.visibility === 'public').length;
     const observer = (sensors.ok && sensors.data && sensors.data.observer) || null;
+    // `guidance` е решението на add-on-а (decision-sensors.js): статус, измерени стойности
+    // и ЕДНА препоръчана проверка. Панелът не смята прагове — иначе би показал друго от HA.
+    const guidance = (sensors.ok && sensors.data && sensors.data.guidance) || null;
     const jobState = (jobs.ok && jobs.data) || null;
     const chain = (audit.ok && audit.data) || null;
+
+    const healthLabel = guidance
+      ? ({ ok: 'здраво', warning: 'внимание', critical: 'критично', unknown: 'още не е измерено' }[guidance.status] || guidance.status)
+      : '—';
+    const healthHint = guidance && guidance.recommended
+      ? guidance.recommended.reason || guidance.recommended.action
+      : (guidance ? 'няма препоръчана проверка' : 'сензорите не отговарят');
 
     badge.textContent = portals.ok ? 'свързан' : `HTTP ${portals.status}`;
     badge.className = 'badge ' + (portals.ok ? 'ok' : 'err');
 
     cards.innerHTML = [
+      card('Състояние', healthLabel, healthHint),
       card('Портали', list.length ? String(list.length) : '0', publicPortals ? `${publicPortals} публични` : 'няма публични'),
       card('Файлове в порталите', String(files), 'общо във всички портали'),
       card('Задачи', jobState ? `${jobState.running || 0} активни` : '—', jobState ? `${jobState.queued || 0} в опашка` : 'няма данни'),
@@ -135,6 +146,9 @@
     if (!jobs.ok) problems.push('опашката не отговаря');
     if (!audit.ok) problems.push('одитната проверка не отговаря');
     if (chain && chain.valid === false) problems.push('одитната верига е нарушена');
+    // Препоръката на сензорите вече е с причина и действие — показва се така, че човекът
+    // да знае какво да провери, а не само че „има проблем“.
+    if (guidance && guidance.recommended) problems.push(guidance.recommended.action || guidance.recommended.id);
     hint.textContent = problems.length ? 'Внимание: ' + problems.join(' · ') : '';
 
     // ── Ресурси и хранилище: какво още може да се поиска от add-on-а ─────────

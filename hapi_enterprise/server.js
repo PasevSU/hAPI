@@ -55,7 +55,7 @@ const gatewayApi = require('./gateway-api');
 gatewayApi.setLogger(log);
 const configProfiles = require('./config-profiles').create(root);
 const storageCheck = require('./storage-check');
-const apiVersion = require('./api-version'); const links = require('./links'); const portalAccess = require('./portal-access'); const publicRoutes = require('./public-route-allowlist');
+const apiVersion = require('./api-version'); const links = require('./links'); const portalAccess = require('./portal-access'); const publicRoutes = require('./public-route-allowlist'); const decisionSensors = require('./decision-sensors').create();
 const signer = require('./signer');
 const pgp = require('./pgp');
 const packager = require('./packager').create({ root });
@@ -1114,7 +1114,8 @@ async function handler(req, res) {
       // Показва се само това, което панелът рисува: режим, прокси, срок, път до геобазата
       // и дали тя е заредена. Вътрешният `geoFile` не се разкрива.
       const sensorConfig = { ipMode: visitorIntel.config.ipMode, trustProxy: visitorIntel.config.trustProxy, retentionDays: visitorIntel.config.retentionDays, geoipPath: runtime.effective().sensors.geoipPath, geoLoaded: Boolean(visitorIntel.geo && visitorIntel.geo.status && visitorIntel.geo.status.loaded) };
-      return json(res, 200, { version: addonVersion() || apiVersion.VERSION.CURRENT, generatedAt: observed.generatedAt, databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, sensorSettings: sensorConfig, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
+      // `guidance` е РЕШЕНИЕТО (вж. decision-sensors.js): компонент, причина, действие.
+      return json(res, 200, { version: addonVersion() || apiVersion.VERSION.CURRENT, generatedAt: observed.generatedAt, guidance: decisionSensors.evaluate({ http: observed.http, downloads: observed.downloads, files: observed.files, databaseBytes: database.size, telemetryBytes: telemetryStat.size }), databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, sensorSettings: sensorConfig, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
     }
     if (url.pathname === '/admin/api/database/backup' && method === 'POST') {
       if (!adminGate(req, res, 'backup', method)) return;

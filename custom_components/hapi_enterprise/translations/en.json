@@ -96,6 +96,35 @@
           "mismatch": "Mismatch",
           "unknown": "Unknown"
         }
+      },
+      "health": {
+        "name": "Health",
+        "state": {
+          "ok": "Healthy",
+          "warning": "Warning",
+          "critical": "Critical",
+          "unknown": "Not measured yet"
+        }
+      },
+      "http_error_rate": {
+        "name": "HTTP error rate (5xx)"
+      },
+      "latency_p95": {
+        "name": "Response time p95"
+      },
+      "download_denial_rate": {
+        "name": "Download denial rate"
+      },
+      "recommended_action": {
+        "name": "Recommended check"
+      }
+    },
+    "binary_sensor": {
+      "mirror_problem": {
+        "name": "Storage mirror problem"
+      },
+      "api_available": {
+        "name": "Admin API available"
       }
     }
   }
