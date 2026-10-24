@@ -142,13 +142,59 @@ function baseFromLocation(where = {}) {
   return trimBase(String(where.origin || '') + base);
 }
 
+/**
+ * Нормализира `folder` от адреса: относителен път без воден/заден наклон, без `..`.
+ * Невалиден път → '' (тогава страницата показва портала, не папка).
+ */
+function portalFolderRel(value) {
+  const rel = String(value == null ? '' : value)
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '');
+  if (!rel || rel.split('/').some((part) => !part || part === '.' || part === '..')) return '';
+  return rel;
+}
+
+/**
+ * `?folder=<rel>` за страницата на портала: QR кодът казва КОЯ папка да се зареди.
+ * Празна/невалидна стойност → празен низ (адресът остава само порталът).
+ */
+function portalFolderQuery(value) {
+  const rel = portalFolderRel(value);
+  return rel ? '?folder=' + seg(rel) : '';
+}
+
+/** `portalLandingPath` + `?folder=` — адресът, който влиза в QR кода. */
+function portalLandingFolderPath(p, folder) {
+  return portalLandingPath(p) + portalFolderQuery(folder);
+}
+
+/**
+ * Добавя параметри към адрес, без да задвоява `?` — `joinQuery('/p/x', '?folder=a', '?expires=1')`
+ * дава `/p/x?folder=a&expires=1`. Празните части се прескачат.
+ */
+function joinQuery(pathname, ...queries) {
+  let out = String(pathname == null ? '' : pathname);
+  for (const query of queries) {
+    const part = String(query == null ? '' : query).replace(/^[?&]+/, '');
+    if (!part) continue;
+    out += (out.includes('?') ? '&' : '?') + part;
+  }
+  return out;
+}
+
 const LINKS = {
   trimBase,
   withBase,
   isAbsolute,
+  joinQuery,
   portalLandingPath,
   portalApiPath,
   portalApiFilePath,
+  portalFolderQuery,
+  portalFolderRel,
+  portalLandingFolderPath,
   htmlProjectPath,
   htmlProjectBasePath,
   sendPath,

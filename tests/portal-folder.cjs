@@ -17,7 +17,10 @@ const shareRoot = path.resolve('/share');
 let created = null;
 
 (async () => {
-  const server = await startServer();
+  // Тестът проверява САМАТА папка на портала, затова пуска с включено копие
+  // (`portal_folder_copy`). По подразбиране прикачването не създава папка — това се
+  // пази от `tests/portal-folder-copy.cjs`.
+  const server = await startServer({ env: { PORTAL_FOLDER_COPY: '1' } });
   try {
     const api = (p, method = 'GET', bodyJson) =>
       server.authFetch(server.base + p, {

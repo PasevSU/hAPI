@@ -9,10 +9,9 @@
     const { esc, state, p, api, FLAGS, ICON, ico, fmtDate, qrSvg, contactSelect, caseSelect, newContactFields, newCaseFields } = ctx;
     // Блокът се сгъва/разгъва — по подразбиране е отворен (`controlOpen !== false`).
     const open = state.controlOpen !== false;
-    // QR кодът кодира СТРАНИЦАТА на портала (`api.landing`, адресирана по id), а НЕ адреса
-    // на SVG изображението: сканиран, той трябва да отвори портала, не картинката.
-    // (До 0.69.70 тук се подаваше `api.qrUrl` и QR кодът в панела водеше към `/api/v1/p/<slug>/qr.svg`.)
-    const qrPage = api ? api.landing || (api.refs && api.refs.landingUrl) || '' : '';
+    // QR кодът кодира СТРАНИЦАТА на портала заедно с ПАПКАТА (`?folder=`), а НЕ адреса
+    // на SVG изображението: сканиран, той трябва да отвори портала с неговите файлове.
+    const qrPage = api ? api.folderUrl || api.landing || (api.refs && api.refs.landingUrl) || '' : '';
     const qr = qrSvg(qrPage);
     // Адресите се показват ВИНАГИ: за частен портал носят подписан достъп (`?expires=&sig=`),
     // който сървърът издава (portal-access.js) — иначе `/p/<id>`, API-то и QR кодът връщат 404.
@@ -24,7 +23,7 @@
           new Date((api.accessExpires || 0) * 1000).toLocaleString('bg-BG'),
         )}; след това се генерира нов („Създай и генерирай API + QR“).</p>`
         : (api.tokenRequired || state.portalTokenRequired)
-          ? '<p class="hint">Включено е <code>require_portal_token</code>: всеки адрес иска вход в add-on-а, включително за публичен портал. За външно споделяне избери друг режим на достъп.</p>'
+          ? '<p class="hint">Включено е <code>require_portal_token</code>: всеки адрес иска вход в add-on-а, включително за публичен портал. За външно споделяне издай <strong>токен за портал</strong> (секция „Публичен достъп“ по-долу) — той е ключът, който получателят отваря.</p>'
           : isPublic
             ? ''
             : '<p class="hint">Порталът е частен — адресът се отваря само с ключ или сесия.</p>';
@@ -103,7 +102,8 @@
                          <dt>Файлове</dt><dd><code>${esc(api.refs.filesUrl || '')}</code></dd>
                          <dt>Хранилище</dt><dd><code>${esc(api.refs.storageUrl || '')}</code></dd>
                          <dt>OpenAPI</dt><dd><code>${esc(api.refs.openapiUrl || '')}</code></dd>
-                         <dt>Адрес на портала</dt><dd><code>${esc(qrPage)}</code></dd>
+                         <dt>Адрес на портала</dt><dd><code>${esc(api.landing || '')}</code></dd>
+                         <dt>Папка</dt><dd><code>${esc(api.folder ? '/' + api.folder : '—')}</code></dd>
                          <dt>QR изображение</dt><dd><code>${esc(api.qrUrl || '')}</code></dd>
                          <dt>Генерирано</dt><dd>${esc((api.at || '').slice(0, 19).replace('T', ' '))}</dd>
                          <dt>Файлове в API</dt><dd>${p.files.length}</dd>
@@ -122,6 +122,25 @@
                   <button type="button" class="btn btn-sm" id="pf-integrity-job" title="Фонова проверка с прогрес">Пусни фонова проверка</button>
                 </div>
                 <output class="pf-security-out" id="pf-security-out" aria-live="polite"></output>
+              </div>
+              <div class="pf-security">
+                <h6>${ico('lock')} Публичен достъп (токен за този портал)</h6>
+                <p class="hint">Токенът важи <strong>само за този портал</strong> и се показва <strong>веднъж</strong> —
+                  в базата остава само отпечатък. Адресът <code>/t/&lt;токен&gt;</code> издава кратка бисквитка
+                  (10 мин) и отваря портала; работи и при включено <code>require_portal_token</code>, защото
+                  токенът Е ключът. Отнемането спира и вече отворените сесии.</p>
+                <div class="u-row u-row-2">
+                  <select id="pf-token-ttl" title="Колко да важи токенът">
+                    <option value="24">24 часа</option>
+                    <option value="168">7 дни</option>
+                    <option value="0">без срок</option>
+                  </select>
+                  <button type="button" class="btn btn-sm" id="pf-token-new">Издай токен за портал</button>
+                </div>
+                <div class="u-row u-row-2 u-mt">
+                  <button type="button" class="btn btn-sm" id="pf-token-list">Покажи издадените</button>
+                </div>
+                <output class="pf-security-out" id="pf-token-out" aria-live="polite"></output>
               </div>
             </div>
           </div>

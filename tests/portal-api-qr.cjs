@@ -38,9 +38,8 @@ const svgFor = (text) => { const q = require('../hapi_enterprise/qrcode.js')(0, 
     const apiInfo = await (await fetch(`http://127.0.0.1:${pub}/admin/api/portals/${pid}/api-info`, { headers: H })).json();
     // От 0.69.71 частният портал дава на QR подписан достъп: целта е ПАК страницата
     // с файловете, само че адресът носи `?expires=&sig=` и се отваря без акаунт.
-    assert.ok(apiInfo.qrTarget.startsWith(landing), 'qrTarget = страницата с файлове');
-    assert.match(apiInfo.accessQuery, /^\?expires=\d+&sig=[a-f0-9]{64}$/, 'частният портал дава подписан достъп');
-    assert.equal(apiInfo.qrTarget, landing + apiInfo.accessQuery, 'QR-ът носи подписания достъп към страницата');
+    assert.ok(apiInfo.qrTarget.startsWith(landing), 'qrTarget = страницата с файлове'); assert.match(apiInfo.accessQuery, /^\?expires=\d+&sig=[a-f0-9]{64}$/, 'частният портал дава подписан достъп');
+    assert.equal(apiInfo.qrTarget, require('../hapi_enterprise/links.js').joinQuery(landing, apiInfo.folderQuery, apiInfo.accessQuery), 'QR-ът носи папката и подписания достъп, с един „?“');
     assert.match(apiInfo.qr, /^<svg/);
     assert.equal(apiInfo.links.universal.target, landing, 'universal link води до страницата');
     assert.match(apiInfo.links.nfc.write, /^https:\/\/www\.home-assistant\.io\/tag\//, 'тагът е по официалния формат');

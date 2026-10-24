@@ -166,6 +166,13 @@ configuration:
     description: >-
       Encrypt new uploads at rest (AES-256-GCM with the admin key) by default. An
       explicit X-File-Encrypt header still wins per upload.
+  portal_folder_copy:
+    name: Copy attached files into the portal folder
+    description: >-
+      Off by default: attaching a file to a portal keeps it in the add-on data and does
+      NOT create a folder in /share. Turn on to also place a copy with the original name
+      in the portal folder (storage_root). Files in /share are uploaded from the portal
+      folders panel, where you choose the folder yourself.
   tls_cert:
     name: TLS certificate
     description: >-

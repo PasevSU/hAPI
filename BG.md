@@ -3,7 +3,7 @@
 # 🏠 HOME ASSISTANT Portal Enterprise - hAPI Enterprise
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?color=ff00d8)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.73-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.75-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?color=ff00d8)](https://hacs.xyz)
 
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -308,6 +308,7 @@ node hapi_enterprise\standalone.js
 | Подписване на експортните пакети | `sign_packages` | `false` | `false`: пакетите не се подписват, докато в конзолата не се прикачи частен ключ. |
 | Ключ за подписване | `signing_key` | — | Празно: подписването ползва избрания в конзолата ключ (Настройки → PGP ключове). |
 | Шифроване на файловете | `encrypt_files` | `false` | `false`: качванията се пазят както са; `X-File-Encrypt` пак решава за конкретната заявка. |
+| Копие на файловете в папката на портала | `portal_folder_copy` | `false` | `false`: прикаченият към портал файл остава в данните на add-on-а — в /share не се създава папка. `true` слага и копие с истинското име в папката на портала (storage_root). |
 | TLS сертификат | `tls_cert` | — | Празно: HTTPS е изключен. Сертификат и ключ се задават заедно, иначе стартът се отказва. |
 | TLS частен ключ | `tls_key` | — | Празно: HTTPS е изключен. Или `tls_cert` и `tls_key` заедно, или нито едно. |
 | Сензори · режим на IP | `visitor_ip_mode` | `hashed` | `hashed`: адресите на посетителите се пазят като SHA-256 хеш. `masked` пази подмрежата, `full` — целия адрес. |

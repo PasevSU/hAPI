@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.73-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.75-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
@@ -231,6 +231,7 @@ this tab. Options apply on add-on restart.
 | Sign export packages | `sign_packages` | `false` | `false`: packages are not signed until a private key is attached in the console. |
 | Signing key | `signing_key` | — | Empty: signing uses the key selected in the console (Settings → PGP keys). |
 | Encrypt stored files | `encrypt_files` | `false` | `false`: uploads are stored as they are; `X-File-Encrypt` still wins per request. |
+| Copy attached files into the portal folder | `portal_folder_copy` | `false` | `false`: a file attached to a portal stays in the add-on data — no folder is created in /share. `true` also writes a copy with the original name into the portal folder (storage_root). |
 | TLS certificate | `tls_cert` | — | Empty: HTTPS is off. Certificate and private key must be set together, otherwise startup fails. |
 | TLS private key | `tls_key` | — | Empty: HTTPS is off. Both `tls_cert` and `tls_key` or neither. |
 | Sensors · IP mode | `visitor_ip_mode` | `hashed` | `hashed`: visitor addresses are stored as SHA-256 hashes. `masked` keeps the subnet, `full` the raw address. |

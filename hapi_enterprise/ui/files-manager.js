@@ -3188,6 +3188,66 @@
         say(`Фоновата проверка е в опашката${jobId ? ` (задача ${jobId})` : ''}. Прогресът е в „Настройки → Задачи“.`, 'ok');
       });
     }
+    // Публичен токен за ЕДИН портал (Stage D): без него адресът на частен портал при
+    // `require_portal_token` не се отваря отвън. Токенът се показва ТУК и повече никъде —
+    // в базата стои само отпечатък, затова няма „покажи отново“.
+    const tokenOut = q('#pf-token-out');
+    const sayToken = (html, kind) => {
+      if (!tokenOut) return toast(String(html).replace(/<[^>]+>/g, ' '), kind);
+      tokenOut.innerHTML = html;
+      tokenOut.className = 'pf-security-out ' + (kind || '');
+    };
+    const tokenRow = (t) => {
+      const state = t.revokedAt ? 'отнет' : t.expiresAt ? 'до ' + fmtDate(t.expiresAt) : 'без срок';
+      return `<li><code>${esc(t.label || t.id)}</code> · ${esc((t.scopes || []).join(', '))} · ${esc(state)}
+        ${t.revokedAt ? '' : `<button type="button" class="btn btn-sm" data-token-revoke="${esc(t.id)}">Отнеми</button>`}</li>`;
+    };
+    const bindRevoke = () => {
+      if (!tokenOut) return;
+      tokenOut.querySelectorAll('[data-token-revoke]').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          const p = portal();
+          if (!p) return;
+          if (!window.confirm('Да отнема ли този токен? Всички сесии, отворени с него, спират веднага.')) return;
+          const r = await api(`${P()}/tokens/${encodeURIComponent(btn.dataset.tokenRevoke)}`, { method: 'DELETE' });
+          if (!r.ok) return sayToken(esc(r.error || `HTTP ${r.status}`), 'err');
+          sayToken('Токенът е отнет — старите бисквитки вече не отварят портала.', 'ok');
+        }),
+      );
+    };
+    if (q('#pf-token-new')) {
+      q('#pf-token-new').addEventListener('click', async () => {
+        const p = portal();
+        if (!p) return;
+        if (!connected()) return sayToken('Демо: токенът се издава от add-on-а', 'err');
+        const hours = Number((q('#pf-token-ttl') || {}).value || 24);
+        const body = { scopes: ['read', 'download'], label: p.slug };
+        if (hours > 0) body.ttlSeconds = hours * 3600;
+        const r = await api(`${P()}/tokens`, { method: 'POST', json: body });
+        if (!r.ok) return sayToken(esc(r.error || `HTTP ${r.status}`), 'err');
+        const url = r.data.url || '';
+        sayToken(
+          `<p><strong>Готово.</strong> Адресът се показва само сега:</p><p><code>${esc(url)}</code></p>
+           <button type="button" class="btn btn-sm" id="pf-token-copy">${ICON.copy} Копирай адреса</button>`,
+          'ok',
+        );
+        const copy = q('#pf-token-copy');
+        if (copy) copy.addEventListener('click', () => copyText(url, 'Адресът с токена е копиран'));
+      });
+    }
+    if (q('#pf-token-list')) {
+      q('#pf-token-list').addEventListener('click', async () => {
+        const p = portal();
+        if (!p) return;
+        if (!connected()) return sayToken('Демо: списъкът идва от add-on-а', 'err');
+        const r = await api(`${P()}/tokens`);
+        if (!r.ok) return sayToken(esc(r.error || `HTTP ${r.status}`), 'err');
+        const list = (r.data && r.data.tokens) || [];
+        if (!list.length) return sayToken('Няма издадени токени за този портал.', '');
+        sayToken(`<ul class="pf-token-list">${list.map(tokenRow).join('')}</ul>`, '');
+        bindRevoke();
+      });
+    }
 
     if (q('#fm-search')) {
       q('#fm-search').addEventListener('input', (e) => {

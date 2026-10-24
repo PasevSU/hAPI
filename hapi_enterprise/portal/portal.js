@@ -64,8 +64,18 @@ const boot = (() => {
     String(v == null ? "" : v)
       .trim()
       .replace(/\/+$/, "");
-  return { base: trim(data.base), api: trim(data.api) };
+  return { base: trim(data.base), api: trim(data.api), folder: trim(data.folder), folders: trim(data.folders) };
 })();
+// Част от заявката, която НЕ бива да се губи при отваряне на подпапка (подписан достъп / токен).
+const keptQuery = () => {
+  const src = new URL(location.href).searchParams;
+  const out = new URLSearchParams();
+  for (const key of ["expires", "sig", "portal_token"]) {
+    const value = src.get(key);
+    if (value) out.set(key, value);
+  }
+  return out.toString();
+};
 // Токен за частен портал (от линка/QR) — с него се отварят и защитените портали.
 const token = new URL(location.href).searchParams.get("portal_token") || "";
 const apiBase = boot.api;
@@ -78,6 +88,11 @@ const withAuth = (path) =>
 const MAX_LISTED = 500;
 let portal = null;
 let allFiles = [];
+// Режим „папка“ (`?folder=` в адреса или портал със собствена папка): показва
+// съдържанието на папка от портала.
+let folderMode = false;
+let folderFiles = [];
+let folderSubs = [];
 // Профил на съдържанието — всички текстове на страницата се извеждат от него.
 let prof = null;
 
@@ -323,7 +338,7 @@ const downloadUrlFor = (file) =>
  * брой файлове, общ обем, вид на артефактите, дата и режим на достъп.
  * Текстовете следват договора в documentation/04_FUNCTION_SPECIFICATIONS/PORTAL_PAGE_CONTRACT.md.
  */
-function paintSummary(data) {
+function paintSummary(_portal) {
   const total = prof.total;
   const bytes = allFiles.reduce((sum, f) => sum + (Number(f.size) || 0), 0);
   const kinds = [...prof.kinds.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
@@ -465,18 +480,130 @@ function fileCard(file) {
   return li;
 }
 
-/** Показва файловете, които отговарят на търсенето (по име, тема, категория, група). */
+/**
+ * PP-03: карта на файл от ПАПКАТА на портала (`?folder=` в адреса).
+ * Файлът не е регистриран в портала — има само път в папката, затова изтеглянето минава
+ * през един контролиран маршрут (`/tree/file?path=`), а не през отделен публичен адрес.
+ */
+function folderCard(file) {
+  const li = document.createElement("li");
+  li.className = "file";
+  const head = document.createElement("div");
+  head.className = "file-head";
+  const glyph = document.createElement("span");
+  glyph.className = "file-glyph";
+  glyph.append(icon("file"));
+  const title = document.createElement("h3");
+  title.className = "file-name";
+  title.textContent = file.name;
+  head.append(glyph, title);
+  li.append(head);
+
+  const meta = document.createElement("ul");
+  meta.className = "file-meta";
+  meta.append(metaItem("", fmtSize(file.size)));
+  const date = fmtDate(file.modifiedAt);
+  if (date) meta.append(metaItem("", date));
+  li.append(meta);
+
+  const actions = document.createElement("div");
+  actions.className = "file-actions";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn";
+  btn.textContent = T("file.download");
+  btn.addEventListener("click", () => void downloadByPath(file.path, file.name));
+  actions.append(btn);
+  li.append(actions);
+  return li;
+}
+
+/** Изтегляне по път в папката: същият blob-подход, без изложен адрес за всеки файл. */
+async function downloadByPath(filePath, name) {
+  setStatus(T("file.status.downloading", { name }));
+  try {
+    const res = await fetch(withAuth("/tree/file?path=" + encodeURIComponent("/" + filePath)), {
+      referrerPolicy: "no-referrer",
+    });
+    if (res.status === 404) {
+      setStatus(T("file.status.missing", { name }), "err");
+      return;
+    }
+    if (!res.ok) {
+      setStatus(T("file.status.http", { status: res.status }), "err");
+      return;
+    }
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = name;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+    setStatus(T("file.status.started", { name }), "ok");
+  } catch {
+    setStatus(T("file.status.offline"), "err");
+  }
+}
+
+/**
+ * Режим „папка“: когато адресът носи `?folder=`, страницата показва СЪДЪРЖАНИЕТО на тази
+ * папка от портала (QR кодът я определя). Регистрираните файлове остават като резервен
+ * вариант, ако папката не е достъпна.
+ */
+async function loadFolder(rel) {
+  const res = await fetch(withAuth("/tree?path=" + encodeURIComponent("/" + rel)), { referrerPolicy: "no-referrer" });
+  if (!res.ok) return false;
+  const data = await res.json().catch(() => null);
+  if (!data || !Array.isArray(data.files)) return false;
+  folderMode = true;
+  folderFiles = data.files.map((f) => ({ name: f.name, path: f.path, size: f.size, modifiedAt: f.modifiedAt }));
+  folderSubs = Array.isArray(data.folders) ? data.folders.map((f) => ({ name: f.name, path: f.path })) : [];
+  paint("");
+  const head = $("files-title");
+  if (head) head.textContent = rel ? T("folder.title", { path: "/" + rel }) : (portal && portal.title) || T("files.title.other");
+  return true;
+}
+
 function paint(filter) {
   const q = String(filter || "").trim().toLocaleLowerCase();
+  const source = folderMode ? folderFiles : allFiles;
   const list = q
-    ? allFiles.filter((f) =>
+    ? source.filter((f) =>
       [f.name, f.topic, f.category, f.group, (f.tags || []).join(" ")]
         .join(" ")
         .toLocaleLowerCase()
         .includes(q),
     )
-    : allFiles;
+    : source;
   const box = $("files");
+  if (folderMode) {
+    const rows = list.map(folderCard);
+    if (!q) {
+      for (const sub of folderSubs) {
+        const li = document.createElement("li");
+        li.className = "file";
+        const link = document.createElement("a");
+        link.className = "file-name";
+        link.href =
+          location.pathname +
+          "?folder=" +
+          encodeURIComponent(sub.path) +
+          (keptQuery() ? "&" + keptQuery() : "");
+        link.textContent = "📁 " + sub.name;
+        li.append(link);
+        rows.unshift(li);
+      }
+    }
+    box.replaceChildren(...rows);
+    $("empty").hidden = rows.length > 0;
+    if (!rows.length) $("empty").textContent = T("folder.empty");
+    $("count").textContent = list.length + (list.length === 1 ? " файл" : " файла");
+    if (rows.length) setStatus("");
+    return;
+  }
   box.replaceChildren(...list.map(fileCard));
   $("empty").hidden = list.length > 0;
   if (!list.length) {
@@ -654,6 +781,9 @@ function setLanguage(value) {
     applyWording(prof);
     paintSummary(portal);
     paint("");
+    // Порталите с СОБСТВЕНА папка се отварят направо в нея — файловете са на диска, не в
+    // регистъра. `?folder=` (от QR или от подпапка) сочи папка ВЪТРЕ в нея.
+    if (boot.folders === "1" || boot.folder) await loadFolder(boot.folder);
     if (listing.hasMore) {
       const more = $("more");
       more.textContent = T("files.more", {

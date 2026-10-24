@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.69.73"
+version: "0.69.75"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
@@ -78,6 +78,11 @@ options:
   sign_packages: false
   signing_key: ""
   encrypt_files: false
+  # Прикаченият към портала файл се пази в данните на add-on-а; тук се избира дали да се
+  # слага КОПИЕ и в папката на портала (`storage_root`, напр. /share/<slug>). Изключено
+  # (по подразбиране) означава, че прикачването НЕ създава папка — файловете в /share се
+  # качват през „Папки на портала“, там където човекът ги иска.
+  portal_folder_copy: false
   tls_cert: ""
   tls_key: ""
   # Сензори (посещения): какво се пази от адреса.
@@ -124,6 +129,7 @@ schema:
   sign_packages: bool?
   signing_key: str?
   encrypt_files: bool?
+  portal_folder_copy: bool?
   tls_cert: str?
   tls_key: str?
   visitor_ip_mode: "match(^(hashed|masked|full)?$)?"

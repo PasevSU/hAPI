@@ -95,11 +95,6 @@
       "count": 1
     }
   },
-  "hapi_enterprise/portal/portal.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "hapi_enterprise/qrcode.js": {
     "no-useless-assignment": {
       "count": 2

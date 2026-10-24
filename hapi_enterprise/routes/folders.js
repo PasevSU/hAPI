@@ -48,6 +48,10 @@ function create(deps) {
         return true;
       }
       try {
+        // Коренът на портала се създава при нужда: прикаченият файл вече НЕ го създава
+        // (виж `portal_folder_copy`), а човекът трябва да може да си направи папка.
+        // Междинна липсваща папка остава 404 — там грешката е в пътя, не в корена.
+        await fsp.mkdir(rootAbs, { recursive: true });
         await fsp.mkdir(full);
       } catch (e) {
         if (e.code === 'EEXIST') fail(res, 409, 'Папката вече съществува');

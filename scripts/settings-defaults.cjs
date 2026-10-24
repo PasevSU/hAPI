@@ -208,6 +208,10 @@ const MEANING = {
     en: '`false`: uploads are stored as they are; `X-File-Encrypt` still wins per request.',
     bg: '`false`: качванията се пазят както са; `X-File-Encrypt` пак решава за конкретната заявка.',
   },
+  portal_folder_copy: {
+    en: '`false`: a file attached to a portal stays in the add-on data — no folder is created in /share. `true` also writes a copy with the original name into the portal folder (storage_root).',
+    bg: '`false`: прикаченият към портал файл остава в данните на add-on-а — в /share не се създава папка. `true` слага и копие с истинското име в папката на портала (storage_root).',
+  },
   tls_cert: {
     en: 'Empty: HTTPS is off. Certificate and private key must be set together, otherwise startup fails.',
     bg: 'Празно: HTTPS е изключен. Сертификат и ключ се задават заедно, иначе стартът се отказва.',

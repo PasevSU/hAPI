@@ -75,9 +75,10 @@ assert.match(src, /fm-detail/); assert.match(src, /Контролен панел
 assert.match(src, /createPortal/);
 assert.match(src, /generateApi/);
 assert.match(src, /qrSvg/);
-// QR кодът в панела кодира СТРАНИЦАТА на портала (`api.landing`, по id), а не адреса на
-// SVG изображението: сканиран, той трябва да отвори портала, а не `/api/v1/p/<slug>/qr.svg`.
-assert.match(src, /const qrPage = api \? api\.landing/);
+// QR кодът в панела кодира СТРАНИЦАТА на портала (`api.folderUrl` — тя отваря папката му,
+// иначе `api.landing`, по id), а не адреса на SVG изображението: сканиран, той трябва да
+// отвори портала с файловете му, а не `/api/v1/p/<slug>/qr.svg`.
+assert.match(src, /const qrPage = api \? api\.folderUrl \|\| api\.landing/);
 assert.match(src, /qrSvg\(qrPage\)/);
 assert.equal(/qrSvg\(api\.qrUrl\)/.test(src), false, 'QR кодът не бива да кодира адреса на SVG-то');
 assert.match(src, /<dt>QR изображение<\/dt>/, 'SVG адресът е отделен ред, не „QR адрес“');
@@ -140,6 +141,14 @@ assert.match(src, /data-extras-add/);
 assert.match(src, /function readExtras/);
 assert.match(src, /function wireExtras/);
 assert.match(src, /\/admin\/api\/cases/);
+// 7ж. Публичен токен за портал (Stage D) — от панела, не само през API-то.
+// Без него при `require_portal_token` панелът показва адреси, които никой отвън не отваря.
+assert.match(src, /id="pf-token-new"/, 'панелът има бутон за издаване на токен');
+assert.match(src, /id="pf-token-list"/, 'панелът има списък с издадените токени');
+assert.match(src, /id="pf-token-ttl"/, 'срокът се избира от панела');
+assert.match(src, /\/tokens`/, 'издаването минава през /tokens на портала');
+assert.match(src, /data-token-revoke/, 'всеки токен може да се отнеме от панела');
+assert.match(src, /показва само сега|само сега/, 'казва, че токенът не се показва повторно');
 assert.equal(m.normalizeCase({ id: 'k', number: '1', title: 'T', extras: [{ key: 'a', value: 'b' }, { value: 'x' }] }).extras.length, 1);
 assert.equal(m.normalizeContact({ id: 'c', extras: [{ key: 'Роля', value: 'адвокат' }] }).extras[0].key, 'Роля');
 // 7е. Стандарт на подредбата: всичко в проценти + фиксиран брой обекти на ред.
@@ -335,7 +344,7 @@ assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\s*\|\|\s*'\
 // 0.69.63: папката на портала се създава от модула `portal-folder` (там отиват и файловете).
 assert.match(serverSrc, /await portalFolder\.ensure\(p\)/);
 assert.match(serverSrc, /if \(p\.storage_root === '\/share' \|\| p\.storage_root === '\/media'\)/);
-assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*\{\s*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\);\s*await portalFolder\.ensure\(p\)/);
+assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*\{\s*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\);\s*if\s*\(portalFolderCopy\)\s*await portalFolder\.ensure\(p\)/);
 assert.match(serverSrc, /contactId:\s*portalContact\(db,\s*b\.contactId\)/);
 assert.match(serverSrc, /if\s*\(b\.contactId\s*!==\s*undefined\)\s*p\.contactId\s*=\s*portalContact\(db,\s*b\.contactId\)/);
 assert.match(serverSrc, /if\s*\(b\.caseId\s*!==\s*undefined\)\s*p\.caseId\s*=\s*portalCase\(db,\s*b\.caseId\)/);

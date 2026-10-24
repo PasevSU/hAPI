@@ -117,6 +117,9 @@ const OPTION_ENV = [
   ['SIGN_PACKAGES', 'sign_packages'],
   ['SIGNING_KEY', 'signing_key'],
   ['ENCRYPT_FILES', 'encrypt_files'],
+  // Копие на прикачените файлове в папката на портала (`storage_root`). Изключено по
+  // подразбиране: прикачването не бива да създава папка, която човекът не е поискал.
+  ['PORTAL_FOLDER_COPY', 'portal_folder_copy'],
   ['TLS_CERT', 'tls_cert'],
   ['TLS_KEY', 'tls_key'],
   // Сензори: какво се пази от адреса на посетителя. Празна/незададена опция → сървърът

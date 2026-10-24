@@ -106,7 +106,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     assert.ok(info.links.automation.includes(info.links.tag.id));
     // QR кодът води до човешката страница; за частен портал адресът носи подписан достъп.
     assert.ok(info.qrTarget.startsWith(info.landingUrl), 'QR кодът остава към човешката страница');
-    assert.equal(info.qrTarget, info.landingUrl + info.accessQuery, 'QR-ът носи подписания достъп');
+    assert.equal(info.qrTarget, require('../hapi_enterprise/links.js').joinQuery(info.landingUrl, info.folderQuery, info.accessQuery), 'QR-ът носи папката и подписания достъп');
 
     // Без токен админският отговор не се дава.
     r = await fetch(`${base}/admin/api/portals/${encodeURIComponent(portal.id)}/api-info`);
