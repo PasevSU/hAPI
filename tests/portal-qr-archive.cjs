@@ -66,6 +66,9 @@ const cleaned = [];
     const onDisk = path.join(server.dir, 'archives', portal.id, ar.file);
     assert.equal(fs.existsSync(onDisk), true, 'архивният файл е РЕАЛЕН на диска: ' + onDisk);
     assert.equal(require('node:crypto').createHash('sha256').update(fs.readFileSync(onDisk)).digest('hex'), ar.sha256, 'хешът на файла съвпада с регистрирания');
+    // §10.1.7 / §19: архивът се ПРОВЕРЯВА преди да се отчете като успешен.
+    assert.equal(ar.verificationStatus, 'verified', 'архивът е проверен при създаване, не след това');
+    assert.ok(ar.verifiedAt, 'има време на проверката');
     assert.equal(archived.data.active, 'QR-002', 'след архив има следващ QR');
     assert.equal(archived.data.archivedQr, 'QR-001');
 
@@ -108,6 +111,9 @@ const cleaned = [];
     const pubFirst = pubQr.data.revisions.find((r) => r.id === 'QR-001');
     assert.equal(pubFirst.archive.id, 'AR-001', 'архивът е свързан с QR-001');
     assert.match(pubFirst.archive.sha256, /^[0-9a-f]{64}$/);
+    assert.equal(pubFirst.archive.verificationStatus, 'verified', 'публичният изглед казва, че архивът е проверен');
+    assert.equal(pubFirst.nextQrId, 'QR-002', '§3.4: ревизията сочи следващия QR');
+    assert.equal(pubFirst.previousQrId, null, 'първата ревизия няма предходна');
     assert.equal('note' in pubFirst.archive, false, 'вътрешните бележки не излизат публично');
     const pubZip = Buffer.from(await (await api(`/api/v1/p/${slug}/qr/QR-001/archive`)).arrayBuffer());
     assert.equal(require('node:crypto').createHash('sha256').update(pubZip).digest('hex'), ar.sha256, 'публичният архив е същият файл');

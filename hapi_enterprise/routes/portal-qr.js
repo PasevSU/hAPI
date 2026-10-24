@@ -94,15 +94,26 @@ function create(deps) {
         const archiveId = 'AR-' + String(reg.archives.length + 1).padStart(3, '0');
         const built = await qr.buildArchive({ portal: p, revision: active, files, note, archiveId });
         const fileName = `${p.slug}-${active.id}-${archiveId}.zip`;
+        const manifestHash = qr.sha256(Buffer.from(JSON.stringify(built.manifest)));
         await fsp.mkdir(dir, { recursive: true });
-        await fsp.writeFile(path.join(dir, fileName), built.buffer);
-        const saved = { id: archiveId, qrId: active.id, file: fileName, sha256: built.hash, size: built.size, files: files.length, createdAt: new Date().toISOString(), note };
+        const full = path.join(dir, fileName);
+        await fsp.writeFile(full, built.buffer);
+        // §10.1 точки 6–7 и §19: архивът се ПРОВЕРЯВА веднага, четейки написаното от диска.
+        // Ако проверката не мине, операцията НЕ се отчита като успешна: файлът се маха и
+        // нищо не влиза в регистъра — иначе би имало „успешен“ архив без валидно доказателство.
+        const check = await integrity.verifyArchive({ archive: { id: archiveId, qrId: active.id, file: fileName, sha256: built.hash }, dir, revision: { manifestHash } });
+        if (!check.ok) {
+          await fsp.rm(full, { force: true }).catch(() => { });
+          void audit('qr.archive.verify.failed', { portalId: p.id, qrId: active.id, archiveId, reason: check.reason, detail: check.detail || null });
+          throw Object.assign(new Error('Архивът не мина проверка за цялост (' + check.reason + ') — не е регистриран'), { status: 500 });
+        }
+        const saved = { id: archiveId, qrId: active.id, file: fileName, sha256: built.hash, size: built.size, files: files.length, createdAt: new Date().toISOString(), note, verificationStatus: 'verified', verifiedAt: new Date().toISOString() };
         reg.archives.push(saved);
         // Съдържанието се фиксира към ТОЗИ QR; следващият е наследник, не подмяна.
         active.archivedAt = saved.createdAt;
         active.archiveId = archiveId;
         active.manifest = built.manifest;
-        active.manifestHash = qr.sha256(Buffer.from(JSON.stringify(built.manifest)));
+        active.manifestHash = manifestHash;
         const next = {
           id: qr.qrIdOf(active.seq + 1), seq: active.seq + 1, portalId: p.id, contract: active.contract || 'order',
           previousQrId: active.id, previousManifestHash: active.manifestHash, createdAt: saved.createdAt,

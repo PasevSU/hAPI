@@ -82,3 +82,22 @@
 | Твърд бюджет | `server.js` ≤ 2722 реда, 9 компонента в `routes/` |
 
 > Когато ред от §5 се затвори, тук се сменя статусът и се добавя тестът, който го пази. Матрицата не е „документ за четене“, а списък на това, което още не е направено.
+
+## 7. Сценариите за сигурност (§20) — карта към реални тестове
+
+| # | Сценарий от §20 | Къде се проверява | Статус |
+| --- | --- | --- | --- |
+| 1 | Достъп до файл извън разрешения портал | `portal-order` (чужда/частна папка → 404), `portal-folder`, `whitebox-security` | ✅ |
+| 2 | Заобикаляне на парола през директен API | `portal-order` (`KEY_REQUIRED` → 403), `access-policy`, `gateway-server`, `file-link-works` | ✅ |
+| 3 | Административен маршрут през Public Gateway | `public-route-allowlist` (жив listener отказва `/admin`, `/ui`, `/generator`), `ingress-isolation` | ✅ |
+| 4 | Подмяна на QR идентификатор | `portal-qr-archive` (непознат QR → 404, прекратен → 410 `blok`) | ✅ |
+| 5 | Изтегляне на заключен файл | `portal-order` (`DISABLED` → 403 с основание), `portal-rules-applied` | ✅ |
+| 6 | Създаване на четвърто вложено ниво | `portal-qr-archive` (3 → 201, 4 → 409, нищо не се създава) | ✅ |
+| 7 | Подмяна на файлови байтове | `integrity` (качване/сверка), `portal-integrity` (`file_hash_mismatch`) | ✅ |
+| 8 | Премахване на публикуван файл | `folder-delete`, `portal-order` (`listed:false` → 404; заключен остава видим) | ✅ |
+| 9 | Подмяна на физически архив | `portal-integrity` (`archive_hash_mismatch`, `manifest_hash_mismatch`), проверка при създаване → `verificationStatus` | ✅ |
+| 10 | Препращане към нов QR без видима история | `portal-qr-archive` (`nextQrId`, `previousQrId`, `previousManifestHash`) | ✅ |
+| 11 | Невалиден или прекратен QR | `portal-qr-archive` (404 / 410 с основание, без съдържание) | ✅ |
+| 12 | Разкриване на абсолютен файлов път през API | `portal-order` (`..` и `%2e%2e` → 400/404), `public-route-allowlist` | ✅ |
+| 13 | Изпълнение на опасен HTML | `html-publish` (CSP), `portal-page-contract`, `panel-framing` | 🟡 CSP има, изолиран контекст (sandbox) — не (вж. §5, ред 4) |
+| 14 | Несъответствие между комбинирания отчет и манифеста | — | ⛔ няма `content_id` (вж. §5, ред 2) |

@@ -101,12 +101,16 @@ flowchart LR
 | 4 | Манифест (`portal_id`, `qr_id`, `revision`, `previous_qr_id`, файлове, `archive_id`) | `portal-qr.manifestFor()` |
 | 5 | **Физически ZIP** (`manifest.json` + `files/…`) | `ooxml.zip()` → `buildArchive()` |
 | 6 | Запис на файла в `<данни>/archives/<portalId>/<slug>-<qr>-<ar>.zip` | `fsp.writeFile` |
-| 7 | Регистрация на архива (`sha256`, `size`, `files`, `createdAt`) | регистърът в `db.portalQr` |
-| 8 | Фиксиране на съдържанието към ТОЗИ QR (`manifestHash`, `archiveId`) | регистърът |
-| 9 | Следващ QR с `previousQrId` + `previousManifestHash` | регистърът |
-| 10 | Одит `qr.archived` | `audit()` |
+| 7 | **Проверка на написаното** (чете се ОТ ДИСКА: SHA-256, манифест, файловете вътре) | `portal-integrity.verifyArchive()` |
+| 8 | Провал → файлът се маха, одит `qr.archive.verify.failed`, отговор `500` — НЕ се отчита успешен архив (§19) | маршрутът |
+| 9 | Регистрация на архива (`sha256`, `size`, `files`, `verificationStatus: verified`, `verifiedAt`) | регистърът в `db.portalQr` |
+| 10 | Фиксиране на съдържанието към ТОЗИ QR (`manifestHash`, `archiveId`) | регистърът |
+| 11 | Следващ QR с `previousQrId` + `previousManifestHash` | регистърът |
+| 12 | Одит `qr.archived` | `audit()` |
 
-Ако стъпка 5 или 6 се провали, `update()` хвърля и **не се появява нов QR**, който да сочи към несъществуващ архив.
+Ако стъпка 5, 6 или 7 се провали, `update()` хвърля и **не се появява нов QR**, който да сочи към
+несъществуващ или непроверен архив. Публичният `qr.json` показва `verificationStatus` и `nextQrId`,
+за да е видима историческата връзка без вътрешни данни.
 
 ## 6. Прекратяване (`blok`) и публичната му страна
 

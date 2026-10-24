@@ -199,14 +199,21 @@ function create(deps) {
     if (!portal) { fail(res, 404, 'Not found'); return true }
     if (!policy.decide({ req, res: undefined, url: new URL(req.url, 'http://localhost'), portal, action: 'read' }).allowed) { fail(res, 404, 'Not found'); return true }
     const reg = qr.registry(db(), portal.id);
-    const visible = reg.revisions.map((r) => ({
-      id: r.id, revision: r.seq, createdAt: r.createdAt,
-      archivedAt: r.archivedAt || null, blockedAt: r.blockedAt || null,
-      manifestHash: r.manifestHash || null,
-      archive: reg.archives.find((a) => a.id === r.archiveId)
-        ? { id: r.archiveId, file: reg.archives.find((a) => a.id === r.archiveId).file, sha256: reg.archives.find((a) => a.id === r.archiveId).sha256, size: reg.archives.find((a) => a.id === r.archiveId).size, files: reg.archives.find((a) => a.id === r.archiveId).files }
-        : null,
-    }));
+    // §3.4 и §10.2: всяка ревизия казва КОЙ е следващият QR (историческата връзка се вижда,
+    // без да се разкрива нищо вътрешно), а архивът — дали е проверен при създаване (§10.1).
+    const visible = reg.revisions.map((r) => {
+      const archive = reg.archives.find((a) => a.id === r.archiveId);
+      return {
+        id: r.id, revision: r.seq, createdAt: r.createdAt,
+        archivedAt: r.archivedAt || null, blockedAt: r.blockedAt || null,
+        manifestHash: r.manifestHash || null,
+        previousQrId: r.previousQrId || null,
+        nextQrId: (reg.revisions.find((n) => n.previousQrId === r.id) || {}).id || null,
+        archive: archive
+          ? { id: archive.id, file: archive.file, sha256: archive.sha256, size: archive.size, files: archive.files, verificationStatus: archive.verificationStatus || 'unverified' }
+          : null,
+      };
+    });
     // Сващане на конкретен архивен файл.
     if (parts[5] && parts[6] === 'archive' && parts.length === 7) {
       const archive = reg.archives.find((a) => a.qrId === parts[5]);

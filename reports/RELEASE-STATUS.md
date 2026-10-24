@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.80
+# Състояние на изданието — hAPI Enterprise 0.69.81
 
-Версия: **0.69.80** · клон `main`
+Версия: **0.69.81** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **249/249** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.80 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 417 файла · 71830 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 413 файла · 71466 реда · critical: 0 · high: 0 · medium: 3 · low: 175 — **има необяснени** |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.81 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 417 файла · 71854 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 413 файла · 71490 реда · critical: 0 · high: 0 · medium: 3 · low: 175 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,29 +27,26 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.80.tar.gz` | add-on архив (168 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.80.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.81.tar.gz` | add-on архив (168 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.81.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.80
+## 3. Какво влезе във 0.69.81
 
-Адресът `/portal.html:<папка>` работи нативно и външният пакет е сверен.
+Спецификацията HAPI-ARCH-API-001 е сверена с кода; затворени са двете разминавания.
 
-- **`/portal.html:<папка>`** (и `/portal.html:<папка>/<подпапка>`) — форматът, който външният
-  пакет искаше, вече се разчита от самия сървър (`routes/portal-storage.js`), без пренаписване
-  в прокси. Това НЕ е втори вход към съдържанието: пътят само се превежда в `order` и после
-  минава през същите проверки (папката е ИМЕННО папката на съществуващ портал + право `read`).
-  Непозната папка, невалидно кодиране и излизане от папката → `404`. Ново правило в
-  `public-route-allowlist.js` (28 публични правила), за да минава и през публичния Gateway.
-- **Преглед на външния пакет `hapi-evidence-portal v1.2`** →
-  `documentation/02_TO_BE_ARCHITECTURE/EVIDENCE_PORTAL_V1.2_REVIEW.md`: байтова сверка файл по
-  файл, проверка за тайни (няма), оценка на рисковете (без `innerHTML`, адресът се проверява,
-  демото е отделно) и честен списък какво още липсва — трите endpoint-а
-  (`/api/evidence/<folder>/manifest`, `/consent`, `/access`). Локалната версия е по-нова от
-  пакета (`/api/evidence` вместо `/api/hapi/evidence`, без браузърен одит), затова пакетът не се
-  копира в репото.
-- **Тест:** `tests/portal-order.cjs` проверява и двоеточието — корен, подпапка, непозната папка,
-  невалиден идентификатор.
+- **§10.1.7 и §19 — архивът се проверява ПРЕДИ да се отчете като успешен.** След записа
+  файлът се чете ОТ ДИСКА и минава през `portal-integrity.verifyArchive()` (SHA-256 на ZIP-а,
+  манифест, хеш на манифеста, всеки файл вътре). При провал файлът се изтрива, вдига се
+  `qr.archive.verify.failed` в одита и отговорът е `500` — не се създава следващ QR, който да
+  сочи към непроверен архив. Архивът вече носи `verificationStatus: 'verified'` и `verifiedAt`.
+- **§3.4 и §10.2 — историческата връзка е видима.** Публичният `qr.json` показва за всяка
+  ревизия `previousQrId`, `nextQrId` и `archive.verificationStatus`, без вътрешни бележки.
+- **§20 — картата на 14-те сценария за сигурност** е добавена в
+  `ARCHITECTURE_COMPLIANCE_MATRIX.md` (§7): всеки сценарий сочи към реален тест; честно
+  отбелязани са само двата, които не са затворени (изолиран HTML контекст и `content_id`).
+- `RUNTIME_EXECUTION_FLOWS.md` §5 — потокът на архивиране вече включва проверката като
+  отделна стъпка със собствен отказ.
 
 ## 4. Как се проверява наново
 
