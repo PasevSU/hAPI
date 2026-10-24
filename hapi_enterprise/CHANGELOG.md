@@ -1,29 +1,23 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.79**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.80**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.79
+## 0.69.80
 
-Целостта на архивите: подмяна на доказателство се вижда без човешка сверка.
+Адресът `/portal.html:<папка>` работи нативно и външният пакет е сверен.
 
-- **Нов модул `portal-integrity.js`** (правило `ARCHIVE_NOT_TAMPERED`). Проверява по ред и
-  връща ТОЧЕН код за всяка повреда, вместо едно общо „счупено“: `file_missing`,
-  `archive_hash_mismatch` (с `expected` и `actual`), `archive_unreadable`, `manifest_missing`,
-  `manifest_invalid`, `manifest_hash_mismatch`, `file_missing_in_archive`,
-  `file_hash_mismatch` / `file_size_mismatch` (с името на файла).
-- **`POST /admin/api/portals/<id>/qr/verify`** — проверка по заявка. Резултатът се записва в
-  метаданните (`db.portalIntegrity[portalId]`: `checkedAt`, `ok`, `archives`, `verified`,
-  `failed[]`) и `GET …/qr` го показва като `integrity` (преди първата проверка — `null`,
-  а не „здраво“).
-- **Фонова проверка** през 6 часа (`HAPI_INTEGRITY_INTERVAL_MS`, `0` я изключва), с `unref`
-  таймер — не държи процеса жив и не блокира старта. При провал вдига `integrity.failed` в
-  одитната верига с `reasons` и `archiveIds`, за да остане следа извън екрана.
-- **Сензори:** `qr.integrity` в `/admin/api/sensors` (`failures`, `portalsFailed`, `checked`,
-  `lastCheckedAt`, `intervalMs`, `code`) → пети QR сензор `integrity_failed` в Home Assistant
-  (**29 общо**), на три езика.
-- **Панел:** бутон „Провери целостта на архивите“ показва проверени/общо и при провал —
-  кой архив и с каква причина (`#pf-qr-verify`, `/qr/verify`).
-- **Гейт:** `tests/portal-integrity.cjs` — всеки код на повреда поотделно (модул), запис и
-  одит (сървър), `integrity.failed` в сензорите и в одитната верига. Документацията е
-  обновена: нова точка 7а в `RUNTIME_EXECUTION_FLOWS.md`, а `ARCHITECTURE_COMPLIANCE_MATRIX.md`
-  вече не брои целостта към липсите (§5.1).
+- **`/portal.html:<папка>`** (и `/portal.html:<папка>/<подпапка>`) — форматът, който външният
+  пакет искаше, вече се разчита от самия сървър (`routes/portal-storage.js`), без пренаписване
+  в прокси. Това НЕ е втори вход към съдържанието: пътят само се превежда в `order` и после
+  минава през същите проверки (папката е ИМЕННО папката на съществуващ портал + право `read`).
+  Непозната папка, невалидно кодиране и излизане от папката → `404`. Ново правило в
+  `public-route-allowlist.js` (28 публични правила), за да минава и през публичния Gateway.
+- **Преглед на външния пакет `hapi-evidence-portal v1.2`** →
+  `documentation/02_TO_BE_ARCHITECTURE/EVIDENCE_PORTAL_V1.2_REVIEW.md`: байтова сверка файл по
+  файл, проверка за тайни (няма), оценка на рисковете (без `innerHTML`, адресът се проверява,
+  демото е отделно) и честен списък какво още липсва — трите endpoint-а
+  (`/api/evidence/<folder>/manifest`, `/consent`, `/access`). Локалната версия е по-нова от
+  пакета (`/api/evidence` вместо `/api/hapi/evidence`, без браузърен одит), затова пакетът не се
+  копира в репото.
+- **Тест:** `tests/portal-order.cjs` проверява и двоеточието — корен, подпапка, непозната папка,
+  невалиден идентификатор.

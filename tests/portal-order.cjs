@@ -63,6 +63,18 @@ const cleaned = [];
     assert.equal(sub.status, 200, 'order с подпапка се отваря');
     assert.match(await sub.text(), /data-folder="архив"/, 'подпапката стига до страницата');
 
+    // ── 2а. Същият договор във вида `/portal.html:<папка>` (донорски формат) ──
+    const colon = await api('/portal.html:' + slug);
+    assert.equal(colon.status, 200, 'двоеточието сервира същата страница, без прокси');
+    const colonHtml = await colon.text();
+    assert.match(colonHtml, /data-folders="1"/, 'и тук страницата е в режим „папка“');
+    assert.match(colonHtml, new RegExp(`data-api="/api/v1/p/${slug}"`), 'и тук API-то е на ТОЗИ портал');
+    const colonSub = await api('/portal.html:' + slug + '/' + encodeURIComponent('архив'));
+    assert.equal(colonSub.status, 200, 'двоеточие + подпапка се отваря');
+    assert.match(await colonSub.text(), /data-folder="архив"/, 'подпапката стига и по този път');
+    assert.equal((await api('/portal.html:няма-такава')).status, 404, 'непозната папка по двоеточие → 404');
+    assert.equal((await api('/portal.html:bad slug')).status, 404, 'невалиден идентификатор не се разчита');
+
     // ── 3. Отрицателни: чуждо име, излизане от папката, частен портал ────────
     assert.equal((await api('/portal.html?order=' + encodeURIComponent('share/няма-такава'))).status, 404, 'непозната папка → 404');
     assert.equal((await api('/portal.html?order=' + encodeURIComponent('../etc'))).status, 404, 'излизане от папката → 404');

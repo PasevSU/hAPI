@@ -68,6 +68,9 @@
 | Правило | Код | Тест |
 | --- | --- | --- |
 | `ARCHIVE_NOT_TAMPERED` — подмяна в архива се вижда без човешка сверка | `portal-integrity.js` (8 проверки по ред), `POST …/qr/verify`, `qr.integrity` в `/admin/api/sensors` | `portal-integrity` (байтове · манифест · файл вътре · одит · сензор) |
+| `ORDER_URL_COLON` — `/portal.html:<папка>` без пренаписване в прокси | `routes/portal-storage.js` (разчита пътя и подава `order`), `public-route-allowlist.js` | `portal-order` (корен, подпапка, непозната папка → 404), `public-route-allowlist` |
+
+Външен пакет `hapi-evidence-portal v1.2` е сверен файл по файл — виж `EVIDENCE_PORTAL_V1.2_REVIEW.md`.
 
 ## 6. Регресионна база
 

@@ -56,6 +56,23 @@ function create(deps) {
   async function handle({ req, res, url, parts, method }) {
     // Универсалният вход: `/portal.html?order=share/<папка>` (виж `serveOrder`).
     if (url.pathname === '/portal.html' && method === 'GET' && url.searchParams.get('order')) return serveOrder({ req, res, url });
+    // Същият договор и във вида `/portal.html:<папка>` (донорският формат). При статичен
+    // сървър това иска пренаписване в прокси; ние сервираме сами, затова пътят се разчита
+    // тук. `order` се сглобява от ПЪТЯ, но правото за достъп пак се решава от `serveOrder`
+    // (име на папка не е удостоверяване).
+    const colon = method === 'GET' ? /^\/portal\.html:([A-Za-z0-9_-]{1,90})(\/[^\\]*)?$/.exec(url.pathname) : null;
+    if (colon) {
+      // Пътят не се декодира от `URL`, за разлика от `searchParams` — правим го тук, но
+      // невалидно кодиране НЕ се хвърля към посетителя: това е просто непознат адрес.
+      let rest = colon[2] || '';
+      try {
+        rest = decodeURIComponent(rest);
+      } catch {
+        fail(res, 404, 'Not found');
+        return true;
+      }
+      return serveOrder({ req, res, url, order: 'share/' + colon[1] + rest });
+    }
     // Публичният QR договор: идентичността на печата и ФИЗИЧЕСКИТЕ архиви.
     // JSON-ът е на `qr.json` (каноничното разширение), а `/qr` остава 301 → `qr.svg`
     // (решение от преди); архивът е `qr/<qrId>/archive`.
@@ -130,8 +147,8 @@ function create(deps) {
    * съществуващ портал (`storage_root`), и че за него има право `read` — име на папка само
    * по себе си не отваря нищо. Подпапката се предава на страницата като `data-folder`.
    */
-  function serveOrder({ req, res, url }) {
-    const rel = links.portalFolderRel(url.searchParams.get('order') || '');
+  function serveOrder({ req, res, url, order }) {
+    const rel = links.portalFolderRel(order === undefined ? (url.searchParams.get('order') || '') : order);
     const segs = rel ? rel.split('/') : [];
     if (segs.length < 2) { fail(res, 404, 'Not found'); return true }
     const portal = resolvePortal(segs[1]);
