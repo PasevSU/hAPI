@@ -197,7 +197,7 @@ const stage = (name, fn) => { current = name; fn(); console.log('  ✔ ' + name)
       assert.equal(up.status, 201);
       fileId = (await up.json()).id;
 
-      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED' })).status, 200);
+      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED', reason: 'тест: ключ' })).status, 200);
       const minted = await api(`/admin/api/portals/${portalId}/files/${fileId}/access-keys`, 'POST', {});
       key = minted.data.key;
     });
@@ -215,7 +215,7 @@ const stage = (name, fn) => { current = name; fn(); console.log('  ✔ ' + name)
       assert.equal(ok.status, 200);
       assert.equal(await ok.text(), 'съдържание');
 
-      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'DISABLED' })).status, 200);
+      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'DISABLED', reason: 'тест: недостъпен' })).status, 200);
       const disabled = await fetch(`${base}/api/v1/p/${slug}/files/${fileId}/download`, { headers: { ...visitorHeaders, 'X-File-Key': key } });
       assert.equal(disabled.status, 403);
       await disabled.text();

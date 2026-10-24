@@ -222,7 +222,7 @@ const assert = require('node:assert/strict');
     assert.equal(await gwDownload.text(), 'hello-gateway');
 
     // 5. Заключен файл: решение и 403 без ключ.
-    assert.equal((await admin('/admin/api/portals/' + portalId + '/files/' + fileId + '/access', 'PATCH', { mode: 'KEY_REQUIRED' })).status, 200);
+    assert.equal((await admin('/admin/api/portals/' + portalId + '/files/' + fileId + '/access', 'PATCH', { mode: 'KEY_REQUIRED', reason: 'иска се ключ' })).status, 200);
     const denied = await req(`/api/public/v1/files/${fileId}/access`);
     assert.equal(denied.value.allowed, false);
     assert.equal(denied.value.reason, 'token-active');
@@ -247,7 +247,7 @@ const assert = require('node:assert/strict');
     assert.equal(ha.value.reason, 'token-scheme');
 
     // 8. DISABLED печели пред всичко.
-    assert.equal((await admin('/admin/api/portals/' + portalId + '/files/' + fileId + '/access', 'PATCH', { mode: 'DISABLED' })).status, 200);
+    assert.equal((await admin('/admin/api/portals/' + portalId + '/files/' + fileId + '/access', 'PATCH', { mode: 'DISABLED', reason: 'оттеглен достъп' })).status, 200);
     const off = await req(`/api/public/v1/files/${fileId}/access`, 'GET', undefined, { 'X-Portal-Key': issued.value.key });
     assert.equal(off.value.allowed, false);
     assert.equal(off.value.reason, 'mode-enabled');

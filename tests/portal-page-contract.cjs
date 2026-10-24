@@ -48,8 +48,8 @@ const svgFor = (text) => {
     const keyed = await upload(portalId, 'akt.pdf', 'файл с ключ');
     const blocked = await upload(portalId, 'arhiv.zip', 'забранен файл');
     assert.deepEqual([free.status, keyed.status, blocked.status], [201, 201, 201]);
-    assert.equal((await api(`/admin/api/portals/${portalId}/files/${keyed.data.id}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true })).status, 200);
-    assert.equal((await api(`/admin/api/portals/${portalId}/files/${blocked.data.id}/access`, 'PATCH', { mode: 'DISABLED', listed: true })).status, 200);
+    assert.equal((await api(`/admin/api/portals/${portalId}/files/${keyed.data.id}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true, reason: 'тест: ключ' })).status, 200);
+    assert.equal((await api(`/admin/api/portals/${portalId}/files/${blocked.data.id}/access`, 'PATCH', { mode: 'DISABLED', listed: true, reason: 'тест: недостъпен' })).status, 200);
 
     // ── PP-01/PP-02/PP-03: страницата има елементите за id, QR и резюме ──────────────
     const page = await fetch(`${base}/p/${portalId}`);

@@ -90,7 +90,7 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
     assert.equal(qr.status, 200); assert.equal(qr.headers.get('content-type'), 'image/svg+xml');
     const qrById = await call(`/api/v1/p/${p.id}/qr.svg?portal_token=${encodeURIComponent(key.token)}`);
     assert.equal(qrById.status, 200, 'QR изображението се сервира и по id на портала');
-    await json(`/admin/api/portals/${p.id}/files/${file.id}/access`, 'PATCH', { mode: 'DISABLED' });
+    await json(`/admin/api/portals/${p.id}/files/${file.id}/access`, 'PATCH', { mode: 'DISABLED', reason: 'тест: недостъпен' });
     assert.equal((await call(`/api/v1/p/example/files/${file.id}/download?portal_token=${encodeURIComponent(key.token)}`)).status, 403);
     console.log('PASS: portal HTML access, private token, static assets, ingress isolation, catalog, disabled file');
   } finally { await stopChild(child); fs.rmSync(dir, { recursive: true, force: true }) }

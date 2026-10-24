@@ -20,7 +20,7 @@ const upload = async (server, portalId, name, body) => {
   return (await res.json()).id;
 };
 const policy = async (server, portalId, fileId, mode, listed) => {
-  const res = await server.api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode, ...(listed === undefined ? {} : { listed }) });
+  const res = await server.api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode, reason: 'тест: режим', ...(listed === undefined ? {} : { listed }) });
   assert.equal(res.status, 200, 'политика ' + mode);
 };
 

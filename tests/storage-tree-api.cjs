@@ -174,11 +174,11 @@ const assert = require('node:assert/strict');
     assert.equal((await call(`/admin/api/portals/${portal.id}/tree/upload?path=${encodeURIComponent('/docs/x.txt')}`, 'POST', 'x', false, { 'Content-Type': 'text/plain' })).status, 401);
 
     // 9. Флагове на папка: видима / медийна / заключване (PATCH, пазят се към портала).
-    const flag = await call(`/admin/api/portals/${portal.id}/tree/folder`, 'PATCH', JSON.stringify({ path: '/docs', media: true, locked: true }), true, json);
+    const flag = await call(`/admin/api/portals/${portal.id}/tree/folder`, 'PATCH', JSON.stringify({ path: '/docs', media: true, locked: true, reason: 'основание' }), true, json);
     assert.equal(flag.status, 200, JSON.stringify(flag.value));
-    assert.deepEqual(flag.value, { path: '/docs', visible: true, media: true, locked: true });
+    assert.deepEqual(flag.value, { path: '/docs', visible: true, media: true, locked: true, reason: 'основание' });
     const withFlags = await call(`/admin/api/portals/${portal.id}/tree`);
-    assert.deepEqual(withFlags.value.folderMeta['/docs'], { visible: true, media: true, locked: true });
+    assert.deepEqual(withFlags.value.folderMeta['/docs'], { visible: true, media: true, locked: true, reason: 'основание' });
     assert.equal(withFlags.value.folderMeta['/sub'], undefined, 'по подразбиране няма запис');
     // Заключената папка не приема качване (и нейните подпапки също).
     const lockedUp = await call(`/admin/api/portals/${portal.id}/tree/upload?path=${encodeURIComponent('/docs/new/x.txt')}`, 'POST', 'x', true, { 'Content-Type': 'text/plain' });

@@ -112,8 +112,8 @@ async function makePortal(server, label) {
 
 /** Качва файл през истинския маршрут и връща пътя му на диска. */
 async function upload(server, portalId, folder, rel, content) {
-    // `mkdir=1`: вложен път се създава ИЗРИЧНО (качване на структура), не мълчаливо.
-    const r = await fetch(`${server.base}/admin/api/portals/${portalId}/tree/upload?path=${encodeURIComponent(rel)}&mkdir=1`, {
+  // `mkdir=1`: вложен път се създава ИЗРИЧНО (качване на структура), не мълчаливо.
+  const r = await fetch(`${server.base}/admin/api/portals/${portalId}/tree/upload?path=${encodeURIComponent(rel)}&mkdir=1`, {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + TOKEN },
     body: content,

@@ -238,6 +238,12 @@ const ROUTES = [
   ['POST', '/admin/api/portals/{portalId}/files/{fileId}/versions', 'Нова версия на файл', 'files', 'portals'],
   ['GET', '/admin/api/portals/{portalId}/files/{fileId}/versions/{versionId}/download', 'Изтегляне на конкретна версия', 'files', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/files/{fileId}/versions/{versionId}/restore', 'Връщане към конкретна версия', 'files', 'portals'],
+  // QR ревизии и физически архиви (един портал = един адрес = поредица от QR кодове).
+  ['GET', '/admin/api/portals/{portalId}/qr', 'Активен QR, история на ревизиите и физическите архиви', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/qr/archive', 'Архивира: физически ZIP със SHA-256 + следващ QR', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/qr/block', 'Прекратява активния QR (изисква основание)', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/qr/{qrId}', 'Ревизия, манифест и наследник на конкретен QR', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/{portalId}/qr/{qrId}/archive', 'Сваляне на архивния файл на конкретен QR', 'portals', 'portals'],
 
   // ── самият договор ────────────────────────────────────────────────────────
   ['GET', '/admin/api/openapi.json', 'Тази спецификация', 'system', 'whoami'],

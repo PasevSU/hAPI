@@ -75,7 +75,10 @@ function create(deps) {
     const registered = (portal.files || []).find((f) => f.storagePath === '/' + rel);
     if (registered) {
       const mode = fileMode(registered);
-      if (mode === 'DISABLED' || registered.listed === false) { fail(res, 404, 'Not found'); return true }
+      // Чернова/необявен файл не съществува за публиката; заключеният съществува, но
+      // съдържанието му не се дава — с ОСНОВАНИЕ, а не с мълчание.
+      if (registered.listed === false) { fail(res, 404, 'Not found'); return true }
+      if (mode === 'DISABLED') { fail(res, 403, 'Файлът е недостъпен' + (registered.lockReason ? ': ' + registered.lockReason : '')); return true }
       if (mode === 'KEY_REQUIRED') { fail(res, 403, 'Файлът е заключен с ключ — отвори го през регистрирания му адрес'); return true }
     }
 
@@ -149,15 +152,27 @@ function create(deps) {
     return reg ? (reg.accessMode || 'FREE') : 'FREE';
   }
 
-  /** Файловете в папката, които правилата ПОЗВОЛЯВАТ да се видят (недостъпните ги няма). */
+  /**
+   * Файловете в папката за публичния списък.
+   *
+   * PUBLISHED_FILE_VISIBILITY: публикуваният файл НЕ изчезва само защото е заключен —
+   * вижда се с режима си и с основанието, а съдържанието се отказва при поискване.
+   * Скрива се само непубликуваното (чернова, `listed:false`).
+   */
   function folderFilesOf(portal, node) {
     return (node.files || []).filter((file) => {
       const reg = (portal.files || []).find((f) => f.storagePath === '/' + file.path);
-      return !reg || (folderFileMode(portal, file) !== 'DISABLED' && reg.listed !== false);
+      return !reg || reg.listed !== false;
     });
   }
 
-  return { handle, folderFileMode, folderFilesOf };
+  /** Основанието за заключване, безопасно за публично показване (без вътрешни бележки). */
+  function lockReasonOf(portal, rel) {
+    const reg = (portal.files || []).find((f) => f.storagePath === '/' + rel);
+    return (reg && reg.lockReason) || '';
+  }
+
+  return { handle, folderFileMode, folderFilesOf, lockReasonOf };
 }
 
 module.exports = { create };

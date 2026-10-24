@@ -36,8 +36,8 @@ const { createDocument } = require('./lib/dom-stub.cjs');
     const free = await upload('dogovor.txt', 'свободен');
     const keyed = await upload('akt.pdf', 'с ключ');
     const blocked = await upload('arhiv.zip', 'забранен');
-    await api(`/admin/api/portals/${portalId}/files/${keyed.id}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true });
-    await api(`/admin/api/portals/${portalId}/files/${blocked.id}/access`, 'PATCH', { mode: 'DISABLED', listed: true });
+    await api(`/admin/api/portals/${portalId}/files/${keyed.id}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true, reason: 'тест: ключ' });
+    await api(`/admin/api/portals/${portalId}/files/${blocked.id}/access`, 'PATCH', { mode: 'DISABLED', listed: true, reason: 'тест: недостъпен' });
 
     // ── Монтиране: истинският HTML на страницата + истинският portal.js ───────────────
     const html = await (await fetch(`${base}/p/${portalId}`)).text();

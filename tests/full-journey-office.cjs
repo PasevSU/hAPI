@@ -137,7 +137,7 @@ const V2 = 'втора версия — поправена';
 
       assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/signed-url`, 'POST', { ttlSeconds: 90000 })).status, 400, 'над 24 часа е невалидно');
 
-      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED' })).status, 200);
+      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED', reason: 'тест: ключ' })).status, 200);
       assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/signed-url`, 'POST', { ttlSeconds: 60 })).status, 403, 'защитен файл не получава подписан линк');
       assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'FREE' })).status, 200);
       assert.equal((await api(`/admin/api/portals/${portalId}`, 'PATCH', { visibility: 'public' })).status, 200);

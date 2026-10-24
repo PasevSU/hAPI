@@ -95,7 +95,7 @@ let step = 'старт';
 
     // ── 4. За защитен файл подписан адрес не се издава ─────────────────────
     step = 'защитен файл';
-    await call(`/admin/api/portals/${portal.id}/files/${file.id}/access`, 'PATCH', JSON.stringify({ mode: 'KEY_REQUIRED', listed: true }), { 'Content-Type': 'application/json' });
+    await call(`/admin/api/portals/${portal.id}/files/${file.id}/access`, 'PATCH', JSON.stringify({ mode: 'KEY_REQUIRED', listed: true, reason: 'тест: ключ' }), { 'Content-Type': 'application/json' });
     const denied = await call(`/admin/api/portals/${portal.id}/files/${file.id}/signed-url`, 'POST', JSON.stringify({ ttlSeconds: 300 }), { 'Content-Type': 'application/json' });
     assert.equal(denied.status, 403, 'KEY_REQUIRED → подписан адрес е забранен (403)');
 

@@ -581,6 +581,11 @@ function paint(filter) {
   const box = $("files");
   if (folderMode) {
     const rows = list.map(folderCard);
+    // Регистриран файл, който НЕ е сложен в папката (качен през панела при изключено
+    // копиране), не бива да изчезва само защото страницата е в режим „папка“: показва се
+    // със собствения си адрес. Едно и също име се брои веднъж (папката е истината).
+    const onDisk = new Set(folderFiles.map((f) => f.name));
+    for (const file of allFiles) if (!onDisk.has(file.name)) rows.push(fileCard(file));
     if (!q) {
       for (const sub of folderSubs) {
         const li = document.createElement("li");
@@ -600,7 +605,7 @@ function paint(filter) {
     box.replaceChildren(...rows);
     $("empty").hidden = rows.length > 0;
     if (!rows.length) $("empty").textContent = T("folder.empty");
-    $("count").textContent = list.length + (list.length === 1 ? " файл" : " файла");
+    $("count").textContent = rows.length + (rows.length === 1 ? " файл" : " файла");
     if (rows.length) setStatus("");
     return;
   }

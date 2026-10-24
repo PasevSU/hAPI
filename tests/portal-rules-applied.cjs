@@ -65,7 +65,7 @@ const root = path.join(__dirname, '..');
     assert.equal(free.text, body, 'байтовете са същите, не „някакъв файл“');
 
     // ── 3. KEY_REQUIRED: правилото на файла иска ключ ─────────────────────────────────
-    const keyed = await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true });
+    const keyed = await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true, reason: 'тест: ключ' });
     assert.equal(keyed.status, 200);
     assert.equal(keyed.data.mode, 'KEY_REQUIRED');
 
@@ -84,7 +84,7 @@ const root = path.join(__dirname, '..');
     assert.equal(withKey.text, body);
 
     // ── 4. DISABLED е отказ дори с верен ключ ─────────────────────────────────────────
-    assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'DISABLED' })).status, 200);
+    assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'DISABLED', reason: 'тест: недостъпен' })).status, 200);
     const disabled = await download('rules-demo', fileId, { 'X-File-Key': minted.data.key });
     assert.equal(disabled.status, 403, 'DISABLED не се отваря и с ключ');
     assert.match(disabled.text, /Download disabled/);

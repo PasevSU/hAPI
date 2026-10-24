@@ -125,10 +125,10 @@ async function makePortal(server, label) {
 
 /** Качва файл в папката на портала и го регистрира (двете стъпки, които прави панелът). */
 async function uploadAndRegister(server, portalId, relPath, content) {
-    // `mkdir=1`: тестът качва по вложен път нарочно (като избрана цяла папка), а качване
-    // на файл в липсваща папка вече е 404 — папки не се създават мълчаливо.
-    const upl = await fetch(
-      `${server.base}/admin/api/portals/${portalId}/tree/upload?path=${encodeURIComponent(relPath)}&mkdir=1`,
+  // `mkdir=1`: тестът качва по вложен път нарочно (като избрана цяла папка), а качване
+  // на файл в липсваща папка вече е 404 — папки не се създават мълчаливо.
+  const upl = await fetch(
+    `${server.base}/admin/api/portals/${portalId}/tree/upload?path=${encodeURIComponent(relPath)}&mkdir=1`,
     { method: 'POST', headers: { Authorization: 'Bearer ' + TOKEN }, body: content },
   );
   const upBody = await upl.text();

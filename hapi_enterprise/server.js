@@ -627,14 +627,14 @@ const portalFlag = v => (PORTAL_FLAGS.includes(String(v || '')) ? String(v) : 'n
 const portalRoot = v => { const s = String(v == null ? '' : v).trim(); if (!s) return '/share'; if (!/^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(s) || s.includes('..')) throw Object.assign(new Error('Invalid storage_root'), { status: 400 }); return s.replace(/\/+$/, '') || '/share' };
 
 // Флагове на папките: нормализирани (липсващ ключ = по подразбиране). На модулно ниво,
-// защото ги ползват и `routes/folders.js`.
+// защото ги ползва и `routes/folders.js`. `reason` (LOCK_REASON_REQUIRED) се пази и връща.
 function folderMetaOf(p) {
   const src = p.folderMeta && typeof p.folderMeta === 'object' ? p.folderMeta : {};
   const out = {};
   for (const [key, value] of Object.entries(src)) {
     if (!value || typeof value !== 'object') continue;
     if (!key.startsWith('/')) continue;
-    out[key] = { visible: value.visible !== false, media: value.media === true, locked: value.locked === true };
+    out[key] = { visible: value.visible !== false, media: value.media === true, locked: value.locked === true, reason: typeof value.reason === 'string' && value.reason ? value.reason : null };
   }
   return out;
 }
@@ -772,7 +772,7 @@ const generatorRoutes = require('./routes/generator').create({ generator, adminG
 const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion });
 // Публични токени за портал (Stage D) и изтегляне на файл от ПАПКАТА му (един вход, не адрес за всеки файл).
 const portalTokens = require('./routes/portal-tokens').create({ json, fail, parse, audit, adminGate, store: metadataStore, policy: portalPolicy, resolvePortal, baseUrl, portalPath: (p) => links.portalLandingPath(p), randomToken: (prefix) => prefix + crypto.randomBytes(32).toString('base64url') });
-const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, folderMetaOf, fileMode, links, baseUrl, htmlEsc });
+const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, folderMetaOf, fileMode, links, baseUrl, htmlEsc }); const qrRegistry = require('./portal-qr'), portalQr = require('./routes/portal-qr').create({ json, fail, parse, audit, fsp, path, portalRoot, update, qr: qrRegistry, archiveRoot: path.join(root, 'archives'), adminGate, db: () => db });
 // PGP ключохранилище (B2): ключовете идват само от изрични пътища; тук се държи една
 // инстанция, за да е еднакъв отговорът „има ли ключ“ за целия сървър.
 const keyring = require('./path-crypto').create({ env: process.env });
@@ -812,7 +812,7 @@ const linkCheck = require('./routes/link-check').create({
   publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
 });
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
-const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring });
+const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry });
 async function handler(req, res) {
   try {
     if (req.url.startsWith('//')) req.url = req.url.replace(/^\/{2,}/, '/'); const url = new URL(req.url, 'http://localhost');
@@ -1737,10 +1737,10 @@ async function handler(req, res) {
         }
         if (tail.length === 2 && tail[1] === 'api.json') {
           void audit('folder.api', { portalId: p.id, path: '/' + rel });
-          return json(res, 200, { schema_version: '1.0', kind: 'storage-folder', ...folderView, apiUrl, folders: (node.folders || []).map(f => ({ name: f.name, path: '/' + f.path, folderCount: f.folderCount, fileCount: f.fileCount, bytes: f.bytes, apiUrl: folderUrl(f.path) })), files: portalStorage.folderFilesOf(p, node).map(f => ({ name: f.name, path: '/' + f.path, size: f.size, modifiedAt: f.modifiedAt || '', mode: portalStorage.folderFileMode(p, f), key: portalStorage.folderFileMode(p, f) === 'KEY_REQUIRED' })), generatedAt: new Date().toISOString() });
+          return json(res, 200, { schema_version: '1.0', kind: 'storage-folder', ...folderView, apiUrl, folders: (node.folders || []).map(f => ({ name: f.name, path: '/' + f.path, folderCount: f.folderCount, fileCount: f.fileCount, bytes: f.bytes, apiUrl: folderUrl(f.path) })), files: portalStorage.folderFilesOf(p, node).map(f => ({ name: f.name, path: '/' + f.path, size: f.size, modifiedAt: f.modifiedAt || '', mode: portalStorage.folderFileMode(p, f), key: portalStorage.folderFileMode(p, f) === 'KEY_REQUIRED', locked: portalStorage.folderFileMode(p, f) !== 'FREE', reason: portalStorage.lockReasonOf(p, f.path) })), generatedAt: new Date().toISOString() });
         }
         void recordTelemetry('visit', req, p, null, url);
-        return json(res, 200, { storage: true, root: '/', ...folderView, apiUrl, folders: (node.folders || []).map(f => ({ name: f.name, path: '/' + f.path, folderCount: f.folderCount, fileCount: f.fileCount, bytes: f.bytes, apiUrl: folderUrl(f.path) })), files: portalStorage.folderFilesOf(p, node).map(f => ({ name: f.name, path: '/' + f.path, size: f.size, modifiedAt: f.modifiedAt || '', mode: portalStorage.folderFileMode(p, f), key: portalStorage.folderFileMode(p, f) === 'KEY_REQUIRED' })) });
+        return json(res, 200, { storage: true, root: '/', ...folderView, apiUrl, folders: (node.folders || []).map(f => ({ name: f.name, path: '/' + f.path, folderCount: f.folderCount, fileCount: f.fileCount, bytes: f.bytes, apiUrl: folderUrl(f.path) })), files: portalStorage.folderFilesOf(p, node).map(f => ({ name: f.name, path: '/' + f.path, size: f.size, modifiedAt: f.modifiedAt || '', mode: portalStorage.folderFileMode(p, f), key: portalStorage.folderFileMode(p, f) === 'KEY_REQUIRED', locked: portalStorage.folderFileMode(p, f) !== 'FREE', reason: portalStorage.lockReasonOf(p, f.path) })) });
       }
       // Пакет на целия портал за посетителя (PP-12): само FREE и видими файлове, а
       // линкът е еднократен и краткотраен. Ключовете и забранените файлове се назовават
@@ -2173,7 +2173,7 @@ async function handler(req, res) {
           const b = await parse(req), slug = clean(b.slug), title = clean(b.title); if (!validSlug(slug) || !title || title.length > 160) return fail(res, 400, 'Invalid title or slug');
           // Видимостта се задава още при създаването (формата я има), не само после с PATCH.
           const visibility = b.visibility === undefined ? 'private' : String(b.visibility); if (!['private', 'public'].includes(visibility)) return fail(res, 400, 'Invalid visibility');
-          return json(res, 201, await update(async () => { if (getPortal(slug)) throw Object.assign(new Error('Slug exists'), { status: 409 }); const p = { id: id(), slug, title, description: clean(b.description).slice(0, 2000), notesText: clean(b.notes).slice(0, 2000), category: clean(b.category).slice(0, 120), subject: clean(b.subject).slice(0, 200), flag: portalFlag(b.flag), storage_root: portalRoot(b.storage_root || '/share/' + slug), contactId: portalContact(db, b.contactId), caseId: portalCase(db, b.caseId), visibility, createdAt: new Date().toISOString(), files: [] }; await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true }); if (portalFolderCopy) await portalFolder.ensure(p).catch(() => { }); db.portals.push(p); await writeApiDir(p, baseUrl(req)); void audit('portal.update', { portalId: p.id }); return adminPortal(p) }))
+          return json(res, 201, await update(async () => { if (getPortal(slug)) throw Object.assign(new Error('Slug exists'), { status: 409 }); const p = { id: id(), slug, title, description: clean(b.description).slice(0, 2000), notesText: clean(b.notes).slice(0, 2000), category: clean(b.category).slice(0, 120), subject: clean(b.subject).slice(0, 200), flag: portalFlag(b.flag), storage_root: portalRoot(b.storage_root || '/share/' + slug), contactId: portalContact(db, b.contactId), caseId: portalCase(db, b.caseId), visibility, createdAt: new Date().toISOString(), files: [] }; await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true }); if (portalFolderCopy) await portalFolder.ensure(p).catch(() => { }); db.portals.push(p); qrRegistry.ensureFirst(db, p); await writeApiDir(p, baseUrl(req)); void audit('portal.update', { portalId: p.id }); return adminPortal(p) }))
         }
         if (parts[3] === 'merge' && parts.length === 4 && method === 'POST') {
           const b = await parse(req);
@@ -2220,13 +2220,13 @@ async function handler(req, res) {
           return json(res, 200, { portal: { id: p.id, slug: p.slug, title: p.title }, storageRoot: out.storageRoot, exists: out.exists, truncated: out.truncated, folderCount: out.folderCount, fileCount: out.fileCount, bytes: out.bytes, tree: out.tree, folderNotes, folderMeta, generatedAt: new Date().toISOString() });
         }
         // Папки на портала: нова, флагове, изтриване — компонент `routes/folders.js`.
-        if (await folders.handle({ req, res, url, parts, method, portal: p })) return;
+        if (await folders.handle({ req, res, url, parts, method, portal: p })) return; if (await portalQr.handle({ req, res, url, parts, method, portal: p })) return;
         // Прикачване на файл в папката на портала (storage_root): тялото е съдържанието,
         // пътят идва като ?path=/подпапка/файл.txt (родителските папки се създават).
         if (parts[4] === 'tree' && parts[5] === 'upload' && parts.length === 6 && method === 'POST') {
           const st = require('./storage-tree');
           const rel = st.normRel(url.searchParams.get('path') || '');
-          if (rel === null || !rel) return fail(res, 400, 'Invalid path');
+          if (rel === null || !rel || qrRegistry.tooDeep(rel)) return fail(res, rel === null || !rel ? 400 : 409, rel === null || !rel ? 'Invalid path' : 'MAX_BRANCH_DEPTH_3: максималната дълбочина е 3 подпапки');
           const name = rel.split('/').pop() || '';
           if (!name || name.startsWith('.') || name.length > 240 || /[\u0000-\u001f]/.test(name)) return fail(res, 400, 'Invalid file name');
           const meta = folderMetaOf(p);
@@ -2327,8 +2327,8 @@ async function handler(req, res) {
         }
         if (parts[4] === 'files' && parts.length === 7 && parts[6] === 'access' && method === 'PATCH') {
           const f = p.files.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'File not found'); const b = await parse(req);
-          if (!accessModes.includes(b.mode) || b.listed !== undefined && typeof b.listed !== 'boolean') return fail(res, 400, 'Invalid file policy');
-          return json(res, 200, await update(() => { f.accessMode = b.mode; if (b.listed !== undefined) f.listed = b.listed; void audit('file.policy', { portalId: p.id, fileId: f.id, mode: b.mode }); return { fileId: f.id, mode: f.accessMode, listed: f.listed !== false } }));
+          if (!accessModes.includes(b.mode) || b.listed !== undefined && typeof b.listed !== 'boolean' || b.mode !== 'FREE' && !String(b.reason || '').trim()) return fail(res, 400, b.mode !== 'FREE' && !String(b.reason || '').trim() ? 'LOCK_REASON_REQUIRED: заключването иска основание' : 'Invalid file policy');
+          return json(res, 200, await update(() => { f.accessMode = b.mode; if (b.listed !== undefined) f.listed = b.listed; f.lockReason = b.mode === 'FREE' ? null : String(b.reason).trim().slice(0, 500); void audit('file.policy', { portalId: p.id, fileId: f.id, mode: b.mode, reason: f.lockReason }); return { fileId: f.id, mode: f.accessMode, listed: f.listed !== false, reason: f.lockReason } }));
         }
         if (parts[4] === 'files' && parts.length === 7 && parts[6] === 'access-keys' && method === 'POST') {
           const f = p.files.find(x => x.id === parts[5]); if (!f) return fail(res, 404, 'File not found'); const b = await parse(req);

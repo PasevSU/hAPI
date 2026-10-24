@@ -65,7 +65,7 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
     assert.equal((await go(`/api/v1/p/mon-b/files/${otchet.id}/download`, ROBOT)).status, 200);
 
     // Отказ: забраняваме файл и DE го опитва.
-    assert.equal((await api(`/admin/api/portals/${portalA}/files/${dogovor.id}/access`, 'PATCH', { mode: 'DISABLED' })).status, 200);
+    assert.equal((await api(`/admin/api/portals/${portalA}/files/${dogovor.id}/access`, 'PATCH', { mode: 'DISABLED', reason: 'тест: недостъпен' })).status, 200);
     assert.equal((await go(`/api/v1/p/mon-a/files/${dogovor.id}/download`, DE)).status, 403);
     assert.equal((await api(`/admin/api/portals/${portalA}/files/${dogovor.id}/access`, 'PATCH', { mode: 'FREE' })).status, 200);
 

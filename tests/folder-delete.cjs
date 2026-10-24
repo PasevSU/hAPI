@@ -102,7 +102,7 @@ const root = path.join(__dirname, '..');
     );
 
     assert.equal((await api(`${base}/folder`, 'POST', { parent: '', name: 'заключена' })).status, 201);
-    assert.equal((await api(`${base}/folder`, 'PATCH', { path: '/заключена', locked: true })).status, 200);
+    assert.equal((await api(`${base}/folder`, 'PATCH', { path: '/заключена', locked: true, reason: 'тест на заключване' })).status, 200);
     const locked = await api(`${base}/folder?path=${encodeURIComponent('/заключена')}&recursive=1`, 'DELETE');
     assert.equal(locked.status, 409, 'заключена папка не се трие дори рекурсивно');
     assert.match((await locked.json()).error, /заключена/);

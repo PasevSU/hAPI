@@ -13,7 +13,7 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
     const key = (await call('/api/v1/auth/login', 'POST', JSON.stringify({ username: 'policyuser', password: 'policy-pass-123' }), false, { 'Content-Type': 'application/json' })).v.token;
     const portalHeaders = { Authorization: 'Bearer ' + key };
     assert.equal((await call(file, 'GET', undefined, false, portalHeaders)).status, 200);
-    assert.equal((await j(base + '/access', 'PATCH', { mode: 'KEY_REQUIRED' })).status, 200);
+    assert.equal((await j(base + '/access', 'PATCH', { mode: 'KEY_REQUIRED', reason: 'иска се ключ по дело' })).status, 200);
     assert.equal((await call(file, 'GET', undefined, false, portalHeaders)).status, 403);
     assert.equal((await j(base + '/signed-url', 'POST', { ttlSeconds: 300 })).status, 403);
     const k = (await j(base + '/access-keys', 'POST', { expiresAt: null })).v;
@@ -22,7 +22,7 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
     assert.equal((await call(file, 'GET', undefined, false, { ...portalHeaders, 'X-File-Key': 'invalid' })).status, 403);
     assert.equal((await call(base + '/access-keys/' + k.id, 'DELETE', undefined, true)).status, 200);
     assert.equal((await call(file, 'GET', undefined, false, { ...portalHeaders, 'X-File-Key': k.key })).status, 403);
-    assert.equal((await j(base + '/access', 'PATCH', { mode: 'DISABLED' })).status, 200);
+    assert.equal((await j(base + '/access', 'PATCH', { mode: 'DISABLED', reason: 'оттеглен достъп' })).status, 200);
     assert.equal((await call(file, 'GET', undefined, false, portalHeaders)).status, 403);
     assert.equal((await j(base + '/access', 'PATCH', { mode: 'FREE', listed: false })).status, 200);
     assert.equal((await call('/api/v1/p/secure/files', 'GET', undefined, false, portalHeaders)).v.files.length, 0);

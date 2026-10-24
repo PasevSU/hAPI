@@ -64,7 +64,7 @@ const stage = async (name, fn) => { current = name; await fn(); console.log('  �
     assert.equal(up.status, 201, await up.text());
     fileId = (await api(`/admin/api/portals/${portalId}/files`)).data.files[0].id;
 
-    assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED' })).status, 200);
+    assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED', reason: 'тест: ключ' })).status, 200);
     key = (await api(`/admin/api/portals/${portalId}/files/${fileId}/access-keys`, 'POST', {})).data.key;
     assert.ok(key, 'има издаден ключ');
   });
@@ -87,7 +87,7 @@ const stage = async (name, fn) => { current = name; await fn(); console.log('  �
     assert.equal(dlB.status, 200); await dlB.text();
 
     // Отказан файл: DISABLED дава отказ дори с ключ.
-    assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'DISABLED' })).status, 200);
+    assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'DISABLED', reason: 'тест: недостъпен' })).status, 200);
     const disabled = await fetch(`${base}/api/v1/p/sensors/files/${fileId}/download`, { headers: { ...HUMAN_A, 'X-File-Key': key } });
     assert.equal(disabled.status, 403, 'DISABLED → 403'); await disabled.text();
     assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'FREE' })).status, 200);

@@ -122,7 +122,7 @@ const stage = async (name, fn) => {
       const comment = await api(`/admin/api/portals/${portalId}/tree/comment`, 'POST', { path: 'dokazatelstva', comment: 'Основни доказателства' });
       assert.equal(comment.data.notes['/dokazatelstva'].text, 'Основни доказателства');
 
-      assert.equal((await api(`/admin/api/portals/${portalId}/tree/folder`, 'PATCH', { path: '/dokazatelstva', locked: true })).status, 200);
+      assert.equal((await api(`/admin/api/portals/${portalId}/tree/folder`, 'PATCH', { path: '/dokazatelstva', locked: true, reason: 'приключен етап' })).status, 200);
       const lockedUp = await authFetch(`${base}/admin/api/portals/${portalId}/tree/upload?path=${encodeURIComponent('/dokazatelstva/vtori.txt')}`, {
         method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: 'x',
       });
@@ -140,13 +140,13 @@ const stage = async (name, fn) => {
       assert.equal(free.status, 200);
       assert.equal(await free.text(), 'съдържание на договора');
 
-      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED' })).status, 200);
+      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'KEY_REQUIRED', reason: 'тест: ключ' })).status, 200);
       assert.equal((await dl()).status, 403, 'без ключ → 403');
       const key = await api(`/admin/api/portals/${portalId}/files/${fileId}/access-keys`, 'POST', {});
       assert.equal(key.status, 201);
       assert.equal((await dl({ 'X-File-Key': key.data.key })).status, 200, 'с ключ → 200');
 
-      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'DISABLED' })).status, 200);
+      assert.equal((await api(`/admin/api/portals/${portalId}/files/${fileId}/access`, 'PATCH', { mode: 'DISABLED', reason: 'тест: недостъпен' })).status, 200);
       assert.equal((await dl({ 'X-File-Key': key.data.key })).status, 403, 'DISABLED дори с ключ → 403');
 
       // Връщаме свободен достъп и качваме втори файл, който остава FREE за следващите стъпки.

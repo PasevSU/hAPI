@@ -90,18 +90,24 @@ const cleaned = [];
     const showNames = async () => ((await jsonOf(listPath)).data.files || []).map((f) => f.name);
     assert.ok((await showNames()).includes('правило.txt'), 'файлът се вижда в списъка');
 
-    // недостъпен: нито в списъка, нито при изтегляне
-    assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/files/${file.id}/access`, 'PATCH', { mode: 'DISABLED' })).status, 200);
-    assert.equal((await showNames()).includes('правило.txt'), false, 'недостъпен файл НЕ се показва');
-    assert.equal((await api(`/api/v1/p/${slug}/tree/file?path=${encodeURIComponent('/правило.txt')}`)).status, 404, 'недостъпен файл не се тегли');
+    // ── LOCK_REASON_REQUIRED: заключване без основание се отказва ────────────
+    assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/files/${file.id}/access`, 'PATCH', { mode: 'DISABLED' })).status, 400, 'без основание заключване не се приема');
 
-    // необявен: същото, но с `listed:false`
-    await jsonOf(`/admin/api/portals/${portal.id}/files/${file.id}/access`, 'PATCH', { mode: 'FREE', listed: false });
+    // недостъпен: ВИДИМ (PUBLISHED_FILE_VISIBILITY) с основание, но съдържанието — 403
+    assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/files/${file.id}/access`, 'PATCH', { mode: 'DISABLED', reason: 'прекратен достъп по дело' })).status, 200);
+    const lockedRow = ((await jsonOf(listPath)).data.files || []).find((f) => f.name === 'правило.txt');
+    assert.ok(lockedRow, 'публикуван заключен файл ОСТАВА видим');
+    assert.equal(lockedRow.locked, true, 'списъкът казва, че файлът е заключен');
+    assert.equal(lockedRow.reason, 'прекратен достъп по дело', 'основанието е записано и видимо');
+    assert.equal((await api(`/api/v1/p/${slug}/tree/file?path=${encodeURIComponent('/правило.txt')}`)).status, 403, 'съдържанието на заключен файл не се дава');
+
+    // необявен (чернова): скрива се от списъка и от изтегляне
+    await jsonOf(`/admin/api/portals/${portal.id}/files/${file.id}/access`, 'PATCH', { mode: 'FREE', listed: false, reason: 'чернова' });
     assert.equal((await showNames()).includes('правило.txt'), false, 'необявен файл НЕ се показва');
     assert.equal((await api(`/api/v1/p/${slug}/tree/file?path=${encodeURIComponent('/правило.txt')}`)).status, 404, 'необявен файл не се тегли');
 
     // с ключ: показва се с флаг `key`, но не се тегли без ключ
-    await jsonOf(`/admin/api/portals/${portal.id}/files/${file.id}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true });
+    await jsonOf(`/admin/api/portals/${portal.id}/files/${file.id}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true, reason: 'иска се ключ' });
     const keyRow = ((await jsonOf(listPath)).data.files || []).find((f) => f.name === 'правило.txt');
     assert.ok(keyRow, 'файлът с ключ се показва');
     assert.equal(keyRow.key, true, 'списъкът казва, че файлът иска ключ');
@@ -125,7 +131,7 @@ const cleaned = [];
     assert.equal(fs.readFileSync(path.join(folder, 'архив', 'нов.txt'), 'utf8'), 'x', 'файлът е в папката');
     assert.equal((await treeUpload('/корен.txt')).status, 201, 'качване в корена на портала работи');
 
-    console.log('PASS portal-order: order → папката на портала · подпапка · чуждо/частно → 404 · DISABLED/unlisted скрити и 404 · KEY 403 · качване не създава папки');
+    console.log('PASS portal-order: order → папката на портала · подпапка · чуждо/частно → 404 · заключен видим с основание, 403 · чернова скрита · KEY 403 · качване не създава папки');
   } finally {
     await server.stop();
     for (const name of cleaned) {

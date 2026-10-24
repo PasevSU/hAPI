@@ -60,7 +60,7 @@ const cleaned = [];
 
     // Скрита и заключена папка се отбелязват през администраторския API.
     assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/tree/folder`, 'PATCH', { path: '/скрита', visible: false })).status, 200, 'скритата папка се отбелязва');
-    assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/tree/folder`, 'PATCH', { path: '/заключена', locked: true })).status, 200, 'заключената папка се отбелязва');
+    assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/tree/folder`, 'PATCH', { path: '/заключена', locked: true, reason: 'заключена за теста' })).status, 200, 'заключената папка се отбелязва');
 
     // ── 1. Страницата на портала отваря ПАПКАТА, не регистъра ─────────────────
     const page = await api('/p/' + portal.id);

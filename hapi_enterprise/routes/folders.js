@@ -9,7 +9,7 @@
 // Договор: `handle()` връща `true`, когато заявката е за този компонент (и е приключена),
 // и `false`, когато трябва да я поеме следващият компонент.
 function create(deps) {
-  const { json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring } = deps;
+  const { json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr } = deps;
 
   function notMatching(parts, method) {
     const target = parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'tree' && parts[5] === 'folder' && parts.length === 6;
@@ -47,6 +47,12 @@ function create(deps) {
         fail(res, 400, 'Invalid path');
         return true;
       }
+      // MAX_BRANCH_DEPTH_3: коренът е ниво 0; нива 1, 2 и 3 са разрешени, четвърто — не.
+      // Ширината е свободна — колкото папки на едно ниво са нужни, толкова.
+      if (qr.tooDeep(rel)) {
+        fail(res, 409, 'MAX_BRANCH_DEPTH_3: максималната дълбочина е 3 подпапки под корена');
+        return true;
+      }
       try {
         // Коренът на портала се създава при нужда: прикаченият файл вече НЕ го създава
         // (виж `portal_folder_copy`), а човекът трябва да може да си направи папка.
@@ -81,11 +87,19 @@ function create(deps) {
         }
         next[key] = b[key];
       }
+      // LOCK_REASON_REQUIRED: заключването е твърдение за човека отвън — без записано
+      // основание то е невъзможно да бъде проверено по-късно.
+      const reason = String(b.reason == null ? '' : b.reason).trim().slice(0, 500);
+      if (next.locked && !next.reason && !reason && !current.reason) {
+        fail(res, 400, 'LOCK_REASON_REQUIRED: заключването иска основание');
+        return true;
+      }
+      if (reason) next.reason = reason;
       const saved = await update(() => {
         p.folderMeta = p.folderMeta && typeof p.folderMeta === 'object' ? p.folderMeta : {};
         const key = '/' + rel;
         // Пази се само ако е различно от подразбирането, за да не расте базата.
-        if (next.visible === false || next.media || next.locked) p.folderMeta[key] = { visible: next.visible, media: next.media, locked: next.locked };
+        if (next.visible === false || next.media || next.locked) p.folderMeta[key] = { visible: next.visible, media: next.media, locked: next.locked, reason: next.reason || current.reason || null };
         else delete p.folderMeta[key];
         void audit('portal.tree.folder.meta', { portalId: p.id, path: key, visible: next.visible, media: next.media, locked: next.locked });
         return { path: key, ...next };
