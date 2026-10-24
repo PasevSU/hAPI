@@ -178,11 +178,6 @@
       "count": 1
     }
   },
-  "hapi_enterprise/ui/directory-panel.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "hapi_enterprise/ui/files-manager.js": {
     "no-unused-vars": {
       "count": 5

@@ -98,7 +98,24 @@ function sourceChecks() {
     const panelAt = html.indexOf('src="' + panel + '"');
     assert(panelAt > helperAt, `api-base.js трябва да се зарежда преди ${panel}`);
   }
-  return 'без абсолютни admin заявки';
+
+  // `location.origin` се чете САМО в api-base.js. Всеки друг файл минава през
+  // `window.hapiApiBase()`; резервно изчисление от origin-а е тихо грешно, защото под
+  // Ingress това е адресът на Home Assistant, а не на add-on-а. Коментарите не се броят.
+  const uiDir = path.join(ROOT, 'hapi_enterprise/ui');
+  const originReaders = [];
+  for (const file of fs.readdirSync(uiDir).filter((f) => f.endsWith('.js') && f !== 'api-base.js')) {
+    const lines = fs.readFileSync(path.join(uiDir, file), 'utf8').split(/\r?\n/);
+    lines.forEach((line, i) => {
+      const trimmed = line.trim();
+      if (!trimmed.includes('location.origin')) return;
+      if (/^(\/\/|\/\*|\*)/.test(trimmed)) return; // коментар
+      if (!trimmed.replace(/\/\/.*$/, '').includes('location.origin')) return; // коментар в края
+      originReaders.push(`${file}:${i + 1}`);
+    });
+  }
+  assert.deepEqual(originReaders, [], 'location.origin се ползва извън api-base.js: ' + originReaders.join(' | '));
+  return 'без абсолютни admin заявки · location.origin само в api-base.js';
 }
 
 const INGRESS = '/api/hassio_ingress/panel-token_9f2c';

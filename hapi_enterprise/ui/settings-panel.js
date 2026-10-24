@@ -30,8 +30,8 @@
 
   const storedBase = () => localStorage.getItem('hapi.apiBase') || '';
   const storedToken = () => sessionStorage.getItem('hapiAdminToken') || '';
-  const defaultBase = () =>
-    window.hapiApiBase ? window.hapiApiBase() : (location.protocol === 'file:' ? '' : location.origin);
+  // Адресът идва само от api-base.js (пази `hapi.apiBase` и Ingress префикса).
+  const defaultBase = () => (typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '');
   const effectiveBase = () => (state.base || storedBase() || defaultBase()).replace(/\/$/, '');
   const connected = () => Boolean(effectiveBase());
 

@@ -29,10 +29,8 @@
     pkg: { portalId: '', last: null, error: '', loaded: false, compression: 'default', encryption: 'none', password: '', generatedPassword: '', split: 'none', rateKbps: 0, parallelChunks: 4 },
   };
 
-  const base = () =>
-    (window.hapiApiBase
-      ? window.hapiApiBase()
-      : localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin)).replace(/\/$/, '');
+  // Адресът идва само от api-base.js (той пази `hapi.apiBase` и Ingress префикса).
+  const base = () => (typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '').replace(/\/$/, '');
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
   const connected = () => Boolean(base());
   async function api(path, opts) {

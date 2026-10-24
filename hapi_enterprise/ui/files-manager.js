@@ -716,14 +716,10 @@
   }
 
   // ── Връзка ───────────────────────────────────────────────────────────────
-  function ingressPrefix() {
-    // Home Assistant подава `/api/hassio_ingress/<token>`; старите форми се пазят.
-    if (typeof window.hapiIngressPrefix === 'function') return window.hapiIngressPrefix();
-    const m = String(location.pathname || '').match(/^\/(?:api\/hassio_ingress|hassio\/ingress|app|hapi)\/[^/]+/);
-    return m ? m[0] : '';
-  }
-  const defaultBase = () =>
-    window.hapiApiBase ? window.hapiApiBase() : (location.protocol === 'file:' ? '' : location.origin + ingressPrefix());
+  // Адресът идва само от `api-base.js`: той пази и `hapi.apiBase`, и Ingress префикса
+  // (`/api/hassio_ingress/<token>`). Собствено изчисление тук беше дубликат, който при
+  // смяна на реда на зареждане връщаше адреса на Home Assistant.
+  const defaultBase = () => (typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '');
   const base = () => (localStorage.getItem('hapi.apiBase') || defaultBase()).replace(/\/$/, '');
   // Адрес за ПУБЛИЧНИТЕ препратки (api.json, QR, подписан URL). При Home Assistant
   // Ingress адресът на интерфейса не е публичен — той иска вход в HA, затова се ползва
@@ -751,10 +747,15 @@
     if (state.connectionLoaded || !connected()) return;
     state.connectionLoaded = true;
     const r = await api('/admin/api/connection');
+    if (r.ok && r.data) {
+      // `require_portal_token` (в add-on-а е включено от start.js): всеки адрес на портал
+      // иска вход — тогава панелът не обещава работещ линк за външен получател.
+      state.portalTokenRequired = r.data.requirePortalToken === true;
+    }
     if (r.ok && r.data && r.data.publicBaseUrl) {
       state.publicBaseUrl = r.data.publicBaseUrl;
       // Препратките се строят наново с публичния адрес (иначе сочат към Ingress).
-      state.portals.forEach((p) => generateApi(p, true));
+      state.portals.forEach((p) => generateApi(p, true, accessOf(p)));
     }
   }
   function askToken(force) {
@@ -822,6 +823,11 @@
       createdAt: p.createdAt || '',
       access: p.access || (p.visibility === 'public' ? 'FREE' : 'KEY_REQUIRED'),
       storage_root: p.storage_root || '/share',
+      // Подписан достъп за частен портал — издава го сървърът (`adminPortal`), за да се отварят
+      // страницата, API-то и QR кодът; без него те връщат 404 (hapi_enterprise/portal-access.js).
+      accessQuery: p.accessQuery || '',
+      accessExpires: p.accessExpires || null,
+      tokenRequired: Boolean(p.tokenRequired),
       token_policy: { ttl_hours: 168, max_uses: 10, revocable: true },
       files: (p.files || []).map(normalizeFile),
     };
@@ -969,7 +975,7 @@
     // API + QR се създават ЗАЕДНО с портала (на сървъра), затова препратките се
     // сглобяват веднага — няма нужда от бутон „Генерирай“.
     list.forEach((p) => {
-      if (!state.api[p.id]) generateApi(p, true);
+      if (!state.api[p.id]) generateApi(p, true, accessOf(p));
     });
     return true;
   }
@@ -1017,7 +1023,13 @@
     }
   }
 
-  function generateApi(p, quiet) {
+  /**
+   * Подписаният достъп, който сървърът дава за портала (`accessQuery`/`accessExpires` от
+   * `adminPortal`). За публичен портал е празен; за частен без него адресите връщат 404.
+   */
+  const accessOf = (p) => ({ query: (p && p.accessQuery) || '', expires: (p && p.accessExpires) || null });
+
+  function generateApi(p, quiet, access) {
     const spec = window.HapiApiSpec;
     if (!spec) {
       toast('Липсва api-spec.js', 'err');
@@ -1035,11 +1047,16 @@
       const record = spec.buildApiRecord(portalObj, { baseUrl: linkBase() });
       const openapi = spec.buildOpenApi(portalObj, { baseUrl: linkBase() });
       const refs = record.references || {};
-      const qrUrl = refs.qrUrl || `${linkBase()}/api/v1/p/${p.slug}/qr.svg`;
+      // Подписаният достъп за частен портал ПРЕДИ адресите: без него `/p/<id>` и API-то
+      // връщат 404 (вж. server.js → portalAuthorized / portal-access.js).
+      const q = (access && access.query) || '';
+      const withAccess = (u) => (typeof u === 'string' && u && q ? u + (u.includes('?') ? '&' + q.slice(1) : q) : u);
+      const qrUrl = withAccess(refs.qrUrl || `${linkBase()}/api/v1/p/${p.slug}/qr.svg`);
       // „Адрес на портала“ е ЧОВЕШКАТА страница (там води QR кодът), не JSON API-то.
       // Адресира се с ID на портала: връзката не издава името и не се чупи при преименуване.
-      const landing = refs.landingUrl || `${linkBase()}/p/${p.id || p.slug}`;
-      state.api[p.id] = { record, openapi, refs, qrUrl, landing, at: new Date().toISOString() };
+      const landing = withAccess(refs.landingUrl || `${linkBase()}/p/${p.id || p.slug}`);
+      const refsQ = Object.fromEntries(Object.entries(refs).map(([k, v]) => [k, k.endsWith('Url') ? withAccess(v) : v]));
+      state.api[p.id] = { record, openapi, refs: refsQ, qrUrl, landing, accessQuery: q, accessExpires: (access && access.expires) || null, at: new Date().toISOString() };
       if (!quiet) toast('API и QR са генерирани за портала', 'ok');
       return state.api[p.id];
     } catch (e) {
@@ -1055,7 +1072,10 @@
       return;
     }
     const r = await api(`/admin/api/v2/portals/${encodeURIComponent(p.slug)}/api`, { method: 'POST', json: {} });
-    generateApi(p, true);
+    // Частен портал: сървърът дава подписан достъп, който се слага в показаните адреси.
+    const info = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/api-info`);
+    const access = info.ok && info.data ? { query: info.data.accessQuery || '', expires: info.data.accessExpires || null } : null;
+    generateApi(p, true, access);
     if (!r.ok) toast(r.error || 'API не е записано на сървъра', 'err');
     else toast('API, openapi.json и qr.svg са записани от add-on-а', 'ok');
     render();
@@ -1113,7 +1133,7 @@
       state.newPortal = false;
       state.selected = null;
       const added = await uploadFolderFiles(foldered);
-      generateApi(p, true); // при изграждане на портал: API + QR веднага
+      generateApi(p, true, accessOf(p)); // при изграждане на портал: API + QR веднага
       state.lastAction = `Създаден портал ${slug}${added ? ` · ${added} файла от папка` : ''} · API и QR (демо)`;
       toast(
         `Демо: порталът е създаден${added ? `, качени ${added} файла от папката` : ''}; API и QR са генерирани`,
@@ -3070,7 +3090,7 @@
         state.newFolder = false;
         state.folderNotes = {};
         // Всеки портал има API + QR: в демо режим се изчисляват при отваряне.
-        if (!connected() && !state.api[target.id]) generateApi(target, true);
+        if (!connected() && !state.api[target.id]) generateApi(target, true, accessOf(target));
         // Дървото на папките е за конкретен портал — при смяна се чете наново.
         if (state.tree.portalId !== target.id) void loadTree().then(render);
         render();
@@ -3563,7 +3583,7 @@
     if (!state.portals.length) seed();
     // Изходно състояние е списъкът с портали (портал се отваря с щракване).
     state.portals.forEach((p) => {
-      if (!state.api[p.id]) generateApi(p, true);
+      if (!state.api[p.id]) generateApi(p, true, accessOf(p));
     });
     render();
   }

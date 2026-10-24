@@ -17,7 +17,9 @@
   // помощник от api-base.js; локалното изчисление е само резервен вариант.
   const apiUrl = (path) => {
     if (typeof window.hapiApiUrl === 'function') return window.hapiApiUrl(path);
-    const base = localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin);
+    // Без помощника остава само ръчно зададеният адрес: `location.origin` НЕ е адресът на
+    // add-on-а под Ingress, затова не се ползва като резерва.
+    const base = localStorage.getItem('hapi.apiBase') || '';
     return String(base).replace(/\/+$/, '') + path;
   };
 

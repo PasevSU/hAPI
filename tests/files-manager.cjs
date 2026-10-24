@@ -52,15 +52,15 @@ assert.match(src, /X-File-Encrypt/);
 assert.match(src, /hapiAdminToken/);
 assert.match(src, /hapi\.apiBase/);
 
-// 5. Демо режимът е честен: file:// не прави мрежови заявки и не твърди трансфер.
-assert.match(src, /location\.protocol === 'file:'/);
-// Ingress: разпознават се и `/api/hassio_ingress/<token>` (истинската форма на HA), и
-// старите `/hassio/ingress/`, `/app/`, `/hapi/`. Адресът идва от общия помощник api-base.js.
-assert.match(src, /api\\\/hassio_ingress/);
-assert.match(src, /hassio\\\/ingress/);
-assert.match(src, /app\|hapi/);
-assert.match(src, /window\.hapiIngressPrefix/);
+// 5. Демо режимът е честен: без адрес (file:// или липсващ api-base.js) няма мрежова заявка
+// и не се твърди трансфер. `connected()` зависи от `base()`, а `base()` е празен точно тогава.
+assert.match(src, /const connected = \(\) => Boolean\(base\(\)\)/);
+// Ingress: префиксът (`/api/hassio_ingress/<token>`, старите `/hassio/ingress/`, `/app/`,
+// `/hapi/`) се знае САМО от общия помощник api-base.js — файлът не го строи сам, нито чете
+// `location.origin`. Самият помощник се проверява в tests/ingress-api-base.cjs.
 assert.match(src, /window\.hapiApiBase/);
+assert.doesNotMatch(src, /location\.pathname/);
+assert.doesNotMatch(src, /location\.origin/);
 assert.match(src, /async function testConnection/);
 assert.equal((src.match(/Демо:/g) || []).length >= 3, true);
 
@@ -75,6 +75,17 @@ assert.match(src, /fm-detail/); assert.match(src, /Контролен панел
 assert.match(src, /createPortal/);
 assert.match(src, /generateApi/);
 assert.match(src, /qrSvg/);
+// QR кодът в панела кодира СТРАНИЦАТА на портала (`api.landing`, по id), а не адреса на
+// SVG изображението: сканиран, той трябва да отвори портала, а не `/api/v1/p/<slug>/qr.svg`.
+assert.match(src, /const qrPage = api \? api\.landing/);
+assert.match(src, /qrSvg\(qrPage\)/);
+assert.equal(/qrSvg\(api\.qrUrl\)/.test(src), false, 'QR кодът не бива да кодира адреса на SVG-то');
+assert.match(src, /<dt>QR изображение<\/dt>/, 'SVG адресът е отделен ред, не „QR адрес“');
+// Частен портал: адресите носят ПОДПИСАН достъп — без него връщат 404 (portal-access.js).
+const portalControlSrc = uiSrc('portal-control.js');
+assert.match(src, /const accessOf = \(p\) => \(\{ query:/, 'подписът идва от сървъра (accessQuery)');
+assert.match(src, /accessQuery: p\.accessQuery \|\| ''/, 'нормализаторът пази подписа');
+assert.match(portalControlSrc, /accessQuery/, 'контролният панел казва до кога важи подписът');
 assert.match(src, /Създай и генерирай API \+ QR/);
 assert.match(src, /openapi\.json/);
 assert.match(src, /fm-bulk/);

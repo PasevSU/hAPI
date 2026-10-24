@@ -74,7 +74,7 @@ const ooxml = require('../hapi_enterprise/ooxml.js');
     const info = await (await call(`/admin/api/portals/${t}/api-info`)).json(); assert(/\/api\/v1\/p\/target$/.test(info.apiUrl)); assert(info.qr.startsWith('<svg'));
     // QR кодът сочи публичната страница по id; вътрешният адрес се маркира, за да не се
     // раздава QR, който не се отваря извън локалната мрежа.
-    assert.ok(info.landingUrl.endsWith('/p/' + t), 'QR сочи публичната страница по id'); assert.equal(info.qrTarget, info.landingUrl);
+    assert.ok(info.landingUrl.endsWith('/p/' + t), 'QR сочи публичната страница по id'); assert.ok(info.qrTarget.startsWith(info.landingUrl)); assert.equal(info.qrTarget, info.landingUrl + info.accessQuery);
     assert.equal(info.baseIsLocal, true, 'тестът работи на 127.0.0.1');
     // Admin page CSP allows blob PDF preview
     const page = await fetch(B + '/admin'); assert(/frame-src blob:/.test(page.headers.get('content-security-policy')));

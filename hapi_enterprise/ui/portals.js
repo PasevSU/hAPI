@@ -22,11 +22,11 @@
     const saved = localStorage.getItem('hapi.apiBase');
     if (saved) return saved;
     if (location.protocol !== 'file:') {
-      // Едно правило за всички адреси: `links.js` (зарежда се преди този файл).
-      if (window.HapiLinks) return window.HapiLinks.baseFromLocation(location);
+      // Едно правило за всички адреси: `api-base.js` (зарежда се преди този файл) знае
+      // Ingress префикса; `links.js` е резервата. Ръчно изчисление от origin-а на браузъра
+      // тук би дало адреса на Home Assistant, а не на add-on-а.
       if (typeof window.hapiApiBase === 'function') return window.hapiApiBase();
-      const m = String(location.pathname || '').match(/^\/(?:api\/hassio_ingress|hassio\/ingress|app|hapi)\/[^/]+/);
-      return location.origin + (m ? m[0] : '');
+      if (window.HapiLinks) return window.HapiLinks.baseFromLocation(location);
     }
     return data().defaultBaseUrl || 'http://homeassistant.local:8099';
   }

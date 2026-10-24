@@ -12,6 +12,27 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
     await json('/admin/api/users', 'POST', { username: 'viewer', password: 'viewer-pass-123', scopes: ['read', 'download'] });
     const key = await (await call('/api/v1/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'viewer', password: 'viewer-pass-123' }) })).json();
     let r = await call('/p/example?portal_token=' + encodeURIComponent(key.token)); assert.equal(r.status, 200); assert((await r.text()).includes('/portal.js'));
+    // Подписан достъп до ЦЕЛИЯ портал (portal-access.js): собственикът получава адрес с
+    // `?expires=&sig=` и той се отваря без акаунт — иначе панелът показваше адреси с 404.
+    const info = await json(`/admin/api/portals/${p.id}/api-info`, 'GET');
+    assert.match(info.accessQuery, /^\?expires=\d+&sig=[a-f0-9]{64}$/, 'api-info дава подписан достъп');
+    for (const addr of ['/p/example', '/api/v1/p/example', '/api/v1/p/example/qr.svg', '/api/v1/p/example/manifest', '/api/v1/p/example/openapi.json']) {
+      const signed = await call(addr + info.accessQuery);
+      await signed.text();
+      assert.equal(signed.status, 200, 'подписаният адрес се отваря: ' + addr);
+      const bare = await call(addr);
+      await bare.text();
+      assert.equal(bare.status, 404, 'без подпис частният портал не издава нищо: ' + addr);
+    }
+    // Подправен подпис и изтекъл срок не минават.
+    const tampered = info.accessQuery.replace(/sig=[a-f0-9]{8}/, 'sig=00000000');
+    assert.equal((await call('/p/example' + tampered)).status, 404, 'подправен подпис → 404');
+    const expired = `?expires=${Math.floor(Date.now() / 1000) - 60}&sig=${'a'.repeat(64)}`;
+    assert.equal((await call('/p/example' + expired)).status, 404, 'изтекъл подпис → 404');
+    // Огледалният вход `/portal.html?folder=<slug>` (линкът, който се записва в папката) трябва да
+    // ползва СЪЩАТА политика като `/p/<id>`: сесия ИЛИ подписан достъп, не само сесия.
+    assert.equal((await call('/portal.html?folder=example&' + info.accessQuery.slice(1))).status, 200, '/portal.html приема подписан достъп');
+    assert.equal((await call('/portal.html?folder=example')).status, 404, '/portal.html без подпис не издава нищо');
     assert.equal((await call('/portal.js')).status, 200); assert.equal((await call('/portal.css')).status, 200);
     assert.equal((await call('/p/example?portal_token=invalid')).status, 404);
     assert.equal((await call('/portal.js', {}, true)).status, 404);

@@ -207,6 +207,12 @@ function mountUi(server, { lang = 'bg', modules = [] } = {}) {
   };
   for (const file of SHARED) run(file, path.join(root, 'hapi_enterprise'));
   run('i18n.js', uiDir);
+  // Както в `ui/index.html`: `links.js` (живее в корена на add-on-а, сервира се на
+  // `/ui/links.js`) и `api-base.js` се зареждат ПРЕДИ панелите. Без тях
+  // `window.hapiApiBase` липсва и панелът няма адрес на add-on-а — тестът щеше да
+  // проверява „демо“ състояние, което в браузъра не съществува.
+  if (!modules.includes('links.js')) run('links.js', path.join(root, 'hapi_enterprise'));
+  if (!modules.includes('api-base.js')) run('api-base.js', uiDir);
   for (const file of modules) run(file, uiDir);
   return {
     sandbox,

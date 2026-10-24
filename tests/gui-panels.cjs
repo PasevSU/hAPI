@@ -107,6 +107,26 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       host.remove();
     }
 
+    // ── 2в. Частен портал: адресът носи подписан достъп и СЕ отваря ────────────────
+    // Без подпис `/p/<id>` връща 404 (server.js: `portalAuthorized`), затова панелът
+    // показва адрес с „?expires=&sig=“ — иначе „работещ“ линк, който не се отваря.
+    {
+      const host = ui.container();
+      w.FilesManagerPanel.mount(host);
+      await waitFor(() => host.textContent.includes('gui-portal'), { label: 'картата на портала' });
+      const chip = host.querySelectorAll('.fm-ico').map((el) => el.getAttribute('title') || '').find((t) => t.startsWith('Адрес на портала'));
+      assert.ok(chip, 'картата показва адрес на портала');
+      const signed = chip.replace(/^Адрес на портала: /, '');
+      assert.match(signed, /\?expires=\d+&sig=[a-f0-9]{64}$/, 'адресът на частен портал носи подпис: ' + signed);
+      const ok = await fetch(signed);
+      await ok.text();
+      assert.equal(ok.status, 200, 'подписаният адрес от панела се отваря');
+      const bare = await fetch(signed.split('?')[0]);
+      await bare.text();
+      assert.equal(bare.status, 404, 'без подпис частният портал не се отваря');
+      host.remove();
+    }
+
     // ── 3. СЪЗДАВАНЕ ПРЕЗ ИНТЕРФЕЙСА: контакт, после дело ──────────────────────
     {
       const host = ui.container();

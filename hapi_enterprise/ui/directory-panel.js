@@ -17,9 +17,9 @@
   let host = null;
   const state = { contacts: [], cases: [], fields: [], query: '', error: '', editing: null, contactsLoaded: false, casesLoaded: false };
 
-  const el = (s) => (location.protocol === 'file:' ? '' : location.origin);
-  // Ingress: адресът на add-on-а е origin + `/api/hassio_ingress/<token>` (виж api-base.js).
-  const base = () => (window.hapiApiBase ? window.hapiApiBase() : localStorage.getItem('hapi.apiBase') || el()).replace(/\/$/, '');
+  // Ingress: адресът на add-on-а е origin + `/api/hassio_ingress/<token>` — това го знае
+  // само api-base.js, затова тук няма собствено изчисление от `location.origin`.
+  const base = () => (typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '').replace(/\/$/, '');
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
   const connected = () => Boolean(base());
 

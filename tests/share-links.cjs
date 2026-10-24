@@ -104,7 +104,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       'universal link-ът сочи към landing адреса на портала',
     );
     assert.ok(info.links.automation.includes(info.links.tag.id));
-    assert.equal(info.qrTarget, info.landingUrl, 'QR кодът остава към човешката страница');
+    // QR кодът води до човешката страница; за частен портал адресът носи подписан достъп.
+    assert.ok(info.qrTarget.startsWith(info.landingUrl), 'QR кодът остава към човешката страница');
+    assert.equal(info.qrTarget, info.landingUrl + info.accessQuery, 'QR-ът носи подписания достъп');
 
     // Без токен админският отговор не се дава.
     r = await fetch(`${base}/admin/api/portals/${encodeURIComponent(portal.id)}/api-info`);

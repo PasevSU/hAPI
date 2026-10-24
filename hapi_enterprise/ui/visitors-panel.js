@@ -9,10 +9,8 @@
 (function () {
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const base = () =>
-    (window.hapiApiBase
-      ? window.hapiApiBase()
-      : localStorage.getItem('hapi.apiBase') || (location.protocol === 'file:' ? '' : location.origin)).replace(/\/$/, '');
+  // Адресът идва само от api-base.js (той пази `hapi.apiBase` и Ingress префикса).
+  const base = () => (typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '').replace(/\/$/, '');
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
 
   async function api(path, method = 'GET') {
