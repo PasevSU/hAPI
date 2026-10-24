@@ -45,6 +45,55 @@ function create(deps) {
     }),
   }), integrity.intervalMs(process.env));
 
+  /**
+   * Физически архив на ТЕКУЩОТО съдържание + следващ QR. Ползва се и от `POST /qr/archive`,
+   * и от `restore` (за да се запази състоянието ПРЕДИ възстановяване — нищо не се губи).
+   */
+  const makeArchive = async (portal, noteRaw) => update(async () => {
+    const p = portal;
+    const rootAbs = path.resolve(portalRoot(p.storage_root || '/share'));
+    const files = await qr.walk(rootAbs);
+    if (!files.length) throw Object.assign(new Error('Папката на портала е празна — няма какво да се архивира'), { status: 409 });
+    const dir = path.join(archiveRoot, p.id);
+    const reg = qr.registry(db(), p.id);
+    qr.ensureFirst(db(), p);
+    const active = qr.activeRevision(reg);
+    if (!active) throw Object.assign(new Error('Няма активен QR — прекратен е; създай нов преди архивиране'), { status: 409 });
+    const note = String(noteRaw || '').slice(0, 300);
+    const archiveId = 'AR-' + String(reg.archives.length + 1).padStart(3, '0');
+    const built = await qr.buildArchive({ portal: p, revision: active, files, note, archiveId });
+    const fileName = `${p.slug}-${active.id}-${archiveId}.zip`;
+    const manifestHash = qr.sha256(Buffer.from(JSON.stringify(built.manifest)));
+    await fsp.mkdir(dir, { recursive: true });
+    const full = path.join(dir, fileName);
+    await fsp.writeFile(full, built.buffer);
+    // §10.1 точки 6–7 и §19: архивът се ПРОВЕРЯВА веднага, четейки написаното от диска.
+    // Ако проверката не мине, операцията НЕ се отчита като успешна: файлът се маха и
+    // нищо не влиза в регистъра — иначе би имало „успешен“ архив без валидно доказателство.
+    const check = await integrity.verifyArchive({ archive: { id: archiveId, qrId: active.id, file: fileName, sha256: built.hash }, dir, revision: { manifestHash } });
+    if (!check.ok) {
+      await fsp.rm(full, { force: true }).catch(() => { });
+      void audit('qr.archive.verify.failed', { portalId: p.id, qrId: active.id, archiveId, reason: check.reason, detail: check.detail || null });
+      throw Object.assign(new Error('Архивът не мина проверка за цялост (' + check.reason + ') — не е регистриран'), { status: 500 });
+    }
+    const saved = { id: archiveId, qrId: active.id, file: fileName, sha256: built.hash, size: built.size, files: files.length, createdAt: new Date().toISOString(), note, verificationStatus: 'verified', verifiedAt: new Date().toISOString() };
+    reg.archives.push(saved);
+    // Съдържанието се фиксира към ТОЗИ QR; следващият е наследник, не подмяна.
+    active.archivedAt = saved.createdAt;
+    active.archiveId = archiveId;
+    active.manifest = built.manifest;
+    active.manifestHash = manifestHash;
+    active.manifestId = built.manifest.manifest_id;
+    const next = {
+      id: qr.qrIdOf(active.seq + 1), seq: active.seq + 1, portalId: p.id, contract: active.contract || 'order',
+      previousQrId: active.id, previousManifestHash: active.manifestHash, createdAt: saved.createdAt,
+      archivedAt: null, archiveId: null, manifestHash: null, manifestId: null, blockedAt: null, blockReason: null,
+    };
+    reg.revisions.push(next);
+    void audit('qr.archived', { portalId: p.id, qrId: active.id, nextQrId: next.id, archiveId, sha256: built.hash, bytes: built.size, files: files.length });
+    return { archive: saved, archivedQr: active.id, active: next.id, state: view(reg) };
+  });
+
   /** Публичен изглед на регистъра: активният QR, историята, архивите и политиката. */
   const view = (reg) => {
     const active = qr.activeRevision(reg);
@@ -55,6 +104,7 @@ function create(deps) {
         previousQrId: r.previousQrId || null, previousManifestHash: r.previousManifestHash || null,
         manifestHash: r.manifestHash || null, manifestId: r.manifestId || null,
         archiveId: r.archiveId || null,
+        restoredFrom: r.restoredFrom || null, restoredAt: r.restoredAt || null,
         archivedAt: r.archivedAt || null, blockedAt: r.blockedAt || null, blockReason: r.blockReason || null,
       })),
       archives: reg.archives,
@@ -82,50 +132,63 @@ function create(deps) {
     // POST /qr/archive — РЕАЛЕН архивен файл + манифест + следващ QR (старият остава).
     if (parts[5] === 'archive' && parts.length === 6 && method === 'POST') {
       const body = await parse(req).catch(() => ({}));
-      const rootAbs = path.resolve(portalRoot(p.storage_root || '/share'));
-      const files = await qr.walk(rootAbs);
-      if (!files.length) return fail(res, 409, 'Папката на портала е празна — няма какво да се архивира');
-      const dir = path.join(archiveRoot, p.id);
-      const done = await update(async () => {
-        const reg = qr.registry(db(), p.id);
-        qr.ensureFirst(db(), p);
-        const active = qr.activeRevision(reg);
-        if (!active) throw Object.assign(new Error('Няма активен QR — прекратен е; създай нов преди архивиране'), { status: 409 });
-        const note = String((body && body.note) || '').slice(0, 300);
-        const archiveId = 'AR-' + String(reg.archives.length + 1).padStart(3, '0');
-        const built = await qr.buildArchive({ portal: p, revision: active, files, note, archiveId });
-        const fileName = `${p.slug}-${active.id}-${archiveId}.zip`;
-        const manifestHash = qr.sha256(Buffer.from(JSON.stringify(built.manifest)));
-        await fsp.mkdir(dir, { recursive: true });
-        const full = path.join(dir, fileName);
-        await fsp.writeFile(full, built.buffer);
-        // §10.1 точки 6–7 и §19: архивът се ПРОВЕРЯВА веднага, четейки написаното от диска.
-        // Ако проверката не мине, операцията НЕ се отчита като успешна: файлът се маха и
-        // нищо не влиза в регистъра — иначе би имало „успешен“ архив без валидно доказателство.
-        const check = await integrity.verifyArchive({ archive: { id: archiveId, qrId: active.id, file: fileName, sha256: built.hash }, dir, revision: { manifestHash } });
-        if (!check.ok) {
-          await fsp.rm(full, { force: true }).catch(() => { });
-          void audit('qr.archive.verify.failed', { portalId: p.id, qrId: active.id, archiveId, reason: check.reason, detail: check.detail || null });
-          throw Object.assign(new Error('Архивът не мина проверка за цялост (' + check.reason + ') — не е регистриран'), { status: 500 });
-        }
-        const saved = { id: archiveId, qrId: active.id, file: fileName, sha256: built.hash, size: built.size, files: files.length, createdAt: new Date().toISOString(), note, verificationStatus: 'verified', verifiedAt: new Date().toISOString() };
-        reg.archives.push(saved);
-        // Съдържанието се фиксира към ТОЗИ QR; следващият е наследник, не подмяна.
-        active.archivedAt = saved.createdAt;
-        active.archiveId = archiveId;
-        active.manifest = built.manifest;
-        active.manifestHash = manifestHash;
-        active.manifestId = built.manifest.manifest_id;
-        const next = {
-          id: qr.qrIdOf(active.seq + 1), seq: active.seq + 1, portalId: p.id, contract: active.contract || 'order',
-          previousQrId: active.id, previousManifestHash: active.manifestHash, createdAt: saved.createdAt,
-          archivedAt: null, archiveId: null, manifestHash: null, blockedAt: null, blockReason: null,
-        };
-        reg.revisions.push(next);
-        void audit('qr.archived', { portalId: p.id, qrId: active.id, nextQrId: next.id, archiveId, sha256: built.hash, bytes: built.size, files: files.length });
-        return { archive: saved, archivedQr: active.id, active: next.id, state: view(reg) };
-      });
+      const done = await makeArchive(p, String((body && body.note) || ''));
       return json(res, 201, done);
+    }
+
+    // POST /qr/{qrId}/restore — връща състоянието на ТОЗИ архив.
+    // Редът е важен и е точно обратният на опасния: ПЪРВО се архивира текущото състояние
+    // (нищо не се губи), ПОСЛЕ се проверява старият архив и само тогава се пише по диска.
+    // Файлове, които не са били в стария архив, НЕ се трият — отчитат се като „останали“.
+    if (parts[6] === 'restore' && parts.length === 7 && method === 'POST') {
+      const sourceQrId = parts[5];
+      const reg = qr.registry(db(), p.id);
+      const archive = reg.archives.find((a) => a.qrId === sourceQrId);
+      if (!archive) return fail(res, 404, 'Няма архив за този QR');
+      const dir = path.join(archiveRoot, p.id);
+      const revision = reg.revisions.find((r) => r.id === sourceQrId) || null;
+      const check = await integrity.verifyArchive({ archive, dir, revision });
+      if (!check.ok) {
+        void audit('qr.restore.refused', { portalId: p.id, qrId: sourceQrId, archiveId: archive.id, reason: check.reason, detail: check.detail || null });
+        return fail(res, 409, 'Архивът не мина проверка за цялост (' + check.reason + ') — нищо не е променено');
+      }
+      const rootAbs = path.resolve(portalRoot(p.storage_root || '/share'));
+      if (rootAbs === path.resolve('/share') || rootAbs === path.resolve('/media')) return fail(res, 403, 'Restore requires a dedicated folder');
+      const current = await qr.walk(rootAbs);
+      let safety = null;
+      if (current.length) {
+        if (!qr.activeRevision(qr.registry(db(), p.id))) return fail(res, 409, 'Няма активен QR — текущото състояние не може да се запази');
+        safety = await makeArchive(p, 'преди възстановяване на ' + sourceQrId);
+      }
+      const buf = await fsp.readFile(path.join(dir, archive.file));
+      const unpacked = qr.unpack(buf);
+      const written = [];
+      for (const file of unpacked.files) {
+        const partsOfPath = String(file.path).split('/');
+        if (!file.path || partsOfPath.some((s) => !s || s === '.' || s === '..')) throw Object.assign(new Error('Невалиден път в архива'), { status: 409 });
+        const target = path.join(rootAbs, ...partsOfPath);
+        if (!target.startsWith(rootAbs + path.sep)) throw Object.assign(new Error('Невалиден път в архива'), { status: 409 });
+        await fsp.mkdir(path.dirname(target), { recursive: true });
+        await fsp.writeFile(target, file.data);
+        written.push(file.path);
+      }
+      const inArchive = new Set(unpacked.files.map((f) => f.path));
+      const keptExtra = current.map((f) => f.path).filter((rel) => !inArchive.has(rel));
+      const done = await update(async () => {
+        const live = qr.registry(db(), p.id);
+        const target = safety ? live.revisions.find((r) => r.id === safety.active) : qr.activeRevision(live);
+        if (target) {
+          target.restoredFrom = sourceQrId;
+          target.restoredAt = new Date().toISOString();
+        }
+        void audit('qr.restored', { portalId: p.id, qrId: sourceQrId, archiveId: archive.id, written: written.length, keptExtra: keptExtra.length, safetyArchive: safety ? safety.archive.id : null });
+        return {
+          restoredFrom: sourceQrId, fromArchive: archive.id, files: written.length,
+          written, keptExtra, safetyArchive: safety ? safety.archive.id : null,
+          active: target ? target.id : null, state: view(live),
+        };
+      });
+      return json(res, 200, done);
     }
 
     // POST /qr/block — прекратяване с ОСНОВАНИЕ; историята и архивите остават.

@@ -175,7 +175,23 @@ async function buildArchive({ portal, revision, files, note, archiveId }) {
 }
 
 /**
- * Броячи за сензорите: активни и прекратени QR, архиви и заключени публикувани файлове.
+ * Разопакова архив: манифестът и байтовете на файловете (за възстановяване, §10.2/§22).
+ * Хвърля `409`, ако липсва манифест или файл — възстановява се само доказуемо съдържание.
+ */
+function unpack(buffer) {
+  const entries = ooxml.unzip(buffer);
+  const manifestEntry = entries.get('manifest.json');
+  if (!manifestEntry) throw Object.assign(new Error('Архивът няма манифест'), { status: 409 });
+  const manifest = JSON.parse(manifestEntry().toString('utf8'));
+  const files = (manifest.files || []).map((f) => {
+    const entry = entries.get('files/' + f.path);
+    if (!entry) throw Object.assign(new Error('В архива липсва файл: ' + f.path), { status: 409 });
+    return { path: f.path, sha256: f.sha256, contentId: f.content_id || null, data: entry() };
+  });
+  return { manifest, files };
+}
+
+/** Броячи за сензорите: активни и прекратени QR, архиви и заключени публикувани файлове.
  * Смятат се ТУК, за да виждат панелът и Home Assistant едни и същи числа.
  */
 function stats(db) {
@@ -208,5 +224,6 @@ module.exports = {
   walk,
   manifestFor,
   buildArchive,
+  unpack,
   stats,
 };

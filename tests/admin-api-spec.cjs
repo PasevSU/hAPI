@@ -159,6 +159,7 @@ const tailLiterals = new Set([...src.matchAll(/parts\[[4-9]\]\s*===\s*'([^']+)'/
 const NON_ADMIN_TAIL = {
   reveal: 'публичният маршрут /api/v2/secrets/{id}/reveal',
   'qr.json': 'публичният /api/v1/p/{slug}/qr.json (QR ревизии и архиви)',
+  ping: 'публичният ръкостиск /api/v1/p/{slug}/ping (дали връзката работи)',
 };
 const describedSegments = new Set([...describedPaths].flatMap((p) => p.split('/').filter(Boolean)));
 const undescribed = [...tailLiterals].filter((s) => !describedSegments.has(s) && !NON_ADMIN_TAIL[s]).sort();

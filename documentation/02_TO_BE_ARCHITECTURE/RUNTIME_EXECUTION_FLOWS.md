@@ -146,8 +146,31 @@ flowchart LR
 
 Последици: резултатът се записва в `db.portalIntegrity[portalId]` (`checkedAt`, `ok`, `archives`, `verified`, `failed[]`), при провал се вдига `integrity.failed` в одитната верига (с `reasons` и `archiveIds`) и `/admin/api/sensors` показва `qr.integrity.failures` → entity `integrity_failed` в Home Assistant.
 
-## 8. Сензори и Home Assistant
+## 7б. Възстановяване от архив
 
+`POST /admin/api/portals/<id>/qr/<qrId>/restore` → `routes/portal-qr.js`. Редът е обратен на опасния:
+
+| # | Стъпка | Последица при провал |
+| --- | --- | --- |
+| 1 | Право `portals` (`adminGate`) | 401/403, нищо не се пипа |
+| 2 | Архив за този QR съществува | 404 |
+| 3 | **Проверка на архива** (`portal-integrity.verifyArchive`) | 409 + одит `qr.restore.refused`, файловете НЕ се пипат |
+| 4 | Папката не е общ корен (`/share`, `/media`) | 403 |
+| 5 | **Предпазен архив** на текущото състояние (ако има файлове) | 409, ако няма активен QR |
+| 6 | Запис на файловете от архива (`qr.unpack`) с проверка на всеки път | 409 при невалиден път |
+| 7 | Новият QR получава `restoredFrom` + `restoredAt`; одит `qr.restored` | — |
+
+Файлове, които не са били в стария архив, **не се трият** — връщат се в `keptExtra`. Така
+„върни старото“ не изтрива нищо, което е било публикувано след това.
+
+## 7в. Ръкостиск („връзката работи“)
+
+`GET /api/v1/p/<slug>/ping` — публичен, със същото право `read` като страницата. Връща
+`{ ok, time, portal: {slug, title}, active, qr: {revisions, archives}, contracts, policy, api }`
+и **нищо от съдържанието** (без файлове и хешове). Служи за проверка на връзката от външен
+клиент, преди той да поиска `qr.json` или страница.
+
+## 8. Сензори и Home Assistant
 1. `observer.js` записва заявките (нормализирани маршрути — токенът не влиза в името на маршрута).
 2. `portal-policy.snapshot()` дава броячите за достъп, `portal-qr.stats(db)` — за QR/архиви/заключени файлове, `decision-sensors.evaluate()` — решението „какво да провериш“.
 3. `/admin/api/sensors` връща едно тяло: `security`, `qr`, `guidance`, телеметрия.

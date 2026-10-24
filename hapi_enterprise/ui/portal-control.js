@@ -159,6 +159,10 @@
                   <button type="button" class="btn btn-sm" id="pf-qr-verify">Провери целостта на архивите</button>
                   <span class="hint">Сверява байтовете, манифеста и файловете вътре.</span>
                 </div>
+                <div class="u-row u-row-2 u-mt">
+                  <input id="pf-qr-restore-id" type="text" maxlength="16" placeholder="QR-001">
+                  <button type="button" class="btn btn-sm" id="pf-qr-restore">Върни това състояние</button>
+                </div>
                 <output class="pf-security-out" id="pf-qr-out" aria-live="polite"></output>
               </div>
             </div>

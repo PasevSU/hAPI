@@ -3315,6 +3315,21 @@
         sayQr(`<p><strong>Проверката се провали.</strong> Засегнати: <strong>${esc(String((data.failed || []).length))}</strong></p><ul class="pf-token-list">${rows}</ul>`, 'err');
       });
     }
+    if (q('#pf-qr-restore')) {
+      q('#pf-qr-restore').addEventListener('click', async () => {
+        if (!portal()) return;
+        const input = q('#pf-qr-restore-id');
+        const qrId = String((input && input.value) || '').trim().toUpperCase();
+        if (!/^QR-\d{3}$/.test(qrId)) return sayQr('Посочи QR идентичност (напр. QR-001).', 'err');
+        if (!connected()) return sayQr('Демо: възстановяването става от add-on-а', 'err');
+        if (!window.confirm(`Да се върне ли състоянието от ${qrId}? Текущото съдържание първо се архивира, за да не се загуби.`)) return;
+        const r = await api(`${P()}/qr/${encodeURIComponent(qrId)}/restore`, { method: 'POST', json: {} });
+        if (!r.ok) return sayQr(esc(r.error || `HTTP ${r.status}`), 'err');
+        const data = r.data || {};
+        const extra = (data.keptExtra || []).length ? `<p>Останали извън архива (не са изтрити): <strong>${esc(String((data.keptExtra || []).length))}</strong></p>` : '';
+        sayQr(`<p><strong>Възстановено от ${esc(String(data.restoredFrom || ''))}.</strong> Записани файлове: <strong>${esc(String(data.files || 0))}</strong> · предпазен архив: <code>${esc(String(data.safetyArchive || '—'))}</code> · активен QR: <strong>${esc(String(data.active || ''))}</strong></p>${extra}`, 'ok');
+      });
+    }
 
     if (q('#fm-search')) {
       q('#fm-search').addEventListener('input', (e) => {

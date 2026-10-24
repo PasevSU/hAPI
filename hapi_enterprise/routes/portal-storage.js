@@ -77,6 +77,9 @@ function create(deps) {
     // JSON-ът е на `qr.json` (каноничното разширение), а `/qr` остава 301 → `qr.svg`
     // (решение от преди); архивът е `qr/<qrId>/archive`.
     if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'p' && method === 'GET' && (parts[4] === 'qr.json' || (parts[4] === 'qr' && parts[6] === 'archive'))) return serveQr({ req, res, parts });
+    // Ръкостиск: `GET /api/v1/p/<slug>/ping` доказва, че връзката до ТОЗИ портал е изградена:
+    // право за четене, активен QR, договорите и версията на договора — без съдържание.
+    if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'p' && parts[4] === 'ping' && parts.length === 5 && method === 'GET') return servePing({ req, res, parts });
     // /api/v1/p/<slug>/tree/file
     if (!(parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'p' && parts[4] === 'tree' && parts[5] === 'file')) return false;
     if (parts.length !== 6) { fail(res, 404, 'Not found'); return true }
@@ -210,6 +213,7 @@ function create(deps) {
         manifestId: r.manifestId || (r.manifestHash ? 'MF-' + r.id : null),
         previousQrId: r.previousQrId || null,
         nextQrId: (reg.revisions.find((n) => n.previousQrId === r.id) || {}).id || null,
+        restoredFrom: r.restoredFrom || null,
         archive: archive
           ? { id: archive.id, file: archive.file, sha256: archive.sha256, size: archive.size, files: archive.files, verificationStatus: archive.verificationStatus || 'unverified' }
           : null,
@@ -241,6 +245,29 @@ function create(deps) {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': body.length, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
     res.end(body);
     return true;
+  }
+
+  /**
+   * Ръкостиск (`GET /api/v1/p/<slug>/ping`): отговорът съдържа САМО това, което е нужно, за
+   * да се знае, че връзката работи — идентичност на портала, активен QR, договори и политика.
+   * Никакви файлове, хешове или вътрешни бележки. Правото е същото като за страницата (`read`).
+   */
+  function servePing({ req, res, parts }) {
+    const portal = resolvePortal(parts[3]);
+    if (!portal) { fail(res, 404, 'Not found'); return true }
+    if (!policy.decide({ req, res: undefined, url: new URL(req.url, 'http://localhost'), portal, action: 'read' }).allowed) { fail(res, 404, 'Not found'); return true }
+    const reg = qr.registry(db(), portal.id);
+    const active = qr.activeRevision(reg);
+    return jsonOut(res, {
+      ok: true,
+      time: new Date().toISOString(),
+      portal: { slug: portal.slug, title: portal.title },
+      active: active ? active.id : null,
+      qr: { revisions: reg.revisions.length, archives: reg.archives.length },
+      contracts: ['order', 'file', 'html', 'blok'],
+      policy: qr.policy(),
+      api: { version: 1, ping: links.portalApiPath(portal) + '/ping', qr: links.portalApiPath(portal) + '/qr.json' },
+    });
   }
 
   /** Правило на САМИЯ файл (от регистъра): `storagePath` сочи записа, липсващ запис = FREE. */

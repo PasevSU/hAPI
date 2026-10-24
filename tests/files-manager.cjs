@@ -159,6 +159,8 @@ assert.match(src, /\/qr\/archive`/, 'архивът минава през /qr/ar
 assert.match(src, /\/qr\/block`/, 'прекратяването минава през /qr/block');
 assert.match(src, /id="pf-qr-verify"/, 'целостта на архивите се проверява от панела');
 assert.match(src, /\/qr\/verify`/, 'проверката минава през /qr/verify');
+assert.match(src, /id="pf-qr-restore"/, 'възстановяването от архив е отделно действие');
+assert.match(src, /\/restore`/, 'възстановяването минава през /qr/<id>/restore');
 assert.match(src, /Проверката се провали/, 'провалът е изписан с причина, не само „грешка“');
 assert.match(src, /QR ревизии и архиви/, 'секцията е названа');
 assert.match(src, /Създава се физически ZIP/, 'потвърждението казва, че се прави реален файл'); assert.equal(m.normalizeContact({ id: 'c', extras: [{ key: 'Роля', value: 'адвокат' }] }).extras[0].key, 'Роля');
