@@ -142,6 +142,21 @@
                 </div>
                 <output class="pf-security-out" id="pf-token-out" aria-live="polite"></output>
               </div>
+              <div class="pf-security">
+                <h6>${ico('qr')} QR ревизии и архиви</h6>
+                <p class="hint">Един портал — един адрес, но поредица от QR кодове: <strong>архивирането</strong>
+                  прави физически ZIP на днешното съдържание и издава следващ QR, който помни предходния.
+                  Максималната дълбочина е <strong>3 подпапки</strong> (ширината е свободна).</p>
+                <div class="u-row u-row-2">
+                  <button type="button" class="btn btn-sm" id="pf-qr-show">Покажи QR историята</button>
+                  <button type="button" class="btn btn-sm" id="pf-qr-archive">Архивирай и издай нов QR</button>
+                </div>
+                <div class="u-row u-row-2 u-mt">
+                  <input id="pf-qr-reason" type="text" maxlength="500" placeholder="Основание за прекратяване (задължително)">
+                  <button type="button" class="btn btn-sm" id="pf-qr-block">Прекрати активния QR</button>
+                </div>
+                <output class="pf-security-out" id="pf-qr-out" aria-live="polite"></output>
+              </div>
             </div>
           </div>
         </div>`

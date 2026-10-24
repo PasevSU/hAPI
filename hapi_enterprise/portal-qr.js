@@ -167,6 +167,26 @@ async function buildArchive({ portal, revision, files, note, archiveId }) {
   return { buffer, manifest, hash: sha256(buffer), size: buffer.length };
 }
 
+/**
+ * Броячи за сензорите: активни и прекратени QR, архиви и заключени публикувани файлове.
+ * Смятат се ТУК, за да виждат панелът и Home Assistant едни и същи числа.
+ */
+function stats(db) {
+  const registryMap = db && db.portalQr && typeof db.portalQr === 'object' ? db.portalQr : {};
+  let active = 0, blocked = 0, archives = 0, lockedFiles = 0, portals = 0;
+  for (const portal of (db && db.portals) || []) {
+    portals += 1;
+    const reg = registryMap[portal.id];
+    if (reg && Array.isArray(reg.revisions) && reg.revisions.length) {
+      active += activeRevision(reg) ? 1 : 0;
+      blocked += reg.revisions.filter((r) => r.blockedAt).length;
+    }
+    if (reg && Array.isArray(reg.archives)) archives += reg.archives.length;
+    lockedFiles += (portal.files || []).filter((f) => (f.accessMode || 'FREE') !== 'FREE' && f.listed !== false).length;
+  }
+  return { active, blocked, archives, lockedFiles, portals, maxDepth: MAX_DEPTH };
+}
+
 module.exports = {
   MAX_DEPTH,
   DEPTH_CODE,
@@ -181,4 +201,5 @@ module.exports = {
   walk,
   manifestFor,
   buildArchive,
+  stats,
 };

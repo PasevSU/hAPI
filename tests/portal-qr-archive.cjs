@@ -100,8 +100,31 @@ const cleaned = [];
     assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/qr`)).data.revisions.length, 3, 'три ревизии след два архива');
     assert.equal(fs.existsSync(path.join(server.dir, 'archives', portal.id, 'AR-001'.length ? ar.file : '')), true, 'старият архив НЕ е изтрит');
 
-    // ── 5. Прекратяване: иска основание, пази историята ──────────────────────
-    assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/qr/block`, 'POST', {})).status, 400, 'без основание не се прекратява');
+    // ── 4б. Публичен QR договор: идентичност, списък и сваляне на архив ─────
+    const pubQr = await jsonOf(`/api/v1/p/${slug}/qr.json`);
+    assert.equal(pubQr.status, 200, 'публичният QR договор се чете');
+    assert.equal(pubQr.data.active, 'QR-003', 'активният QR е последният');
+    assert.equal(pubQr.data.revisions.length, 3, 'историята се вижда');
+    const pubFirst = pubQr.data.revisions.find((r) => r.id === 'QR-001');
+    assert.equal(pubFirst.archive.id, 'AR-001', 'архивът е свързан с QR-001');
+    assert.match(pubFirst.archive.sha256, /^[0-9a-f]{64}$/);
+    assert.equal('note' in pubFirst.archive, false, 'вътрешните бележки не излизат публично');
+    const pubZip = Buffer.from(await (await api(`/api/v1/p/${slug}/qr/QR-001/archive`)).arrayBuffer());
+    assert.equal(require('node:crypto').createHash('sha256').update(pubZip).digest('hex'), ar.sha256, 'публичният архив е същият файл');
+    const withQr = await api(`/portal.html?order=${encodeURIComponent('share/' + slug)}&qr=QR-001`);
+    assert.equal(withQr.status, 200, 'order + qr отваря страницата');
+    assert.match(await withQr.text(), /data-qr="QR-001"/, 'страницата знае с кой QR е дошъл посетителят');
+    assert.equal((await api(`/portal.html?order=${encodeURIComponent('share/' + slug)}&qr=QR-999`)).status, 404, 'непознат QR → 404');
+
+    // ── 4в. Сензорите виждат същото (един източник: portal-qr.stats) ────────
+    const sensors = (await jsonOf('/admin/api/sensors')).data;
+    assert.ok(sensors.qr, 'сензорите носят блок `qr`');
+    assert.equal(sensors.qr.active, 1, 'един активен QR');
+    assert.equal(sensors.qr.blocked, 0, 'още няма прекратени');
+    assert.equal(sensors.qr.archives, 2, 'два физически архива');
+    assert.equal(sensors.qr.maxDepth, 3, 'политиката за дълбочина идва от сензорите');
+
+    // ── 5. Прекратяване: иска основание, пази историята ──────────────────────    assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/qr/block`, 'POST', {})).status, 400, 'без основание не се прекратява');
     const blocked = await jsonOf(`/admin/api/portals/${portal.id}/qr/block`, 'POST', { reason: 'подадена е нова редакция на делото' });
     assert.equal(blocked.status, 200, 'с основание се прекратява');
     assert.equal(blocked.data.blocked, 'QR-003');
@@ -112,6 +135,13 @@ const cleaned = [];
     assert.equal(last.blockedAt ? true : false, true, 'прекратяването е записано');
     assert.equal(last.blockReason, 'подадена е нова редакция на делото', 'основанието е записано');
     assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/qr/archive`, 'POST', {})).status, 409, 'след прекратяване не се архивира');
+    // `blok`: прекратеният QR не отдава съдържание, но казва защо — с 410.
+    const blok = await api(`/portal.html?order=${encodeURIComponent('share/' + slug)}&qr=QR-003`);
+    assert.equal(blok.status, 410, 'прекратен QR дава blok страница');
+    const blokHtml = await blok.text();
+    assert.match(blokHtml, /QR-003/, 'страницата назовава прекратения QR');
+    assert.match(blokHtml, /подадена е нова редакция на делото/, 'основанието е публично видимо');
+    assert.equal(/документ-1\.txt/.test(blokHtml), false, 'blok не показва съдържание');
 
     // ── 6. Дълбочина: три клона се приемат, четвърти — не ────────────────────
     const mk = (parentValue, name) => jsonOf(`/admin/api/portals/${portal.id}/tree/folder`, 'POST', { parent: parentValue, name });

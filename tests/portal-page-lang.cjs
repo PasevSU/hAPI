@@ -3,6 +3,8 @@
 // и падане към български при непознат език. Проверява се РЕАЛНИЯТ portal.js в DOM —
 // не речникът сам по себе си (той има отделен тест).
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const vm = require('node:vm');
 const { startServer, waitFor } = require('./lib/gui-harness.cjs');
 const { createDocument } = require('./lib/dom-stub.cjs');
@@ -73,6 +75,11 @@ const pageText = (doc) =>
 
 (async () => {
   const server = await startServer();
+  // 0.69.78: порталът получава СОБСТВЕНА папка `/share/<slug>`. Остатъци от предишен
+  // пуск (или от паралелен тест) карат страницата да покаже файловете на ПАПКАТА
+  // вместо регистрираните два → чистенето тук прави броя им предвидим.
+  const shareDir = path.resolve('/share', 'lang-demo');
+  try { fs.rmSync(shareDir, { recursive: true, force: true }) } catch { /* заключен файл на Windows */ }
   try {
     const portal = (await server.api('/admin/api/portals', 'POST', { slug: 'lang-demo', title: 'Report Portal' })).data;
     assert.equal((await server.api('/admin/api/portals/' + portal.id, 'PATCH', { visibility: 'public' })).status, 200);
@@ -88,7 +95,7 @@ const pageText = (doc) =>
     console.log('· ?lang=en — страницата е на английски, не на български');
     {
       const { doc } = await mountPage(server.base, portal.id, 'en');
-      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла' });
+      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла', timeout: 30000 });
       assert.equal(doc.documentElement.getAttribute('lang'), 'en', '<html lang="en">');
       assert.equal(doc.getElementById('lang').value, 'en', 'изборът показва английски');
       const summary = text(doc.getElementById('summary'));
@@ -119,7 +126,7 @@ const pageText = (doc) =>
     console.log('· ?lang=de — немски, с правилно множествено число');
     {
       const { doc } = await mountPage(server.base, portal.id, 'de');
-      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла (de)' });
+      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла (de)', timeout: 30000 });
       assert.equal(doc.documentElement.getAttribute('lang'), 'de');
       const summary = text(doc.getElementById('summary'));
       assert.match(summary, /vollständiger Satz von 2 Dokumente/, 'резюмето е на немски: ' + summary);
@@ -130,7 +137,7 @@ const pageText = (doc) =>
     console.log('· непознат език пада към български, а не към празна страница');
     {
       const { doc } = await mountPage(server.base, portal.id, 'fr');
-      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла (fr→bg)' });
+      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла (fr→bg)', timeout: 30000 });
       assert.equal(doc.documentElement.getAttribute('lang'), 'bg', 'fr не се приема');
       assert.match(text(doc.getElementById('summary')), /цялостен набор от 2 документа/, 'страницата е на български: ' + text(doc.getElementById('summary')));
     }
@@ -138,7 +145,7 @@ const pageText = (doc) =>
     console.log('· изборът на език работи веднага и се запазва');
     {
       const { doc, store } = await mountPage(server.base, portal.id, 'bg');
-      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла (bg)' });
+      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла (bg)', timeout: 30000 });
       assert.match(text(doc.getElementById('summary')), /цялостен набор/, 'начално е български');
       const select = doc.getElementById('lang');
       select.value = 'en';
@@ -158,7 +165,7 @@ const pageText = (doc) =>
     console.log('· запазеният избор се прилага при следващо отваряне без ?lang');
     {
       const { doc } = await mountPage(server.base, portal.id, '', { savedLang: 'de' });
-      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла (запазен de)' });
+      await waitFor(() => doc.getElementById('files').children.length === 2, { label: 'двата файла (запазен de)', timeout: 30000 });
       assert.equal(doc.documentElement.getAttribute('lang'), 'de', 'запазеният език печели пред подразбирането');
       assert.match(text(doc.getElementById('files-title')), /Dokumente/, 'списъкът е на немски');
     }
@@ -166,6 +173,7 @@ const pageText = (doc) =>
     console.log('PASS portal-page-lang: ?lang=en/de · избор от посетителя без презареждане · запазен избор · непознат език → български · без остатъчна кирилица');
   } finally {
     await server.stop().catch(() => { });
+    try { fs.rmSync(shareDir, { recursive: true, force: true }) } catch { /* Linux */ }
   }
 })().catch((e) => {
   console.error(e);

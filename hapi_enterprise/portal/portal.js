@@ -64,7 +64,7 @@ const boot = (() => {
     String(v == null ? "" : v)
       .trim()
       .replace(/\/+$/, "");
-  return { base: trim(data.base), api: trim(data.api), folder: trim(data.folder), folders: trim(data.folders) };
+  return { base: trim(data.base), api: trim(data.api), folder: trim(data.folder), folders: trim(data.folders), qr: trim(data.qr) };
 })();
 // Част от заявката, която НЕ бива да се губи при отваряне на подпапка (подписан достъп / токен).
 const keptQuery = () => {
@@ -766,6 +766,54 @@ function setLanguage(value) {
   applyLanguage();
 }
 
+/**
+ * QR идентичността на страницата: кой печат е донесъл посетителя (`?qr=`) и кои физически
+ * архиви съществуват. Показва се КОМПАКТНО (бадж в заглавната лента), а не като половин
+ * екран — архивът е резервен механизъм, а не работна зона (виж плана, §6.4).
+ */
+async function loadQrInfo() {
+  const res = await fetch(withAuth("/qr.json"), { referrerPolicy: "no-referrer" });
+  if (!res.ok) return;
+  const data = await res.json().catch(() => null);
+  if (!data || !Array.isArray(data.revisions)) return;
+  const host = $("badges");
+  if (!host) return;
+  const current = boot.qr || data.active || "";
+  const badge = document.createElement("li");
+  badge.className = "badge";
+  badge.textContent = current ? T("qr.badge", { id: current }) : T("qr.badge.none");
+  host.append(badge);
+  const archives = data.revisions.filter((r) => r.archive);
+  if (!archives.length) return;
+  const slot = document.createElement("li");
+  slot.className = "badge";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn btn-ghost btn-sm";
+  btn.textContent = T("qr.archives", { n: archives.length });
+  btn.addEventListener("click", () => {
+    const existing = $("qr-archives-list");
+    if (existing) {
+      existing.remove();
+      return;
+    }
+    const list = document.createElement("ul");
+    list.id = "qr-archives-list";
+    list.className = "summary-list";
+    for (const rev of archives) {
+      const item = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = absolute(withAuth("/qr/" + encodeURIComponent(rev.id) + "/archive"));
+      link.textContent = T("qr.archive.item", { id: rev.id, size: fmtSize(rev.archive.size) });
+      item.append(link);
+      list.append(item);
+    }
+    host.after(list);
+  });
+  slot.append(btn);
+  host.append(slot);
+}
+
 (async () => {
   try {
     applyLanguage();
@@ -789,6 +837,7 @@ function setLanguage(value) {
     // Порталите с СОБСТВЕНА папка се отварят направо в нея — файловете са на диска, не в
     // регистъра. `?folder=` (от QR или от подпапка) сочи папка ВЪТРЕ в нея.
     if (boot.folders === "1" || boot.folder) await loadFolder(boot.folder);
+    await loadQrInfo();
     if (listing.hasMore) {
       const more = $("more");
       more.textContent = T("files.more", {

@@ -150,7 +150,15 @@ assert.match(src, /\/tokens`/, 'издаването минава през /toke
 assert.match(src, /data-token-revoke/, 'всеки токен може да се отнеме от панела');
 assert.match(src, /показва само сега|само сега/, 'казва, че токенът не се показва повторно');
 assert.equal(m.normalizeCase({ id: 'k', number: '1', title: 'T', extras: [{ key: 'a', value: 'b' }, { value: 'x' }] }).extras.length, 1);
-assert.equal(m.normalizeContact({ id: 'c', extras: [{ key: 'Роля', value: 'адвокат' }] }).extras[0].key, 'Роля');
+// 7з. QR ревизии и физически архиви — компактна секция до токена (плани, §6.4 и §10.2).
+assert.match(src, /id="pf-qr-show"/, 'панелът показва QR историята');
+assert.match(src, /id="pf-qr-archive"/, 'архивирането се стартира от панела');
+assert.match(src, /id="pf-qr-reason"/, 'прекратяването иска основание в панела');
+assert.match(src, /id="pf-qr-block"/, 'прекратяването е отделно действие');
+assert.match(src, /\/qr\/archive`/, 'архивът минава през /qr/archive');
+assert.match(src, /\/qr\/block`/, 'прекратяването минава през /qr/block');
+assert.match(src, /QR ревизии и архиви/, 'секцията е названа');
+assert.match(src, /Създава се физически ZIP/, 'потвърждението казва, че се прави реален файл');assert.equal(m.normalizeContact({ id: 'c', extras: [{ key: 'Роля', value: 'адвокат' }] }).extras[0].key, 'Роля');
 // 7е. Стандарт на подредбата: всичко в проценти + фиксиран брой обекти на ред.
 // CSS-ът се сравнява с нормализирани интервали: форматирането (един ред, разгънато или
 // без интервали около `>` и `{`) не бива да чупи теста — важно е правилото.

@@ -154,8 +154,12 @@ assert.deepEqual(phantom, [], 'няма описан маршрут, който 
 // `…/files/{id}/watermark`) не може да остане извън договора, без тестът да падне.
 const tailLiterals = new Set([...src.matchAll(/parts\[[4-9]\]\s*===\s*'([^']+)'/g)].map((m) => m[1]));
 // `reveal` е на ПУБЛИЧНАТА страница на тайна връзка (`/api/v2/secrets/<id>/reveal`), не в
-// admin API-то — изключваме го изрично, вместо да разхлабваме проверката.
-const NON_ADMIN_TAIL = { reveal: 'публичният маршрут /api/v2/secrets/{id}/reveal' };
+// admin API-то — изключваме го изрично, вместо да разхлабваме проверката. `qr.json` е
+// публичният QR договор (`/api/v1/p/<slug>/qr.json`); `/qr` без разширение остава 301.
+const NON_ADMIN_TAIL = {
+  reveal: 'публичният маршрут /api/v2/secrets/{id}/reveal',
+  'qr.json': 'публичният /api/v1/p/{slug}/qr.json (QR ревизии и архиви)',
+};
 const describedSegments = new Set([...describedPaths].flatMap((p) => p.split('/').filter(Boolean)));
 const undescribed = [...tailLiterals].filter((s) => !describedSegments.has(s) && !NON_ADMIN_TAIL[s]).sort();
 assert.deepEqual(undescribed, [], 'всеки подпът от кода е описан в договора; липсват: ' + undescribed.join(', '));

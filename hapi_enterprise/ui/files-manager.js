@@ -3250,6 +3250,58 @@
       });
     }
 
+    // ── QR ревизии и архиви (един портал = един адрес = поредица от QR) ──────
+    const sayQr = (html, kind) => {
+      const out = q('#pf-qr-out');
+      if (out) {
+        out.innerHTML = html || '';
+        out.dataset.kind = kind || '';
+      }
+    };
+    if (q('#pf-qr-show')) {
+      q('#pf-qr-show').addEventListener('click', async () => {
+        const p = portal();
+        if (!p) return;
+        if (!connected()) return sayQr('Демо: историята идва от add-on-а', 'err');
+        const r = await api(`${P()}/qr`);
+        if (!r.ok) return sayQr(esc(r.error || `HTTP ${r.status}`), 'err');
+        const active = (r.data && r.data.active && r.data.active.id) || 'няма';
+        const revisions = (r.data && r.data.revisions) || [];
+        const archives = (r.data && r.data.archives) || [];
+        const rows = revisions.map((rev) => `<li><code>${esc(rev.id)}</code> · ${esc(rev.createdAt)}` +
+          (rev.archiveId ? ` · архив <code>${esc(rev.archiveId)}</code>` : '') +
+          (rev.blockedAt ? ` · <strong>прекратен</strong>: ${esc(rev.blockReason || '')}` : '') + '</li>').join('');
+        sayQr(`<p>Активен QR: <strong>${esc(active)}</strong> · архиви: <strong>${archives.length}</strong> · дълбочина: 3</p><ul class="pf-token-list">${rows}</ul>`, '');
+      });
+    }
+    if (q('#pf-qr-archive')) {
+      q('#pf-qr-archive').addEventListener('click', async () => {
+        const p = portal();
+        if (!p) return;
+        if (!connected()) return sayQr('Демо: архивът се прави от add-on-а', 'err');
+        if (!window.confirm('Да архивира ли текущото съдържание? Създава се физически ZIP и се издава следващ QR.')) return;
+        const r = await api(`${P()}/qr/archive`, { method: 'POST', json: { note: 'архив от панела' } });
+        if (!r.ok) return sayQr(esc(r.error || `HTTP ${r.status}`), 'err');
+        const ar = (r.data && r.data.archive) || {};
+        sayQr(`<p><strong>Готово.</strong> Архив <code>${esc(ar.id || '')}</code> · ${esc(String(ar.size || 0))} B · SHA-256 <code>${esc(String(ar.sha256 || '').slice(0, 16))}…</code></p><p>Активен QR: <strong>${esc(String((r.data && r.data.active) || ''))}</strong></p>`, 'ok');
+      });
+    }
+    if (q('#pf-qr-block')) {
+      q('#pf-qr-block').addEventListener('click', async () => {
+        const p = portal();
+        if (!p) return;
+        const input = q('#pf-qr-reason');
+        const reason = String((input && input.value) || '').trim();
+        if (reason.length < 3) return sayQr('Основанието е задължително (поне 3 знака) — иначе прекратяването не е проверимо.', 'err');
+        if (!connected()) return sayQr('Демо: прекратяването става от add-on-а', 'err');
+        if (!window.confirm('Да прекрати ли активния QR? Историята и архивите остават, но печатът спира да отваря съдържание.')) return;
+        const r = await api(`${P()}/qr/block`, { method: 'POST', json: { reason } });
+        if (!r.ok) return sayQr(esc(r.error || `HTTP ${r.status}`), 'err');
+        sayQr(`<p><strong>Прекратен:</strong> <code>${esc(String((r.data && r.data.blocked) || ''))}</code></p><p>Историята и архивите са запазени.</p>`, 'ok');
+        if (input) input.value = '';
+      });
+    }
+
     if (q('#fm-search')) {
       q('#fm-search').addEventListener('input', (e) => {
         const value = e.target.value;
