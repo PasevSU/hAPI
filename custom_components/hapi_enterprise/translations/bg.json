@@ -96,6 +96,35 @@
           "mismatch": "Различна",
           "unknown": "Неизвестна"
         }
+      },
+      "health": {
+        "name": "Състояние",
+        "state": {
+          "ok": "Здраво",
+          "warning": "Внимание",
+          "critical": "Критично",
+          "unknown": "Още не е измерено"
+        }
+      },
+      "http_error_rate": {
+        "name": "Дял на HTTP грешките (5xx)"
+      },
+      "latency_p95": {
+        "name": "Време за отговор p95"
+      },
+      "download_denial_rate": {
+        "name": "Дял на отказаните изтегляния"
+      },
+      "recommended_action": {
+        "name": "Препоръчана проверка"
+      }
+    },
+    "binary_sensor": {
+      "mirror_problem": {
+        "name": "Проблем с огледалното хранилище"
+      },
+      "api_available": {
+        "name": "Административното API отговаря"
       }
     }
   }

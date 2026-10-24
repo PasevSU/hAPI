@@ -109,6 +109,48 @@ _TOTAL_SENSORS: tuple[PortalSensorEntityDescription, ...] = (
     ),
 )
 
+# --- Решение, не само число (Stage E) ---------------------------------------------
+# `guidance` в `/admin/api/sensors` носи готовото решение: кой компонент, откога и какво
+# да се провери. Интеграцията НЕ преизчислява прагове — иначе панелът и Home Assistant
+# биха могли да казват различни неща за едно и също измерване.
+_GUIDANCE_SENSORS: tuple[PortalSensorEntityDescription, ...] = (
+    PortalSensorEntityDescription(
+        key="health",
+        translation_key="health",
+        device_class=SensorDeviceClass.ENUM,
+        options=["ok", "warning", "critical", "unknown"],
+        icon="mdi:heart-pulse",
+    ),
+    PortalSensorEntityDescription(
+        key="http_error_rate",
+        translation_key="http_error_rate",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        icon="mdi:alert-circle-outline",
+    ),
+    PortalSensorEntityDescription(
+        key="latency_p95",
+        translation_key="latency_p95",
+        native_unit_of_measurement="ms",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:speedometer",
+    ),
+    PortalSensorEntityDescription(
+        key="download_denial_rate",
+        translation_key="download_denial_rate",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        icon="mdi:cancel",
+    ),
+    PortalSensorEntityDescription(
+        key="recommended_action",
+        translation_key="recommended_action",
+        icon="mdi:clipboard-check-outline",
+    ),
+)
+
 # Версия и синхрон: текст/enum, не числа — затова са в отделен списък със свой клас.
 # Смисълът им е точно това, което липсваше: в Home Assistant да се вижда КОЯ версия
 # работи add-on-ът и дали съвпада с версията на интеграцията (иначе едната половина
@@ -130,7 +172,7 @@ _VERSION_SENSORS: tuple[PortalSensorEntityDescription, ...] = (
     ),
 )
 
-SENSOR_KEYS = tuple(description.key for description in _TOTAL_SENSORS)
+SENSOR_KEYS = tuple(description.key for description in (*_TOTAL_SENSORS, *_GUIDANCE_SENSORS))
 
 
 def _to_int(value: object) -> int | None:
@@ -139,6 +181,20 @@ def _to_int(value: object) -> int | None:
         return None
     try:
         return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_float(value: object) -> float | None:
+    """Coerce a JSON number/string to float, or None.
+
+    None is a real value here: „няма измерване“ не е нула. Сензорът трябва да покаже
+    `unknown`, а не „0 % грешки“ — иначе липсата на данни изглежда като здраве.
+    """
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return float(value)
     except (TypeError, ValueError):
         return None
 
@@ -159,6 +215,10 @@ async def async_setup_entry(
     async_add_entities(
         PortalStatusSensor(coordinator, entry, description, integration_version)
         for description in _VERSION_SENSORS
+    )
+    async_add_entities(
+        PortalGuidanceSensor(coordinator, entry, description)
+        for description in _GUIDANCE_SENSORS
     )
 
 
@@ -272,6 +332,86 @@ class PortalStatusSensor(SensorEntity):
             "addon_version": self.addon_version,
             "integration_version": self.integration_version,
         }
+
+    @property
+    def should_poll(self) -> bool:
+        """The coordinator handles polling."""
+        return False
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to coordinator updates."""
+        self.async_on_remove(
+            self.coordinator.async_add_listener(self._handle_coordinator_update)
+        )
+        await super().async_added_to_hass()
+        self._handle_coordinator_update()
+
+    def _handle_coordinator_update(self) -> None:
+        """Refresh the entity state on coordinator updates."""
+        self.async_write_ha_state()
+
+
+class PortalGuidanceSensor(SensorEntity):
+    """The decision the add-on already made: health, measured rates, next action.
+
+    Праговете НЕ се смятат тук (вж. `hapi_enterprise/decision-sensors.js`): ако ги
+    дублираме, панелът и Home Assistant биха могли да показват различен статус за
+    едни и същи измервания. Интеграцията само чете готовия отговор.
+    """
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: PortalEnterpriseCoordinator,
+        entry: ConfigEntry,
+        description: PortalSensorEntityDescription,
+    ) -> None:
+        """Initialize the guidance sensor."""
+        self.entity_description = description
+        self.coordinator = coordinator
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": entry.title,
+            "manufacturer": "hAPI",
+            "model": "Enterprise Portal",
+            "sw_version": entry.data.get("addon_version"),
+        }
+
+    @property
+    def available(self) -> bool:
+        """Whether data is available for this sensor."""
+        return self.coordinator.last_update_success and self.coordinator.data is not None
+
+    @property
+    def native_value(self) -> str | float | None:
+        """Health state, a measured percentage/ms, or the recommended action."""
+        data = self.coordinator.data or {}
+        key = self.entity_description.key
+        if key == "recommended_action":
+            value = data.get("recommended_action")
+            return str(value) if value else None
+        if key == "health":
+            value = data.get("health")
+            return value if value in ("ok", "warning", "critical", "unknown") else "unknown"
+        return _to_float(data.get(key))
+
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        """Why the decision was made: component, reason, basis and window."""
+        key = self.entity_description.key
+        if key not in ("health", "recommended_action"):
+            return None
+        data = self.coordinator.data or {}
+        attributes = {
+            "basis": data.get("guidance_basis"),
+            "window_seconds": data.get("guidance_window_seconds"),
+            "recommended_component": data.get("recommended_component"),
+            "recommended_severity": data.get("recommended_severity"),
+            "recommended_reason": data.get("recommended_reason"),
+        }
+        return {name: value for name, value in attributes.items() if value is not None}
 
     @property
     def should_poll(self) -> bool:

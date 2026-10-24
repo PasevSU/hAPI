@@ -55,7 +55,7 @@ const gatewayApi = require('./gateway-api');
 gatewayApi.setLogger(log);
 const configProfiles = require('./config-profiles').create(root);
 const storageCheck = require('./storage-check');
-const apiVersion = require('./api-version'); const links = require('./links'); const portalAccess = require('./portal-access'); const publicRoutes = require('./public-route-allowlist');
+const apiVersion = require('./api-version'); const links = require('./links'); const portalAccess = require('./portal-access'); const publicRoutes = require('./public-route-allowlist'); const decisionSensors = require('./decision-sensors').create();
 const signer = require('./signer');
 const pgp = require('./pgp');
 const packager = require('./packager').create({ root });
@@ -113,9 +113,7 @@ async function verifyPortalFiles(p, ctx) {
   const summary = { VERIFIED: 0, MISMATCH: 0, MISSING: 0, INVALID_TYPE: 0, ERROR: 0 }; for (const r of results) summary[r.status]++;
   return { portalId: p.id, summary, files: results, verified: summary.VERIFIED === results.length && results.length === p.files.length };
 }
-const dbPath = runtime.databasePath, filesRoot = path.join(root, 'files'), internalRoot = path.join(root, 'internal'); let db = { portals: [], qrArtifacts: [] }; let queue = Promise.resolve(); const metadataStore = require('./sqlite-store').open(dbPath);
-// Една политика за достъп до портал (Stage D): идентичност → портал → ресурс → действие.
-const portalPolicy = require('./portal-policy').create({ store: metadataStore, requireToken: requirePortalToken, signedPortal: (url, p) => portalAccess.allow(url, p, { requireToken: requirePortalToken, fallbackSecret: adminToken }), onDeny: (d) => void audit('portal.access.denied', d) });
+const dbPath = runtime.databasePath, filesRoot = path.join(root, 'files'), internalRoot = path.join(root, 'internal'); let db = { portals: [], qrArtifacts: [] }; let queue = Promise.resolve(); const metadataStore = require('./sqlite-store').open(dbPath); const portalPolicy = require('./portal-policy').create({ store: metadataStore, requireToken: requirePortalToken, signedPortal: (url, p) => portalAccess.allow(url, p, { requireToken: requirePortalToken, fallbackSecret: adminToken }), onDeny: (d) => void audit('portal.access.denied', d) });
 // Споделени данни между процесите: `bind` кара `db` да сочи към това, което е В БАЗАТА
 // (включително след запис на друг процес), а `transaction` пази записа с междупроцесна
 // ключалка. Заключването е в data директорията, за да е едно за всички процеси върху нея.
@@ -1119,7 +1117,8 @@ async function handler(req, res) {
       // Показва се само това, което панелът рисува: режим, прокси, срок, път до геобазата
       // и дали тя е заредена. Вътрешният `geoFile` не се разкрива.
       const sensorConfig = { ipMode: visitorIntel.config.ipMode, trustProxy: visitorIntel.config.trustProxy, retentionDays: visitorIntel.config.retentionDays, geoipPath: runtime.effective().sensors.geoipPath, geoLoaded: Boolean(visitorIntel.geo && visitorIntel.geo.status && visitorIntel.geo.status.loaded) };
-      return json(res, 200, { version: addonVersion() || apiVersion.VERSION.CURRENT, generatedAt: observed.generatedAt, security: portalPolicy.snapshot(), databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, sensorSettings: sensorConfig, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
+      // `guidance` е РЕШЕНИЕТО (decision-sensors.js), `security` — състоянието на политиката.
+      return json(res, 200, { version: addonVersion() || apiVersion.VERSION.CURRENT, generatedAt: observed.generatedAt, security: portalPolicy.snapshot(), guidance: decisionSensors.evaluate({ http: observed.http, downloads: observed.downloads, files: observed.files, databaseBytes: database.size, telemetryBytes: telemetryStat.size }), databaseBytes: database.size, telemetryBytes: telemetryStat.size, files: portals.reduce((n, p) => n + p.files, 0), fileBytes: portals.reduce((n, p) => n + p.bytes, 0), visits: telemetry.visits, downloads: telemetry.downloads, portals, tokenActivity: telemetry.byToken, fileDownloads: telemetry.byFile, ratings: Object.fromEntries(Object.entries(telemetry.ratings).map(([k, v]) => [k, { count: v.count, average: v.sum / v.count }])), recent: telemetry.recent, ipMode: rawIpEnabled ? 'raw' : 'hashed', observer: observed, sensorSettings: sensorConfig, visitorsIntel: visitors, uniqueVisitors: visitors.unique_visitors, visitorsNew24h: visitors.visitors_new_24h, downloadVisitors: visitors.download_visitors, deniedTotal: visitors.denied_total, adminLogins: visitors.admin_logins, countriesKnown: visitors.countries_known, countryTop: visitors.country_top });
     }
     if (url.pathname === '/admin/api/database/backup' && method === 'POST') {
       if (!adminGate(req, res, 'backup', method)) return;
