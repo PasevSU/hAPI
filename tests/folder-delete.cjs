@@ -48,7 +48,10 @@ const root = path.join(__dirname, '..');
 
     const payload = Buffer.from('съдържание на документа', 'utf8');
     assert.equal((await upload(`${base}/upload?path=${encodeURIComponent('/документи/първи.txt')}`, payload)).status, 201);
-    assert.equal((await upload(`${base}/upload?path=${encodeURIComponent('/документи/под/second.txt')}`, payload)).status, 201);
+    // `mkdir=1` е изричното „качвам цяла папка със структурата ѝ“ — само тогава се
+    // създават липсващи междинни папки (иначе качването на файл не създава папки).
+    assert.equal((await upload(`${base}/upload?path=${encodeURIComponent('/документи/под/second.txt')}&mkdir=1`, payload)).status, 201);
+    assert.equal((await upload(`${base}/upload?path=${encodeURIComponent('/няма/трети.txt')}`, payload)).status, 404, 'без mkdir липсваща папка е 404');
 
     const reg = await api(`${base}/register`, 'POST', { path: '/документи/първи.txt' });
     assert.equal(reg.status, 201, 'файлът се регистрира в портала');

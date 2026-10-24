@@ -772,7 +772,7 @@ const generatorRoutes = require('./routes/generator').create({ generator, adminG
 const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion });
 // Публични токени за портал (Stage D) и изтегляне на файл от ПАПКАТА му (един вход, не адрес за всеки файл).
 const portalTokens = require('./routes/portal-tokens').create({ json, fail, parse, audit, adminGate, store: metadataStore, policy: portalPolicy, resolvePortal, baseUrl, portalPath: (p) => links.portalLandingPath(p), randomToken: (prefix) => prefix + crypto.randomBytes(32).toString('base64url') });
-const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, folderMetaOf });
+const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, folderMetaOf, fileMode, links, baseUrl, htmlEsc });
 // PGP ключохранилище (B2): ключовете идват само от изрични пътища; тук се държи една
 // инстанция, за да е еднакъв отговорът „има ли ключ“ за целия сървър.
 const keyring = require('./path-crypto').create({ env: process.env });
@@ -1490,7 +1490,7 @@ async function handler(req, res) {
       void recordTelemetry('visit', req, portal, null, url);
       // Адресите се строят ТУК (links.js): база от public_base_url/заявката, не от location.origin.
       // `{{FOLDERS}}` казва на страницата, че порталът има СОБСТВЕНА папка — тогава тя се отваря в режим „папка“, а `?folder=` сочи подпапка в нея.
-      const stRoot = portalRoot(portal.storage_root || '/share'), dedicated = stRoot !== '/share' && stRoot !== '/media', html = fs.readFileSync(path.join(__dirname, 'portal', 'portal.html'), 'utf8').replace('{{BASE}}', htmlEsc(baseUrl(req))).replace('{{API}}', htmlEsc(links.portalApiPath(portal))).replace('{{FOLDER}}', htmlEsc(links.portalFolderRel(url.searchParams.get('folder') || ''))).replace('{{FOLDERS}}', dedicated ? '1' : '');
+      const stRoot = portalRoot(portal.storage_root || '/share'), dedicated = stRoot !== '/share' && stRoot !== '/media', html = fs.readFileSync(path.join(__dirname, 'portal', 'portal.html'), 'utf8').replace('{{BASE}}', htmlEsc(baseUrl(req))).replace('{{API}}', htmlEsc(links.portalApiPath(portal))).replace('{{FOLDER}}', htmlEsc(links.portalFolderRel(url.searchParams.get('order') || url.searchParams.get('folder') || ''))).replace('{{FOLDERS}}', dedicated ? '1' : '');
       // inline стилове не се allow-ват; QR кодът е локален SVG (img-src 'self').
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
       return res.end(html);
@@ -1737,10 +1737,10 @@ async function handler(req, res) {
         }
         if (tail.length === 2 && tail[1] === 'api.json') {
           void audit('folder.api', { portalId: p.id, path: '/' + rel });
-          return json(res, 200, { schema_version: '1.0', kind: 'storage-folder', ...folderView, apiUrl, folders: (node.folders || []).map(f => ({ name: f.name, path: '/' + f.path, folderCount: f.folderCount, fileCount: f.fileCount, bytes: f.bytes, apiUrl: folderUrl(f.path) })), files: (node.files || []).map(f => ({ name: f.name, path: '/' + f.path, size: f.size, modifiedAt: f.modifiedAt || '' })), generatedAt: new Date().toISOString() });
+          return json(res, 200, { schema_version: '1.0', kind: 'storage-folder', ...folderView, apiUrl, folders: (node.folders || []).map(f => ({ name: f.name, path: '/' + f.path, folderCount: f.folderCount, fileCount: f.fileCount, bytes: f.bytes, apiUrl: folderUrl(f.path) })), files: portalStorage.folderFilesOf(p, node).map(f => ({ name: f.name, path: '/' + f.path, size: f.size, modifiedAt: f.modifiedAt || '', mode: portalStorage.folderFileMode(p, f), key: portalStorage.folderFileMode(p, f) === 'KEY_REQUIRED' })), generatedAt: new Date().toISOString() });
         }
         void recordTelemetry('visit', req, p, null, url);
-        return json(res, 200, { storage: true, root: '/', ...folderView, apiUrl, folders: (node.folders || []).map(f => ({ name: f.name, path: '/' + f.path, folderCount: f.folderCount, fileCount: f.fileCount, bytes: f.bytes, apiUrl: folderUrl(f.path) })), files: (node.files || []).map(f => ({ name: f.name, path: '/' + f.path, size: f.size, modifiedAt: f.modifiedAt || '' })) });
+        return json(res, 200, { storage: true, root: '/', ...folderView, apiUrl, folders: (node.folders || []).map(f => ({ name: f.name, path: '/' + f.path, folderCount: f.folderCount, fileCount: f.fileCount, bytes: f.bytes, apiUrl: folderUrl(f.path) })), files: portalStorage.folderFilesOf(p, node).map(f => ({ name: f.name, path: '/' + f.path, size: f.size, modifiedAt: f.modifiedAt || '', mode: portalStorage.folderFileMode(p, f), key: portalStorage.folderFileMode(p, f) === 'KEY_REQUIRED' })) });
       }
       // Пакет на целия портал за посетителя (PP-12): само FREE и видими файлове, а
       // линкът е еднократен и краткотраен. Ключовете и забранените файлове се назовават
@@ -2242,7 +2242,7 @@ async function handler(req, res) {
           const exists = await fsp.access(full).then(() => true, () => false);
           if (exists && !overwrite) return fail(res, 409, 'Файлът вече съществува');
           try {
-            await fsp.mkdir(path.dirname(full), { recursive: true });
+            if (!(url.searchParams.get('mkdir') === '1') && path.dirname(full) !== rootAbs && !(await fsp.access(path.dirname(full)).then(() => true, () => false))) return fail(res, 404, 'Родителската папка липсва'); await fsp.mkdir(url.searchParams.get('mkdir') === '1' ? path.dirname(full) : rootAbs, { recursive: true });
             // L2: при `pgp_encrypt_workdir` на диска отива контейнер, не откритото съдържание.
             await fsp.writeFile(full, workdirIo.pack(data));
           } catch (e) { return fail(res, 500, `Файлът не може да бъде записан: ${e.code || e.message}`) }

@@ -2079,12 +2079,13 @@
     let done = 0;
     const failed = [];
     for (const file of files) {
-      const rel = String(file.webkitRelativePath || file.name || '')
-        .replace(/\\/g, '/')
-        .replace(/^\/+/, '');
+      const structure = String(file.webkitRelativePath || '').replace(/\\/g, '/').replace(/^\/+/, '');
+      const rel = structure || String(file.name || '').replace(/\\/g, '/').replace(/^\/+/, '');
       if (!rel) continue;
       const target = dirRel ? `${dirRel}/${rel}` : rel;
-      const r = await api(`${P()}/tree/upload?path=${encodeURIComponent('/' + target)}`, {
+      // `mkdir=1` се праща САМО при избор на цяла папка: тогава се пази структурата ѝ.
+      // Качване на файлове в избрана папка НЕ създава папки — липсваща е 404.
+      const r = await api(`${P()}/tree/upload?path=${encodeURIComponent('/' + target)}${structure ? '&mkdir=1' : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
         body: file,

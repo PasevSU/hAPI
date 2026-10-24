@@ -153,7 +153,10 @@ const assert = require('node:assert/strict');
     assert.deepEqual(cleared.value.notes, {});
 
     // 8. Прикачване на файл в папката на портала (тялото е съдържанието, пътят е ?path=).
-    const up = await call(`/admin/api/portals/${portal.id}/tree/upload?path=${encodeURIComponent('/docs/new/file.txt')}`, 'POST', 'съдържание', true, { 'Content-Type': 'text/plain' });
+    // Липсваща междинна папка НЕ се създава мълчаливо: `mkdir=1` е изричното „качвам цяла
+    // папка със структурата ѝ“ (така панелът качва избрана директория).
+    assert.equal((await call(`/admin/api/portals/${portal.id}/tree/upload?path=${encodeURIComponent('/docs/new/file.txt')}`, 'POST', 'съдържание', true, { 'Content-Type': 'text/plain' })).status, 404, 'липсваща папка без mkdir е 404');
+    const up = await call(`/admin/api/portals/${portal.id}/tree/upload?path=${encodeURIComponent('/docs/new/file.txt')}&mkdir=1`, 'POST', 'съдържание', true, { 'Content-Type': 'text/plain' });
     assert.equal(up.status, 201, JSON.stringify(up.value));
     assert.equal(up.value.path, '/docs/new/file.txt');
     assert.equal(up.value.size, Buffer.byteLength('съдържание'));
