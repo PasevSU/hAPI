@@ -8,7 +8,10 @@ export default [
       'node_modules/**', 'data/**', 'release/**', 'build/**', 'dist/**',
       '.dev/**', '.github/**', 'img/**', 'hapi_enterprise/fonts/**',
       'hapi_enterprise/*.html', 'custom_components/**/portal.html',
-      'documentation/**', 'docs/**'
+      'documentation/**', 'docs/**',
+      // Локални среди (Python venv за инструменти, TimescaleDB и т.н.): не са код на
+      // проекта и не бива да чупят `eslint .` — venv-ът съдържа чужди JS файлове.
+      '.venv/**', '**/.venv/**', 'venv/**', '**/site-packages/**'
     ]
   },
   js.configs.recommended,

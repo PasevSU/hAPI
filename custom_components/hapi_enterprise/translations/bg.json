@@ -117,6 +117,18 @@
       },
       "recommended_action": {
         "name": "Препоръчана проверка"
+      },
+      "active_portal_sessions": {
+        "name": "Активни сесии за портали"
+      },
+      "token_validation_failures": {
+        "name": "Неуспешни проверки на токен"
+      },
+      "revoked_token_attempts": {
+        "name": "Опити с отнет токен"
+      },
+      "cross_portal_denials": {
+        "name": "Откази между портали"
       }
     },
     "binary_sensor": {
@@ -125,6 +137,9 @@
       },
       "api_available": {
         "name": "Административното API отговаря"
+      },
+      "public_gateway_security_alert": {
+        "name": "Сигурностна тревога на публичния gateway"
       }
     }
   }

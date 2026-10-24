@@ -50,6 +50,14 @@ _BINARY_SENSORS: tuple[PortalBinarySensorEntityDescription, ...] = (
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         icon="mdi:lan-connect",
     ),
+    # Тревога по ПРОЗОРЕЦА (5 мин), не по натрупания брояч: иначе би светела вечно след
+    # първия отказ. Вдига се само за крос-портални опити и за отнет токен.
+    PortalBinarySensorEntityDescription(
+        key="public_gateway_security_alert",
+        translation_key="public_gateway_security_alert",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:shield-lock-outline",
+    ),
 )
 
 BINARY_SENSOR_KEYS = tuple(description.key for description in _BINARY_SENSORS)
@@ -105,10 +113,19 @@ class PortalProblemBinarySensor(BinarySensorEntity):
 
     @property
     def is_on(self) -> bool | None:
-        """True = има проблем (mirror) / API-то отговаря (availability)."""
+        """True = има проблем (mirror/security) / API-то отговаря (availability)."""
         if self.entity_description.key == "api_available":
             return bool(self.coordinator.last_update_success)
         data = self.coordinator.data or {}
+        if self.entity_description.key == "public_gateway_security_alert":
+            # Само ПРОЗОРЕЦЪТ (последните 5 мин), не натрупаният брояч: иначе тревогата
+            # би светела вечно след първия отказ. Брои се крос-порталният опит и опитът
+            # с отнет токен — те са сигурностни, не „грешен адрес“.
+            cross = data.get("security_window_cross_portal")
+            revoked = data.get("security_window_revoked")
+            if cross is None and revoked is None:
+                return None
+            return (cross or 0) + (revoked or 0) > 0
         value = data.get("mirror_problem")
         # Липсващото измерване не е „проблем“: `None` → `unknown`, а не „on“.
         return None if value is None else bool(value)

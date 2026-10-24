@@ -78,9 +78,18 @@ function clearCookie(req) {
 
 const digest = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
-function create({ store, signedPortal, sessionTtlSeconds = 600, requireToken = false, onDeny = null }) {
+function create({ store, signedPortal, sessionTtlSeconds = 600, requireToken = false, onDeny = null, now = () => Date.now(), windowSeconds = 300 }) {
   // Броячи за сензорите: само числа, без токени, IP адреси или имена на портали.
+  // `denied` е НАТРУПАНО (от старта), `events` пази само времето и причината, за да може
+  // сензорът да покаже „има отказ СЕГА“, а не „имало е отказ някога“ (натрупаното никога
+  // не се нулира и тревога по него би светела вечно).
   const denied = { tokenUnknown: 0, tokenExpired: 0, revokedRefused: 0, crossPortal: 0, scopeDenied: 0, sessionInvalid: 0 };
+  const events = [];
+  const noteKind = (kind) => {
+    if (Object.hasOwn(denied, kind)) denied[kind] += 1;
+    events.push({ at: now(), kind });
+    if (events.length > 200) events.shift();
+  };
   /** Отказът влиза в одита с ПРИЧИНА и портал — без токен, без бисквитка, без IP. */
   const noteDenial = (reason, portal) => {
     if (typeof onDeny !== 'function') return;
@@ -115,9 +124,9 @@ function create({ store, signedPortal, sessionTtlSeconds = 600, requireToken = f
     const raw = readSessionToken(req);
     if (raw) {
       const session = store.getPortalSession(digest(raw));
-      if (!session) denied.sessionInvalid += 1;
-      else if (session.portalId !== portal.id) { denied.crossPortal += 1; return refusal('cross_portal') }
-      else if (!session.scopes.includes(action)) { denied.scopeDenied += 1; return refusal('scope') }
+      if (!session) noteKind('sessionInvalid');
+      else if (session.portalId !== portal.id) { noteKind('crossPortal'); return refusal('cross_portal') }
+      else if (!session.scopes.includes(action)) { noteKind('scopeDenied'); return refusal('scope') }
       else return { allowed: true, via: 'portal-session', identity: session, reason: '' };
     }
     // 3. Потребителска сесия (Bearer или `portal_token`): скоупи + ACL по портали.
@@ -126,8 +135,8 @@ function create({ store, signedPortal, sessionTtlSeconds = 600, requireToken = f
     if (userToken) {
       const session = store.getSession(digest(userToken));
       if (session) {
-        if (!session.scopes.includes(action)) { denied.scopeDenied += 1; return refusal('scope') }
-        if (!userMayPortal(session.username, portal.id)) { denied.crossPortal += 1; return refusal('cross_portal') }
+        if (!session.scopes.includes(action)) { noteKind('scopeDenied'); return refusal('scope') }
+        if (!userMayPortal(session.username, portal.id)) { noteKind('crossPortal'); return refusal('cross_portal') }
         return { allowed: true, via: 'user-session', identity: session, reason: '' };
       }
     }
@@ -140,16 +149,27 @@ function create({ store, signedPortal, sessionTtlSeconds = 600, requireToken = f
 
   /** Еднакъв отказ за всички случаи: 404 без обяснение навън, причината — в сензорите. */
   function snapshot() {
+    const since = now() - windowSeconds * 1000;
+    const window = { seconds: windowSeconds, tokenUnknown: 0, tokenExpired: 0, revokedRefused: 0, crossPortal: 0, scopeDenied: 0, sessionInvalid: 0, total: 0 };
+    for (const event of events) {
+      if (event.at < since) continue;
+      if (Object.hasOwn(window, event.kind)) window[event.kind] += 1;
+      window.total += 1;
+    }
     return {
       requireToken,
       sessionTtlSeconds,
       cookie: { secure: COOKIE_SECURE, plain: COOKIE_PLAIN },
       denied: { ...denied },
+      window,
+      // „Проверката не мина“ и „отнет токен“ са сигурностни събития; показват се и като
+      // едно число, за да има сензор, който не изисква тълкуване на шест полета.
+      validationFailures: denied.tokenUnknown + denied.tokenExpired + denied.sessionInvalid,
       activePortalSessions: store.purgeExpiredPortalAccess ? store.purgeExpiredPortalAccess().sessions : 0,
     };
   }
 
-  return { decide, snapshot, userMayPortal, denied, sessionTtlSeconds, isSecureRequest, readSessionToken, sessionCookie, clearCookie, digest };
+  return { decide, snapshot, note: noteKind, userMayPortal, denied, sessionTtlSeconds, isSecureRequest, readSessionToken, sessionCookie, clearCookie, digest };
 }
 
 module.exports = { create, isSecureRequest, readSessionToken, sessionCookie, clearCookie, COOKIE_SECURE, COOKIE_PLAIN };

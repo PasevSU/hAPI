@@ -51,23 +51,23 @@ function create(deps) {
         fail(res, 404, 'Not found'); return true;
       }
       if (!/^[A-Za-z0-9_-]{20,120}$/.test(token)) {
-        policy.denied.tokenUnknown += 1;
+        policy.note('tokenUnknown');
         void audit('portal.token.denied', { reason: 'malformed' });
         fail(res, 404, 'Not found'); return true;
       }
       const record = store.getPortalTokenByHash(policy.digest(token));
       if (!record) {
-        policy.denied.tokenUnknown += 1;
+        policy.note('tokenUnknown');
         void audit('portal.token.denied', { reason: 'unknown' });
         fail(res, 404, 'Not found'); return true;
       }
       if (record.revokedAt) {
-        policy.denied.revokedRefused += 1;
+        policy.note('revokedRefused');
         void audit('portal.token.denied', { reason: 'revoked', portalId: record.portalId, tokenId: record.id });
         fail(res, 404, 'Not found'); return true;
       }
       if (record.expiresAt && Date.parse(record.expiresAt) <= Date.now()) {
-        policy.denied.tokenExpired += 1;
+        policy.note('tokenExpired');
         void audit('portal.token.denied', { reason: 'expired', portalId: record.portalId, tokenId: record.id });
         fail(res, 404, 'Not found'); return true;
       }

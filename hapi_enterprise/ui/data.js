@@ -7,7 +7,7 @@
 // единственият източник за GUI-я (не се твърди на ръка в HTML-а или в панелите).
 // `tests/ui-version.cjs` пази съответствието с `hapi_enterprise/config.yaml` и с
 // `custom_components/hapi_enterprise/manifest.json` при всяко пускане на пакета.
-window.HAPI_VERSION = '0.69.72';
+window.HAPI_VERSION = '0.69.73';
 
 window.HAPI_DATA = {
   manifest: {

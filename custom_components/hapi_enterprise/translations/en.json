@@ -117,6 +117,18 @@
       },
       "recommended_action": {
         "name": "Recommended check"
+      },
+      "active_portal_sessions": {
+        "name": "Active portal sessions"
+      },
+      "token_validation_failures": {
+        "name": "Token validation failures"
+      },
+      "revoked_token_attempts": {
+        "name": "Attempts with a revoked token"
+      },
+      "cross_portal_denials": {
+        "name": "Cross-portal denials"
       }
     },
     "binary_sensor": {
@@ -125,6 +137,9 @@
       },
       "api_available": {
         "name": "Admin API available"
+      },
+      "public_gateway_security_alert": {
+        "name": "Public gateway security alert"
       }
     }
   }

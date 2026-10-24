@@ -42,8 +42,8 @@ assert.match(coordinator, /UpdateFailed/, 'coordinator.py: грешките се
 // 4. Сензори: ключовете съвпадат с тези в coordinator и в преводите.
 const sensor = read('sensor.py');
 const sensorKeys = [...sensor.matchAll(/(?<![_a-z])key="([a-z_0-9]+)"/g)].map((m) => m[1]);
-assert.equal(sensorKeys.length, 20, 'очакват се 20 сензора, намерени ' + sensorKeys.length);
-for (const key of ['visits', 'downloads', 'files', 'portal_count', 'file_bytes', 'database_bytes', 'telemetry_bytes', 'unique_visitors', 'visitors_new_24h', 'download_visitors', 'denied_total', 'admin_logins', 'countries_known', 'version', 'sync', 'health', 'http_error_rate', 'latency_p95', 'download_denial_rate', 'recommended_action']) {
+assert.equal(sensorKeys.length, 24, 'очакват се 24 сензора, намерени ' + sensorKeys.length);
+for (const key of ['visits', 'downloads', 'files', 'portal_count', 'file_bytes', 'database_bytes', 'telemetry_bytes', 'unique_visitors', 'visitors_new_24h', 'download_visitors', 'denied_total', 'admin_logins', 'countries_known', 'version', 'sync', 'health', 'http_error_rate', 'latency_p95', 'download_denial_rate', 'recommended_action', 'active_portal_sessions', 'token_validation_failures', 'revoked_token_attempts', 'cross_portal_denials']) {
   assert.ok(sensorKeys.includes(key), 'sensor.py: липсва сензор ' + key);
   // `sync` не идва от payload-а: смята се в sensor.py от version + версията на
   // интеграцията. Затова не се търси в координатора.
@@ -77,18 +77,27 @@ for (const key of ['health', 'http_error_rate', 'latency_p95', 'download_denial_
   assert.ok(coordinator.includes('"' + key + '"'), 'coordinator.py: липсва ключ ' + key);
 }
 assert.match(coordinator, /"unknown"/, 'липсващото `guidance` е `unknown`, а не „здраво“');
+// Stage D: сигурностните броячи идват готови и тревогата гледа ПРОЗОРЕЦА, не натрупаното.
+assert.match(coordinator, /_normalize_security/, 'coordinator.py: превежда блока `security`');
+for (const key of ['activePortalSessions', 'validationFailures', 'revokedRefused', 'crossPortal', 'window']) {
+  assert.ok(coordinator.includes(key), 'coordinator.py: липсва поле от `security`: ' + key);
+}
+assert.match(coordinator, /security_window_cross_portal/, 'координаторът дава прозоречните стойности за тревогата');
 assert.match(sensor, /class PortalGuidanceSensor/, 'sensor.py: отделен клас за решението');
 assert.match(sensor, /_to_float/, 'сензорите за проценти и ms приемат дробни стойности');
 assert.match(sensor, /recommended_action/, 'sensor.py: показва и препоръчаното действие');
+assert.match(sensor, /class PortalSecuritySensor/, 'sensor.py: отделен клас за сигурностните броячи');
+assert.match(sensor, /TOTAL_INCREASING/, 'броячите растат, значи са TOTAL_INCREASING');
 
-// 4г. Binary sensors: само две неща, но с правилните типове (`problem`, `connectivity`).
+// 4г. Binary sensors: три неща, с правилните типове (`problem`, `connectivity`).
 const binarySensor = read('binary_sensor.py');
 const binarySensorKeys = [...binarySensor.matchAll(/(?<![_a-z])key="([a-z_0-9]+)"/g)].map((m) => m[1]);
-assert.deepEqual(binarySensorKeys, ['mirror_problem', 'api_available'], 'binary_sensor.py: точно двата обекта');
+assert.deepEqual(binarySensorKeys, ['mirror_problem', 'api_available', 'public_gateway_security_alert'], 'binary_sensor.py: трите обекта');
 assert.match(binarySensor, /BinarySensorDeviceClass\.PROBLEM/, '`mirror_problem` е device_class=problem');
 assert.match(binarySensor, /BinarySensorDeviceClass\.CONNECTIVITY/, '`api_available` е device_class=connectivity');
 assert.match(binarySensor, /return True/, '`api_available` остава налична и когато API-то не отговаря');
 assert.match(binarySensor, /mirror_problem/, 'стойността идва от add-on-а, не се смята тук');
+assert.match(binarySensor, /security_window_cross_portal/, 'тревогата гледа прозореца, не натрупания брояч');
 assert.ok(consts.includes('binary_sensor'), 'const.py: платформата е включена');
 
 // 5. Config flow: валидация срещу същите граници и грешки, които преводите очакват.

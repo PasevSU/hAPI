@@ -163,6 +163,11 @@ const { freePort, stopChild } = require('./helpers.cjs');
     assert.ok(security.denied.crossPortal >= 1, 'отказът между портали е отчетен: ' + JSON.stringify(security.denied));
     assert.ok(security.denied.revokedRefused >= 1, 'опитът с отнет токен е отчетен');
     assert.ok(typeof security.activePortalSessions === 'number', 'броят живи сесии се вижда');
+    // Прозорецът отличава „има отказ СЕГА“ от „имало е отказ някога“ (натрупаното не се нулира).
+    assert.ok(security.window && security.window.seconds === 300, 'прозорецът на отказите е 5 минути');
+    assert.ok(security.window.crossPortal >= 1, 'прозорецът вижда крос-порталния отказ');
+    assert.ok(security.window.revokedRefused >= 1, 'прозорецът вижда опита с отнет токен');
+    assert.ok(security.validationFailures >= 1, 'неуспешните проверки са едно число');
     assert.equal(JSON.stringify(sensors.data).includes(token), false, 'сензорите не изтичат токена');
     assert.equal(JSON.stringify(sensors.data).includes(userToken), false, 'сензорите не изтичат потребителската сесия');
 

@@ -103,7 +103,43 @@ def _normalize(payload: dict) -> dict:
     out["portal_count"] = len(portals) if isinstance(portals, list) else None
     out["generated_at"] = payload.get("generatedAt")
     out.update(_normalize_guidance(payload.get("guidance")))
+    out.update(_normalize_security(payload.get("security")))
     return out
+
+
+def _normalize_security(security: object) -> dict:
+    """Flatten the add-on's `security` block (Stage D) onto entity keys.
+
+    Две неща се различават нарочно: натрупаните броячи (`denied.*`) растат вечно и по
+    тях не може да се вдигне тревога, която някога да угасне; `window` гледа последните
+    5 минути и точно той храни `binary_sensor.public_gateway_security_alert`.
+    """
+    if not isinstance(security, dict):
+        return {
+            "active_portal_sessions": None,
+            "token_validation_failures": None,
+            "revoked_token_attempts": None,
+            "cross_portal_denials": None,
+            "security_recent_denials": None,
+            "security_window_cross_portal": None,
+            "security_window_revoked": None,
+            "security_require_token": None,
+        }
+    denied = security.get("denied")
+    denied = denied if isinstance(denied, dict) else {}
+    window = security.get("window")
+    window = window if isinstance(window, dict) else {}
+    return {
+        "active_portal_sessions": security.get("activePortalSessions"),
+        # „Проверката не мина“ = непознат + изтекъл токен + невалидна бисквитка.
+        "token_validation_failures": security.get("validationFailures"),
+        "revoked_token_attempts": denied.get("revokedRefused"),
+        "cross_portal_denials": denied.get("crossPortal"),
+        "security_recent_denials": window.get("total"),
+        "security_window_cross_portal": window.get("crossPortal"),
+        "security_window_revoked": window.get("revokedRefused"),
+        "security_require_token": security.get("requireToken"),
+    }
 
 
 def _normalize_guidance(guidance: object) -> dict:
