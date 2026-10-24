@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.68
+# Състояние на изданието — hAPI Enterprise 0.69.69
 
-Версия: **0.69.68** · клон `main`
+Версия: **0.69.69** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,7 +15,7 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **239/239** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.68 — отпечатъците се сверяват от `verify-release.cjs` |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.69 — отпечатъците се сверяват от `verify-release.cjs` |
 | Логически одит | `node scripts/logic-audit.cjs --gate` | 396 файла · 67231 реда · **0** отворени · 7 с обосновка |
 | Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 392 файла · 66867 реда · critical: 0 · high: 0 · medium: 3 · low: 170 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
@@ -27,36 +27,31 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.68.tar.gz` | add-on архив (159 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.68.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.69.tar.gz` | add-on архив (159 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.69.zip` | интеграция за HACS (22 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.68
+## 3. Какво влезе във 0.69.69
 
-Издание с една нова функция (избор на ключ по роля) и две поправки в самите гейтове — за да не
-може код да остане извън git и за да не твърди документацията несъществуващи полета.
+Издание с една промяна в подредбата: целият публичен портал (страница, скрипт, стилове и речник)
+вече живее в собствена папка, за да може видът и опциите му да се сменят, без да се пипа
+останалият код на add-on-а.
 
-- **Кой ключ криптира се решава по Key Flags, не по поредност.** Досега при ключов пакет с
-  отделни подключове изборът беше „първият X25519/X448, иначе RSA“ — можеше да е комуникационният
-  ключ вместо ключът за данни в покой. Сега редът е договорен и се вижда: `0x08`
-  (`encrypt-storage`) → `0x04` (`encrypt-comms`, с точния източник `key-flags-comms`) → по вид
-  ключ за стари пакети без флагове. `GET /admin/api/pgp/keyring` връща `storageKeySource`
-  (`key-flags` / `key-flags-comms` / `kind`), а всеки ключ носи `keyFlags` и `roles` — изборът
-  вече не е мълчалив. `encrypt-comms` не се ползва за криптиране навън.
-- **Тестове:** `tests/pgp-keyflags.cjs` (6 проверки: роли от реален self-signature; два подключа
-  comms/storage → избран е storage; само comms → избран, но с точен източник; без флагове → по
-  вид; генериран ключ носи `0x0F`; `encryptionKeyOf()` е съвместим) и 4 нови твърдения в
-  `tests/pgp-keyring.cjs`. Общо 239 тестови файла.
-- **Поправка в хигиената на хранилището:** `.gitignore` беше започнал да игнорира самите
-  `hapi_enterprise/pgp.js`, `hapi_enterprise/path-crypto.js`, `tests/pgp-keyring.cjs`,
-  `reports/RELEASE-STATUS.md`, `scripts/bad-code-allowlist.json` и `eslint-suppressions.json`.
-  Така `git add -A` не ги вкарваше — кодът вървеше локално, но не влизаше нито в CI, нито в
-  изданието. Сега се игнорира само временният `.commit-msg.txt`.
-- **Поправка в документацията:** `pgp-keys-setup.md` описваше полета `encryptionKeyId`,
-  `hasPrivate`, `passphraseAccepted`, които `status()` никога не е връщала. Заменени с истинските
-  (`available`, `canDecrypt`, `storageKeyId`, `storageKeySource`, `primaryKeyId`,
-  `passphraseSource`, `reason`). Договорът за ключовете вече не обещава ⏳ за вече излязла
-  версия; `tests/docs-consistency.cjs` пази и двете правила.
+- **`hapi_enterprise/portal/`** — четирите файла на портала (`portal.html`, `portal.js`,
+  `portal.css`, `portal-i18n.js`) излизат от корена на add-on-а и заживяват заедно.
+  Причината е практическа: още не е решено какви опции трябва да има порталът и как точно да
+  изглежда, а така промяната е в една папка, а не из целия код.
+- **Адресите не се променят.** `server.js` чете файловете от `portal/`, но маршрутите остават
+  същите (`/p/<id>`, `/portal.html`, `/portal.js`, `/portal.css`, `/portal-i18n.js`) — стари
+  QR кодове, отметки и линкове продължават да работят.
+- **Dockerfile:** порталът има собствен `COPY portal /app/portal/` вместо да е ред в общия
+  списък — така се вижда, че това е отделна част от add-on-а.
+- **Проверките са обновени:** `build-release` и `verify-release` (вкл. S12) сочат
+  `portal/portal.*`, `tests/portal-page.cjs`, `tests/portal-i18n.cjs`, `tests/layout.cjs`,
+  `tests/docker-runtime.cjs` и `tests/ha-compatibility.cjs` (HA-I05) четат новите пътища,
+  `eslint.config.mjs` дава browser-среди за `portal/**/*.js`, а
+  `documentation/01_AS_IS_ARCHITECTURE/STORAGE_LAYOUT.md` показва `/app/portal/portal.html`.
+- **Тестове:** 238 тестови файла в матрицата (239 с `release-status`), 100 % успех.
 
 ## 4. Как се проверява наново
 
