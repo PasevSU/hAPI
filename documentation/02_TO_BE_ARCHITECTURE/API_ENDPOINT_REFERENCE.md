@@ -2,11 +2,11 @@
 
 **Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 (API Architecture & Runtime Logic Specification)
 
-**Генериран от кода на hAPI Enterprise 0.69.78.** Не се редактира на ръка.
+**Генериран от кода на hAPI Enterprise 0.69.79.** Не се редактира на ръка.
 
 Източници (живи, не копия):
 
-- `hapi_enterprise/admin-api-spec.js` — 183 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
+- `hapi_enterprise/admin-api-spec.js` — 184 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
 - `hapi_enterprise/public-route-allowlist.js` — 27 правила за това какво Public Gateway пропуска.
 - `hapi_enterprise/routes/` — 9 компонента на HTTP слоя.
 
@@ -165,6 +165,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | GET | `/admin/api/portals/{portalId}/qr` | Активен QR, история на ревизиите и физическите архиви | `portals` |
 | POST | `/admin/api/portals/{portalId}/qr/archive` | Архивира: физически ZIP със SHA-256 + следващ QR | `portals` |
 | POST | `/admin/api/portals/{portalId}/qr/block` | Прекратява активния QR (изисква основание) | `portals` |
+| POST | `/admin/api/portals/{portalId}/qr/verify` | Проверява целостта на архивите сега (байтове, манифест, файлове) | `portals` |
 | GET | `/admin/api/portals/{portalId}/qr/{qrId}` | Ревизия, манифест и наследник на конкретен QR | `portals` |
 | GET | `/admin/api/portals/{portalId}/qr/{qrId}/archive` | Сваляне на архивния файл на конкретен QR | `portals` |
 

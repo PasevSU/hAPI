@@ -3301,6 +3301,20 @@
         if (input) input.value = '';
       });
     }
+    if (q('#pf-qr-verify')) {
+      q('#pf-qr-verify').addEventListener('click', async () => {
+        if (!portal()) return;
+        if (!connected()) return sayQr('Демо: проверката се прави от add-on-а', 'err');
+        const r = await api(`${P()}/qr/verify`, { method: 'POST', json: {} });
+        if (!r.ok) return sayQr(esc(r.error || `HTTP ${r.status}`), 'err');
+        const data = r.data || {};
+        if (data.ok) {
+          return sayQr(`<p><strong>Архивите са наред.</strong> Проверени: <strong>${esc(String(data.verified || 0))}</strong> от ${esc(String(data.archives || 0))} · ${esc(String(data.checkedAt || ''))}</p>`, 'ok');
+        }
+        const rows = (data.failed || []).map((f) => `<li><code>${esc(String(f.id || ''))}</code> — ${esc(String(f.reason || ''))}${f.detail ? ' (' + esc(String(f.detail)) + ')' : ''}</li>`).join('');
+        sayQr(`<p><strong>Проверката се провали.</strong> Засегнати: <strong>${esc(String((data.failed || []).length))}</strong></p><ul class="pf-token-list">${rows}</ul>`, 'err');
+      });
+    }
 
     if (q('#fm-search')) {
       q('#fm-search').addEventListener('input', (e) => {

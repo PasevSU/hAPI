@@ -155,6 +155,10 @@
                   <input id="pf-qr-reason" type="text" maxlength="500" placeholder="Основание за прекратяване (задължително)">
                   <button type="button" class="btn btn-sm" id="pf-qr-block">Прекрати активния QR</button>
                 </div>
+                <div class="u-row u-row-2 u-mt">
+                  <button type="button" class="btn btn-sm" id="pf-qr-verify">Провери целостта на архивите</button>
+                  <span class="hint">Сверява байтовете, манифеста и файловете вътре.</span>
+                </div>
                 <output class="pf-security-out" id="pf-qr-out" aria-live="polite"></output>
               </div>
             </div>

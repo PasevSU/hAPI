@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.78
+# Състояние на изданието — hAPI Enterprise 0.69.79
 
-Версия: **0.69.78** · клон `main`
+Версия: **0.69.79** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,57 +14,48 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **248/248** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.78 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 415 файла · 71376 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 411 файла · 71012 реда · critical: 0 · high: 0 · medium: 3 · low: 174 — **има необяснени** |
+| Тестове | `node scripts/test-matrix.cjs` | **249/249** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.79 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 417 файла · 71800 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 413 файла · 71436 реда · critical: 0 · high: 0 · medium: 3 · low: 175 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 41 опции, 248 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 41 опции, 249 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.78.tar.gz` | add-on архив (167 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.78.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.79.tar.gz` | add-on архив (168 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.79.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.78
+## 3. Какво влезе във 0.69.79
 
-Публичната страна на QR договора и сензорите към него.
+Целостта на архивите: подмяна на доказателство се вижда без човешка сверка.
 
-- **`?qr=` в адреса** (`/portal.html?order=share/<папка>&qr=QR-002`): сървърът проверява,
-  че печатът съществува за ТОЗИ портал, и го предава на страницата (`data-qr`). Така един
-  и същ адрес може да има няколко QR идентичности, без да се променя архитектурата.
-- **`blok`** — прекратен QR не отдава съдържание: връща се страница с код **410**, която
-  казва кой печат е прекратен, откога и с какво основание. Историята и архивите остават.
-- **Публичен QR договор** (`GET /api/v1/p/<slug>/qr.json`): активният QR, историята и
-  физическите архиви с размер и SHA-256; вътрешните бележки не излизат. `/qr` без
-  разширение остава каноничният 301 → `qr.svg` (както при файловете), а
-  `GET /api/v1/p/<slug>/qr/<qrId>/archive` сваля архивния файл, ако за портала има право
-  `read` — същият отговор като за страницата.
-- **Страницата показва QR идентичността** като компактни баджове в заглавната лента:
-  `QR-00N`, „Архиви: N“ и списък с архивите при поискване (не заема половин екран —
-  архивът е резервен механизъм, не работна зона).
-- **Панелът** получава секция „QR ревизии и архиви“ с три действия: показване на
-  историята, **архивирай и издай нов QR**, **прекрати активния QR** (с поле за основание).
-- **Сензори** (`/admin/api/sensors` → `qr`): активни QR, прекратени QR, физически архиви,
-  заключени публикувани файлове и политиката за дълбочина — сметнати на едно място
-  (`portal-qr.stats`). Home Assistant получава четири нови сензора
-  (`qr_active`, `qr_blocked`, `qr_archives`, `locked_files`) на три езика.
-- **Гейт:** `tests/portal-qr-archive.cjs` покрива и публичната част — публичният манифест
-  не носи вътрешни бележки, ZIP-ът от публичния адрес е същият файл, `?qr=` стига до
-  страницата, непознат QR → 404, прекратен → 410 с основание и без съдържание.
-  `tests/ha-integration-flow.cjs` очаква 28 сензора.
-- **Документация, която не се разминава с кода** (`documentation/02_TO_BE_ARCHITECTURE/`):
-  `API_ENDPOINT_REFERENCE.md` се генерира от `admin-api-spec.js` + `public-route-allowlist.js`
-  + `routes/` чрез `scripts/api-reference.cjs` (183 операции, 27 публични правила,
-  9 компонента, реалните кодове за грешка) и се пази от `tests/api-reference.cjs`
-  (`--check` байт-в-байт); `RUNTIME_EXECUTION_FLOWS.md` описва реалните потоци и изрично
-  изброява липсващото; `ARCHITECTURE_COMPLIANCE_MATRIX.md` съпоставя 12-те инварианта и
-  4-те договора с файлове и тестове.
+- **Нов модул `portal-integrity.js`** (правило `ARCHIVE_NOT_TAMPERED`). Проверява по ред и
+  връща ТОЧЕН код за всяка повреда, вместо едно общо „счупено“: `file_missing`,
+  `archive_hash_mismatch` (с `expected` и `actual`), `archive_unreadable`, `manifest_missing`,
+  `manifest_invalid`, `manifest_hash_mismatch`, `file_missing_in_archive`,
+  `file_hash_mismatch` / `file_size_mismatch` (с името на файла).
+- **`POST /admin/api/portals/<id>/qr/verify`** — проверка по заявка. Резултатът се записва в
+  метаданните (`db.portalIntegrity[portalId]`: `checkedAt`, `ok`, `archives`, `verified`,
+  `failed[]`) и `GET …/qr` го показва като `integrity` (преди първата проверка — `null`,
+  а не „здраво“).
+- **Фонова проверка** през 6 часа (`HAPI_INTEGRITY_INTERVAL_MS`, `0` я изключва), с `unref`
+  таймер — не държи процеса жив и не блокира старта. При провал вдига `integrity.failed` в
+  одитната верига с `reasons` и `archiveIds`, за да остане следа извън екрана.
+- **Сензори:** `qr.integrity` в `/admin/api/sensors` (`failures`, `portalsFailed`, `checked`,
+  `lastCheckedAt`, `intervalMs`, `code`) → пети QR сензор `integrity_failed` в Home Assistant
+  (**29 общо**), на три езика.
+- **Панел:** бутон „Провери целостта на архивите“ показва проверени/общо и при провал —
+  кой архив и с каква причина (`#pf-qr-verify`, `/qr/verify`).
+- **Гейт:** `tests/portal-integrity.cjs` — всеки код на повреда поотделно (модул), запис и
+  одит (сървър), `integrity.failed` в сензорите и в одитната верига. Документацията е
+  обновена: нова точка 7а в `RUNTIME_EXECUTION_FLOWS.md`, а `ARCHITECTURE_COMPLIANCE_MATRIX.md`
+  вече не брои целостта към липсите (§5.1).
 
 ## 4. Как се проверява наново
 

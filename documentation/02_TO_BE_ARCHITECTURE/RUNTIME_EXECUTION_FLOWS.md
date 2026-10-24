@@ -123,6 +123,25 @@ flowchart LR
 - `GET /api/v1/p/<slug>/qr/<qrId>/archive` — ZIP, със същото право `read` като страницата.
 - `/api/v1/p/<slug>/qr` (без разширение) — **301** към `qr.svg`; същото правило важи за `/files/<id>/qr`.
 
+## 7а. Проверка на целостта (`ARCHIVE_NOT_TAMPERED`)
+
+Кой я пуска: `POST /admin/api/portals/<id>/qr/verify` (ръчно), фоновата задача (`portal-integrity.schedule`, по подразбиране на всеки **6 часа**, `HAPI_INTEGRITY_INTERVAL_MS=0` я изключва) и `GET …/qr` (само показва последния резултат, не проверява).
+
+Какво проверява `portal-integrity.verifyArchive()` — по ред, първата грешка спира ТОЗИ архив:
+
+| # | Проверка | Код при провал |
+| --- | --- | --- |
+| 1 | файлът е на диска | `file_missing` |
+| 2 | SHA-256 на целия ZIP = записаният в метаданните | `archive_hash_mismatch` (+ `expected`/`actual`) |
+| 3 | ZIP-ът се разчита от нашия четец | `archive_unreadable` |
+| 4 | вътре има `manifest.json` | `manifest_missing` |
+| 5 | манифестът е валиден JSON | `manifest_invalid` |
+| 6 | хешът на манифеста = `revision.manifestHash` | `manifest_hash_mismatch` |
+| 7 | всеки файл от манифеста е в ZIP-а | `file_missing_in_archive` (+ `detail`) |
+| 8 | всеки файл има същия SHA-256 и размер | `file_hash_mismatch` / `file_size_mismatch` (+ `detail`) |
+
+Последици: резултатът се записва в `db.portalIntegrity[portalId]` (`checkedAt`, `ok`, `archives`, `verified`, `failed[]`), при провал се вдига `integrity.failed` в одитната верига (с `reasons` и `archiveIds`) и `/admin/api/sensors` показва `qr.integrity.failures` → entity `integrity_failed` в Home Assistant.
+
 ## 8. Сензори и Home Assistant
 
 1. `observer.js` записва заявките (нормализирани маршрути — токенът не влиза в името на маршрута).
@@ -141,6 +160,7 @@ flowchart LR
 | Може ли този файл да се види/свали? | `routes/portal-storage.js` (режим, основание, скрити папки) + `folderMetaOf` |
 | Кое съдържание е публикувано под този QR? | `portal-qr.manifestFor()` (манифест + хеш) |
 | Какво има в стария печат? | физическият ZIP в `<данни>/archives/` |
+| Доказателството подменяно ли е? | `portal-integrity.js` (8 проверки, кодове за всяка повреда) |
 | Достигната ли е дълбочината? | `portal-qr.tooDeep()` (3 нива) |
 | Какво да провери операторът? | `decision-sensors.js` (`guidance`) |
 
@@ -148,7 +168,6 @@ flowchart LR
 
 | Липсва | Последица |
 | --- | --- |
-| Периодична проверка на манифестите (`integrity.failed`) | сензорът „неуспешни проверки на цялостта“ още не съществува; проверката е ръчна (сваляне и сверка на SHA-256) |
 | `report_entry_id → content_id` връзка | номерът в комбинирания отчет не е вързан към версия на файл |
 | Отделен договор `file` като самостоятелен вход | има per-file QR (`/files/<id>/qr.svg`), но не и страница със собствен списък |
 | Изолация на недоверен HTML (`html` договор) | HTML проектът се сервира от `/site/…` с CSP, но без отделен sandbox процес |

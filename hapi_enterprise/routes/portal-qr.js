@@ -4,15 +4,46 @@
 //   GET  /admin/api/portals/{id}/qr                  — активен QR, история, архиви, политика
 //   POST /admin/api/portals/{id}/qr/archive          — ФИЗИЧЕСКИ архив + следващ QR
 //   POST /admin/api/portals/{id}/qr/block            — прекратяване на активния QR (с основание)
+//   POST /admin/api/portals/{id}/qr/verify           — проверка на целостта на архивите СЕГА
 //   GET  /admin/api/portals/{id}/qr/{qrId}           — ревизията, манифестът и наследникът
 //   GET  /admin/api/portals/{id}/qr/{qrId}/archive   — сваляне на архивния файл
 //
 // Договор като на останалите компоненти: `handle()` връща `true`, когато заявката е за
 // този компонент (и е приключена). `db()` връща ЖИВИТЕ метаданни, за да няма втора истина.
 function create(deps) {
-  const { json, fail, parse, audit, fsp, path, portalRoot, update, qr, archiveRoot, adminGate, db } = deps;
+  const { json, fail, parse, audit, fsp, path, portalRoot, update, qr, integrity, archiveRoot, adminGate, db } = deps;
 
   const isQr = (parts) => parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'qr';
+
+  /**
+   * Проверка на целостта на архивите на един портал: чете ФАЙЛОВЕТЕ, не метаданните.
+   * Записва резултата и вдига `integrity.failed`, за да остане в одитната верига.
+   */
+  const verifyOne = async (portal) => {
+    const reg = qr.registry(db(), portal.id);
+    const result = await integrity.verifyPortal({
+      portalId: portal.id,
+      dir: path.join(archiveRoot, portal.id),
+      archives: reg.archives,
+      revisions: reg.revisions,
+    });
+    await update(async () => integrity.record(db(), portal.id, result));
+    if (!result.ok) {
+      void audit('integrity.failed', {
+        portalId: portal.id, slug: portal.slug, failed: result.failed.length,
+        reasons: result.failed.map((f) => f.reason), archiveIds: result.failed.map((f) => f.id),
+      });
+    }
+    return result;
+  };
+
+  // Фоновата проверка не блокира старта и не държи процеса жив (unref): ако средата я
+  // изключи с `HAPI_INTEGRITY_INTERVAL_MS=0`, не се създава никакъв таймер.
+  integrity.schedule(() => integrity.verifyPortals({
+    db: db(), qr, archiveRoot, onResult: (portalId, result) => update(async () => integrity.record(db(), portalId, result)).then(() => {
+      if (!result.ok) void audit('integrity.failed', { portalId, failed: result.failed.length, reasons: result.failed.map((f) => f.reason) });
+    }),
+  }), integrity.intervalMs(process.env));
 
   /** Публичен изглед на регистъра: активният QR, историята, архивите и политиката. */
   const view = (reg) => {
@@ -39,7 +70,12 @@ function create(deps) {
     // GET /qr
     if (parts.length === 5 && method === 'GET') {
       const state = await update(async () => view(qr.ensureFirst(db(), p)));
-      return json(res, 200, { portal: { id: p.id, slug: p.slug, title: p.title }, ...state });
+      return json(res, 200, { portal: { id: p.id, slug: p.slug, title: p.title }, ...state, integrity: integrity.read(db(), p.id) });
+    }
+
+    // POST /qr/verify — проверка на ЦЕЛОСТТА: байтовете на архива, манифестът и файловете в него.
+    if (parts[5] === 'verify' && parts.length === 6 && method === 'POST') {
+      return json(res, 200, await verifyOne(p));
     }
 
     // POST /qr/archive — РЕАЛЕН архивен файл + манифест + следващ QR (старият остава).

@@ -242,6 +242,7 @@ const ROUTES = [
   ['GET', '/admin/api/portals/{portalId}/qr', 'Активен QR, история на ревизиите и физическите архиви', 'portals', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/qr/archive', 'Архивира: физически ZIP със SHA-256 + следващ QR', 'portals', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/qr/block', 'Прекратява активния QR (изисква основание)', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/qr/verify', 'Проверява целостта на архивите сега (байтове, манифест, файлове)', 'portals', 'portals'],
   ['GET', '/admin/api/portals/{portalId}/qr/{qrId}', 'Ревизия, манифест и наследник на конкретен QR', 'portals', 'portals'],
   ['GET', '/admin/api/portals/{portalId}/qr/{qrId}/archive', 'Сваляне на архивния файл на конкретен QR', 'portals', 'portals'],
 

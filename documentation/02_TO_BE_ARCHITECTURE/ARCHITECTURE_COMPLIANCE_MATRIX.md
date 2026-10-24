@@ -49,7 +49,7 @@
 | Изискване | Код | Тест |
 | --- | --- | --- |
 | Сензори с реални числа, едно изчисление | `security` + `qr` + `guidance` в `/admin/api/sensors` | `decision-sensors`, `portal-qr-archive` |
-| Home Assistant без втора логика | `coordinator._normalize_*`, 28 сензора | `ha-integration-flow` |
+| Home Assistant без втора логика | `coordinator._normalize_*`, 29 сензора | `ha-integration-flow` |
 | Грешки без вътрешни пътища | `fail()` в маршрутите; 404 при липса на право | `portal-order`, `public-route-allowlist` |
 | API договор, който не се разминава | `admin-api-spec.js` + `scripts/api-reference.cjs` | `admin-api-spec`, `api-reference` |
 
@@ -57,12 +57,17 @@
 
 | # | Липсва | Какво значи | Следваща стъпка |
 | --- | --- | --- | --- |
-| 1 | Периодична проверка на целостта | няма `integrity.failed` събитие и сензор; подмяна на байтове се вижда само при ръчна сверка | фонова задача „провери манифеста на активния QR“ + сензор |
 | 2 | `report_entry_id → content_id` | номерът в отчета не сочи версия | поле `contentId` при публикуване + тест за две версии |
 | 3 | Договор `file` като самостоятелна страница | има QR към файл, но не и страница с неговия списък | `serveFile()` до `serveOrder()` |
 | 4 | Изолация на недоверен HTML | CSP има, sandbox няма | отделен origin/iframe с `sandbox` |
 | 5 | Възстановяване от архив | архивът се сваля, но няма „върни това състояние“ | `POST …/qr/{qrId}/restore` (изрично, с нов QR) |
 | 6 | GUI бадж „QR vN / Архиви“ в списъка на порталите | има го в контролния панел, не в реда на портала | малък бадж до `API/QR` |
+
+### 5.1 Реализирано след първото издание на матрицата
+
+| Правило | Код | Тест |
+| --- | --- | --- |
+| `ARCHIVE_NOT_TAMPERED` — подмяна в архива се вижда без човешка сверка | `portal-integrity.js` (8 проверки по ред), `POST …/qr/verify`, `qr.integrity` в `/admin/api/sensors` | `portal-integrity` (байтове · манифест · файл вътре · одит · сензор) |
 
 ## 6. Регресионна база
 
