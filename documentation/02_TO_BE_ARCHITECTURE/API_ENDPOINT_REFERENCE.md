@@ -2,7 +2,7 @@
 
 **Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 (API Architecture & Runtime Logic Specification)
 
-**Генериран от кода на hAPI Enterprise 0.69.84.** Не се редактира на ръка.
+**Генериран от кода на hAPI Enterprise 0.69.85.** Не се редактира на ръка.
 
 Източници (живи, не копия):
 
