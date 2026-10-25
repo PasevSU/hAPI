@@ -16,6 +16,13 @@ export default [
   },
   js.configs.recommended,
   {
+    // Забравен `eslint-disable` коментар не е безобиден: след рефакторинг той започва да
+    // крие СЛЕДВАЩОТО нарушение на същото място, а никой не разбира, че правилото е изключено.
+    // Затова неизползван коментар е грешка, а не забележка. Същото правило важи за
+    // `scripts/bad-code-allowlist.json` — там го пази `node scripts/bad-code-scan.cjs --gate`.
+    linterOptions: { reportUnusedDisableDirectives: 'error' }
+  },
+  {
     files: ['**/*.{js,cjs,mjs}'],
     languageOptions: {
       ecmaVersion: 2022,

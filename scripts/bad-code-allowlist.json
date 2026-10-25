@@ -109,5 +109,17 @@
     "file": "tests/report-entry-points.cjs",
     "rule": "json-parse-untrusted",
     "reason": "Тестът чете обхвата, който панелът току-що е записал в sessionStorage, за да провери какво вижда Report Studio. Данните са от същия процес, а тест без парсване не може да провери нищо."
+  },
+  {
+    "file": "hapi_enterprise/routes/link-check.js",
+    "rule": "ssrf-fetch",
+    "segment": "create",
+    "reason": "Заявката НЕ отива където поиска викащият: преди fetch адресът се сравнява с хостовете на publicBaseUrl() и baseUrl(req) и при разлика връща 400 Host not allowed; протоколът е само http/https, изисква се право 'portals', а тялото на отговора се отменя (Range: 0-0) — връщат се само код и време. Проверката на собствени адреси е самата функция на панела, затова тук няма как да се забрани."
+  },
+  {
+    "file": "tests/pgp-workdir-encryption.cjs",
+    "rule": "traversal-join",
+    "segment": "upload",
+    "reason": "Пътят се сглобява в ТЕСТ, за да се провери къде миграцията е оставила копието: името идва от отговора на собствената миграция върху временна директория, а резултатът се ползва само за existsSync/readFileSync под нея. Извън теста този код не се изпълнява."
   }
 ]

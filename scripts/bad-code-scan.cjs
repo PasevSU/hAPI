@@ -175,13 +175,22 @@ try {
 // Сегментът е УСТОЙЧИВ на изместване на редовете: добавен ред в същия файл не отменя
 // обосновката и не изисква нов преглед на същия код. Запис без ред и без сегмент важи за
 // целия файл (file + rule).
-const allowed = (f) =>
-  ALLOW.find(
+const allowIndex = (f) =>
+  ALLOW.findIndex(
     (a) =>
       a.file === f.file &&
       a.rule === f.rule &&
       (a.segment ? a.segment === f.segment : !a.line || a.line === f.line),
   );
+// Кой запис от allowlist-а наистина е спасил находка. Ако запис НЕ спаси нищо, той е мъртъв:
+// кодът е поправен или преместен, а обосновката продължава да важи за файла и тихо би приела
+// СЛЕДВАЩАТА находка на същото правило — точно това прави гейта нечетим след време.
+const usedAllow = new Set();
+const allowed = (f) => {
+  const i = allowIndex(f);
+  if (i >= 0) usedAllow.add(i);
+  return i >= 0;
+};
 
 const findings = [];
 let scanned = 0;
@@ -254,11 +263,16 @@ for (const f of findings) (allowed(f) ? suppressed : active).push(f);
 const tally = (list) => list.reduce((acc, f) => ((acc[f.sev] = (acc[f.sev] || 0) + 1), acc), {});
 const bySev = tally(active);
 const byRule = active.reduce((acc, f) => ((acc[f.rule] = (acc[f.rule] || 0) + 1), acc), {});
+// Здравето на allowlist-а влиза в JSON-а, за да го вижда и `release-status`: брой записи,
+// колко от тях пазят нещо и кои са мъртви. Мъртвите се виждат и без да се чете гейта.
+const deadAllow = ALLOW.map((a, i) => ({ ...a, index: i })).filter((a) => !usedAllow.has(a.index));
+const allowHealth = { total: ALLOW.length, used: usedAllow.size, dead: deadAllow.map(({ file, rule, segment, line }) => ({ file, rule, segment, line })) };
 
 if (ARGS.has('--json')) {
-  console.log(JSON.stringify({ scanned, totalLines, bySev, byRule, findings: active, suppressed }, null, 2));
+  console.log(JSON.stringify({ scanned, totalLines, bySev, byRule, allow: allowHealth, findings: active, suppressed }, null, 2));
 } else {
   console.log(`сканирани: ${scanned} файла · ${totalLines} реда (${active.length} находки, ${suppressed.length} приети с обосновка)`);
+  console.log(`изключения: ${allowHealth.total} записа · ${allowHealth.used} пазят находка · ${allowHealth.dead.length} мъртви`);
   console.log(`активни: critical=${bySev.critical || 0} high=${bySev.high || 0} medium=${bySev.medium || 0} low=${bySev.low || 0}`);
   const top = Object.entries(byRule).sort((a, b) => b[1] - a[1]).slice(0, 12);
   if (top.length) console.log('по правила: ' + top.map(([k, v]) => `${k}=${v}`).join(' · '));
@@ -277,10 +291,19 @@ if (ARGS.has('--json')) {
 
 if (ARGS.has('--gate')) {
   const blocking = active.filter((f) => f.sev === 'critical' || f.sev === 'high');
+  const dead = deadAllow;
+  if (dead.length) {
+    console.error(`\nГЕЙТ: ${dead.length} мъртви записа в allowlist-а (не спасяват нито една находка):`);
+    for (const a of dead) {
+      console.error(`   ${a.file} · ${a.rule}${a.segment ? ' · ' + a.segment : ''}${a.line ? ' · ред ' + a.line : ''}`);
+    }
+    console.error('   поправка: махни записа от scripts/bad-code-allowlist.json (обосновката вече не пази нищо)');
+    process.exitCode = 1;
+  }
   if (blocking.length) {
     console.error(`\nГЕЙТ: ${blocking.length} необяснени находки critical/high`);
     process.exitCode = 1;
-  } else {
-    console.log('\nГЕЙТ: чисто (няма необяснени critical/high)');
+  } else if (!dead.length) {
+    console.log('\nГЕЙТ: чисто (няма необяснени critical/high, няма мъртви изключения)');
   }
 }

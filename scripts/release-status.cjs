@@ -84,7 +84,7 @@ const releaseRow = release
 const logic = runJson('scripts/logic-audit.cjs', ['--json']);
 const bad = runJson('scripts/bad-code-scan.cjs', ['--json']);
 const logicCounts = logic.data ? { files: logic.data.files, lines: logic.data.scannedLines, open: (logic.data.open || []).length, accepted: (logic.data.accepted || []).length } : null;
-const badCounts = bad.data ? { files: bad.data.scanned, lines: bad.data.totalLines, sev: bad.data.bySev || {} } : null;
+const badCounts = bad.data ? { files: bad.data.scanned, lines: bad.data.totalLines, sev: bad.data.bySev || {}, allow: bad.data.allow || null } : null;
 
 // ── 4. Бързи гейтове ──────────────────────────────────────────────────────────
 const docs = runGate('tests/docs-consistency.cjs');
@@ -120,7 +120,10 @@ rows.push([
   badCounts
     ? `${badCounts.files} файла · ${badCounts.lines} реда · ` +
     ['critical', 'high', 'medium', 'low'].map((k) => `${k}: ${badCounts.sev[k] || 0}`).join(' · ') +
-    ((badCounts.sev.critical || 0) + (badCounts.sev.high || 0) + (badCounts.sev.medium || 0) === 0 ? ' — чисто' : ' — **има необяснени**')
+    ((badCounts.sev.critical || 0) + (badCounts.sev.high || 0) + (badCounts.sev.medium || 0) === 0 ? ' — чисто' : ' — **има необяснени**') +
+    // Мъртво изключение не се вижда в броячите на находките: то просто вече не пази нищо.
+    // Затова се показва отделно — иначе отчетът твърди „чисто“, а allowlist-ът тихо покрива следващото.
+    (badCounts.allow ? ` · изключения: ${badCounts.allow.used}/${badCounts.allow.total}${badCounts.allow.dead.length ? ' (**' + badCounts.allow.dead.length + ' мъртви**)' : ' (0 мъртви)'}` : '')
     : 'не се изпълни',
 ]);
 rows.push(['Документация', '`node tests/docs-consistency.cjs`', docs.ok ? '✔ версията е еднаква в документите, няма счупени връзки' : '✘ ' + docs.last]);
