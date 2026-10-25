@@ -11,7 +11,7 @@
 // Договор като на останалите компоненти: `handle()` връща `true`, когато заявката е за
 // този компонент (и е приключена). `db()` връща ЖИВИТЕ метаданни, за да няма втора истина.
 function create(deps) {
-  const { json, fail, parse, audit, fsp, path, portalRoot, update, qr, integrity, archiveRoot, adminGate, db } = deps;
+  const { json, fail, parse, audit, fsp, path, portalRoot, update, qr, integrity, archiveRoot, adminGate, db, sealFiles } = deps;
 
   const isQr = (parts) => parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'qr';
 
@@ -91,6 +91,12 @@ function create(deps) {
     };
     reg.revisions.push(next);
     void audit('qr.archived', { portalId: p.id, qrId: active.id, nextQrId: next.id, archiveId, sha256: built.hash, bytes: built.size, files: files.length });
+    // WORM за ОСНОВНОТО хранилище (F7-3): щом файловете са в манифест, байтовете им се
+    // заключват — оттук нататък презаписът е `EACCES`, а не тиха подмяна. Това е същата
+    // граница, която `retention.protectionOf` вече ползва за забрана на триене.
+    if (typeof sealFiles === 'function') {
+      try { await sealFiles(p, active.manifest) } catch (e) { void audit('worm.seal.failed', { portalId: p.id, qrId: active.id, err: e.message }) }
+    }
     return { archive: saved, archivedQr: active.id, active: next.id, state: view(reg) };
   });
 

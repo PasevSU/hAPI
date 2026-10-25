@@ -214,7 +214,7 @@
 | ------ | ------------------------------------------- | ----------------------- | ------------------------------------------------------------------- |
 | `F7-1` | Роли за съд (judge/prosecutor/clerk/expert) | достъп по дело          | ❌ `rbac.js` познава само admin/operator/viewer                      |
 | `F7-2` | Верига на пазене (chain of custody)         | хронология с hash       | ✅ `audit-chain.js` (`tests/audit-chain.cjs`)                        |
-| `F7-3` | EVIDENCE (WORM)                             | файлът не се презаписва | 🟡 WORM има за ВТОРОТО копие: `mirror-target.js` пише с `Object Lock` в `COMPLIANCE` режим и отказва триене (`file.mirror.locked`, `tests/mirror-target.cjs`); основното хранилище НЕ е WORM |
+| `F7-3` | EVIDENCE (WORM)                             | файлът не се презаписва | 🟡 двете половини са налице, но не са равни: ВТОРОТО копие има истински `Object Lock` в `COMPLIANCE` (`mirror-target.js`, `tests/mirror-target.cjs`), а ОСНОВНОТО хранилище — `chmod 0444` при архивиране на QR ревизия (`worm.js`, `tests/worm.cjs`). `chmod` пази от ПРЕЗАПИСВАНЕ, не от ИЗТРИВАНЕ; това е записано в `WORM_MAIN_STORE.md` |
 | `F7-4` | PKCS#7 detached                             | подписът се проверява   | ✅ `cms-sign.js` + `ui/report-sign.js` (`tests/cms-panel.cjs`)       |
 | `F7-5` | RFC 3161 TSA                                | токен само в обхвата    | ✅ `tsa-client.js` + `report-stamp.js` (`tests/report-tsa-e2e.cjs`)  |
 | `F7-6` | Верификационен пакет                        | receipt+tsa+chain       | ✅ `report-package.js`: PDF + манифест + `evidence.json` + `tsa/*.tsr` + `signature.p7s` + **`audit/custody.jsonl`** (отрязък от hash-chained одита) + `SHA256SUMS.txt` (`tests/report-package.cjs`) |

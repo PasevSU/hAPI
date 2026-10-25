@@ -14,24 +14,40 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **274/274** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **275/275** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 460 файла · 78631 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 456 файла · 78257 реда · critical: 0 · high: 0 · medium: 3 · low: 184 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 462 файла · 78861 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 458 файла · 78487 реда · critical: 0 · high: 0 · medium: 3 · low: 184 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 274 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 275 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (181 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (182 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.87.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Доказателството в ОСНОВНОТО хранилище не се презаписва (F7-3).** Досега WORM имаше само
+  второто копие: `mirror-target.js` пише с `Object Lock` в режим `COMPLIANCE` и отказва триене.
+  Основното хранилище (`<DATA_DIR>/files/<portal>/<file>`) нямаше нищо — файл можеше да бъде
+  презаписан на диска, а манифестът на QR архива щеше да сочи към байтове, които вече не са
+  същите. Това е точно разликата между „пазим копие“ и „доказателството е проверимо“. Сега при
+  архивиране на QR ревизия `sealFiles` заключва всеки файл от манифеста с `chmod 0444`
+  (`worm.js`), така че презаписът пада с `EACCES`, а `unseal` сваля защитата съзнателно преди
+  легитимна операция (изтриване, нова версия, преместване). `isSealed` чете РЕАЛНИТЕ права от
+  `stat`, не флаг в метаданните — затова `integrity-scan` показва `WRITABLE` за доказателство,
+  което е записваемо.
+  **Границата се казва на глас:** `chmod` пази от ПРЕЗАПИСВАНЕ, не от ИЗТРИВАНЕ (собственикът
+  на директорията пак може да изтрие файла), и на Windows ОС не налага `EACCES` по същия
+  начин. Затова тук НЕ се твърди „WORM като Object Lock“ — истинският `Object Lock` остава за
+  второто копие. Договор: `documentation/04_FUNCTION_SPECIFICATIONS/WORM_MAIN_STORE.md`;
+  тест: `tests/worm.cjs` (6 проверки).
 
 - **Жив поток за събития (SSE) — същите събития, но веднага в конзолата.** Webhook-ът е за
   ИНТЕГРАЦИЯ: тя получава събитието на свой адрес и го обработва, когато не е на линия.
