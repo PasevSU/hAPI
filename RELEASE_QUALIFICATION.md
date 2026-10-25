@@ -13,22 +13,24 @@
 ## v0.69.87 — прехвърляне между портали и защита на доказателствата
 
 Обхват: доказателството не се трие по нито един вход; файл може да се премести или копира в
-друг портал; данните по подразбиране са в `/share/hapi/data`; огледалото може да е S3 обект с
-Object Lock. Подробното описание е в
+друг портал; повторена заявка с `Idempotency-Key` не изпълнява действието втори път; данните
+по подразбиране са в `/share/hapi/data`; огледалото може да е S3 обект с Object Lock.
+Подробното описание е в
 [`documentation/07_RELEASE/RELEASE_0.69.87.md`](documentation/07_RELEASE/RELEASE_0.69.87.md).
 
 ### Проверени локални гейтове
 
 | Гейт                            | Команда                                      | Резултат                                                  |
 | ------------------------------- | -------------------------------------------- | --------------------------------------------------------- |
-| Пълен тестов пакет              | `node scripts/test-matrix.cjs`               | **264/264** (1 опит, 265 с `release-status`)              |
-| Издателски сценарии             | `node scripts/verify-release.cjs --with-tests` | **22/22** (вкл. S20 и S22 — байт по байт, 174 файла)     |
+| Пълен тестов пакет              | `node scripts/test-matrix.cjs`               | **268/268** (1 опит, 269 с `release-status`)              |
+| Издателски сценарии             | `node scripts/verify-release.cjs --with-tests` | **22/22** (вкл. S20 и S22 — байт по байт, 176 файла)     |
 | Самото издание (артефакт)       | `node scripts/artifact-smoke.cjs`            | 8 проверки върху разархивираното издание                  |
 | GUI + съвместимост + изданието  | `npm run audit:gui`                          | GUI 33/33 · съвместимост 28/28 · изданието проверено      |
 | Логически одит                  | `node scripts/logic-audit.cjs --gate`        | чисто (няма необяснени critical/high)                     |
 | Скенер за лош код               | `node scripts/bad-code-scan.cjs --gate`      | чисто                                                     |
-| Справочник на API               | `node scripts/api-reference.cjs --check`      | 186 операции · 32 публични правила · 11 компонента        |
-| Инвентар на кода                | `node scripts/source-inventory.cjs --check`   | 165 файла, съвпада с диска                                |
+| Справочник на API               | `node scripts/api-reference.cjs --check`      | 193 операции · 32 публични правила · 11 компонента        |
+| Инвентар на кода                | `node scripts/source-inventory.cjs --check`   | 168 файла, съвпада с диска                                |
+| Каталог на одитните събития     | `node scripts/audit-events.cjs --check`       | 164 събития от 12 файла, съвпада с кода                   |
 | Подразбирания в README          | `node scripts/settings-defaults.cjs --check` | ✔ 43 настройки                                           |
 | Отчет за състоянието            | `node scripts/release-status.cjs --check`    | ✔ актуален                                               |
 | Стил                            | `npx eslint .`                               | 0                                                         |

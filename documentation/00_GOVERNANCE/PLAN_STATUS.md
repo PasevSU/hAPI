@@ -66,10 +66,15 @@ veraPDF, `legal hold` към Object Lock, Compose режим
 
 | Липсва | Къде е записано | Какво точно липсва |
 | ------ | --------------- | ------------------ |
-| `Idempotency-Key` | `docs/plan/17…` `F4-5` | повторяеми заявки (ключ + кеш на отговора); `problem+json` полетата и `Range`/`ETag` вече ги има |
 | Webhooks с HMAC | `docs/plan/17…` `F4-7` | `notify.js` вика HA `notify.*`, което не е webhook с подпис и retry |
 | WORM за ОСНОВНОТО хранилище | `docs/plan/17…` `F7-3` | огледалото има `Object Lock` в `COMPLIANCE` режим; основното хранилище — не |
 | OTS / Blockchain, Forensic панел, EXIF | `docs/plan/18…` панели 05/07/08 | няма съответните модули |
+
+`Idempotency-Key` (F4-5) беше в този списък до 0.69.87 и вече е затворен: заглавката се
+обработва в `idempotency.js` (таблица `idempotency` в `sqlite-store.js`), договорът е описан в
+`API_ARCHITECTURE_SPEC.md` §4.4b, а `tests/idempotency.cjs` проверява повторението срещу жив
+сървър. С това F4-5 е изцяло покрит — `problem+json`, `Range`/`ETag`, `429` по самоличност и
+повторяемите заявки.
 
 ## 5. Какво да се направи с изостаналите документи
 

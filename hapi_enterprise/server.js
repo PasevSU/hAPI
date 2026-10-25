@@ -807,7 +807,7 @@ const linkCheck = require('./routes/link-check').create({
   publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
 });
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
-const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry }); const fileTransfer = require('./routes/file-transfer').create({ json, fail, parse, audit, update, clean, fsp, path, crypto, filesRoot, id, contentIds, storeMirrored, removeMirrored, portalFolder, portalFolderCopy, writeApiDir, baseUrl, observer, retention, getPortals: () => db.portals });
+const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry }); const fileTransfer = require('./routes/file-transfer').create({ json, fail, parse, audit, update, clean, fsp, path, crypto, filesRoot, id, contentIds, storeMirrored, removeMirrored, portalFolder, portalFolderCopy, writeApiDir, baseUrl, observer, retention, getPortals: () => db.portals }); const idempotency = require('./idempotency').create({ store: metadataStore, fail, audit, limit: () => runtime.effective().maxUploadBytes });
 async function handler(req, res) {
   try {
     if (req.url.startsWith('//')) req.url = req.url.replace(/^\/{2,}/, '/'); const url = new URL(req.url, 'http://localhost');
@@ -925,7 +925,7 @@ async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       return fail(res, 429, 'Too many requests');
     }
-    if (await portalTokens.handle({ req, res, url, parts, method })) return; if (await portalStorage.handle({ req, res, url, parts, method })) return; if (await oidcRoutes.handle({ req, res, url, method })) return;
+    if (await idempotency.handle({ req, res, url, method })) return; if (await portalTokens.handle({ req, res, url, parts, method })) return; if (await portalStorage.handle({ req, res, url, parts, method })) return; if (await oidcRoutes.handle({ req, res, url, method })) return;
     if (url.pathname === '/api/v1/auth/login' && method === 'POST') {
       if (!loginPeerGate(req, res)) return;
       const b = await parse(req); const username = clean(b.username), password = String(b.password || '');

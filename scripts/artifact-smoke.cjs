@@ -131,6 +131,26 @@ const checks = [];
     }
     checks.push('transfer copy → 201 · сверен SHA-256 · нов content_id');
 
+    // Повторената заявка НЕ бива да създава второ копие (`idempotency.js` в изданието).
+    // Проверява се на две стъпки: първата ключова заявка добавя едно копие, втората със
+    // СЪЩИЯ ключ и СЪЩОТО тяло трябва да върне първия отговор и да не добави нищо.
+    const dstFiles = async () => ((await (await fetch(base + `/admin/api/portals/${dst.id}`, { headers: H })).json()).files || []).length;
+    const idemBody = JSON.stringify({ mode: 'copy', targetPortalId: dst.id });
+    const idemHeaders = { ...H, 'idempotency-key': 'artifact-smoke-transfer-1' };
+    const beforeKeyed = await dstFiles();
+    const keyed = await fetch(base + `/admin/api/portals/${portal.id}/files/${regFile.id}/transfer`, { method: 'POST', headers: idemHeaders, body: idemBody });
+    const keyedBody = await keyed.json();
+    if (keyed.status !== 201) throw new Error('Idempotency-Key в изданието → ' + keyed.status + ' ' + JSON.stringify(keyedBody));
+    const repeated = await fetch(base + `/admin/api/portals/${portal.id}/files/${regFile.id}/transfer`, { method: 'POST', headers: idemHeaders, body: idemBody });
+    const repeatedBody = await repeated.json();
+    if (repeated.status !== 201 || repeatedBody.target?.fileId !== keyedBody.target?.fileId) {
+      throw new Error('повторената заявка не върна първия отговор: ' + repeated.status + ' ' + JSON.stringify(repeatedBody));
+    }
+    if (repeated.headers.get('idempotency-replayed') !== 'true') throw new Error('липсва Idempotency-Replayed при повторение');
+    const afterKeyed = await dstFiles();
+    if (afterKeyed !== beforeKeyed + 1) throw new Error('повторената заявка е създала второ копие: ' + beforeKeyed + ' → ' + afterKeyed);
+    checks.push('Idempotency-Key → повтореното копиране връща същия файл, копието остава едно');
+
     const archived = await fetch(base + `/admin/api/portals/${portal.id}/qr/archive`, { method: 'POST', headers: H, body: JSON.stringify({ note: 'artifact-smoke' }) });
     if (archived.status !== 201) throw new Error('QR архивът в изданието → ' + archived.status);
     const refusedDelete = await fetch(base + `/admin/api/portals/${portal.id}/files/${regFile.id}`, { method: 'DELETE', headers: H });

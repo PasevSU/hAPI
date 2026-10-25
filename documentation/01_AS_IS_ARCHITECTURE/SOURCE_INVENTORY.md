@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **100** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **28** инструмента · **268** теста.
+Общо: **101** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **28** инструмента · **269** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (100)
+### Backend модули (`hapi_enterprise/*.js`) (101)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -41,6 +41,7 @@
 | `hapi_enterprise/gateway-api.js` | PG-6 / FD-6: backend прилагане на правилата за публичен достъп и експорт. |
 | `hapi_enterprise/generator.js` | PasevSU Document Generator — ШАБЛОНИ ОТ ДИСКА, ИНДЕКС НА ЖИВО. |
 | `hapi_enterprise/generator/app.js` | PasevSU Document Generator — клиентската част. |
+| `hapi_enterprise/idempotency.js` | IDEMPOTENCY-KEY — повторена заявка не изпълнява действието втори път (docs/plan/17, F4-5). |
 | `hapi_enterprise/instance-lock.js` | Заключване на data директорията: една жива инстанция на add-on-а, един собственик. |
 | `hapi_enterprise/interpolate.js` | Интерполация на `{{променлива}}` в текстове, които отиват към хора: име и описание на |
 | `hapi_enterprise/job-manager.js` | Persistent, bounded FIFO job queue with cooperative pause/resume and crash |

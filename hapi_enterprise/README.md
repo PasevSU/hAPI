@@ -94,6 +94,17 @@ Deleting a portal that has archived QR revisions needs an explicit `?force=1`, w
 removes the archives and the registry entry (otherwise they would be left orphaned) and is
 recorded as `forced` in the audit log.
 
+**Retrying a change is safe.** Send `Idempotency-Key: <8–255 printable ASCII>` with any
+`POST`/`PUT`/`PATCH`/`DELETE` under `/admin/api/` and the request becomes repeatable: a second
+call with the same key returns the **stored first answer** (`Idempotency-Replayed: true`) and
+does not create a second file, package or portal. The fingerprint covers the method, the path
+and the SHA-256 of the body, so the same key with a **different** body is `422` — a client never
+gets confirmation for a change that did not happen. While the first request is still running a
+repeat gets `409` with `Retry-After: 1`. The key is stored with the caller's identity (a hash of
+the bearer token or the ingress user), so one client cannot read another client's answer or
+squat its key. Keys live 24 hours; only JSON answers up to 512 KB are stored — a binary or
+oversized answer releases the key instead of caching it. Without the header nothing changes.
+
 ## Install
 
 **Fast path:** use the **ADD REPOSITORY** button above, then install **hAPI Enterprise**

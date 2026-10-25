@@ -369,8 +369,9 @@ webhook подпис); `docs/api/` с quickstart за 3 сценария.
 - GUI: панел „Портали & API“ генерира същите файлове в браузъра (демо), показва
   виртуалното дърво и ги сваля.
 
-Остават: service токени с обхвати (`API-02`), `problem+json`/`ETag`/`Idempotency-Key`
-(`API-04`), SDK пакет (`API-05`), webhooks (`API-06`).
+Остават: service токени с обхвати (`API-02`), SDK пакет (`API-05`), webhooks (`API-06`).
+`API-04` (`problem+json`, `ETag`, `Idempotency-Key`, `429`) е **затворен** в 0.69.87 —
+виж `API_ARCHITECTURE_SPEC.md` §4.4a/§4.4b и `tests/problem.cjs` + `tests/idempotency.cjs`.
 
 ### 6.10 Фаза 9 — Пакетиране и доставка
 

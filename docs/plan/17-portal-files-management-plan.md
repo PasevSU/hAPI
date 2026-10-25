@@ -168,7 +168,7 @@
 | `F4-2` | `api-registry` (хранилище на API-то)                      | атомарни записи                | ✅      |
 | `F4-3` | Генериране/четене/триене през admin API                   | 201/200/200                    | ✅      |
 | `F4-4` | Service токени с обхвати                                  | `portal:read`, `file:write`, … | 🟡 обхвати ИМА (`read`/`write` на сесия, `scopeDenied` в сензорите, `tests/portal-tokens.cjs`), но не с имената `portal:read`/`file:write` |
-| `F4-5` | `problem+json`, `ETag`, `Idempotency-Key`, `429` по токен | договорни изисквания | 🟡 `problem+json` полетата ИМА (`problem.js`, типът остава `application/json`), `Range`/`ETag` (`ha-range-bridge`), `429` по самоличност (`admin-throttle`); остава само `Idempotency-Key` |
+| `F4-5` | `problem+json`, `ETag`, `Idempotency-Key`, `429` по токен | договорни изисквания | ✅ `problem+json` полетата ИМА (`problem.js`, типът остава `application/json`), `Range`/`ETag` (`ha-range-bridge`), `429` по самоличност (`admin-throttle`), `Idempotency-Key` (`idempotency.js` + таблица `idempotency`, договор в `API_ARCHITECTURE_SPEC.md` §4.4b, тест `tests/idempotency.cjs`) |
 | `F4-6` | SDK (`sdk/js`) + примери                                  | 100 % от v1                    | 🟡 има в `archive/SDK/`, не в публикуваното дърво |
 | `F4-7` | Webhooks с HMAC                                           | подпис + retry                 | ❌ няма; `notify.js` вика HA `notify.*`, това не е webhook с подпис |
 

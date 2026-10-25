@@ -30,7 +30,12 @@ function open(jsonPath) {
  CREATE TABLE IF NOT EXISTS portal_sessions (token_hash TEXT PRIMARY KEY, portal_token_id TEXT NOT NULL REFERENCES portal_tokens(id) ON DELETE CASCADE, portal_id TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL);
  CREATE INDEX IF NOT EXISTS portal_sessions_token_idx ON portal_sessions(portal_token_id);
  -- ACL на потребителски акаунт: кои портали вижда. Празно = всички (старото поведение).
- CREATE TABLE IF NOT EXISTS user_portals (username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE, portal_id TEXT NOT NULL, PRIMARY KEY(username, portal_id));`);
+ CREATE TABLE IF NOT EXISTS user_portals (username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE, portal_id TEXT NOT NULL, PRIMARY KEY(username, portal_id));
+ -- Idempotency-Key: запазен отговор на вече изпълнена променяща заявка. Ключът тук е
+ -- „самоличност:ключ на клиента“ — така чужд клиент не може да прочете чужд отговор, нито
+ -- да заеме ключа. NULL в status значи „заявката се изпълнява в момента“.
+ CREATE TABLE IF NOT EXISTS idempotency (idem_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, status INTEGER, content_type TEXT, body BLOB, created_at TEXT NOT NULL, expires_at TEXT NOT NULL);
+ CREATE INDEX IF NOT EXISTS idempotency_expiry_idx ON idempotency(expires_at);`);
   const get = db.prepare('SELECT payload FROM metadata WHERE id=1');
   const getSnapshot = db.prepare('SELECT payload, revision FROM metadata WHERE id=1');
   const getRevision = db.prepare('SELECT revision FROM metadata WHERE id=1');
@@ -68,6 +73,11 @@ function open(jsonPath) {
   const deletePortalUsersStmt = db.prepare('DELETE FROM user_portals WHERE portal_id=?');
   const selectUserPortals = db.prepare('SELECT portal_id FROM user_portals WHERE username=? ORDER BY portal_id');
   const selectPortalUsers = db.prepare('SELECT username FROM user_portals WHERE portal_id=? ORDER BY username');
+  const insertIdempotency = db.prepare('INSERT OR IGNORE INTO idempotency(idem_key,fingerprint,status,content_type,body,created_at,expires_at) VALUES(?,?,NULL,NULL,NULL,?,?)');
+  const selectIdempotency = db.prepare('SELECT idem_key,fingerprint,status,content_type,body,created_at,expires_at FROM idempotency WHERE idem_key=?');
+  const completeIdempotencyStmt = db.prepare('UPDATE idempotency SET status=?, content_type=?, body=? WHERE idem_key=? AND fingerprint=?');
+  const deleteIdempotencyStmt = db.prepare('DELETE FROM idempotency WHERE idem_key=?');
+  const purgeIdempotencyStmt = db.prepare('DELETE FROM idempotency WHERE expires_at<=?');
   // `admin` е валиден скоуп: досега се отрязваше и това правеше невъзможен административен
   // достъп през сесия (напр. OIDC), дори когато потребителят е записан с него.
   const parseScopes = v => { try { const a = JSON.parse(v); return Array.isArray(a) ? a.filter(s => s === 'read' || s === 'download' || s === 'admin') : ['read', 'download'] } catch { return ['read', 'download'] } };
@@ -225,6 +235,16 @@ function open(jsonPath) {
   }
   function getPortalUsers(portalId) { return selectPortalUsers.all(portalId).map((r) => r.username) }
 
-  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, createPortalToken, getPortalTokenByHash, listPortalTokens, revokePortalToken, createPortalSession, getPortalSession, deletePortalSession, purgeExpiredPortalAccess, setUserPortals, getUserPortals, setPortalUsers, getPortalUsers, close: () => db.close() };
+  // ── Idempotency-Key: повторена заявка получава запазения първи отговор ──────
+  const idempotencyView = (row) => (row ? { key: row.idem_key, fingerprint: row.fingerprint, status: row.status == null ? null : Number(row.status), contentType: row.content_type || '', body: row.body ? Buffer.from(row.body) : null, createdAt: row.created_at, expiresAt: row.expires_at } : null);
+  /** Заема ключа. `false` = ключът вече е зает (завършен или в ход) — викащият чете наново. */
+  function reserveIdempotency(key, fingerprint, expiresAt) { return insertIdempotency.run(key, fingerprint, nowIso(), expiresAt).changes === 1 }
+  function getIdempotency(key) { return idempotencyView(selectIdempotency.get(key)) }
+  /** Записва отговора. Само ако отпечатъкът е още същият — иначе някой е сменил ключа. */
+  function completeIdempotency(key, fingerprint, { status, contentType, body }) { return completeIdempotencyStmt.run(Number(status), contentType || '', body || null, key, fingerprint).changes === 1 }
+  function forgetIdempotency(key) { return deleteIdempotencyStmt.run(key).changes > 0 }
+  function purgeIdempotency(before = nowIso()) { return purgeIdempotencyStmt.run(before).changes }
+
+  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, createPortalToken, getPortalTokenByHash, listPortalTokens, revokePortalToken, createPortalSession, getPortalSession, deletePortalSession, purgeExpiredPortalAccess, setUserPortals, getUserPortals, setPortalUsers, getPortalUsers, reserveIdempotency, getIdempotency, completeIdempotency, forgetIdempotency, purgeIdempotency, close: () => db.close() };
 }
 module.exports = { open };

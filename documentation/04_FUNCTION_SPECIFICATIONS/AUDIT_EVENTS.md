@@ -5,7 +5,7 @@
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **162** събития, излъчвани от **11** файла.
+Общо: **164** събития, излъчвани от **12** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -96,6 +96,8 @@
 | `html.project.register` | `hapi_enterprise/server.js` |
 | `html.project.unregister` | `hapi_enterprise/server.js` |
 | `html.publish` | `hapi_enterprise/server.js` |
+| `idempotency.conflict` | `hapi_enterprise/idempotency.js` |
+| `idempotency.replay` | `hapi_enterprise/idempotency.js` |
 | `integrity.failed` | `hapi_enterprise/routes/portal-qr.js` |
 | `integrity.verify` | `hapi_enterprise/server.js` |
 | `link.check` | `hapi_enterprise/routes/link-check.js` |
