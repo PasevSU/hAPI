@@ -69,6 +69,7 @@ veraPDF, `legal hold` към Object Lock, Compose режим
 | Webhooks с HMAC | `docs/plan/17…` `F4-7` | `notify.js` вика HA `notify.*`, което не е webhook с подпис и retry |
 | WORM за ОСНОВНОТО хранилище | `docs/plan/17…` `F7-3` | огледалото има `Object Lock` в `COMPLIANCE` режим; основното хранилище — не |
 | OTS / Blockchain, Forensic панел, EXIF | `docs/plan/18…` панели 05/07/08 | няма съответните модули |
+| AEAD-защита на секретния PGP ключ (v6, `usage 253`) | `PGP_KEYRING_AND_WORK_FOLDER.md` §„Какво НЕ се поддържа“ | ключът се отваря само без парола (`usage 0`) или с CFB+S2K (`254`/`255`) — Node няма OCB; кодът е `S2K_AEAD_UNSUPPORTED`, не обща грешка |
 
 `Idempotency-Key` (F4-5) беше в този списък до 0.69.87 и вече е затворен: заглавката се
 обработва в `idempotency.js` (таблица `idempotency` в `sqlite-store.js`), договорът е описан в

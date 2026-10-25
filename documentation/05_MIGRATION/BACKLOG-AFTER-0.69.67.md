@@ -16,8 +16,10 @@
 | 3 | `encrypt-comms` роля | `PGP_KEYRING_AND_WORK_FOLDER.md`, таблицата с ролите | ползва се само като резервен избор, когато няма `encrypt-storage` ключ; за криптиране навън не се ползва |
 
 Съзнателно извън обхват и **няма да се пипат** без изрично решение: AEAD/OCB (SEIPD v2),
-Argon2 S2K, ECDH с именувана крива. Те имат точни кодове (`UNSUPPORTED_AEAD`,
-`S2K_ARGON2_UNSUPPORTED`, `UNSUPPORTED_CURVE`) и това е договореното поведение, не дефект.
+Argon2 S2K, ECDH с именувана крива, както и AEAD-защита на САМИЯ секретен ключ (v6,
+`usage 253`, RFC 9580 §5.5.3). Те имат точни кодове (`UNSUPPORTED_AEAD`,
+`S2K_ARGON2_UNSUPPORTED`, `UNSUPPORTED_CURVE`, `S2K_AEAD_UNSUPPORTED`) и това е
+договореното поведение, не дефект.
 
 > **Готово и в изданието 0.69.68:** изборът на подключ по Key Flags
 > (`0x08` encrypt-storage → `0x04` encrypt-comms → по вид ключ) е в `storageKeyOf()`
