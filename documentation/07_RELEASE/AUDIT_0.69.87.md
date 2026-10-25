@@ -122,24 +122,29 @@
 | `artifact-smoke` става част от гейта (пропуск, намерен от одита) | `scripts/audit-gui-compat.cjs` (СТЕПЕН 3) | `audit-gui-compat` | `RELEASE_CHECKLIST.md` | `f13069a` |
 | Пълният индекс на документацията се генерира (втори пропуск от одита) | `scripts/docs-index.cjs` | `tests/docs-index.cjs` | `documentation/README.md` §„Пълно съдържание“ | `d8cb370` |
 | Манифестът се проверява и обратно — нищо мъртво в образа (трети пропуск) | `tests/docker-runtime.cjs` | `docker-runtime` | `MODULE_CATALOG.md` бележка за необвързаните | `1cff14a` |
-| Каталог на кодовете за грешка, генериран от кода (четвърти пропуск) | `scripts/error-codes.cjs`, `path-crypto.js` | `tests/error-codes.cjs` | `ERROR_CODES.md` | — |
+| Каталог на кодовете за грешка, генериран от кода (четвърти пропуск) | `scripts/error-codes.cjs`, `path-crypto.js` | `tests/error-codes.cjs` | `ERROR_CODES.md` | `d905811` |
 
-Общо в последния дял: **43 файла, +1791 / −359 реда, 16 комита** (от `78e2b44` до `763e6e8`).
+Общо за работата по доклада (`78e2b44` … `763e6e8`): **43 файла, +1791 / −359 реда, 16 комита**.
+Одиторските поправки СЛЕД него (последните четири реда в таблицата) не влизат в това число —
+те са отделни комити, всеки с хеш, и са резултат от самия одит, не от доклада, който го
+предизвика.
 
 ## 4. Измерени гейтове (последно пускане, тази машина)
 
 | Гейт | Команда | Резултат |
 | ---- | ------- | -------- |
-| Тестова матрица | `node scripts/test-matrix.cjs --skip=release-status` | **269/269, 1 опит, 208 с** |
+| Тестова матрица | `node scripts/test-matrix.cjs --skip=release-status` | **271/271, 1 опит, 208.8 с** |
 | Издателски сценарии | `node scripts/verify-release.cjs` | **21/21** (S22: архивът е байт по байт равен на `hapi_enterprise/`) |
 | Самото издание | `node scripts/artifact-smoke.cjs` | **11 проверки** върху разархивирания архив |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | **0.69.87 · 270 теста**, независим от платформа и дата |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | **0.69.87 · 272 теста**, независим от платформа и дата |
 | Справочник на API | `node scripts/api-reference.cjs --check` | 193 операции · 32 публични правила · 11 компонента |
 | Каталог на одитните събития | `node scripts/audit-events.cjs --check` | 164 събития от 12 файла |
-| Инвентар на кода | `node scripts/source-inventory.cjs --check` | 169 файла, съвпада с диска |
+| Инвентар на кода | `node scripts/source-inventory.cjs --check` | 171 файла, съвпада с диска |
+| Пълен индекс на документацията | `node scripts/docs-index.cjs --check` | 113 документа, всеки с входяща препратка |
+| Каталог на кодовете за грешка | `node scripts/error-codes.cjs --check` | 55 кода, всеки с файл на излъчване |
 | Подразбирания в README | `node scripts/settings-defaults.cjs --check` | 43 настройки |
 | Документация | `tests/docs-consistency.cjs` | OK, без счупени връзки |
-| Матрица на сценариите | `tests/scenario-matrix.cjs` | 62 области · 49 маршрута · 24 RBAC способности · 43 опции · 270 тестови файла |
+| Матрица на сценариите | `tests/scenario-matrix.cjs` | 62 области · 49 маршрута · 24 RBAC способности · 43 опции · 272 тестови файла |
 | Логически одит | `node scripts/logic-audit.cjs --gate` | чисто |
 | Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | чисто |
 | GUI + съвместимост + изданието | `node scripts/audit-gui-compat.cjs` | 33/33 · 28/28 · `verify-release` S01–S21 · `artifact-smoke` (11 проверки) като СТЕПЕН 3 |
