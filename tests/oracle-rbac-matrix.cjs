@@ -36,7 +36,15 @@ const EXPECTED = {
   load: { admin: 'all', operator: 'read', viewer: 'read' },
   whoami: { admin: 'all', operator: 'read', viewer: 'read' },
   users: { admin: 'all', operator: 'none', viewer: 'none' },
+  // ── Роли за съд (F7-1) ──────────────────────────────────────────────────────
+  // Съдът чете доказателства и веригата на пазене, но НЕ създава и НЕ променя нищо.
+  // Единственото изключение е експертът: той може да представи становище.
+  evidence: { admin: 'all', operator: 'none', viewer: 'none', judge: 'read', prosecutor: 'read', clerk: 'read', expert: 'read' },
+  custody: { admin: 'all', operator: 'none', viewer: 'none', judge: 'read', prosecutor: 'read', clerk: 'read', expert: 'read' },
+  expert_opinion: { admin: 'all', operator: 'none', viewer: 'none', judge: 'none', prosecutor: 'none', clerk: 'none', expert: 'all' },
 };
+
+const ALL_ROLES = ['admin', 'operator', 'viewer', 'judge', 'prosecutor', 'clerk', 'expert'];
 
 const decide = (cell, method) => cell === 'all' || (cell === 'read' && method === 'GET');
 
@@ -48,10 +56,12 @@ const decide = (cell, method) => cell === 'all' || (cell === 'read' && method ==
   const methods = ['GET', 'POST', 'PATCH', 'DELETE'];
   const wrong = [];
   for (const capability of caps) {
-    for (const role of ['admin', 'operator', 'viewer']) {
+    for (const role of ALL_ROLES) {
       for (const method of methods) {
         const got = session.allowed(role, capability, method);
-        const want = decide(EXPECTED[capability][role], method);
+        // Липсваща клетка значи „никакъв достъп“ — така нова роля не получава права по
+        // подразбиране само защото някой е забравил да я изброи.
+        const want = decide((EXPECTED[capability] || {})[role], method);
         if (got !== want) wrong.push(`${capability}/${role}/${method}: очаквано ${want ? 'да' : 'не'}, получено ${got ? 'да' : 'не'}`);
       }
     }

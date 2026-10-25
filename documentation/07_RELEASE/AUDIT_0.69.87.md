@@ -150,7 +150,7 @@
 | Каталог на кодовете за грешка | `node scripts/error-codes.cjs --check` | 55 кода, всеки с файл на излъчване |
 | Подразбирания в README | `node scripts/settings-defaults.cjs --check` | 43 настройки |
 | Документация | `tests/docs-consistency.cjs` | OK, без счупени връзки |
-| Матрица на сценариите | `tests/scenario-matrix.cjs` | 62 области · 49 маршрута · 24 RBAC способности · 43 опции · 275 тестови файла |
+| Матрица на сценариите | `tests/scenario-matrix.cjs` | 62 области · 49 маршрута · 27 RBAC способности · 43 опции · 276 тестови файла |
 | Логически одит | `node scripts/logic-audit.cjs --gate` | чисто |
 | Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | чисто |
 | GUI + съвместимост + изданието | `node scripts/audit-gui-compat.cjs` | 33/33 · 28/28 · `verify-release` S01–S21 · `artifact-smoke` (11 проверки) като СТЕПЕН 3 |
@@ -194,6 +194,7 @@
 | Че панелът „Живи събития“ се вижда в браузъра | `ui/dashboard-panel.js` отваря `EventSource` и е покрит от `ui-coverage`/`gui-sections`, но тестът не отваря реален браузър — DOM-ът се проверява с `dom-harness` |
 | Че WORM пази от ИЗТРИВАНЕ | `chmod 0444` пази от ПРЕЗАПИСВАНЕ; собственикът на директорията пак може да изтрие файла. Изтриването се отказва по друг механизъм (`retention.protectionOf` → 409), не от правата |
 | Че WORM работи на Windows по същия начин | `chmod` сменя бита „само за четене“ и `stat` го показва, но ОС не налага `EACCES`; тестът го казва изрично вместо да твърди невярно |
+| Че съдебните роли са ограничени по ДЕЛО | `evidence`/`custody` не филтрират по дело: `judge` вижда ВСИЧКИ доказателства. Филтърът иска връзка потребител↔дело, която днес няма къде да се пази |
 | Пълният отговор на въпроса „кой точно маршрут отговори два пъти“ | обезвредено е на ниво `respond.js` + `catch`; конкретният извикващ не е изолиран, защото логът не пази пътя на заявката при грешка |
 
 ## 7. Как да се провери отново (без доверие към този документ)
@@ -206,6 +207,7 @@ node scripts/release-status.cjs && node --test tests/release-status.cjs
 node tests/webhooks.cjs                               # 8 проверки (F4-7)
 node tests/event-stream.cjs                           # 5 проверки (F4-7, SSE)
 node tests/worm.cjs                                   # 6 проверки (F7-3)
+node tests/court-roles.cjs                            # 8 проверки (F7-1)
 node scripts/logic-audit.cjs --gate
 node scripts/bad-code-scan.cjs --gate
 npx eslint .

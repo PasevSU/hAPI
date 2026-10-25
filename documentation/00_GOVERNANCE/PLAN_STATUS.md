@@ -68,7 +68,7 @@ veraPDF, `legal hold` към Object Lock, Compose режим
 | ------ | --------------- | ------------------ |
 | OTS / Blockchain, Forensic панел, EXIF | `docs/plan/18…` панели 05/07/08 | няма съответните модули |
 | AEAD-защита на секретния PGP ключ (v6, `usage 253`) | `PGP_KEYRING_AND_WORK_FOLDER.md` §„Какво НЕ се поддържа“ | ключът се отваря само без парола (`usage 0`) или с CFB+S2K (`254`/`255`) — Node няма OCB; кодът е `S2K_AEAD_UNSUPPORTED`, не обща грешка |
-| Роли за съд (judge/prosecutor/clerk/expert), F7-1 | `docs/plan/17…` `F7-1` | `rbac.js` познава само admin/operator/viewer; ролите за съд са различен модел на достъп, не ново име |
+| Роли за съд (judge/prosecutor/clerk/expert), F7-1 | `docs/plan/17…` `F7-1` | ролите съществуват (`rbac.js`, `tests/court-roles.cjs`), но НЕ са ограничени по ДЕЛО — `judge` вижда всички доказателства, не само на своето |
 | Излъчване на `job.completed`, `access.created`, `report.packaged` | `WEBHOOKS.md` §„Какво НЕ е направено“ | имената са в договора и се приемат при абониране, но кодът вика `publish(…)` само за `document.finalized` |
 | WORM, който пази и от ИЗТРИВАНЕ | `WORM_MAIN_STORE.md` §„Границата“ | `chmod 0444` пази от презаписване; изтриването се отказва от `retention.protectionOf` (409), не от правата |
 

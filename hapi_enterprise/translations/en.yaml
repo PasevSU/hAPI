@@ -106,6 +106,10 @@ configuration:
       against the ingress headers `X-Remote-User-Name`, then `X-Remote-User-Id`, then
       `X-Remote-User-Display-Name`. Admin is the default for every Ingress user, so use
       this only to demote, e.g. {"guest": "viewer"}.
+      Roles: `admin`, `operator`, `viewer`, and the court roles `judge`, `prosecutor`,
+      `clerk`, `expert`. Court roles only READ evidence and the chain of custody; the
+      exception is `expert`, who may submit an opinion. An unknown role is rejected so a
+      typo cannot grant access.
   group_roles:
     name: Group roles
     description: >-

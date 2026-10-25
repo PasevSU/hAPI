@@ -212,7 +212,7 @@
 
 | ID     | Задача                                      | DoD                     | Статус                                                              |
 | ------ | ------------------------------------------- | ----------------------- | ------------------------------------------------------------------- |
-| `F7-1` | Роли за съд (judge/prosecutor/clerk/expert) | достъп по дело          | ❌ `rbac.js` познава само admin/operator/viewer                      |
+| `F7-1` | Роли за съд (judge/prosecutor/clerk/expert) | достъп по дело          | 🟡 ролите СЪЩЕСТВУВАТ (`rbac.js`: `judge`/`prosecutor`/`clerk`/`expert`, способности `evidence`/`custody`/`expert_opinion`, `tests/court-roles.cjs`), но НЕ са ограничени по ДЕЛО — виждат всички доказателства |
 | `F7-2` | Верига на пазене (chain of custody)         | хронология с hash       | ✅ `audit-chain.js` (`tests/audit-chain.cjs`)                        |
 | `F7-3` | EVIDENCE (WORM)                             | файлът не се презаписва | 🟡 двете половини са налице, но не са равни: ВТОРОТО копие има истински `Object Lock` в `COMPLIANCE` (`mirror-target.js`, `tests/mirror-target.cjs`), а ОСНОВНОТО хранилище — `chmod 0444` при архивиране на QR ревизия (`worm.js`, `tests/worm.cjs`). `chmod` пази от ПРЕЗАПИСВАНЕ, не от ИЗТРИВАНЕ; това е записано в `WORM_MAIN_STORE.md` |
 | `F7-4` | PKCS#7 detached                             | подписът се проверява   | ✅ `cms-sign.js` + `ui/report-sign.js` (`tests/cms-panel.cjs`)       |

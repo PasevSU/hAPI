@@ -38,14 +38,30 @@ const CAPABILITIES = {
   retention: { admin: true, operator: true, viewer: 'read' },
   load: { admin: true, operator: 'read', viewer: 'read' },
   whoami: { admin: true, operator: 'read', viewer: 'read' },
-  users: { admin: true }
+  users: { admin: true },
+  // ── Роли за съд (F7-1) ────────────────────────────────────────────────────
+  // Съдът НЕ е оператор: той чете доказателства и оставя следа, но не създава портали,
+  // не качва файлове и не пипа настройки. Затова тези способности са само `read` и то
+  // само за трите съдебни роли. `evidence` включва портала и доказателствения изглед;
+  // `custody` — одитната верига и верификацията (кой какво е правил).
+  evidence: { admin: true, judge: 'read', prosecutor: 'read', clerk: 'read', expert: 'read' },
+  custody: { admin: true, judge: 'read', prosecutor: 'read', clerk: 'read', expert: 'read' },
+  // Експертът може да ПРЕДСТАВИ становище (не да променя доказателство): точно една
+  // способност с право на запис, за да не му се дава повече, отколкото работата му иска.
+  expert_opinion: { admin: true, expert: true },
 };
+
+// Всички роли, които системата познава. Извън списъка → ролята не се приема (иначе
+// правописна грешка в `user_roles` тихо би дала права).
+const ROLES = ['admin', 'operator', 'viewer', 'judge', 'prosecutor', 'clerk', 'expert'];
+const isRole = (r) => ROLES.includes(r);
+
 function create({ adminToken, operatorToken, viewerToken, userRoles = {}, groupRoles = {}, defaultRole = 'admin', ssoRole = null }) {
   // Администраторските права са ПО ПОДРАЗБИРАНЕ: профилите (user_roles/group_roles) са
   // незадължителни и само коригират ролята надолу (напр. {"bob":"viewer"}).
-  const fallback = ['admin', 'operator', 'viewer'].includes(defaultRole) ? defaultRole : 'admin';
-  const roleForUser = user => { if (!user) return null; const r = userRoles[user]; return r === 'admin' || r === 'operator' || r === 'viewer' ? r : null };
-  const roleForGroups = groups => { for (const g of groups) { const r = groupRoles[g]; if (r === 'admin' || r === 'operator' || r === 'viewer') return r } return null };
+  const fallback = isRole(defaultRole) ? defaultRole : 'admin';
+  const roleForUser = user => { if (!user) return null; const r = userRoles[user]; return isRole(r) ? r : null };
+  const roleForGroups = groups => { for (const g of groups) { const r = groupRoles[g]; if (isRole(r)) return r } return null };
   // Home Assistant ingress подава X-Remote-User-Id / X-Remote-User-Name /
   // X-Remote-User-Display-Name (не X-Remote-User и не X-Remote-Groups). Двете „стари“
   // заглавки остават само за обратна съвместимост и за reverse proxy, който сам
@@ -85,4 +101,4 @@ function create({ adminToken, operatorToken, viewerToken, userRoles = {}, groupR
   }
   return { resolve, allowed, role: resolve, configured: Object.keys(userRoles).length > 0 || Object.keys(groupRoles).length > 0, defaultRole: fallback };
 }
-module.exports = { create, CAPABILITIES };
+module.exports = { create, CAPABILITIES, ROLES, isRole };

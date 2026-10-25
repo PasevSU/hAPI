@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **115** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **116** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -56,6 +56,7 @@ _Генериран списък: **115** документа. Пише се от
 | `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` | hAPI ENTERPRISE — API Architecture & Runtime Logic Specification |
 | `02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md` | API Endpoint Reference |
 | `02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md` | Architecture Compliance Matrix |
+| `02_TO_BE_ARCHITECTURE/COURT_ROLES.md` | Роли за съд (F7-1) |
 | `02_TO_BE_ARCHITECTURE/CRYPTO_ENGINE.md` | Crypto Engine — hAPI Enterprise (To-Be) |
 | `02_TO_BE_ARCHITECTURE/DATA_MODEL.md` | Data Model — hAPI Enterprise (To-Be) |
 | `02_TO_BE_ARCHITECTURE/DEPLOYMENT_MODEL.md` | Модел на внедряване — add-on или Docker Compose |

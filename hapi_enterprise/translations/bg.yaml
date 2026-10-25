@@ -105,6 +105,10 @@ configuration:
       в `X-Remote-User-Name`, после в `X-Remote-User-Id`, после в
       `X-Remote-User-Display-Name`. По подразбиране всеки Ingress потребител е admin —
       ползвайте я само за понижаване, напр. {"guest": "viewer"}.
+      Роли: `admin`, `operator`, `viewer` и съдебните `judge`, `prosecutor`, `clerk`,
+      `expert`. Съдебните роли САМО четат доказателства и веригата на пазене; изключение
+      е `expert`, който може да представи становище. Непозната роля се отхвърля, за да не
+      даде права правописна грешка.
   group_roles:
     name: Роли на групи
     description: >-
