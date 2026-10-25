@@ -1,0 +1,112 @@
+# Одит на постигнатото — 0.69.87
+
+> **Какво е този документ.** Един честен отчет какво е направено в изданието 0.69.87, **откъде
+> дойде всяка промяна**, с какво е доказана и какво НЕ е доказано. Не е маркетинг: числата
+> долу са от последното пускане на гейтовете на тази машина, а твърденията без измерване са
+> изрично отделени в §5.
+>
+> Описанието „какво се промени и защо“ е в
+> [`RELEASE_0.69.87.md`](RELEASE_0.69.87.md); тук е **проследимостта**: произход → код → тест
+> → документ → комит.
+
+## 1. Обхват и произход на промените
+
+Изданието не е „списък от идеи“, а отговор на конкретни наблюдения. Всеки ред по-долу има
+източник, който може да се отвори.
+
+| # | Какво предизвика промяната | Какво беше намерено |
+| - | -------------------------- | ------------------- |
+| A | доклад на собственика: `Unknown secret ' hapi_pgp_path_pass'` при запис на конфигурацията | в опцията има **две** разстояния след `!secret`; Supervisor търси секрет на име `" hapi_pgp_path_pass"` |
+| B | същият доклад, но погледнат в кода | четири наши документа твърдяха обратното („`!secret` не се разширява в опциите“) — вярно някога, невярно сега |
+| C | `error-log.jsonl` на живата инсталация | 10 двойки `ERR_HTTP_HEADERS_SENT` за два дни: сървърът отговаря **два пъти** на една заявка |
+| D | `secrets.yaml` и реалните ключове на инсталацията | `private.asc` е v6 с **AEAD** защита (`usage 253`) → дотогава `UNSUPPORTED_KEY_USAGE (253)` без обяснение; пътищата бяха относителни, а `secret.asc` не съществува |
+| E | `PLAN_STATUS` §4.1 — последното открито изискване от F4-5 | липсваше `Idempotency-Key` (повторяеми заявки) |
+| F | собствен гейт `bad-code-scan` падна по време на работата | allowlist-ът беше закачен за **номера на ред**: добавен ред отменяше пет приети обосновки |
+
+## 2. Проследимост: промяна → код → тест → документ → комит
+
+| Промяна | Код | Тест | Документ | Комит |
+| ------- | --- | ---- | -------- | ----- |
+| `Idempotency-Key` (F4-5): повторена заявка не изпълнява действието втори път | `idempotency.js`, таблица `idempotency` в `sqlite-store.js` | `tests/idempotency.cjs` (10 проверки + жив сървър) | `API_ARCHITECTURE_SPEC.md` §4.4b, матрица §5.1 | `78e2b44` |
+| Документите казват истината за `!secret` в опциите | — | `docs-consistency` | `admin-token.md`, `installation-layout.md`, `pgp-keys-setup.md`, `PGP_KEYRING_AND_WORK_FOLDER.md` | `dd07581` |
+| `SECRET_NAME_HAS_SPACE` / `SECRET_NOT_EXPANDED` + `secretOption` | `path-crypto.js`, `start.js` | `pgp-keyring` (4 нови), `start-token-required` | `pgp-keys-setup.md` §3 капан 2 | `fe81d87` |
+| Изданието доказва, че разпознава незаместен `!secret` | `scripts/artifact-smoke.cjs` | `artifact-smoke` (9-та проверка) | `RELEASE_0.69.87.md` §3 | `e5f151c` |
+| `SECRET_PATH_RELATIVE` — относителен път не е път в контейнера | `path-crypto.js` | `pgp-keyring` (5-та нова) | `installation-layout.md`, `pgp-keys-setup.md` капан 3 | `6ca383c` |
+| `S2K_AEAD_UNSUPPORTED` + allowlist по сегмент | `pgp.js`, `path-crypto.js` (`KEY_ERRORS`), `scripts/bad-code-scan.cjs` + allowlist | `pgp-keyring` (6-та нова), фикстур `secret-aead.asc` | `PGP_KEYRING_AND_WORK_FOLDER.md` таблица, `TEST_CASE_CATALOG.md` T-PGP-02 | `57afa49` |
+| Договорът на ключохранилището изброява новите причини | — | `api-reference` | `INTEGRATION_CONTRACTS.md` | `fbf1daa` |
+| `OPTION_SECRET_NOT_EXPANDED` при старт за всяка опция | `start.js` | `start-token-required` (9 случая) | `installation-layout.md` таблица, `pgp-keys-setup.md` | `543a7da` |
+| AEAD-ограничението в честния списък | — | `docs-consistency` | `PLAN_STATUS.md` §4.1, `BACKLOG-AFTER-0.69.67.md` | `6911ff2` |
+| `SINGLE_RESPONSE`: тялото преди заглавките, без втори отговор | `respond.js` (изнесен от `server.js`), `server.js` | `tests/respond.cjs` | `MODULE_CATALOG.md`, матрица §5.1, `RELEASE_0.69.87.md` §2.11 | `aa764de`, `c70bbd6` |
+| Късен отговор ≠ сървърна грешка (`response.already-sent`) | `server.js` (catch) | `tests/server-structure.cjs` (инвариант) | `CHANGELOG.md` | `87757c1` |
+| Изданието не отговаря двойно (проверка върху архива) | `scripts/artifact-smoke.cjs` | `artifact-smoke` (11-та проверка) | `RELEASE_QUALIFICATION.md`, `RELEASE_0.69.87.md` §3 | `f5089c5` |
+| Отказаният втори отговор се вижда в лога (`RESPONSE_ALREADY_SENT`) | `respond.js` | `tests/respond.cjs` (прихваща `console.warn`) | `CHANGELOG.md` | `e6d7dcc` |
+
+Общо: **43 файла, +1791 / −359 реда, 15 комита** (от `78e2b44` до `e6d7dcc`).
+
+## 3. Измерени гейтове (последно пускане, тази машина)
+
+| Гейт | Команда | Резултат |
+| ---- | ------- | -------- |
+| Тестова матрица | `node scripts/test-matrix.cjs --skip=release-status` | **269/269, 1 опит, 208 с** |
+| Издателски сценарии | `node scripts/verify-release.cjs` | **21/21** (S22: архивът е байт по байт равен на `hapi_enterprise/`) |
+| Самото издание | `node scripts/artifact-smoke.cjs` | **11 проверки** върху разархивирания архив |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | **0.69.87 · 270 теста**, независим от платформа и дата |
+| Справочник на API | `node scripts/api-reference.cjs --check` | 193 операции · 32 публични правила · 11 компонента |
+| Каталог на одитните събития | `node scripts/audit-events.cjs --check` | 164 събития от 12 файла |
+| Инвентар на кода | `node scripts/source-inventory.cjs --check` | 169 файла, съвпада с диска |
+| Подразбирания в README | `node scripts/settings-defaults.cjs --check` | 43 настройки |
+| Документация | `tests/docs-consistency.cjs` | OK, без счупени връзки |
+| Матрица на сценариите | `tests/scenario-matrix.cjs` | 62 области · 49 маршрута · 24 RBAC способности · 43 опции · 270 тестови файла |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | чисто |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | чисто |
+| GUI + съвместимост | `node scripts/audit-gui-compat.cjs` | 33/33 · 28/28 |
+| Стил | `npx eslint .` | 0 |
+
+`server.js` е **2720/2722** реда — таванът не е вдиган, а освободен чрез изнасяне (`respond.js`).
+
+## 4. Какво е проверено ИЗВЪН кода (живата инсталация)
+
+Тези неща не се виждат от тестовете, затова са описани отделно.
+
+1. **`secrets.yaml`** (`\\192.168.50.4\config`) — поправен: абсолютни пътища
+   (`/homeassistant/_openpgpV6/…`), `private.asc` вместо несъществуващия `secret.asc`,
+   `hapi_pgp_path_pass` → празно (паролата идва от `pgp_key_pass`), премахнати двата интервала
+   в шаблона и паролата от него. Проверено: `BEGIN PGP PRIVATE KEY BLOCK` в `private.asc`,
+   нула двойни интервала, всички незапразнени пътища абсолютни.
+2. **Всички `!secret` препратки** в `/config` — сверени с имената в `secrets.yaml`. Няма втора
+   активна счупена; двете недефинирани (`addon_usr`, `white_dirs`) са само в коментари.
+3. **Реалните ключове** — публичният е 9 ключа, X25519 подключ за криптиране по Key Flags, с
+   роли `sign`/`authenticate`/`encrypt-comms`/`encrypt-storage`. Частният е v6 с AEAD защита —
+   оттам идва `S2K_AEAD_UNSUPPORTED`.
+4. **`error-log.jsonl`** — двойките `ERR_HTTP_HEADERS_SENT` са сверени по време с
+   `audit.jsonl`: съвпадат с `qr.archived` и с дълги операции по портал с 1013 папки/2000 файла,
+   тоест „късен отговор“, не счупен маршрут.
+5. **Мястото на данните** — инсталацията ползва `app_config` (`hapi_enterprise/`), не новото
+   подразбиране `/share/hapi/data`. Това е валидно, документирано поведение за стари
+   инсталации (`STORAGE_LEGACY_LOCATION`).
+
+## 5. Какво НЕ е доказано (честен списък)
+
+| Нещо | Защо не е доказано |
+| ---- | ------------------ |
+| Че записът в HA UI минава | опциите на add-on-а се пазят от Supervisor и **не са** на SMB дяла; проверката иска достъп до UI |
+| Че PGP ключът се отваря | ключът е с AEAD защита; нужно е пре-експортиране без парола — действие на собственика |
+| Docker образът | демонът на машината е спрян: образът не е пресъбран, CVE числата не са премерени |
+| Реална инсталация през Supervisor и браузърна Ingress сесия | изисква жива инсталация |
+| PDF/A-3 заверка (veraPDF), `legal hold` към Object Lock | извън обхвата на изданието (виж `PLAN_STATUS.md` §4.1) |
+| Пълният отговор на въпроса „кой точно маршрут отговори два пъти“ | обезвредено е на ниво `respond.js` + `catch`; конкретният извикващ не е изолиран, защото логът не пази пътя на заявката при грешка |
+
+## 6. Как да се провери отново (без доверие към този документ)
+
+```bash
+node scripts/test-matrix.cjs --skip=release-status   # 269/269
+node scripts/build-release.cjs && node scripts/verify-release.cjs
+node scripts/artifact-smoke.cjs                       # 11 проверки
+node scripts/release-status.cjs && node --test tests/release-status.cjs
+node scripts/logic-audit.cjs --gate
+node scripts/bad-code-scan.cjs --gate
+npx eslint .
+```
+
+Ако числата тук и в `reports/RELEASE-STATUS.md` се разминават, важи **`RELEASE-STATUS.md`** —
+той се генерира заедно с артефактите.
