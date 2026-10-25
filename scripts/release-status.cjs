@@ -134,7 +134,9 @@ const artifactRows = release
   ? [
     ['`' + release.addon.archive + '`', 'add-on архив' + (release.addon.fileCount != null ? ` (${release.addon.fileCount} файла)` : ''), '`dist/RELEASE.json`'],
     ['`' + release.integration.archive + '`', 'интеграция за HACS' + (release.integration.fileCount != null ? ` (${release.integration.fileCount} файла)` : ''), '`dist/RELEASE.json`'],
-    ['`repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt`', '4 артефакта', '`SHA256SUMS.txt`'],
+    // GUI пакетът е отделен артефакт, не вариант на add-on архива: в него НЯМА backend.
+    ...(release.gui ? [['`' + release.gui.archive + '`', 'GUI без сървър (' + (release.gui.entrypoints || []).join(', ') + ')', '`dist/RELEASE.json`']] : []),
+    ['`repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt`', (release.gui ? 5 : 4) + ' артефакта', '`SHA256SUMS.txt`'],
   ]
   : [['—', 'няма `dist/`', '—']];
 
@@ -172,7 +174,7 @@ const md = [
   '```',
   'node scripts/test-matrix.cjs          # пълният набор, от начало, до 5 опита',
   'node scripts/build-release.cjs        # dist/',
-  'node scripts/verify-release.cjs       # S01–S21 върху готовия архив',
+  'node scripts/verify-release.cjs       # S01–S23 върху готовия архив',
   'npm run audit:gui                     # GUI + съвместимост + изданието',
   'node scripts/release-status.cjs       # този отчет',
   '```',

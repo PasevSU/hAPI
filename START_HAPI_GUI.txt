@@ -1,0 +1,40 @@
+hAPI Enterprise — Enterprise Control Center (GUI без сървър)
+=================================================================
+
+Пакетът съдържа само интерфейса. Няма Node, няма Python пакети, няма backend:
+отваря се от диска и работи с административния API на add-on-а, ако е достъпен.
+
+КАК СЕ СТАРТИРА
+---------------
+1. Разархивирай папката навсякъде (стига пътят да няма забранени символи).
+2. Windows, истински WebView2 прозорец:
+      START_HAPI_GUI.pyw
+   Иска Python 3 и пакета `pywebview` (pip install pywebview). Ако ги няма, същият
+   файл отваря Edge/Chrome в режим на приложение — виж по-долу.
+3. Windows, без нищо инсталирано:
+      START_HAPI_GUI.bat
+   Отваря Edge или Chrome с `--app=`, тоест самостоятелен прозорец без адресна лента.
+
+Двете стартери отварят ЕДНО и също нещо: `hapi_enterprise/ui/index.html`. Проверено е,
+че командата им съвпада (`--app=`, `--window-size=1440,900`) — виж
+`tests/gui-starter-pyw.cjs` в хранилището.
+
+КАКВО НЕ Е ТОВА
+---------------
+Не е Windows инсталатор и не носи add-on-а. Това е GUI-ят за преглед и за работа срещу
+вече работещ hAPI Enterprise; данните, доказателствата и правата живеят на сървъра.
+Ако отвориш файла без add-on, интерфейсът тръгва, но показва, че няма връзка.
+
+hAPI Enterprise — Enterprise Control Center (GUI without a server)
+==================================================================
+
+The package holds the interface only. No Node, no Python packages, no backend:
+it runs from disk and talks to the add-on's admin API when one is reachable.
+
+   START_HAPI_GUI.pyw   — Windows, real WebView2 window (needs Python 3 + pywebview);
+                          falls back to the Edge/Chrome app window when they are missing
+   START_HAPI_GUI.bat   — Windows, nothing to install: Edge or Chrome with `--app=`
+
+Both starters open the same `hapi_enterprise/ui/index.html`. This is not a Windows
+installer and it does not ship the add-on; it is the GUI for an already running
+hAPI Enterprise instance.

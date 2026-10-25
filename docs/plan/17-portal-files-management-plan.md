@@ -246,7 +246,7 @@
 
 | Изискване | Днес |
 | --------- | ---- |
-| Пакети от един build | **2**, не 6: `dist/hapi_enterprise-<версия>.tar.gz` (add-on) + `dist/hapi_enterprise-integration-<версия>.zip` (интеграцията). `verify-release` проверява 21 сценария, `SHA256SUMS.txt` и `RELEASE.json` се пишат до тях |
+| Пакети от един build | **3**, не 6: `dist/hapi_enterprise-<версия>.tar.gz` (add-on) + `dist/hapi_enterprise-integration-<версия>.zip` (интеграцията) + `dist/hapi-enterprise-gui-<версия>.zip` (GUI без сървър — `ui/` и стартерите, БЕЗ backend; `verify-release` S23 и `tests/gui-package.cjs` пазят, че backend не влиза в него). `verify-release` проверява 21 сценария, `SHA256SUMS.txt` и `RELEASE.json` се пишат до тях |
 | SHA-256 манифест на артефактите | **има** — `dist/SHA256SUMS.txt`, сверява се от `release/publish-release.ps1` |
 | WebView2 обвивка | **има я от 0.69.87** — `START_HAPI_GUI.pyw` отваря истински WebView2 прозорец (1440×900) при наличен `pywebview` и пада към Edge/Chrome `--app=` със СЪЩАТА команда като `.bat`, когато няма; `tests/gui-starter-pyw.cjs` сверява и двете |
 | 6 банера (Windows/HA × BG/DE/EN) | **няма**. `img/` има 5 банера (`banner.png`, `banner-thin.png`, `banner-thin.svg`, `banner-elegant.png`, `banner-neon-dashboard.png`) + `icon.png`/`logo.png` — но те не са разделени по език и платформа |

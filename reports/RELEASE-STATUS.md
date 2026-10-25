@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **291/291** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **292/292** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 486 файла · 82750 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 481 файла · 82212 реда · critical: 0 · high: 0 · medium: 3 · low: 190 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 487 файла · 82930 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 482 файла · 82392 реда · critical: 0 · high: 0 · medium: 3 · low: 190 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 291 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 292 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -29,9 +29,28 @@
 | --- | --- | --- |
 | `hapi_enterprise-0.69.87.tar.gz` | add-on архив (188 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.87.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
-| `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
+| `hapi-enterprise-gui-0.69.87.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Самостоятелен GUI пакет (`dist/hapi-enterprise-gui-<версия>.zip`) — W8 вече не е само обвивка.**
+  Досега от W8 имаше стартер, който отваря интерфейса **от хранилището**, а на машина без репо
+  нямаше какво да се даде: пакетът за Windows беше един от редовете, които планът иска, а ние
+  отчитахме като липсващи. Сега `build-release.cjs` строи трети артефакт: `hapi_enterprise/ui/`
+  + `START_HAPI_GUI.pyw` + `START_HAPI_GUI.bat` + `START_HAPI_GUI.txt` (упътване) — и **нищо от
+  backend-а**, защото смисълът на този пакет е точно това. Списъкът се строи на едно място
+  (`release-lib.guiPackage`), за да не се разминават „пакетът съдържа“ и „тестът проверява“.
+  `RELEASE.json` получи секция `gui` (архив, sha256, файлове, входни точки), а `SHA256SUMS.txt`
+  вече покрива 5 артефакта.
+  Проверки: `verify-release` **S23** (22/22) — в пакета има точно `ui/` + трите файла, `index.html`
+  е вътре, а `server.js`/`start.js`/`config.yaml`/`Dockerfile` са изрично забранени; нов
+  `tests/gui-package.cjs` (4 проверки) разопакова пакета във временна папка и **пита стартера
+  оттам** — `--check` намира `index.html`, URL-ът сочи в разопакованата папка, а резервният път
+  дава същата команда `--app=… --window-size=1440,900`. Проверено и обратно: щом в пакета влезе
+  backend файл, тестът пада с „извън ui/ има точно стартерите“.
+  **Границата:** това не е инсталатор (.msi/.exe) и не носи add-on — остава записано като
+  открито, вместо да се брои за затворено.
 
 - **AEAD-защитеният PGP ключ вече е проверен срещу ВТОРА реализация, не само срещу себе си.**
   Досега `tests/pgp-aead.cjs` заключваше и отваряше с един и същ код: това хваща подправен байт,
@@ -751,7 +770,7 @@
 ```
 node scripts/test-matrix.cjs          # пълният набор, от начало, до 5 опита
 node scripts/build-release.cjs        # dist/
-node scripts/verify-release.cjs       # S01–S21 върху готовия архив
+node scripts/verify-release.cjs       # S01–S23 върху готовия архив
 npm run audit:gui                     # GUI + съвместимост + изданието
 node scripts/release-status.cjs       # този отчет
 ```

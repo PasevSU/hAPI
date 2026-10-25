@@ -604,6 +604,29 @@ check('S22', 'Артефакт: съдържанието съвпада байт
   return `${compared} файла байт по байт`;
 });
 
+// ── S23. Самостоятелният GUI пакет (W8) ─────────────────────────────────────
+// Защо отделен сценарий: това е единственият артефакт, който НЕ съдържа backend. Ако в него
+// случайно влезе `server.js` или пък липсва стартер, пакетът изглежда готов, а на машина без
+// add-on не прави нищо. Затова се проверява точното съдържание, а не „има zip“.
+check('S23', 'Артефакт: самостоятелният GUI пакет съдържа само интерфейса и стартерите', () => {
+  const entries = archived(path.join(distDir, `hapi-enterprise-gui-${version}.zip`));
+  const paths = new Set(entries.map((e) => e.path));
+  for (const name of lib.GUI_FILES) {
+    assert(paths.has(name), 'липсва стартер в GUI пакета: ' + name);
+  }
+  assert(paths.has(lib.ADDON_DIR + '/ui/index.html'), 'липсва ' + lib.ADDON_DIR + '/ui/index.html');
+  // Backend НЕ бива да влиза: това е смисълът на пакета.
+  for (const forbidden of ['server.js', 'start.js', 'config.yaml', 'Dockerfile']) {
+    assert(!paths.has(lib.ADDON_DIR + '/' + forbidden), 'backend файл в GUI пакета: ' + forbidden);
+  }
+  const uiOnly = [...paths].every((p) => p.startsWith(lib.ADDON_DIR + '/ui/') || lib.GUI_FILES.includes(p));
+  assert(uiOnly, 'в GUI пакета има файл извън ui/ и стартерите');
+  const release = JSON.parse(readText(releaseJson));
+  assert(release.gui && release.gui.archive === `hapi-enterprise-gui-${version}.zip`, 'RELEASE.json не описва GUI пакета');
+  assert(release.gui.sha256 === lib.sha256File(path.join(distDir, release.gui.archive)), 'sha256 на GUI пакета се разминава');
+  return `${entries.length} файла, само ui/ + стартерите`;
+});
+
 // ── Отчет ───────────────────────────────────────────────────────────────────
 function report() {
   results.sort((a, b) => a.id.localeCompare(b.id));

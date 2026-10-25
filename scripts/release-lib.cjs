@@ -116,6 +116,38 @@ function walk(dirAbs, prefix, out = []) {
 const sha256 = (data) => crypto.createHash('sha256').update(data).digest('hex');
 const sha256File = (file) => sha256(fs.readFileSync(file));
 
+// ── Самостоятелен GUI пакет (Windows Edition, W8) ─────────────────────────────
+// Какво съдържа и защо точно това: интерфейсът (`hapi_enterprise/ui/`) и двата стартера,
+// които го отварят от диска, плюс упътването до тях. Backend НЕ влиза — този пакет е за
+// машина, която няма add-on, и точно това го прави различен от add-on архива.
+// Един източник на истина: същият списък се ползва от `build-release.cjs` и от теста
+// `tests/gui-package.cjs`, иначе „пакетът съдържа“ и „тестът проверява“ се разминават.
+const GUI_FILES = ['START_HAPI_GUI.pyw', 'START_HAPI_GUI.bat', 'START_HAPI_GUI.txt'];
+
+function guiPackage(addonDirAbs, root = ROOT, version = readAddonVersion(root)) {
+  const uiDir = path.join(addonDirAbs, 'ui');
+  if (!fs.existsSync(path.join(uiDir, 'index.html'))) {
+    throw new Error('липсва ' + path.join(ADDON_DIR, 'ui', 'index.html') + ' — GUI пакетът няма какво да отвори');
+  }
+  const entries = assertSafeEntryPaths(walk(uiDir, ADDON_DIR + '/ui'), 'gui');
+  for (const name of GUI_FILES) {
+    const abs = path.join(root, name);
+    if (!fs.existsSync(abs)) throw new Error('липсва стартер за GUI пакета: ' + name);
+    const st = fs.statSync(abs);
+    entries.push({
+      path: name,
+      abs,
+      size: st.size,
+      mode: name.endsWith('.sh') ? 0o755 : 0o644,
+      mtime: Math.floor(st.mtimeMs / 1000),
+    });
+  }
+  // Входната точка се проверява, а не се предполага: без нея пакетът е папка с файлове.
+  const hasIndex = entries.some((e) => e.path === ADDON_DIR + '/ui/index.html');
+  if (!hasIndex) throw new Error('GUI пакетът не съдържа ' + ADDON_DIR + '/ui/index.html');
+  return { version, entries, entrypoints: GUI_FILES.slice(0, 2), uiDir: ADDON_DIR + '/ui' };
+}
+
 // Архивните записи трябва да са относителни и да не излизат от папката (zip-slip / tar-slip).
 // Иначе распаковането пише извън дървото — затова се проверява и при строеж, и при проверка.
 function assertSafeEntryPaths(entries, label = 'архив') {
@@ -341,5 +373,7 @@ module.exports = {
   readZip,
   readArchive,
   assertSafeEntryPaths,
+  guiPackage,
+  GUI_FILES,
   fmtBytes,
 };

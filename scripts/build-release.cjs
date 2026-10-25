@@ -90,10 +90,14 @@ if (!fs.existsSync(repositoryYaml)) fail('липсва repository.yaml');
 // ── 4. Архивни имена ─────────────────────────────────────────────────────────
 const addonName = `hapi_enterprise-${version}.tar.gz`;
 const integrationName = `hapi_enterprise-integration-${version}.zip`;
+// Третият артефакт: GUI-ят БЕЗ сървър — това е „самостоятелен пакет“ от W8, който досега
+// липсваше. Съдържа само `ui/` и стартерите, защото точно това се пуска на машина без add-on.
+const guiArchive = lib.guiPackage(path.join(root, lib.ADDON_DIR), root, version);
+const guiName = `hapi-enterprise-gui-${version}.zip`;
 
 // ── 5. Сглобяване ────────────────────────────────────────────────────────────
 fs.mkdirSync(distDir, { recursive: true });
-for (const stale of [addonName, integrationName]) {
+for (const stale of [addonName, integrationName, guiName]) {
   fs.rmSync(path.join(distDir, stale), { force: true });
 }
 
@@ -102,6 +106,9 @@ fs.writeFileSync(path.join(distDir, addonName), addonBuf);
 
 const integrationBuf = step('Сглобяване на ' + integrationName, () => lib.buildZip(integrationEntries));
 fs.writeFileSync(path.join(distDir, integrationName), integrationBuf);
+
+const guiBuf = step('Сглобяване на ' + guiName, () => lib.buildZip(lib.assertSafeEntryPaths(guiArchive.entries, 'gui')));
+fs.writeFileSync(path.join(distDir, guiName), guiBuf);
 
 step('Копиране на repository.yaml', () => {
   fs.copyFileSync(repositoryYaml, path.join(distDir, 'repository.yaml'));
@@ -142,6 +149,15 @@ const release = {
     files: integrationEntries.map((e) => ({ path: e.path, bytes: e.size, sha256: lib.sha256(fs.readFileSync(e.abs)) })),
   },
   repository: { file: 'repository.yaml', sha256: lib.sha256File(repositoryYaml) },
+  // GUI пакетът: кой входен файл е входната точка, за да не се гадае след разархивиране.
+  gui: {
+    archive: guiName,
+    sha256: lib.sha256(guiBuf),
+    bytes: guiBuf.length,
+    fileCount: guiArchive.entries.length,
+    entrypoints: ['START_HAPI_GUI.pyw', 'START_HAPI_GUI.bat'],
+    uiDir: lib.ADDON_DIR + '/ui',
+  },
   install: {
     addon: `Разархивирай ${addonName} в папка и я добави като локален add-on repository (или я копирай в /addons).`,
     integration: `Разархивирай ${integrationName} в /config (получава се /config/custom_components/hapi_enterprise) и рестартирай Home Assistant.`,
@@ -154,7 +170,7 @@ step('RELEASE.json', () => {
 });
 
 step('SHA256SUMS.txt', () => {
-  const artifacts = [addonName, integrationName, 'repository.yaml', 'RELEASE.json'];
+  const artifacts = [addonName, integrationName, guiName, 'repository.yaml', 'RELEASE.json'];
   const lines = artifacts.map((name) => `${lib.sha256File(path.join(distDir, name))}  ${name}`);
   fs.writeFileSync(path.join(distDir, 'SHA256SUMS.txt'), lines.join('\n') + '\n');
   return lines.length + ' артефакта';
@@ -164,6 +180,7 @@ step('SHA256SUMS.txt', () => {
 console.log('\n════════ Издание ' + lib.PRODUCT + ' ' + version + ' ════════');
 console.log(`  ${addonName.padEnd(44)} ${lib.fmtBytes(addonBuf.length).padStart(9)}  ${addonEntries.length} файла`);
 console.log(`  ${integrationName.padEnd(44)} ${lib.fmtBytes(integrationBuf.length).padStart(9)}  ${integrationEntries.length} файла`);
+console.log(`  ${guiName.padEnd(44)} ${lib.fmtBytes(guiBuf.length).padStart(9)}  ${guiArchive.entries.length} файла  (GUI без сървър)`);
 console.log(`  ${'repository.yaml + RELEASE.json + SHA256SUMS.txt'.padEnd(44)}`);
 console.log(`  папка: ${lib.DIST_DIR}/  ·  ${((Date.now() - started) / 1000).toFixed(1)}s`);
 console.log('  Проверка: node scripts/verify-release.cjs');
