@@ -27,6 +27,9 @@ const path = require('node:path');
 
 const CODE = 'MIRROR_TARGET_PATH_OR_S3';
 const DEFAULT_REGION = 'us-east-1';
+// Мъртъв или забавен S3 не бива да блокира проверката/поправката на цялото огледало:
+// без таймаут една заявка може да виси с минути, а `verify` минава файл по файл.
+const DEFAULT_TIMEOUT_MS = 15000;
 
 const sha256Buf = (buf) => crypto.createHash('sha256').update(buf).digest();
 const sha256Hex = (buf) => sha256Buf(buf).toString('hex');
@@ -120,6 +123,12 @@ function keyFor(prefix, portalId, fileId) {
 
 function trimSlash(v) { return String(v || '').replace(/\/+$/, '') }
 
+/** Причина за провал на мрежова заявка: таймаутът се разпознава отделно от чужд код. */
+function timeoutReason(e) {
+  if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) return 'timeout';
+  return (e && (e.code || e.message)) || 'failed';
+}
+
 /** Цел „папка“ — поведението от преди 0.69.87, изнесено без промяна. */
 function pathTarget(dir) {
   const fileFor = (portalId, fileId) => path.join(dir, 'files', portalId, fileId);
@@ -155,15 +164,16 @@ function pathTarget(dir) {
 }
 
 /** Цел „s3“ — запис, четене, триене през подписан HTTPS. */
-function s3Target(spec, { accessKey, secretKey } = {}) {
+function s3Target(spec, { accessKey, secretKey, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   const prefix = spec.prefix || '';
   const base = trimSlash(spec.endpoint) || `https://${spec.bucket}.s3.${spec.region}.amazonaws.com`;
   // Път-стил адресиране (`endpoint/bucket/key`) работи навсякъде, включително MinIO.
   const objectUrl = (key) => (spec.endpoint ? `${base}/${spec.bucket}/${key}` : `${base}/${key}`);
+  const limit = Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : DEFAULT_TIMEOUT_MS;
   const request = async (method, key, { body = Buffer.alloc(0), extra = {} } = {}) => {
     const url = objectUrl(key);
     const headers = signV4({ method, url, body, accessKey, secretKey, region: spec.region, headers: extra });
-    return fetch(url, { method, headers, body: method === 'GET' || method === 'HEAD' ? undefined : body });
+    return fetch(url, { method, headers, body: method === 'GET' || method === 'HEAD' ? undefined : body, signal: AbortSignal.timeout(limit) });
   };
   const get = async (portalId, fileId) => {
     try {
@@ -183,12 +193,17 @@ function s3Target(spec, { accessKey, secretKey } = {}) {
         extra['x-amz-object-lock-mode'] = 'COMPLIANCE';
         extra['x-amz-object-lock-retain-until-date'] = new Date(Date.now() + spec.lockDays * 86400000).toISOString();
       }
-      const res = await request('PUT', key, { body: data, extra });
-      if (!res.ok) return { ok: false, reason: 's3 put ' + res.status };
-      // Сверката е същата като при папката: прочитаме обратно и сравняваме SHA-256.
-      const back = await get(portalId, fileId);
-      if (!back || sha256Hex(back) !== sha256Hex(data)) return { ok: false, reason: 'sha256 mismatch' };
-      return { ok: true };
+      try {
+        const res = await request('PUT', key, { body: data, extra });
+        if (!res.ok) return { ok: false, reason: 's3 put ' + res.status };
+        // Сверката е същата като при папката: прочитаме обратно и сравняваме SHA-256.
+        const back = await get(portalId, fileId);
+        if (!back || sha256Hex(back) !== sha256Hex(data)) return { ok: false, reason: 'sha256 mismatch' };
+        return { ok: true };
+      } catch (e) {
+        // Изтекъл таймаут се разпознава като `timeout`, за да го види операторът в одита.
+        return { ok: false, reason: timeoutReason(e) };
+      }
     },
     get,
     async remove(portalId, fileId) {
@@ -197,7 +212,7 @@ function s3Target(spec, { accessKey, secretKey } = {}) {
         // Object Lock в режим COMPLIANCE не се маха от никого — отказът е очакван.
         if (res.status === 403) return { ok: false, locked: true };
         return { ok: res.ok || res.status === 404, locked: false };
-      } catch (e) { return { ok: false, locked: false, reason: e.message } }
+      } catch (e) { return { ok: false, locked: false, reason: timeoutReason(e) } }
     },
   };
 }
@@ -205,12 +220,12 @@ function s3Target(spec, { accessKey, secretKey } = {}) {
 /**
  * Строи целта. `null` значи „няма огледало“ — същото като празна настройка досега.
  */
-function create({ raw, root, allowAny = false, accessKey = '', secretKey = '' } = {}) {
+function create({ raw, root, allowAny = false, accessKey = '', secretKey = '', timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   const spec = parseSpec(raw, { root, allowAny });
   if (!spec) return null;
   if (spec.kind === 'path') return pathTarget(spec.dir);
   if (!accessKey || !secretKey) throw Error('storage_mirror: за s3 цел са нужни s3_access_key и s3_secret_key');
-  return s3Target(spec, { accessKey, secretKey });
+  return s3Target(spec, { accessKey, secretKey, timeoutMs });
 }
 
-module.exports = { CODE, DEFAULT_REGION, parseSpec, signV4, keyFor, uriEncode, create, pathTarget, s3Target };
+module.exports = { CODE, DEFAULT_REGION, DEFAULT_TIMEOUT_MS, parseSpec, signV4, keyFor, uriEncode, create, pathTarget, s3Target };
