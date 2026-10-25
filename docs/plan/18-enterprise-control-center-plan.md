@@ -189,14 +189,19 @@ Text · Data · Table · Media · Certificate · Layout · Legal · Dynamic.
 > | „RFC 3161 ❌“ | `tsa-client.js`, `routes/reports.js`, `tests/tsa-client.cjs` |
 > | „Profiles/Templates ❌“ | `config-profiles.js`, `generator.js`, `tests/config-profiles.cjs` |
 > | „Undo/Redo ❌“ | има го в Report Studio (`ui/report-studio.js`, `state.history`) |
+> | „Обектна библиотека: 8 категории, planned обекти“ | **има ги**: `ui/report-objects.js` дефинира точно 8 категории (`CATEGORIES`) и всеки обект носи `category`/`status`; списъкът „планирано“ е празен от 0.69.61, защото последните четири обекта станаха готови |
 > | „Manifest … `manifest.schema.json` липсва“ | схемата съществува като `schema()` от самото начало; от 0.69.87 има и ФАЙЛ — `config/schemas/manifest.schema.json`, генериран от кода (`scripts/manifest-schema.cjs`), пазен байт-байт от `tests/manifest-schema.cjs`. Профилите са налични (`report-manifest.js` → `template(profile)`) |
 >
-> **Остават отворени и днес:** OTS/Blockchain (панел 05, виж §2), WebView2 `.pyw` стартер (има
-> `START_HAPI_GUI.bat` с Edge app), редактор на таблици v2, дизайн система
-> (`tokens/layout/components/themes`), категории на обектната библиотека, регистър на панелите
-> и **миграции на манифеста**: днес има само `schemaVersion` 1 и `validate()` отказва всичко
-> друго с `UNSUPPORTED_SCHEMA_VERSION`. Верига от миграции при една единствена версия би била
-> непроверяема — затова не е написана, вместо да стои като код без реален случай.
+> **Остават отворени и днес** — сверено с кода при 0.69.87, а не по памет:
+>
+> | Ред | Какво точно липсва |
+> | --- | ------------------ |
+> | OTS/Blockchain (панел 05) | няма модул; иска външна услуга (календар или възел), затова „закотвено“ твърдение не може да се провери в среда без мрежа (виж §2) |
+> | WebView2 `.pyw` стартер | `START_HAPI_GUI.bat` отваря Edge в режим на приложение — различен механизъм; `.pyw` файл няма |
+> | Регистър на панелите | панелите са `window.Hapi*Panel = { mount, unmount }` без общ регистър — няма `render/mount/unmount/permissions/capabilities` на едно място |
+> | Дизайн система | **токените ги има** (37 CSS custom properties в `ui/styles.css`), липсва раздробяването на `tokens/layout/components/themes` |
+> | Редактор на таблици v2 | подредба (↑/↓) и изтриване на колони **има** (`data-col="up|down|del"`); липсват добавяне на колона и ширини по колона |
+> | Миграции на манифеста | има само `schemaVersion` 1 и `validate()` отказва друго с `UNSUPPORTED_SCHEMA_VERSION`; верига при една единствена версия би била непроверяем код |
 
 | Ново изискване | Днес в репото (при писане на плана) | Липсва |
 | -------------- | ------------- | ------ |
