@@ -787,11 +787,11 @@
           .map((c, i) => `<li><span>${esc(c)}</span>
             <button type="button" data-col="up" data-i="${i}" title="Нагоре" ${i === 0 ? 'disabled' : ''}>↑</button>
             <button type="button" data-col="down" data-i="${i}" title="Надолу" ${i === columns.length - 1 ? 'disabled' : ''}>↓</button>
-            <button type="button" data-col="del" data-i="${i}" title="Изтрий">✕</button></li>`)
+            <button type="button" data-col="del" data-i="${i}" title="${columns.length === 1 ? 'Таблица без колони не минава валидация' : 'Изтрий'}" ${columns.length === 1 ? 'disabled' : ''}>✕</button></li>`)
           .join('')}</ul>
         <div class="u-row u-row-2">
           <input id="p-newcol" placeholder="нова колона" />
-          <button type="button" class="btn btn-sm" id="p-addcol">Добави</button>
+          <button type="button" class="btn btn-sm" id="p-addcol" ${columns.length >= (M() ? M().MAX_COLUMNS : 32) ? 'disabled' : ''}>Добави</button>
         </div>
         <p class="hint">Ширини и повторение на заглавен ред — v2 (F8).</p>`;
     } else if (block.type === 'hash-table') {
@@ -859,9 +859,13 @@
     if (sourceInput) sourceInput.addEventListener('input', () => onChange(block.id, { source: sourceInput.value.trim() }));
     els.props.querySelectorAll('[data-col]').forEach((btn) => {
       btn.addEventListener('click', () => {
+        // `disabled` в DOM-а не спира извикване от код; затова правилото се пази и тук:
+        // таблица с нула колони не минава `validate()`, тоест редакторът не бива да я
+        // довежда до състояние, което собственият му експорт после отказва.
         const i = Number(btn.dataset.i);
         const cols = (block.columns || []).slice();
         const act = btn.dataset.col;
+        if (act === 'del' && cols.length <= 1) return;
         if (act === 'del') cols.splice(i, 1);
         if (act === 'up' && i > 0) [cols[i - 1], cols[i]] = [cols[i], cols[i - 1]];
         if (act === 'down' && i < cols.length - 1) [cols[i + 1], cols[i]] = [cols[i], cols[i + 1]];
@@ -876,8 +880,14 @@
         const input = els.props.querySelector('#p-newcol');
         const value = (input.value || '').trim();
         if (!value) return;
+        const limit = M() ? M().MAX_COLUMNS : 32;
+        if ((block.columns || []).length >= limit) {
+          toast(`Таблицата е на тавана от ${limit} колони.`, 'err');
+          return;
+        }
         pushHistory();
         block.columns = [...(block.columns || []), value];
+        input.value = '';
         refresh();
       });
     }

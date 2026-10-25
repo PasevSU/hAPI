@@ -502,6 +502,7 @@ const API = {
   ORIENTATIONS,
   FORBIDDEN_KEYS,
   MAX_LAYOUT_COLUMNS,
+  MAX_COLUMNS,
   MAX_LOGO_CHARS,
   normalize,
   validate,
