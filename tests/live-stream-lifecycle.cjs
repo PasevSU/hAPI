@@ -66,6 +66,23 @@ const readUi = (name) => fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'ui'
   ok('без EventSource: startLive → false и панелът казва „изключено“');
 }
 
+// ── 4б. Лентата не лъже, когато потокът умре СЛЕД отварянето ───────────────
+{
+  const panel = readUi('dashboard-panel.js');
+  // Сървърът затваря след 30 минути с `bye`, а мрежата може да падне. Без тези слушатели
+  // лентата оставаше „на живо“ върху мъртва връзка — твърдение, което не е вярно.
+  assert.match(panel, /addEventListener\('bye'/, '`bye` се обработва');
+  assert.match(panel, /addEventListener\('error'/, '`error` се обработва');
+  assert.match(panel, /addEventListener\('open'/, '`open` връща лентата в „на живо“');
+  assert.match(panel, /'приключи'/, 'след `bye` лентата казва „приключи“');
+  assert.match(panel, /'няма връзка'/, 'при грешка лентата казва „няма връзка“');
+  // `bye` НЕ трябва да минава през `forward`: това е съобщение за състоянието, не събитие.
+  const forwardLine = panel.match(/for \(const name of \[([^\]]*)\]\) forward\(name\)/);
+  assert.ok(forwardLine, 'списъкът на излъчваните събития съществува');
+  assert.ok(!/bye/.test(forwardLine[1]), '`bye` не е в списъка на бизнес събитията');
+  ok('потокът: bye → „приключи“, error → „няма връзка“, open → „на живо“');
+}
+
 // ── 5. Сървърът брои клиентите — значи освобождаването е проверимо ─────────
 {
   const events = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'routes', 'events.js'), 'utf8');

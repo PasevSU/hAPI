@@ -37,8 +37,20 @@
   // САМО за този маршрут — и само по HTTPS/Ingress, както останалите заявки на панела.
   // Потокът НЕ е задължителен: ако не се отвори, таблото работи както преди и казва защо.
   let liveSource = null;
+  // Състоянието се държи извън `startLive`, за да може лентата да го покаже, когато потокът
+  // умре СЛЕД отварянето (сървърът затваря след 30 минути с `bye`, а мрежата може да падне).
+  let liveState = 'off';
+  let liveBadgeEl = null;
+  function paintLive() {
+    if (!liveBadgeEl) return;
+    const label = liveState === 'on' ? 'на живо' : liveState === 'ended' ? 'приключи' : liveState === 'error' ? 'няма връзка' : 'изключено';
+    liveBadgeEl.className = 'badge ' + (liveState === 'on' ? 'ok' : liveState === 'error' ? 'err' : '');
+    liveBadgeEl.textContent = label;
+  }
   function stopLive() {
     if (liveSource) { try { liveSource.close() } catch { /* вече е затворен */ } liveSource = null }
+    liveState = 'off';
+    paintLive();
   }
   function startLive(onEvent) {
     stopLive();
@@ -58,7 +70,15 @@
       try { payload = JSON.parse(e.data) } catch { payload = { event: name } }
       onEvent(name, payload);
     });
-    for (const name of ['document.finalized', 'job.completed', 'access.created', 'report.packaged', 'resync', 'bye']) forward(name);
+    for (const name of ['document.finalized', 'job.completed', 'access.created', 'report.packaged', 'resync']) forward(name);
+    // `bye` е СЪОБЩЕНИЕ, че сървърът затваря (таванът от 30 минути). Без него лентата
+    // оставаше „на живо“ върху мъртва връзка — тоест твърдение, което не е вярно.
+    liveSource.addEventListener('bye', () => { liveState = 'ended'; paintLive(); try { liveSource.close() } catch { /* вече е затворен */ } liveSource = null });
+    // `EventSource` се пресвързва сам; тук само се казва, че в момента няма връзка.
+    liveSource.addEventListener('error', () => { if (liveSource) { liveState = 'error'; paintLive() } });
+    liveSource.addEventListener('open', () => { liveState = 'on'; paintLive() });
+    liveState = 'on';
+    paintLive();
     return true;
   }
 
@@ -199,15 +219,15 @@
         : '<p class="hint">Още нищо не е станало от отварянето на таблото.</p>';
     };
     if (liveBox) renderLive();
+    // Лентата се рисува от `paintLive`, за да е вярна и когато потокът умре СЛЕД отварянето
+    // (сървърът затваря след 30 минути с `bye`, а мрежата може да падне).
+    liveBadgeEl = liveBadge;
     const liveOn = startLive((name, payload) => {
       liveList.unshift({ event: name, at: (payload && payload.at) ? String(payload.at).replace('T', ' ').slice(0, 19) : new Date().toISOString().replace('T', ' ').slice(0, 19) });
       if (liveList.length > 10) liveList.length = 10;
       renderLive();
     });
-    if (liveBadge) {
-      liveBadge.className = 'badge ' + (liveOn ? 'ok' : '');
-      liveBadge.textContent = liveOn ? 'на живо' : 'изключено';
-    }
+    if (!liveOn) { liveState = 'off'; paintLive() }
 
     // ── Ресурси и хранилище: какво още може да се поиска от add-on-а ─────────
     // Всичко идва от `/admin/api/diagnostics` — същият маршрут, който ползва

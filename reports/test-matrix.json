@@ -1,15 +1,12 @@
 {
-  "generatedAt": "2026-10-25T18:31:31.020Z",
-  "attemptsUsed": 4,
+  "generatedAt": "2026-10-25T18:37:15.356Z",
+  "attemptsUsed": 1,
   "attemptsAllowed": 5,
-  "totalMs": 883140,
+  "totalMs": 214751,
   "files": 277,
   "passed": 277,
   "failed": [],
-  "flaky": [
-    "gui-coverage.cjs",
-    "source-inventory.cjs"
-  ],
+  "flaky": [],
   "skipped": [
     "release-status.cjs"
   ],
@@ -18,543 +15,543 @@
       "file": "access-policy.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 736,
+      "attempts": 1,
+      "lastMs": 737,
       "flaky": false
     },
     {
       "file": "addon-changelog.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 102,
+      "attempts": 1,
+      "lastMs": 106,
       "flaky": false
     },
     {
       "file": "addon-config.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 56,
+      "attempts": 1,
+      "lastMs": 59,
       "flaky": false
     },
     {
       "file": "admin-api-spec.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 4689,
+      "attempts": 1,
+      "lastMs": 4640,
       "flaky": false
     },
     {
       "file": "admin-hierarchy.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 66,
+      "attempts": 1,
+      "lastMs": 51,
       "flaky": false
     },
     {
       "file": "admin-throttle.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 468,
+      "attempts": 1,
+      "lastMs": 449,
       "flaky": false
     },
     {
       "file": "admin-token-shape.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1159,
+      "attempts": 1,
+      "lastMs": 1094,
       "flaky": false
     },
     {
       "file": "api-generation.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1012,
+      "attempts": 1,
+      "lastMs": 741,
       "flaky": false
     },
     {
       "file": "api-input-errors.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 822,
+      "attempts": 1,
+      "lastMs": 748,
       "flaky": false
     },
     {
       "file": "api-reference.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 151,
+      "attempts": 1,
+      "lastMs": 135,
       "flaky": false
     },
     {
       "file": "api-rules-connection.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 622,
+      "attempts": 1,
+      "lastMs": 530,
       "flaky": false
     },
     {
       "file": "api-spec-coverage.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 65,
+      "attempts": 1,
+      "lastMs": 54,
       "flaky": false
     },
     {
       "file": "audit-chain.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 530,
+      "attempts": 1,
+      "lastMs": 457,
       "flaky": false
     },
     {
       "file": "audit-events.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 361,
+      "attempts": 1,
+      "lastMs": 328,
       "flaky": false
     },
     {
       "file": "audit-export.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 595,
+      "attempts": 1,
+      "lastMs": 940,
       "flaky": false
     },
     {
       "file": "audit.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 487,
+      "attempts": 1,
+      "lastMs": 493,
       "flaky": false
     },
     {
       "file": "auth.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1475,
+      "attempts": 1,
+      "lastMs": 1355,
       "flaky": false
     },
     {
       "file": "backup-api.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 542,
+      "attempts": 1,
+      "lastMs": 432,
       "flaky": false
     },
     {
       "file": "backup-mirror.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 8524,
+      "attempts": 1,
+      "lastMs": 8525,
       "flaky": false
     },
     {
       "file": "backup-restore.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 789,
+      "attempts": 1,
+      "lastMs": 560,
       "flaky": false
     },
     {
       "file": "backup-schedule.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2560,
+      "attempts": 1,
+      "lastMs": 2538,
       "flaky": false
     },
     {
       "file": "bad-code.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 317,
+      "attempts": 1,
+      "lastMs": 274,
       "flaky": false
     },
     {
       "file": "blackbox-security.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 7214,
+      "attempts": 1,
+      "lastMs": 7182,
       "flaky": false
     },
     {
       "file": "bulk-access.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 685,
+      "attempts": 1,
+      "lastMs": 591,
       "flaky": false
     },
     {
       "file": "cabinet-merge-taxonomy.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1436,
+      "attempts": 1,
+      "lastMs": 1371,
       "flaky": false
     },
     {
       "file": "cases.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 84,
+      "attempts": 1,
+      "lastMs": 63,
       "flaky": false
     },
     {
       "file": "chaos-resilience.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1087,
+      "attempts": 1,
+      "lastMs": 1016,
       "flaky": false
     },
     {
       "file": "cms-panel.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 618,
+      "attempts": 1,
+      "lastMs": 546,
       "flaky": false
     },
     {
       "file": "concurrent-links.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 697,
+      "attempts": 1,
+      "lastMs": 592,
       "flaky": false
     },
     {
       "file": "config-profiles.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 618,
+      "attempts": 1,
+      "lastMs": 497,
       "flaky": false
     },
     {
       "file": "content-id.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 783,
+      "attempts": 1,
+      "lastMs": 602,
       "flaky": false
     },
     {
       "file": "core-api-version.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 507,
+      "attempts": 1,
+      "lastMs": 443,
       "flaky": false
     },
     {
       "file": "core-container.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 57,
+      "attempts": 1,
+      "lastMs": 51,
       "flaky": false
     },
     {
       "file": "core-groups.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 619,
+      "attempts": 1,
+      "lastMs": 537,
       "flaky": false
     },
     {
       "file": "core-migration.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 646,
+      "attempts": 1,
+      "lastMs": 565,
       "flaky": false
     },
     {
       "file": "core-orphan.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 549,
+      "attempts": 1,
+      "lastMs": 449,
       "flaky": false
     },
     {
       "file": "core-plugins.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 119,
+      "attempts": 1,
+      "lastMs": 107,
       "flaky": false
     },
     {
       "file": "core-profiles.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 546,
+      "attempts": 1,
+      "lastMs": 442,
       "flaky": false
     },
     {
       "file": "core-qr-file.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 607,
+      "attempts": 1,
+      "lastMs": 501,
       "flaky": false
     },
     {
       "file": "core-repository.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 150,
+      "attempts": 1,
+      "lastMs": 143,
       "flaky": false
     },
     {
       "file": "core-signer.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 605,
+      "attempts": 1,
+      "lastMs": 493,
       "flaky": false
     },
     {
       "file": "core-variables.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 599,
+      "attempts": 1,
+      "lastMs": 595,
       "flaky": false
     },
     {
       "file": "corrupt-metadata.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 248,
+      "attempts": 1,
+      "lastMs": 221,
       "flaky": false
     },
     {
       "file": "court-roles.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 70,
+      "attempts": 1,
+      "lastMs": 57,
       "flaky": false
     },
     {
       "file": "crypto-options.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 991,
+      "attempts": 1,
+      "lastMs": 952,
       "flaky": false
     },
     {
       "file": "dashboard.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 54,
+      "attempts": 1,
+      "lastMs": 50,
       "flaky": false
     },
     {
       "file": "data-settings.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 857,
+      "attempts": 1,
+      "lastMs": 751,
       "flaky": false
     },
     {
       "file": "decision-sensors.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 497,
+      "attempts": 1,
+      "lastMs": 445,
       "flaky": false
     },
     {
       "file": "diagnostics.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 476,
+      "attempts": 1,
+      "lastMs": 422,
       "flaky": false
     },
     {
       "file": "directory-organizations.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 885,
+      "attempts": 1,
+      "lastMs": 719,
       "flaky": false
     },
     {
       "file": "directory-variables.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 919,
+      "attempts": 1,
+      "lastMs": 788,
       "flaky": false
     },
     {
       "file": "docker-runtime.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 105,
+      "attempts": 1,
+      "lastMs": 76,
       "flaky": false
     },
     {
       "file": "docs-consistency.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 159,
+      "attempts": 1,
+      "lastMs": 117,
       "flaky": false
     },
     {
       "file": "docs-index.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 545,
+      "attempts": 1,
+      "lastMs": 462,
       "flaky": false
     },
     {
       "file": "docx-pdf.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 181,
+      "attempts": 1,
+      "lastMs": 150,
       "flaky": false
     },
     {
       "file": "dom-harness.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 65,
+      "attempts": 1,
+      "lastMs": 52,
       "flaky": false
     },
     {
       "file": "download-access.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 62,
+      "attempts": 1,
+      "lastMs": 50,
       "flaky": false
     },
     {
       "file": "edge-runtime.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1200,
+      "attempts": 1,
+      "lastMs": 910,
       "flaky": false
     },
     {
       "file": "enterprise-lifecycle.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1420,
+      "attempts": 1,
+      "lastMs": 1179,
       "flaky": false
     },
     {
       "file": "enterprise.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 644,
+      "attempts": 1,
+      "lastMs": 565,
       "flaky": false
     },
     {
       "file": "error-codes.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 351,
+      "attempts": 1,
+      "lastMs": 310,
       "flaky": false
     },
     {
       "file": "error-log.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 505,
+      "attempts": 1,
+      "lastMs": 471,
       "flaky": false
     },
     {
       "file": "error-logging.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 978,
+      "attempts": 1,
+      "lastMs": 856,
       "flaky": false
     },
     {
       "file": "event-stream.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2807,
+      "attempts": 1,
+      "lastMs": 2730,
       "flaky": false
     },
     {
       "file": "evidence-portal-publish.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 96,
+      "attempts": 1,
+      "lastMs": 90,
       "flaky": false
     },
     {
       "file": "evidence-portal-root.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 93,
+      "attempts": 1,
+      "lastMs": 91,
       "flaky": false
     },
     {
       "file": "evidence-portal.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 501,
+      "attempts": 1,
+      "lastMs": 533,
       "flaky": false
     },
     {
       "file": "export-config.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
+      "attempts": 1,
       "lastMs": 63,
       "flaky": false
     },
@@ -562,1495 +559,1495 @@
       "file": "export-manager.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 103,
+      "attempts": 1,
+      "lastMs": 105,
       "flaky": false
     },
     {
       "file": "export-rules.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 53,
+      "attempts": 1,
+      "lastMs": 51,
       "flaky": false
     },
     {
       "file": "export-tracked.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 262,
+      "attempts": 1,
+      "lastMs": 236,
       "flaky": false
     },
     {
       "file": "file-encryption.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 553,
+      "attempts": 1,
+      "lastMs": 496,
       "flaky": false
     },
     {
       "file": "file-link-works.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1831,
+      "attempts": 1,
+      "lastMs": 1787,
       "flaky": false
     },
     {
       "file": "file-transfer.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1163,
+      "attempts": 1,
+      "lastMs": 1151,
       "flaky": false
     },
     {
       "file": "files-manager.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 91,
+      "attempts": 1,
+      "lastMs": 86,
       "flaky": false
     },
     {
       "file": "folder-delete.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 766,
+      "attempts": 1,
+      "lastMs": 745,
       "flaky": false
     },
     {
       "file": "full-journey-office.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1101,
+      "attempts": 1,
+      "lastMs": 1189,
       "flaky": false
     },
     {
       "file": "full-journey-sensors.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2135,
+      "attempts": 1,
+      "lastMs": 2112,
       "flaky": false
     },
     {
       "file": "full-journey.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1282,
+      "attempts": 1,
+      "lastMs": 1266,
       "flaky": false
     },
     {
       "file": "gateway-api.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 65,
+      "attempts": 1,
+      "lastMs": 66,
       "flaky": false
     },
     {
       "file": "gateway-server.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1159,
+      "attempts": 1,
+      "lastMs": 1071,
       "flaky": false
     },
     {
       "file": "generator-app.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 780,
+      "attempts": 1,
+      "lastMs": 578,
       "flaky": false
     },
     {
       "file": "gui-coverage.cjs",
       "ok": true,
-      "fails": 3,
-      "attempts": 4,
-      "lastMs": 74,
-      "flaky": true
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 63,
+      "flaky": false
     },
     {
       "file": "gui-panels.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1157,
+      "attempts": 1,
+      "lastMs": 1152,
       "flaky": false
     },
     {
       "file": "gui-portal-token.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 761,
+      "attempts": 1,
+      "lastMs": 690,
       "flaky": false
     },
     {
       "file": "gui-sections.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2581,
+      "attempts": 1,
+      "lastMs": 2467,
       "flaky": false
     },
     {
       "file": "ha-bridge.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 58,
+      "attempts": 1,
+      "lastMs": 56,
       "flaky": false
     },
     {
       "file": "ha-compatibility.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 384,
+      "attempts": 1,
+      "lastMs": 272,
       "flaky": false
     },
     {
       "file": "ha-integration-flow.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 69,
+      "attempts": 1,
+      "lastMs": 53,
       "flaky": false
     },
     {
       "file": "ha-range-bridge.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 66,
+      "attempts": 1,
+      "lastMs": 50,
       "flaky": false
     },
     {
       "file": "hacs-structure.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 76,
+      "attempts": 1,
+      "lastMs": 54,
       "flaky": false
     },
     {
       "file": "haoss-in-sync.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 137,
+      "attempts": 1,
+      "lastMs": 94,
       "flaky": false
     },
     {
       "file": "haoss-release.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 320,
+      "attempts": 1,
+      "lastMs": 188,
       "flaky": false
     },
     {
       "file": "html-projects.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 772,
+      "attempts": 1,
+      "lastMs": 712,
       "flaky": false
     },
     {
       "file": "html-publish.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 902,
+      "attempts": 1,
+      "lastMs": 616,
       "flaky": false
     },
     {
       "file": "idempotency.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 629,
+      "attempts": 1,
+      "lastMs": 651,
       "flaky": false
     },
     {
       "file": "ingress-api-base.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 536,
+      "attempts": 1,
+      "lastMs": 482,
       "flaky": false
     },
     {
       "file": "ingress-auth.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 489,
+      "attempts": 1,
+      "lastMs": 468,
       "flaky": false
     },
     {
       "file": "ingress-isolation.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 889,
+      "attempts": 1,
+      "lastMs": 831,
       "flaky": false
     },
     {
       "file": "ingress-panel-load.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 768,
+      "attempts": 1,
+      "lastMs": 654,
       "flaky": false
     },
     {
       "file": "instance-lock.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 907,
+      "attempts": 1,
+      "lastMs": 814,
       "flaky": false
     },
     {
       "file": "integrity.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 719,
+      "attempts": 1,
+      "lastMs": 516,
       "flaky": false
     },
     {
       "file": "internal.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1319,
+      "attempts": 1,
+      "lastMs": 692,
       "flaky": false
     },
     {
       "file": "interpolate.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 733,
+      "attempts": 1,
+      "lastMs": 613,
       "flaky": false
     },
     {
       "file": "job-manager.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 710,
+      "attempts": 1,
+      "lastMs": 658,
       "flaky": false
     },
     {
       "file": "job-persistence.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 396,
+      "attempts": 1,
+      "lastMs": 402,
       "flaky": false
     },
     {
       "file": "layout.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 508,
+      "attempts": 1,
+      "lastMs": 470,
       "flaky": false
     },
     {
       "file": "legacy-logic-residue.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 141,
+      "attempts": 1,
+      "lastMs": 122,
       "flaky": false
     },
     {
       "file": "link-check.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 12140,
+      "attempts": 1,
+      "lastMs": 12020,
       "flaky": false
     },
     {
       "file": "links-contract.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 593,
+      "attempts": 1,
+      "lastMs": 540,
       "flaky": false
     },
     {
       "file": "lint-config.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 5098,
+      "attempts": 1,
+      "lastMs": 4110,
       "flaky": false
     },
     {
       "file": "live-stream-lifecycle.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 53,
+      "attempts": 1,
+      "lastMs": 50,
       "flaky": false
     },
     {
       "file": "load-control.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 57,
+      "attempts": 1,
+      "lastMs": 52,
       "flaky": false
     },
     {
       "file": "logger.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 111,
+      "attempts": 1,
+      "lastMs": 105,
       "flaky": false
     },
     {
       "file": "logic-audit.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 375,
+      "attempts": 1,
+      "lastMs": 357,
       "flaky": false
     },
     {
       "file": "logic-boundaries.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 111,
+      "attempts": 1,
+      "lastMs": 104,
       "flaky": false
     },
     {
       "file": "logs-api.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 553,
+      "attempts": 1,
+      "lastMs": 486,
       "flaky": false
     },
     {
       "file": "mirror-s3-wiring.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 802,
+      "attempts": 1,
+      "lastMs": 796,
       "flaky": false
     },
     {
       "file": "mirror-target-timeout.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1602,
+      "attempts": 1,
+      "lastMs": 1561,
       "flaky": false
     },
     {
       "file": "mirror-target.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 204,
+      "attempts": 1,
+      "lastMs": 200,
       "flaky": false
     },
     {
       "file": "network-storage.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 69,
+      "attempts": 1,
+      "lastMs": 61,
       "flaky": false
     },
     {
       "file": "no-stubs.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 83,
+      "attempts": 1,
+      "lastMs": 76,
       "flaky": false
     },
     {
       "file": "node-runtime-gate.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 55,
+      "attempts": 1,
+      "lastMs": 48,
       "flaky": false
     },
     {
       "file": "office-processing.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 137,
+      "attempts": 1,
+      "lastMs": 121,
       "flaky": false
     },
     {
       "file": "oidc-login.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 711,
+      "attempts": 1,
+      "lastMs": 702,
       "flaky": false
     },
     {
       "file": "oracle-digest-chain.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 912,
+      "attempts": 1,
+      "lastMs": 856,
       "flaky": false
     },
     {
       "file": "oracle-interpolate.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 55,
+      "attempts": 1,
+      "lastMs": 50,
       "flaky": false
     },
     {
       "file": "oracle-lifecycle.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1235,
+      "attempts": 1,
+      "lastMs": 1135,
       "flaky": false
     },
     {
       "file": "oracle-manifest-rules.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 77,
+      "attempts": 1,
+      "lastMs": 67,
       "flaky": false
     },
     {
       "file": "oracle-rbac-matrix.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 714,
+      "attempts": 1,
+      "lastMs": 603,
       "flaky": false
     },
     {
       "file": "oracle-slug-and-paths.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 703,
+      "attempts": 1,
+      "lastMs": 628,
       "flaky": false
     },
     {
       "file": "package-api.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1233,
+      "attempts": 1,
+      "lastMs": 1096,
       "flaky": false
     },
     {
       "file": "package-compression.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 122,
+      "attempts": 1,
+      "lastMs": 114,
       "flaky": false
     },
     {
       "file": "package-encryption.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 553,
+      "attempts": 1,
+      "lastMs": 544,
       "flaky": false
     },
     {
       "file": "package-split.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 821,
+      "attempts": 1,
+      "lastMs": 752,
       "flaky": false
     },
     {
       "file": "packager.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 139,
+      "attempts": 1,
+      "lastMs": 131,
       "flaky": false
     },
     {
       "file": "pagination.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 715,
+      "attempts": 1,
+      "lastMs": 669,
       "flaky": false
     },
     {
       "file": "panel-framing.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 991,
+      "attempts": 1,
+      "lastMs": 955,
       "flaky": false
     },
     {
       "file": "parallel-transfers.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 9075,
+      "attempts": 1,
+      "lastMs": 8714,
       "flaky": false
     },
     {
       "file": "pdf-signature.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 760,
+      "attempts": 1,
+      "lastMs": 692,
       "flaky": false
     },
     {
       "file": "pgp-bundle.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 906,
+      "attempts": 1,
+      "lastMs": 640,
       "flaky": false
     },
     {
       "file": "pgp-engine.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 258,
+      "attempts": 1,
+      "lastMs": 279,
       "flaky": false
     },
     {
       "file": "pgp-gpg-interop.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2062,
+      "attempts": 1,
+      "lastMs": 1849,
       "flaky": false
     },
     {
       "file": "pgp-keyflags.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 96,
+      "attempts": 1,
+      "lastMs": 101,
       "flaky": false
     },
     {
       "file": "pgp-keyring.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 3209,
+      "attempts": 1,
+      "lastMs": 3130,
       "flaky": false
     },
     {
       "file": "pgp-mpi.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 77,
+      "attempts": 1,
+      "lastMs": 61,
       "flaky": false
     },
     {
       "file": "pgp-path-encryption.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 5112,
+      "attempts": 1,
+      "lastMs": 4760,
       "flaky": false
     },
     {
       "file": "pgp-v6.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 108,
+      "attempts": 1,
+      "lastMs": 95,
       "flaky": false
     },
     {
       "file": "pgp-workdir-encryption.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 4687,
+      "attempts": 1,
+      "lastMs": 4449,
       "flaky": false
     },
     {
       "file": "pgp.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 124,
+      "attempts": 1,
+      "lastMs": 131,
       "flaky": false
     },
     {
       "file": "policy-gui.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 75,
+      "attempts": 1,
+      "lastMs": 52,
       "flaky": false
     },
     {
       "file": "portal-api-qr.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 636,
+      "attempts": 1,
+      "lastMs": 495,
       "flaky": false
     },
     {
       "file": "portal-file-page.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 605,
+      "attempts": 1,
+      "lastMs": 621,
       "flaky": false
     },
     {
       "file": "portal-folder-copy.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 965,
+      "attempts": 1,
+      "lastMs": 976,
       "flaky": false
     },
     {
       "file": "portal-folder-portal.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1009,
+      "attempts": 1,
+      "lastMs": 898,
       "flaky": false
     },
     {
       "file": "portal-folder-refs.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 745,
+      "attempts": 1,
+      "lastMs": 610,
       "flaky": false
     },
     {
       "file": "portal-folder.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 885,
+      "attempts": 1,
+      "lastMs": 705,
       "flaky": false
     },
     {
       "file": "portal-html-sandbox.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 659,
+      "attempts": 1,
+      "lastMs": 526,
       "flaky": false
     },
     {
       "file": "portal-i18n.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 69,
+      "attempts": 1,
+      "lastMs": 58,
       "flaky": false
     },
     {
       "file": "portal-integrity.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 783,
+      "attempts": 1,
+      "lastMs": 572,
       "flaky": false
     },
     {
       "file": "portal-monitoring.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1214,
+      "attempts": 1,
+      "lastMs": 865,
       "flaky": false
     },
     {
       "file": "portal-order.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1240,
+      "attempts": 1,
+      "lastMs": 894,
       "flaky": false
     },
     {
       "file": "portal-page-contract.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 807,
+      "attempts": 1,
+      "lastMs": 796,
       "flaky": false
     },
     {
       "file": "portal-page-lang.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 741,
+      "attempts": 1,
+      "lastMs": 748,
       "flaky": false
     },
     {
       "file": "portal-page-render.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 624,
+      "attempts": 1,
+      "lastMs": 736,
       "flaky": false
     },
     {
       "file": "portal-page.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1028,
+      "attempts": 1,
+      "lastMs": 1011,
       "flaky": false
     },
     {
       "file": "portal-qr-archive.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 897,
+      "attempts": 1,
+      "lastMs": 839,
       "flaky": false
     },
     {
       "file": "portal-qr-badge.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 544,
+      "attempts": 1,
+      "lastMs": 513,
       "flaky": false
     },
     {
       "file": "portal-qr-restore.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 618,
+      "attempts": 1,
+      "lastMs": 568,
       "flaky": false
     },
     {
       "file": "portal-rules-applied.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 867,
+      "attempts": 1,
+      "lastMs": 789,
       "flaky": false
     },
     {
       "file": "portal-tokens.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1569,
+      "attempts": 1,
+      "lastMs": 1509,
       "flaky": false
     },
     {
       "file": "preview.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 545,
+      "attempts": 1,
+      "lastMs": 534,
       "flaky": false
     },
     {
       "file": "problem.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 54,
+      "attempts": 1,
+      "lastMs": 47,
       "flaky": false
     },
     {
       "file": "process-guards.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 374,
+      "attempts": 1,
+      "lastMs": 361,
       "flaky": false
     },
     {
       "file": "public-gateway.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 58,
+      "attempts": 1,
+      "lastMs": 56,
       "flaky": false
     },
     {
       "file": "public-package.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 3275,
+      "attempts": 1,
+      "lastMs": 3169,
       "flaky": false
     },
     {
       "file": "public-rate-limit.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2882,
+      "attempts": 1,
+      "lastMs": 2817,
       "flaky": false
     },
     {
       "file": "public-route-allowlist.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 570,
+      "attempts": 1,
+      "lastMs": 567,
       "flaky": false
     },
     {
       "file": "publish-script.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1057,
+      "attempts": 1,
+      "lastMs": 966,
       "flaky": false
     },
     {
       "file": "qr-dispatch.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 586,
+      "attempts": 1,
+      "lastMs": 531,
       "flaky": false
     },
     {
       "file": "qr-rollback.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 69,
+      "attempts": 1,
+      "lastMs": 75,
       "flaky": false
     },
     {
       "file": "raspberrypi-compat.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 56,
+      "attempts": 1,
+      "lastMs": 61,
       "flaky": false
     },
     {
       "file": "rate-limit.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 4747,
+      "attempts": 1,
+      "lastMs": 4723,
       "flaky": false
     },
     {
       "file": "rbac-default-matrix.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 844,
+      "attempts": 1,
+      "lastMs": 853,
       "flaky": false
     },
     {
       "file": "rbac-sso.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 502,
+      "attempts": 1,
+      "lastMs": 503,
       "flaky": false
     },
     {
       "file": "rbac.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 549,
+      "attempts": 1,
+      "lastMs": 569,
       "flaky": false
     },
     {
       "file": "readiness-integrity.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 641,
+      "attempts": 1,
+      "lastMs": 542,
       "flaky": false
     },
     {
       "file": "readiness.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 512,
+      "attempts": 1,
+      "lastMs": 426,
       "flaky": false
     },
     {
       "file": "release-acceptance.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 108,
+      "attempts": 1,
+      "lastMs": 83,
       "flaky": false
     },
     {
       "file": "release-archive-paths.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 67,
+      "attempts": 1,
+      "lastMs": 54,
       "flaky": false
     },
     {
       "file": "release-tooling.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 65,
+      "attempts": 1,
+      "lastMs": 63,
       "flaky": false
     },
     {
       "file": "report-api.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 895,
+      "attempts": 1,
+      "lastMs": 821,
       "flaky": false
     },
     {
       "file": "report-entry-points.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 3019,
+      "attempts": 1,
+      "lastMs": 2192,
       "flaky": false
     },
     {
       "file": "report-manifest.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 68,
+      "attempts": 1,
+      "lastMs": 73,
       "flaky": false
     },
     {
       "file": "report-manifests.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 67,
+      "attempts": 1,
+      "lastMs": 69,
       "flaky": false
     },
     {
       "file": "report-objects-real.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 672,
+      "attempts": 1,
+      "lastMs": 621,
       "flaky": false
     },
     {
       "file": "report-objects.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 64,
+      "attempts": 1,
+      "lastMs": 57,
       "flaky": false
     },
     {
       "file": "report-package.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 595,
+      "attempts": 1,
+      "lastMs": 548,
       "flaky": false
     },
     {
       "file": "report-qr.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 210,
+      "attempts": 1,
+      "lastMs": 227,
       "flaky": false
     },
     {
       "file": "report-render.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 214,
+      "attempts": 1,
+      "lastMs": 228,
       "flaky": false
     },
     {
       "file": "report-scope.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 61,
+      "attempts": 1,
+      "lastMs": 62,
       "flaky": false
     },
     {
       "file": "report-stamp.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 218,
+      "attempts": 1,
+      "lastMs": 227,
       "flaky": false
     },
     {
       "file": "report-studio-panel.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 62,
+      "attempts": 1,
+      "lastMs": 61,
       "flaky": false
     },
     {
       "file": "report-tsa-e2e.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 584,
+      "attempts": 1,
+      "lastMs": 573,
       "flaky": false
     },
     {
       "file": "respond.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 55,
+      "attempts": 1,
+      "lastMs": 54,
       "flaky": false
     },
     {
       "file": "resume-transfer.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1200,
+      "attempts": 1,
+      "lastMs": 895,
       "flaky": false
     },
     {
       "file": "retention-audit.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 552,
+      "attempts": 1,
+      "lastMs": 531,
       "flaky": false
     },
     {
       "file": "retention-cost.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 229,
+      "attempts": 1,
+      "lastMs": 216,
       "flaky": false
     },
     {
       "file": "retention-evidence.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 78,
+      "attempts": 1,
+      "lastMs": 66,
       "flaky": false
     },
     {
       "file": "retention.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 427,
+      "attempts": 1,
+      "lastMs": 420,
       "flaky": false
     },
     {
       "file": "rfc3161-api.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 692,
+      "attempts": 1,
+      "lastMs": 597,
       "flaky": false
     },
     {
       "file": "rollback.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 590,
+      "attempts": 1,
+      "lastMs": 509,
       "flaky": false
     },
     {
       "file": "rules-config.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 90,
+      "attempts": 1,
+      "lastMs": 91,
       "flaky": false
     },
     {
       "file": "rules-parity.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 52,
+      "attempts": 1,
+      "lastMs": 55,
       "flaky": false
     },
     {
       "file": "runtime-config.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 79,
+      "attempts": 1,
+      "lastMs": 73,
       "flaky": false
     },
     {
       "file": "runtime-limits.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 541,
+      "attempts": 1,
+      "lastMs": 534,
       "flaky": false
     },
     {
       "file": "scenario-matrix.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 115,
+      "attempts": 1,
+      "lastMs": 108,
       "flaky": false
     },
     {
       "file": "search-api.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 485,
+      "attempts": 1,
+      "lastMs": 481,
       "flaky": false
     },
     {
       "file": "secret-links.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1065,
+      "attempts": 1,
+      "lastMs": 1014,
       "flaky": false
     },
     {
       "file": "secret-lock.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 189,
+      "attempts": 1,
+      "lastMs": 193,
       "flaky": false
     },
     {
       "file": "secret-panel.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 972,
+      "attempts": 1,
+      "lastMs": 842,
       "flaky": false
     },
     {
       "file": "security-defaults.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 295,
+      "attempts": 1,
+      "lastMs": 230,
       "flaky": false
     },
     {
       "file": "send.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2446,
+      "attempts": 1,
+      "lastMs": 2497,
       "flaky": false
     },
     {
       "file": "sensor-settings.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1900,
+      "attempts": 1,
+      "lastMs": 1743,
       "flaky": false
     },
     {
       "file": "sensors-telemetry.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 5424,
+      "attempts": 1,
+      "lastMs": 5441,
       "flaky": false
     },
     {
       "file": "sensors.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 923,
+      "attempts": 1,
+      "lastMs": 786,
       "flaky": false
     },
     {
       "file": "server-structure.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 53,
+      "attempts": 1,
+      "lastMs": 65,
       "flaky": false
     },
     {
       "file": "settings-defaults.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 386,
+      "attempts": 1,
+      "lastMs": 323,
       "flaky": false
     },
     {
       "file": "share-links.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 557,
+      "attempts": 1,
+      "lastMs": 480,
       "flaky": false
     },
     {
       "file": "shared-data-access.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 578,
+      "attempts": 1,
+      "lastMs": 591,
       "flaky": false
     },
     {
       "file": "shared-data-burst.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1895,
+      "attempts": 1,
+      "lastMs": 1890,
       "flaky": false
     },
     {
       "file": "shared-data-lock.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 379,
+      "attempts": 1,
+      "lastMs": 391,
       "flaky": false
     },
     {
       "file": "shared-data-processes.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1455,
+      "attempts": 1,
+      "lastMs": 1289,
       "flaky": false
     },
     {
       "file": "shared-data.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 259,
+      "attempts": 1,
+      "lastMs": 284,
       "flaky": false
     },
     {
       "file": "shared-mode-shutdown.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 406,
+      "attempts": 1,
+      "lastMs": 389,
       "flaky": false
     },
     {
       "file": "signed-url-restart.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2245,
+      "attempts": 1,
+      "lastMs": 2167,
       "flaky": false
     },
     {
       "file": "signing-fallback.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 642,
+      "attempts": 1,
+      "lastMs": 597,
       "flaky": false
     },
     {
       "file": "signing.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 617,
+      "attempts": 1,
+      "lastMs": 539,
       "flaky": false
     },
     {
       "file": "single-source.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 56,
+      "attempts": 1,
+      "lastMs": 57,
       "flaky": false
     },
     {
       "file": "smoke.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 999,
+      "attempts": 1,
+      "lastMs": 1041,
       "flaky": false
     },
     {
       "file": "source-inventory.cjs",
       "ok": true,
-      "fails": 2,
-      "attempts": 4,
-      "lastMs": 430,
-      "flaky": true
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 399,
+      "flaky": false
     },
     {
       "file": "sqlite-backup.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 162,
+      "attempts": 1,
+      "lastMs": 160,
       "flaky": false
     },
     {
       "file": "sqlite-size.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 135,
+      "attempts": 1,
+      "lastMs": 132,
       "flaky": false
     },
     {
       "file": "sqlite-snapshot-safety.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 136,
+      "attempts": 1,
+      "lastMs": 135,
       "flaky": false
     },
     {
       "file": "sqlite-store.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 144,
+      "attempts": 1,
+      "lastMs": 149,
       "flaky": false
     },
     {
       "file": "start-entrypoint.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 648,
+      "attempts": 1,
+      "lastMs": 632,
       "flaky": false
     },
     {
       "file": "start-token-required.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2771,
+      "attempts": 1,
+      "lastMs": 2326,
       "flaky": false
     },
     {
       "file": "storage-check.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 447,
+      "attempts": 1,
+      "lastMs": 521,
       "flaky": false
     },
     {
       "file": "storage-default-location.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 83,
+      "attempts": 1,
+      "lastMs": 86,
       "flaky": false
     },
     {
       "file": "storage-migrate.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 70,
+      "attempts": 1,
+      "lastMs": 76,
       "flaky": false
     },
     {
       "file": "storage-mirror.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 975,
+      "attempts": 1,
+      "lastMs": 1016,
       "flaky": false
     },
     {
       "file": "storage-paths.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 73,
+      "attempts": 1,
+      "lastMs": 77,
       "flaky": false
     },
     {
       "file": "storage-tree-api.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 1281,
+      "attempts": 1,
+      "lastMs": 1300,
       "flaky": false
     },
     {
       "file": "storage-tree.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 62,
+      "attempts": 1,
+      "lastMs": 60,
       "flaky": false
     },
     {
       "file": "storage.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
+      "attempts": 1,
       "lastMs": 65,
       "flaky": false
     },
@@ -2058,111 +2055,111 @@
       "file": "tag-version.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 297,
+      "attempts": 1,
+      "lastMs": 267,
       "flaky": false
     },
     {
       "file": "taxonomy.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 711,
+      "attempts": 1,
+      "lastMs": 669,
       "flaky": false
     },
     {
       "file": "transfer-mirror.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 671,
+      "attempts": 1,
+      "lastMs": 598,
       "flaky": false
     },
     {
       "file": "tsa-breaker.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 473,
+      "attempts": 1,
+      "lastMs": 464,
       "flaky": false
     },
     {
       "file": "tsa-client.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 64,
+      "attempts": 1,
+      "lastMs": 60,
       "flaky": false
     },
     {
       "file": "tsa-evidence.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 655,
+      "attempts": 1,
+      "lastMs": 619,
       "flaky": false
     },
     {
       "file": "ui-coverage.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 68,
+      "attempts": 1,
+      "lastMs": 64,
       "flaky": false
     },
     {
       "file": "ui-i18n.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 67,
+      "attempts": 1,
+      "lastMs": 59,
       "flaky": false
     },
     {
       "file": "ui-icons.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 54,
+      "attempts": 1,
+      "lastMs": 50,
       "flaky": false
     },
     {
       "file": "ui-navigation.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 62,
+      "attempts": 1,
+      "lastMs": 59,
       "flaky": false
     },
     {
       "file": "ui-settings-sections.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 193,
+      "attempts": 1,
+      "lastMs": 214,
       "flaky": false
     },
     {
       "file": "ui-version.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 64,
+      "attempts": 1,
+      "lastMs": 63,
       "flaky": false
     },
     {
       "file": "update-repo.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 722,
+      "attempts": 1,
+      "lastMs": 636,
       "flaky": false
     },
     {
       "file": "upload-rollback-guard.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
+      "attempts": 1,
       "lastMs": 49,
       "flaky": false
     },
@@ -2170,15 +2167,15 @@
       "file": "versioning.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 686,
+      "attempts": 1,
+      "lastMs": 524,
       "flaky": false
     },
     {
       "file": "virtual-storage.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
+      "attempts": 1,
       "lastMs": 67,
       "flaky": false
     },
@@ -2186,48 +2183,48 @@
       "file": "visitor-sensors.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 458,
+      "attempts": 1,
+      "lastMs": 427,
       "flaky": false
     },
     {
       "file": "visitors-panel.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 690,
+      "attempts": 1,
+      "lastMs": 775,
       "flaky": false
     },
     {
       "file": "webhook-events.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 76,
+      "attempts": 1,
+      "lastMs": 69,
       "flaky": false
     },
     {
       "file": "webhooks.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 2691,
+      "attempts": 1,
+      "lastMs": 2724,
       "flaky": false
     },
     {
       "file": "whitebox-security.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 249,
+      "attempts": 1,
+      "lastMs": 241,
       "flaky": false
     },
     {
       "file": "worm.cjs",
       "ok": true,
       "fails": 0,
-      "attempts": 4,
-      "lastMs": 67,
+      "attempts": 1,
+      "lastMs": 61,
       "flaky": false
     }
   ]
