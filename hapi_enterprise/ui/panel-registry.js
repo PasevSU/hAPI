@@ -99,6 +99,23 @@
       return Boolean(resolve(id));
     }
 
+    /**
+     * Може ли тази роля да ползва панела. `capabilities` е списъкът от `whoami` — тоест
+     * СЪЩАТА таблица, по която сървърът пуска заявките (`rbac.capabilitiesOf`), а не втори
+     * списък в GUI-я. Панел без декларирани способности е общ (табло, „Относно“).
+     *
+     * `null`/липсващ списък значи „ролята още не е известна“ — тогава не се филтрира, за да
+     * не изчезне целият интерфейс, докато `whoami` отговори. Това НЕ е отстъпка по сигурност:
+     * правата се налагат в API-то, тук се пази само човекът от бутон, който връща 403.
+     */
+    function allowed(id, capabilities) {
+      const entry = byId.get(String(id));
+      if (!entry) return false;
+      if (entry.capabilities.length === 0) return true;
+      if (!Array.isArray(capabilities)) return true;
+      return entry.capabilities.every((name) => capabilities.includes(name));
+    }
+
     function list() {
       return order.map((id) => {
         const entry = byId.get(id);
@@ -113,13 +130,16 @@
     }
 
     /**
-     * Монтира панела в `host`. Връща `false`, когато панелът не е наличен — викащият решава
-     * какво да покаже, вместо да получи празен екран без обяснение.
+     * Монтира панела в `host`. Връща `true`, `false` (панелът не е наличен) или `'DENIED'`
+     * (ролята няма способността) — викащият решава какво да покаже, вместо да получи празен
+     * екран без обяснение. Различаването на трите е нарочно: „липсва модул“ и „нямаш право“
+     * водят до различни съобщения, а еднакво `false` би ги смесило.
      */
     function mount(id, host, ctx) {
       const entry = byId.get(String(id));
       const target = resolve(id);
       if (!entry || !target) return false;
+      if (!allowed(id, ctx && ctx.capabilities)) return 'DENIED';
       try {
         if (target.fn) target.fn(host, ctx);
         else target.host[target.method](host, ctx);
@@ -172,7 +192,7 @@
       return active;
     }
 
-    return { register, registerAll, get: (id) => byId.get(String(id)) || null, resolve, has, available, list, mount, unmount, unmountAll, activeId };
+    return { register, registerAll, get: (id) => byId.get(String(id)) || null, resolve, has, available, allowed, list, mount, unmount, unmountAll, activeId };
   }
 
   const API = { create };

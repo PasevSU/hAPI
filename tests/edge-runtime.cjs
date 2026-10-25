@@ -36,6 +36,12 @@ const edge = require('../hapi_enterprise/standalone');
     assert.equal(whoBody.ingress, true);
     assert.equal(whoBody.defaultRole, 'admin', 'admin е ролята по подразбиране');
     assert.equal(whoBody.mapped, false, 'без user_roles/group_roles няма карта');
+    // GUI-ят филтрира панелите по ТОЗИ списък (план 18 §7, `permissions`). Ако сървърът
+    // спре да го връща, интерфейсът тихо щеше да показва панели, които отговарят 403.
+    assert.ok(Array.isArray(whoBody.capabilities), 'whoami връща capabilities');
+    assert.ok(whoBody.capabilities.includes('portals'), 'admin има `portals`');
+    assert.equal(whoBody.capabilities.includes('evidence'), true, 'admin има и `evidence`');
+    assert.deepEqual(whoBody.capabilities, require('../hapi_enterprise/rbac.js').capabilitiesOf('admin'), 'списъкът е същият като от rbac');
 
     // Admin API surface used by the live desktop GUI (contract for ui/live.js).
     const H = { Authorization: 'Bearer ' + t1 };

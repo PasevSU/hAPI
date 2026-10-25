@@ -33,6 +33,7 @@
       noBackend: 'няма връзка с add-on-а',
       barConnected: 'свързан · токен в сесията',
       barNoToken: 'свързан · без токен (само четене)',
+      noPermission: 'Тази роля няма право на този панел. Правата се дават от администратор.',
     },
     en: {
       app: 'Enterprise Control Center',
@@ -63,6 +64,7 @@
       noBackend: 'no connection to the add-on',
       barConnected: 'connected · token in session',
       barNoToken: 'connected · no token (read-only)',
+      noPermission: 'This role has no access to this panel. Access is granted by an administrator.',
     },
     de: {
       app: 'Enterprise Control Center',
@@ -93,6 +95,7 @@
       noBackend: 'keine Verbindung zum Add-on',
       barConnected: 'verbunden · Token in der Sitzung',
       barNoToken: 'verbunden · kein Token (nur Lesen)',
+      noPermission: 'Diese Rolle hat keinen Zugriff auf dieses Panel. Zugriff vergibt ein Administrator.',
     },
   };
 
@@ -129,19 +132,23 @@
   // този файл се зарежда ПРЕДИ тях в `index.html` — регистърът ги търси в момента на
   // монтиране, а не при регистрация (иначе редът на `<script>`-овете решава кой работи).
   const panels = window.HapiPanelRegistry ? window.HapiPanelRegistry.create(window) : null;
+  // Ролята още не е известна: `null` значи „не филтрирай“, а не „нищо не може“.
+  let capabilities = null;
   if (panels) {
+    // `capabilities` е същата способност, която съответните маршрути искат от сървъра
+    // (`routes/*` → `adminGate`), за да не се показва панел, който ще отговори 403.
     panels.registerAll([
       { id: 'dashboard', title: 'Табло', global: 'HapiDashboardPanel' },
       { id: 'about', title: 'Относно', global: 'HapiDashboardPanel', method: 'mountAbout' },
-      { id: 'report', title: 'Report Studio', global: 'ReportStudio' },
-      { id: 'visitors', title: 'Посетители', global: 'HapiVisitorsPanel' },
+      { id: 'report', title: 'Report Studio', global: 'ReportStudio', capabilities: ['settings'] },
+      { id: 'visitors', title: 'Посетители', global: 'HapiVisitorsPanel', capabilities: ['sensors'] },
       // Порталът има две поколения панел; първият наличен печели.
-      { id: 'portals', title: 'Портали', global: ['FilesManagerPanel', 'PortalsPanel'] },
-      { id: 'files', title: 'Файлове', global: 'FilesManagerPanel' },
-      { id: 'export', title: 'Експорт', global: 'ExportCenterPanel' },
-      { id: 'gateway', title: 'Публичен достъп', global: 'PublicGatewayPanel' },
-      { id: 'contacts', title: 'Контакти', global: 'ContactsPanel' },
-      { id: 'cases', title: 'Дела', global: 'CasesPanel' },
+      { id: 'portals', title: 'Портали', global: ['FilesManagerPanel', 'PortalsPanel'], capabilities: ['portals'] },
+      { id: 'files', title: 'Файлове', global: 'FilesManagerPanel', capabilities: ['portals'] },
+      { id: 'export', title: 'Експорт', global: 'ExportCenterPanel', capabilities: ['packages'] },
+      { id: 'gateway', title: 'Публичен достъп', global: 'PublicGatewayPanel', capabilities: ['portals'] },
+      { id: 'contacts', title: 'Контакти', global: 'ContactsPanel', capabilities: ['directory'] },
+      { id: 'cases', title: 'Дела', global: 'CasesPanel', capabilities: ['cases'] },
     ]);
   }
 
@@ -173,6 +180,10 @@
     const nav = $('#nav');
     nav.innerHTML = '';
     for (const item of NAV) {
+      // Панел, който иска способност, която ролята няма, не се показва. Проверява се само за
+      // регистрираните панели: останалите входове водят към секция на „Настройки“ и се
+      // решават от сървъра при самата заявка.
+      if (panels && panels.has(item.id) && !panels.allowed(item.id, capabilities)) continue;
       const button = document.createElement('button');
       button.type = 'button';
       button.className = `nav-item${item.id === current ? ' active' : ''}`;
@@ -209,7 +220,14 @@
     // екран без обяснение.
     if (panels && panels.available(current)) {
       view.innerHTML = '';
-      if (panels.mount(current, view)) return;
+      const mounted = panels.mount(current, view, { capabilities });
+      if (mounted === true) return;
+      if (mounted === 'DENIED') {
+        // Различава се от „липсва панел“: човекът има право да знае, че не е за него, а не
+        // че модулът липсва. Правата ги налага сървърът; тук само не се показва бутон.
+        view.innerHTML = `<div class="page-title"><h1>${esc(t(current))}</h1><p class="muted">${esc(t('noPermission'))}</p></div>`;
+        return;
+      }
     }
 
     if (current === 'settings' && window.SettingsPanel) {
@@ -269,6 +287,28 @@
     bar.textContent = !url ? t('noBackend') : token ? t('barConnected') : t('barNoToken');
   }
 
+  // Ролята и способностите идват от СЪЩИЯ източник, по който сървърът пуска заявките
+  // (`GET /admin/api/whoami` → `rbac.capabilitiesOf`), а не от втори списък в GUI-я.
+  // Докато отговорът не дойде, `capabilities` е `null` и нищо не се скрива — иначе при
+  // бавна връзка интерфейсът би изчезнал за момент. Правата пак се налагат от API-то.
+  async function loadCapabilities() {
+    const base = typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '';
+    const token = sessionStorage.getItem('hapiAdminToken');
+    if (!base || !token || typeof fetch !== 'function') return;
+    try {
+      const res = await fetch(base + '/admin/api/whoami', { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data && data.capabilities)) return;
+      capabilities = data.capabilities;
+      renderNav();
+      renderView();
+    } catch {
+      // Без роля интерфейсът остава както досега; това не е отстъпка по сигурност —
+      // всяка заявка пак минава през `adminGate`.
+    }
+  }
+
   function boot() {
     const fromHash = (location.hash || '').replace('#', '');
     if (NAV.some((n) => n.id === fromHash)) current = fromHash;
@@ -287,6 +327,7 @@
     if (versionEl) versionEl.textContent = versionLabel();
     renderNav();
     renderView();
+    void loadCapabilities();
   }
 
   // Панелите могат да водят към друг панел (напр. „Виж всички“ от таблото), без да

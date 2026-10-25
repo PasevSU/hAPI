@@ -33,7 +33,7 @@ assert.ok(
 );
 assert.match(app, /id: 'dashboard',[^}]*global: 'HapiDashboardPanel'/, 'таблото е регистрирано по име на глобален обект');
 assert.match(app, /id: 'about',[^}]*global: 'HapiDashboardPanel',[^}]*method: 'mountAbout'/, '„Относно“ ползва mountAbout през регистъра');
-assert.match(app, /panels\.mount\(current, view\)/, 'монтирането минава през регистъра');
+assert.match(app, /panels\.mount\(current, view/, 'монтирането минава през регистъра (с контекста на ролята)');
 assert.match(dashboard, /mountAbout/, 'панелът предоставя mountAbout');
 
 // 3. Данните идват от реалните административни маршрути.

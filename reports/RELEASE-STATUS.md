@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **284/284** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 478 файла · 81470 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 474 файла · 81096 реда · critical: 0 · high: 0 · medium: 3 · low: 185 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 478 файла · 81610 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 474 файла · 81236 реда · critical: 0 · high: 0 · medium: 3 · low: 185 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,7 +27,7 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (187 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (188 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.87.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
@@ -598,6 +598,17 @@
   проверката си остава в API-то; днес нито един панел не декларира такава.
   Тестове: `tests/panel-registry.cjs` (8 проверки), `tests/live-stream-lifecycle.cjs` (вече
   проверява пътя през регистъра, а не само стария резервен ред).
+
+- **Панел, който щеше да върне 403, вече не се показва.** Регистърът получи `permissions`:
+  всеки панел декларира своите способности, `GET /admin/api/whoami` и `/connection` връщат
+  `capabilities`, и `mount` отказва с `DENIED`. Списъкът идва от **същата** таблица, по която
+  сървърът пуска заявките (`rbac.capabilitiesOf`), а не от втори списък в GUI-я — затова
+  `tests/panel-registry.cjs` сверява **196 двойки роля×способност** и изисква регистърът и
+  `rbac` да дават един и същ отговор. `tests/edge-runtime.cjs` проверява, че `whoami` връща
+  списъка и че той е равен на `rbac.capabilitiesOf('admin')`.
+  Две граници, казани на глас: докато `whoami` не отговори, нищо не се скрива (`null` значи
+  „ролята още не е известна“), а съдебните роли не получават списък, защото `whoami` иска
+  способност `whoami`, която те нямат — пакетите им са за портала, не за Control Center.
 
 ## 4. Как се проверява наново
 

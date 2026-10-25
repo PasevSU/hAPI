@@ -131,4 +131,60 @@ const ok = (label) => cases.push(label);
   ok('`method` (mountAbout), `list()` с реда на регистрацията и способности');
 }
 
+// ── 9. Способности: панел, който иска право, което ролята няма ──────────────
+// Точно това иска план 18 §7 с `permissions`: не „скрит бутон“, а панел, който се отказва,
+// защото ролята няма способността. Списъкът идва от `rbac.capabilitiesOf` — същата таблица,
+// по която сървърът пуска заявките, а не втори списък в GUI-я.
+{
+  const rbac = require('../hapi_enterprise/rbac.js');
+  const mounted = [];
+  const scope = { HapiPortalPanel: { mount: () => mounted.push('portals') } };
+  const registry = create(scope);
+  registry.register({ id: 'portals', global: 'HapiPortalPanel', capabilities: ['portals'] });
+  registry.register({ id: 'dashboard', global: 'HapiPortalPanel' });
+
+  assert.equal(registry.allowed('portals', rbac.capabilitiesOf('admin')), true, 'admin има `portals`');
+  assert.equal(registry.allowed('portals', rbac.capabilitiesOf('judge')), false, 'съдът НЯМА `portals`');
+  assert.equal(registry.allowed('dashboard', rbac.capabilitiesOf('judge')), true, 'панел без способности е общ');
+
+  assert.equal(registry.mount('portals', {}, { capabilities: rbac.capabilitiesOf('judge') }), 'DENIED');
+  assert.deepEqual(mounted, [], 'отказаният панел не се монтира');
+  assert.equal(registry.mount('portals', {}, { capabilities: rbac.capabilitiesOf('admin') }), true);
+  assert.deepEqual(mounted, ['portals']);
+  ok('способности: съдът получава DENIED за порталите, admin — не');
+}
+
+// ── 10. Регистърът и `rbac` не се разминават ────────────────────────────────
+{
+  const rbac = require('../hapi_enterprise/rbac.js');
+  const scope = { P: { mount: () => undefined } };
+  const registry = create(scope);
+  // Всяка способност от таблицата, за всяка роля: регистърът трябва да даде същия отговор
+  // като `rbac`, иначе GUI-ят би скрил панел, който работи, или обратното.
+  let checked = 0;
+  for (const cap of Object.keys(rbac.CAPABILITIES)) {
+    const id = 'p-' + cap.replace(/[^a-z_]/g, 'x').toLowerCase();
+    registry.register({ id, global: 'P', capabilities: [cap] });
+    for (const role of rbac.ROLES) {
+      const fromRbac = rbac.capabilitiesOf(role).includes(cap);
+      assert.equal(registry.allowed(id, rbac.capabilitiesOf(role)), fromRbac, role + ' / ' + cap);
+      checked += 1;
+    }
+  }
+  assert.ok(checked > 100, 'проверени са всички двойки роля×способност, получено: ' + checked);
+  ok('регистърът и `rbac` дават един и същ отговор за всички ' + checked + ' двойки роля×способност');
+}
+
+// ── 11. Непозната роля не скрива интерфейса ─────────────────────────────────
+{
+  const scope = { P: { mount: () => undefined } };
+  const registry = create(scope);
+  registry.register({ id: 'protected', global: 'P', capabilities: ['settings'] });
+  // `null` значи „ролята още не е известна“ (whoami не е отговорил) — не се филтрира.
+  assert.equal(registry.allowed('protected', null), true, 'без знания за ролята не се крие');
+  assert.equal(registry.allowed('protected', []), false, 'празен списък значи „няма права“');
+  assert.equal(registry.mount('protected', {}, {}), true, 'без `capabilities` в контекста се монтира');
+  ok('непозната роля (null) не крие, а празен списък ([]) отказва');
+}
+
 console.log('PASS panel-registry: ' + cases.length + ' проверки — ' + cases.join('; '));

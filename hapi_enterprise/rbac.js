@@ -56,6 +56,23 @@ const CAPABILITIES = {
 const ROLES = ['admin', 'operator', 'viewer', 'judge', 'prosecutor', 'clerk', 'expert'];
 const isRole = (r) => ROLES.includes(r);
 
+/**
+ * Кои способности ролята изобщо може да ползва (без значение от метода). Нужно е на GUI-я:
+ * панел, който иска способност, която ролята няма, не бива да се показва като работещ —
+ * иначе човекът вижда бутон, който връща 403. Точно това иска план 18 §7 с `permissions`.
+ * Една дефиниция за инстанцията, за `whoami` и за тестовете — иначе три копия се разминават.
+ */
+function capabilitiesOf(role) {
+  if (!role) return [];
+  if (role === 'admin') return Object.keys(CAPABILITIES).sort();
+  return Object.keys(CAPABILITIES)
+    .filter((name) => {
+      const value = CAPABILITIES[name][role];
+      return value === true || value === 'read';
+    })
+    .sort();
+}
+
 function create({ adminToken, operatorToken, viewerToken, userRoles = {}, groupRoles = {}, defaultRole = 'admin', ssoRole = null }) {
   // Администраторските права са ПО ПОДРАЗБИРАНЕ: профилите (user_roles/group_roles) са
   // незадължителни и само коригират ролята надолу (напр. {"bob":"viewer"}).
@@ -99,6 +116,6 @@ function create({ adminToken, operatorToken, viewerToken, userRoles = {}, groupR
     if (v === 'read') return method === 'GET';
     return false;
   }
-  return { resolve, allowed, role: resolve, configured: Object.keys(userRoles).length > 0 || Object.keys(groupRoles).length > 0, defaultRole: fallback };
+  return { resolve, allowed, capabilitiesOf, role: resolve, configured: Object.keys(userRoles).length > 0 || Object.keys(groupRoles).length > 0, defaultRole: fallback };
 }
-module.exports = { create, CAPABILITIES, ROLES, isRole };
+module.exports = { create, CAPABILITIES, ROLES, isRole, capabilitiesOf };

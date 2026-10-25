@@ -49,7 +49,7 @@ assert.match(index, /<script src="panel-registry\.js"><\/script>/);
 assert.match(app, /id: 'contacts',[^}]*global: 'ContactsPanel'/);
 assert.match(app, /id: 'cases',[^}]*global: 'CasesPanel'/);
 assert.match(app, /id: 'visitors',[^}]*global: 'HapiVisitorsPanel'/);
-assert.match(app, /panels\.mount\(current, view\)/, 'монтирането минава през регистъра');
+assert.match(app, /panels\.mount\(current, view/, 'монтирането минава през регистъра (с контекста на ролята)');
 assert.match(app, /window\.SettingsPanel\.mount\(view\)/, '„Настройки“ остава извън регистъра (секции, не панел)');
 
 // 3. Настройки: поле за токен + публичен адрес (сървърна настройка).

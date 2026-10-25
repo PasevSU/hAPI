@@ -1350,11 +1350,11 @@ async function handler(req, res) {
       void audit('evidence-portal.deploy', { ok: deployed.ok, dir: deployed.dir || '', error: deployed.error || '' });
       return json(res, deployed.ok ? 200 : 409, deployed);
     }
-    if (url.pathname === '/admin/api/whoami' && method === 'GET') { if (!adminGate(req, res, 'whoami', method)) return; return json(res, 200, { role: rbac.role(req), ingress: req.ingress === true, defaultRole: rbac.defaultRole, mapped: rbac.configured }) }
+    if (url.pathname === '/admin/api/whoami' && method === 'GET') { if (!adminGate(req, res, 'whoami', method)) return; const whoRole = rbac.role(req); return json(res, 200, { role: whoRole, capabilities: rbac.capabilitiesOf(whoRole), ingress: req.ingress === true, defaultRole: rbac.defaultRole, mapped: rbac.configured }) }
     // Връзка за GUI-я: роля, режим и публичен адрес за API/QR (без секрети).
     if (url.pathname === '/admin/api/connection' && method === 'GET') {
       if (!adminGate(req, res, 'whoami', method)) return;
-      return json(res, 200, { role: rbac.role(req), ingress: req.ingress === true, publicBaseUrl: runtime.effective().publicBaseUrl || '', requestBase: baseUrl(req), apiVersion: apiVersion.VERSION.CURRENT, requirePortalToken: !!requirePortalToken });
+      return json(res, 200, { role: rbac.role(req), capabilities: rbac.capabilitiesOf(rbac.role(req)), ingress: req.ingress === true, publicBaseUrl: runtime.effective().publicBaseUrl || '', requestBase: baseUrl(req), apiVersion: apiVersion.VERSION.CURRENT, requirePortalToken: !!requirePortalToken });
     }
     if (url.pathname === '/health' && method === 'GET') return json(res, 200, { status: 'ok', shared: sharedData.state() });
     if (url.pathname === '/ready' && method === 'GET') {
