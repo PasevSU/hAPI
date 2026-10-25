@@ -61,6 +61,12 @@ const ROUTES = [
   ['POST', '/admin/api/webhooks/{id}/disable', 'Спиране на абонамент без триене (историята остава)', 'webhooks', 'settings'],
   ['POST', '/admin/api/webhooks/{id}/enable', 'Пускане на спрян абонамент', 'webhooks', 'settings'],
 
+  // ── живи събития (SSE, F4-7) ───────────────────────────────────────────────
+  // Правото е `metrics` (само за четене): потокът НЕ позволява нищо, само показва какво
+  // вече се е случило — същите събития, които webhook-ът доставя на интеграциите.
+  ['GET', '/admin/api/events', 'Състояние на живия поток (свързани клиенти, помнени събития)', 'events', 'metrics'],
+  ['GET', '/admin/api/events/stream', 'Жив поток от събития (text/event-stream, сърцебиене, Last-Event-ID)', 'events', 'metrics'],
+
   // ── задачи и резервни копия ────────────────────────────────────────────────
   ['GET', '/admin/api/jobs', 'Задачи и тяхната статистика', 'jobs', 'jobs'],
   ['GET', '/admin/api/database/backups', 'Списък на резервните копия', 'storage', 'portals'],

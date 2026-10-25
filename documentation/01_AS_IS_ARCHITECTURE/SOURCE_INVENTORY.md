@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **103** backend модула · **12** HTTP компонента · **22** UI модула · **6** Python модула · **30** инструмента · **273** теста.
+Общо: **104** backend модула · **13** HTTP компонента · **22** UI модула · **6** Python модула · **30** инструмента · **274** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (103)
+### Backend модули (`hapi_enterprise/*.js`) (104)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -32,6 +32,7 @@
 | `hapi_enterprise/download-stream.js` | Поточно изтегляне на файл с ограничен брой едновременни потоци и (по избор) |
 | `hapi_enterprise/error-log.js` | Centralized, bounded structured error log. Entries are appended as JSONL with |
 | `hapi_enterprise/event-bus.js` | In-process Event Bus (Фаза 2.2, P5). Излъчва наблюдаеми domain събития; |
+| `hapi_enterprise/event-stream.js` | SSE ПОТОК ЗА ЖИВИ СЪБИТИЯ — `GET /admin/api/events/stream` (F4-7, втората половина). |
 | `hapi_enterprise/evidence-portal.js` | Публикуване на Evidence View портала в папката, която Home Assistant сервира статично. |
 | `hapi_enterprise/evidence-portal/assets/app.js` | (без заглавен коментар) |
 | `hapi_enterprise/evidence-portal/assets/consent.js` | hAPI consent gate. Never treat browser state as server authorization. |
@@ -118,11 +119,12 @@
 | `hapi_enterprise/workdir-migrate.js` | L2 миграция (бач B4): откритите файлове в работните папки стават контейнери. |
 | `hapi_enterprise/x509.js` | Минимален X.509 (self-signed) — за подписване на отчети и за устройствени сертификати. |
 
-### HTTP компоненти (`hapi_enterprise/routes/*.js`) (12)
+### HTTP компоненти (`hapi_enterprise/routes/*.js`) (13)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
 | `hapi_enterprise/routes/admin-docs.js` | Договорът за административното API — като компонент на HTTP слоя. |
+| `hapi_enterprise/routes/events.js` | SSE поток — административен компонент на HTTP слоя (F4-7, живата половина). |
 | `hapi_enterprise/routes/file-transfer.js` | Преместване и копиране на файл между портали (F2-10 / F2-11) — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/folders.js` | Папки на портала в хранилището — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/generator.js` | Document Generator — компонент на HTTP слоя. |

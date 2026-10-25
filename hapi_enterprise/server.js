@@ -805,8 +805,8 @@ const linkCheck = require('./routes/link-check').create({
   json, fail, parse, audit, adminGate, baseUrl,
   publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
 });
-const webhooks = require('./webhooks').create({ store: metadataStore, audit, log });
-const webhooksRoutes = require('./routes/webhooks').create({ json, fail, parse, audit, adminGate, webhooks });
+const eventStream = require('./event-stream').create({ log }); const webhooks = require('./webhooks').create({ store: metadataStore, audit, log, stream: eventStream });
+const webhooksRoutes = require('./routes/webhooks').create({ json, fail, parse, audit, adminGate, webhooks }); const eventsRoutes = require('./routes/events').create({ json, fail, adminGate, stream: eventStream });
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
 const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry }); const fileTransfer = require('./routes/file-transfer').create({ json, fail, parse, audit, update, clean, fsp, path, crypto, filesRoot, id, contentIds, storeMirrored, removeMirrored, portalFolder, portalFolderCopy, writeApiDir, baseUrl, observer, retention, getPortals: () => db.portals, publish: webhooks.publish }); const idempotency = require('./idempotency').create({ store: metadataStore, fail, audit, limit: () => runtime.effective().maxUploadBytes });
 async function handler(req, res) {
@@ -926,7 +926,7 @@ async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       return fail(res, 429, 'Too many requests');
     }
-    if (await idempotency.handle({ req, res, url, method })) return; if (await portalTokens.handle({ req, res, url, parts, method })) return; if (await portalStorage.handle({ req, res, url, parts, method })) return; if (await oidcRoutes.handle({ req, res, url, method })) return; if (await webhooksRoutes.handle({ req, res, url, parts, method })) return;
+    if (await idempotency.handle({ req, res, url, method })) return; if (await portalTokens.handle({ req, res, url, parts, method })) return; if (await portalStorage.handle({ req, res, url, parts, method })) return; if (await oidcRoutes.handle({ req, res, url, method })) return; if (await webhooksRoutes.handle({ req, res, url, parts, method })) return; if (await eventsRoutes.handle({ req, res, url, parts, method })) return;
     if (url.pathname === '/api/v1/auth/login' && method === 'POST') {
       if (!loginPeerGate(req, res)) return;
       const b = await parse(req); const username = clean(b.username), password = String(b.password || '');
@@ -2717,6 +2717,6 @@ async function start() {
   // accepting requests, let queued metadata writes finish, then close SQLite so the
   // WAL is checkpointed instead of leaving the shutdown to the kernel.
   let shuttingDown = false;
-  const shutdown = signal => { if (shuttingDown) return; shuttingDown = true; log.info('shutdown', { ns: 'server', signal }); webhooks.stop(); let finished = false; const finish = () => { if (finished) return; finished = true; try { require('./instance-lock').release(root, instanceId); if (sharedMode) require('./instance-lock').leaveShared({ file: lock && lock.file }) } catch (e) { log.warn('instance.release.failed', { ns: 'server', err: e.message }) } try { visitorIntel.flush() } catch (e) { log.warn('visitors.flush.failed', { ns: 'server', err: e.message }) } try { observer.close() } catch (e) { log.warn('observer.close.failed', { ns: 'server', err: e.message }) } try { metadataStore.close() } catch (e) { log.error('sqlite.close.failed', { ns: 'server', err: e.message }) } process.exit(0) }; const timer = setTimeout(finish, 5000); timer.unref(); let open = servers.length; if (!open) return finish(); for (const s of servers) s.close(() => { if (--open === 0) { clearTimeout(timer); void Promise.resolve(queue).catch(() => { }).then(finish) } }) };
+  const shutdown = signal => { if (shuttingDown) return; shuttingDown = true; log.info('shutdown', { ns: 'server', signal }); webhooks.stop(); eventStream.closeAll(); let finished = false; const finish = () => { if (finished) return; finished = true; try { require('./instance-lock').release(root, instanceId); if (sharedMode) require('./instance-lock').leaveShared({ file: lock && lock.file }) } catch (e) { log.warn('instance.release.failed', { ns: 'server', err: e.message }) } try { visitorIntel.flush() } catch (e) { log.warn('visitors.flush.failed', { ns: 'server', err: e.message }) } try { observer.close() } catch (e) { log.warn('observer.close.failed', { ns: 'server', err: e.message }) } try { metadataStore.close() } catch (e) { log.error('sqlite.close.failed', { ns: 'server', err: e.message }) } process.exit(0) }; const timer = setTimeout(finish, 5000); timer.unref(); let open = servers.length; if (!open) return finish(); for (const s of servers) s.close(() => { if (--open === 0) { clearTimeout(timer); void Promise.resolve(queue).catch(() => { }).then(finish) } }) };
   process.on('SIGTERM', () => shutdown('SIGTERM')); process.on('SIGINT', () => shutdown('SIGINT'))
 } start().catch(e => { console.error(e); process.exit(1) });

@@ -69,7 +69,6 @@ veraPDF, `legal hold` към Object Lock, Compose режим
 | WORM за ОСНОВНОТО хранилище | `docs/plan/17…` `F7-3` | огледалото има `Object Lock` в `COMPLIANCE` режим; основното хранилище — не |
 | OTS / Blockchain, Forensic панел, EXIF | `docs/plan/18…` панели 05/07/08 | няма съответните модули |
 | AEAD-защита на секретния PGP ключ (v6, `usage 253`) | `PGP_KEYRING_AND_WORK_FOLDER.md` §„Какво НЕ се поддържа“ | ключът се отваря само без парола (`usage 0`) или с CFB+S2K (`254`/`255`) — Node няма OCB; кодът е `S2K_AEAD_UNSUPPORTED`, не обща грешка |
-| SSE поток за живи събития | `INTEGRATION_CONTRACTS.md` §Events | webhook-ът е реализиран, SSE — не |
 
 `Idempotency-Key` (F4-5) беше в този списък до 0.69.87 и вече е затворен: заглавката се
 обработва в `idempotency.js` (таблица `idempotency` в `sqlite-store.js`), договорът е описан в
@@ -83,6 +82,12 @@ veraPDF, `legal hold` към Object Lock, Compose режим
 [`04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md`](../04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md), тестът —
 `tests/webhooks.cjs`. Излъчват се само имената, които кодът наистина вика: днес
 `document.finalized` (след качване и след копиране/преместване).
+
+`SSE поток за живи събития` също излезе от списъка: `GET /admin/api/events/stream`
+(`event-stream.js` + `routes/events.js`) дава същите събития на конзолата — `retry: 5000`,
+сърцебиене на 20 s, `Last-Event-ID` с пръстен от 200 и `resync` при твърде старо id, право
+`metrics`. Тестът `tests/event-stream.cjs` проверява и живия път: качване на файл → събитие
+в отворения поток. Двата транспорта четат ЕДНО излъчване (`publish(…)`), не две истини.
 
 ## 5. Какво да се направи с изостаналите документи
 

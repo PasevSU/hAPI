@@ -31,6 +31,37 @@
       ${note ? `<small class="hint">${esc(note)}</small>` : ''}
     </div>`;
 
+  // ── Жив поток от събития (SSE) ────────────────────────────────────────────
+  // Таблото е мястото, което човекът гледа, затова тук се вижда „стана нещо“ веднага.
+  // `EventSource` не може да носи `Authorization`, затова токенът пътува като `?token=`
+  // САМО за този маршрут — и само по HTTPS/Ingress, както останалите заявки на панела.
+  // Потокът НЕ е задължителен: ако не се отвори, таблото работи както преди и казва защо.
+  let liveSource = null;
+  function stopLive() {
+    if (liveSource) { try { liveSource.close() } catch { /* вече е затворен */ } liveSource = null }
+  }
+  function startLive(onEvent) {
+    stopLive();
+    const url = base();
+    const adminToken = token();
+    if (!url || !adminToken || typeof window.EventSource !== 'function') return false;
+    try {
+      // `lastEventId` не се подава: при всяко отваряне на таблото ни трябва САМО новото,
+      // а историята за възстановяване е одитът, не потокът.
+      liveSource = new window.EventSource(url + '/admin/api/events/stream?token=' + encodeURIComponent(adminToken));
+    } catch {
+      liveSource = null;
+      return false;
+    }
+    const forward = (name) => liveSource.addEventListener(name, (e) => {
+      let payload;
+      try { payload = JSON.parse(e.data) } catch { payload = { event: name } }
+      onEvent(name, payload);
+    });
+    for (const name of ['document.finalized', 'job.completed', 'access.created', 'report.packaged', 'resync', 'bye']) forward(name);
+    return true;
+  }
+
   async function mount(view) {
     view.innerHTML = `
       <div class="page-title">
@@ -58,6 +89,10 @@
       <section class="panel">
         <div class="panel-head"><h2>Кой влиза</h2></div>
         <div class="panel-body" id="dash-visitors"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Живи събития</h2><span class="badge" id="dash-live-badge">—</span></div>
+        <div class="panel-body" id="dash-live"></div>
       </section>
       <section class="panel">
         <div class="panel-head"><h2>Отчети</h2><span class="badge" id="dash-report-state">—</span></div>
@@ -150,6 +185,29 @@
     // да знае какво да провери, а не само че „има проблем“.
     if (guidance && guidance.recommended) problems.push(guidance.recommended.action || guidance.recommended.id);
     hint.textContent = problems.length ? 'Внимание: ' + problems.join(' · ') : '';
+
+    // ── Живи събития: какво става В МОМЕНТА, без да се пита на интервал ──────
+    // Потокът е по избор: без токен или без `EventSource` таблото просто не показва
+    // живата лента. Когато работи, всяко събитие се записва в нея с часа си.
+    const liveBox = view.querySelector('#dash-live');
+    const liveBadge = view.querySelector('#dash-live-badge');
+    const liveList = [];
+    const renderLive = () => {
+      if (!liveBox) return;
+      liveBox.innerHTML = liveList.length
+        ? liveList.map((item) => `<div class="fm-row"><span class="badge">${esc(item.event)}</span> <small class="hint">${esc(item.at)}</small></div>`).join('')
+        : '<p class="hint">Още нищо не е станало от отварянето на таблото.</p>';
+    };
+    if (liveBox) renderLive();
+    const liveOn = startLive((name, payload) => {
+      liveList.unshift({ event: name, at: (payload && payload.at) ? String(payload.at).replace('T', ' ').slice(0, 19) : new Date().toISOString().replace('T', ' ').slice(0, 19) });
+      if (liveList.length > 10) liveList.length = 10;
+      renderLive();
+    });
+    if (liveBadge) {
+      liveBadge.className = 'badge ' + (liveOn ? 'ok' : '');
+      liveBadge.textContent = liveOn ? 'на живо' : 'изключено';
+    }
 
     // ── Ресурси и хранилище: какво още може да се поиска от add-on-а ─────────
     // Всичко идва от `/admin/api/diagnostics` — същият маршрут, който ползва

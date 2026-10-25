@@ -81,6 +81,8 @@
 | `IDEMPOTENT_RETRY` — повторена заявка не изпълнява действието втори път | `idempotency.js` (`handle` преди маршрутите, отпечатък метод+път+тяло, ключ заедно със самоличността, `Idempotency-Replayed`), таблица `idempotency` в `sqlite-store.js`, `idempotency.replay`/`idempotency.conflict` в одита | `idempotency` (без заглавка → старото поведение · повторение → същия отговор · друго тяло → 422 · в ход → 409+`Retry-After` · друга самоличност → собствен ключ · двоичен/5xx отговор не се пази · жив сървър: един портал и един файл) |
 
 | `SINGLE_RESPONSE` — отговорът се пише точно веднъж | `respond.js` (`json` строи тялото ПРЕДИ заглавките, `fail` не прави втори `writeHead` при вече започнал отговор), `server.js` (`require('./respond')`) | `respond` (BigInt → нищо не се пише · втори отговор → тих · тяло по RFC 9457 · защитни заглавки) |
+| `WEBHOOK_HMAC` — изходящото събитие е подписано и се повтаря (F4-7) | `webhooks.js` (`sign`/`verifySignature` върху `<t>.<тяло>`, `publicDetails` филтър, `publish`/`drain`, изчакване 30 s→1 h), `routes/webhooks.js` (6 маршрута, право `settings`), таблици `webhooks`/`webhook_deliveries` в `sqlite-store.js`, `webhooks.start()` в `server.js`, `publish` при качване и при копиране/преместване | `webhooks` (верен подпис · старо `t` → `STALE` · ключ веднъж · повторение и „изчерпано“ · тялото без тайни и пътища · HTTP 401/201/400/404) |
+| `SSE_LIVE_EVENTS` — живият поток носи същите събития, без да ги измисля (F4-7) | `event-stream.js` (`broadcast`/`open`, пръстен от 200, `Last-Event-ID` → `resync`, сърцебиене 20 s, таван 30 min), `routes/events.js` (право `metrics`), `stream` в `webhooks.js` (`publish` храни и потока), `eventStream.closeAll()` при спиране | `event-stream` (заглавки и `retry` · излъчване до всички · `Last-Event-ID` връща пропуснатите · старо id → `resync` · HTTP 401/200 и качване → събитие в потока) |
 
 Външен пакет `hapi-evidence-portal v1.2` е сверен файл по файл — виж `EVIDENCE_PORTAL_V1.2_REVIEW.md`.
 
@@ -88,10 +90,10 @@
 
 | Показател | Стойност |
 | --- | --- |
-| Тестови файлове | 247 (`reports/RELEASE-STATUS.md`) |
+| Тестови файлове | 274 (`reports/RELEASE-STATUS.md`) |
 | Матрица | `node scripts/test-matrix.cjs` — 100 % при 1 опит е целта; флейки при паралелни портове се отчитат изрично |
 | Проверки на изданието | `verify-release` 21/21 · `audit-gui-compat` 33/33 · `logic-audit --gate` · `bad-code-scan --gate` · `eslint` 0 |
-| Твърд бюджет | `server.js` ≤ 2722 реда, 9 компонента в `routes/` |
+| Твърд бюджет | `server.js` ≤ 2722 реда, 13 компонента в `routes/` |
 
 > Когато ред от §5 се затвори, тук се сменя статусът и се добавя тестът, който го пази. Матрицата не е „документ за четене“, а списък на това, което още не е направено.
 

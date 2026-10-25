@@ -90,6 +90,9 @@ function create(deps = {}) {
     ? deps.audit
     : (event, details) => { console.warn('WEBHOOK AUDIT (no sink)', event, JSON.stringify(details || {})) };
   const log = deps.log || { info() { }, warn() { } };
+  // Вторият транспорт към СЪЩИТЕ събития: живият поток за конзолата. Тук е по избор, за да
+  // не зависи webhook-ът от него; когато го има, двете страни виждат едно и също събитие.
+  const stream = deps.stream || null;
   const fetchImpl = deps.fetch || ((...args) => fetch(...args));
   // Часовникът е вход, за да може тестът да „превърти“ изчакването без да чака.
   const now = typeof deps.now === 'function' ? deps.now : () => Date.now();
@@ -140,6 +143,10 @@ function create(deps = {}) {
    */
   function publish(event, details = {}) {
     if (!enabled() || !EVENTS.includes(event)) return 0;
+    const safe = publicDetails(details);
+    // Живият поток получава събитието ПРЕДИ опашката: конзолата трябва да го види веднага,
+    // дори когато няма нито един абониран webhook (тогава `queued` е 0, но събитието е станало).
+    if (stream) { try { stream.broadcast(event, safe) } catch (e) { log.warn('sse.broadcast.failed', { ns: 'webhook', err: e.message }) } }
     let targets;
     try { targets = store.listWebhooks().filter((w) => !w.disabled && w.events.includes(event)) } catch (e) { log.warn('webhook.publish.failed', { ns: 'webhook', err: e.message }); return 0 }
     if (!targets.length) return 0;
@@ -147,7 +154,7 @@ function create(deps = {}) {
       id: crypto.randomBytes(12).toString('hex'),
       event,
       at: new Date(now()).toISOString(),
-      details: publicDetails(details),
+      details: safe,
     });
     let queued = 0;
     for (const target of targets) {
