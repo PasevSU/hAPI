@@ -7,8 +7,9 @@
 // коментар в самия файл. Няма как документът да твърди нещо, което кодът не казва.
 //
 // Употреба:
-//   node scripts/source-inventory.cjs           # записва документа
-//   node scripts/source-inventory.cjs --check   # само проверява, че е актуален (exit 1 при разлика)
+//   node scripts/source-inventory.cjs                 # записва документа
+//   node scripts/source-inventory.cjs --check         # проверява, че е актуален (exit 1 при разлика)
+//   node scripts/source-inventory.cjs --out=<път>     # друг файл (тестът работи върху копие, не върху репото)
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -144,14 +145,16 @@ function generate() {
 
 const text = generate();
 const check = process.argv.includes('--check');
+const outArg = process.argv.find((a) => a.startsWith('--out='));
+const target = outArg ? path.resolve(outArg.slice('--out='.length)) : OUT;
 if (check) {
-  const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
+  const current = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : '';
   if (current !== text) {
     console.error('source-inventory: документът е остарял — пусни `node scripts/source-inventory.cjs`');
     process.exit(1);
   }
   console.log('source-inventory: актуален (списъкът съвпада с диска)');
 } else {
-  fs.writeFileSync(OUT, text, 'utf8');
-  console.log(`source-inventory: записан ${path.relative(ROOT, OUT)} (${text.split('\n').length} реда)`);
+  fs.writeFileSync(target, text, 'utf8');
+  console.log(`source-inventory: записан ${path.relative(ROOT, target)} (${text.split('\n').length} реда)`);
 }
