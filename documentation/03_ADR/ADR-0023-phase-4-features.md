@@ -44,7 +44,7 @@
 - [x] Изключва се през config? — `preview.enabled`, `retention.enabled`, `SUPERVISOR_TOKEN`.
 - [x] Заменя се с алтернатива? — notify endpoint, preview engine, storage (Repository).
 - [x] Има интерфейс, не конкретна имплементация? — да (модули + интерфейси).
-- [x] Излъчва събитие? — audit (`cabinet.upload`, `file.upload`, `qr.revoke` и др.).
+- [x] Излъчва събитие? — audit (`cabinet.upload`, `file.upload`, `qr.blocked` и др.).
 - [x] Има миграция с rollback? — `runtime.removeArtifacts`, версиониране, retention apply.
 - [x] Документиран е в ADR? — да (настоящият ADR + §9.1 матрица).
 - [x] Тестван изолирано? — `office-processing.cjs`, `qr-dispatch.cjs`, `retention-audit.cjs`.

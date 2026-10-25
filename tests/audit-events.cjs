@@ -58,6 +58,24 @@ try {
   assert.ok(original.includes(`**${version}**`), 'каталогът носи версия ' + version);
   assert.equal(fs.readFileSync(doc, 'utf8'), original, 'тестът не бива да променя репото');
 
+  // 8. Документите, които НАЗОВАВАТ одитни събития, назовават съществуващи такива.
+  //    Точно това беше счупено: спецификацията казваше `file.imported`, ADR — `qr.revoke`,
+  //    а кодът излъчва `file.upload` и `qr.blocked`. Проверката е точкова (по документа и по
+  //    изречението), за да не дава фалшиви тревоги за имена на файлове като `audit.jsonl`.
+  const names = new Set(rows.map((r) => r.name));
+  const readDoc = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+  const spec = readDoc('documentation/02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md');
+  const specEvent = (spec.match(/Създава се събитие `([a-z0-9_.-]+)`/) || [])[1];
+  assert.ok(specEvent, 'спецификацията назовава събитие при импорт');
+  assert.ok(names.has(specEvent), 'спецификацията назовава съществуващо събитие: ' + specEvent);
+  const adr = readDoc('documentation/03_ADR/ADR-0023-phase-4-features.md');
+  const adrEvents = [...(adr.match(/`(cabinet\.upload|cabinet\.[a-z.]+|file\.upload|qr\.[a-z.]+)`/g) || [])].map((s) => s.replace(/`/g, ''));
+  assert.ok(adrEvents.length >= 2, 'ADR-0023 изрежда събития');
+  for (const name of adrEvents) assert.ok(names.has(name), 'ADR-0023 назовава съществуващо събитие: ' + name);
+  const contracts = readDoc('documentation/02_TO_BE_ARCHITECTURE/INTEGRATION_CONTRACTS.md');
+  assert.match(contracts, /Events \/ webhooks \(target — НЕ е реализирано\)/, 'целевите събития са отбелязани като нереализирани');
+  assert.match(contracts, /webhook с HMAC \*\*още не е реализиран\*\*/, 'липсата на webhooks е изречена, не премълчана');
+
   console.log(`audit-events OK: ${rows.length} събития · ${legacy.length} наследствени · актуален · хваща остарял и липсващ документ`);
 } finally {
   fs.rmSync(dir, { recursive: true, force: true });

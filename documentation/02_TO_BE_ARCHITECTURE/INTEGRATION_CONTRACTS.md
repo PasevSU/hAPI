@@ -367,7 +367,13 @@ add-on-а — виж бележката за `!secret` в [`PGP_KEYRING_AND_WORK
 | Verify    | hash/signature/timestamp recompute client-side    |
 | Auth      | time-limited token embedded in QR (never secrets) |
 
-## Events / webhooks (target)
+## Events / webhooks (target — НЕ е реализирано)
 
-- `document.finalized`, `access.created`, `audit.anchored`, `job.completed`.
-- Delivery: SSE (live) + optional webhook (audit consumers).
+- Целеви имена: `document.finalized`, `access.created`, `audit.anchored`, `job.completed`.
+  **Никое от тях не се излъчва днес** — те са проект, не договор.
+- Действителните одитни събития са в генерирания
+  [`04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md`](../04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md)
+  (162 имена, четени от `audit(…)` в кода); там се проверява и какво съществува.
+- Доставка: SSE (на живо) + по избор webhook — webhook с HMAC **още не е реализиран**
+  (записано в `PLAN_STATUS` §4.1). Днес има само `notify.js` към Home Assistant, което не е
+  webhook с подпис и retry.
