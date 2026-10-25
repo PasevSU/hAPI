@@ -6,6 +6,8 @@
 //   • Степен 1 — GUI: панелите, секциите, бутоните, DOM-ът, речниците, иконите, навигацията.
 //   • Степен 2 — съвместимост: HA правилата, HACS/HACS-издание, Dockerfile ↔ модули,
 //     опции ↔ схема, приемането на изданието, матрицата на сценариите, verify-release.
+//   • Степен 3 — изданието: `verify-release` (S01–S21 върху `dist/`) и `artifact-smoke`
+//     (пуска сървъра ОТ архива — там се хваща „модул забравен в COPY“ и двоен отговор).
 //
 // Степен 2 НЕ тръгва, ако степен 1 има дори един провал — така „зелено“ никога не значи
 // „минало някъде другаде“. Всяка степен пише своя ред и общият изход е код 1 при провал.
@@ -137,19 +139,27 @@ console.log('\n  GUI: ' + gui.passed + '/' + gui.total + ' — 100 %, минав
 
 const compat = runStage('СТЕПЕН 2 · СЪВМЕСТИМОСТ НА ПАКЕТА', COMPAT);
 
-// Изданието се проверява най-накрая: S01–S21 върху dist/ (изисква построени артефакти).
+// Изданието се проверява най-накрая: S01–S21 върху dist/ и пускане на сървъра ОТ архива
+// (изискват построени артефакти). `artifact-smoke` стига дотам, докъдето `verify-release` не
+// може: стартира изданието и проверява поведението му (вкл. единичния отговор).
 const verify = runScript('verify-release');
+const smoke = runScript('artifact-smoke');
 console.log('\n═══ СТЕПЕН 3 · ИЗДАНИЕ ═══');
 if (verify.ok) console.log('  ✔ verify-release — S01–S21 върху dist/');
 else {
   console.log('  ✘ verify-release');
   for (const line of verify.output.split('\n').slice(-12)) console.log('    ' + line);
 }
+if (smoke.ok) console.log('  ✔ artifact-smoke — сървърът от архива отговаря (вкл. единичен отговор)');
+else {
+  console.log('  ✘ artifact-smoke');
+  for (const line of smoke.output.split('\n').slice(-12)) console.log('    ' + line);
+}
 
 console.log('\n═══ ОБОБЩЕНИЕ ═══');
 console.log('  GUI: ' + gui.passed + '/' + gui.total);
 console.log('  Съвместимост: ' + compat.passed + '/' + compat.total);
-console.log('  Издание: ' + (verify.ok ? 'проверено' : 'ПРОВАЛЕНО'));
-const allGreen = compat.failures.length === 0 && verify.ok;
+console.log('  Издание: ' + (verify.ok && smoke.ok ? 'проверено' : 'ПРОВАЛЕНО'));
+const allGreen = compat.failures.length === 0 && verify.ok && smoke.ok;
 console.log(allGreen ? '\n  ✔ 100 % — ГУИ и съвместимост са зелени' : '\n  ✘ има провали — виж по-горе');
 process.exit(allGreen ? 0 : 1);
