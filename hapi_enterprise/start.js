@@ -57,6 +57,27 @@ function readOptions() {
 }
 
 const options = readOptions();
+// ── 2б. Незаместен `!secret` в КОЯТО и да е опция ─────────────────────────────
+// Supervisor замества `!secret <име>` в опциите, но ако не успее (по-стар Supervisor,
+// грешно име, излишно разстояние), стойността пристига БУКВАЛНО и се превръща в път
+// `!secret …`, в адрес или в ключ. Грешката тогава излиза някъде другаде и не сочи тук, а
+// записът в HA може вече да е отказан със „Unknown secret ' …'“. Един ред в лога пести
+// часове: казва ИМЕНАТА на опциите (не стойностите) и дали има излишен интервал в името.
+// `token` е изключен — той има собствен, по-точен отказ в §3.
+function warnUnexpandedSecrets(values) {
+  const bad = [];
+  for (const [key, raw] of Object.entries(values)) {
+    if (key === 'token' || typeof raw !== 'string' || !raw.startsWith('!secret ')) continue;
+    const name = raw.slice('!secret '.length);
+    bad.push(key + (name === name.trim() ? '' : ' (интервал в името)'));
+  }
+  if (!bad.length) return;
+  console.warn(
+    'OPTION_SECRET_NOT_EXPANDED: тези опции съдържат "!secret" без замяна → ' + bad.join(', ') +
+    '. След "!secret" трябва да има ТОЧНО едно разстояние и името да е същото като в secrets.yaml.',
+  );
+}
+warnUnexpandedSecrets(options);
 const optionText = (key) => {
   const value = options[key];
   return value === undefined || value === null ? '' : String(value).trim();

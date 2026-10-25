@@ -177,6 +177,26 @@ async function runToHealth(options, preExistingToken) {
   }
   cases.push('PGP по избор → старт');
 
+  // 8. Незаместен `!secret` в ДРУГА опция: стартът продължава, но логът го назовава.
+  // Без това човек вижда следствието (грешен адрес, път „!secret …“) и не се сеща за
+  // причината — точно този клас грешка даде `Unknown secret ' hapi_pgp_path_pass'`.
+  const unexpanded = await runToHealth({
+    token: STRONG,
+    public_domain: '!secret  hapi_domain',
+    storage_location: 'addon_config',
+    storage_subdirectory: 'hapi_enterprise',
+  });
+  try {
+    assert.equal(await unexpanded.health(), 200, 'незаместен !secret в друга опция не бива да спира старта');
+    assert.match(unexpanded.stderr(), /OPTION_SECRET_NOT_EXPANDED/, 'логът трябва да назове проблема');
+    assert.match(unexpanded.stderr(), /public_domain/, 'логът трябва да назове КОЯ опция е');
+    assert.match(unexpanded.stderr(), /интервал в името/, 'при две разстояния трябва да каже точно това');
+    assert.ok(!unexpanded.stderr().includes('hapi_domain'), 'логът назовава ОПЦИЯТА, не препратката към секрета');
+  } finally {
+    await unexpanded.stop();
+  }
+  cases.push('незаместен !secret в друга опция → OPTION_SECRET_NOT_EXPANDED + старт');
+
   console.log('start-token-required: ok — ' + cases.length + ' случая (' + cases.join('; ') + ')');
 })().catch((err) => {
   console.error('start-token-required: FAILED — ' + (err && err.message ? err.message : err));
