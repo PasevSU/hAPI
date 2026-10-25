@@ -171,7 +171,17 @@ try {
 } catch {
   ALLOW = [];
 }
-const allowed = (f) => ALLOW.find((a) => a.file === f.file && a.rule === f.rule && (!a.line || a.line === f.line));
+// Приета находка се разпознава по файл + правило и после по ред ИЛИ по име на сегмент.
+// Сегментът е УСТОЙЧИВ на изместване на редовете: добавен ред в същия файл не отменя
+// обосновката и не изисква нов преглед на същия код. Запис без ред и без сегмент важи за
+// целия файл (file + rule).
+const allowed = (f) =>
+  ALLOW.find(
+    (a) =>
+      a.file === f.file &&
+      a.rule === f.rule &&
+      (a.segment ? a.segment === f.segment : !a.line || a.line === f.line),
+  );
 
 const findings = [];
 let scanned = 0;

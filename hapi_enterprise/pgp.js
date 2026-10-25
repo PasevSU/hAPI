@@ -12,6 +12,8 @@
 //
 // Извън обхвата (връща ясна грешка, не тих fallback):
 //   • S2K тип 4 (Argon2) — иска се gpg 2.4+ с `--s2k-mode 3` или ключ без парола;
+//   • AEAD-защита на САМИЯ секретен ключ (RFC 9580 §5.5.3, usage 253) —
+//     `S2K_AEAD_UNSUPPORTED`; ключ без парола (usage 0) и CFB+S2K (254/255) се четат;
 //   • AEAD/SEIPD v2, ECDH/X25519, генериране на Ed448 ключове.
 const crypto = require('node:crypto');
 const zlib = require('node:zlib');
@@ -454,6 +456,16 @@ function s2kDerive(spec, passphrase, keyBytes) {
 /** Отваря секцията на секретния ключ, защитена с парола. Връща {plain} (без сумата). */
 function openSecretSection(key, body, passphrase) {
   const usage = body[key.bodyLength];
+  // RFC 9580 §5.5.3: при v6 ключ защитата на секретния материал е AEAD (usage 253), не CFB.
+  // Node няма OCB/EAX, затова това е ДОКУМЕНТИРАНА граница на двигателя, а не „счупен ключ“:
+  // кодът е отделен от общия UNSUPPORTED_KEY_USAGE, за да може човек да потърси решение,
+  // вместо да получи „неподдържан режим (253)“ без име.
+  if (usage === 253) {
+    throw fail(
+      'S2K_AEAD_UNSUPPORTED',
+      'Секретният ключ е защитен с AEAD (RFC 9580 §5.5.3, usage 253) — hAPI поддържа незащитен ключ (usage 0) и CFB+S2K (254/255). Експортирай секретния ключ без парола или ключ, защитен с S2K (gpg 2.4+ с `--s2k-mode 3`).',
+    );
+  }
   if (usage !== 254 && usage !== 255) {
     throw fail('UNSUPPORTED_KEY_USAGE', `Неподдържан режим на защита на секретния ключ (${usage})`);
   }

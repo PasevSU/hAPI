@@ -107,7 +107,8 @@ GET /admin/api/pgp/keyring
 - Кой ключ се ползва, има ли частен ключ и приета ли е паролата (без самата парола).
 - Дали пътищата и работната папка са криптирани (две отделни отметки).
 - При проблем — код и обяснение с думи: `PASSPHRASE_REQUIRED`, `PASSPHRASE_WRONG`,
-  `NO_ENCRYPTION_KEY`, `S2K_ARGON2_UNSUPPORTED`, `UNSUPPORTED_CURVE`, `MDC_MISMATCH`.
+  `NO_ENCRYPTION_KEY`, `S2K_ARGON2_UNSUPPORTED`, `S2K_AEAD_UNSUPPORTED`, `UNSUPPORTED_CURVE`,
+  `MDC_MISMATCH`, `SECRET_NOT_EXPANDED`, `SECRET_NAME_HAS_SPACE`, `SECRET_PATH_RELATIVE`.
   Пълната таблица е в [`PGP_KEYRING_AND_WORK_FOLDER.md`](../02_TO_BE_ARCHITECTURE/PGP_KEYRING_AND_WORK_FOLDER.md#какво-не-се-поддържа--с-точна-грешка-не-с-мълчание).
 
 ## 8. Ако ключът е защитен с Argon2
@@ -121,3 +122,14 @@ GET /admin/api/pgp/keyring
 gpg 2.4+ криптира по подразбиране с AEAD/OCB, което hAPI не чете (Node няма OCB). За обмен с
 gpg: криптирай с hAPI или с инструмент, който пише SEIPD v1. Собствените съобщения на hAPI са
 винаги SEIPD v1 и се четат от gpg, OpenPGP.js и hAPI.
+
+## 10. Ако САМИЯТ ключ е защитен с AEAD (v6)
+
+При v6 ключове (RFC 9580) `gpg` защитава секретния материал с AEAD (usage `253`), а не с
+CFB+S2K (usage `254`/`255`). Node няма OCB, затова hAPI връща `S2K_AEAD_UNSUPPORTED` — това е
+документирана граница, не „счупен ключ“. Две решения:
+
+1. експортирай секретния ключ **без парола** и разчитай на правата на файла (`0600`);
+2. ползвай v4 ключ, защитен със S2K тип 0/1/3 (`gpg --s2k-mode 3`).
+
+Ключ без парола (`usage 0`) се чете нормално — тогава `pgp_key_pass` не е нужен.

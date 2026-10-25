@@ -94,6 +94,18 @@ const keyringWith = (env) => create({ env });
   assert.equal(relative.reason, 'SECRET_PATH_RELATIVE', 'относителен път → SECRET_PATH_RELATIVE, получено: ' + relative.reason);
   assert.equal(relative.secretOption, 'pgp_path_public');
   ok('относителен път → SECRET_PATH_RELATIVE + име на опцията');
+
+  // v6 ключ, защитен с AEAD (RFC 9580 §5.5.3, usage 253): това е граница на двигателя, а не
+  // „счупен ключ“. Причината трябва да е СВОЯ (не общото UNSUPPORTED_KEY_USAGE), за да може
+  // човек да потърси решение; фикстурът е същият ключ със сменен usage байт (виж README-то).
+  const aead = keyringWith({
+    [ENV.public]: PUBLIC,
+    [ENV.secret]: path.join(FIX, 'secret-aead.asc'),
+    [ENV.keyPass]: PASS,
+  }).status();
+  assert.equal(aead.reason, 'S2K_AEAD_UNSUPPORTED', 'AEAD-защитен ключ → S2K_AEAD_UNSUPPORTED, получено: ' + aead.reason);
+  assert.equal(aead.available, false);
+  ok('AEAD-защитен v6 ключ → S2K_AEAD_UNSUPPORTED (документирана граница)');
 }
 
 // ── 2. Само публичен ключ: може да криптира, не може да декриптира ──────────
