@@ -177,7 +177,28 @@ Text · Data · Table · Media · Certificate · Layout · Legal · Dynamic.
 
 ## 7. Карта към текущото репо (делта)
 
-| Ново изискване | Днес в репото | Липсва |
+> **Това е кадър към момента на писане на плана, не текущо състояние.** Колоната „Днес в репото“
+> описва репото, когато планът е съставян; оттогава редове са затворени. Актуалното, проверено
+> състояние е таблицата в §2 — тя е меродавната. Разминаванията са изброени тук, за да не се чете
+> един и същ файл по два начина:
+>
+> | Ред от таблицата долу | Днес (0.69.87) |
+> | --------------------- | -------------- |
+> | „13 панела“ | 15 панела, картографирани в §2 (`tests/gui-panels.cjs`) |
+> | PGP, Encrypt/Sign, Forensic, Profiles като липсващи панели | налични: `pgp.js`, `file-crypto.js`, `signer.js`, `forensic.js`, `config-profiles.js` |
+> | „RFC 3161 ❌“ | `tsa-client.js`, `routes/reports.js`, `tests/tsa-client.cjs` |
+> | „Profiles/Templates ❌“ | `config-profiles.js`, `generator.js`, `tests/config-profiles.cjs` |
+> | „Undo/Redo ❌“ | има го в Report Studio (`ui/report-studio.js`, `state.history`) |
+> | „Manifest … `manifest.schema.json` липсва“ | схемата съществува като `schema()` от самото начало; от 0.69.87 има и ФАЙЛ — `config/schemas/manifest.schema.json`, генериран от кода (`scripts/manifest-schema.cjs`), пазен байт-байт от `tests/manifest-schema.cjs`. Профилите са налични (`report-manifest.js` → `template(profile)`) |
+>
+> **Остават отворени и днес:** OTS/Blockchain (панел 05, виж §2), WebView2 `.pyw` стартер (има
+> `START_HAPI_GUI.bat` с Edge app), редактор на таблици v2, дизайн система
+> (`tokens/layout/components/themes`), категории на обектната библиотека, регистър на панелите
+> и **миграции на манифеста**: днес има само `schemaVersion` 1 и `validate()` отказва всичко
+> друго с `UNSUPPORTED_SCHEMA_VERSION`. Верига от миграции при една единствена версия би била
+> непроверяема — затова не е написана, вместо да стои като код без реален случай.
+
+| Ново изискване | Днес в репото (при писане на плана) | Липсва |
 | -------------- | ------------- | ------ |
 | 15 панела | 13 панела (`ui/app.js`) | PGP, Encrypt/Sign, OTS, RFC 3161, Forensic, Profiles, отделен Hash Generator |
 | Дизайн система | `ui/styles.css` (един файл) | `tokens/layout/components/themes` |

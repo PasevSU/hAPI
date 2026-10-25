@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hapi-enterprise/report-manifest.schema.json",
+  "title": "hAPI Enterprise report manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "profile",
+    "page",
+    "blocks"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "page": {
+      "type": "object",
+      "required": [
+        "format",
+        "orientation",
+        "marginsMm"
+      ],
+      "properties": {
+        "format": {
+          "enum": [
+            "A4",
+            "A5",
+            "LETTER"
+          ]
+        },
+        "orientation": {
+          "enum": [
+            "portrait",
+            "landscape"
+          ]
+        },
+        "marginsMm": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 50
+          }
+        }
+      }
+    },
+    "branding": {
+      "type": "object",
+      "properties": {
+        "organization": {
+          "type": "string"
+        },
+        "logo": {
+          "type": "string"
+        },
+        "qr": {
+          "type": "boolean"
+        }
+      }
+    },
+    "print": {
+      "type": "object",
+      "properties": {
+        "pageNumbers": {
+          "type": "boolean"
+        },
+        "headerFooter": {
+          "type": "boolean"
+        },
+        "footerNote": {
+          "type": "string"
+        }
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "type": {
+            "enum": [
+              "title",
+              "subtitle",
+              "text",
+              "legal",
+              "data-block",
+              "table",
+              "image",
+              "qr",
+              "separator",
+              "pagebreak",
+              "signature",
+              "metadata",
+              "hash-table",
+              "logo",
+              "certificate",
+              "columns",
+              "dynamic",
+              "rfc3161-start",
+              "rfc3161-stop"
+            ]
+          },
+          "locked": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

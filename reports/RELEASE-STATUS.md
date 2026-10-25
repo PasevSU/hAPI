@@ -14,20 +14,20 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **281/281** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **282/282** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 473 файла · 80563 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 469 файла · 80189 реда · critical: 0 · high: 0 · medium: 3 · low: 184 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 475 файла · 80758 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 471 файла · 80384 реда · critical: 0 · high: 0 · medium: 3 · low: 185 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 281 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 282 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (185 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (187 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.87.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
@@ -543,6 +543,21 @@
   възпроизводимост). Новият таг е проверен и с `docker manifest inspect` (`amd64`, `arm64`,
   `arm/v7`); `tests/docker-runtime.cjs` пази точно него, а `ha-compatibility`/
   `raspberrypi-compat` изискват `node:22.x.y-alpine`.
+
+- **`config/schemas/manifest.schema.json` — договорът на отчета вече е и файл.** `report-manifest.js`
+  имаше `schema()` от самото начало, тоест договорът съществуваше, но само като обект в паметта:
+  външен инструмент (редактор, валидатор, чужда интеграция) не можеше да го прочете, без да пусне
+  hAPI. План 18 §7 искаше точно файл. Той се **генерира** от `schema()` с
+  `scripts/manifest-schema.cjs` (`--write` / `--check`), а `tests/manifest-schema.cjs` пази, че е
+  байт-байт изходът на кода и че списъците в него са **същите константи** (`PAGE_FORMATS`,
+  `ORIENTATIONS`, `ELEMENT_TYPES` + `SYSTEM_TYPES`), които `validate()` ползва — тоест файлът не
+  може да обещава стойности, които кодът отхвърля. Ръчна редакция се губи при следващото
+  пускане, както при останалите генерирани документи.
+  Границата е записана в самия скрипт: JSON Schema описва **структурата**; семантиката
+  (`rfc3161-start` е първи, `rfc3161-stop` е последен и заключен, уникални `id`, забранени
+  TSA/подпис полета) остава само във `validate()`, за да няма втори източник на истина.
+  **Миграции не са написани** — има само `schemaVersion` 1 и `validate()` отказва друго с
+  `UNSUPPORTED_SCHEMA_VERSION`; верига при една единствена версия би била непроверяем код.
 
 ## 4. Как се проверява наново
 
