@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **294/294** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **295/295** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 492 файла · 83447 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 487 файла · 82886 реда · critical: 0 · high: 0 · medium: 0 · low: 190 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 493 файла · 83601 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 488 файла · 83040 реда · critical: 0 · high: 0 · medium: 0 · low: 190 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 294 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 295 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,19 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Интеграцията за Home Assistant е Python, а тестовият пакет е JavaScript — счупен Python не се
+  виждаше от нито един от 293-те теста.** Home Assistant просто нямаше да я зареди, а изданието
+  щеше да изглежда зелено. `tests/ha-integration-python.cjs` затваря точно тази граница без
+  инсталиран HA: компилира всеки `.py` в паметта (`compile()`, без да пише `__pycache__` в репото),
+  проверява че всяко име, внесено от `.const`, съществува в `const.py` (премахната константа =
+  `ImportError` при зареждане), че всяка платформа от `PLATFORMS` има файл с `async_setup_entry`,
+  че `strings.json`, `translations/en.json` и `translations/bg.json` имат **еднакви** ключове и
+  нито един празен текст, и че всяка причина, която `config_flow.py` връща, има превод — и
+  обратното, че няма превод без код. Без `python` тестът казва, че компилацията не се проверява,
+  вместо да мълчи. **Проверено обратно:** добавен синтактичен гаф пада с
+  `coordinator.py:215: invalid syntax`; несъществуващо име от `const` — с `PLATFORM_NAMES`;
+  изтрит ключ от `bg.json` — с „разминава се с strings.json“.
 
 - **Изключение, което вече не пази нищо, е ГРЕШКА, а не мълчание.**
   `scripts/bad-code-allowlist.json` имаше 23 записа с обосновка, но нищо не проверяваше, че те

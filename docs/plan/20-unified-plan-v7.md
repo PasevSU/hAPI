@@ -273,7 +273,7 @@ flowchart LR
 | W5    | Портални файлове (план 17) върху `decide()`                                     | ✅ портали, папки, качване/регистрация, флагове, коментари (`ui/files-manager.js`, `portal-*.js`, `tree/*`); публичната страница е по договор                                      |
 | W6    | Backend прилагане: preflight, jobs, gateway listen, Public Access Test сървърно | ✅ listener `:8088`, preflight, jobs, правила на живо                                                                                                                              |
 | W7    | Report Studio: Evidence Package, DRAFT/INCOMPLETE, реални RFC 3161 токени       | ✅ `RS-05`/`RS-06`/`RS-07` + Evidence Package и статусите `READY`/`INCOMPLETE`/`DRAFT` (`report-package.js`, `tests/report-package.cjs`); остава само заверка на PDF/A-3 с veraPDF |
-| W8    | Windows Edition, подпис на PDF, WebView2, опаковане                             | ❌ (подписът на PDF вече е готов в W7; остава Windows Edition)                                                                                                                     |
+| W8    | Windows Edition, подпис на PDF, WebView2, опаковане                             | 🟡 подписът на PDF е готов (W7), WebView2 обвивката и самостоятелният GUI пакет — също; **липсва инсталатор (.msi/.exe) и add-on за Windows**, защото и двете искат подписан build среда/опаковчик, каквито репото не строи |
 
 ### 8.1 Следващите 10 работни слота
 
@@ -297,7 +297,8 @@ flowchart LR
 **Готово в текущия етап:** FD-0/PG-0 (правила, политики, gateway модел), FD-1 (трансферно
 ядро), конфигурация и схеми, два GUI панела, backend правила/preflight, отделен публичен
 listener на `8088` с изолация, **същият IP и порт като HA** (`public_same_origin` +
-интеграцията на `:8123`), 88 теста — `88/88` зелени.
+интеграцията на `:8123`). Броят на тестовете не се поддържа на ръка тук — единственият
+източник е генерираният [`reports/RELEASE-STATUS.md`](../../reports/RELEASE-STATUS.md).
 
 **Публикуване на собствен домейн:** [`documentation/08_USER_GUIDES/public-gateway-setup.md`](../../documentation/08_USER_GUIDES/public-gateway-setup.md)
 — DNS, add-on опции (`public_domain`, `public_gateway`), reverse proxy (NGINX/NPM/Cloudflare),
