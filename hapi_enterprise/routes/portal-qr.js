@@ -95,7 +95,7 @@ function create(deps) {
     // заключват — оттук нататък презаписът е `EACCES`, а не тиха подмяна. Това е същата
     // граница, която `retention.protectionOf` вече ползва за забрана на триене.
     if (typeof sealFiles === 'function') {
-      try { await sealFiles(p, active.manifest) } catch (e) { void audit('worm.seal.failed', { portalId: p.id, qrId: active.id, err: e.message }) }
+      try { await sealFiles(p, active.manifest, rootAbs) } catch (e) { void audit('worm.seal.failed', { portalId: p.id, qrId: active.id, err: e.message }) }
     }
     return { archive: saved, archivedQr: active.id, active: next.id, state: view(reg) };
   });

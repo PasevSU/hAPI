@@ -72,6 +72,34 @@ const cleaned = [];
     assert.equal(archived.data.active, 'QR-002', 'след архив има следващ QR');
     assert.equal(archived.data.archivedQr, 'QR-001');
 
+    // ── 2б. WORM (F7-3): файловете от манифеста стават САМО ЗА ЧЕТЕНЕ ────────
+    // Архивът е доказателство — байтовете му не бива да могат да се презапишат. Проверява се
+    // РЕАЛНИЯТ режим на файловете, не флаг в метаданните: първата версия на `sealManifest`
+    // търсеше `file_id`, който манифестът не носи, и тихо не заключваше нищо.
+    // На Windows заключването е ИЗКЛЮЧЕНО съзнателно (chmod прави файла неизтриваем и чупи
+    // `restore`), затова там проверката е, че файловете са останали записваеми — тоест
+    // системата не твърди защита, която не дава.
+    {
+      const found = [];
+      const walk = (dir) => {
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+          const abs = path.join(dir, entry.name);
+          if (entry.isDirectory()) { walk(abs); continue }
+          if (!entry.isFile()) continue;
+          found.push({ name: path.relative(folder, abs), writableBits: fs.statSync(abs).mode & 0o222 });
+        }
+      };
+      walk(folder);
+      assert.ok(found.length >= 2, 'порталът има поне два файла на диска: ' + JSON.stringify(found));
+      if (process.platform === 'win32') {
+        assert.ok(found.every((f) => f.writableBits !== 0), 'Windows: файловете остават записваеми (заключването е изключено)');
+      } else {
+        for (const file of found) {
+          assert.equal(file.writableBits, 0, 'файлът ' + file.name + ' е само за четене след архивиране (WORM), режим: ' + file.writableBits.toString(8));
+        }
+      }
+    }
+
     // ── 3. Манифестът е в архива и сочи съдържанието ─────────────────────────
     const zipBuf = Buffer.from(await (await api(`/admin/api/portals/${portal.id}/qr/QR-001/archive`)).arrayBuffer());
     const unzipped = require('../hapi_enterprise/ooxml.js').unzip(zipBuf);

@@ -28,6 +28,10 @@ const fs = require('node:fs/promises');
 
 const READ_ONLY = 0o444;
 const WRITABLE = 0o600;
+// На Windows `chmod 0444` НЕ дава „само за четене“: файлът става НЕИЗТРИВАЕМ за
+// `fs.rm` дори с `force` (EPERM), което чупи `restore` и всяко почистване. Затова там
+// заключването не се прилага — и това се казва, вместо да се прави „наполовина“.
+const SUPPORTED = process.platform !== 'win32';
 
 function create(deps = {}) {
   const log = deps.log || { warn() { } };
@@ -42,23 +46,53 @@ function create(deps = {}) {
   /**
    * Заключва ВСИЧКИ файлове от манифест на архивирана QR ревизия. Именно манифестът е
    * доказателството — затова защитата следва него, а не флаг, който някой трябва да помни
-   * да сложи. Връща броя заключени, за да може одитът да каже колко, а не „готово“.
+   * да сложи.
+   *
+   * Пътят е ключов: манифестът носи `path` ОТНОСИТЕЛНО ПАПКАТА НА ПОРТАЛА
+   * (`portalRoot(storage_root)`), не `file.id` и не `files/`. Първата версия търсеше
+   * `file_id` в `filesRoot` и тихо не заключваше нищо — затова `rootAbs` е задължителен вход,
+   * а `tests/portal-qr-archive.cjs` проверява РЕАЛНИЯ режим на файловете след архивиране.
    */
-  async function sealManifest(portal, manifest) {
-    const files = manifest && Array.isArray(manifest.files) ? manifest.files : [];
+  async function sealManifest(portal, manifest, rootAbs) {
+    const entries = manifest && Array.isArray(manifest.files) ? manifest.files : [];
+    const owned = Array.isArray(portal && portal.files) ? portal.files : [];
+    const byContent = new Map(), bySha = new Map(), byPath = new Map();
+    for (const file of owned) {
+      if (!file || !file.id) continue;
+      if (file.contentId) byContent.set(String(file.contentId), file);
+      if (file.sha256) bySha.set(String(file.sha256).toLowerCase(), file);
+      if (file.storagePath) byPath.set(String(file.storagePath).replace(/^\/+/, ''), file);
+    }
     let sealed = 0;
-    for (const entry of files) {
-      const fileId = entry && (entry.file_id || entry.id);
-      if (!fileId) continue;
-      const out = await seal(path.join(filesRoot, portal.id, String(fileId)));
-      if (out.ok) sealed += 1;
+    const missing = [];
+    for (const entry of entries) {
+      if (!entry || !entry.path) continue;
+      const rel = String(entry.path).replace(/^\/+/, '');
+      // Първо по пътя в папката на портала: манифестът Е това, което е на диска.
+      const candidates = [];
+      if (rootAbs) candidates.push(path.join(rootAbs, ...rel.split('/')));
+      const known = (entry.content_id && byContent.get(String(entry.content_id)))
+        || (entry.sha256 && bySha.get(String(entry.sha256).toLowerCase()))
+        || byPath.get(rel);
+      // Файл, който е в портала и има `storagePath`, се взима и оттам — за инсталации, в
+      // които файлът е качен през API (в `files/`), а не сложен ръчно в папката.
+      if (known && known.storagePath) candidates.push(path.join(filesRoot, portal.id, String(known.id)));
+      let done = false;
+      for (const target of candidates) {
+        const out = await seal(target);
+        if (out.ok) { done = true; break }
+      }
+      if (done) sealed += 1; else missing.push(rel);
     }
     if (sealed) void audit('worm.sealed', { portalId: portal.id, files: sealed });
+    if (missing.length) void audit('worm.seal.missing', { portalId: portal.id, files: missing.slice(0, 20), count: missing.length });
     return sealed;
   }
 
   /** Заключва байтовете: оттук нататък презаписът е `EACCES`, а не тиха подмяна. */
   async function seal(filePath) {
+    // Windows: виж `SUPPORTED` — там `chmod` прави файла неизтриваем, а не само за четене.
+    if (!SUPPORTED) return { ok: false, reason: 'UNSUPPORTED_PLATFORM' };
     try {
       await fs.chmod(filePath, READ_ONLY);
       return { ok: true };
