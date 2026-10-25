@@ -93,4 +93,15 @@ const readUi = (name) => fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'ui'
   ok('сървърът брои клиентите и ги маха при close — течът е видим');
 }
 
+// ── 6. `stopLive` пуска и DOM референцията, не само връзката ───────────────
+{
+  const panel = readUi('dashboard-panel.js');
+  const body = panel.slice(panel.indexOf('function stopLive()'), panel.indexOf('function startLive'));
+  // Без това панелът държи откачен възел от изтрития изглед, а следващото `open`/`bye`
+  // би рисувало в него, вместо в новия — тоест лентата млъква след връщане на таблото.
+  assert.match(body, /liveBadgeEl = null/, 'stopLive нулира и DOM референцията');
+  assert.match(body, /liveState = 'off'/, 'състоянието се връща в „изключено“');
+  ok('stopLive: затваря връзката, нулира състоянието И DOM референцията');
+}
+
 console.log('PASS live-stream-lifecycle: ' + cases.length + ' проверки — ' + cases.join('; '));

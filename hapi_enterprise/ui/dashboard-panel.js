@@ -51,6 +51,9 @@
     if (liveSource) { try { liveSource.close() } catch { /* вече е затворен */ } liveSource = null }
     liveState = 'off';
     paintLive();
+    // Референцията към DOM се пуска при напускане: иначе панелът държи откачен възел от
+    // изтрития изглед, а следващото `open`/`bye` би рисувало в него, вместо в новия.
+    liveBadgeEl = null;
   }
   function startLive(onEvent) {
     stopLive();
