@@ -2536,7 +2536,7 @@ async function handler(req, res) {
               f.versions ??= []; f.versions.push(prev);
               f.size = data.length; f.sha256 = sha256; f.contentId = contentIds.of({ portalId: p.id, sha256, size: data.length }); f.uploadedAt = new Date().toISOString(); f.version = newVersion;
               if (f.encrypted) f.storedSize = stored.length;
-              const drop = versioning.pruneTargets(f);
+              const drop = versioning.pruneTargets(f, undefined, (v) => retention.protection(p, v));
               f.versions = f.versions.filter(v => !drop.includes(v.version));
               void audit('file.version.upload', { portalId: p.id, fileId: f.id, version: newVersion, prevVersion: prev.version });
               return { pruned: drop };

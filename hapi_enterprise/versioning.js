@@ -42,10 +42,15 @@ function history(file) {
 // Лимитът е ОБЩ брой версии, включително текущата: `history()` връща архивните плюс
 // текущата, затова броенето само на архивните държеше една версия отгоре (история от
 // 51 записа при лимит 50). Една и съща бройка за двете функции.
-function pruneTargets(file, maxVersions = MAX_VERSIONS) {
+// `keep(v)` (по избор) казва коя версия НЕ бива да се изхвърля — използва се за доказателства:
+// ако байтовете на версията са в публикуван манифест, тя остава дори над лимита. Иначе „качи
+// 50 версии след публикуването“ тихо триеше доказателството от историята на файла.
+function pruneTargets(file, maxVersions = MAX_VERSIONS, keep = null) {
   const versions = [...(file.versions || [])].sort((a, b) => a.version - b.version);
   const keepArchived = Math.max(0, Math.trunc(maxVersions) - 1);
-  return versions.slice(0, Math.max(0, versions.length - keepArchived)).map(v => v.version);
+  const excess = versions.slice(0, Math.max(0, versions.length - keepArchived));
+  const prunable = typeof keep === 'function' ? excess.filter(v => !keep(v)) : excess;
+  return prunable.map(v => v.version);
 }
 
 module.exports = { create: () => ({ versionPath, snapshotCurrent, nextVersion, history, pruneTargets }), versionPath, snapshotCurrent, nextVersion, history, pruneTargets, MAX_VERSIONS };
