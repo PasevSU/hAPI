@@ -100,6 +100,41 @@ const cleaned = [];
       }
     }
 
+    // ── 2в. ПЕЧАТЪТ: изтриването не унищожава доказателството ──────────────
+    // `chmod` пази от презаписване, но не и от `unlink`. Затова при архивиране байтовете
+    // влизат и в `.worm/<sha256>` (виж `worm.js` → `vaultPut`). Тук се проверява през
+    // ИСТИНСКИЯ сървър: печатът съществува на диска, броят му се вижда през API и не се
+    // променя, когато работният файл бъде изтрит.
+    {
+      const vaultDir = path.join(server.dir, 'files', '.worm');
+      assert.equal(fs.existsSync(vaultDir), true, 'печатът е създаден при архивиране: ' + vaultDir);
+      const sealedNames = fs.readdirSync(vaultDir).filter((n) => /^[0-9a-f]{64}$/.test(n));
+      assert.ok(sealedNames.length >= 2, 'печатът пази поне двата файла от манифеста: ' + sealedNames.length);
+      for (const name of sealedNames) {
+        const bytes = fs.readFileSync(path.join(vaultDir, name));
+        assert.equal(require('node:crypto').createHash('sha256').update(bytes).digest('hex'), name, 'името в печата е хешът на съдържанието');
+      }
+
+      const vaultApi = await jsonOf('/admin/api/evidence/vault');
+      assert.equal(vaultApi.status, 200, 'GET /admin/api/evidence/vault отговаря 200');
+      assert.equal(vaultApi.data.available, true, 'печатът е наличен');
+      assert.equal(vaultApi.data.objects, sealedNames.length, 'API-то брои същите обекти като диска');
+      assert.ok(vaultApi.data.bytes > 0, 'има обем: ' + vaultApi.data.bytes);
+      assert.equal(vaultApi.data.root, undefined, 'вътрешният път не се връща в отговора');
+
+      // Изтриваме работния файл — байтовете трябва да останат в печата.
+      const victim = path.join(folder, 'документ-1.txt');
+      const victimBytes = fs.readFileSync(victim);
+      const victimSha = require('node:crypto').createHash('sha256').update(victimBytes).digest('hex');
+      fs.rmSync(victim);
+      assert.equal(fs.existsSync(path.join(vaultDir, victimSha)), true, 'след изтриване печатът е още там');
+      assert.deepEqual(fs.readFileSync(path.join(vaultDir, victimSha)), victimBytes, 'байтовете са същите');
+      const afterDelete = await jsonOf('/admin/api/evidence/vault');
+      assert.equal(afterDelete.data.objects, sealedNames.length, 'изтриването не намалява печата');
+      // Връщаме файла, за да не зависят следващите секции от изтрит файл.
+      fs.writeFileSync(victim, victimBytes);
+    }
+
     // ── 3. Манифестът е в архива и сочи съдържанието ─────────────────────────
     const zipBuf = Buffer.from(await (await api(`/admin/api/portals/${portal.id}/qr/QR-001/archive`)).arrayBuffer());
     const unzipped = require('../hapi_enterprise/ooxml.js').unzip(zipBuf);
