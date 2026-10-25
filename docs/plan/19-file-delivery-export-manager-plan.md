@@ -1,9 +1,14 @@
 # hAPI ENTERPRISE — File Delivery & Export Manager + Download Access Control
 
-> **Статус:** приет план (изпълнителен). Транскрипция на спецификацията „Enterprise
-> Specification · File Delivery & Export Manager · Проектна спецификация v1.0“ и на
-> „управление на достъпността за изтегляне“, дадени от собственика на 2026-10-20, с карта
-> към текущото репо и етапи на изпълнение.
+> **Статус: исторически изпълнителен план (приет за 0.63).** Таблиците „днес / цел“ описват
+> състоянието към датата на писане; лявата колона нарочно показва какво е имало ТОГАВА и не
+> бива да се чете като „липсва сега“. Актуалното състояние е в
+> [`PLAN_STATUS.md`](../../documentation/00_GOVERNANCE/PLAN_STATUS.md), нормативният план —
+> `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` + матрицата §5. Изпълненото от този план
+> (правила за експорт, политики за достъп, трансферно ядро, Gateway, Export Center GUI)
+> е в продукция и се пази от `export-rules`, `download-access`, `export-manager`,
+> `export-config`, `public-gateway`.
+>
 > **Връзки:** [`15-unified-master-plan-v6.0.md`](15-unified-master-plan-v6.0.md),
 > [`16-implementation-plan-from-chat.md`](16-implementation-plan-from-chat.md),
 > [`17-portal-files-management-plan.md`](17-portal-files-management-plan.md) (F-серия:
