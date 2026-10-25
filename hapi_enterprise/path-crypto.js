@@ -17,6 +17,7 @@
 //
 // В status НЯМА пътища и НЯМА парола (INV-P7): само идентичността на ключовете и причината.
 const fs = require('node:fs');
+const nodePath = require('node:path');
 const pgp = require('./pgp');
 
 const ENV = {
@@ -132,13 +133,14 @@ function create(options = {}) {
     const secretPath = text(env[ENV.secret]);
     const optionPass = text(env[ENV.keyPass]);
     const filePass = text(env[ENV.pass]);
-    // Проверяват се само стойностите, които РЕАЛНО се ползват: `pgp_key_pass` има
-    // предимство пред файла, затова неговият `!secret` е по-важният от двата.
-    const refs = [
+    // Пътищата, които РЕАЛНО се ползват: `pgp_key_pass` има предимство и тогава файлът с
+    // паролата не се пипа — иначе сгрешен, но неизползван път би съборил работещ ключ.
+    const pathRefs = [
       ['pgp_path_public', publicPath],
       ['pgp_path_secret', secretPath],
-      optionPass ? ['pgp_key_pass', optionPass] : ['pgp_path_pass', filePass],
     ];
+    if (!optionPass) pathRefs.push(['pgp_path_pass', filePass]);
+    const refs = optionPass ? [...pathRefs, ['pgp_key_pass', optionPass]] : pathRefs;
     for (const [option, value] of refs) {
       const name = value ? unexpandedSecret(value) : null;
       if (name === null) continue;
@@ -146,6 +148,13 @@ function create(options = {}) {
       // `Unknown secret ' …'` — затова причината го казва, вместо да го остави за гадаене.
       const code = name === name.trim() ? 'SECRET_NOT_EXPANDED' : 'SECRET_NAME_HAS_SPACE';
       return empty(code, { ...meta, secretOption: option });
+    }
+    // Относителен път не е път в контейнера: работната директория е `/app`, а HA
+    // конфигурацията е `/homeassistant`. Затова `config/_openpgpV6/public.asc` се чете като
+    // `/app/config/...` и дава „файлът не се чете“ без причина — тук причината се казва.
+    for (const [option, value] of pathRefs) {
+      if (!value || nodePath.isAbsolute(value)) continue;
+      return empty('SECRET_PATH_RELATIVE', { ...meta, secretOption: option });
     }
     if (!publicPath && !secretPath) return empty('NO_PATHS', meta);
 

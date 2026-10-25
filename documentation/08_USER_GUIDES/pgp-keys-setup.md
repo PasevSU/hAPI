@@ -50,7 +50,7 @@
 
 Паролата може и директно като стойност: опция `pgp_key_pass` (тя има предимство пред файла).
 
-> **Две капана:**
+> **Три капана:**
 > 1. `pgp_path_pass` трябва да сочи към **`.env`**, не към `.env.example` — примерният файл е с
 >    празна стойност и ключът не се отваря (`PASSPHRASE_REQUIRED`).
 > 2. **`!secret` работи в опциите, но с ТОЧНО име и точно едно разстояние.** Supervisor
@@ -61,6 +61,10 @@
 >    add-on-а, `keyring.reason` казва точно това: `SECRET_NAME_HAS_SPACE` (излишен интервал)
 >    или `SECRET_NOT_EXPANDED` (не е заместен), а `keyring.secretOption` показва коя опция е
 >    сгрешената.
+> 3. **Пътищата са абсолютни.** `config/_openpgpV6/public.asc` се чете като
+>    `/app/config/_openpgpV6/public.asc`, защото работната директория в контейнера е `/app`.
+>    Затова `keyring.reason` е `SECRET_PATH_RELATIVE`, а не „файлът не се чете“: верният
+>    префикс за HA конфигурацията е `/homeassistant/`.
 
 Ако не ползваш Supervisor, същото идва от env: `PGP_KEY_PASS`, `PGP_PATH_PUBLIC`,
 `PGP_PATH_SECRET`, `PGP_PATH_PASS`.

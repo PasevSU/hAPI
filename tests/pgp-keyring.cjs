@@ -87,6 +87,13 @@ const keyringWith = (env) => create({ env });
   assert.equal(chosen.passphraseSource, 'option');
   assert.equal(chosen.reason, '');
   ok('неизползван !secret път не чупи ключа (pgp_key_pass печели)');
+
+  // Относителен път не е път в контейнера: работната директория е `/app`, а HA конфигурацията
+  // е `/homeassistant`. Без тази причина човек вижда само `PUBLIC_UNREADABLE`.
+  const relative = keyringWith({ [ENV.public]: 'config/_openpgpV6/public.asc' }).status();
+  assert.equal(relative.reason, 'SECRET_PATH_RELATIVE', 'относителен път → SECRET_PATH_RELATIVE, получено: ' + relative.reason);
+  assert.equal(relative.secretOption, 'pgp_path_public');
+  ok('относителен път → SECRET_PATH_RELATIVE + име на опцията');
 }
 
 // ── 2. Само публичен ключ: може да криптира, не може да декриптира ──────────

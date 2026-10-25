@@ -7,7 +7,8 @@
 // Защо съществува: дотогава липсващ или грешен ключ се виждаше само като „не се криптира“
 // някъде надолу из кода. Тук състоянието се казва с точна причина (`NO_PATHS`,
 // `SECRET_UNREADABLE`, `PASSPHRASE_REQUIRED`, `PASSPHRASE_WRONG`, `UNSUPPORTED_CURVE`,
-// `SECRET_NOT_EXPANDED`/`SECRET_NAME_HAS_SPACE` за незаместен `!secret` в опция, …)
+// `SECRET_NOT_EXPANDED`/`SECRET_NAME_HAS_SPACE` за незаместен `!secret` в опция,
+// `SECRET_PATH_RELATIVE` за относителен път, …)
 // и БЕЗ път до файла и без парола (INV-P7).
 //
 // Договор: `handle()` връща `true`, когато заявката е за този компонент (и е приключена),

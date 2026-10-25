@@ -112,7 +112,11 @@ const checks = [];
     if (spaced.reason !== 'SECRET_NAME_HAS_SPACE' || spaced.secretOption !== 'pgp_path_pass') {
       throw new Error('незаместен !secret в изданието → ' + spaced.reason + ' / ' + spaced.secretOption);
     }
-    checks.push('незаместен !secret → SECRET_NAME_HAS_SPACE + име на опцията');
+    // Втората половина на същата конфигурация: относителен път (`config/…`) в контейнера
+    // се чете като `/app/config/…` и без тази причина изглежда като „файлът не се чете“.
+    const relative = keyring.create({ env: { PGP_PATH_PUBLIC: 'config/_openpgpV6/public.asc' } }).status();
+    if (relative.reason !== 'SECRET_PATH_RELATIVE') throw new Error('относителен път в изданието → ' + relative.reason);
+    checks.push('незаместен !secret → SECRET_NAME_HAS_SPACE · относителен път → SECRET_PATH_RELATIVE');
 
     // ── Новото в 0.69.87 трябва да работи ИМЕННО в публикувания архив ──────────────
     // `routes/file-transfer.js` е нов файл: ако не влезе в архива, тестовете в репото
