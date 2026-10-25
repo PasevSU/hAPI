@@ -14,24 +14,36 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **269/269** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **270/270** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 448 файла · 76713 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 444 файла · 76339 реда · critical: 0 · high: 0 · medium: 3 · low: 182 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 450 файла · 76865 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 446 файла · 76491 реда · critical: 0 · high: 0 · medium: 3 · low: 183 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 269 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 270 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (176 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (177 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.87.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Отговорът се пише точно веднъж — поправен е реален дефект от error-log-а на жива
+  инсталация.** В `error-log.jsonl` на работещ add-on имаше двойки редове
+  `Cannot write headers after they are sent to the client` /
+  `ERR_HTTP_HEADERS_SENT … at json … at fail` — десет пъти за два дни. Причината е в двата
+  помощника на отговора: `json()` слагаше заглавките ПРЕДИ да сериализира тялото, а `fail()`
+  не проверяваше дали отговорът вече е започнал. Резултатът: при несериализируем обект
+  клиентът получаваше празен 200, а всяко хвърляне след успешен отговор раждаше ВТОРА грешка,
+  която замазваше първата. Сега `json()` строи тялото първо (грешката става обикновено
+  изключение преди писането), а `fail()` при изпратени заглавки само затваря връзката —
+  първият отговор печели. Код: `hapi_enterprise/respond.js` (изнесен от `server.js`, който
+  става 2720/2722 реда); тест: `tests/respond.cjs`.
 
 - **Незаместен `!secret` в опция вече има точна причина.** Home Assistant отказва запис на
   конфигурацията с `Unknown secret ' hapi_pgp_path_pass'`, когато стойността е

@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **101** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **28** инструмента · **269** теста.
+Общо: **102** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **28** инструмента · **270** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (101)
+### Backend модули (`hapi_enterprise/*.js`) (102)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -86,6 +86,7 @@
 | `hapi_enterprise/report-render.js` | Фаза 11 / RS-03: манифест → PDF чрез собствения pdf-writer (без външни зависимости). |
 | `hapi_enterprise/report-stamp.js` | Фаза 11 / RS-05: реален RFC 3161 обхват върху отчет от Report Studio. |
 | `hapi_enterprise/repository.js` | Repository интерфейс (Фаза 2.3, ADR-04/P4). Дефинира persistence контракта за |
+| `hapi_enterprise/respond.js` | ОТГОВОРЪТ НА ЗАЯВКА — точно веднъж. |
 | `hapi_enterprise/retention.js` | Retention policies: age-based expiry of uploaded files and the human-readable audit |
 | `hapi_enterprise/runtime-config.js` | Конфигурацията на средата: какво идва от опциите на add-on-а, кое е твърдо зададено и |
 | `hapi_enterprise/secret-links.js` | Тайни връзки (zero-knowledge): тайната се шифрова В БРАУЗЪРА, а сървърът пази само |

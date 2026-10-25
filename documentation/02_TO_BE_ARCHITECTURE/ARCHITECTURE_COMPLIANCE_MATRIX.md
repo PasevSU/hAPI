@@ -80,6 +80,8 @@
 | `PROBLEM_DETAILS_RFC9457` — грешката е структура, не низ | `problem.js` (`body`: `type` · `title` · `status` · `detail` + старото `error`), `fail()` в `server.js`; типът остава `application/json` за обратна съвместимост | `api-input-errors` (всеки 4xx от 23 входа носи полетата и старото `error`), `problem` (чистата функция) |
 | `IDEMPOTENT_RETRY` — повторена заявка не изпълнява действието втори път | `idempotency.js` (`handle` преди маршрутите, отпечатък метод+път+тяло, ключ заедно със самоличността, `Idempotency-Replayed`), таблица `idempotency` в `sqlite-store.js`, `idempotency.replay`/`idempotency.conflict` в одита | `idempotency` (без заглавка → старото поведение · повторение → същия отговор · друго тяло → 422 · в ход → 409+`Retry-After` · друга самоличност → собствен ключ · двоичен/5xx отговор не се пази · жив сървър: един портал и един файл) |
 
+| `SINGLE_RESPONSE` — отговорът се пише точно веднъж | `respond.js` (`json` строи тялото ПРЕДИ заглавките, `fail` не прави втори `writeHead` при вече започнал отговор), `server.js` (`require('./respond')`) | `respond` (BigInt → нищо не се пише · втори отговор → тих · тяло по RFC 9457 · защитни заглавки) |
+
 Външен пакет `hapi-evidence-portal v1.2` е сверен файл по файл — виж `EVIDENCE_PORTAL_V1.2_REVIEW.md`.
 
 ## 6. Регресионна база
