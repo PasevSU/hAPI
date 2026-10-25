@@ -1,6 +1,9 @@
 # План за изпълнение по разговора „hAPI ENTERPRICE / Enterprise Control Center“
-
-> **Източник:** https://chatgpt.com/share/6ad77e1b-6d28-83ed-862b-f3ca3e73586c (7–10.10.2026)
+> **Статус: исторически работен план (0.63).** Таблиците и стъпките описват как е
+> планирана работата, не какво е останало. Актуалното състояние е в
+> [`PLAN_STATUS.md`](../../documentation/00_GOVERNANCE/PLAN_STATUS.md), нормативният план —
+> `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` + матрицата §5.
+>> **Източник:** https://chatgpt.com/share/6ad77e1b-6d28-83ed-862b-f3ca3e73586c (7–10.10.2026)
 > **Роля:** работният план по изискванията на разговора. Не заменя обединения план
 > [`15-unified-master-plan-v6.0.md`](15-unified-master-plan-v6.0.md), а го изпълнява.
 > **Дата:** 2026-10-20

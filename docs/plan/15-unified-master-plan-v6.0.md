@@ -1,5 +1,12 @@
 # hAPI Enterprise — Обединен проект v6.0 (единствен източник на истина)
 
+> **За какво е „единствен източник на истина“:** за ОБХВАТА и ИДЕИТЕ, не за текущото
+> състояние. Състоянието се мени с всеки комит и тук не се поддържа: актуалното е в
+> [`PLAN_STATUS.md`](../../documentation/00_GOVERNANCE/PLAN_STATUS.md), нормативното — в
+> `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` + матрицата §5, а числата — в генерирания
+> [`reports/RELEASE-STATUS.md`](../../reports/RELEASE-STATUS.md). Ако ред тук противоречи на
+> кода, вярвай на кода.
+>
 > **Статус:** Каноничен. Този документ **обединява** всички идеи от:
 > `docs/plan/00…14`, `documentation/` (00–08), текущия код (`hapi_enterprise/`,
 > `custom_components/`, `tests/`), worktree `hAPI Enterptice.worktrees/pr/3-dependabot`
