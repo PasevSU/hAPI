@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **270/270** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 450 файла · 76884 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 446 файла · 76510 реда · critical: 0 · high: 0 · medium: 3 · low: 183 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 450 файла · 76898 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 446 файла · 76524 реда · critical: 0 · high: 0 · medium: 3 · low: 183 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -49,7 +49,9 @@
   редове замазваха истинските 500-ки (в живия лог бяха 10 от 10). Структурният тест
   `server-structure` пази и двете: `json`/`fail` идват от `respond.js`, а `catch`-ът проверява
   `res.headersSent`. `artifact-smoke` (вече 11 проверки) пуска изданието и твърди, че в лога му
-  няма нито един `ERR_HTTP_HEADERS_SENT`.
+  няма нито един `ERR_HTTP_HEADERS_SENT`. Отказаният втори отговор не е безмълвен: пише се
+  `RESPONSE_ALREADY_SENT` (стабилен код, без съобщението на извикващия) — иначе дефект в
+  маршрут би изчезнал без следа.
 
 - **Незаместен `!secret` в опция вече има точна причина.** Home Assistant отказва запис на
   конфигурацията с `Unknown secret ' hapi_pgp_path_pass'`, когато стойността е

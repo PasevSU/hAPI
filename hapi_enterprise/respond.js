@@ -41,6 +41,9 @@ function json(res, status, obj, headers = {}) {
  */
 function fail(res, status, message) {
   if (res.headersSent) {
+    // Отказът НЕ бива да е безмълвен: втори отговор е дефект в извикващия и трябва да се
+    // види в лога на add-on-а. Кодът е стабилен, за да се търси с него.
+    console.warn('RESPONSE_ALREADY_SENT: втори отговор е отказан (първият вече е изпратен), код ' + Number(status || 0));
     try {
       if (!res.writableEnded) res.end();
     } catch {

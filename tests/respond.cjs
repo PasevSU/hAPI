@@ -62,9 +62,20 @@ try {
     const res = new FakeRes();
     respond.json(res, 201, { ok: true });
     assert.equal(res.writes, 1);
-    assert.doesNotThrow(() => respond.fail(res, 500, 'късно'), 'fail след изпратен отговор не бива да хвърля');
+    // Отказът трябва да е ЧУВАЕМ: безмълвно погълнат втори отговор е дефект, който изчезва.
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (line) => warnings.push(String(line));
+    try {
+      assert.doesNotThrow(() => respond.fail(res, 500, 'късно'), 'fail след изпратен отговор не бива да хвърля');
+    } finally {
+      console.warn = originalWarn;
+    }
     assert.equal(res.writes, 1, 'втори writeHead НЕ се прави — няма ERR_HTTP_HEADERS_SENT');
     assert.match(res.text, /"ok":true/, 'първият отговор остава непокътнат');
+    assert.equal(warnings.length, 1, 'отказът се записва в лога точно веднъж');
+    assert.match(warnings[0], /RESPONSE_ALREADY_SENT/, 'кодът е стабилен и се търси с него');
+    assert.ok(!/късно/.test(warnings[0]), 'съобщението на извикващия не се повтаря в лога');
   }
 
   // ── 3. Чист отговор: тяло по RFC 9457 ──────────────────────────────────────
