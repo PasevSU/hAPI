@@ -28,7 +28,8 @@
 | `signer.js` | Integrity receipts (HMAC-SHA256) |
 | `file-crypto.js` | Encryption at rest (AES-256-GCM) |
 | `audit-chain.js` | Hash-chained append-only audit |
-| `retention.js` | Retention + audit export |
+| `retention.js` | Retention + audit export; **никога не трие публикувано** (`EVIDENCE_NEVER_DELETED`) |
+| `mirror-target.js` | Цел на огледалото: `path` (папка) или `s3` (SigV4 + Object Lock) зад един договор `put/get/remove` | `create`, `parseSpec`, `signV4`, `keyFor` |
 
 ## Documents
 
@@ -46,6 +47,23 @@
 | `portal.js` | Public landing portal |
 | `notify.js` | HA notify dispatch |
 | `qrcode.js` | QR generation |
+
+## QR договори, архиви и идентичност (0.69.75+)
+
+| Module | Responsibility | Interface |
+| ------ | -------------- | --------- |
+| `portal-qr.js` | QR ревизии, манифести, физически архиви (`MAX_BRANCH_DEPTH_3`), `unpack()` за възстановяване | `ensureFirst`, `activeRevision`, `walk`, `manifestFor`, `buildArchive`, `unpack`, `stats` |
+| `portal-integrity.js` | Проверка на целостта на архивите (`ARCHIVE_NOT_TAMPERED`, 8 кода за повреда), фонова задача | `verifyArchive`, `verifyPortal`, `verifyPortals`, `stats`, `schedule` |
+| `content-id.js` | Идентичност на СЪДЪРЖАНИЕТО (`CT-…`) — от портал + SHA-256 + размер, не от името | `of`, `forFile` |
+| `oidc.js` | OIDC вход: откриване, PKCE `S256`, проверка на ID token (`RS256` само), state/nonce | `config`, `createDiscovery`, `createFlows`, `verifyIdToken`, `sessionCookie`, `cookie` |
+
+## HTTP компоненти (`routes/`)
+
+| Component | Responsibility |
+| --------- | -------------- |
+| `routes/portal-storage.js` | `order` (вкл. `/portal.html:<папка>`), изтегляне по път, `ping`, публичен `qr.json` |
+| `routes/portal-qr.js` | Админ QR: регистър, архивиране, прекратяване, проверка, възстановяване |
+| `routes/oidc.js` | `/api/v1/auth/oidc/login` и `/callback` |
 
 ## Operations
 

@@ -1,5 +1,9 @@
 # Roadmap — hAPI Enterprise
 
+> **Исторически документ.** Написан е за v0.50 и фази 5–11 като „следващи“.
+> Актуалното състояние е в [`PLAN_STATUS.md`](PLAN_STATUS.md); нормативният план за
+> текущата работа е `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` + матрицата §5.
+
 > Canonical: [`docs/plan/15-unified-master-plan-v6.0.md`](../../docs/plan/15-unified-master-plan-v6.0.md).
 
 ## Now (v0.50.0)

@@ -76,7 +76,9 @@ npm run sync:local    # = pwsh -NoProfile -File scripts/sync-local-addon.ps1
 
 ## 3. Къде отиват данните (най-важната таблица)
 
-`DATA_DIR` е `/data` в add-on-а и `%LOCALAPPDATA%\hAPI_enterprise` в Windows. Вътре:
+`DATA_DIR` НЕ е фиксиран: той е `<storage_location>/<storage_subdirectory>` и се решава от
+`storage-preflight.js` при старт. По подразбиране от 0.69.87 това е **`/share/hapi/data`**
+(`storage_location: share`, `storage_subdirectory: hapi/data`). Вътре:
 
 | Път в `DATA_DIR`                                               | Какво има                                              | Кой го създава                |
 | -------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------- |
@@ -90,13 +92,22 @@ npm run sync:local    # = pwsh -NoProfile -File scripts/sync-local-addon.ps1
 
 ### Работната папка (там, където работиш с файловете)
 
-Зависи от `storage_location` (по подразбиране `addon_config`):
+Зависи от `storage_location` и `storage_subdirectory` (по подразбиране `share` + `hapi/data`):
 
 | `storage_location`               | Корен в контейнера | Какво виждаш на домакина      |
 | -------------------------------- | ------------------ | ----------------------------- |
-| `addon_config` (по подразбиране) | `/config`          | собствената папка на add-on-а |
+| `share` (по подразбиране)        | `/share`           | `/share` на HA (Samba)        |
+| `addon_config`                   | `/config`          | собствената папка на add-on-а |
 | `media`                          | `/media`           | `/media` на HA                |
-| `share`                          | `/share`           | `/share` на HA (Samba)        |
+
+Подпапката може да е до три нива (`hapi/data`, `documents/hapi/data`), но не може да излиза
+навън (`../…` се отказва).
+
+> **Обновяване от по-стара версия.** Старото подразбиране беше `addon_config/hapi_enterprise`.
+> Ако там има данни, а новото място е празно, add-on-ът **продължава да ползва старото** и пише
+> `STORAGE_LEGACY_LOCATION` в лога. Иначе обновяването би стартирало празна база и порталите
+> биха „изчезнали“. За да минеш на новото място: спри add-on-а, премести папката
+> (`/config/hapi_enterprise` → `/share/hapi/data`) и го стартирай отново.
 
 Всеки портал получава **своя** папка `<корен>/<slug>` (напр. `/share/<slug>`). Там стоят
 файловете с оригиналните им имена — това е „работната папка на портала“. Пълната карта и

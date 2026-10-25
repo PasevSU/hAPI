@@ -41,7 +41,7 @@
 | Едно решение за достъп | `portal-policy.js` (`decide`, `snapshot`) | `portal-tokens`, `gateway-server` |
 | Заключването иска основание | `LOCK_REASON_REQUIRED` (файл и папка) | `access-policy`, `portal-order`, `storage-tree-api` |
 | Парола не отваря друг портал | скоупи + ACL (`user_portals`) | `portal-tokens` (A↔B, отнемане) |
-| Allowlist за публичния слушател | `public-route-allowlist.js` (27 правила) | `public-route-allowlist` (35 разрешени, 33 отказани) |
+| Allowlist за публичния слушател | `public-route-allowlist.js` (32 правила) | `public-route-allowlist` (35 разрешени, 33 отказани) |
 | Без изтекли токени в имената на маршрути | `observer.normalizePath` (`/t/:token`) | `portal-tokens` |
 
 ## 4. Експлоатация и интеграция (§15–§16)
@@ -55,11 +55,10 @@
 
 ## 5. Липсваща функционалност (честен списък)
 
-| # | Липсва | Какво значи | Следваща стъпка |
-| --- | --- | --- | --- |
-| 3 | Договор `file` като самостоятелна страница | има QR към файл, но не и страница с неговия списък | `serveFile()` до `serveOrder()` |
-| 4 | Изолация на недоверен HTML | CSP има, sandbox няма | отделен origin/iframe с `sandbox` |
-| 6 | GUI бадж „QR vN / Архиви“ в списъка на порталите | има го в контролния панел, не в реда на портала | малък бадж до `API/QR` |
+**Няма отворени редове.** Всичко, което първото издание на матрицата отбеляза като липсващо
+(договор `file` като страница, изолация на недоверен HTML, QR бадж в списъка на порталите), е
+затворено и е преместено в §5.1 с кода и теста, който го пази. Нов ред се добавя ТУК, когато
+се появи разминаване между спецификацията и кода — не се пренаписва спецификацията.
 
 ### 5.1 Реализирано след първото издание на матрицата
 
@@ -71,6 +70,13 @@
 | `RESTORE_FROM_ARCHIVE` — връщане към старо състояние без загуба | `POST …/qr/{qrId}/restore`: проверка → предпазен архив → запис на байтовете; излишните НЕ се трият | `portal-qr-restore` (предпазен архив · точни байтове · `keptExtra` · повреден архив → 409) |
 | `PORTAL_PING` — връзката до портала е проверима | `GET /api/v1/p/<slug>/ping` (право `read`, без съдържание) | `portal-qr-restore` (200 · активен QR · договори · непознат портал → 404) |
 | `OIDC_PKCE_LOGIN` — вход през външен доставчик без тайна в адреса | `oidc.js` (PKCE S256, RS256, state/nonce), `routes/oidc.js`, бисквитка `hapi_sso` | `oidc-login` (поток · state веднъж · роля от групи · `alg none`/изтекъл отказ) |
+| `EVIDENCE_NEVER_DELETED` — политиката за задържане не може да изтрие публикувано съдържание | `retention.js` (`evidenceIndex` от `db.portalQr`, `protectionOf`, отказ при `delete`), `getQrRegistry` в `server.js`, `refused` в одита | `retention-evidence` (манифест · `archive-unindexed` · `sealed` · обратна съвместимост) |
+| `MIRROR_TARGET_PATH_OR_S3` — второто копие е цел, не папка | `mirror-target.js` (`parseSpec`, `signV4`, `pathTarget`, `s3Target`), `server.js` (`mirror.put/get/remove`), опции `s3_access_key`/`s3_secret_key`, `file.mirror.locked` | `mirror-target` (SigV4 срещу независима проверка · Object Lock заглавки · грешен секрет → 403), `mirror-s3-wiring` (настройка → s3 цел · без ключове → отказ при старт) |
+| `STORAGE_DEFAULT_SHARE` — данните са в `/share/hapi/data`, но стара инсталация не се обявява за празна | `config.yaml` (нови подразбирания + схема до три нива), `storage-preflight.js` (`DEFAULT_SUB`, `validSub`, `hasData`, `STORAGE_LEGACY_LOCATION`) | `storage-default-location` (6 случая · стар път печели пред празен нов · `../escape` и 4 нива → отказ) |
+| `QR_BADGE_IN_LIST` — баджът „QR vN · N арх.“ идва със списъка, не с втора заявка | `server.js` (`qrSummary` в `adminPortal`), `ui/files-manager.js` (`qrBadge`: активен = ok, прекратен = warn + основание) | `portal-qr-badge` (QR-001 → QR-002 + 1 архив → прекратен с основание · манифест `MF-QR-001`) |
+| `HTML_IN_SANDBOX` — недовереният HTML е в изолиран контекст | `site-csp.js` (`forFile`: `sandbox` без `allow-same-origin`, `connect-src 'none'`), `server.js` (`/site/…` подава политиката) | `portal-html-sandbox` (документ → пясъчник · ресурси → статика · изход от папката → 4xx) |
+| `FILE_CONTRACT_PAGE` — договорът `file` е самостоятелна страница за ЕДИН файл | `routes/portal-storage.js` (`serveFile`), `public-route-allowlist.js` (2 правила: `?file=` и `:папка/път`) | `portal-file-page` (доказателства: SHA-256 · Content ID · QR-001/`MF-QR-001`; другите файлове НЕ се показват; traversal и скрита папка → 404) |
+| `HTML_IN_SANDBOX` — недовереният HTML е в изолиран контекст | `site-csp.js` (`forFile`: `sandbox` без `allow-same-origin`, `connect-src 'none'`), `server.js` (`/site/…` подава политиката) | `portal-html-sandbox` (документ → пясъчник · ресурси → статика · изход от папката → 4xx) |
 
 Външен пакет `hapi-evidence-portal v1.2` е сверен файл по файл — виж `EVIDENCE_PORTAL_V1.2_REVIEW.md`.
 
@@ -103,3 +109,4 @@
 | 12 | Разкриване на абсолютен файлов път през API | `portal-order` (`..` и `%2e%2e` → 400/404), `public-route-allowlist` | ✅ |
 | 13 | Изпълнение на опасен HTML | `html-publish` (CSP), `portal-page-contract`, `panel-framing` | 🟡 CSP има, изолиран контекст (sandbox) — не (вж. §5, ред 4) |
 | 14 | Несъответствие между комбинирания отчет и манифеста | `content-id` (`content_id` в отчета и в манифеста; две версии → два идентификатора) | ✅ |
+| 15 | Администраторски токен, който е и HA long-lived token (едно изтичане = цял Home Assistant) | `admin-token-shape` (`haLongLived` от формата; жив старт: маркерът е в лога), `runtime-config.tokenShape` | ✅ предупреждение `ADMIN_TOKEN_LOOKS_LIKE_HA_LLAT` |

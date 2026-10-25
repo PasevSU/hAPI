@@ -21,6 +21,8 @@ const RULES = [
   { method: GET, re: /^\/p\/[^/]+\/?$/, why: 'страницата на портала (там води QR кодът)' },
   { method: GET, re: /^\/portal\.html$/, why: 'страницата на портала за конкретна папка' },
   { method: GET, re: /^\/portal\.html:[A-Za-z0-9_-]{1,90}(\/[^\\]*)?$/, why: 'същата страница във вида `/portal.html:<папка>` (донорски формат, без прокси)' },
+  { method: GET, re: /^\/file\.html$/, why: 'договорът `file` — страница за един файл (`?file=<папка>/<път`)' },
+  { method: GET, re: /^\/file\.html:[A-Za-z0-9_-]{1,90}(\/[^\\]*)?$/, why: 'същата страница във вида `/file.html:<папка>/<път>`' },
   { method: GET, re: /^\/portal\.js$/, why: 'скриптът на страницата' },
   { method: GET, re: /^\/portal\.css$/, why: 'стиловете на страницата' },
   { method: GET, re: /^\/portal-i18n\.js$/, why: 'речникът BG/EN/DE' },

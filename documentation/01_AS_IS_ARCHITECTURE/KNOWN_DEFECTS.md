@@ -10,7 +10,7 @@
 | DEF-03 | Portal | Public portal (`portal.js`) is download-only; no in-browser hash verification yet — addressed by Phase 7. | Medium | Planned (Phase 7) |
 | DEF-04 | Crypto | No RFC 3161 timestamp / PKCS#7 detached signature yet — evidence lacks legal-grade sealing until Phase 7. | High | Planned (Phase 7) |
 | DEF-05 | Crypto | SHA-256 only (no SHA-512) in manifest — Phase 7 adds SHA-512. | Low | Planned (Phase 7) |
-| DEF-06 | Ops | WORM is partial (`flag:'wx'`); dedicated immutable evidence volume not yet present. | Medium | Planned (Phase 7) |
+| DEF-06 | Ops | WORM is partial (`flag:'wx'`); dedicated immutable evidence volume not yet present. | Medium | Planned (Phase 7) — оценка на готовите решения: `02_TO_BE_ARCHITECTURE/READY_MADE_COMPONENTS.md` (S3 Object Lock) |
 
 ## Disposition rules
 

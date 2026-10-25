@@ -3,7 +3,7 @@
 # 🏠 HOME ASSISTANT Portal Enterprise - hAPI Enterprise
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?color=ff00d8)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.86-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.87-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?color=ff00d8)](https://hacs.xyz)
 
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -285,7 +285,9 @@ node hapi_enterprise\standalone.js
 | Име на базата и портала | `db_name` | `Files` | Именува първия портал (`Files`, slug `files`). Сменя се преди първия старт, ако трябва друго име. |
 | Папка за резервни копия | `backup_folder` | — | Празно: `<хранилище>/backups` в папката на add-on-а. Относителен път се решава в `/share`. |
 | Огледална папка за архивите | `backup_mirror` | — | Празно: без второ копие на резервните копия. Всяко зададено копие се проверява с SHA-256. |
-| Огледална папка за файловете | `storage_mirror` | — | Празно: без второ копие на качените файлове. Зададено огледало се проверява и възстановява. |
+| Второ копие на файловете (папка или s3) | `storage_mirror` | — | Празно: без второ копие на качените файлове. Папка се проверява и възстановява; `s3://bucket/prefix?endpoint=…&lock=дни` пише същото копие в S3-съвместимо хранилище с Object Lock. |
+| S3 ключ за достъп (само при s3 огледало) | `s3_access_key` | — | Само за целта `s3` на огледалото. Празно: s3 цел се отказва, вместо да не пише никъде. |
+| S3 таен ключ (само при s3 огледало) | `s3_secret_key` | — | Само за целта `s3` на огледалото. Не се печата и не влиза в адреса на огледалото. |
 | Лимит на паметта (MB) | `memory_limit_mb` | `0` | `0` оставя подразбирането на Node.js. `256`-`384` е разумният диапазон за Raspberry Pi. |
 | Идентификатор на базата | `db_id` | `1` | `1` е пространството от имена по подразбиране. Сменя се само за втора, независима база. |
 | Конфигурационни профили | `profiles` | — | Празно: ползват се вградените профили. Път или JSON ги заменя; невалиден JSON се игнорира. |
@@ -294,8 +296,8 @@ node hapi_enterprise\standalone.js
 | Адреси в същия origin | `public_same_origin` | `false` | `false`: абсолютните адреси се строят от `public_domain`. `true` дава относителни на адреса на HA. |
 | Роли на потребители | `user_roles` | — | Празно: всеки Ingress потребител е `admin`. Картата е за понижаване, напр. `{"guest": "viewer"}`. |
 | Роли на групи | `group_roles` | — | Празно: без карта на групи. HA не подава групи; reverse proxy, който ги добавя, може. |
-| Място за съхранение | `storage_location` | `addon_config` | `addon_config`: документите са в папката на add-on-а. `media` и `share` са споделени HA папки. |
-| Подпапка за съхранение | `storage_subdirectory` | `hapi_enterprise` | `hapi_enterprise`: една предвидима подпапка в избраното хранилище. |
+| Място за съхранение | `storage_location` | `share` | `share` (подразбиране): документите са в `/share/hapi/data`, видими през Samba и оцеляват преинсталиране на add-on-а. `addon_config` ги пази в папката на add-on-а, `media` — в другата споделена папка. |
+| Подпапка за съхранение | `storage_subdirectory` | `hapi/data` | `hapi/data`: една предвидима подпапка в избраното място (до три нива). Ако по-стара инсталация е пазила данните в предишната папка, add-on-ът продължава да ги ползва и пише `STORAGE_LEGACY_LOCATION`, вместо да стартира празен. |
 | Режим на съхранение | `storage_mode` | `local` | `local`: монтираната папка се ползва директно. `ha_network` отказва старт при неактивен mount. |
 | Име на мрежовия storage | `storage_mount_name` | — | Празно: има значение само при `storage_mode: ha_network`, където името на mount-а е задължително. |
 | Минимум свободно място (MB) | `min_free_mb` | `100` | `100`: стартът се отказва под 100 MB свободни. Вдигни до `500`+ при сканиране на големи папки. |

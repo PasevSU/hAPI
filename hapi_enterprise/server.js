@@ -192,7 +192,7 @@ function registerSendFailure(sendId, req) {
 const pruneSendTickets = () => { const now = Date.now(); for (const [k, exp] of usedSendTickets) if (exp <= now) usedSendTickets.delete(k) };
 const tokenMatch = (items, secret) => { if (!secret) return false; const digest = keyDigest(secret); return (items || []).some(k => safeEqual(k.hash, digest) && (!k.expiresAt || Date.parse(k.expiresAt) > Date.now())); };
 const auditPath = path.join(root, 'audit.jsonl');
-const retention = require('./retention').create({ filesRoot, auditPath, getSettings: () => runtime.settings });
+const retention = require('./retention').create({ filesRoot, auditPath, getSettings: () => runtime.settings, getQrRegistry: () => db.portalQr });
 const audit = (event, details = {}) => { void auditChain.append(event, details).catch(e => console.error('AUDIT CHAIN FAILURE', e)); return fsp.appendFile(auditPath, JSON.stringify({ at: new Date().toISOString(), event, ...details }) + '\n', { mode: 0o600 }).catch(e => console.error('AUDIT FAILURE', e)) };
 const counters = { requests: 0, errors: 0, downloads: 0, rateLimited: 0 };
 const telemetryFile = path.join(root, 'telemetry.jsonl');
@@ -309,44 +309,36 @@ async function serveEncryptedFile(req, res, fp, f, onStart) {
 }
 // Reads a file's plaintext into memory (decrypting when stored encrypted).
 // Returns null when the physical file is missing or undecryptable.
-// Огледало на файловете: второ копие на всяко качване (друго устройство/споделена
-// папка). Пази се СЪЩИТЕ байтове като оригинала (вкл. шифровани), за да е сверката
-// е просто равенство; при липса на оригинала четенето минава към копието и то се
-// връща на място (самолекуване).
-const storageMirrorDir = (() => {
-  const v = String(optionValue('STORAGE_MIRROR', 'storage_mirror', '')).trim();
-  if (!v) return '';
-  const abs = path.isAbsolute(v) ? path.resolve(v) : path.resolve('/share', v);
-  if (!['/share', '/media', '/config', '/data'].some(p => abs === p || abs.startsWith(p + '/')) && !process.env.STORAGE_MIRROR_ANY) throw Error('storage_mirror must be inside /share, /media or /config');
-  if (abs === root || abs === path.join(root, 'files')) throw Error('storage_mirror must differ from the data directory');
-  return abs;
-})();
+// Огледало на файловете: второ копие на всяко качване. Целта е `path` (папка) или `s3`
+// (`s3://bucket/prefix?endpoint=…&lock=дни`) — виж `mirror-target.js`. Договорът е един и
+// същ: запис → прочитане обратно → сравнение по SHA-256 → при нужда поправка. Пази се
+// СЪЩИТЕ байтове като оригинала (вкл. шифровани), за да е сверката просто равенство; при
+// липса на оригинала четенето минава към копието и то се връща на място (самолекуване).
+const mirror = require('./mirror-target').create({
+  raw: optionValue('STORAGE_MIRROR', 'storage_mirror', ''),
+  root,
+  allowAny: Boolean(process.env.STORAGE_MIRROR_ANY),
+  accessKey: optionValue('S3_ACCESS_KEY', 's3_access_key', ''),
+  secretKey: optionValue('S3_SECRET_KEY', 's3_secret_key', ''),
+});
+// Самолекуването при четене е синхронно, затова работи само при цел „папка“. При `s3`
+// поправката минава през `/admin/api/storage/mirror/verify` (async), не през четене.
+const storageMirrorDir = mirror && mirror.kind === 'path' ? mirror.describe().location : '';
 const mirrorFilePath = (portalId, fileId) => path.join(storageMirrorDir, 'files', portalId, fileId);
 const mirrorPortalDir = portalId => path.join(storageMirrorDir, 'files', portalId);
 async function storeMirrored(portalId, fileId, data) {
-  if (!storageMirrorDir) return null;
-  const target = mirrorFilePath(portalId, fileId);
-  try {
-    await fsp.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
-    await fsp.writeFile(target, data, { flag: 'wx', mode: 0o600 });
-    const check = await fsp.readFile(target);
-    const same = check.length === data.length && crypto.createHash('sha256').update(check).digest('hex') === crypto.createHash('sha256').update(data).digest('hex');
-    if (!same) {
-      await fsp.rm(target, { force: true }).catch(() => { });
-      log.error('file.mirror.mismatch', { ns: 'storage', portalId, fileId });
-      void audit('file.mirror.failed', { portalId, fileId, reason: 'sha256 mismatch' });
-      return 'failed';
-    }
-    return 'ok';
-  } catch (e) {
-    log.error('file.mirror.failed', { ns: 'storage', portalId, fileId, err: e.message });
-    void audit('file.mirror.failed', { portalId, fileId, reason: e.code || e.message });
-    return 'failed';
-  }
+  if (!mirror) return null;
+  const out = await mirror.put(portalId, fileId, data);
+  if (out.ok) return 'ok';
+  log.error('file.mirror.failed', { ns: 'storage', portalId, fileId, reason: out.reason });
+  void audit('file.mirror.failed', { portalId, fileId, reason: out.reason });
+  return 'failed';
 }
 async function removeMirrored(portalId, fileId) {
-  if (!storageMirrorDir) return;
-  await fsp.rm(mirrorFilePath(portalId, fileId), { force: true }).catch(() => { });
+  if (!mirror) return;
+  const out = await mirror.remove(portalId, fileId);
+  // Заключен обект (Object Lock) НЕ е провал: очаквано е да не се трие.
+  if (out && out.locked) void audit('file.mirror.locked', { portalId, fileId, target: mirror.kind });
 }
 function readPlainBuffer(p, f) {
   const fp = path.join(filesRoot, p.id, f.id);
@@ -688,7 +680,10 @@ const getPortal = s => db.portals.find(p => p.slug === s);
 // Публичните адреси приемат и slug, и id: `/p/<id>` е каноничният адрес на QR кода,
 // а `/p/<slug>` остава валиден (стари връзки и познаваеми адреси).
 const resolvePortal = key => { const k = String(key || ''); if (!k) return null; return db.portals.find(p => p.slug === k) || db.portals.find(p => p.id === k) || null };
-const adminPortal = p => ({ ...publicPortal(p), tokenRequired: !!requirePortalToken, accessQuery: p.visibility === 'public' || requirePortalToken ? '' : portalAccess.issue(p.signingSecret || adminToken, p.id).query, accessExpires: p.visibility === 'public' || requirePortalToken ? null : portalAccess.issue(p.signingSecret || adminToken, p.id).expires, contactId: p.contactId || '', contact: contactById(db, p.contactId), caseId: p.caseId || '', case: require('./cases').caseView(db, p.caseId), htmlProjects: (p.htmlProjects || []).map(x => ({ ...x })), files: p.files.map(f => ({ ...publicFile(f), accessKeys: (f.accessKeys || []).map(k => ({ id: k.id, createdAt: k.createdAt, expiresAt: k.expiresAt || null })), sends: (f.sends || []).map(s => sendLite.adminView(s)) })) });
+const adminPortal = p => ({ ...publicPortal(p), tokenRequired: !!requirePortalToken, accessQuery: p.visibility === 'public' || requirePortalToken ? '' : portalAccess.issue(p.signingSecret || adminToken, p.id).query, accessExpires: p.visibility === 'public' || requirePortalToken ? null : portalAccess.issue(p.signingSecret || adminToken, p.id).expires, contactId: p.contactId || '', contact: contactById(db, p.contactId), caseId: p.caseId || '', case: require('./cases').caseView(db, p.caseId), htmlProjects: (p.htmlProjects || []).map(x => ({ ...x })), qr: qrSummary(p), files: p.files.map(f => ({ ...publicFile(f), accessKeys: (f.accessKeys || []).map(k => ({ id: k.id, createdAt: k.createdAt, expiresAt: k.expiresAt || null })), sends: (f.sends || []).map(s => sendLite.adminView(s)) })) });
+// Кратко състояние на QR за СПИСЪКА на порталите (бадж „QR vN / Архиви“). Чете се от
+// регистъра в метаданните, не от диска — иначе списъкът прави по една заявка на портал.
+const qrSummary = p => { const reg = (db.portalQr && db.portalQr[p.id]) || null; const revisions = (reg && Array.isArray(reg.revisions)) ? reg.revisions : []; const last = revisions[revisions.length - 1] || null; const stamped = [...revisions].reverse().find(r => r && r.manifestId) || null; return { active: last && !last.blockedAt ? last.id : null, seq: last ? last.seq : 0, revisions: revisions.length, archives: (reg && Array.isArray(reg.archives)) ? reg.archives.length : 0, blocked: Boolean(last && last.blockedAt), blockReason: (last && last.blockReason) || null, manifestId: (stamped && stamped.manifestId) || null } };
 const bearerToken = req => ((req.headers.authorization || '').replace(/^Bearer\s+/i, '')).trim();
 const resolveSession = (req, url) => { const token = bearerToken(req) || oidcLib.cookie(req, 'hapi_sso') || ((url && url.searchParams.get('portal_token')) || ''); if (!token) return null; return metadataStore.getSession(keyDigest(token)) }; function ssoRoleOf(req) { const token = oidcLib.cookie(req, 'hapi_sso'); if (!token) return null; const session = metadataStore.getSession(keyDigest(token)); if (!session) return null; const scopes = session.scopes || []; if (scopes.includes('admin')) return 'admin'; return scopes.length ? 'viewer' : null }
 const signedValid = (url, p, f) => { const expires = Number(url.searchParams.get('expires')), sig = url.searchParams.get('sig') || ''; if (!Number.isSafeInteger(expires) || expires <= Math.floor(Date.now() / 1000) || expires > Math.floor(Date.now() / 1000) + 86400 || !/^[a-f0-9]{64}$/.test(sig)) return false; const expected = crypto.createHmac('sha256', p.signingSecret || adminToken).update(`${p.id}:${f.id}:${expires}`).digest('hex'); return safeEqual(sig, expected) };
@@ -1257,33 +1252,37 @@ async function handler(req, res) {
     // от здравата (копие → оригинал или обратно), така че една повредена страна не е загуба.
     if (url.pathname === '/admin/api/storage/mirror/verify' && method === 'POST') {
       if (!adminGate(req, res, 'storage', method)) return;
-      if (!storageMirrorDir) return fail(res, 409, 'storage_mirror is not configured');
+      if (!mirror) return fail(res, 409, 'storage_mirror is not configured');
       // Празно тяло е валидно (само проверка без repair); невалиден JSON не се приема.
       let payload = {};
       const rawVerify = await body(req, 64 * 1024).catch(() => Buffer.alloc(0));
       if (rawVerify && rawVerify.length) { try { payload = JSON.parse(rawVerify.toString('utf8')) || {} } catch { return fail(res, 400, 'Invalid JSON') } }
       const repair = payload && payload.repair === true;
       const shaOf = async file => { const h = crypto.createHash('sha256'); for await (const chunk of fs.createReadStream(file)) h.update(chunk); return h.digest('hex') };
+      const shaBuf = buf => crypto.createHash('sha256').update(buf).digest('hex');
       const files = []; let repaired = 0;
       for (const p of db.portals) {
         for (const f of p.files) {
           const primary = path.join(filesRoot, p.id, f.id);
-          const mirror = mirrorFilePath(p.id, f.id);
           const item = { portalId: p.id, fileId: f.id, name: f.name, status: 'lost', repaired: false };
-          let primarySha = null, mirrorSha = null;
+          let primarySha = null, mirrorSha = null, mirrorBytes = null;
           try { primarySha = await shaOf(primary) } catch (e) { if (e.code !== 'ENOENT') item.primaryError = e.code }
-          try { mirrorSha = await shaOf(mirror) } catch (e) { if (e.code !== 'ENOENT') item.mirrorError = e.code }
+          mirrorBytes = await mirror.get(p.id, f.id);
+          if (mirrorBytes) mirrorSha = shaBuf(mirrorBytes);
           item.sha256 = primarySha || mirrorSha || '';
           item.equal = Boolean(primarySha && mirrorSha && primarySha === mirrorSha);
           if (primarySha && mirrorSha) item.status = item.equal ? 'ok' : 'mismatch';
           else if (primarySha) item.status = 'mirrorMissing';
           else if (mirrorSha) item.status = 'primaryMissing';
           if (repair && item.status !== 'ok' && item.status !== 'lost') {
+            // Поправката върви по СЪЩИЯ договор като записа: целта се пита, не се предполага
+            // файлова система. Затова работи и за папка, и за s3.
             try {
-              if (item.status === 'primaryMissing') { await fsp.mkdir(path.dirname(primary), { recursive: true }); await fsp.copyFile(mirror, primary) }
-              else { await fsp.mkdir(path.dirname(mirror), { recursive: true, mode: 0o700 }); await fsp.copyFile(primary, mirror) }
+              if (item.status === 'primaryMissing') { await fsp.mkdir(path.dirname(primary), { recursive: true }); await fsp.writeFile(primary, mirrorBytes, { mode: 0o600 }) }
+              else { const bytes = await fsp.readFile(primary); if (mirror.kind === 'path') await fsp.rm(mirrorFilePath(p.id, f.id), { force: true }).catch(() => { }); const out = await mirror.put(p.id, f.id, bytes); if (!out.ok) item.repairError = out.reason }
               const afterPrimary = await shaOf(primary).catch(() => null);
-              const afterMirror = await shaOf(mirror).catch(() => null);
+              const back = await mirror.get(p.id, f.id);
+              const afterMirror = back ? shaBuf(back) : null;
               item.repaired = Boolean(afterPrimary && afterMirror && afterPrimary === afterMirror);
               item.status = item.repaired ? 'ok' : item.status;
               if (item.repaired) repaired++;
@@ -1293,8 +1292,8 @@ async function handler(req, res) {
         }
       }
       const problems = files.filter(x => x.status !== 'ok');
-      void audit('storage.mirror.verify', { checked: files.length, problems: problems.length, repaired });
-      return json(res, problems.length ? 409 : 200, { dir: storageMirrorDir, checked: files.length, ok: files.length - problems.length, problems: problems.length, repaired, files });
+      void audit('storage.mirror.verify', { checked: files.length, problems: problems.length, repaired, target: mirror.kind });
+      return json(res, problems.length ? 409 : 200, { dir: storageMirrorDir || null, target: mirror.describe(), checked: files.length, ok: files.length - problems.length, problems: problems.length, repaired, files });
     }
 
     if (url.pathname === '/admin/api/database/backup-schedule' && method === 'GET') {
@@ -1412,7 +1411,7 @@ async function handler(req, res) {
     }
     if (url.pathname === '/admin/api/retention' && method === 'POST') {
       if (!adminGate(req, res, 'retention', method)) return;
-      const result = await update(async () => { const r = await retention.apply(db.portals); void audit('retention.run', { fileAction: r.fileAction, disabled: r.disabled, deleted: r.deleted, auditLinesPruned: r.auditLinesPruned }); return r });
+      const result = await update(async () => { const r = await retention.apply(db.portals); void audit('retention.run', { fileAction: r.fileAction, disabled: r.disabled, deleted: r.deleted, refused: r.refused, auditLinesPruned: r.auditLinesPruned }); return r });
       return json(res, 200, result);
     }
     // --- Document Generator: отделен компонент (routes/generator.js) ---
@@ -1466,7 +1465,7 @@ async function handler(req, res) {
       if (!targetReal.startsWith(baseReal + path.sep) || !st.isFile()) return fail(res, 404, 'Not found');
       const ext = path.extname(targetReal).toLowerCase(); const mime = { '.html': 'text/html; charset=utf-8', '.htm': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
       if (!mime[ext]) return fail(res, 415, 'File type not supported');
-      res.writeHead(200, { 'Content-Type': mime[ext], 'Content-Length': st.size, 'Cache-Control': 'private, no-store', 'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'", 'X-Content-Type-Options': 'nosniff' });
+      res.writeHead(200, { 'Content-Type': mime[ext], 'Content-Length': st.size, 'Cache-Control': 'private, no-store', 'Content-Security-Policy': require('./site-csp').forFile(ext, baseUrl(req)), 'X-Content-Type-Options': 'nosniff' });
       return fs.createReadStream(targetReal).pipe(res);
     }
     if (parts[0] === 'qr' && parts.length === 2 && method === 'GET') {

@@ -18,6 +18,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const storagePreflight = require('./storage-preflight');
+// Само чистата функция за формата на токена; нищо не се записва и не се валидира с нея.
+const { tokenShape } = require('./runtime-config');
 
 // Supervisor монтира личните данни на add-on-а в /data. HAPI_ADDON_DATA_DIR е
 // само за тестове/локален старт — в add-on-а винаги е /data.
@@ -100,12 +102,26 @@ function resolveAdminToken(optionToken) {
 
 const env = { ...process.env };
 env.ADMIN_TOKEN = resolveAdminToken(optionText('token'));
+// Предупреждение, не отказ (0.69.87). Ако администраторският токен на hAPI е Home Assistant
+// long-lived access token, той отваря и целия HA API: едно изтичане на hAPI токена става
+// изтичане на Home Assistant. Не пипаме стойността — само казваме какво означава.
+if (tokenShape(env.ADMIN_TOKEN).haLongLived) {
+  console.warn(
+    'ADMIN_TOKEN_LOOKS_LIKE_HA_LLAT: the "token" option is shaped like a Home Assistant ' +
+    'long-lived access token (JWT with "iss"). Every hAPI client holding it would also be able ' +
+    'to call the whole Home Assistant API. Use a separate random value for hAPI (32+ characters) ' +
+    'and keep the HA token only where HA itself needs it.',
+  );
+}
 
 // ── 4. Options → env ────────────────────────────────────────────────────────
 // Празна стойност НЕ се подава, за да остане в сила default-ът на сървъра.
 env.BACKUP_DIR = optionText('backup_folder');
 env.BACKUP_MIRROR = optionText('backup_mirror');
 env.STORAGE_MIRROR = optionText('storage_mirror');
+// Само за целта `s3` на огледалото. Празни → сървърът отказва s3 цел с ясна грешка.
+env.S3_ACCESS_KEY = optionText('s3_access_key');
+env.S3_SECRET_KEY = optionText('s3_secret_key');
 
 const configDir = optionText('config_dir');
 if (configDir) env.HAPI_CONFIG_DIR = configDir;

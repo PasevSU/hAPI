@@ -241,7 +241,7 @@ logger:
 ## Removal
 
 HACS → **Integrations** → hAPI Enterprise → **Remove**, then restart. The add-on and its data
-(\`/config/hapi_enterprise\` on the host, plus \`/data\`) are not touched by removing the integration.
+(\`/share/hapi/data\` by default, or \`/config/hapi_enterprise\` on an upgraded installation, plus \`/data\`) are not touched by removing the integration.
 
 ## Security
 

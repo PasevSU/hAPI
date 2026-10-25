@@ -1,5 +1,9 @@
 # Milestones — hAPI Enterprise
 
+> **Исторически документ.** Версиите и статусите по-долу описват състоянието към 0.53.
+> Актуалното състояние е в [`PLAN_STATUS.md`](PLAN_STATUS.md) и в генерирания
+> [`reports/RELEASE-STATUS.md`](../../reports/RELEASE-STATUS.md); не се ползва за решения.
+
 | # | Milestone | Version | Status | Exit criteria |
 | - | --------- | ------- | ------ | ------------- |
 | M1 | DOCFLOW core (variable hierarchy) | 0.49.0 | ✅ Done | Registry + variable store + orphan association, isolated tests |

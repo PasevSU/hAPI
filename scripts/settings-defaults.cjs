@@ -117,8 +117,16 @@ const MEANING = {
     bg: 'Празно: без второ копие на резервните копия. Всяко зададено копие се проверява с SHA-256.',
   },
   storage_mirror: {
-    en: 'Empty: no second copy of uploaded files. A configured mirror is verified and repairable.',
-    bg: 'Празно: без второ копие на качените файлове. Зададено огледало се проверява и възстановява.',
+    en: 'Empty: no second copy of uploaded files. A folder is verified and repairable; `s3://bucket/prefix?endpoint=…&lock=дни` writes the same copy into S3-compatible storage with Object Lock.',
+    bg: 'Празно: без второ копие на качените файлове. Папка се проверява и възстановява; `s3://bucket/prefix?endpoint=…&lock=дни` пише същото копие в S3-съвместимо хранилище с Object Lock.',
+  },
+  s3_access_key: {
+    en: 'Only for the `s3` mirror target. Empty: an s3 target is refused instead of silently writing nowhere.',
+    bg: 'Само за целта `s3` на огледалото. Празно: s3 цел се отказва, вместо да не пише никъде.',
+  },
+  s3_secret_key: {
+    en: 'Only for the `s3` mirror target. Never printed and never part of the mirror address.',
+    bg: 'Само за целта `s3` на огледалото. Не се печата и не влиза в адреса на огледалото.',
   },
   memory_limit_mb: {
     en: '`0` keeps the Node.js default heap. `256`-`384` is the sane range on a Raspberry Pi.',
@@ -153,12 +161,12 @@ const MEANING = {
     bg: 'Празно: без карта на групи. HA не подава групи; reverse proxy, който ги добавя, може.',
   },
   storage_location: {
-    en: '`addon_config`: documents live in the add-on folder. `media` and `share` are shared HA folders.',
-    bg: '`addon_config`: документите са в папката на add-on-а. `media` и `share` са споделени HA папки.',
+    en: '`share` (default): documents live in `/share/hapi/data`, visible over Samba and surviving an add-on reinstall. `addon_config` keeps them in the add-on folder, `media` in the other shared folder.',
+    bg: '`share` (подразбиране): документите са в `/share/hapi/data`, видими през Samba и оцеляват преинсталиране на add-on-а. `addon_config` ги пази в папката на add-on-а, `media` — в другата споделена папка.',
   },
   storage_subdirectory: {
-    en: '`hapi_enterprise`: one predictable subfolder inside the chosen storage location.',
-    bg: '`hapi_enterprise`: една предвидима подпапка в избраното хранилище.',
+    en: '`hapi/data`: one predictable subfolder inside the chosen location (up to three levels). If an older installation kept its data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty.',
+    bg: '`hapi/data`: една предвидима подпапка в избраното място (до три нива). Ако по-стара инсталация е пазила данните в предишната папка, add-on-ът продължава да ги ползва и пише `STORAGE_LEGACY_LOCATION`, вместо да стартира празен.',
   },
   storage_mode: {
     en: '`local`: the mounted folder is used directly. `ha_network` refuses to start when the mount is inactive.',

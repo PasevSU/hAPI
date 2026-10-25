@@ -12,6 +12,9 @@ configuration:
       The add-on refuses to start without it (ADMIN_TOKEN_REQUIRED) and never generates one by itself.
       In secrets.yaml this value is named hapi_token, but Home Assistant does not expand !secret in
       add-on options — enter the value itself here.
+      Do NOT reuse a Home Assistant long-lived access token: it also opens the whole HA API, so one
+      leaked hAPI token would be a leaked Home Assistant. The log warns with
+      ADMIN_TOKEN_LOOKS_LIKE_HA_LLAT when it detects that shape.
   pgp_path_public:
     name: PGP public key path (optional)
     description: >-
@@ -52,12 +55,23 @@ configuration:
       Raspberry Pi or another small board so a large folder scan cannot trigger the OOM
       killer; the value is passed as --max-old-space-size.
   storage_mirror:
-    name: File mirror folder
+    name: Second copy of the files (folder or s3)
     description: >-
-      Optional second copy target for uploaded files (inside /share, /media or
-      /config). Every upload is copied and the mirror is verified with SHA-256 by
-      POST /admin/api/storage/mirror/verify; a missing or damaged side is restored from
-      the healthy one (`repair`), and reading a file heals a lost original.
+      A folder (inside /share, /media or /config) or an address
+      `s3://bucket/prefix?endpoint=…&region=…&lock=days`. Every upload is written there
+      too, read back and compared with SHA-256 by POST /admin/api/storage/mirror/verify;
+      a missing or damaged side is restored (`repair`). With `lock=days` the S3 objects
+      are locked (Object Lock COMPLIANCE) and cannot be deleted while the period runs.
+  s3_access_key:
+    name: S3 access key (s3 mirror only)
+    description: >-
+      Required when `storage_mirror` is `s3://…`. Without it the s3 target is refused at
+      start instead of silently writing nowhere.
+  s3_secret_key:
+    name: S3 secret key (s3 mirror only)
+    description: >-
+      Pairs with the access key. It is never printed in the log and never part of the
+      mirror address.
   backup_mirror:
     name: Backup mirror folder
     description: >-
@@ -101,10 +115,16 @@ configuration:
   storage_location:
     name: Storage location
     description: >-
-      Where documents and the database live. addon_config is the add-on's own folder
-      (/config inside the container); media and share are shared Home Assistant folders.
+      Where documents and the database live. `share` (default) is the shared Home Assistant
+      folder — visible over Samba and surviving an add-on reinstall. `addon_config` is the
+      add-on's own folder (/config inside the container); `media` is the other shared folder.
   storage_subdirectory:
     name: Storage subdirectory
+    description: >-
+      Subfolder inside the chosen location; `hapi/data` by default, i.e. `/share/hapi/data`.
+      Up to three levels are allowed (e.g. `documents/hapi/data`). If the data lived in the old
+      folder before the update, the add-on keeps using it and logs STORAGE_LEGACY_LOCATION
+      instead of starting with an empty database.
     description: Subfolder created inside the chosen storage location.
   storage_mode:
     name: Storage mode

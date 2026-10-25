@@ -73,6 +73,20 @@ function create(deps) {
       }
       return serveOrder({ req, res, url, order: 'share/' + colon[1] + rest });
     }
+    // Договорът `file` (§6): страница за ЕДИН файл. Не зарежда папката на портала и не
+    // прилага филтрите на `order` — показва само този файл и неговите доказателства.
+    if (url.pathname === '/file.html' && method === 'GET' && url.searchParams.get('file')) return serveFile({ req, res, url, spec: url.searchParams.get('file') });
+    const colonFile = method === 'GET' ? /^\/file\.html:([A-Za-z0-9_-]{1,90})(\/.*)?$/.exec(url.pathname) : null;
+    if (colonFile) {
+      let rest = colonFile[2] || '';
+      try {
+        rest = decodeURIComponent(rest);
+      } catch {
+        fail(res, 404, 'Not found');
+        return true;
+      }
+      return serveFile({ req, res, url, spec: colonFile[1] + rest });
+    }
     // Публичният QR договор: идентичността на печата и ФИЗИЧЕСКИТЕ архиви.
     // JSON-ът е на `qr.json` (каноничното разширение), а `/qr` остава 301 → `qr.svg`
     // (решение от преди); архивът е `qr/<qrId>/archive`.
@@ -180,10 +194,106 @@ function create(deps) {
   }
 
   /**
+   * Договорът `file` (§6 от спецификацията): страница за ЕДИН файл.
+   *
+   * Защо отделна страница, а не „същата като портала“: договорът `file` НЕ зарежда цялата
+   * папка и НЕ прилага филтрите на `order` — показва само този файл, неговите хешове и
+   * доказателствената му връзка (в коя QR ревизия и манифест влиза). Затова тук няма
+   * списък: посетителят не научава какво друго има в папката.
+   *
+   * Влиза се по два начина, като при `order`:
+   *   `/file.html?file=<папка>/<път>`   (универсален, за QR без пренаписване в прокси)
+   *   `/file.html:<папка>/<път>`         (донорски формат)
+   * Името на папката НЕ е удостоверяване: достъпът се решава от `policy.decide`.
+   */
+  async function serveFile({ req, res, url, spec }) {
+    const raw = String(spec || '').trim();
+    if (!raw) { fail(res, 404, 'Not found'); return true }
+    const cut = raw.indexOf('/');
+    if (cut < 1) { fail(res, 404, 'Not found'); return true }
+    const folderName = raw.slice(0, cut);
+    const rel = storageTree.normRel(raw.slice(cut + 1));
+    if (rel === null || !rel) { fail(res, 400, 'Invalid path'); return true }
+    const portal = resolvePortal(folderName);
+    if (!portal) { fail(res, 404, 'Not found'); return true }
+    if (!policy.decide({ req, url, portal, action: 'read' }).allowed) { fail(res, 404, 'Not found'); return true }
+
+    // Прекратен QR не отдава съдържание — същата `blok` страница като при `order`.
+    const wanted = String(url.searchParams.get('qr') || '').trim();
+    if (wanted) {
+      const known = qr.registry(db(), portal.id).revisions.find((r) => r.id === wanted);
+      if (!known) { fail(res, 404, 'Not found'); return true }
+      if (known.blockedAt) return serveBlocked(res, portal, known);
+    }
+
+    // Правилата за самия файл важат и тук: чернова не съществува, заключен с ключ не се
+    // показва (страницата няма как да го отключи), недостъпен — с основание.
+    const registered = (portal.files || []).find((f) => f.storagePath === '/' + rel);
+    if (registered) {
+      if (registered.listed === false) { fail(res, 404, 'Not found'); return true }
+      const mode = fileMode(registered);
+      if (mode === 'DISABLED') { fail(res, 403, 'Файлът е недостъпен' + (registered.lockReason ? ': ' + registered.lockReason : '')); return true }
+      if (mode === 'KEY_REQUIRED') { fail(res, 403, 'Файлът е заключен с ключ — отвори го през регистрирания му адрес'); return true }
+    }
+    const meta = folderMetaOf(portal);
+    if (hiddenOrLockedAncestor(meta, rel)) { fail(res, 404, 'Not found'); return true }
+
+    const rootAbs = path.resolve(portalRoot(portal.storage_root || '/share'));
+    if (rootAbs === path.resolve('/share') || rootAbs === path.resolve('/media')) { fail(res, 403, 'Folder API requires a dedicated folder'); return true }
+    const wantedAbs = path.resolve(rootAbs, ...rel.split('/'));
+    if (wantedAbs !== rootAbs && !wantedAbs.startsWith(rootAbs + path.sep)) { fail(res, 400, 'Invalid path'); return true }
+
+    let realRoot, realFile, stat;
+    try {
+      realRoot = await fsp.realpath(rootAbs);
+      realFile = await fsp.realpath(wantedAbs);
+      stat = await fsp.stat(realFile);
+    } catch {
+      fail(res, 404, 'File not found'); return true;
+    }
+    if (!realFile.startsWith(realRoot + path.sep) || !stat.isFile()) { fail(res, 404, 'File not found'); return true }
+
+    // Доказателствената връзка: в коя ревизия и манифест влиза ТОЗИ път. Търси се в
+    // манифестите (не се преизчислява) — това е записаното, а не догадка.
+    const reg = qr.registry(db(), portal.id);
+    let inQr = null;
+    for (const r of reg.revisions) {
+      const files = r && r.manifest && Array.isArray(r.manifest.files) ? r.manifest.files : [];
+      const hit = files.find((f) => f && f.path === rel);
+      if (hit) inQr = { qrId: r.id, manifestId: r.manifestId || r.manifest.manifest_id || null, contentId: hit.content_id || null, sha256: hit.sha256 || null };
+    }
+    if (!inQr && registered) {
+      // Резервно: файлът е регистриран, но още не е в архив — показва се идентичността му
+      // от записа, за да не изглежда „без доказателство“.
+      inQr = { qrId: null, manifestId: null, contentId: registered.contentId || null, sha256: registered.sha256 || null };
+    }
+
+    const sha = await new Promise((resolve, reject) => { const h = require('node:crypto').createHash('sha256'); fs.createReadStream(realFile).on('data', (c) => h.update(c)).on('end', () => resolve(h.digest('hex'))).on('error', reject) });
+    const cid = inQr && inQr.contentId ? inQr.contentId : require('../content-id').forFile(portal, { sha256: sha, size: stat.size, contentId: registered && registered.contentId });
+    const canDownload = policy.decide({ req, url, portal, action: 'download' }).allowed;
+    const esc = (v) => htmlEsc(String(v == null ? '' : v));
+    const downloadHref = links.portalApiPath(portal) + '/tree/file?path=' + encodeURIComponent(rel) + (wanted ? '&qr=' + encodeURIComponent(wanted) : '');
+    const html = '<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<title>' + esc(path.basename(realFile)) + ' — ' + esc(portal.title) + '</title><link rel="stylesheet" href="/portal.css"></head><body><main>'
+      + '<h1>' + esc(path.basename(realFile)) + '</h1><p>' + esc(portal.title) + '</p>'
+      + '<dl><dt>Път</dt><dd>' + esc('/' + rel) + '</dd>'
+      + '<dt>Размер</dt><dd>' + esc(String(stat.size)) + ' байта</dd>'
+      + '<dt>SHA-256</dt><dd><code>' + esc(sha) + '</code></dd>'
+      + '<dt>Content ID</dt><dd><code>' + esc(cid || '—') + '</code></dd>'
+      + '<dt>Публикуван в</dt><dd>' + (inQr && inQr.qrId ? esc(inQr.qrId) + (inQr.manifestId ? ' · ' + esc(inQr.manifestId) : '') : 'още не е в архив') + '</dd></dl>'
+      + (canDownload ? '<p><a class="btn" href="' + esc(downloadHref) + '">Изтегли файла</a></p>' : '<p>Съдържанието не се отдава за този достъп.</p>')
+      + '<p><small>Тази страница показва само един файл; съдържанието на папката не се зарежда.</small></p>'
+      + '</main></body></html>';
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
+    res.end(html);
+    void audit('portal.file.open', { portalId: portal.id, path: '/' + rel, bytes: stat.size, qr: wanted || null, publishedIn: inQr && inQr.qrId ? inQr.qrId : null });
+    return true;
+  }
+
+  /**
    * `blok` — прекратен QR. Посетителят вижда, че печатът е съществувал и е прекратен,
    * с дата и публично допустимо основание; съдържание НЕ се отдава. Историята остава.
-   */
-  function serveBlocked(res, portal, revision) {
+   */  function serveBlocked(res, portal, revision) {
     const esc = (v) => htmlEsc(String(v == null ? '' : v));
     const html = '<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(portal.title) + ' — прекратен QR</title><link rel="stylesheet" href="/portal.css"></head><body><main><h1>' + esc(revision.id) + ' е прекратен</h1><p>' + esc(portal.title) + '</p><dl><dt>Прекратен на</dt><dd>' + esc(revision.blockedAt) + '</dd><dt>Основание</dt><dd>' + esc(revision.blockReason || '—') + '</dd></dl><p>Съдържанието на този печат не се отдава. Потърси актуалния QR на портала.</p></main></body></html>';
     res.writeHead(410, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });

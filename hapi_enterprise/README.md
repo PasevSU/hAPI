@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.86-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.87-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
@@ -65,6 +65,18 @@ account.
 5. The recipient opens the portal, downloads the file and can re-check the hash — the
    numbers must match.
 
+A single file can also be shared on its own: `/file.html?file=<folder>/<path>` (or the
+colon form `/file.html:<folder>/<path>`) is the **`file` contract** — one file, its full
+SHA-256, its `Content ID` and the QR revision/manifest it belongs to, with nothing else
+from the folder listed. Access rules are the same as for a download (traversal, hidden or
+locked folders, foreign portal → 400/404), and a blocked QR shows the `blok` page instead.
+
+HTML projects served from `/site/<portal>/<project>/…` run **sandboxed**: the document
+response carries `Content-Security-Policy: sandbox …` without `allow-same-origin` and with
+`connect-src 'none'`. Scripts of the project still run, but the page has no cookies, no
+shared session and no way to call the admin API — a published page can no longer act with
+the visitor's rights. Assets (`.css`, `.js`, fonts) keep the normal static policy.
+
 ## Install
 
 **Fast path:** use the **ADD REPOSITORY** button above, then install **hAPI Enterprise**
@@ -94,6 +106,11 @@ sensors) is installed through HACS from the same repository — see
   HMAC and the audit chain. Put it in `secrets.yaml` as `hapi_token` (24+ characters) and
   reference it with `!secret hapi_token`. Without it the add-on **refuses to start**
   (`ADMIN_TOKEN_REQUIRED`); it is never printed and never written to `/data`.
+  **Do not reuse a Home Assistant long-lived access token here.** That token also opens the
+  whole HA API, so one leaked hAPI token would be a leaked Home Assistant, and rotating one
+  breaks the other. When the value has that shape the log says
+  `ADMIN_TOKEN_LOOKS_LIKE_HA_LLAT` (a warning, not a refusal) — see
+  [`documentation/08_USER_GUIDES/admin-token.md`](../documentation/08_USER_GUIDES/admin-token.md).
 - **PGP is optional.** The `pgp_*` fields load keys you already have; leave them empty and the
   add-on still starts with `keyring.available = false`.
 
@@ -103,11 +120,12 @@ Five minutes of preparation avoids almost every first-start surprise.
 
 1. **Take a Home Assistant snapshot first** — Settings → System → Backups → *Create
    backup*. The add-on uses `backup: cold`, so future snapshots stop it for a moment.
-2. **Decide where documents live.**
-   - `addon_config` (default) — the vault stays inside the add-on's own folder
-     (`/addon_configs/hapi_enterprise` on the host) and survives add-on updates.
-   - `share` — documents land in the shared folder, visible over Samba and to other
-     add-ons; pick this when `/share` is what you already back up.
+2. **Decide where documents live.** The default is `share` → `/share/hapi/data`.
+   - `share` (**default**) — documents land in the shared folder (`/share/hapi/data`),
+     visible over Samba and to other add-ons, and they survive an add-on reinstall.
+   - `addon_config` — the vault stays inside the add-on's own folder
+     (`/addon_configs/hapi_enterprise` on the host). Pick this when the documents must
+     stay out of the shared folder.
 3. **For network storage**, create the mount in Settings → System → Storage **before**
    starting the add-on. With `storage_mode: ha_network` the add-on refuses to start when
    the mount is inactive instead of silently writing to the boot disk.
@@ -129,8 +147,8 @@ Five minutes of preparation avoids almost every first-start surprise.
 ### Starting point (copy into the Configuration tab, YAML mode)
 
 ```yaml
-storage_location: addon_config
-storage_subdirectory: hapi_enterprise
+storage_location: share
+storage_subdirectory: hapi/data
 storage_mode: local
 min_free_mb: 200
 log_level: info
@@ -154,8 +172,8 @@ tls_key: ""
 
 | Option                 | Recommended                | Why                                                                   |
 | ---------------------- | -------------------------- | --------------------------------------------------------------------- |
-| `storage_location`     | `addon_config`             | Isolated by default; switch to `share` only for cross-add-on access.  |
-| `storage_subdirectory` | `hapi_enterprise`          | One predictable folder under the chosen location.                     |
+| `storage_location`     | `share`                    | Documents survive an add-on reinstall and are reachable over Samba; use `addon_config` if they must stay out of the shared folder. |
+| `storage_subdirectory` | `hapi/data`                | One predictable folder under the chosen location (up to three levels). |
 | `storage_mode`         | `local`                    | `ha_network` only with an active mount, otherwise startup fails.      |
 | `min_free_mb`          | `200` (500+ for scans)     | Fails closed before a half-written upload fills the disk.             |
 | `log_level`            | `info`                     | `debug` writes one line per request — use it only while diagnosing.   |
@@ -208,7 +226,9 @@ this tab. Options apply on add-on restart.
 | Database and portal name | `db_name` | `Files` | Names the first portal (`Files`, slug `files`). Change it before the first start to get another name. |
 | Backup folder | `backup_folder` | — | Empty: `<storage>/backups` inside the add-on data folder. A relative path resolves inside `/share`. |
 | Backup mirror folder | `backup_mirror` | — | Empty: no second copy of the database backups. Every configured copy is verified with SHA-256. |
-| File mirror folder | `storage_mirror` | — | Empty: no second copy of uploaded files. A configured mirror is verified and repairable. |
+| Second copy of the files (folder or s3) | `storage_mirror` | — | Empty: no second copy of uploaded files. A folder is verified and repairable; `s3://bucket/prefix?endpoint=…&lock=дни` writes the same copy into S3-compatible storage with Object Lock. |
+| S3 access key (s3 mirror only) | `s3_access_key` | — | Only for the `s3` mirror target. Empty: an s3 target is refused instead of silently writing nowhere. |
+| S3 secret key (s3 mirror only) | `s3_secret_key` | — | Only for the `s3` mirror target. Never printed and never part of the mirror address. |
 | Node heap limit (MB) | `memory_limit_mb` | `0` | `0` keeps the Node.js default heap. `256`-`384` is the sane range on a Raspberry Pi. |
 | Database id | `db_id` | `1` | `1` is the default namespace for composite keys. Change it only for a second, independent database. |
 | Configuration profiles | `profiles` | — | Empty: the built-in profile set is used. A path or JSON replaces it; invalid JSON is ignored. |
@@ -217,8 +237,8 @@ this tab. Options apply on add-on restart.
 | Same-origin URLs | `public_same_origin` | `false` | `false`: absolute URLs are built from `public_domain`. `true` emits relative URLs on the HA host and port. |
 | User roles | `user_roles` | — | Empty: every Ingress user is `admin`. The map is for demotion, e.g. `{"guest": "viewer"}`. |
 | Group roles | `group_roles` | — | Empty: no group mapping. Home Assistant does not send groups; a reverse proxy that adds them can. |
-| Storage location | `storage_location` | `addon_config` | `addon_config`: documents live in the add-on folder. `media` and `share` are shared HA folders. |
-| Storage subdirectory | `storage_subdirectory` | `hapi_enterprise` | `hapi_enterprise`: one predictable subfolder inside the chosen storage location. |
+| Storage location | `storage_location` | `share` | `share` (default): documents live in `/share/hapi/data`, visible over Samba and surviving an add-on reinstall. `addon_config` keeps them in the add-on folder, `media` in the other shared folder. |
+| Storage subdirectory | `storage_subdirectory` | `hapi/data` | `hapi/data`: one predictable subfolder inside the chosen location (up to three levels). If an older installation kept its data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |
 | Storage mode | `storage_mode` | `local` | `local`: the mounted folder is used directly. `ha_network` refuses to start when the mount is inactive. |
 | Network storage name | `storage_mount_name` | — | Empty: only meaningful with `storage_mode: ha_network`, where the mount name is required. |
 | Minimum free space (MB) | `min_free_mb` | `100` | `100`: startup fails below 100 MB free. Raise it to `500`+ when you scan large folders. |
@@ -300,6 +320,19 @@ restores the broken side from the healthy one; reading a file whose original van
 falls back to the copy and puts it back on disk. Deleting a file or a portal removes
 its mirror copy too.
 
+The mirror target has two kinds behind the same contract (`mirror-target.js`):
+
+- **a folder** — `backup_hapi`, resolved inside `/share` (the original behaviour);
+- **S3-compatible storage** — `s3://bucket/prefix?endpoint=http://minio:9000&region=eu-central-1&lock=730`
+  with `s3_access_key` / `s3_secret_key`. The signature is SigV4 made with `node:crypto`,
+  so the add-on still has no npm dependencies. With `lock=<days>` the object is written
+  with `Object Lock` in `COMPLIANCE` mode: not even the storage root can delete it while
+  the period runs, and deleting the file or the portal reports `file.mirror.locked`
+  instead of pretending it removed the copy. Reading a vanished original heals it only
+  for the folder target (the read path is synchronous); with S3 the repair runs through
+  `POST /admin/api/storage/mirror/verify` with `{"repair":true}`.
+  The bucket must be created **with** Object Lock enabled — it cannot be switched on later.
+
 Every backup is written to `backup_folder` and then copied to `backup_mirror`. The
 copy is hashed again and compared with the original; a copy that does not match is
 deleted and logged (`backup.mirror.mismatch`), so a broken mirror can never look like
@@ -310,14 +343,22 @@ reports `primary` / `mirror` state (`ok`, `mismatch`, `missing`).
 
 | Path      | Access | Used for                                                                                              |
 | --------- | ------ | ----------------------------------------------------------------------------------------------------- |
-| `/config` | `rw`   | Add-on folder (`app_configs/<slug>` on the host): SQLite database, receipts, audit chain, rules, logs |
-| `/share`  | `rw`   | Documents and portal folders (`storage_root`)                                                         |
+| `/config` | `rw`   | Add-on folder (`app_configs/<slug>` on the host): options, translations, `admin-token`                 |
+| `/share`  | `rw`   | **Default data location** (`/share/hapi/data`): database, files, audit chain, receipts, backups, portal folders |
 | `/media`  | `rw`   | Optional media/documents folder (`storage_location: media`)                                           |
 
 The add-on folder comes from `map: app_config:rw`; there is no `/addon_config` mount.
-The database, documents and logs live under `/config/<storage_subdirectory>`
-(default `/config/hapi_enterprise`). Back up `/config` and `/share` together — the
-database references documents by path.
+`DATA_DIR` is not `/data`: it is `<storage_location>/<storage_subdirectory>`, resolved by
+`storage-preflight.js` at start. Since 0.69.87 the default is **`/share/hapi/data`**
+(`storage_location: share`, `storage_subdirectory: hapi/data`); `addon_config` and `media`
+remain valid choices, and the subdirectory may have up to three levels (`documents/hapi/data`).
+
+> **Upgrading from an older version.** The old default was `addon_config/hapi_enterprise`.
+> If that folder holds data and the new location is empty, the add-on **keeps using the old
+> path** and logs `STORAGE_LEGACY_LOCATION` — otherwise the upgrade would start with an empty
+> database and the portals would look lost. To move: stop the add-on, move
+> `/config/hapi_enterprise` to `/share/hapi/data`, start it again. Back up the chosen folder
+> and `/share` together — the database references documents by path.
 
 ## Document Generator (`/generator/`)
 
@@ -441,10 +482,15 @@ Scrape example (Home Assistant or any Prometheus-compatible agent):
 
 ## Raspberry Pi and small boards
 
-The add-on builds from `node:22.16.0-alpine3.21`, an official multi-architecture image
-(`linux/amd64`, `linux/arm64`, `linux/arm/v7`). There is no `--platform` pin, no `apk`
-package and no `npm install`: every dependency is a Node built-in, so the same
-`Dockerfile` produces a working image on each architecture.
+The add-on builds from `node:22.21.1-alpine3.23`, an official multi-architecture image
+(`linux/amd64`, `linux/arm64`, `linux/arm/v7`). There is no `--platform` pin and no
+`npm install`: every dependency is a Node built-in, so the same `Dockerfile` produces a
+working image on each architecture.
+
+The image is hardened at build time: `apk upgrade` lifts the Alpine packages to their current
+fixes, and **npm, npx, yarn and corepack are removed** — this add-on never runs them, and they
+were the source of the `tar`/`minimatch`/`http-cache-semantics` findings. The trade-off is that
+rebuilds are no longer byte-identical; security wins over bit-for-bit reproducibility here.
 
 | Board / OS                                 | `arch`    | Notes                                            |
 | ------------------------------------------ | --------- | ------------------------------------------------ |
@@ -540,7 +586,7 @@ keys/<N>-<fingerprint>/private.asc     private material — attach, then keep th
 keys/<N>-<fingerprint>/subkeys/*.json  subkey roles: sign, encrypt-comms, encrypt-storage, authenticate
 ```
 
-Unzip the bundle into `<storage>/keys/` (for example `/config/hapi_enterprise/keys/`): the\nadd-on imports every `private.asc`/`public.asc` pair at start, records the roles and\nnever overwrites an existing fingerprint. `POST /admin/api/pgp/keys/import` re-scans the\nfolder on demand and reports what was imported or skipped.\n\nPoint `signing_key` at the fingerprint of the primary key: the signing subkey is chosen
+Unzip the bundle into `<storage>/keys/` (for example `/share/hapi/data/keys/`): the\nadd-on imports every `private.asc`/`public.asc` pair at start, records the roles and\nnever overwrites an existing fingerprint. `POST /admin/api/pgp/keys/import` re-scans the\nfolder on demand and reports what was imported or skipped.\n\nPoint `signing_key` at the fingerprint of the primary key: the signing subkey is chosen
 automatically. `encrypt-comms` / `encrypt-storage` subkeys are reserved for PGP-level
 encryption, which this add-on does not implement yet — file encryption at rest uses
 AES-256-GCM, and transport encryption uses TLS. Nothing pretends otherwise.

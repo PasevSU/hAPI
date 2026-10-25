@@ -4,15 +4,28 @@
 #
 # Multi-arch: this official tag publishes linux/amd64, linux/arm64 and linux/arm/v7,
 # so the same Dockerfile builds on x86-64 servers, 64-bit Raspberry Pi OS (aarch64)
-# and 32-bit Raspberry Pi OS (armv7). No --platform pin, no apk packages and no npm
-# install: every dependency is a Node built-in, which keeps the image architecture
-# independent. armhf/armv6 (Pi Zero/1) has no Node 22 build and is not claimed in
-# config.yaml.
-FROM node:22.16.0-alpine3.21
+# and 32-bit Raspberry Pi OS (armv7). No --platform pin and no dependency install: every
+# dependency is a Node built-in, which keeps the image architecture independent.
+# armhf/armv6 (Pi Zero/1) has no Node 22 build and is not claimed in config.yaml.
+FROM node:22.21.1-alpine3.23
 WORKDIR /app
+# Сигурност на слоя (0.69.87). Сканът на Docker DX показа, че findings идват от две места:
+# базовите пакети на Alpine (4 critical + 26 high в слоя `alpine`) и npm, който базовият
+# образ носи със себе си (tar 6.2.1, minimatch, http-cache-semantics — 2 critical + част от
+# high в нашия слой). Този add-on НЕ ползва npm по време на изпълнение: всички зависимости
+# са вградени в Node. Затова:
+#   • вдигат се пакетите на Alpine до актуалните поправки в момента на build-а;
+#   • махат се npm, npx, yarn и corepack — те не се ползват и само носят чужди CVEs.
+# Цената е, че build-ът не е байт-идентичен при повторение. Това е съзнателно (сигурност
+# пред пълна възпроизводимост) и е записано в CHANGELOG.
+RUN apk upgrade --no-cache \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+    /usr/local/bin/yarn /usr/local/bin/yarnpkg \
+    && rm -rf /var/cache/apk/*
 # Всички локални модули, които server.js изисква (пряко или през друг модул).
 # tests/docker-runtime.cjs проверява списъка срещу реалните require-и.
-COPY api-registry.js api-spec.js api-version.js audit-chain.js cabinet.js cases.js cms-sign.js config-profiles.js container.js core-store.js directory.js download-access.js download-stream.js error-log.js event-bus.js export-manager.js export-rules.js file-crypto.js gateway-api.js generator.js instance-lock.js interpolate.js job-manager.js links.js load-control.js logger.js migration-bridge.js notify.js observer.js ooxml.js package-crypto.js packager.js path-crypto.js pdf-writer.js pgp.js plugins.js portal-folder.js portal-access.js public-route-allowlist.js portal-policy.js portal-qr.js portal-integrity.js content-id.js oidc.js decision-sensors.js layout.js preview.js process-guards.js public-gateway.js public-package.js qrcode.js rbac.js readiness.js registry.js report-manifest.js report-package.js report-render.js report-stamp.js repository.js retention.js runtime-config.js secret-lock.js secret-links.js secret-page.js secret-view.js send.js server.js share-links.js shared-data.js signer.js sqlite-repository.js sqlite-store.js start.js storage-check.js storage-migrate.js storage-preflight.js storage-tree.js throttle.js tsa-client.js versioning.js virtual-storage.js visitor-intel.js workdir-crypto.js workdir-io.js workdir-migrate.js evidence-portal.js x509.js admin-api-spec.js /app/
+COPY api-registry.js api-spec.js api-version.js audit-chain.js cabinet.js cases.js cms-sign.js config-profiles.js container.js core-store.js directory.js download-access.js download-stream.js error-log.js event-bus.js export-manager.js export-rules.js file-crypto.js gateway-api.js generator.js instance-lock.js interpolate.js job-manager.js links.js load-control.js logger.js migration-bridge.js mirror-target.js notify.js observer.js ooxml.js package-crypto.js packager.js path-crypto.js pdf-writer.js pgp.js plugins.js portal-folder.js portal-access.js public-route-allowlist.js portal-policy.js portal-qr.js portal-integrity.js content-id.js oidc.js decision-sensors.js layout.js preview.js process-guards.js public-gateway.js public-package.js qrcode.js rbac.js readiness.js registry.js report-manifest.js report-package.js report-render.js report-stamp.js repository.js retention.js runtime-config.js secret-lock.js secret-links.js secret-page.js secret-view.js send.js server.js share-links.js shared-data.js signer.js sqlite-repository.js sqlite-store.js start.js storage-check.js storage-migrate.js storage-preflight.js storage-tree.js throttle.js tsa-client.js versioning.js virtual-storage.js visitor-intel.js workdir-crypto.js workdir-io.js workdir-migrate.js evidence-portal.js x509.js site-csp.js admin-api-spec.js /app/
 # Целият публичен портал (страница, скрипт, стилове, речник) живее в своя папка —
 # така се сменя дизайнът и опциите, без да се пипа останалият код на add-on-а.
 COPY portal /app/portal/

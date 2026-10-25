@@ -5,10 +5,15 @@ const path = require('node:path');
 const root = path.join(__dirname, '../hapi_enterprise');
 const docker = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
 const run = fs.readFileSync(path.join(root, 'start.js'), 'utf8');
-assert.match(docker, /^FROM node:22\.16\.0-alpine3\.21$/m);
+assert.match(docker, /^FROM node:22\.21\.1-alpine3\.23$/m);
 assert.match(docker, /node:sqlite/);
 assert.match(run, /node:sqlite/);
 assert.doesNotMatch(docker, /apk add.*nodejs/);
+// 0.69.87: слой за сигурност. Alpine пакетите се вдигат, а npm/npx/yarn/corepack се махат —
+// add-on-ът няма нито една npm зависимост и не бива да носи чуждите CVEs на npm.
+assert.match(docker, /RUN apk upgrade --no-cache/, 'Dockerfile вдига пакетите на Alpine до актуалните поправки');
+assert.match(docker, /rm -rf \/usr\/local\/lib\/node_modules\/npm/, 'npm се маха от образа');
+assert.match(docker, /\/usr\/local\/bin\/npx/, 'npx се маха от образа');
 // Правилото на проекта: entrypoint-ът е JavaScript. Shell скрипт в add-on-а
 // (run.sh и подобни) би върнал втори език за стартиране и чупи това правило.
 assert.doesNotMatch(docker, /CMD\s+\["\/app\/run\.sh"\]/, 'Dockerfile не бива да стартира shell entrypoint');

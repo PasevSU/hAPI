@@ -29,6 +29,14 @@
 | Auditing           | hash-chained log                                                 | + external anchor              |
 | Rate limiting      | present, **по самоличност** (токен / HA user / акаунт), не по IP | keep + per-role                |
 | Input validation   | present                                                          | schema-validated API v2        |
+| Untrusted HTML     | sandbox без `allow-same-origin`, `connect-src 'none'` (`site-csp.js`) | отделен origin за проектите |
+
+> **Администраторският токен не е HA токен (0.69.87).** Опцията `token` е admin токенът на
+> hAPI; Home Assistant long-lived access token (JWT с `iss`, без `sub`/`scope`) отваря целия
+> HA API, тоест едно изтичане на hAPI токена става изтичане на Home Assistant и ротацията на
+> едното чупи другото. Затова `start.js` разпознава формата (`runtime-config.tokenShape`) и
+> пише `ADMIN_TOKEN_LOOKS_LIKE_HA_LLAT` — **предупреждение, не отказ**, за да не се чупят
+> работещи инсталации. Тест: `admin-token-shape`. Ръководство: `08_USER_GUIDES/admin-token.md`.
 
 > Защо не по IP (`BUG-05`, 0.69.15): зад Home Assistant Ingress всички заявки идват от
 > един и същ peer (проксирането на Supervisor), затова лимит по IP заключва целия панел

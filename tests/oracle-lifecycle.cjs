@@ -68,7 +68,12 @@ const findPortal = async (server, id) => {
     assert.deepEqual(list2.data.files.map((f) => f.name), ['beta.txt', 'gamma.txt'], 'след преименуването редът е по новото име');
 
     // ── 5. Неуспешна промяна НЕ оставя следа (сравнявам целия запис) ──────────
-    const snapshot = clone(await findPortal(server, portal.id));
+    // `accessExpires`/`accessQuery` са подписан адрес с ЕДНОСЕКУНДНА резолюция — при
+    // частен портал те се сменят всяка секунда и сравнението „байт по байт“ падаше просто
+    // защото часовникът е минал. Затова тези две полета се изключват от сравнението, а
+    // останалото се сравнява ЦЯЛОТО (точно това твърди тестът).
+    const stable = (p) => { const copy = clone(p); delete copy.accessExpires; delete copy.accessQuery; return copy };
+    const snapshot = stable(await findPortal(server, portal.id));
     const badName = await server.api('/admin/api/portals/' + portal.id + '/files/' + a.id, 'PATCH', { name: '' });
     assert.equal(badName.status, 400, 'празно име се отказва');
     assert.equal(badName.data.error, 'Invalid name', 'точният текст');
@@ -78,7 +83,7 @@ const findPortal = async (server, id) => {
     const badTitle = await server.api('/admin/api/portals/' + portal.id, 'PATCH', { title: '   ' });
     assert.equal(badTitle.status, 400, 'празно заглавие се отказва');
     assert.equal(badTitle.data.error, 'Invalid title', 'точният текст');
-    assert.deepEqual(await findPortal(server, portal.id), snapshot, 'след ТРИ отказа порталът е БАЙТ ПО БАЙТ същият (нищо не е наполовина записано)');
+    assert.deepEqual(stable(await findPortal(server, portal.id)), snapshot, 'след ТРИ отказа порталът е БАЙТ ПО БАЙТ същият (нищо не е наполовина записано)');
 
     // ── 6. Успешна промяна: сменя се точно едно нещо ──────────────────────────
     const published = await server.api('/admin/api/portals/' + portal.id, 'PATCH', { visibility: 'public' });

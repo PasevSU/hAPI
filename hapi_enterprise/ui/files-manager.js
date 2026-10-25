@@ -144,6 +144,22 @@
     if (type === 'text' || ['txt', 'md', 'json', 'xml', 'log'].some((e) => name.endsWith(`.${e}`))) return ico('fileText');
     return ico('file');
   }
+  /**
+   * Бадж „QR vN · N арх.“ в реда на портала. Данните идват със списъка (`p.qr`), за да няма
+   * по една допълнителна заявка на портал при всяко рисуване. Прекратен QR е предупреждение,
+   * не успех: по него вече не се публикува съдържание.
+   */
+  function qrBadge(x) {
+    const q = x && x.qr;
+    if (!q || !q.revisions) return '';
+    const extra = q.archives ? ` · ${q.archives} арх.` : '';
+    const title = q.blocked
+      ? `QR е прекратен${q.blockReason ? ': ' + q.blockReason : ''} · ревизии ${q.revisions} · архиви ${q.archives}`
+      : `Активен ${q.active || '—'} · ревизии ${q.revisions} · архиви ${q.archives}${q.manifestId ? ' · манифест ' + q.manifestId : ''}`;
+    return `<span class="state-chip ${q.blocked ? 'warn' : 'ok'}" title="${esc(title)}">QR v${esc(
+      String(q.seq),
+    )}${esc(extra)}</span>`;
+  }
   /** Една икона-плочка: икона + кратка стойност, пълна стойност в tooltip. */
   function chip(icon, label, value, shown) {
     const full = value == null || value === '' ? '—' : String(value);
@@ -1871,6 +1887,7 @@
         )}</span>`
         : '<span class="state-chip warn">няма API/QR</span>'
       }
+                    ${qrBadge(x)}
                     ${apiMenu((api && api.refs && api.refs.apiUrl) || '', 'api.json', 'api.json')}
                     <button type="button" class="fm-ico-btn pf-pkg-btn" data-pkg-portal="${i}" title="Изтегли пакета (ZIP с всички файлове от хранилището: ${esc(
         x.storage_root || '/share',

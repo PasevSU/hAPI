@@ -8,7 +8,7 @@ admin listener като панела.
 | --------------- | ---------------------------------------------------------------------------------------- |
 | Приложение      | `hapi_enterprise/generator/{index.html,app.js,style.css}`                                |
 | Начални шаблони | `hapi_enterprise/generator/templates/*.html` (копират се веднъж при първи старт)         |
-| Шаблони         | `<storage>/generator/temp/*.html` (в add-on-а: `/config/hapi_enterprise/generator/temp`) |
+| Шаблони         | `<storage>/generator/temp/*.html` (по подразбиране `/share/hapi/data/generator/temp`; при `addon_config` — `/config/hapi_enterprise/generator/temp`) |
 | Индекс и записи | `hapi_enterprise/generator.js` + маршрути в `server.js`                                  |
 | Тест            | `tests/generator-app.cjs`                                                                |
 

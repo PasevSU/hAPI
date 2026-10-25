@@ -17,6 +17,7 @@ const ROUTES = [
   { url: '/ui/', serves: 'Enterprise Control Center (панелът)', source: 'app' },
   { url: '/p/<slug>', serves: 'страницата на add-on-а portal.html (evidence портал)', source: 'app' },
   { url: '/portal.html?folder=<slug>', serves: 'генерираната страница на ТОЗИ портал', source: 'api' },
+  { url: '/file.html?file=<папка>/<път>', serves: 'договорът `file` — страница за ЕДИН файл (и `/file.html:<папка>/<път>`)', source: 'app' },
   { url: '/api/v1/p/<slug>/api.json', serves: 'описание на API-то на портала', source: 'api' },
   { url: '/local/hapi/data/portal.html', serves: 'копие за Home Assistant (/config/www/hapi/data)', source: 'evidence-portal' },
 ];

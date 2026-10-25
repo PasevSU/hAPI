@@ -90,7 +90,30 @@ function validate(v) {
 // (start.js го подава по опцията `public_domain`). Невалидна стойност се игнорира, за да не
 // се създадат QR кодове с чужд или счупен адрес.
 function publicBase(v) { const s = String(v ?? '').trim().replace(/\/+$/, ''); return s && s.length <= 200 && /^https?:\/\/[A-Za-z0-9.\-:\[\]]+(\/[A-Za-z0-9._~\-\/]*)?$/.test(s) ? s : '' }
-function create(root) {
+
+/**
+ * Формата на администраторския токен — САМО разпознаване, без проверка на подпис.
+ *
+ * Защо: токенът на hAPI дава пълен админ достъп до hAPI. Ако някой сложи там Home Assistant
+ * long-lived access token (JWT с `iss` в payload-а и без `sub`/`scope`), същият низ отваря и
+ * целия HA API (`/api/services/...`). Тогава едно изтичане на админ токен на hAPI е изтичане
+ * на Home Assistant. Тук не се забранява — само се казва истината навреме (виж `start.js`).
+ * Грешно разпознаване не чупи нищо: резултатът се ползва само за предупреждение.
+ */
+function tokenShape(token) {
+  const raw = String(token == null ? '' : token).trim();
+  const parts = raw.split('.');
+  const out = { jwt: false, haLongLived: false };
+  if (parts.length !== 3 || parts.some((p) => !p)) return out;
+  const decode = (part) => { try { return JSON.parse(Buffer.from(part.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')) } catch { return null } };
+  const header = decode(parts[0]), payload = decode(parts[1]);
+  if (!header || typeof header.alg !== 'string') return out;
+  out.jwt = true;
+  // HA long-lived token: `{"iss":"<user id>","iat":…}` — издател без субект и без обхват.
+  // OIDC токен (позволен като вход през доставчик) има `sub`/`aud`/`scope` и тук НЕ влиза.
+  out.haLongLived = Boolean(payload && typeof payload.iss === 'string' && payload.iss && !('sub' in payload) && !('scope' in payload));
+  return out;
+} function create(root) {
   const configDir = path.join(root, 'config'), configPath = path.join(configDir, 'settings.json'); let settings = DEFAULT;
   try {
     settings = validate(JSON.parse(fs.readFileSync(configPath, 'utf8')));
@@ -149,4 +172,4 @@ function create(root) {
   }
   return { get settings() { return settings }, effective, databasePath, databaseRelative, save, createArtifacts, removeArtifacts };
 }
-module.exports = { create, validate, validateSensors, DEFAULT };
+module.exports = { create, validate, validateSensors, tokenShape, DEFAULT };
