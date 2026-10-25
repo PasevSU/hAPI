@@ -800,6 +800,10 @@ Home Assistant.
   се отказва с `ADMIN_TOKEN_REQUIRED`; нов токен не се създава и не се записва. Вече записаният
   `/data/admin-token` се чете за обратна съвместимост. `!secret hapi_token` в поле на add-on-а
   НЕ се разширява и се отхвърля като слаб токен — стойността трябва да е истинската.
+  *(По-късните версии на Supervisor заместват `!secret` и в опциите, преди стойността да влезе
+  в `/data/options.json` — виж `documentation/08_USER_GUIDES/admin-token.md`. Тогава името
+  трябва да е точно: **едно** разстояние след `!secret`, иначе записът се отказва с
+  `Unknown secret ' hapi_token'`.)*
 - **PGP е по избор, но вече работи.** Ключовете се зареждат само от изричните пътища
   `pgp_path_public`, `pgp_path_secret`, `pgp_path_pass` (и `pgp_key_pass`), без търсене по
   „папка“ и без предположение къде е `/config`. `GET /admin/api/pgp/keyring` показва

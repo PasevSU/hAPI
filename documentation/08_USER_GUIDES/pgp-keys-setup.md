@@ -53,9 +53,11 @@
 > **Две капана:**
 > 1. `pgp_path_pass` трябва да сочи към **`.env`**, не към `.env.example` — примерният файл е с
 >    празна стойност и ключът не се отваря (`PASSPHRASE_REQUIRED`).
-> 2. `!secret` **не се разширява** в опциите на add-on-а (HA замества `!secret` само в YAML,
->    който сам зарежда). Имената горе са стандарт за именуване, а в полетата влизат стойности.
->    Ако напишеш буквално `!secret hapi_token`, той се отхвърля като слаб токен.
+> 2. **`!secret` работи в опциите, но с ТОЧНО име и точно едно разстояние.** Supervisor
+>    замества `!secret <име>` от `secrets.yaml`, преди стойността да влезе в
+>    `/data/options.json`. При две разстояния (`'!secret  hapi_pgp_path_pass'`) името става
+>    `" hapi_pgp_path_pass"` и записът се отказва с `Unknown secret ' hapi_pgp_path_pass'` —
+>    „липсващият“ секрет всъщност е излишен интервал.
 
 Ако не ползваш Supervisor, същото идва от env: `PGP_KEY_PASS`, `PGP_PATH_PUBLIC`,
 `PGP_PATH_SECRET`, `PGP_PATH_PASS`.
