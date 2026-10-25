@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **264/264** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **265/265** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 439 файла · 75076 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 435 файла · 74712 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 441 файла · 75251 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 437 файла · 74887 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 264 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 265 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -32,6 +32,15 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Инвентарът на кода вече се генерира, вместо да се поддържа на ръка.**
+  `documentation/01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md` твърдеше „v0.50.0“ и изброяваше
+  38 модула, докато `hapi_enterprise/` има 99 + 11 HTTP компонента + 22 UI модула. Ръчно
+  поддържан списък на файловете е трета версия на истината, която застива тихо. Сега
+  `scripts/source-inventory.cjs` чете диска, взима „предназначението“ от първия коментар в
+  самия файл и пише документа; `tests/source-inventory.cjs` проверява, че е актуален, че
+  `--check` НАИСТИНА хваща добавен измислен ред, че всеки ред сочи съществуващ файл и че
+  версията в него е текущата.
 
 - **`TRANSFER_BETWEEN_PORTALS` — „Премести“ и „Копирай“ вече са истински, не надпис.**
   `POST /admin/api/portals/{id}/files/{fileId}/transfer` с `{mode:'move'|'copy',

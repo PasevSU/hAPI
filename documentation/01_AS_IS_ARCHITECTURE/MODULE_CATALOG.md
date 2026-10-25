@@ -60,11 +60,24 @@
 
 ## HTTP компоненти (`routes/`)
 
+Единадесет компонента с един и същ договор: `create(deps)` → `handle({req,res,url,parts,method,portal})`,
+който връща `true`, когато заявката е за него. Пълният списък на маршрутите е в
+[`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md) (генериран от
+`admin-api-spec.js`, проверяван от `tests/api-reference.cjs` и `tests/server-structure.cjs`).
+
 | Component | Responsibility |
 | --------- | -------------- |
-| `routes/portal-storage.js` | `order` (вкл. `/portal.html:<папка>`), изтегляне по път, `ping`, публичен `qr.json` |
-| `routes/portal-qr.js` | Админ QR: регистър, архивиране, прекратяване, проверка, възстановяване |
-| `routes/oidc.js` | `/api/v1/auth/oidc/login` и `/callback` |
+| `routes/admin-docs.js` | Договорът за административното API (`GET /admin/api/*`, OpenAPI) |
+| `routes/file-transfer.js` | Преместване/копиране на файл между портали: сверка по SHA-256, нов `content_id`, откази за доказателство/ключалка/версии |
+| `routes/folders.js` | Папки на портала: нова, флагове (видима/медийна/заключена), изтриване |
+| `routes/generator.js` | Document Generator — HTTP частта на шаблоните |
+| `routes/link-check.js` | Проверка дали един публичен адрес наистина се отваря |
+| `routes/oidc.js` | `/api/v1/auth/oidc/login` и `/callback` (PKCE) |
+| `routes/pgp-keyring.js` | PGP ключохранилище: преглед и препрочитане |
+| `routes/portal-qr.js` | QR ревизии: архивиране, прекратяване, проверка, възстановяване |
+| `routes/portal-storage.js` | `order` (вкл. `/portal.html:<папка>`), договор `file`, изтегляне по път, `ping`, публичен `qr.json` |
+| `routes/portal-tokens.js` | Публични токени за портал (`/t/<token>` + админ списък) |
+| `routes/reports.js` | Report Studio + RFC 3161: рендер, пакет с доказателства, CMS подпис, времеви печати |
 
 ## Operations
 

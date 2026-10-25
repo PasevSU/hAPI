@@ -195,6 +195,7 @@ add-on-а. Защитата е цената на смяната: без нея �
 | Справочник на API | `node scripts/api-reference.cjs --check` | 185 операции · 32 публични правила · 10 компонента |
 | Настройки в README | `node scripts/settings-defaults.cjs --check` | 43 настройки |
 | Документация | `node tests/docs-consistency.cjs` | OK, без счупени връзки |
+| Инвентар на кода | `node scripts/source-inventory.cjs --check` | генериран от диска; `tests/source-inventory.cjs` хваща остарял документ |
 | Стил | `npx eslint .` | 0 |
 | Самото издание | `node scripts/artifact-smoke.cjs` | старт от архива · `file` договор · `qr` в списъка · 409 без огледало · `site-csp` пясъчник · `mirror-target` s3 · `transfer` copy със сверен SHA-256 и нов `content_id` · доказателство → `DELETE` 409 |
 
