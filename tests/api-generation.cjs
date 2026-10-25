@@ -205,6 +205,26 @@ const spec = require('../hapi_enterprise/api-spec.js');
     r = await call('/admin/api/v2/portals/api-demo/api');
     assert.equal(r.status, 404);
 
+    // ── F1-8: смяна на slug МЕСТИ `api/<slug>/` ─────────────────────────────────
+    // Договорът: старата директория я няма, новата носи същите файлове, старият адрес
+    // отговаря 404, новият работи, а заета директория → 409 (иначе два портала биха
+    // споделяли едно API хранилище).
+    r = await call('/admin/api/v2/portals/api-demo/api', 'POST');
+    assert.equal(r.status, 201, 'хранилището се създава отново');
+    r = await call('/admin/api/portals/' + portal.id, 'PATCH', { slug: 'api-demo-2' });
+    assert.equal(r.status, 200, 'slug-ът се сменя');
+    assert.equal(fs.existsSync(apiDir), false, 'старата api/<slug>/ директория я няма');
+    const renamedDir = path.join(dir, 'api', 'api-demo-2');
+    assert.ok(fs.existsSync(path.join(renamedDir, 'api.json')), 'новата директория носи файловете');
+    assert.equal((await fetch(`${B}/api/v1/p/api-demo/manifest`)).status, 404, 'старият slug не отговаря');
+    const renamedManifest = await fetch(`${B}/api/v1/p/api-demo-2/manifest`);
+    assert.equal(renamedManifest.status, 200, 'новият slug отваря манифеста');
+    assert.equal((await renamedManifest.json()).portal.slug, 'api-demo-2');
+    fs.mkdirSync(path.join(dir, 'api', 'zayet'), { recursive: true });
+    r = await call('/admin/api/portals/' + portal.id, 'PATCH', { slug: 'zayet' });
+    assert.equal(r.status, 409, 'заета API директория → 409, без тихо презаписване');
+    assert.equal((await fetch(`${B}/api/v1/p/api-demo-2/manifest`)).status, 200, 'след отказа slug-ът е непроменен');
+
     console.log('api-generation OK');
   } finally {
     await stopChild(child);
