@@ -139,18 +139,18 @@
 
 | Гейт | Команда | Резултат |
 | ---- | ------- | -------- |
-| Тестова матрица | `node scripts/test-matrix.cjs --skip=release-status` | **271/271, 1 опит, 208.8 с** |
+| Тестова матрица | `node scripts/test-matrix.cjs --skip=release-status` | **272/272, 2 опита, 444.2 с** (първият опит падна по остарели генерирани документи, не по код) |
 | Издателски сценарии | `node scripts/verify-release.cjs` | **21/21** (S22: архивът е байт по байт равен на `hapi_enterprise/`) |
 | Самото издание | `node scripts/artifact-smoke.cjs` | **11 проверки** върху разархивирания архив |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | **0.69.87 · 272 теста**, независим от платформа и дата |
-| Справочник на API | `node scripts/api-reference.cjs --check` | 193 операции · 32 публични правила · 11 компонента |
-| Каталог на одитните събития | `node scripts/audit-events.cjs --check` | 164 събития от 12 файла |
-| Инвентар на кода | `node scripts/source-inventory.cjs --check` | 171 файла, съвпада с диска |
-| Пълен индекс на документацията | `node scripts/docs-index.cjs --check` | 113 документа, всеки с входяща препратка |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | **0.69.87 · 273 теста**, независим от платформа и дата |
+| Справочник на API | `node scripts/api-reference.cjs --check` | 199 операции · 32 публични правила · 12 компонента |
+| Каталог на одитните събития | `node scripts/audit-events.cjs --check` | 172 събития от 14 файла |
+| Инвентар на кода | `node scripts/source-inventory.cjs --check` | 173 файла, съвпада с диска |
+| Пълен индекс на документацията | `node scripts/docs-index.cjs --check` | 114 документа, всеки с входяща препратка |
 | Каталог на кодовете за грешка | `node scripts/error-codes.cjs --check` | 55 кода, всеки с файл на излъчване |
 | Подразбирания в README | `node scripts/settings-defaults.cjs --check` | 43 настройки |
 | Документация | `tests/docs-consistency.cjs` | OK, без счупени връзки |
-| Матрица на сценариите | `tests/scenario-matrix.cjs` | 62 области · 49 маршрута · 24 RBAC способности · 43 опции · 272 тестови файла |
+| Матрица на сценариите | `tests/scenario-matrix.cjs` | 62 области · 49 маршрута · 24 RBAC способности · 43 опции · 273 тестови файла |
 | Логически одит | `node scripts/logic-audit.cjs --gate` | чисто |
 | Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | чисто |
 | GUI + съвместимост + изданието | `node scripts/audit-gui-compat.cjs` | 33/33 · 28/28 · `verify-release` S01–S21 · `artifact-smoke` (11 проверки) като СТЕПЕН 3 |
@@ -188,15 +188,18 @@
 | Docker образът | демонът на машината е спрян: образът не е пресъбран, CVE числата не са премерени |
 | Реална инсталация през Supervisor и браузърна Ingress сесия | изисква жива инсталация |
 | PDF/A-3 заверка (veraPDF), `legal hold` към Object Lock | извън обхвата на изданието (виж `PLAN_STATUS.md` §4.1) |
+| Че webhook-ът стига до ЧУЖД сървър в интернет | тестът ползва локален получател; DNS, TLS и чужд firewall не са част от проверката |
+| Че всички обявени събития се излъчват | `job.completed`, `access.created`, `report.packaged` са в договора, но кодът вика `publish(…)` само за `document.finalized` — записано в `WEBHOOKS.md` §„Какво НЕ е направено“ |
 | Пълният отговор на въпроса „кой точно маршрут отговори два пъти“ | обезвредено е на ниво `respond.js` + `catch`; конкретният извикващ не е изолиран, защото логът не пази пътя на заявката при грешка |
 
 ## 7. Как да се провери отново (без доверие към този документ)
 
 ```bash
-node scripts/test-matrix.cjs --skip=release-status   # 269/269
+node scripts/test-matrix.cjs --skip=release-status   # 272/272
 node scripts/build-release.cjs && node scripts/verify-release.cjs
 node scripts/artifact-smoke.cjs                       # 11 проверки
 node scripts/release-status.cjs && node --test tests/release-status.cjs
+node tests/webhooks.cjs                               # 8 проверки (F4-7)
 node scripts/logic-audit.cjs --gate
 node scripts/bad-code-scan.cjs --gate
 npx eslint .
