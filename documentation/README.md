@@ -148,4 +148,3 @@ _Генериран списък: **113** документа. Пише се от
 | `08_USER_GUIDES/USER_GUIDE_DE.md` | hAPI Enterprise — Benutzerhandbuch |
 | `08_USER_GUIDES/USER_GUIDE_EN.md` | hAPI Enterprise — User Guide |
 <!-- doc-index:end -->
-
