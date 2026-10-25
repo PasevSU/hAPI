@@ -25,6 +25,16 @@ const assert = require('node:assert/strict'), { spawn } = require('node:child_pr
     assert.equal((await call('/admin/api/portals/' + p.id + '/files?tag=missing')).data.total, 0);
     const taxonomy = await call('/admin/api/portals/' + p.id + '/taxonomy'); assert.deepEqual(taxonomy.data.tags, ['evidence', 'review']);
     const unauth = await fetch(base + '/admin/api/portals/' + p.id + '/taxonomy'); assert.equal(unauth.status, 401);
-    console.log('PASS taxonomy: metadata, validation, four filters, taxonomy facets, admin authorization');
+    // F2-10: смяната на тема/категория/група МЕСТИ файла във виртуалното дърво — id-то остава,
+    // пътят се сменя. Това е „Премести“ по план 17 и се вижда в публичния манифест.
+    const pathOf = async () => (await call('/api/v1/p/' + p.slug + '/manifest')).data.files[0].path;
+    const beforeMove = await pathOf();
+    assert.equal(beforeMove, '/Security/Reports/Legal/test.txt', 'пътят следва таксономията: ' + beforeMove);
+    assert.equal((await call(endpoint, 'PATCH', { category: 'Contracts', group: 'Archive' })).status, 200);
+    const afterMove = await pathOf();
+    assert.equal(afterMove, '/Security/Contracts/Archive/test.txt', 'смяната на категория/група мести файла: ' + afterMove);
+    const afterFiles = await call('/admin/api/portals/' + p.id + '/files');
+    assert.equal(afterFiles.data.files[0].id, f.id, 'идентификаторът не се мени при преместване');
+    console.log('PASS taxonomy: metadata, validation, four filters, taxonomy facets, admin authorization, F2-10 virtual move keeps the id');
   } finally { await stopChild(child); fs.rmSync(dir, { recursive: true, force: true }) }
 })().catch(e => { console.error(e); process.exitCode = 1 });
