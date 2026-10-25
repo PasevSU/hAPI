@@ -1,8 +1,11 @@
 # hAPI ENTERPRISE — Обобщаващ общ план v7 (програмен план)
 
-> **Статус:** действащ общ план. Това е единственият вход към всички останали планове:
-> подрежда ги, показва какво е готово и какво следва. При конфликт между документи този
-> план определя приоритета, а детайлите остават в специализираните планове.
+> **Статус:** **исторически план** (състояние към 0.63). Подредбата на слотовете и W0–W8
+> остава вярна като описание на обхвата, но не е актуален списък „какво следва“.
+> Актуалното състояние е в [`PLAN_STATUS.md`](../../documentation/00_GOVERNANCE/PLAN_STATUS.md);
+> нормативният план за текущата работа е
+> [`API_ARCHITECTURE_SPEC.md`](../../documentation/02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md) +
+> [`ARCHITECTURE_COMPLIANCE_MATRIX.md`](../../documentation/02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md) §5.
 > **Дата:** 2026-10-20 · **База:** v6.0 (`15-unified-master-plan-v6.0.md`).
 > **Връзки:** [15](15-unified-master-plan-v6.0.md) · [16](16-implementation-plan-from-chat.md) ·
 > [17](17-portal-files-management-plan.md) · [18](18-enterprise-control-center-plan.md) ·
@@ -285,8 +288,10 @@ flowchart LR
 9. 🟡 План 17: действията Преглед/Изтегли/Версии/… през `decide()` — режимите и
    проверката са в `download-access.js`, но „Премести“/„Копирай“ между портали още са
    надписани „планирано“ (`ui/files-manager.js`).
-10. ❌ Report Studio: Evidence Package от манифеста + `DRAFT`/`INCOMPLETE` статуси
-    (статусите съществуват само в `download-access.js`, не и в Report Studio).
+10. ✅ Report Studio: Evidence Package от манифеста + `DRAFT`/`INCOMPLETE` статуси —
+    `report-package.js` (`classify`/`build`, статуси `READY`/`INCOMPLETE`/`DRAFT`, `evidence.missing`),
+    `tests/report-package.cjs`. Остава извън този слот: заверка на PDF/A-3 с veraPDF (външен
+    валидатор, не се вгражда в add-on-а).
 
 **Готово в текущия етап:** FD-0/PG-0 (правила, политики, gateway модел), FD-1 (трансферно
 ядро), конфигурация и схеми, два GUI панела, backend правила/preflight, отделен публичен

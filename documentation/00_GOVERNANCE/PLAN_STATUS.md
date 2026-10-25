@@ -14,7 +14,7 @@
 
 1. `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` — нормативен (какво трябва да работи);
 2. `02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md` §5 — честният списък на
-   липсващото (3 реда).
+   липсващото: **0 реда** за 0.69.87, а §5.1 пази какво е затворено и с кой тест.
 
 Всичко останало е история и не бива да се ползва за решение „какво следва“.
 
@@ -25,9 +25,9 @@
 | `00_GOVERNANCE/MILESTONES.md` | M6 (настройки) 0.51 🟡, M7 (миграция) 0.52 🟡, M8 (доказателствен портал) 0.53 🟡 | и трите са в продукция отдавна: `ui/settings-panel.js` + `job-manager.js`, `storage-migrate.js` + `workdir-migrate.js`, `evidence-portal.js` + OIDC + PKCS#7 + RFC 3161 | **изостанал** |
 | `00_GOVERNANCE/ROADMAP.md` | „Now (v0.50.0)“; фази 5–11 като следващи | фази 5, 6, 7 са готови; 8–11 частично (OpenAPI/спецификация ✅, Windows Edition ❌) | **изостанал** |
 | `docs/plan/21-next-updates.md` | състояние към 0.69.29, P0 = издаване | издаването минава през Release workflow; RS-05/06/07 са затворени | **исторически** |
-| `docs/plan/20-unified-plan-v7.md` §8.1 | слотове 1–8 ✅, 9 🟡, 10 ❌ | слот 10 (Evidence Package + `DRAFT`/`INCOMPLETE`) е реализиран в `report-package.js`, но документът още го води отворен | **вътрешно противоречие** |
+| `docs/plan/20-unified-plan-v7.md` §8.1 | слотове 1–8 ✅, 9 🟡, 10 ❌ | слот 10 (Evidence Package + `DRAFT`/`INCOMPLETE`) е реализиран в `report-package.js` | **поправено** — слот 10 е ✅ от 0.69.87, документът носи статус „исторически“ |
 | `20-unified-plan-v7.md` §7–8 | W0–W7 ✅, W8 ❌ | същото: W8 (Windows Edition + WebView2) наистина липсва | **вярно** |
-| `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` + матрица §5 | 3 отворени реда | 3 отворени реда | **актуално** ✔ |
+| `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` + матрица §5 | 3 отворени реда (при първата проверка) | **0 отворени реда** — и трите са затворени в 0.69.87 (§4) | **актуално** ✔ |
 
 ## 3. Какво е добавено извън плана (и защо е записано)
 
@@ -63,8 +63,10 @@ veraPDF, `legal hold` към Object Lock, Compose режим
 
 Не се пренаписват „на ръка“ — така се създава трета версия на истината. Правилото:
 
-1. `MILESTONES.md` и `ROADMAP.md` получават ред в началото, че са **исторически**, и сочат
-   към този документ.
+1. `MILESTONES.md`, `ROADMAP.md` и `docs/plan/20-unified-plan-v7.md` получават ред в началото,
+   че са **исторически**, и сочат към този документ. В v7 освен това слот 10 е приведен в
+   съответствие с кода (`report-package.js` + `tests/report-package.cjs`), за да не остане
+   планът да твърди „липсва“ за нещо, което работи.
 2. Актуалният статус се поддържа на две места: `reports/RELEASE-STATUS.md` (генериран) и
    `ARCHITECTURE_COMPLIANCE_MATRIX.md` §5 (ръчно, но проверяван от `tests/scenario-matrix.cjs`).
 3. Всяко ново издание получава документ в `07_RELEASE/` — както
