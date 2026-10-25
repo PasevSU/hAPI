@@ -192,6 +192,7 @@ Text · Data · Table · Media · Certificate · Layout · Legal · Dynamic.
 > | „Обектна библиотека: 8 категории, planned обекти“ | **има ги**: `ui/report-objects.js` дефинира точно 8 категории (`CATEGORIES`) и всеки обект носи `category`/`status`; списъкът „планирано“ е празен от 0.69.61, защото последните четири обекта станаха готови |
 > | „Панел като модул: регистър + render/mount/unmount/permissions/capabilities“ | **регистърът го има**: `ui/panel-registry.js` (`register`/`mount`/`unmount`/`unmountAll`/`allowed`/`list`/`available`), а `app.js` минава през него вместо верига от `if`-ове. `render` е `mount(host)`. **`permissions` също се налагат**: всеки панел декларира своите способности, `whoami` връща `capabilities` от **същата** таблица на `rbac`, и `mount` отказва с `DENIED` — панел, който щеше да върне 403, вече не се показва |
 > | „Manifest … `manifest.schema.json` липсва“ | схемата съществува като `schema()` от самото начало; от 0.69.87 има и ФАЙЛ — `config/schemas/manifest.schema.json`, генериран от кода (`scripts/manifest-schema.cjs`), пазен байт-байт от `tests/manifest-schema.cjs`. Профилите са налични (`report-manifest.js` → `template(profile)`) |
+> | „Редактор на таблици: колони като текст, липсват подредба/добавяне/изтриване/ширини“ | **всичко го има**: подредба (↑/↓), добавяне (`#p-addcol`), изтриване и **ширини по колона** (`#p-widths`, тегла). От 0.69.87 е и през DOM — `tests/report-studio-columns.cjs` (5 проверки) и `tests/report-table-widths.cjs` (6 проверки: математиката на `columnWidths`, манифестът, рендер моделът, PDF-ът, редакторът). Теглата вървят с колоната при преместване и се трият с нея |
 >
 > **Остават отворени и днес** — сверено с кода при 0.69.87, а не по памет:
 >
@@ -201,7 +202,7 @@ Text · Data · Table · Media · Certificate · Layout · Legal · Dynamic.
 > | WebView2 `.pyw` стартер | `START_HAPI_GUI.bat` отваря Edge в режим на приложение — различен механизъм; `.pyw` файл няма |
 > | Права за съдебните роли в GUI-я | `whoami`/`connection` искат способност `whoami`, която `judge`/`prosecutor`/`clerk`/`expert` **нямат** — те не получават списък със способности и интерфейсът не филтрира за тях (пакетите им така или иначе са за портала, не за Control Center) |
 > | Дизайн система | **токените ги има** (37 CSS custom properties в `ui/styles.css`), липсва раздробяването на `tokens/layout/components/themes` |
-> | Редактор на таблици v2 | подредба (↑/↓), **добавяне** (`#p-addcol`) и изтриване на колони **има** — и вече са през DOM в `tests/report-studio-columns.cjs` (5 проверки). Липсват само **ширини по колона и повторение на заглавен ред**, които планът сам отлага: „v2 (F8)“ |
+> | Повторение на заглавен ред | при нов лист таблицата продължава без заглавия — планът сам отлага това за F8 (`pdf-writer.js`, клонът `b.type === 'table'` в `render`) |
 > | Миграции на манифеста | има само `schemaVersion` 1 и `validate()` отказва друго с `UNSUPPORTED_SCHEMA_VERSION`; верига при една единствена версия би била непроверяем код |
 
 | Ново изискване | Днес в репото (при писане на плана) | Липсва |

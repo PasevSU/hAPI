@@ -793,7 +793,11 @@
           <input id="p-newcol" placeholder="нова колона" />
           <button type="button" class="btn btn-sm" id="p-addcol" ${columns.length >= (M() ? M().MAX_COLUMNS : 32) ? 'disabled' : ''}>Добави</button>
         </div>
-        <p class="hint">Ширини и повторение на заглавен ред — v2 (F8).</p>`;
+        <div class="u-row u-row-2">
+          <input id="p-widths" value="${esc((block.widths || []).join(', '))}" placeholder="тегла: 2, 1, 1" />
+          <span class="hint">ширини (v2) — празно значи равни</span>
+        </div>
+        <p class="hint">Повторение на заглавен ред при нов лист — v2 (F8).</p>`;
     } else if (block.type === 'hash-table') {
       html += `<h4 class="u-mt">Алгоритми</h4>`;
       for (const alg of M().HASH_ALGORITHMS) {
@@ -866,11 +870,24 @@
         const cols = (block.columns || []).slice();
         const act = btn.dataset.col;
         if (act === 'del' && cols.length <= 1) return;
-        if (act === 'del') cols.splice(i, 1);
-        if (act === 'up' && i > 0) [cols[i - 1], cols[i]] = [cols[i], cols[i - 1]];
-        if (act === 'down' && i < cols.length - 1) [cols[i + 1], cols[i]] = [cols[i], cols[i + 1]];
+        // Теглата вървят ЗАЕДНО с колоните: ако преместиш колона, ширината ѝ се мести с нея,
+        // иначе подредбата и ширините описват различен отчет.
+        const widths = Array.isArray(block.widths) && block.widths.length === cols.length ? block.widths.slice() : null;
+        if (act === 'del') {
+          cols.splice(i, 1);
+          if (widths) widths.splice(i, 1);
+        }
+        if (act === 'up' && i > 0) {
+          [cols[i - 1], cols[i]] = [cols[i], cols[i - 1]];
+          if (widths) [widths[i - 1], widths[i]] = [widths[i], widths[i - 1]];
+        }
+        if (act === 'down' && i < cols.length - 1) {
+          [cols[i + 1], cols[i]] = [cols[i], cols[i + 1]];
+          if (widths) [widths[i + 1], widths[i]] = [widths[i], widths[i + 1]];
+        }
         pushHistory();
         block.columns = cols;
+        if (widths) block.widths = widths;
         refresh();
       });
     });
@@ -887,8 +904,35 @@
         }
         pushHistory();
         block.columns = [...(block.columns || []), value];
+        // Новата колона получава средното тегло — така сборът остава смислен, вместо да
+        // се появи колона без ширина (тя би била невалидна според `validate()`).
+        if (Array.isArray(block.widths) && block.widths.length === block.columns.length - 1 && block.widths.length) {
+          const avg = Math.round((block.widths.reduce((a, b) => a + b, 0) / block.widths.length) * 100) / 100;
+          block.widths = [...block.widths, avg];
+        }
         input.value = '';
         refresh();
+      });
+    }
+    // Ширини по колона (v2): тегла, не милиметри — PDF-ът ги разпределя пропорционално на
+    // наличната ширина, тоест еднакъв отчет изглежда еднакво и на A4, и на A5.
+    const widthsInput = els.props.querySelector('#p-widths');
+    if (widthsInput) {
+      widthsInput.addEventListener('change', () => {
+        const raw = String(widthsInput.value || '').trim();
+        if (!raw) {
+          pushHistory();
+          delete block.widths;
+          return;
+        }
+        const nums = raw.split(',').map((part) => Number(part.trim()));
+        const cols = block.columns || [];
+        if (nums.length !== cols.length || nums.some((n) => !Number.isFinite(n) || n <= 0 || n > 1000)) {
+          toast(`Ширините са ${cols.length} положителни числа (по едно на колона), напр. 2, 1, 1.`, 'err');
+          return;
+        }
+        pushHistory();
+        block.widths = nums;
       });
     }
     const itemsInput = els.props.querySelector('#p-items');

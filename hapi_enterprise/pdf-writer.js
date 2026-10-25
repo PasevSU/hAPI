@@ -129,6 +129,24 @@ function stampOf(value) {
   const iso = time.toISOString();
   return { iso: iso.slice(0, 19) + 'Z', pdf: iso.replace(/[-:T]/g, '').slice(0, 14) + 'Z' };
 }
+/**
+ * Ширини на колоните в таблица. Без тегла всички са равни — досегашното поведение, което
+ * остава по подразбиране. С тегла (`widths` от манифеста) се разпределя пропорционално, но
+ * сборът ВИНАГИ е `maxW`: иначе таблицата излиза извън полетата на страницата.
+ * Невалидни тегла (различен брой, не-число, нула или отрицателно) се ИГНОРИРАТ и таблицата
+ * става равна — по-добре равна таблица, отколкото колона с нулева ширина, която не се чете.
+ */
+function columnWidths(maxW, ncol, weights) {
+  const cols = Math.max(1, Math.trunc(Number(ncol)) || 1);
+  const equal = () => Array.from({ length: cols }, () => maxW / cols);
+  if (!Array.isArray(weights) || weights.length !== cols) return equal();
+  const nums = weights.map((w) => Number(w));
+  if (nums.some((w) => !Number.isFinite(w) || w <= 0)) return equal();
+  const sum = nums.reduce((a, b) => a + b, 0);
+  if (!sum) return equal();
+  return nums.map((w) => (maxW * w) / sum);
+}
+
 function render(blocks, { title = '', watermark = '', lang = 'bg', attachments = [], createdAt = null } = {}) {
   const stamp = stampOf(createdAt);
   const used = {}; const fontIds = {}; const faces = {};
@@ -244,8 +262,12 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
       const st = STYLES.table, pad = st.pad;
       const rows = (b.rows || []).map(r => Array.isArray(r) ? r.map(c => String(c == null ? '' : c)) : Object.values(r || {}).map(c => String(c == null ? '' : c)));
       const ncol = Math.max(1, ...rows.map(r => r.length));
-      const colW = maxW / ncol, cellW = Math.max(10, colW - pad * 2);
-      const wrapped = rows.map(r => { const cells = []; for (let c = 0; c < ncol; c++)cells.push(wrap(st.font, st.size, r[c] || '', cellW)); return cells });
+      const widths = columnWidths(maxW, ncol, b.widths);
+      // Лявата граница на всяка колона се смята веднъж — иначе теглата се разминават с
+      // рамките, които се чертаят по-долу.
+      const xs = []; let acc = M.l;
+      for (const w of widths) { xs.push(acc); acc += w }
+      const wrapped = rows.map(r => { const cells = []; for (let c = 0; c < ncol; c++)cells.push(wrap(st.font, st.size, r[c] || '', Math.max(10, widths[c] - pad * 2))); return cells });
       const rowH = wrapped.map((w, ri) => Math.max(1, ...w.map(c => c.length)) * st.lead + pad * 2);
       if (y - st.before - Math.min(...rowH) < M.b && y < A4.h - M.t) newPage();
       y -= st.before;
@@ -253,9 +275,9 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
         const rh = rowH[ri];
         if (y - rh < M.b) { newPage(); y = A4.h - M.t - st.before }
         const top = y;
-        for (let ci = 0; ci < ncol; ci++)ops.push(`0.6 G 0.5 w ${num(M.l + ci * colW)} ${num(top - rh)} ${num(colW)} ${num(rh)} re S 0 G`);
+        for (let ci = 0; ci < ncol; ci++)ops.push(`0.6 G 0.5 w ${num(xs[ci])} ${num(top - rh)} ${num(widths[ci])} ${num(rh)} re S 0 G`);
         for (let ci = 0; ci < ncol; ci++) {
-          const x = M.l + ci * colW;
+          const x = xs[ci];
           wrapped[ri][ci].forEach((ln, li) => {
             draw(b.header && ri === 0 ? 'bold' : st.font, st.size, x + pad, top - pad - st.size - li * st.lead, ln);
           });
@@ -400,4 +422,4 @@ function markdownBlocks(md) {
   if (code) blocks.push({ type: 'code', text: code.join('\n') });
   flushTable(); flush(); return blocks;
 }
-module.exports = { render, markdownBlocks, qrMatrix };
+module.exports = { render, markdownBlocks, qrMatrix, columnWidths };

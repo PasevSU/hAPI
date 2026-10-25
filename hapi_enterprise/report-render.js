@@ -235,10 +235,15 @@ function toPdfBlocks(manifest, options = {}) {
         });
         break;
       }
-      case 'table':
+      case 'table': {
         heading(block.label);
-        out.push({ type: 'table', header: true, rows: tableRows(block, data) });
+        const item = { type: 'table', header: true, rows: tableRows(block, data) };
+        // Теглата на колоните вървят с таблицата до PDF-а. Без тях `pdf-writer` дели равно
+        // (старото поведение), тоест липсата на `widths` не е „счупено“, а „по подразбиране“.
+        if (Array.isArray(block.widths) && block.widths.length) item.widths = block.widths.map(Number);
+        out.push(item);
         break;
+      }
       case 'hash-table': {
         heading(block.label || 'Hash таблица');
         const algorithms = Array.isArray(block.algorithms) ? block.algorithms : [];

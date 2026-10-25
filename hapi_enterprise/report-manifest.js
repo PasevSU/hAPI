@@ -188,6 +188,21 @@ function validateBlock(block, index, seen) {
         message: `Колоните трябва да са 1–${MAX_COLUMNS} непразни имена.`,
       });
     }
+    // Тегла на колоните (v2): по избор, но ако са зададени, трябва да са точно колкото
+    // колоните и всички положителни. Иначе PDF-ът би получил тегло за несъществуваща колона
+    // или колона с нулева ширина — и `pdf-writer` щеше тихо да ги подмине.
+    if (block.widths !== undefined && block.widths !== null) {
+      const widths = block.widths;
+      const countOk = Array.isArray(widths) && Array.isArray(cols) && widths.length === cols.length;
+      const valuesOk = Array.isArray(widths) && widths.length > 0 && widths.every((n) => isNumber(n) && n > 0 && n <= 1000);
+      if (!countOk || !valuesOk) {
+        errors.push({
+          path: `${at}.widths`,
+          code: 'INVALID_TABLE_WIDTHS',
+          message: `Ширините са по едно положително число (до 1000) за всяка от ${Array.isArray(cols) ? cols.length : 0} колони.`,
+        });
+      }
+    }
   }
   if (type === 'logo') {
     // Логото е или вградено изображение, или нищо. Адрес във `branding.logo` не е
@@ -483,6 +498,14 @@ function schema() {
             id: { type: 'string', pattern: BLOCK_ID.source },
             type: { enum: [...ELEMENT_TYPES, ...SYSTEM_TYPES] },
             locked: { type: 'boolean' },
+            // Тегла на колоните за `table` (v2): по избор; проверката за брой спрямо
+            // `columns` е във `validate()`, защото JSON Schema не сравнява два масива.
+            widths: {
+              type: 'array',
+              minItems: 1,
+              maxItems: MAX_COLUMNS,
+              items: { type: 'number', exclusiveMinimum: 0, maximum: 1000 },
+            },
           },
         },
       },
