@@ -323,11 +323,14 @@ add-on-а — виж бележката за `!secret` в [`PGP_KEYRING_AND_WORK
 
 | Метод | Път                             | Право | Отговор                                                                                                                                                              |
 | ----- | ------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET   | `/admin/api/pgp/keyring`        | `pgp` | `{ ok, keyring: { available, canDecrypt, reason, encryptPaths, encryptWorkdir, passphraseSource, keys[], storageKeyId, primaryKeyId } }` — **без** парола, **без** път до файла |
+| GET   | `/admin/api/pgp/keyring`        | `pgp` | `{ ok, keyring: { available, canDecrypt, reason, secretOption, encryptPaths, encryptWorkdir, passphraseSource, keys[], storageKeyId, primaryKeyId } }` — **без** парола, **без** път до файла; `secretOption` казва КОЯ опция е причината, когато тя е в опция |
 | POST  | `/admin/api/pgp/keyring/reload` | `pgp` | препрочита ключовете от диска; `200` с горния обект (и одит `pgp.keyring.reload`) или `503 KEYRING_UNAVAILABLE: <код>`                                               |
 
 **Кодове при отказ (същите като в `pgp.js`, не нови):** `PASSPHRASE_REQUIRED`, `PASSPHRASE_WRONG`,
-`NO_ENCRYPTION_KEY`, `UNSUPPORTED_CURVE`, `S2K_ARGON2_UNSUPPORTED`, `MDC_MISMATCH`, `WEAK_KEY`;
+`NO_ENCRYPTION_KEY`, `UNSUPPORTED_CURVE`, `S2K_ARGON2_UNSUPPORTED`, `S2K_AEAD_UNSUPPORTED`,
+`MDC_MISMATCH`, `WEAK_KEY`. Когато причината е в КОНФИГУРАЦИЯТА, а не в ключа:
+`SECRET_NOT_EXPANDED` (незаменен `!secret`), `SECRET_NAME_HAS_SPACE` (излишно разстояние в
+името), `SECRET_PATH_RELATIVE` (относителен път) — винаги заедно със `secretOption`;
 при недостъпен ключ за четене — `503` с `KEYRING_UNAVAILABLE`.
 
 **Инварианти:** INV-P1…INV-P9 в [`PGP_KEYRING_AND_WORK_FOLDER.md`](PGP_KEYRING_AND_WORK_FOLDER.md#инварианти-пазят-се-от-тестове).
