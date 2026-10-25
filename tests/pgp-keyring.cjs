@@ -95,17 +95,19 @@ const keyringWith = (env) => create({ env });
   assert.equal(relative.secretOption, 'pgp_path_public');
   ok('относителен път → SECRET_PATH_RELATIVE + име на опцията');
 
-  // v6 ключ, защитен с AEAD (RFC 9580 §5.5.3, usage 253): това е граница на двигателя, а не
-  // „счупен ключ“. Причината трябва да е СВОЯ (не общото UNSUPPORTED_KEY_USAGE), за да може
-  // човек да потърси решение; фикстурът е същият ключ със сменен usage байт (виж README-то).
+  // v6 ключ със СМЕНЕН usage байт на 253 (AEAD): това НЕ е истински AEAD-защитен ключ, а
+  // фикстур с подправен байт, за да се види какъв код излиза. От 0.69.87 AEAD се ПОДДЪРЖА
+  // (`tests/pgp-aead.cjs`), затова тук се очаква точният код за невалидна секция, а не
+  // общото „неподдържан режим“: подправеният байт не носи AEAD параметри и тагът не може
+  // да се провери.
   const aead = keyringWith({
     [ENV.public]: PUBLIC,
     [ENV.secret]: path.join(FIX, 'secret-aead.asc'),
     [ENV.keyPass]: PASS,
   }).status();
-  assert.equal(aead.reason, 'S2K_AEAD_UNSUPPORTED', 'AEAD-защитен ключ → S2K_AEAD_UNSUPPORTED, получено: ' + aead.reason);
+  assert.equal(aead.reason, 'PASSPHRASE_WRONG', 'подправен usage байт → PASSPHRASE_WRONG (тагът не се проверява), получено: ' + aead.reason);
   assert.equal(aead.available, false);
-  ok('AEAD-защитен v6 ключ → S2K_AEAD_UNSUPPORTED (документирана граница)');
+  ok('AEAD-фикстур с подправен usage байт → PASSPHRASE_WRONG (не „неподдържан режим“)');
 }
 
 // ── 2. Само публичен ключ: може да криптира, не може да декриптира ──────────

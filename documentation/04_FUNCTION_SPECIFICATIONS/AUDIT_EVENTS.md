@@ -5,7 +5,7 @@
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **176** събития, излъчвани от **15** файла.
+Общо: **179** събития, излъчвани от **16** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -59,6 +59,8 @@
 | `directory.rule.add` | `hapi_enterprise/server.js` |
 | `directory.rule.remove` | `hapi_enterprise/server.js` |
 | `evidence-portal.deploy` | `hapi_enterprise/server.js` |
+| `exif.compare` | `hapi_enterprise/routes/forensic.js` |
+| `exif.read` | `hapi_enterprise/routes/forensic.js` |
 | `file.copy` | `hapi_enterprise/routes/file-transfer.js` |
 | `file.delete` | `hapi_enterprise/server.js` |
 | `file.delete.refused` | `hapi_enterprise/server.js` |
@@ -89,6 +91,7 @@
 | `file.version.restore` | `hapi_enterprise/server.js` |
 | `file.version.upload` | `hapi_enterprise/server.js` |
 | `folder.api` | `hapi_enterprise/server.js` |
+| `forensic.analyze` | `hapi_enterprise/routes/forensic.js` |
 | `gateway.download` | `hapi_enterprise/server.js` |
 | `gateway.download.denied` | `hapi_enterprise/server.js` |
 | `generator.template.delete` | `hapi_enterprise/routes/generator.js` |

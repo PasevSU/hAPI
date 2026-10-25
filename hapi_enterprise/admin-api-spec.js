@@ -61,6 +61,12 @@ const ROUTES = [
   ['POST', '/admin/api/webhooks/{id}/disable', 'Спиране на абонамент без триене (историята остава)', 'webhooks', 'settings'],
   ['POST', '/admin/api/webhooks/{id}/enable', 'Пускане на спрян абонамент', 'webhooks', 'settings'],
 
+  // ── forensic и метаданни (план 18, панели 07 и 08) ─────────────────────────
+  // Правото е `storage` (само четене за viewer): анализът не променя нищо.
+  ['GET', '/admin/api/portals/{portalId}/files/{fileId}/exif', 'EXIF/TIFF/PNG метаданни (GPS само при ?gps=1)', 'forensic', 'storage'],
+  ['POST', '/admin/api/portals/{portalId}/files/{fileId}/exif/compare', 'Сравнение на метаданните с втори файл', 'forensic', 'storage'],
+  ['GET', '/admin/api/portals/{portalId}/files/{fileId}/forensic', 'Анализ по съдържание: тип, ентропия, структура, находки', 'forensic', 'storage'],
+
   // ── живи събития (SSE, F4-7) ───────────────────────────────────────────────
   // Правото е `metrics` (само за четене): потокът НЕ позволява нищо, само показва какво
   // вече се е случило — същите събития, които webhook-ът доставя на интеграциите.

@@ -41,8 +41,8 @@
 | 04 | Encrypt / Sign | криптиране, подписване, проверка | ✅ `file-crypto.js`, `signer.js`, `cms-sign.js`, `pgp.js` (`file-encryption`, `signing`, `pgp`) |
 | 05 | OTS / Blockchain | изолиран модул | ❌ няма |
 | 06 | RFC 3161 Timestamp | TSA профили, токени, проверки | ✅ `tsa-client.js`, `routes/reports.js` (`tsa-client`, `rfc3161-api`, `tsa-evidence`, `report-tsa-e2e`) |
-| 07 | Forensic Analysis | файлови и метаданни анализи | ❌ няма отделен модул |
-| 08 | Metadata / EXIF | извличане и сравнение | 🟡 `preview.js` (размери/тип/текст), без EXIF |
+| 07 | Forensic Analysis | файлови и метаданни анализи | ✅ `forensic.js` (тип по магически числа, ентропия, структурни проверки, находки с код), `routes/forensic.js` (`forensic-exif`) |
+| 08 | Metadata / EXIF | извличане и сравнение | ✅ `exif.js` (JPEG APP1 / TIFF II+MM / PNG tEXt, GPS скрит по подразбиране, `compare`), `routes/forensic.js` (`forensic-exif`) |
 | 09 | Hash Generator | алгоритми, хеширане, сравнение | ✅ `GET …/files/{id}/hashes` (SHA-2/3, SHA-1, MD5) |
 | 10 | Reports / PDF | история и експорт | ✅ Report Studio (`report-render`, `report-package`) |
 | 11 | Report Studio | визуален конструктор | ✅ `ui/report-studio.js` |
@@ -51,9 +51,10 @@
 | 14 | Settings / System | настройки, диагностика, логове | ✅ `ui/settings-panel.js` (17 таба), `ui-settings-sections` |
 | 15 | About / NOTICE | версия, лиценз, third-party | ✅ |
 
-> **Редовете са приведени в съответствие с кода при 0.69.87** за панели 03, 04, 06, 09, 12, 13,
-> 14 — всеки със собствени тестове. Остават отворени само 05 (OTS/Blockchain), 07 (Forensic)
-> и частично 08 (EXIF).
+> **Редовете са приведени в съответствие с кода при 0.69.87** за панели 03, 04, 06, 07, 08, 09,
+> 12, 13, 14 — всеки със собствени тестове. Остава отворен само 05 (OTS/Blockchain): той иска
+> външна услуга (календар на OpenTimestamps или блокчейн възел), а в средата без мрежа такова
+> твърдение не може да се провери.
 
 **Правило:** всеки съществуващ модул се **картографира** към новата навигация без загуба на
 функционалност. Старите 13 панела не се смесват безконтролно с новите.

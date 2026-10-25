@@ -5,7 +5,7 @@
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
 
-Общо: **55** кода, излъчвани от `hapi_enterprise/`. От тях **36** носят
+Общо: **55** кода, излъчвани от `hapi_enterprise/`. От тях **37** носят
 собствено обяснение в кода; останалите се разпознават по кода и файла.
 
 ## Кодове по азбучен ред
@@ -37,12 +37,12 @@
 | `NO_SECRET_KEY` | Няма секретен ключ за подписване | `hapi_enterprise/pgp.js` |
 | `NOT_ENCRYPTED` | Съобщението няма PKESK пакет (криптирано е само с парола) | `hapi_enterprise/pgp.js` |
 | `OPTION_SECRET_NOT_EXPANDED` | тези опции съдържат "!secret" без замяна → | `hapi_enterprise/start.js` |
-| `PASSPHRASE_REQUIRED` | Празна парола за секретния ключ | `hapi_enterprise/pgp.js` |
-| `PASSPHRASE_WRONG` | Паролата на секретния ключ не е вярна | `hapi_enterprise/pgp.js` |
+| `PASSPHRASE_REQUIRED` | Секретният ключ е защитен с парола (AEAD) — нужна е паролата (опция `pgp_key_pass` или `PGP_KEY_PASS`) | `hapi_enterprise/pgp.js` |
+| `PASSPHRASE_WRONG` | Паролата на секретния ключ не е вярна (AEAD тагът не се провери; опити: | `hapi_enterprise/pgp.js` |
 | `PGP_SECRET_KEY_REQUIRED` | — | `hapi_enterprise/path-crypto.js` |
 | `PUBLIC_UNREADABLE` | — | `hapi_enterprise/path-crypto.js` |
 | `RESPONSE_ALREADY_SENT` | втори отговор е отказан (първият вече е изпратен), код | `hapi_enterprise/respond.js` |
-| `S2K_AEAD_UNSUPPORTED` | Секретният ключ е защитен с AEAD (RFC 9580 §5.5.3, usage 253) — hAPI поддържа незащитен ключ (usage 0) и CFB+S2K (254/255). Експортирай секретния ключ без парола или ключ, защитен с S2K (gpg 2.4+ с `--s2k-mode 3`). | `hapi_enterprise/pgp.js` |
+| `S2K_AEAD_UNSUPPORTED` | Платформата няма поддръжка на AEAD режима на този ключ ( | `hapi_enterprise/pgp.js` |
 | `S2K_ARGON2_UNSUPPORTED` | Секретният ключ е защитен с Argon2 (S2K тип 4) — hAPI поддържа iterated-salted (тип 3). Експортирай ключа с `--s2k-mode 3` или без парола. | `hapi_enterprise/pgp.js` |
 | `SEAL_WORKDIR_NEEDS_CONFIRM` | добави ?confirm=1 (действието пипа файловете в работните папки) | `hapi_enterprise/routes/pgp-keyring.js` |
 | `SECRET_NAME_HAS_SPACE` | — | `hapi_enterprise/path-crypto.js` |
@@ -50,7 +50,7 @@
 | `SECRET_PATH_RELATIVE` | — | `hapi_enterprise/path-crypto.js` |
 | `SECRET_UNREADABLE` | — | `hapi_enterprise/path-crypto.js` |
 | `STORAGE_LEGACY_LOCATION` | намерени са данни в | `hapi_enterprise/storage-preflight.js` |
-| `UNSUPPORTED_AEAD` | — | `hapi_enterprise/pgp.js` |
+| `UNSUPPORTED_AEAD` | Този режим не е наличен за заключване | `hapi_enterprise/pgp.js` |
 | `UNSUPPORTED_ALGO` | — | `hapi_enterprise/pgp.js` |
 | `UNSUPPORTED_ALGORITHM` | — | `hapi_enterprise/pgp.js` |
 | `UNSUPPORTED_CIPHER` | — | `hapi_enterprise/pgp.js` |

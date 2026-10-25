@@ -12,8 +12,11 @@
 //
 // Извън обхвата (връща ясна грешка, не тих fallback):
 //   • S2K тип 4 (Argon2) — иска се gpg 2.4+ с `--s2k-mode 3` или ключ без парола;
-//   • AEAD-защита на САМИЯ секретен ключ (RFC 9580 §5.5.3, usage 253) —
-//     `S2K_AEAD_UNSUPPORTED`; ключ без парола (usage 0) и CFB+S2K (254/255) се четат;
+//   • AEAD-защита на САМИЯ секретен ключ (RFC 9580 §5.5.3, usage 253) — ПОДДЪРЖА СЕ от
+//     0.69.87 чрез нативния OCB на OpenSSL 3 (`aes-*-ocb`). Проверено с `tests/pgp-aead.cjs`
+//     (кръгово, подправен байт, свързване с публичната част). НЕ е проверено срещу чужда
+//     реализация: GnuPG 2.5.24 отговаря „S2K pseudo algo 253 is not yet supported“, тоест
+//     на тази машина няма еталон, който да произведе или прочете такъв ключ;
 //   • AEAD/SEIPD v2, ECDH/X25519, генериране на Ed448 ключове.
 const crypto = require('node:crypto');
 const zlib = require('node:zlib');
@@ -403,8 +406,110 @@ function parseSecretMpis(key, body, passphrase) {
   return secret;
 }
 
-// ── S2K (ключ, защитен с парола) ─────────────────────────────────────────────
-// RFC 4880 §3.7.1: S2K тип 0 (прост), 1 (солен), 3 (итериран и солен). Тип 4 (Argon2,
+// ── AEAD-защита на секретния ключ (RFC 9580 §5.5.3, usage 253) ──────────────
+// Режимите са номерирани както в OpenPGP: 1 = EAX, 2 = OCB, 3 = GCM. Node/OpenSSL дава
+// OCB и GCM нативно; EAX не е налично и се отказва с точна причина, вместо с обща.
+const AEAD_MODES = { 1: { name: 'eax', node: null, nonce: 16 }, 2: { name: 'ocb', node: 'ocb', nonce: 15 }, 3: { name: 'gcm', node: 'gcm', nonce: 12 } };
+const AEAD_TAG = 16;
+
+/**
+ * Отваря AEAD-защитена секретна секция.
+ *
+ * Защо има ДВА опита за подредбата на полетата: RFC 9580 §5.5.3 при v6 има октет за дължина
+ * пред параметрите, а някои издания/реализации го пропускат. Вместо да гадаем, се пробват
+ * и двете подредби и се приема САМО тази, чийто AEAD таг се провери — тагът е автентикация,
+ * тоест грешната подредба се проваля криптографски, а не „на око“. Това е и единственият
+ * начин да се различи истинската подредба без външен еталон.
+ */
+function openAeadSecretSection(key, body, passphrase) {
+  const pass = typeof passphrase === 'string' ? passphrase : '';
+  if (!pass) {
+    throw fail('PASSPHRASE_REQUIRED', 'Секретният ключ е защитен с парола (AEAD) — нужна е паролата (опция `pgp_key_pass` или `PGP_KEY_PASS`)');
+  }
+  const start = key.bodyLength + 1; // след байта за използване
+  const attempts = key.version === 6 ? [true, false] : [false];
+  const reasons = [];
+  for (const withParamLength of attempts) {
+    let at = start;
+    if (withParamLength) at += 1; // 1 октет „колко байта следват“
+    const symAlgo = body[at]; at += 1;
+    const cipher = SYM_CIPHERS[symAlgo];
+    if (!cipher) { reasons.push('шифър ' + symAlgo); continue }
+    const aeadAlgo = body[at]; at += 1;
+    const mode = AEAD_MODES[aeadAlgo];
+    if (!mode) { reasons.push('AEAD режим ' + aeadAlgo); continue }
+    if (key.version === 6) at += 1; // 1 октет за дължината на S2K спецификацията
+    const type = body[at];
+    const specLength = type === 0 ? 2 : type === 1 ? 10 : type === 3 ? 11 : 0;
+    if (!specLength) { reasons.push('S2K тип ' + type); continue }
+    const spec = body.subarray(at, at + specLength); at += specLength;
+    let nonceLength = mode.nonce;
+    if (key.version === 6) { nonceLength = body[at]; at += 1 }
+    if (at + nonceLength + AEAD_TAG > body.length) { reasons.push('отрязан ключ'); continue }
+    const nonce = body.subarray(at, at + nonceLength); at += nonceLength;
+    const ciphertext = body.subarray(at, body.length - AEAD_TAG);
+    const tag = body.subarray(body.length - AEAD_TAG);
+    const keyBytes = s2kDerive(spec, Buffer.from(pass, 'utf8'), cipher.keyBytes);
+    const plain = aeadOpen({ mode, cipher, keyBytes, nonce, ciphertext, tag, ad: aeadAssociatedData(key) });
+    if (plain) return { plain };
+    reasons.push('тагът не се провери');
+  }
+  // Никоя подредба не мина. Ако причината е липсващ режим в платформата, се казва точно.
+  const missing = reasons.every((r) => r.startsWith('AEAD режим'));
+  if (missing) {
+    throw fail('S2K_AEAD_UNSUPPORTED', 'Платформата няма поддръжка на AEAD режима на този ключ (' + reasons.join(', ') + ') — нужен е Node 22+/OpenSSL 3 за OCB');
+  }
+  throw fail('PASSPHRASE_WRONG', 'Паролата на секретния ключ не е вярна (AEAD тагът не се провери; опити: ' + reasons.join(', ') + ')');
+}
+
+/**
+ * Свързаните данни (AD) при секретен ключ: байтът на пакетния таг в OpenPGP формат
+ * (`0xC0 | tag`) последван от публичната част на ключа (RFC 9580 §5.5.3). За секретен ключ
+ * тагът е 5 → `0xC5`; за v6 пръстовият отпечатък се смята точно над тези байтове, тоест
+ * AD не може да се „смени“ незабелязано.
+ */
+function aeadAssociatedData(key) {
+  return Buffer.concat([Buffer.from([0xc5]), key.publicBody]);
+}
+
+/** Един AEAD опит. Връща `plain` при успешна автентикация, иначе `null`. */
+function aeadOpen({ mode, cipher, keyBytes, nonce, ciphertext, tag, ad }) {
+  const algorithm = cipher.name.replace('-cfb', '-' + mode.node);
+  let decipher;
+  try {
+    decipher = crypto.createDecipheriv(algorithm, keyBytes, nonce, { authTagLength: AEAD_TAG });
+    if (mode.node === 'ocb' || mode.node === 'gcm') decipher.setAuthTag(tag);
+    if (ad && ad.length && typeof decipher.setAAD === 'function') decipher.setAAD(ad);
+    return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  } catch {
+    return null;
+  }
+}
+
+/** Заключва секретна секция с AEAD — ползва се за тестов фикстур, не по време на работа. */
+function sealAeadSecretSection({ plain, publicBody, passphrase, symAlgo = 9, aeadAlgo = 2 }) {
+  const cipher = SYM_CIPHERS[symAlgo];
+  const mode = AEAD_MODES[aeadAlgo];
+  if (!cipher || !mode || !mode.node) throw fail('UNSUPPORTED_AEAD', 'Този режим не е наличен за заключване');
+  const salt = crypto.randomBytes(8);
+  // S2K тип 3 (iterated-salted), SHA-256, 96 милиона итерации (както gpg по подразбиране).
+  const count = 96;
+  const spec = Buffer.from([3, 8, salt[0], salt[1], salt[2], salt[3], salt[4], salt[5], salt[6], salt[7], count]);
+  const keyBytes = s2kDerive(spec, Buffer.from(passphrase, 'utf8'), cipher.keyBytes);
+  const nonce = crypto.randomBytes(mode.nonce);
+  const ad = Buffer.concat([Buffer.from([0xc5]), publicBody]);
+  const encipher = crypto.createCipheriv(cipher.name.replace('-cfb', '-' + mode.node), keyBytes, nonce, { authTagLength: AEAD_TAG });
+  if (ad.length && typeof encipher.setAAD === 'function') encipher.setAAD(ad);
+  const ciphertext = Buffer.concat([encipher.update(plain), encipher.final()]);
+  const tag = encipher.getAuthTag();
+  // Подредба по RFC 9580 §5.5.3: usage, [дължина на параметрите], шифър, AEAD, дължина на
+  // S2K, S2K, дължина на nonce, nonce, шифротекст, таг.
+  const s2kPart = Buffer.concat([Buffer.from([spec.length]), spec]);
+  const rest = Buffer.concat([Buffer.from([symAlgo, aeadAlgo]), s2kPart, Buffer.from([nonce.length]), nonce, ciphertext, tag]);
+  return Buffer.concat([Buffer.from([253, rest.length]), rest]);
+}
+
+// ── S2K (ключ, защитен с парола) ─────────────────────────────────────────────// RFC 4880 §3.7.1: S2K тип 0 (прост), 1 (солен), 3 (итериран и солен). Тип 4 (Argon2,
 // RFC 9580) не се поддържа — казва се с думи, вместо да се върне безсмислена грешка.
 const S2K_HASHES = { 1: 'md5', 2: 'sha1', 3: 'ripemd160', 8: 'sha256', 9: 'sha384', 10: 'sha512', 11: 'sha224' };
 // Шифри, които Node може да ползва директно. CAST5/BLOWFISH/IDEA липсват в Node —
@@ -456,16 +561,10 @@ function s2kDerive(spec, passphrase, keyBytes) {
 /** Отваря секцията на секретния ключ, защитена с парола. Връща {plain} (без сумата). */
 function openSecretSection(key, body, passphrase) {
   const usage = body[key.bodyLength];
-  // RFC 9580 §5.5.3: при v6 ключ защитата на секретния материал е AEAD (usage 253), не CFB.
-  // Node няма OCB/EAX, затова това е ДОКУМЕНТИРАНА граница на двигателя, а не „счупен ключ“:
-  // кодът е отделен от общия UNSUPPORTED_KEY_USAGE, за да може човек да потърси решение,
-  // вместо да получи „неподдържан режим (253)“ без име.
-  if (usage === 253) {
-    throw fail(
-      'S2K_AEAD_UNSUPPORTED',
-      'Секретният ключ е защитен с AEAD (RFC 9580 §5.5.3, usage 253) — hAPI поддържа незащитен ключ (usage 0) и CFB+S2K (254/255). Експортирай секретния ключ без парола или ключ, защитен с S2K (gpg 2.4+ с `--s2k-mode 3`).',
-    );
-  }
+  // RFC 9580 §5.5.3: при v6 ключ защитата на секретния материал може да е AEAD (usage 253).
+  // Node 22+/OpenSSL 3 дава OCB нативно (`aes-*-ocb`), затова това вече не е граница на
+  // двигателя. Ако платформата наистина няма OCB, `openAeadSecretSection` казва точно това.
+  if (usage === 253) return openAeadSecretSection(key, body, passphrase);
   if (usage !== 254 && usage !== 255) {
     throw fail('UNSUPPORTED_KEY_USAGE', `Неподдържан режим на защита на секретния ключ (${usage})`);
   }
@@ -1444,5 +1543,10 @@ module.exports = {
   generate,
   encryptToKey,
   decryptMessage,
+  // AEAD-защита на секретния ключ (RFC 9580 §5.5.3): `sealAeadSecretSection` съществува, за да
+  // може фикстурът за теста да е НАПРАВЕН от същия код, а не внесен — така тестът проверява
+  // реалния път, а не ръчно сглобени байтове.
+  sealAeadSecretSection,
+  AEAD_MODES,
   ALGO,
 };

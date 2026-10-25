@@ -6,9 +6,9 @@
 
 Източници (живи, не копия):
 
-- `hapi_enterprise/admin-api-spec.js` — 201 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
+- `hapi_enterprise/admin-api-spec.js` — 204 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
 - `hapi_enterprise/public-route-allowlist.js` — 32 правила за това какво Public Gateway пропуска.
-- `hapi_enterprise/routes/` — 13 компонента на HTTP слоя.
+- `hapi_enterprise/routes/` — 14 компонента на HTTP слоя.
 
 ```bash
 node scripts/api-reference.cjs           # записва документа
@@ -301,6 +301,14 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | GET | `/admin/api/events` | Състояние на живия поток (свързани клиенти, помнени събития) | `metrics` |
 | GET | `/admin/api/events/stream` | Жив поток от събития (text/event-stream, сърцебиене, Last-Event-ID) | `metrics` |
 
+### forensic (`forensic`)
+
+| Метод | Път | Описание | Право |
+| --- | --- | --- | --- |
+| GET | `/admin/api/portals/{portalId}/files/{fileId}/exif` | EXIF/TIFF/PNG метаданни (GPS само при ?gps=1) | `storage` |
+| POST | `/admin/api/portals/{portalId}/files/{fileId}/exif/compare` | Сравнение на метаданните с втори файл | `storage` |
+| GET | `/admin/api/portals/{portalId}/files/{fileId}/forensic` | Анализ по съдържание: тип, ентропия, структура, находки | `storage` |
+
 ### webhooks (`webhooks`)
 
 | Метод | Път | Описание | Право |
@@ -377,6 +385,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | `routes/events.js` | — |
 | `routes/file-transfer.js` | — |
 | `routes/folders.js` | Папки на портала: нова, флагове (видима/медийна/заключена + основание), изтриване |
+| `routes/forensic.js` | — |
 | `routes/generator.js` | Генератор на документи |
 | `routes/link-check.js` | Проверка на връзки |
 | `routes/oidc.js` | — |
@@ -393,11 +402,11 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 
 | Код | Значение | Срещания |
 | --- | --- | --- |
-| 400 | Невалидна заявка/път/име — проверката е преди докосване на диска | 114 |
+| 400 | Невалидна заявка/път/име — проверката е преди докосване на диска | 115 |
 | 401 | Липсва или невалидна идентичност (административен токен/бисквитка) | 6 |
 | 403 | Идентичността е известна, но правото липсва (напр. заключен файл, общ корен) | 22 |
 | 404 | Ресурсът не съществува ИЛИ не бива да се разкрива (нарочно еднакъв отговор) | 165 |
-| 405 | Методът не се поддържа за този път | 7 |
+| 405 | Методът не се поддържа за този път | 8 |
 | 409 | Конфликт със състоянието (съществуващо име, прекратен QR, максимална дълбочина) | 30 |
 | 410 | Ресурсът е прекратен (blok: QR е съществувал, достъпът е спрян) | 3 |
 | 413 | Твърде голям payload за операцията | 3 |

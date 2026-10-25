@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **105** backend модула · **13** HTTP компонента · **22** UI модула · **6** Python модула · **30** инструмента · **278** теста.
+Общо: **107** backend модула · **14** HTTP компонента · **22** UI модула · **6** Python модула · **30** инструмента · **280** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (105)
+### Backend модули (`hapi_enterprise/*.js`) (107)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -36,9 +36,11 @@
 | `hapi_enterprise/evidence-portal.js` | Публикуване на Evidence View портала в папката, която Home Assistant сервира статично. |
 | `hapi_enterprise/evidence-portal/assets/app.js` | (без заглавен коментар) |
 | `hapi_enterprise/evidence-portal/assets/consent.js` | hAPI consent gate. Never treat browser state as server authorization. |
+| `hapi_enterprise/exif.js` | EXIF / МЕТАДАННИ — извличане и СРАВНЕНИЕ (план 18, панел 08). |
 | `hapi_enterprise/export-manager.js` | Export Manager (FD-1) — трансферно ядро с проверка на целостта. |
 | `hapi_enterprise/export-rules.js` | File Delivery & Export Manager — правила за експорт (FD-0). |
 | `hapi_enterprise/file-crypto.js` | Opt-in whole-file encryption at rest (AES-256-GCM). The logical file SHA-256 and |
+| `hapi_enterprise/forensic.js` | FORENSIC АНАЛИЗ (план 18, панел 07) — файлът се проверява по СЪДЪРЖАНИЕТО, не по разширението. |
 | `hapi_enterprise/gateway-api.js` | PG-6 / FD-6: backend прилагане на правилата за публичен достъп и експорт. |
 | `hapi_enterprise/generator.js` | PasevSU Document Generator — ШАБЛОНИ ОТ ДИСКА, ИНДЕКС НА ЖИВО. |
 | `hapi_enterprise/generator/app.js` | PasevSU Document Generator — клиентската част. |
@@ -120,7 +122,7 @@
 | `hapi_enterprise/worm.js` | WORM ЗА ОСНОВНОТО ХРАНИЛИЩЕ — файл, който е влязъл в доказателство, не се презаписва |
 | `hapi_enterprise/x509.js` | Минимален X.509 (self-signed) — за подписване на отчети и за устройствени сертификати. |
 
-### HTTP компоненти (`hapi_enterprise/routes/*.js`) (13)
+### HTTP компоненти (`hapi_enterprise/routes/*.js`) (14)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -128,6 +130,7 @@
 | `hapi_enterprise/routes/events.js` | SSE поток — административен компонент на HTTP слоя (F4-7, живата половина). |
 | `hapi_enterprise/routes/file-transfer.js` | Преместване и копиране на файл между портали (F2-10 / F2-11) — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/folders.js` | Папки на портала в хранилището — компонент на HTTP слоя. |
+| `hapi_enterprise/routes/forensic.js` | Forensic и метаданни — компонент на HTTP слоя (план 18, панели 07 и 08). |
 | `hapi_enterprise/routes/generator.js` | Document Generator — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/link-check.js` | Проверка дали един публичен адрес НАИСТИНА се отваря — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/oidc.js` | OIDC вход — компонент на HTTP слоя. |
