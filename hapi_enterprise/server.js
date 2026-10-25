@@ -2534,7 +2534,7 @@ async function handler(req, res) {
               await fsp.rename(curPath, archPath);
               try { await fsp.writeFile(curPath, stored, { flag: 'wx', mode: 0o600 }) } catch (e) { await fsp.rename(archPath, curPath).catch(() => { }); throw e }
               f.versions ??= []; f.versions.push(prev);
-              f.size = data.length; f.sha256 = sha256; f.uploadedAt = new Date().toISOString(); f.version = newVersion;
+              f.size = data.length; f.sha256 = sha256; f.contentId = contentIds.of({ portalId: p.id, sha256, size: data.length }); f.uploadedAt = new Date().toISOString(); f.version = newVersion;
               if (f.encrypted) f.storedSize = stored.length;
               const drop = versioning.pruneTargets(f);
               f.versions = f.versions.filter(v => !drop.includes(v.version));
@@ -2564,7 +2564,7 @@ async function handler(req, res) {
               await fsp.rename(curPath, archPath);
               try { await fsp.copyFile(vp, curPath) } catch (e) { await fsp.rename(archPath, curPath).catch(() => { }); throw e }
               f.versions ??= []; f.versions.push(prev);
-              f.size = v.size; f.sha256 = v.sha256; f.encrypted = !!v.encrypted; f.storedSize = v.storedSize || null; f.uploadedAt = new Date().toISOString(); f.version = newVersion;
+              f.size = v.size; f.sha256 = v.sha256; f.contentId = contentIds.of({ portalId: p.id, sha256: v.sha256, size: v.size }); f.encrypted = !!v.encrypted; f.storedSize = v.storedSize || null; f.uploadedAt = new Date().toISOString(); f.version = newVersion;
               void audit('file.version.restore', { portalId: p.id, fileId: f.id, restoredFrom: vn, newVersion });
               return { file: publicFile(f), restoredFrom: vn, version: newVersion };
             }, async () => { await fsp.rm(curPath, { force: true }).catch(() => { }); await fsp.rename(archPath, curPath).catch(() => { }) });

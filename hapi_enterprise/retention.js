@@ -51,6 +51,18 @@ function create({ filesRoot, auditPath, getSettings, getQrRegistry }) {
     if (id && index.ids.has(id)) return 'qr-manifest';
     const sha = typeof f.sha256 === 'string' ? f.sha256.toLowerCase() : '';
     if (sha && index.hashes.has(sha)) return 'qr-manifest-hash';
+    // Историята на файла също е доказателство. Ако публикуваната версия е заменена с нова,
+    // манифестът продължава да сочи към старите байтове, а те живеят в `versions`. Без тази
+    // проверка „публикувай → качи нова версия → изтрий“ изтриваше доказателството, стига
+    // текущото съдържание да е различно.
+    for (const v of Array.isArray(f.versions) ? f.versions : []) {
+      if (!v) continue;
+      const vs = typeof v.sha256 === 'string' ? v.sha256.toLowerCase() : '';
+      if (!vs) continue;
+      if (index.hashes.has(vs)) return 'qr-manifest-version';
+      const vid = contentId.of({ portalId: portal.id, sha256: vs, size: v.size });
+      if (vid && index.ids.has(vid)) return 'qr-manifest-version';
+    }
     return null;
   }
 

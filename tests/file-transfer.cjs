@@ -148,10 +148,22 @@ let step = 'старт';
     step = 'ръчно изтриване на доказателство';
     const del = await call(`/admin/api/portals/${A.id}/files/${proof.id}`, 'DELETE');
     assert.equal(del.status, 409, 'файл в манифест не се трие и с бутона „Изтрий“');
-    assert.match(String(del.value.error), /qr-manifest/, 'причината е същата като при задържането');
+    assert.match(String(del.value.error), /qr-manifest/, 'причината е същата като при задръжането');
     assert.ok((await filesOf(A.id)).some((f) => f.id === proof.id), 'записът остава в регистъра');
 
-    console.log('file-transfer OK: копие с нов content_id · преместване с освобождаване на източника · откази 400/404/409 (заключен · версии · доказателство) · доказателство не се трие и ръчно');
+    // ── 8. Публикувай → качи нова версия → изтрий: публикуваното остава доказателство ──
+    step = 'публикувана версия, после нова';
+    const newVersion = await call(`/admin/api/portals/${A.id}/files/${proof.id}/versions`, 'POST', Buffer.from('ново съдържание след публикуването'), { 'X-Version-Note': 'v2', 'Content-Type': 'application/octet-stream' });
+    assert.equal(newVersion.status, 201, 'новата версия е приета: ' + JSON.stringify(newVersion.value));
+    const afterVersion = (await filesOf(A.id)).find((f) => f.id === proof.id);
+    assert.equal(afterVersion.version, 2, 'файлът вече е версия 2');
+    assert.notEqual(afterVersion.sha256, proof.sha256, 'текущото съдържание е различно от публикуваното');
+    const delVersioned = await call(`/admin/api/portals/${A.id}/files/${proof.id}`, 'DELETE');
+    assert.equal(delVersioned.status, 409, 'публикуваната версия пази файла дори след нова версия');
+    assert.match(String(delVersioned.value.error), /qr-manifest-version/, 'причината сочи историята на файла');
+    assert.ok((await filesOf(A.id)).some((f) => f.id === proof.id), 'файлът остава');
+
+    console.log('file-transfer OK: копие с нов content_id · преместване с освобождаване на източника · откази 400/404/409 (заключен · версии · доказателство) · доказателство не се трие и ръчно, и след нова версия');
   } finally {
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });

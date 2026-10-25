@@ -102,6 +102,18 @@ function qrWithManifest(portalId, fileList) {
     const pv7 = await r7.preview([{ id: PORTAL, files: [file('x')] }]);
     assert.equal(pv7.protectedCount, 0);
 
+    // ── 8. Историята на файла: публикуваната версия е заменена с нова ─────────
+    // Сценарият, който преди беше дупка: публикувай → качи нова версия → изтрий.
+    // Текущият `sha256` вече не съвпада с манифеста, но публикуваните байтове живеят в
+    // `versions` — значи файлът продължава да е доказателство.
+    const republished = file('republished', { sha256: 'e'.repeat(64), size: 21, version: 2 });
+    republished.versions = [{ version: 1, sha256: 'f'.repeat(64), size: 20, uploadedAt: OLD }];
+    const publishedV1 = contentId.of({ portalId: PORTAL, sha256: 'f'.repeat(64), size: 20 });
+    const r8 = retention.create({ filesRoot, auditPath, getSettings: () => ({ retention: { enabled: true, fileDays: 30, auditDays: null, fileAction: 'delete' } }), getQrRegistry: () => qrWithManifest(PORTAL, [{ path: 'republished.txt', content_id: publishedV1, sha256: 'f'.repeat(64), size_bytes: 20 }]) });
+    const pv8 = await r8.preview([{ id: PORTAL, files: [republished] }]);
+    assert.equal(pv8.files.length, 0, 'файл с публикувана версия не е кандидат за триене');
+    assert.equal(pv8.protectedFiles[0].reason, 'qr-manifest-version', 'причината сочи историята, не текущото съдържание');
+
     console.log('retention-evidence OK: ' + retention.CODE);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

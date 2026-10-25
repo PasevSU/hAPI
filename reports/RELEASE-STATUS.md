@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **264/264** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 439 файла · 75026 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 435 файла · 74662 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 439 файла · 75062 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 435 файла · 74698 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -62,6 +62,18 @@
   манифестът твърди, че е публикувано. Скриването остава възможно: `accessMode: 'DISABLED'`
   крие файла, без да губи байтовете. Тест: `tests/file-transfer.cjs` (ръчно изтриване на
   архивиран файл → 409 с причина).
+
+- **Публикуваната версия пази файла, а `content_id` следва байтовете и след нова версия.**
+  Две дупки, намерени, докато се затваряше горното:
+  1. `POST …/versions` и `POST …/versions/{n}/restore` сменяха `sha256` и размера, но **не и
+     `contentId`** — значи различно съдържание продължаваше да носи идентичността на
+     предишното, точно обратното на `IMMUTABLE_CONTENT_ID`. Сега идентичността се преизчислява
+     заедно с байтовете.
+  2. Защитата познаваше само ТЕКУЩОТО съдържание. „Публикувай → качи нова версия → изтрий“
+     триеше публикуваното, защото то вече живееше само в `versions`. Сега `protectionOf`
+     проверява и историята и връща причина **`qr-manifest-version`**, когато публикувана
+     версия е в манифест. Тестове: `tests/retention-evidence.cjs` (случай 8),
+     `tests/file-transfer.cjs` (жив сървър: версия 2 след архива → 409).
 
 Нов инструмент преди публикуване: `node scripts/artifact-smoke.cjs` разопакова
 `dist/hapi_enterprise-<версия>.tar.gz` и пуска сървъра **оттам**, после проверява, че новите
