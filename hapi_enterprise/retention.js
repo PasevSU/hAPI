@@ -54,9 +54,8 @@ function create({ filesRoot, auditPath, getSettings, getQrRegistry }) {
     return null;
   }
 
-  async function preview(portals) {
+  async function preview(portals, index = evidenceIndex()) {
     const c = cfg(); const fileCut = c.fileDays ? Date.now() - c.fileDays * MS : null, auditCut = c.auditDays ? Date.now() - c.auditDays * MS : null;
-    const index = evidenceIndex();
     const files = [], protectedFiles = [];
     if (fileCut) {
       for (const p of portals) for (const f of p.files) {
@@ -71,21 +70,30 @@ function create({ filesRoot, auditPath, getSettings, getQrRegistry }) {
     return { enabled: c.enabled, fileDays: c.fileDays, auditDays: c.auditDays, fileAction: c.fileAction, files, protectedFiles, protectedCount: protectedFiles.length, auditLinesExpired, code: CODE };
   }
   async function apply(portals) {
-    const c = cfg(); const prev = await preview(portals); if (!c.enabled) return { ...prev, applied: false, note: 'retention disabled' };
+    // Индексът се строи ВЕДНЪЖ и се подава и на `preview`, и на цикъла: той е от регистъра на
+    // QR, който не се променя по време на прилагането (махаме само записи от `p.files`).
+    // Преди това се строеше вътре в цикъла по файлове — O(файлове × ревизии).
+    const index = evidenceIndex();
+    const c = cfg(); const prev = await preview(portals, index); if (!c.enabled) return { ...prev, applied: false, note: 'retention disabled' };
     let deleted = 0, disabled = 0;
+    // `refused` = триения, които политиката е блокирала. В режим `disable` няма отказ: файлът
+    // се изключва, байтовете остават и манифестът продължава да сочи към тях. Затова броячът
+    // започва от нула и се вдига само когато `delete` е истински отказан.
+    let refused = c.fileAction === 'delete' ? prev.protectedCount : 0;
     // Изключването е разрешено и за доказателства (байтовете остават), затова при `disable`
     // списъкът включва и защитените. При `delete` — не.
     const targets = c.fileAction === 'delete' ? prev.files : [...prev.files, ...prev.protectedFiles];
     for (const it of targets) {
       const p = portals.find(x => x.id === it.portalId); if (!p) continue; const f = p.files.find(x => x.id === it.fileId); if (!f) continue;
-      // Защитата се пре-проверява тук: списъкът от preview може да е остарял, а триенето е
-      // необратимо. По-евтино е да откажем, отколкото да обясняваме липсващ файл.
-      if (c.fileAction === 'delete' && protectionOf(p, f, evidenceIndex())) { continue }
+      // Защитата се пре-проверява тук със същия индекс: списъкът от preview може да е
+      // остарял, а триенето е необратимо. По-евтино е да откажем, отколкото да обясняваме
+      // липсващ файл.
+      if (c.fileAction === 'delete' && protectionOf(p, f, index)) { refused++; continue }
       if (c.fileAction === 'delete') { await fsp.rm(path.join(filesRoot, it.portalId, it.fileId), { force: true }); p.files = p.files.filter(x => x.id !== it.fileId); deleted++ }
       else { f.accessMode = 'DISABLED'; f.expired = true; disabled++ }
     }
     let auditLinesPruned = 0; if (c.auditDays) { const cut = Date.now() - c.auditDays * MS; const lines = await auditLines(); const keep = lines.filter(l => { try { return Date.parse(JSON.parse(l).at) >= cut } catch { return false } }); auditLinesPruned = lines.length - keep.length; if (auditLinesPruned > 0) await fsp.writeFile(auditPath, keep.join('\n') + (keep.length ? '\n' : ''), { mode: 0o600 }) }
-    return { ...prev, applied: true, deleted, disabled, auditLinesPruned, refused: prev.protectedCount };
+    return { ...prev, applied: true, deleted, disabled, auditLinesPruned, refused };
   }
   return { preview, apply, evidenceIndex, CODE };
 }
