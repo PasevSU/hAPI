@@ -97,12 +97,12 @@ function build({ manifest, pdf, stamps = null, cms = null, draft = false, create
     // проверката си към момента на пакетиране: по-късна подмяна на реда се вижда по `sha256`.
     audit: chain && Array.isArray(chain.lines)
       ? {
-          lines: chain.lines.length,
-          sha256: sha256(Buffer.from(chain.lines.join('\n') + (chain.lines.length ? '\n' : ''), 'utf8')),
-          count: Number(chain.count) || 0,
-          lastHash: chain.lastHash || '',
-          valid: chain.valid === true,
-        }
+        lines: chain.lines.length,
+        sha256: sha256(Buffer.from(chain.lines.join('\n') + (chain.lines.length ? '\n' : ''), 'utf8')),
+        count: Number(chain.count) || 0,
+        lastHash: chain.lastHash || '',
+        valid: chain.valid === true,
+      }
       : null,
   };
 

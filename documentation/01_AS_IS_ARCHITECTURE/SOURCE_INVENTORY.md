@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **99** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **27** инструмента · **265** теста.
+Общо: **100** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **27** инструмента · **266** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (99)
+### Backend модули (`hapi_enterprise/*.js`) (100)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -71,6 +71,7 @@
 | `hapi_enterprise/portal/portal-i18n.js` | Речник на ПУБЛИЧНАТА страница на портала (BG / EN / DE). |
 | `hapi_enterprise/portal/portal.js` | Публична страница на портала — това, което се отваря при сканиране на QR кода. |
 | `hapi_enterprise/preview.js` | Document preview & thumbnails (Phase 4.3). Dependency-free: renders text, |
+| `hapi_enterprise/problem.js` | ГРЕШКАТА КАТО ДОКУМЕНТ (RFC 9457, „problem details“). |
 | `hapi_enterprise/process-guards.js` | Последен предпазител на процеса. |
 | `hapi_enterprise/public-gateway.js` | Public API Gateway (PG-0) — втори, независим канал за достъп. |
 | `hapi_enterprise/public-package.js` | Еднократни токени за пакет, поискан от ПУБЛИЧНАТА страница. |

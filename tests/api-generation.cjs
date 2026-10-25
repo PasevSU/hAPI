@@ -85,7 +85,7 @@ const spec = require('../hapi_enterprise/api-spec.js');
           ready = true;
           break;
         }
-      } catch {}
+      } catch { }
       await new Promise((r) => setTimeout(r, 70));
     }
     assert(ready);

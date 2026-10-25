@@ -480,7 +480,7 @@ function applyBackupSchedule() {
   }
 }
 const json = (res, status, obj, headers = {}) => { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers }); res.end(JSON.stringify(obj)) };
-const fail = (res, status, message) => json(res, status, { error: message });
+const fail = (res, status, message) => json(res, status, require('./problem').body(status, message));
 // Bounded authentication failures.
 //
 // КЛЮЧЪТ Е САМОЛИЧНОСТТА, НЕ IP-ТО (BUG-05). Зад Home Assistant Ingress всички

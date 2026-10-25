@@ -69,9 +69,14 @@ const CASES = [
     assert(ready, 'сървърът не стартира');
 
     const failures = [];
+    // Формата на грешката е договор: освен старото `error` тя носи и полетата по RFC 9457
+    // (`type`, `title`, `status`, `detail`). Проверява се НА ВСЕКИ 4xx — иначе „добавихме
+    // problem details“ би останало вярно само за маршрутите, които някой е погледнал.
+    const contract = [];
     for (const [method, route, body] of CASES) {
       let status = 0;
       let text = '';
+      let parsed = null;
       try {
         const res = await fetch(base + route, {
           method,
@@ -80,19 +85,32 @@ const CASES = [
           signal: AbortSignal.timeout(6000),
         });
         status = res.status;
-        text = (await res.text()).slice(0, 120).replace(/\s+/g, ' ');
+        const raw = await res.text();
+        text = raw.slice(0, 120).replace(/\s+/g, ' ');
+        try { parsed = JSON.parse(raw) } catch { parsed = null }
       } catch (e) {
         failures.push(`${method} ${route} → изключение: ${e.message}`);
         continue;
       }
       if (status >= 500 && status !== 503) failures.push(`${status} ${method} ${route} ${JSON.stringify(body).slice(0, 50)} → ${text}`);
+      if (status >= 400 && status < 500) {
+        if (!parsed) contract.push(`${status} ${method} ${route} → тялото не е JSON`);
+        else {
+          if (parsed.status !== status) contract.push(`${status} ${method} ${route} → status в тялото е ${JSON.stringify(parsed.status)}`);
+          if (typeof parsed.title !== 'string' || !parsed.title) contract.push(`${status} ${method} ${route} → липсва title`);
+          if (typeof parsed.detail !== 'string' || !parsed.detail) contract.push(`${status} ${method} ${route} → липсва detail`);
+          if (typeof parsed.type !== 'string') contract.push(`${status} ${method} ${route} → липсва type`);
+          if (typeof parsed.error !== 'string' || !parsed.error) contract.push(`${status} ${method} ${route} → липсва старото error (обратна съвместимост)`);
+        }
+      }
     }
     assert.deepEqual(failures, [], 'невалиден вход върна 5xx (трябва да е 4xx с причина):\n  ' + failures.join('\n  '));
+    assert.deepEqual(contract, [], 'грешката не носи полетата по RFC 9457:\n  ' + contract.join('\n  '));
 
     const log = out.join('');
     assert.equal((log.match(/unhandled/g) || []).length, 0, 'нито един невалиден вход не се записва като „unhandled“');
 
-    console.log('PASS api-input-errors: ' + CASES.length + ' невалидни входа → нито един 5xx, нито един „unhandled“');
+    console.log('PASS api-input-errors: ' + CASES.length + ' невалидни входа → нито един 5xx, нито един „unhandled“, всеки 4xx носи problem details');
   } finally {
     await stopChild(child).catch(() => { });
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* Windows може да държи файла */ }

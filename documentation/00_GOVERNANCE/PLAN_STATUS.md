@@ -66,7 +66,7 @@ veraPDF, `legal hold` към Object Lock, Compose режим
 
 | Липсва | Къде е записано | Какво точно липсва |
 | ------ | --------------- | ------------------ |
-| `problem+json` и `Idempotency-Key` | `docs/plan/17…` `F4-5` | договорни заглавки за грешки и повторяеми заявки; `Range`/`ETag` и `429` по самоличност вече ги има |
+| `Idempotency-Key` | `docs/plan/17…` `F4-5` | повторяеми заявки (ключ + кеш на отговора); `problem+json` полетата и `Range`/`ETag` вече ги има |
 | Webhooks с HMAC | `docs/plan/17…` `F4-7` | `notify.js` вика HA `notify.*`, което не е webhook с подпис и retry |
 | WORM за ОСНОВНОТО хранилище | `docs/plan/17…` `F7-3` | огледалото има `Object Lock` в `COMPLIANCE` режим; основното хранилище — не |
 | OTS / Blockchain, Forensic панел, EXIF | `docs/plan/18…` панели 05/07/08 | няма съответните модули |

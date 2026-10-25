@@ -86,7 +86,36 @@ assert.equal(sig6.keyId, v6.keyId);
 const sig6Body = pgp.readPackets(pgp.dearmor(sig6.armored).data).find((p) => p.tag === 2).body;
 assert.equal(sig6Body[0], 6, 'версия 6 на подписа');
 assert.ok(sig6Body.readUInt32BE(4) > 0, '4-октетна дължина на хешираните subpacket-и');
-assert.equal(sig6Body.includes(Buffer.from([0x10, 0x09])), false, 'v6 подписът не носи Issuer Key ID');
+// Subpacket-ите се РАЗБИРАТ, а не се търсят като байтове. Предишната проверка търсеше
+// последователността `[0x10,0x09]` из целия подпис — това е (а) грешен шаблон за Issuer Key ID
+// (той е `[дължина, 0x10]`), и (б) произволно съвпадение в salt-а/подписа, което правеше теста
+// нестабилен (падна веднъж на 36 пуска). Сега типовете се четат от структурата.
+function subpacketTypes(buf, start, length) {
+  const types = [];
+  const end = Math.min(buf.length, start + length);
+  let i = start;
+  while (i < end) {
+    let len = buf[i++];
+    if (len >= 192 && len < 255) {
+      len = ((len - 192) << 8) + buf[i++] + 192;
+    } else if (len === 255) {
+      len = buf.readUInt32BE(i);
+      i += 4;
+    }
+    if (!len) break;
+    types.push(buf[i] & 0x7f);
+    // `i` сочи към байта на ТИПА, който е част от дължината: следващият subpacket е на i + len.
+    i += len;
+  }
+  return types;
+}
+const hashedLen6 = sig6Body.readUInt32BE(4);
+const hashed6 = subpacketTypes(sig6Body, 8, hashedLen6);
+assert.equal(hashed6.includes(16), false, 'v6 подписът не носи Issuer Key ID (тип 16) в хешираните subpacket-и');
+assert.equal(hashed6.includes(33), true, 'v6 подписът носи Issuer Fingerprint (тип 33)');
+const unhashedStart6 = 8 + hashedLen6;
+const unhashed6 = unhashedStart6 + 4 <= sig6Body.length ? subpacketTypes(sig6Body, unhashedStart6 + 4, sig6Body.readUInt32BE(unhashedStart6)) : [];
+assert.equal(unhashed6.includes(16), false, 'v6 подписът не носи Issuer Key ID и в нехешираните subpacket-и');
 const ok6 = pgp.verifyDetached(data, sig6.armored, v6.publicArmored);
 assert.equal(ok6.valid, true, JSON.stringify(ok6));
 assert.equal(ok6.version, 6);

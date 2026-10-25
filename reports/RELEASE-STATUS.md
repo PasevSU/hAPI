@@ -14,24 +14,41 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **265/265** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **266/266** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 441 файла · 75460 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 437 файла · 75096 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 443 файла · 75598 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 439 файла · 75234 реда · critical: 0 · high: 0 · medium: 3 · low: 182 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 265 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 266 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (174 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (175 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.87.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Нестабилен тест в издателската верига е поправен.** `tests/pgp.cjs` проверяваше, че v6
+  подписът не носи `Issuer Key ID`, като ТЪРСЕШЕ байтовата последователност `[0x10,0x09]` из
+  целия подпис. Две грешки в едно: шаблонът не е този на `Issuer Key ID` (той е
+  `[дължина, 0x10]`), а самият байт-търсач може да съвпадне случайно в salt-а или подписа —
+  точно това се случи на един от 36 пуска (матрицата го отбеляза като „нестабилен“, 265/265
+  след рестарт). Сега subpacket-ите се РАЗБИРАТ: проверява се, че в хешираната зона има
+  `Issuer Fingerprint` (тип 33), а `Issuer Key ID` (тип 16) няма никъде. 30 последователни
+  пуска без нито един провал.
+
+- **Грешката е структура, не низ (RFC 9457).** Тялото на всяка 4xx/5xx грешка носи
+  `type`, `title`, `status`, `detail` **заедно** със старото `error`, а типът остава
+  `application/json`. Смяната на `application/problem+json` би счупила всеки клиент, който
+  проверява за `application/json` — затова двете форми вървят заедно. `type` е `about:blank`
+  (видовете не се делят), `title` е стандартният текст за кода, `detail` е съобщението.
+  Код: `problem.js`; тестове: `problem` (чистата функция) и `api-input-errors` (всеки 4xx от
+  23 невалидни входа).
 
 - **Доказателственият пакет носи и отрязък от одитната верига.** `report-package.js` събираше
   PDF, манифест, `evidence.json`, TSA токени и CMS подпис — но не и „кой какво е правил“.
