@@ -201,7 +201,7 @@ const cleaned = [];
     assert.equal(after.active, null, 'няма активен QR след прекратяване');
     assert.equal(after.revisions.length, 3, 'историята остава');
     const last = after.revisions[after.revisions.length - 1];
-    assert.equal(last.blockedAt ? true : false, true, 'прекратяването е записано');
+    assert.equal(Boolean(last.blockedAt), true, 'прекратяването е записано');
     assert.equal(last.blockReason, 'подадена е нова редакция на делото', 'основанието е записано');
     assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/qr/archive`, 'POST', {})).status, 409, 'след прекратяване не се архивира');
     // `blok`: прекратеният QR не отдава съдържание, но казва защо — с 410.

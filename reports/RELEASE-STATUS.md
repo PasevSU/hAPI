@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **288/288** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 482 файла · 82177 реда · **1** отворени · 7 с обосновка |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 482 файла · 82177 реда · **0** отворени · 1 с обосновка |
 | Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 478 файла · 81803 реда · critical: 0 · high: 0 · medium: 3 · low: 186 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
@@ -32,6 +32,19 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Логическият одит вече няма нито една приета находка, освен тестваната.** Гейтът
+  `scripts/logic-audit.cjs --gate` отчиташе 7 „приети с обосновка“ находки — а гейт, който
+  постоянно приема седем изключения, привиква хората да не го четат. Шест от тях бяха
+  `ternary-bool` (`cond ? false : true` — отрицание, изписано като тернарник) в
+  `download-access.js` (3) и `public-gateway.js` (3): изписани са директно като `src.x !== false`.
+  Поведението е **същото до бит** (`undefined`/`null`/липсващо поле дава `true`, изрично
+  `false` дава `false`), но инверсията вече се вижда, вместо да се декодира. Седмата беше в
+  тест (`tests/portal-qr-archive.cjs`: `last.blockedAt ? true : false` → `Boolean(last.blockedAt)`).
+  Остава **само** `off-by-one-loop` в `server.js` (`lockedAncestor`), който е нарочен — цикълът
+  трябва да включи и самата папка — и вече има тест: `tests/portal-folder-lock.cjs` доказва, че
+  наследеното заключване спира създаването в подпапка. Отчетът е презаписан
+  (`reports/logic-audit.json`: `findings: 0`, `accepted: 1`).
 
 - **Достъп по ДЕЛО за съдебните роли (F7-1, DoD „достъп по дело“).** Ролите `judge`,
   `prosecutor`, `clerk` и `expert` съществуваха от предишното издание, но виждаха **всички**

@@ -1,9 +1,9 @@
 # Логически одит — отчет
 
-Генериран: 2026-10-22T13:53:46.600Z
+Генериран: 2026-10-25T20:54:19.424Z
 
-- сканирани: **315 файла · 55593 реда**
-- находки: **7** (отворени 0, приети с обосновка 7)
+- сканирани: **482 файла · 82177 реда**
+- находки: **1** (отворени 0, приети с обосновка 1)
 - по тежест: critical 0 · high 0 · medium 0
 
 ## Отворени находки
@@ -14,13 +14,7 @@ _Няма отворени находки._
 
 | файл:ред | правило | код | обосновка |
 |---|---|---|---|
-| `hapi_enterprise/download-access.js:71` | ternary-bool | `verify_on_serve: src.verify_on_serve === false ? false : true,` | Нормализация на политика: по подразбиране true, освен при изрично false. `src.x === false ? false : true` е точно това правило (undefined -> true), затова не се заменя с !src.x. |
-| `hapi_enterprise/download-access.js:72` | ternary-bool | `audit: src.audit === false ? false : true,` | Нормализация на политика: по подразбиране true, освен при изрично false. `src.x === false ? false : true` е точно това правило (undefined -> true), затова не се заменя с !src.x. |
-| `hapi_enterprise/download-access.js:81` | ternary-bool | `inherits: src.inherits === false ? false : true,` | Нормализация на политика: по подразбиране true, освен при изрично false. `src.x === false ? false : true` е точно това правило (undefined -> true), затова не се заменя с !src.x. |
-| `hapi_enterprise/public-gateway.js:118` | ternary-bool | `api: src.api === false ? false : true,` | Същата нормализация на публичен портал: липсващо поле значи включено, изрично false значи изключено. Инверсията е умишлена. |
-| `hapi_enterprise/public-gateway.js:119` | ternary-bool | `qr: src.qr === false ? false : true,` | Същата нормализация на публичен портал: липсващо поле значи включено, изрично false значи изключено. Инверсията е умишлена. |
-| `hapi_enterprise/public-gateway.js:121` | ternary-bool | `inherit: src.inherit === false ? false : true,` | Същата нормализация на публичен портал: липсващо поле значи включено, изрично false значи изключено. Инверсията е умишлена. |
-| `hapi_enterprise/server.js:1549` | off-by-one-loop | `for (let i = 0; i <= parts.length; i++) {` | lockedAncestor проверява ВСИЧКИ родителски префикси, включително пълния път; i === parts.length дава parts.slice(0, n) — точно последният родител, който трябва да се провери. Това е нарочна инклузивна итерация, не off-by-one. |
+| `hapi_enterprise/server.js:635` | off-by-one-loop | `for (let i = 0; i <= parts.length; i++) { // `<=` е нарочно: i === parts.length включва и самата папка, не само предшествениците (тест: portal-folder-lock)` | lockedAncestor проверява ВСИЧКИ родителски префикси, включително пълния път; i === parts.length дава parts.slice(0, n) — точно последният родител, който трябва да се провери. Това е нарочна инклузивна итерация, не off-by-one. |
 
 ## Правила
 

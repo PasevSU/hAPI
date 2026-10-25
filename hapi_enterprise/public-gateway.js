@@ -115,10 +115,10 @@
       flag: PORTAL_FLAGS.includes(src.flag) ? src.flag : 'none',
       visibility: src.visibility === 'hidden' ? 'hidden' : 'public',
       html: HTML_MODES.includes(src.html) ? src.html : PORTAL_DEFAULTS.html,
-      api: src.api === false ? false : true,
-      qr: src.qr === false ? false : true,
+      api: src.api !== false,
+      qr: src.qr !== false,
       storage_root: String(src.storage_root || PORTAL_DEFAULTS.storage_root),
-      inherit: src.inherit === false ? false : true,
+      inherit: src.inherit !== false,
       token_policy: {
         ttl_hours: Number(tokenPolicy.ttl_hours) > 0 ? Number(tokenPolicy.ttl_hours) : 168,
         max_uses: Number(tokenPolicy.max_uses) > 0 ? Number(tokenPolicy.max_uses) : 10,

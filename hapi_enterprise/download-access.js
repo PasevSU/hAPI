@@ -68,8 +68,8 @@
       expires_at: src.expires_at ? String(src.expires_at) : null,
       max_downloads: src.max_downloads == null ? null : toInt(src.max_downloads, null),
       password: Boolean(src.password),
-      verify_on_serve: src.verify_on_serve === false ? false : true,
-      audit: src.audit === false ? false : true,
+      verify_on_serve: src.verify_on_serve !== false,
+      audit: src.audit !== false,
       window: normalizeWindow(src.window),
       ip: {
         allow: Array.isArray(ip.allow) ? ip.allow.map(String) : [],
@@ -78,7 +78,7 @@
       concurrency: src.concurrency == null ? null : toInt(src.concurrency, null),
       rate_per_hour: src.rate_per_hour == null ? null : toInt(src.rate_per_hour, null),
       one_time: Boolean(src.one_time),
-      inherits: src.inherits === false ? false : true,
+      inherits: src.inherits !== false,
     };
   }
 
