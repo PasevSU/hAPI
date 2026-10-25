@@ -22,10 +22,19 @@ assert.equal(/\b1 284\b|\b18,4 GB\b|\b412 GB\b/.test(app + dashboard), false, '�
 
 // 2. Скриптът е зареден и панелът се монтира за табло и „Относно“.
 assert.ok(index.includes('dashboard-panel.js'), 'index.html зарежда dashboard-panel.js');
-assert.match(app, /current === 'dashboard' && window\.HapiDashboardPanel/);
-assert.match(app, /HapiDashboardPanel\.mount\(view\)/);
-assert.match(app, /current === 'about' && window\.HapiDashboardPanel/);
-assert.match(app, /HapiDashboardPanel\.mountAbout\(view\)/);
+// От 0.69.87 монтирането минава през регистъра на панелите (план 18 §7): `app.js` не вика
+// панела директно, а го сочи по ИМЕ на глобален обект, защото се зарежда преди него.
+assert.ok(index.includes('panel-registry.js'), 'index.html зарежда регистъра на панелите');
+// Сравняват се САМИТЕ тагове, не поднизове: коментарът над тях споменава `app.js` и
+// проверка по подниз минаваше погрешно (или падаше) заради текста, не заради подредбата.
+assert.ok(
+  index.indexOf('<script src="panel-registry.js"></script>') < index.indexOf('<script src="app.js"></script>'),
+  'регистърът се зарежда ПРЕДИ app.js — иначе app.js не го намира',
+);
+assert.match(app, /id: 'dashboard',[^}]*global: 'HapiDashboardPanel'/, 'таблото е регистрирано по име на глобален обект');
+assert.match(app, /id: 'about',[^}]*global: 'HapiDashboardPanel',[^}]*method: 'mountAbout'/, '„Относно“ ползва mountAbout през регистъра');
+assert.match(app, /panels\.mount\(current, view\)/, 'монтирането минава през регистъра');
+assert.match(dashboard, /mountAbout/, 'панелът предоставя mountAbout');
 
 // 3. Данните идват от реалните административни маршрути.
 for (const endpoint of ['/admin/api/portals', '/admin/api/sensors', '/admin/api/jobs', '/admin/api/audit/verify']) {

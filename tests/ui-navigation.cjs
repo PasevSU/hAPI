@@ -39,13 +39,18 @@ for (const lang of app.match(/bg: \{[\s\S]*?\n    \},/g)) {
 }
 
 // 2. Панелите са заредени и монтирани.
+// От 0.69.87 `app.js` не вика панелите директно: монтирането минава през регистъра
+// (`ui/panel-registry.js`), който ги сочи по ИМЕ на глобален обект. Затова се проверява
+// регистрацията — тя е договорът „този навигационен вход води до този панел“.
 assert.match(index, /<script src="directory-panel\.js"><\/script>/);
 assert.match(index, /<script src="visitors-panel\.js"><\/script>/);
 assert.match(index, /<script src="settings-panel\.js"><\/script>/);
-assert.match(app, /window\.ContactsPanel\.mount\(view\)/);
-assert.match(app, /window\.CasesPanel\.mount\(view\)/);
-assert.match(app, /window\.HapiVisitorsPanel\.mount\(view\)/);
-assert.match(app, /window\.SettingsPanel\.mount\(view\)/);
+assert.match(index, /<script src="panel-registry\.js"><\/script>/);
+assert.match(app, /id: 'contacts',[^}]*global: 'ContactsPanel'/);
+assert.match(app, /id: 'cases',[^}]*global: 'CasesPanel'/);
+assert.match(app, /id: 'visitors',[^}]*global: 'HapiVisitorsPanel'/);
+assert.match(app, /panels\.mount\(current, view\)/, 'монтирането минава през регистъра');
+assert.match(app, /window\.SettingsPanel\.mount\(view\)/, '„Настройки“ остава извън регистъра (секции, не панел)');
 
 // 3. Настройки: поле за токен + публичен адрес (сървърна настройка).
 assert.match(settings, /id="set-token"/);

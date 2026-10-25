@@ -124,6 +124,27 @@
   // Измислените „демо“ числа бяха премахнати: таблото и „Относно“ се рисуват от
   // dashboard-panel.js с реални данни от административния API.
 
+  // Регистърът на панелите (план 18 §7). Едно място за „кой панел как се отваря и как се
+  // освобождава“ вместо верига от `if`-ове. Панелите се сочат по ИМЕ на глобален обект, защото
+  // този файл се зарежда ПРЕДИ тях в `index.html` — регистърът ги търси в момента на
+  // монтиране, а не при регистрация (иначе редът на `<script>`-овете решава кой работи).
+  const panels = window.HapiPanelRegistry ? window.HapiPanelRegistry.create(window) : null;
+  if (panels) {
+    panels.registerAll([
+      { id: 'dashboard', title: 'Табло', global: 'HapiDashboardPanel' },
+      { id: 'about', title: 'Относно', global: 'HapiDashboardPanel', method: 'mountAbout' },
+      { id: 'report', title: 'Report Studio', global: 'ReportStudio' },
+      { id: 'visitors', title: 'Посетители', global: 'HapiVisitorsPanel' },
+      // Порталът има две поколения панел; първият наличен печели.
+      { id: 'portals', title: 'Портали', global: ['FilesManagerPanel', 'PortalsPanel'] },
+      { id: 'files', title: 'Файлове', global: 'FilesManagerPanel' },
+      { id: 'export', title: 'Експорт', global: 'ExportCenterPanel' },
+      { id: 'gateway', title: 'Публичен достъп', global: 'PublicGatewayPanel' },
+      { id: 'contacts', title: 'Контакти', global: 'ContactsPanel' },
+      { id: 'cases', title: 'Дела', global: 'CasesPanel' },
+    ]);
+  }
+
   let lang = 'bg';
   let current = 'dashboard';
 
@@ -171,70 +192,26 @@
 
   function renderView() {
     const view = $('#view');
-    // Панелът, който напускаме, получава шанс да освободи ресурси (напр. отворен SSE поток).
-    // Без това таблото оставяше връзка към сървъра след всяко преминаване — видимо като
-    // растящ брой клиенти в `/admin/api/events`. Проверката е през локална променлива, за да
-    // не изглежда като обявяване на панелен модул (виж `tests/gui-coverage.cjs`).
-    const dashboard = window.HapiDashboardPanel;
-    if (dashboard && typeof dashboard.unmount === 'function') {
-      try { dashboard.unmount() } catch { /* освобождаването не бива да чупи навигацията */ }
+    // Всеки панел, който има `unmount`, получава шанс да освободи ресурси (напр. отворен SSE
+    // поток). Досега това ставаше САМО за таблото, тоест панел със слушател оставаше монтиран
+    // след напускане — видимо като растящ брой клиенти в `/admin/api/events`. Проверката е през
+    // локална променлива, за да не изглежда като обявяване на панелен модул (виж
+    // `tests/gui-coverage.cjs`).
+    if (panels) panels.unmountAll();
+    else {
+      const dashboard = window.HapiDashboardPanel;
+      if (dashboard && typeof dashboard.unmount === 'function') {
+        try { dashboard.unmount() } catch { /* освобождаването не бива да чупи навигацията */ }
+      }
     }
-    // Табло и „Относно“: РЕАЛНИ данни от add-on-а (dashboard-panel.js). Тук няма демо числа.
-    if (current === 'dashboard' && window.HapiDashboardPanel) {
+    // Панелите от регистъра се монтират през него — едно място за „кой панел как се отваря“.
+    // `available` се пита ПРЕДИ да се изчисти изгледът: иначе липсващ панел би оставил празен
+    // екран без обяснение.
+    if (panels && panels.available(current)) {
       view.innerHTML = '';
-      window.HapiDashboardPanel.mount(view);
-      return;
+      if (panels.mount(current, view)) return;
     }
-    if (current === 'about' && window.HapiDashboardPanel) {
-      view.innerHTML = '';
-      window.HapiDashboardPanel.mountAbout(view);
-      return;
-    }
-    if (current === 'report') {
-      view.innerHTML = '';
-      window.ReportStudio.mount(view);
-      return;
-    }
-    if (current === 'visitors' && window.HapiVisitorsPanel) {
-      view.innerHTML = '';
-      window.HapiVisitorsPanel.mount(view);
-      return;
-    }
-    if (current === 'portals' && window.FilesManagerPanel) {
-      view.innerHTML = '';
-      window.FilesManagerPanel.mount(view);
-      return;
-    }
-    if (current === 'portals' && window.PortalsPanel) {
-      view.innerHTML = '';
-      window.PortalsPanel.mount(view);
-      return;
-    }
-    if (current === 'files' && window.FilesManagerPanel) {
-      view.innerHTML = '';
-      window.FilesManagerPanel.mount(view);
-      return;
-    }
-    if (current === 'export' && window.ExportCenterPanel) {
-      view.innerHTML = '';
-      window.ExportCenterPanel.mount(view);
-      return;
-    }
-    if (current === 'gateway' && window.PublicGatewayPanel) {
-      view.innerHTML = '';
-      window.PublicGatewayPanel.mount(view);
-      return;
-    }
-    if (current === 'contacts' && window.ContactsPanel) {
-      view.innerHTML = '';
-      window.ContactsPanel.mount(view);
-      return;
-    }
-    if (current === 'cases' && window.CasesPanel) {
-      view.innerHTML = '';
-      window.CasesPanel.mount(view);
-      return;
-    }
+
     if (current === 'settings' && window.SettingsPanel) {
       view.innerHTML = '';
       window.SettingsPanel.state.section = 'general';

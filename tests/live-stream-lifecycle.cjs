@@ -25,14 +25,18 @@ const readUi = (name) => fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'ui'
 // ── 1. `app.js` вика unmount преди да смени изгледа ─────────────────────────
 {
   const app = readUi('app.js');
-  // Извикването е през локална променлива (`dashboard.unmount()`), за да не изглежда като
-  // обявяване на панелен модул за `gui-coverage` — затова се търси `.unmount(`.
-  assert.match(app, /\.unmount\(\)/, 'app.js вика unmount на панела');
-  const unmountAt = app.indexOf('.unmount()');
-  const clearAt = app.indexOf("view.innerHTML = ''", unmountAt);
-  assert.ok(unmountAt > 0, 'извикването съществува');
-  assert.ok(clearAt > unmountAt, 'unmount идва ПРЕДИ изчистването на изгледа (иначе е късно)');
-  ok('app.js: unmount се вика преди view.innerHTML = \'\'');
+  // От 0.69.87 освобождаването минава през регистъра на панелите: `unmountAll()` вика
+  // `unmount` на ВСЕКИ панел, който го има, а не само на таблото. Затова първо се проверява
+  // регистърът — иначе тестът минава заради стария резервен ред и не вижда, че пътят е друг.
+  assert.match(app, /panels\.unmountAll\(\)/, 'app.js освобождава през регистъра (unmountAll)');
+  const registryAt = app.indexOf('panels.unmountAll()');
+  const registryClearAt = app.indexOf("view.innerHTML = ''", registryAt);
+  assert.ok(registryAt > 0, 'извикването към регистъра съществува');
+  assert.ok(registryClearAt > registryAt, 'unmountAll идва ПРЕДИ изчистването на изгледа');
+  assert.match(app, /HapiPanelRegistry/, 'app.js ползва регистъра на панелите');
+  // Резервният път остава за случай, в който регистърът не се е заредил (стар кеш на HTML-а).
+  assert.match(app, /\.unmount\(\)/, 'резервният път вика unmount на таблото');
+  ok('app.js: unmountAll от регистъра се вика преди view.innerHTML = \'\'');
 }
 
 // ── 2. Панелът наистина го предоставя ──────────────────────────────────────

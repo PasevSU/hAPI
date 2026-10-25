@@ -55,6 +55,9 @@
   <script src="api-base.js"></script>
   <script src="data.js"></script>
   <script src="icons.js"></script>
+  <!-- Регистърът на панелите се зарежда ПРЕДИ app.js: той само се регистрира, а живите
+       панелни обекти търси в момента на монтиране (виж panel-registry.js). -->
+  <script src="panel-registry.js"></script>
   <script src="app.js"></script>
   <script src="i18n.js"></script>
   <script src="report-objects.js"></script>
