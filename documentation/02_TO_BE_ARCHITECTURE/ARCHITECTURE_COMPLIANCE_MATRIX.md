@@ -76,7 +76,6 @@
 | `QR_BADGE_IN_LIST` — баджът „QR vN · N арх.“ идва със списъка, не с втора заявка | `server.js` (`qrSummary` в `adminPortal`), `ui/files-manager.js` (`qrBadge`: активен = ok, прекратен = warn + основание) | `portal-qr-badge` (QR-001 → QR-002 + 1 архив → прекратен с основание · манифест `MF-QR-001`) |
 | `HTML_IN_SANDBOX` — недовереният HTML е в изолиран контекст | `site-csp.js` (`forFile`: `sandbox` без `allow-same-origin`, `connect-src 'none'`), `server.js` (`/site/…` подава политиката) | `portal-html-sandbox` (документ → пясъчник · ресурси → статика · изход от папката → 4xx) |
 | `FILE_CONTRACT_PAGE` — договорът `file` е самостоятелна страница за ЕДИН файл | `routes/portal-storage.js` (`serveFile`), `public-route-allowlist.js` (2 правила: `?file=` и `:папка/път`) | `portal-file-page` (доказателства: SHA-256 · Content ID · QR-001/`MF-QR-001`; другите файлове НЕ се показват; traversal и скрита папка → 404) |
-| `HTML_IN_SANDBOX` — недовереният HTML е в изолиран контекст | `site-csp.js` (`forFile`: `sandbox` без `allow-same-origin`, `connect-src 'none'`), `server.js` (`/site/…` подава политиката) | `portal-html-sandbox` (документ → пясъчник · ресурси → статика · изход от папката → 4xx) |
 
 Външен пакет `hapi-evidence-portal v1.2` е сверен файл по файл — виж `EVIDENCE_PORTAL_V1.2_REVIEW.md`.
 

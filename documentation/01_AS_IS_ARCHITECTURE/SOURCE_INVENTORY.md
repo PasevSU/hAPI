@@ -29,6 +29,8 @@
 | `audit-chain.js`       | Hash-chained audit log                                    |
 | `rbac.js`              | Role-based access control                                 |
 | `retention.js`         | Retention policies                                        |
+| `mirror-target.js`     | Mirror target: folder or S3 with Object Lock              |
+| `site-csp.js`          | CSP for untrusted HTML projects (sandbox)                 |
 | `job-manager.js`       | Job queue (progress, cancel, pause)                       |
 | `load-control.js`      | Adaptive load control                                     |
 | `config-profiles.js`   | Named configuration profiles                              |

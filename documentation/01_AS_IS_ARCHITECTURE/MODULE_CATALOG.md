@@ -30,6 +30,7 @@
 | `audit-chain.js` | Hash-chained append-only audit |
 | `retention.js` | Retention + audit export; **никога не трие публикувано** (`EVIDENCE_NEVER_DELETED`) |
 | `mirror-target.js` | Цел на огледалото: `path` (папка) или `s3` (SigV4 + Object Lock) зад един договор `put/get/remove` | `create`, `parseSpec`, `signV4`, `keyFor` |
+| `site-csp.js` | CSP за недоверените HTML проекти: `sandbox` без `allow-same-origin`, `connect-src 'none'` | `forFile`, `isDocument` |
 
 ## Documents
 
