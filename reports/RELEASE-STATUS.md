@@ -27,7 +27,7 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (182 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.87.tar.gz` | add-on архив (185 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.87.zip` | интеграция за HACS (23 файла) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
