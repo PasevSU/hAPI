@@ -1,8 +1,9 @@
 {
   "schema_version": "1.0",
+  "note": "Ролите тук са от rbac.js и само оттам. Публичният посетител НЕ е роля: той получава files.download от политиката на файла/порталта, не от списък с роли. Право на потребител се дава през user.permissions (download-access.effectivePermissions); този файл казва кои роли какво МОГАТ и се публикува в GET /admin/api/v2/export/rules — не се прилага сам.",
   "permissions": [
-    { "id": "files.read", "label": "Преглед на файл", "roles": ["admin", "operator", "viewer", "judge"] },
-    { "id": "files.download", "label": "Изтегляне", "roles": ["admin", "operator", "viewer", "judge", "portal-guest"] },
+    { "id": "files.read", "label": "Преглед на файл", "roles": ["admin", "operator", "viewer", "judge", "prosecutor", "clerk"] },
+    { "id": "files.download", "label": "Изтегляне", "roles": ["admin", "operator", "viewer", "judge"] },
     { "id": "reports.export", "label": "Експорт на отчет", "roles": ["admin", "operator"] },
     { "id": "evidence.export", "label": "Експорт на доказателства", "roles": ["admin"] },
     { "id": "templates.export", "label": "Експорт на шаблони", "roles": ["admin", "operator"] },

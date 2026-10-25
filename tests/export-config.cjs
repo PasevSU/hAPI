@@ -35,13 +35,30 @@ for (const [modeId, permission] of Object.entries(perms.mode_permissions)) {
   assert.equal(R.MODES_BY_ID[modeId].permission, permission, modeId);
 }
 
-// 4. download_access.json: йерархия и default политика.
+// 4. download_access.json: default политика и РЕД НА СЛОЕВЕТЕ.
+// Досега файлът носеше `hierarchy` — подреден списък, който тестът сравняваше с `A.LEVELS`.
+// И двете страни бяха еднакви, но никоя не се четеше при вземане на решение: `merge()` е
+// независим от реда и взима по-СТРИКТНОТО (ролите се секат, лимитите — по-малките). Затова
+// списъкът вече не се обещава във файла, а тук се проверява САМОТО СВОЙСТВО на кода.
 const access = read('rules/download_access.json');
-assert.deepEqual(access.hierarchy, A.LEVELS);
+assert.equal('hierarchy' in access, false, 'download_access.json не бива да обещава ред на слоевете');
+assert.deepEqual([...new Set(A.LEVELS)].sort(), [...A.LEVELS].sort(), 'слоевете са уникални');
+assert.equal(A.LEVELS.length, 8, 'слоевете са осем');
 assert.equal(A.validatePolicy(access.default_policy).ok, true);
 for (const key of ['mode', 'password', 'verify_on_serve', 'audit', 'one_time']) {
   assert.equal(access.default_policy[key], A.DEFAULT_POLICY[key], key);
 }
+// Редът е без значение, а резултатът не е по-слаб от нито един вход: PRIVATE не изчезва,
+// ако е подаден пръв, и ролите са СЕЧЕНИЕ, не обединение.
+const strict = { mode: 'PRIVATE', roles: ['admin', 'judge'], max_downloads: 3, rate_per_hour: 10 };
+const loose = { mode: 'FREE', roles: ['admin', 'judge', 'viewer'], max_downloads: 50, rate_per_hour: 100 };
+const forward = A.merge([loose, strict]);
+const backward = A.merge([strict, loose]);
+assert.deepEqual(forward, backward, 'merge() не бива да зависи от реда на слоевете');
+assert.equal(forward.mode, 'PRIVATE', 'по-стриктният режим печели');
+assert.deepEqual(forward.roles, ['admin', 'judge'], 'ролите са сечение, не обединение');
+assert.equal(forward.max_downloads, 3, 'по-малкият лимит печели');
+assert.equal(forward.rate_per_hour, 10, 'по-малкият лимит на час печели');
 
 // 5. public_gateway.json = нормализираните default-и.
 const gatewayCfg = read('rules/public_gateway.json');

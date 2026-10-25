@@ -1,6 +1,5 @@
 {
   "schema_version": "1.0",
-  "hierarchy": ["system", "storage", "portal", "folder", "file", "user", "token", "session"],
   "system": { "allow_downloads": true, "public_gateway": true, "mode": "FREE" },
   "default_policy": {
     "mode": "FREE",

@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **295/295** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **296/296** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 493 файла · 83668 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 488 файла · 83107 реда · critical: 0 · high: 0 · medium: 0 · low: 190 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 494 файла · 83794 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 489 файла · 83233 реда · critical: 0 · high: 0 · medium: 0 · low: 190 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 295 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 296 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,26 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Декларативните правила твърдяха неща, които кодът не изпълнява.** `config/rules/*.json` се
+  публикуват на клиенти през `GET /admin/api/v2/export/rules`, тоест всеки ред в тях е
+  обещание навън — а два от тях бяха неверни:
+  • `export_permissions.json` даваше `files.download` на роля **`portal-guest`**, каквато
+    `rbac.js` не познава (ролите са 7: admin, operator, viewer, judge, prosecutor, clerk,
+    expert). Публичният посетител НЕ е роля — той получава изтегляне от политиката на
+    файла/порталта. Сега файлът носи само реални роли и го казва в `note`;
+  • `download_access.json` носеше `hierarchy` — подреден списък, който внушава „по-дълбокият
+    слой бие“, докато `download-access.merge` е **независим от реда** и взима
+    по-СТРИКТНОТО (ролите се секат, лимитите се взимат по-малките). Редът е премахнат, а не
+    преписан — обещание, което никой не изпълнява, е по-лошо от липса.
+  `tests/rules-declarations.cjs` пази връзката с кода, вместо да разчита на списък: режимите
+  и видимостите идват от `download-access` (`MODES`, `VISIBILITY`, `validatePolicy`), правата —
+  от `PERMISSION_IDS`, режимите на експорт — от `export-rules.MODES`, ролите — от `rbac.ROLES`.
+  Изисква се ТОЧНО съответствие в двете посоки: всяко право в файла е в кода и всяко право в
+  кода е във файла, всеки режим има право и никое право не е измислено. **Проверено обратно:**
+  връщане на `portal-guest` пада с „роли, които не съществуват в rbac.js: portal-guest“;
+  `certificates.export` — с „непознато право“; връщане на `hierarchy` — с „редът на слоевете
+  не се чете от кода и не бива да се обещава“.
 
 - **Интеграцията за Home Assistant е Python, а тестовият пакет е JavaScript — счупен Python не се
   виждаше от нито един от 293-те теста.** Home Assistant просто нямаше да я зареди, а изданието
