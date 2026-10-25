@@ -271,10 +271,10 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
       const rowH = wrapped.map((w, ri) => Math.max(1, ...w.map(c => c.length)) * st.lead + pad * 2);
       if (y - st.before - Math.min(...rowH) < M.b && y < A4.h - M.t) newPage();
       y -= st.before;
-      for (let ri = 0; ri < rows.length; ri++) {
+      // Един ред се чертае на едно място — и за данните, и за повтореното заглавие на нов
+      // лист. Иначе двете употреби се разминават при промяна на рамките.
+      const drawRow = (ri, top) => {
         const rh = rowH[ri];
-        if (y - rh < M.b) { newPage(); y = A4.h - M.t - st.before }
-        const top = y;
         for (let ci = 0; ci < ncol; ci++)ops.push(`0.6 G 0.5 w ${num(xs[ci])} ${num(top - rh)} ${num(widths[ci])} ${num(rh)} re S 0 G`);
         for (let ci = 0; ci < ncol; ci++) {
           const x = xs[ci];
@@ -282,7 +282,18 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
             draw(b.header && ri === 0 ? 'bold' : st.font, st.size, x + pad, top - pad - st.size - li * st.lead, ln);
           });
         }
-        y = top - rh;
+        return top - rh;
+      };
+      for (let ri = 0; ri < rows.length; ri++) {
+        if (y - rowH[ri] < M.b) {
+          newPage();
+          y = A4.h - M.t - st.before;
+          // Заглавието се повтаря на новия лист: таблица, продължила на втора страница без
+          // имена на колоните, се чете наизуст. Повтаря се само ако заедно с реда, който
+          // продължава, пак има място — иначе би се получил лист само със заглавие.
+          if (b.header && ri > 0 && y - rowH[0] - rowH[ri] >= M.b) y = drawRow(0, y);
+        }
+        y = drawRow(ri, y);
       }
       y -= st.after; continue;
     }
