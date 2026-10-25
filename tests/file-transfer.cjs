@@ -168,6 +168,11 @@ let step = 'старт';
     const C = (await json('/admin/api/portals', 'POST', { slug: 'treti', title: 'Трети', visibility: 'public' })).value;
     assert.ok(C.id, 'третият портал е създаден');
     fs.mkdirSync(path.join(shareRoot, C.slug), { recursive: true });
+    // След 0.69.87 архивираните файлове СА заключени и на Windows (`0444` → EPERM при запис),
+    // а папката на портала остава след принудителното изтриване — пазим доказателства. Затова
+    // при ПОВТОРНО пускане на теста файлът от предишния опит е там и е само за четене.
+    // `unlink` не се спира от `chmod`, тоест остатъкът се маха, вместо тестът да пада на втория опит.
+    fs.rmSync(path.join(shareRoot, C.slug, 'архив.txt'), { force: true });
     fs.writeFileSync(path.join(shareRoot, C.slug, 'архив.txt'), 'съдържание за QR');
     const archivedC = await json(`/admin/api/portals/${C.id}/qr/archive`, 'POST', { note: 'преди изтриване' });
     assert.equal(archivedC.status, 201, 'QR архивът на третия портал е създаден');

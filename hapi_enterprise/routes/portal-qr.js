@@ -11,7 +11,7 @@
 // Договор като на останалите компоненти: `handle()` връща `true`, когато заявката е за
 // този компонент (и е приключена). `db()` връща ЖИВИТЕ метаданни, за да няма втора истина.
 function create(deps) {
-  const { json, fail, parse, audit, fsp, path, portalRoot, update, qr, integrity, archiveRoot, adminGate, db, sealFiles } = deps;
+  const { json, fail, parse, audit, fsp, path, portalRoot, update, qr, integrity, archiveRoot, adminGate, db, sealFiles, worm } = deps;
 
   const isQr = (parts) => parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'qr';
 
@@ -175,7 +175,13 @@ function create(deps) {
         const target = path.join(rootAbs, ...partsOfPath);
         if (!target.startsWith(rootAbs + path.sep)) throw Object.assign(new Error('Невалиден път в архива'), { status: 409 });
         await fsp.mkdir(path.dirname(target), { recursive: true });
+        // Целта може да е ЗАКЛЮЧЕНА (доказателство от предишен архив): `writeFile` върху `0444`
+        // пада с `EACCES`/`EPERM`, тоест възстановяването би върнало 500 точно когато трябва да
+        // работи. Отключва се СЪЗНАТЕЛНО (това е легитимната операция, за която съществува
+        // `worm.unseal`) и след записа се заключва ПАК: възстановените байтове са доказателство.
+        if (worm) await worm.unseal(target);
         await fsp.writeFile(target, file.data);
+        if (worm) await worm.seal(target);
         written.push(file.path);
       }
       const inArchive = new Set(unpacked.files.map((f) => f.path));

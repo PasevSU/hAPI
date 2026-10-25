@@ -76,9 +76,9 @@ const cleaned = [];
     // Архивът е доказателство — байтовете му не бива да могат да се презапишат. Проверява се
     // РЕАЛНИЯТ режим на файловете, не флаг в метаданните: първата версия на `sealManifest`
     // търсеше `file_id`, който манифестът не носи, и тихо не заключваше нищо.
-    // На Windows заключването е ИЗКЛЮЧЕНО съзнателно (chmod прави файла неизтриваем и чупи
-    // `restore`), затова там проверката е, че файловете са останали записваеми — тоест
-    // системата не твърди защита, която не дава.
+    // До 0.69.87 заключването беше изключено на Windows с обяснение, което измерването
+    // опроверга (записът пада с EPERM, триенето и почистването минават) — затова вече се
+    // изисква 0444 на всяка платформа, а не „на Windows нищо не се заключва“.
     {
       const found = [];
       const walk = (dir) => {
@@ -91,12 +91,8 @@ const cleaned = [];
       };
       walk(folder);
       assert.ok(found.length >= 2, 'порталът има поне два файла на диска: ' + JSON.stringify(found));
-      if (process.platform === 'win32') {
-        assert.ok(found.every((f) => f.writableBits !== 0), 'Windows: файловете остават записваеми (заключването е изключено)');
-      } else {
-        for (const file of found) {
-          assert.equal(file.writableBits, 0, 'файлът ' + file.name + ' е само за четене след архивиране (WORM), режим: ' + file.writableBits.toString(8));
-        }
+      for (const file of found) {
+        assert.equal(file.writableBits, 0, 'файлът ' + file.name + ' е само за четене след архивиране (WORM), режим: ' + file.writableBits.toString(8));
       }
     }
 
