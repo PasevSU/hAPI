@@ -1,0 +1,38 @@
+/* Themes
+   Тема (светла/тъмна) — предефинира токените, затова се зарежда последна.
+   Част от дизайн системата (план 18 §7). Редът на зареждане е в `index.html`:
+   tokens → layout → components → themes. Пази го `tests/ui-css-split.cjs`. */
+
+body.light {
+  --bg: #eef2f8;
+  --bg-2: #e4eaf4;
+  --panel: #ffffff;
+  --panel-2: #f6f8fc;
+  --line: rgba(15, 35, 70, 0.12);
+  --line-strong: rgba(15, 35, 70, 0.24);
+  --text: #0f1b2d;
+  --muted: #5b6b85;
+  --card: #ffffff;
+  --card-2: #f2f6fb;
+  --shadow: 0 8px 24px rgba(15, 35, 70, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Браузърът дава на <code>/<pre> монospace корекция 81.25% и това чупи
+   процентната скала (процентът се смята спрямо нея). Задаваме явен шрифт,
+   за да остане всяко `font-size: X%` дял от родителя. */
+code,
+kbd,
+samp,
+pre {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+code,
+kbd,
+samp {
+  font-size: var(--fs-11);
+}

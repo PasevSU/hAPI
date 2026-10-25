@@ -53,5 +53,5 @@
 1. `ui/report-objects.js` — статус и подразбиращи се стойности.
 2. `report-manifest.js` — `ELEMENT_TYPES` (и специфична валидация, ако има).
 3. `report-render.js` — как блокът влиза в PDF.
-4. `ui/report-studio.js` — полета в свойствата и ред в A4 прегледа (`ui/styles.css` за стил).
+4. `ui/report-studio.js` — полета в свойствата и ред в A4 прегледа (стилът е в `ui/components.css`).
 5. Тестове: `tests/report-objects.cjs`, `tests/report-render.cjs`.

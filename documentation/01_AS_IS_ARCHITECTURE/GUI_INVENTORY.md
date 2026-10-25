@@ -4,7 +4,7 @@
 
 | Aspect     | Detail                                                                                                               |
 | ---------- | -------------------------------------------------------------------------------------------------------------------- |
-| Files      | `hapi_enterprise/ui/` (index.html, app.js, 16 панелни модула, styles.css, icons.js)                                  |
+| Files      | `hapi_enterprise/ui/` (index.html, app.js, 16 панелни модула, 4 файла на дизайн системата, icons.js)                                  |
 | Purpose    | Пълен административен обхват: портали и файлове, контакти, дела, публичен gateway, експорт, Report Studio, настройки |
 | Access     | Home Assistant **Ingress** (`ingress_entry: /`) или Windows loopback `http://127.0.0.1:8098/ui/index.html`           |
 | Стар панел | `admin.html` / `admin.js` са **премахнати в 0.69.8**; `GET /admin` пренасочва към `/ui/index.html`                   |

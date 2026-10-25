@@ -202,13 +202,13 @@ Text · Data · Table · Media · Certificate · Layout · Legal · Dynamic.
 > | OTS/Blockchain (панел 05) | няма модул; иска външна услуга (календар или възел), затова „закотвено“ твърдение не може да се провери в среда без мрежа (виж §2) |
 > | ~~WebView2 `.pyw` стартер~~ | **затворен в 0.69.87**: `START_HAPI_GUI.pyw` отваря същия GUI в истински WebView2 прозорец, когато има `pywebview` (тук: WebView2 runtime 155), и пада към Edge/Chrome `--app=` с СЪЩАТА команда като `.bat`, когато няма. Тест: `tests/gui-starter-pyw.cjs` (4 проверки — `--check`, паритет с `.bat`, избор на режим, създаване на WebView2 прозорец без `start()`); границата: тестът не гледа как ИЗГЛЕЖДА прозорецът |
 > | Права за съдебните роли в GUI-я | `whoami`/`connection` искат способност `whoami`, която `judge`/`prosecutor`/`clerk`/`expert` **нямат** — те не получават списък със способности и интерфейсът не филтрира за тях (пакетите им така или иначе са за портала, не за Control Center) |
-> | Дизайн система | **токените ги има** (37 CSS custom properties в `ui/styles.css`), липсва раздробяването на `tokens/layout/components/themes` |
+> | Дизайн система | **затворен в 0.69.87**: `ui/tokens.css`, `ui/layout.css`, `ui/components.css`, `ui/themes.css` (51 токена), зареждани в този ред; `styles.css` го няма — една истина за стиловете. Разделянето е механично (`scripts/split-styles.cjs`) и доказано байтово равно на оригинала при разделянето; пази го `tests/ui-css-split.cjs` (ред · сервиране през allow-list-а · всеки `var(--x)` е дефиниран · темата само в `themes.css`) |
 > | Миграции на манифеста | има само `schemaVersion` 1 и `validate()` отказва друго с `UNSUPPORTED_SCHEMA_VERSION`; верига при една единствена версия би била непроверяем код |
 
 | Ново изискване | Днес в репото (при писане на плана) | Липсва |
 | -------------- | ------------- | ------ |
 | 15 панела | 13 панела (`ui/app.js`) | PGP, Encrypt/Sign, OTS, RFC 3161, Forensic, Profiles, отделен Hash Generator |
-| Дизайн система | `ui/styles.css` (един файл) | `tokens/layout/components/themes` |
+| Дизайн система | `ui/tokens.css` + `layout.css` + `components.css` + `themes.css` (0.69.87) | — |
 | Панел като модул | `ui/*.js` (app, portals, report-studio) | регистър + `render/mount/unmount/permissions/capabilities` |
 | Обектна библиотека | 9 плоски типа | 8 категории, planned обекти |
 | Редактор на таблици | колони като текст | подредба/добавяне/изтриване на колони, ширини (v2) |
@@ -229,7 +229,7 @@ Text · Data · Table · Media · Certificate · Layout · Legal · Dynamic.
 2. Редактор на таблици: колони (добавяне, ред, изтриване) + бележка за ширини (v2).
 3. Undo/Redo в Report Studio.
 4. `manifests/manifest.schema.json` + проверка в `report-manifest.js`.
-5. Разделяне на `ui/styles.css` на `tokens/layout/components/themes`.
+5. ~~Разделяне на `ui/styles.css`~~ — направено в 0.69.87 (четири файла, виж §7).
 6. Профили/шаблони (мениджър) → A4 header/footer → RFC 3161.
 
 **Правило:** нищо не се обявява за готово, докато няма ред в §7, който да е преместен от

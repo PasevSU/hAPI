@@ -10,7 +10,7 @@ const index = read('ui/index.html');
 const settings = read('ui/settings-panel.js');
 const directory = read('ui/directory-panel.js');
 const filesManager = read('ui/files-manager.js');
-const css = read('ui/styles.css');
+const css = require('./lib/ui-css.cjs').text();
 
 // 1. Навигация: панелите по плана (UI-01, §6.11) — 13 панела + Контакти, Дела и Кой влиза.
 //    Панел без собствена логика не е забранен, стига да води към РЕАЛНА секция
@@ -112,15 +112,19 @@ assert.match(css, /\.state-chip::before \{|\.chip::before,/);
 assert.match(css, /\.pf-portal \{[^}]*border-left: 3px solid var\(--accent-2\)/);
 assert.match(filesManager, /class="chip \$\{x\.visibility === 'public' \? 'ok' : ''\}"/);
 
-// 7. Новият интерфейс държи всички размери и цветове в styles.css: без inline стилове
+// 7. Новият интерфейс държи всички размери и цветове в дизайн системата (четири файла,
+//    зареждани в ред tokens → layout → components → themes): без inline стилове
 //    в HTML и без style.cssText в скриптовете (старият панел ги имаше — той е премахнат).
 const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'index.html'), 'utf8');
 const settingsPanel = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'settings-panel.js'), 'utf8');
-assert.ok(indexHtml.includes('href="styles.css"'), 'index.html зарежда styles.css');
+for (const name of require('./lib/ui-css.cjs').FILES) {
+  assert.ok(indexHtml.includes('href="' + name + '"'), 'index.html зарежда ' + name);
+}
+assert.equal(/href="styles\.css"/.test(indexHtml), false, 'старият единствен styles.css вече не се зарежда');
 assert.equal(/<style[\s>]/.test(indexHtml), false, 'index.html няма вграден <style> блок');
-assert.ok(settingsPanel.includes('class="set-tabs"'), 'табовете ползват клас от styles.css');
-assert.match(css, /\.set-tabs \{/, 'styles.css описва .set-tabs');
-assert.match(css, /\.set-tab\.active \{/, 'styles.css описва активния таб');
+assert.ok(settingsPanel.includes('class="set-tabs"'), 'табовете ползват клас от дизайн системата');
+assert.match(css, /\.set-tabs \{/, 'дизайн системата описва .set-tabs');
+assert.match(css, /\.set-tab\.active \{/, 'дизайн системата описва активния таб');
 const inlineStyles = fs
   .readdirSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui'))
   .filter((f) => f.endsWith('.js'))

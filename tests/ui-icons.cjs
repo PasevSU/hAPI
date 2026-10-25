@@ -44,7 +44,7 @@ assert.deepEqual(unused, [], `неизползвани икони (мъртъв 
 // Спрайтът е изцяло локален (xmlns е само име на пространство, не адрес за сваляне),
 // а цветът/размерът идват от CSS (currentColor + 1em).
 assert.equal(/<image|xlink:href|href="https?:|url\(https?:/.test(iconsSrc), false, 'спрайтът е изцяло локален');
-const css = fs.readFileSync(path.join(uiDir, 'styles.css'), 'utf8');
+const css = require('./lib/ui-css.cjs').text();
 assert.match(css, /\.ui-ico \{[\s\S]*?stroke: currentColor;/, 'иконите наследяват цвета на текста');
 // Форматирането (един ред или разгънато) не бива да чупи теста — важно е правилото.
 assert.match(css, /\.ui-ico \{[\s\S]*?width: 1\.05em;\s*height: 1\.05em;/, 'иконите се оразмеряват спрямо шрифта');

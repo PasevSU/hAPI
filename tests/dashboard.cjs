@@ -77,6 +77,6 @@ for (const field of ['heapUsedBytes', 'rssBytes', 'activeDownloadStreams', 'effe
   assert.ok(dashboard.includes(field) ? true : true);
 }
 assert.match(dashboard, /badge .*err|'badge ' \+/, 'липсващо хранилище се маркира като проблем');
-assert.match(read('hapi_enterprise/ui/styles.css'), /\.quick-grid \{/, 'бързият достъп има стил');
+assert.match(require('./lib/ui-css.cjs').text(), /\.quick-grid \{/, 'бързият достъп има стил');
 
 console.log('PASS dashboard: реални данни от API-то · вход към ' + (navIds.length - 1) + ' раздела · ресурси от диагностиката');

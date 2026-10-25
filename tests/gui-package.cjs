@@ -33,7 +33,7 @@ const STARTERS = ['START_HAPI_GUI.pyw', 'START_HAPI_GUI.bat', 'START_HAPI_GUI.tx
 // ── 1. Съдържание: интерфейсът и стартерите, без backend ────────────────────
 {
   assert.ok(paths.has(lib.ADDON_DIR + '/ui/index.html'), 'има index.html');
-  for (const name of ['app.js', 'styles.css', 'panel-registry.js', 'i18n.js']) {
+  for (const name of ['app.js', 'panel-registry.js', 'i18n.js', 'tokens.css', 'layout.css', 'components.css', 'themes.css']) {
     assert.ok(paths.has(lib.ADDON_DIR + '/ui/' + name), 'има ui/' + name + ' (иначе GUI-ят не тръгва)');
   }
   for (const name of STARTERS) assert.ok(paths.has(name), 'има стартер ' + name);

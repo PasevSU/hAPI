@@ -5,7 +5,7 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **108** backend модула · **15** HTTP компонента · **23** UI модула · **6** Python модула · **31** инструмента · **292** теста.
+Общо: **108** backend модула · **15** HTTP компонента · **23** UI модула · **6** Python модула · **32** инструмента · **293** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -182,7 +182,7 @@
 | `custom_components/hapi_enterprise/coordinator.py` | DataUpdateCoordinator for hAPI Enterprise telemetry. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (31)
+### Инструменти (`scripts/*.cjs`) (32)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -214,6 +214,7 @@
 | `scripts/secret-patterns.cjs` | Общи правила за тайни, ползвани от одита (pre-push-audit) и от експорта за публикуване |
 | `scripts/settings-defaults.cjs` | Генерира таблицата „Настройки по подразбиране“ от `config.yaml` и преводите, вместо |
 | `scripts/source-inventory.cjs` | Инвентар на изходния код — ГЕНЕРИРАН, за да не остарява. |
+| `scripts/split-styles.cjs` | РАЗДЕЛЯ `ui/styles.css` на ЧЕТИРИТЕ файла от дизайн системата (план 18 §7): tokens, layout, |
 | `scripts/sync-addon-changelog.cjs` | Supervisor показва changelog само ако до `config.yaml` на add-on-а има `CHANGELOG.md`. |
 | `scripts/test-matrix.cjs` | Цялостен тестов пакет: изпълнява ВСИЧКИ тестове от `tests/` и при каквато и да е |
 | `scripts/verify-release.cjs` | Проверка на изданието за Home Assistant — всички сценарии на едно място. |

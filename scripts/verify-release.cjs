@@ -159,7 +159,11 @@ check('S03', 'Add-on: всички файлове за стартиране са
     'ui/index.html',
     'ui/app.js',
     'ui/settings-panel.js',
-    'ui/styles.css',
+    // Дизайн системата е четири файла (план 18 §7): липсва ли един, интерфейсът тръгва „без стилове“.
+    'ui/tokens.css',
+    'ui/layout.css',
+    'ui/components.css',
+    'ui/themes.css',
     'icon.png',
     'logo.png',
     'fonts/DejaVuSans.ttf',

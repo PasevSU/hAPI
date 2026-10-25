@@ -168,8 +168,8 @@ assert.match(src, /Създава се физически ZIP/, 'потвърж�
 // 7е. Стандарт на подредбата: всичко в проценти + фиксиран брой обекти на ред.
 // CSS-ът се сравнява с нормализирани интервали: форматирането (един ред, разгънато или
 // без интервали около `>` и `{`) не бива да чупи теста — важно е правилото.
-const css = fs
-  .readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'styles.css'), 'utf8')
+const css = require('./lib/ui-css.cjs')
+  .text()
   .replace(/\s*\n\s*/g, ' ')
   .replace(/\s*>\s*/g, ' > ')
   .replace(/\s*\{\s*/g, ' { ')
