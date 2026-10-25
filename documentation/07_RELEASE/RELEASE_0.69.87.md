@@ -26,6 +26,7 @@
 | 13 | Инвентар на кода — генериран от диска | `scripts/source-inventory.cjs`, `SOURCE_INVENTORY.md` | `source-inventory` | документът не бива да твърди файл, който не съществува |
 | 14 | `IDEMPOTENT_RETRY` — повторена заявка не работи втори път | `idempotency.js`, таблица `idempotency` в `sqlite-store.js` | `idempotency` | загубен отговор не бива да създава втори файл, втори пакет или втори портал |
 | 15 | `SINGLE_RESPONSE` — отговорът се пише точно веднъж | `respond.js` (изнесен от `server.js`), `server.js` | `respond` | дефект от error-log-а на жива инсталация: `ERR_HTTP_HEADERS_SENT` десет пъти за два дни |
+| 16 | `WEBHOOK_HMAC` — изходящо събитие с подпис и повторение (F4-7) | `webhooks.js`, `routes/webhooks.js`, таблици `webhooks`/`webhook_deliveries` | `webhooks` | `notify.js` праща съобщение до човек; интеграция не можеше нито да различи нашето съобщение от чуждо, нито да разчита, че ще го получи |
 
 ## 2. По промяна — какво, как и защо
 
@@ -258,6 +259,33 @@ process/error Error [ERR_HTTP_HEADERS_SENT] … at json (server.js) at fail (ser
 тяло по RFC 9457; защитните `no-store`/`nosniff` се слагат винаги, а изричните стойности на
 извикващия печелят. `api-input-errors` продължава да проверява живите 4xx тела.
 
+### 2.12 Изходящо събитие с подпис, не съобщение до човек (F4-7)
+
+**Какво.** `webhooks.js` + `routes/webhooks.js`: абонамент (адрес + събития + ключ), подпис
+`X-HAPI-Signature: t=<unix>,v1=<hex>` = HMAC-SHA256 върху `<t>.<тяло>`, и повторение
+30 s → 2 m → 10 m → 1 h. Опашката е в SQLite (`webhook_deliveries`); след петия неуспех
+доставката е „изчерпана“ и се **пази**.
+
+**Защо.** `PLAN_STATUS` §4.1 държеше F4-7 отворен с точната причина: „`notify.js` вика HA
+`notify.*`, което не е webhook с подпис и retry“. Това е вярно и е разлика по същество —
+`notify.*` праща съобщение до ЧОВЕК. Интеграция, която иска да знае „файлът е готов“, нямаше
+как да го научи: нямаше адрес, нямаше подпис, нямаше повторение. Без подпис получателят не
+може да различи нашето съобщение от чуждо; без повторение не може да разчита, че ще го получи
+изобщо.
+
+**Кои събития се излъчват.** Само имената, които кодът наистина вика: `document.finalized`
+(след качване и след копиране/преместване) и `webhook.test` (пробна доставка). Останалите
+имена в договора (`job.completed`, `access.created`, `report.packaged`) се приемат при
+абониране, но мълчат, докато съответният маршрут не ги извика — и това е записано в
+`WEBHOOKS.md` §„Какво НЕ е направено“, вместо да се обещава повече, отколкото кодът прави.
+
+**Как е проверено.** `tests/webhooks.cjs` (8 проверки): верен подпис минава, старо `t` →
+`STALE`, друго тяло/ключ → `BAD_SIGNATURE`; ключът се вижда един път и после само последните
+4 знака; непознат адрес/събитие → 400 и нищо не се записва; получателят проверява подписа със
+своя ключ; отказ → повторение с изчакване, после „изчерпано“; спиране/пускане/триене; HTTP
+401/201/400/404. Тялото се филтрира: без полета с `pass`/`secret`/`token`/`key`, без пътища,
+без обекти.
+
 ## 3. Измерени гейтове
 
 | Гейт | Команда | Резултат |
@@ -271,8 +299,8 @@ process/error Error [ERR_HTTP_HEADERS_SENT] … at json (server.js) at fail (ser
 | Справочник на API | `node scripts/api-reference.cjs --check` | 193 операции · 32 публични правила · 11 компонента |
 | Настройки в README | `node scripts/settings-defaults.cjs --check` | 43 настройки |
 | Документация | `node tests/docs-consistency.cjs` | OK, без счупени връзки |
-| Инвентар на кода | `node scripts/source-inventory.cjs --check` | 168 файла, генериран от диска; `tests/source-inventory.cjs` хваща остарял документ |
-| Каталог на одитните събития | `node scripts/audit-events.cjs --check` | 164 събития от 12 файла, генериран от `audit(…)` |
+| Инвентар на кода | `node scripts/source-inventory.cjs --check` | 173 файла, генериран от диска; `tests/source-inventory.cjs` хваща остарял документ |
+| Каталог на одитните събития | `node scripts/audit-events.cjs --check` | 172 събития от 14 файла, генериран от `audit(…)` |
 | Стил | `npx eslint .` | 0 |
 | Самото издание | `node scripts/artifact-smoke.cjs` | 11 проверки: старт от архива · `file` договор · `qr` в списъка · 409 без огледало · `site-csp` пясъчник · `mirror-target` s3 · незаместен `!secret` → `SECRET_NAME_HAS_SPACE` · относителен път → `SECRET_PATH_RELATIVE` · `transfer` copy със сверен SHA-256 и нов `content_id` · `Idempotency-Key` без второ копие · доказателство → `DELETE` 409 · нито един двоен отговор |
 
@@ -284,6 +312,7 @@ process/error Error [ERR_HTTP_HEADERS_SENT] … at json (server.js) at fail (ser
 | Compose режим | [`DEPLOYMENT_MODEL.md`](../02_TO_BE_ARCHITECTURE/DEPLOYMENT_MODEL.md) §4 — само при поискване |
 | PostgreSQL / Redis / отделен worker | всяко чупи нулата зависимости и `backup: cold` snapshot-а |
 | PDF/A-3 заверка | иска veraPDF; без него не се твърди |
+| SSE поток за живи събития | webhook-ът е реализиран (F4-7), SSE — не; влиза в `PLAN_STATUS` §4.1 |
 
 **Прорязването на версии не трие доказателство.** При `POST …/versions` се пазят последните
 50 версии (`MAX_VERSIONS` в `versioning.js`). Ако публикувана версия остане зад този лимит,
