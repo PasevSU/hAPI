@@ -5,7 +5,7 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **102** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **29** инструмента · **271** теста.
+Общо: **102** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **30** инструмента · **272** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -171,7 +171,7 @@
 | `custom_components/hapi_enterprise/coordinator.py` | DataUpdateCoordinator for hAPI Enterprise telemetry. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (29)
+### Инструменти (`scripts/*.cjs`) (30)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -187,6 +187,7 @@
 | `scripts/dev-dashboard.cjs` | команди (запаметявани в dashboard-commands.json) |
 | `scripts/docs-index.cjs` | ПЪЛНО СЪДЪРЖАНИЕ НА `documentation/` — ГЕНЕРИРАНО ОТ ДИСКА. |
 | `scripts/document-empty-catches.cjs` | Еднократен инструмент: добавя КОНКРЕТНА причина във всеки празен `catch` в издавания код. |
+| `scripts/error-codes.cjs` | КАТАЛОГ НА КОДОВЕТЕ ЗА ГРЕШКА — ГЕНЕРИРАН ОТ КОДА. |
 | `scripts/export-release.cjs` | Изнася готовото издание в папка за качване (по подразбиране Downloads). |
 | `scripts/export-tracked.cjs` | Експорт на „точно това, което би влязло в git“ — без robocopy /MIR по цялото дърво. |
 | `scripts/fetch-package.cjs` | Паралелно теглене на експортен пакет (или който и да е файл с Range поддръжка). |

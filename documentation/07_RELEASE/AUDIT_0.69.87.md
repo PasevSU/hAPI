@@ -67,6 +67,11 @@
    но **никой не ги require-ва**, а каталогът ги описваше като инфраструктура. Сега
    `tests/docker-runtime.cjs` пада при нов необвързан файл, а изключенията са изрични и с
    причина; каталогът ги отбелязва като **необвързани**.
+4. **23 кода за грешка се излъчваха без нито едно обяснение в документацията**
+   (`UNSUPPORTED_PKESK`, `BAD_MPI`, `MDC_MISSING`, `WORKDIR_NOT_SEALED`, …). Сега
+   `scripts/error-codes.cjs` строи `ERROR_CODES.md` — **55 кода**, значение от самия код и файл
+   на излъчване; `tests/error-codes.cjs` го пази актуален и проверява, че всеки ред сочи
+   съществуващ файл.
 
 ## 3. Проследимост на последните 16 комита
 
@@ -89,7 +94,8 @@
 | Пълният одит на изданието (този документ) | — | `docs-consistency` | `documentation/README.md` (индекс) | `763e6e8` |
 | `artifact-smoke` става част от гейта (пропуск, намерен от одита) | `scripts/audit-gui-compat.cjs` (СТЕПЕН 3) | `audit-gui-compat` | `RELEASE_CHECKLIST.md` | `f13069a` |
 | Пълният индекс на документацията се генерира (втори пропуск от одита) | `scripts/docs-index.cjs` | `tests/docs-index.cjs` | `documentation/README.md` §„Пълно съдържание“ | `d8cb370` |
-| Манифестът се проверява и обратно — нищо мъртво в образа (трети пропуск) | `tests/docker-runtime.cjs` | `docker-runtime` | `MODULE_CATALOG.md` бележка за необвързаните | — |
+| Манифестът се проверява и обратно — нищо мъртво в образа (трети пропуск) | `tests/docker-runtime.cjs` | `docker-runtime` | `MODULE_CATALOG.md` бележка за необвързаните | `1cff14a` |
+| Каталог на кодовете за грешка, генериран от кода (четвърти пропуск) | `scripts/error-codes.cjs`, `path-crypto.js` | `tests/error-codes.cjs` | `ERROR_CODES.md` | — |
 
 Общо в последния дял: **43 файла, +1791 / −359 реда, 16 комита** (от `78e2b44` до `763e6e8`).
 

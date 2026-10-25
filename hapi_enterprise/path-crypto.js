@@ -147,8 +147,10 @@ function create(options = {}) {
       if (name === null) continue;
       // Водещият интервал в името е ТОЧНО причината записът в HA да се откаже с
       // `Unknown secret ' …'` — затова причината го казва, вместо да го остави за гадаене.
-      const code = name === name.trim() ? 'SECRET_NOT_EXPANDED' : 'SECRET_NAME_HAS_SPACE';
-      return empty(code, { ...meta, secretOption: option });
+      // Двата кода се връщат ТУК, а не през променлива: така `scripts/error-codes.cjs` ги
+      // вижда статично и каталогът на кодовете не може да ги изпусне.
+      if (name === name.trim()) return empty('SECRET_NOT_EXPANDED', { ...meta, secretOption: option });
+      return empty('SECRET_NAME_HAS_SPACE', { ...meta, secretOption: option });
     }
     // Относителен път не е път в контейнера: работната директория е `/app`, а HA
     // конфигурацията е `/homeassistant`. Затова `config/_openpgpV6/public.asc` се чете като
