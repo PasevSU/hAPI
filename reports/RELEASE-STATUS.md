@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **264/264** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 439 файла · 74986 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 435 файла · 74622 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 439 файла · 75026 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 435 файла · 74662 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -66,10 +66,11 @@
 Нов инструмент преди публикуване: `node scripts/artifact-smoke.cjs` разопакова
 `dist/hapi_enterprise-<версия>.tar.gz` и пуска сървъра **оттам**, после проверява, че новите
 функции работят в това, което ще се публикува: договорът `file` (200 с точен SHA-256), `qr` в
-списъка на порталите, `mirror/verify` без огледало → 409, `site-csp` е пясъчник и
-`mirror-target` разчита s3 адрес. `verify-release` проверява архива, а това проверява
-поведението му — точно класът грешка „модул забравен в COPY“, който минава всички тестове в
-репото и гърми при потребителя.
+списъка на порталите, `mirror/verify` без огледало → 409, `site-csp` е пясъчник,
+`mirror-target` разчита s3 адрес, `transfer` копира със сверен SHA-256 и **нов `content_id`**,
+а изтриването на доказателство се отказва с 409. `verify-release` проверява архива, а това
+проверява поведението му — точно класът грешка „модул забравен в COPY“ (`routes/file-transfer.js`
+е нов файл), който минава всички тестове в репото и гърми при потребителя.
 
 `verify-release` получава и **S22**: всеки файл в архива се сравнява байт по байт с
 `hapi_enterprise/` (173 файла). Досега се проверяваше хигиената, четенето с `tar` и че

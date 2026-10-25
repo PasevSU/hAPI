@@ -12,7 +12,8 @@
 //
 // Проверява: старт от архива, договор `file` (200 + точен SHA-256), `qr` в списъка на
 // порталите, `mirror/verify` без огледало → 409, `site-csp` е пясъчник, `mirror-target`
-// разчита s3 адрес. Изходен код 1 при провал.
+// разчита s3 адрес, `transfer` копира със сверен SHA-256 и нов `content_id`, а изтриването
+// на доказателство се отказва с 409. Изходен код 1 при провал.
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -101,6 +102,44 @@ const checks = [];
     if (spec.kind !== 's3' || spec.lockDays !== 30 || spec.bucket !== 'hapi-evidence') throw new Error('mirror-target в изданието е счупен');
     checks.push('mirror-target → s3 адрес с lock=30');
 
+    // ── Новото в 0.69.87 трябва да работи ИМЕННО в публикувания архив ──────────────
+    // `routes/file-transfer.js` е нов файл: ако не влезе в архива, тестовете в репото
+    // минават, а при потребителя маршрутът липсва. Точно този клас грешка проверяваме.
+    const dstRes = await fetch(base + '/admin/api/portals', { method: 'POST', headers: H, body: JSON.stringify({ slug: slug + '-dst', title: 'Цел', visibility: 'public' }) });
+    const dst = await dstRes.json();
+    if (dstRes.status !== 201) throw new Error('вторият портал не се създава: ' + dstRes.status);
+    // Същите байтове като файла в папката на портала — така записът влиза в манифеста
+    // по съдържание и отказът при изтриване е проверим, не случаен.
+    const bytes = fs.readFileSync(path.join(folder, 'договор.txt'));
+    const upload = await fetch(base + `/admin/api/portals/${portal.id}/files`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer ' + token, 'x-file-name': encodeURIComponent('договор.txt'), 'content-type': 'application/octet-stream' },
+      body: bytes,
+    });
+    const regFile = await upload.json();
+    if (upload.status !== 201) throw new Error('качване в изданието → ' + upload.status + ' ' + JSON.stringify(regFile));
+
+    const transferred = await fetch(base + `/admin/api/portals/${portal.id}/files/${regFile.id}/transfer`, {
+      method: 'POST',
+      headers: H,
+      body: JSON.stringify({ mode: 'copy', targetPortalId: dst.id }),
+    });
+    const copy = await transferred.json();
+    if (transferred.status !== 201) throw new Error('transfer в изданието → ' + transferred.status + ' ' + JSON.stringify(copy));
+    if (copy.verified !== true || copy.sha256 !== regFile.sha256 || copy.contentId === regFile.contentId) {
+      throw new Error('transfer в изданието не е сверен или преизползва content_id: ' + JSON.stringify(copy));
+    }
+    checks.push('transfer copy → 201 · сверен SHA-256 · нов content_id');
+
+    const archived = await fetch(base + `/admin/api/portals/${portal.id}/qr/archive`, { method: 'POST', headers: H, body: JSON.stringify({ note: 'artifact-smoke' }) });
+    if (archived.status !== 201) throw new Error('QR архивът в изданието → ' + archived.status);
+    const refusedDelete = await fetch(base + `/admin/api/portals/${portal.id}/files/${regFile.id}`, { method: 'DELETE', headers: H });
+    const refusedBody = await refusedDelete.json();
+    if (refusedDelete.status !== 409 || !/qr-manifest/.test(String(refusedBody.error))) {
+      throw new Error('изтриване на доказателство в изданието → ' + refusedDelete.status + ' ' + JSON.stringify(refusedBody));
+    }
+    checks.push('доказателство → DELETE 409 (qr-manifest)');
+
     console.log('artifact-smoke OK: ' + path.basename(archive) + ' · ' + checks.join(' · '));
   } finally {
     try { child.kill() } catch { /* вече е спрян */ }
@@ -111,6 +150,7 @@ const checks = [];
       setTimeout(resolve, 3000);
     });
     fs.rmSync(path.join(shareRoot, slug), { recursive: true, force: true });
+    fs.rmSync(path.join(shareRoot, slug + '-dst'), { recursive: true, force: true });
     for (let i = 0; i < 5; i++) {
       try { fs.rmSync(work, { recursive: true, force: true }); break } catch { await new Promise((r) => setTimeout(r, 300)) }
     }
