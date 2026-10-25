@@ -76,6 +76,7 @@
 | Отказаният втори отговор се вижда в лога (`RESPONSE_ALREADY_SENT`) | `respond.js` | `tests/respond.cjs` (прихваща `console.warn`) | `CHANGELOG.md` | `e6d7dcc` |
 | Конфигурационните диагнози в издателския запис (§2.10) | — | `docs-consistency` | `RELEASE_0.69.87.md` §2.10 | `a1c74da` |
 | Пълният одит на изданието (този документ) | — | `docs-consistency` | `documentation/README.md` (индекс) | `763e6e8` |
+| `artifact-smoke` става част от гейта (пропуск, намерен от одита) | `scripts/audit-gui-compat.cjs` (СТЕПЕН 3) | `audit-gui-compat` | `RELEASE_CHECKLIST.md` | `f13069a` |
 
 Общо в последния дял: **43 файла, +1791 / −359 реда, 16 комита** (от `78e2b44` до `763e6e8`).
 
