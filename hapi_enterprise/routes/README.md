@@ -35,7 +35,7 @@ module.exports = { create };
 
 | Компонент      | Какво поема                                                         |
 | -------------- | ------------------------------------------------------------------- |
-| `reports.js`   | `/admin/api/v2/reports/{render,package,sign}`, `rfc3161` + `verify` |
+| `reports.js`   | `/admin/api/v2/reports/render`, `/package`, `/sign`, `rfc3161` + `verify` |
 | `generator.js` | `/admin/api/generator/templates` (четене, качване, изтриване)       |
 
 ## Следващи кандидати (по ред на риска)

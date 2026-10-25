@@ -80,6 +80,10 @@ const ROUTES = [
   // ── QR и доказателствен портал ────────────────────────────────────────────
   ['GET', '/admin/api/qr-artifacts', 'Списък на QR архивите', 'portals', 'portals'],
   ['POST', '/admin/api/qr-artifacts', 'Създаване/обновяване на QR архив', 'portals', 'portals'],
+  ['DELETE', '/admin/api/qr-artifacts/{qrId}', 'Изтриване на QR архив (с връщане при провал на записа)', 'portals', 'portals'],
+  ['POST', '/admin/api/links/check', 'Проверка дали публичен адрес наистина се отваря', 'system', 'core'],
+  ['GET', '/admin/api/sensors/visitors/{visitorId}', 'Профил на един посетител', 'system', 'sensors'],
+  ['DELETE', '/admin/api/sensors/visitors/{visitorId}', 'Изтриване на посетител (GDPR, чл. 17)', 'system', 'sensors'],
   ['GET', '/admin/api/evidence-portal/status', 'Състояние на доказателствения портал', 'portals', 'portals'],
   ['POST', '/admin/api/evidence-portal/deploy', 'Публикуване на доказателствения портал', 'portals', 'portals'],
 
@@ -97,6 +101,9 @@ const ROUTES = [
   ['GET', '/admin/api/pgp/keys/{keyId}/public', 'Публичната част на ключ', 'export', 'pgp'],
   ['GET', '/admin/api/packages', 'Експортни пакети', 'export', 'packages'],
   ['POST', '/admin/api/packages', 'Създаване на експортeн пакет', 'export', 'packages'],
+  ['GET', '/admin/api/packages/{packageId}', 'Метаданни на експортен пакет', 'export', 'packages'],
+  ['GET', '/admin/api/packages/{packageId}/download', 'Изтегляне на пакета (`?part=N` при разделен пакет)', 'export', 'packages'],
+  ['POST', '/admin/api/packages/{packageId}/verify', 'Проверка на подписа/целостта на пакета', 'export', 'packages'],
   ['GET', '/admin/api/packages/{packageId}/signature', 'Detached подпис на пакета', 'export', 'packages'],
   ['PATCH', '/admin/api/packages/settings', 'Настройки на пакетите (автоподписване, срок)', 'export', 'packages'],
   ['GET', '/admin/api/v2/export/rules', 'Правила за експорт', 'export', 'core'],

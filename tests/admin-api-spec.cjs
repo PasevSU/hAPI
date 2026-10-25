@@ -130,6 +130,12 @@ for (const file of ['reports.js', 'generator.js']) {
 const src = surface.source(ROOT);
 function segmentIsReal(seg) {
   const quoted = "'" + seg + "'";
+  // Трети начин: маршрутът е регулярен израз върху целия път
+  // (`/^\/admin\/api\/qr-artifacts\/([A-Za-z0-9_-]{1,64})$/`), тогава сегментът не е низ в
+  // сравнение, а част от шаблона. Без тази проверка истински маршрути изглеждаха измислени —
+  // точно това се случи с изтриването на QR архив и с профила на посетител.
+  if (new RegExp('\\/admin\\/api\\/(?:[^/]*\\/)*' + seg + '\\\\/').test(src)) return true;
+  if (src.includes(seg + '\\/(')) return true;
   if (!src.includes(quoted)) return false;
   const esc = quoted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   // `parts[n] === 'x'` (обикновено), `parts[n] !== 'x'` (генераторът пази останалото с 404),

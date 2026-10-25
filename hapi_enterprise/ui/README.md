@@ -285,7 +285,7 @@ PGP ключовете и подписването се управляват **�
   - Пакетът ZIP носи същото: `hashes/sha256sum.txt` (за `sha256sum -c`) и
     `hashes/checksums.txt` (четим блок за всеки файл), а `PACKAGE_INDEX.json` (schema 1.1)
     съдържа `hash_algorithms` и `hashes` за всеки запис.
-- Заключването е реално: `PATCH /admin/api/v2/portals/{slug}/files/{id}/lock` →
+- Заключването е реално: `PATCH /admin/api/portals/{portalId}/files/{fileId}/lock` →
   `locked`, `lockedBy`, `lockedAt`; публичният payload ги връща.
 - **„Нов портал“** създава портала и **веднага генерира API и QR код** за него;
   при свързан add-on извиква `POST /admin/api/v2/portals/{slug}/api` (записва

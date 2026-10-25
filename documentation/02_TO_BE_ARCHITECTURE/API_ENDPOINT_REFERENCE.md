@@ -6,7 +6,7 @@
 
 Източници (живи, не копия):
 
-- `hapi_enterprise/admin-api-spec.js` — 186 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
+- `hapi_enterprise/admin-api-spec.js` — 193 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
 - `hapi_enterprise/public-route-allowlist.js` — 32 правила за това какво Public Gateway пропуска.
 - `hapi_enterprise/routes/` — 11 компонента на HTTP слоя.
 
@@ -56,6 +56,9 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | GET | `/admin/api/pgp/keys/{keyId}/public` | Публичната част на ключ | `pgp` |
 | GET | `/admin/api/packages` | Експортни пакети | `packages` |
 | POST | `/admin/api/packages` | Създаване на експортeн пакет | `packages` |
+| GET | `/admin/api/packages/{packageId}` | Метаданни на експортен пакет | `packages` |
+| GET | `/admin/api/packages/{packageId}/download` | Изтегляне на пакета (`?part=N` при разделен пакет) | `packages` |
+| POST | `/admin/api/packages/{packageId}/verify` | Проверка на подписа/целостта на пакета | `packages` |
 | GET | `/admin/api/packages/{packageId}/signature` | Detached подпис на пакета | `packages` |
 | PATCH | `/admin/api/packages/settings` | Настройки на пакетите (автоподписване, срок) | `packages` |
 | GET | `/admin/api/v2/export/rules` | Правила за експорт | `core` |
@@ -134,6 +137,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | DELETE | `/admin/api/taxonomy` | Премахване на категория или група | `portals` |
 | GET | `/admin/api/qr-artifacts` | Списък на QR архивите | `portals` |
 | POST | `/admin/api/qr-artifacts` | Създаване/обновяване на QR архив | `portals` |
+| DELETE | `/admin/api/qr-artifacts/{qrId}` | Изтриване на QR архив (с връщане при провал на записа) | `portals` |
 | GET | `/admin/api/evidence-portal/status` | Състояние на доказателствения портал | `portals` |
 | POST | `/admin/api/evidence-portal/deploy` | Публикуване на доказателствения портал | `portals` |
 | GET | `/admin/api/portals/{portalId}` | Един портал с неговите файлове | `portals` |
@@ -218,6 +222,9 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | GET | `/admin/api/sensors/visitors` | Живи данни за посетителите | `sensors` |
 | GET | `/admin/api/sensors/visitors.csv` | Посетителите като CSV | `sensors` |
 | POST | `/admin/api/sensors/geo` | Офлайн гео-обаждане от браузъра на посетителя | `sensors` |
+| POST | `/admin/api/links/check` | Проверка дали публичен адрес наистина се отваря | `core` |
+| GET | `/admin/api/sensors/visitors/{visitorId}` | Профил на един посетител | `sensors` |
+| DELETE | `/admin/api/sensors/visitors/{visitorId}` | Изтриване на посетител (GDPR, чл. 17) | `sensors` |
 | GET | `/admin/api/openapi.json` | Тази спецификация | `whoami` |
 
 ### Файлове (общи операции) (`files`)
