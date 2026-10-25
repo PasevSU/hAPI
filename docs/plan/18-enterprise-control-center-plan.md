@@ -33,23 +33,27 @@
 
 ## 2. Навигация — 15 панела
 
-| № | Панел | Предназначение | В репото днес |
+| № | Панел | Предназначение | В репото днес (проверено при 0.69.87) |
 | - | ----- | -------------- | ------------- |
-| 01 | Dashboard | статус, ресурси, бързи действия | ✅ обвивка |
-| 02 | File Portals | портали, ключове, QR, статистика | 🟡 демо + API генератор |
-| 03 | PGP / Keys | OpenPGP идентичности и ключове | ❌ нов |
-| 04 | Encrypt / Sign | криптиране, подписване, проверка | ❌ нов |
-| 05 | OTS / Blockchain | изолиран модул | ❌ нов |
-| 06 | RFC 3161 Timestamp | TSA профили, токени, проверки | ❌ нов |
-| 07 | Forensic Analysis | файлови и метаданни анализи | ❌ нов |
-| 08 | Metadata / EXIF | извличане и сравнение | 🟡 частично (preview/meta) |
-| 09 | Hash Generator | алгоритми, хеширане, сравнение | 🟡 backend `integrity` |
-| 10 | Reports / PDF | история и експорт | 🟡 Report Studio |
-| 11 | Report Studio | визуален конструктор | ✅ прототип |
-| 12 | Profiles / Templates | профили, шаблони, версии | ❌ нов |
-| 13 | Tasks / Automation | задачи и изпълнение | 🟡 backend jobs |
-| 14 | Settings / System | настройки, диагностика, логове | 🟡 демо |
+| 01 | Dashboard | статус, ресурси, бързи действия | ✅ обвивка, реални данни от API-то (`dashboard`) |
+| 02 | File Portals | портали, ключове, QR, статистика | ✅ `ui/files-manager.js` (`files-manager`, `access-policy`, `portal-qr-badge`) |
+| 03 | PGP / Keys | OpenPGP идентичности и ключове | ✅ `pgp.js`, `routes/pgp-keyring.js`, панелът в настройките (`pgp`, `pgp-keyring`, `pgp-v6`, `pgp-gpg-interop`) |
+| 04 | Encrypt / Sign | криптиране, подписване, проверка | ✅ `file-crypto.js`, `signer.js`, `cms-sign.js`, `pgp.js` (`file-encryption`, `signing`, `pgp`) |
+| 05 | OTS / Blockchain | изолиран модул | ❌ няма |
+| 06 | RFC 3161 Timestamp | TSA профили, токени, проверки | ✅ `tsa-client.js`, `routes/reports.js` (`tsa-client`, `rfc3161-api`, `tsa-evidence`, `report-tsa-e2e`) |
+| 07 | Forensic Analysis | файлови и метаданни анализи | ❌ няма отделен модул |
+| 08 | Metadata / EXIF | извличане и сравнение | 🟡 `preview.js` (размери/тип/текст), без EXIF |
+| 09 | Hash Generator | алгоритми, хеширане, сравнение | ✅ `GET …/files/{id}/hashes` (SHA-2/3, SHA-1, MD5) |
+| 10 | Reports / PDF | история и експорт | ✅ Report Studio (`report-render`, `report-package`) |
+| 11 | Report Studio | визуален конструктор | ✅ `ui/report-studio.js` |
+| 12 | Profiles / Templates | профили, шаблони, версии | ✅ `config-profiles.js`, `generator.js` (`config-profiles`, `generator-app`) |
+| 13 | Tasks / Automation | задачи и изпълнение | ✅ `job-manager.js` (`job-manager`, `job-persistence`) |
+| 14 | Settings / System | настройки, диагностика, логове | ✅ `ui/settings-panel.js` (17 таба), `ui-settings-sections` |
 | 15 | About / NOTICE | версия, лиценз, third-party | ✅ |
+
+> **Редовете са приведени в съответствие с кода при 0.69.87** за панели 03, 04, 06, 09, 12, 13,
+> 14 — всеки със собствени тестове. Остават отворени само 05 (OTS/Blockchain), 07 (Forensic)
+> и частично 08 (EXIF).
 
 **Правило:** всеки съществуващ модул се **картографира** към новата навигация без загуба на
 функционалност. Старите 13 панела не се смесват безконтролно с новите.
