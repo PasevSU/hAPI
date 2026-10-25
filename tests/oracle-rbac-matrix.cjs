@@ -34,7 +34,11 @@ const EXPECTED = {
   storage: { admin: 'all', operator: 'all', viewer: 'read' },
   retention: { admin: 'all', operator: 'all', viewer: 'read' },
   load: { admin: 'all', operator: 'read', viewer: 'read' },
-  whoami: { admin: 'all', operator: 'read', viewer: 'read' },
+  // `whoami` е единственото право, което съдебните роли имат извън доказателствата, и то
+  // нарочно: GUI-ят взима оттам `capabilities`, за да скрие панелите, които сървърът и без
+  // това отказва. Без него съдът получава 403, `capabilities` остава `null` и GUI-ят не
+  // филтрира — тоест вижда повече, не по-малко (`tests/court-whoami.cjs`).
+  whoami: { admin: 'all', operator: 'read', viewer: 'read', judge: 'read', prosecutor: 'read', clerk: 'read', expert: 'read' },
   users: { admin: 'all', operator: 'none', viewer: 'none' },
   // ── Роли за съд (F7-1) ──────────────────────────────────────────────────────
   // Съдът чете доказателства и веригата на пазене, но НЕ създава и НЕ променя нищо.

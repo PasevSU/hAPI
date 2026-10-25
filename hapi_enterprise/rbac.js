@@ -37,7 +37,13 @@ const CAPABILITIES = {
   storage: { admin: true, operator: true, viewer: 'read' },
   retention: { admin: true, operator: true, viewer: 'read' },
   load: { admin: true, operator: 'read', viewer: 'read' },
-  whoami: { admin: true, operator: 'read', viewer: 'read' },
+  whoami: {
+    admin: true, operator: 'read', viewer: 'read',
+    // Съдът също трябва да може да попита „кой съм и какво мога“. Без това GUI-ят не
+    // получава `capabilities` за съдебните роли и показва панели, които сървърът после
+    // отказва с 403. Отговорът не издава нищо чуждо: собствената роля и собствените права.
+    judge: 'read', prosecutor: 'read', clerk: 'read', expert: 'read',
+  },
   users: { admin: true },
   // ── Роли за съд (F7-1) ────────────────────────────────────────────────────
   // Съдът НЕ е оператор: той чете доказателства и оставя следа, но не създава портали,
