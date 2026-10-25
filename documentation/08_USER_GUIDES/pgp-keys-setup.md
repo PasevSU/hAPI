@@ -57,7 +57,10 @@
 >    замества `!secret <име>` от `secrets.yaml`, преди стойността да влезе в
 >    `/data/options.json`. При две разстояния (`'!secret  hapi_pgp_path_pass'`) името става
 >    `" hapi_pgp_path_pass"` и записът се отказва с `Unknown secret ' hapi_pgp_path_pass'` —
->    „липсващият“ секрет всъщност е излишен интервал.
+>    „липсващият“ секрет всъщност е излишен интервал. Ако стойността все пак стигне до
+>    add-on-а, `keyring.reason` казва точно това: `SECRET_NAME_HAS_SPACE` (излишен интервал)
+>    или `SECRET_NOT_EXPANDED` (не е заместен), а `keyring.secretOption` показва коя опция е
+>    сгрешената.
 
 Ако не ползваш Supervisor, същото идва от env: `PGP_KEY_PASS`, `PGP_PATH_PUBLIC`,
 `PGP_PATH_SECRET`, `PGP_PATH_PASS`.

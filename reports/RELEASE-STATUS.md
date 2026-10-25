@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **269/269** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 448 файла · 76501 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 444 файла · 76137 реда · critical: 0 · high: 0 · medium: 3 · low: 182 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 448 файла · 76604 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 444 файла · 76240 реда · critical: 0 · high: 0 · medium: 3 · low: 182 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -32,6 +32,20 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Незаместен `!secret` в опция вече има точна причина.** Home Assistant отказва запис на
+  конфигурацията с `Unknown secret ' hapi_pgp_path_pass'`, когато стойността е
+  `'!secret  hapi_pgp_path_pass'` с **две** разстояния: Supervisor отсича префикса `!secret `
+  (с едно разстояние) и търси секрет на име `" hapi_pgp_path_pass"`. Ако такава стойност все
+  пак стигне до add-on-а, дотогава се виждаше `SECRET_UNREADABLE` — тоест „файлът не се чете“
+  за нещо, което никога не е било път, и човек търси файл вместо интервал. Сега
+  `path-crypto.js` проверява ПРЕДИ четене и връща `SECRET_NAME_HAS_SPACE` (излишен интервал в
+  името) или `SECRET_NOT_EXPANDED` (не е заместен), заедно с `secretOption` — КОЯ опция е
+  сгрешената. Проверява се само стойността, която реално се ползва (`pgp_key_pass` има
+  предимство пред файла), за да не се събори работеща инсталация. Съобщението на
+  `ADMIN_TOKEN_REQUIRED` за буквално `!secret` вече казва правилото („точно едно разстояние“)
+  и как Home Assistant нарича грешката. Тестове: `pgp-keyring` (четири нови случая) и
+  `start-token-required` (включително варианта с две разстояния).
 
 - **`Idempotency-Key`: повторена заявка не изпълнява действието втори път (F4-5).** Всички
   променящи маршрути на admin API-то — качване на файл, преместване между портали, пакет,

@@ -36,6 +36,9 @@ const isOn = (value) =>
       .toLowerCase()
   );
 const text = (value) => (value == null ? '' : String(value).trim());
+// Префиксът, който Supervisor отсича, за да вземе името на секрета. Едно разстояние —
+// точно както е в `addons/options.py`; второ разстояние става част от името.
+const SECRET_PREFIX = '!secret ';
 
 /** Кодовете, които `pgp.js` дава при невалиден ключ, се пренасят както са (INV-P6). */
 const KEY_ERRORS = new Set([
@@ -107,6 +110,19 @@ function create(options = {}) {
     ...extra,
   });
 
+  /**
+   * `!secret …` в опция значи, че Supervisor НЕ е заместил стойността: по-стар Supervisor,
+   * грешно име или излишно разстояние след `!secret`. Без тази проверка човек вижда
+   * „файлът не се чете“ и търси файл, който никога не е бил път.
+   *
+   * Отсича се ТОЧНО както го прави Supervisor: префиксът е `!secret ` (с ЕДНО разстояние),
+   * а всичко след него е името — затова при две разстояния името започва с интервал.
+   */
+  function unexpandedSecret(value) {
+    if (!value.startsWith(SECRET_PREFIX)) return null;
+    return value.slice(SECRET_PREFIX.length);
+  }
+
   /** Зарежда състоянието. Никога не хвърля — причината отива в `reason`. */
   function load() {
     material = null;
@@ -114,6 +130,23 @@ function create(options = {}) {
     const meta = { encryptPaths, encryptWorkdir, passphraseSource: resolvePassphrase().source };
     const publicPath = text(env[ENV.public]);
     const secretPath = text(env[ENV.secret]);
+    const optionPass = text(env[ENV.keyPass]);
+    const filePass = text(env[ENV.pass]);
+    // Проверяват се само стойностите, които РЕАЛНО се ползват: `pgp_key_pass` има
+    // предимство пред файла, затова неговият `!secret` е по-важният от двата.
+    const refs = [
+      ['pgp_path_public', publicPath],
+      ['pgp_path_secret', secretPath],
+      optionPass ? ['pgp_key_pass', optionPass] : ['pgp_path_pass', filePass],
+    ];
+    for (const [option, value] of refs) {
+      const name = value ? unexpandedSecret(value) : null;
+      if (name === null) continue;
+      // Водещият интервал в името е ТОЧНО причината записът в HA да се откаже с
+      // `Unknown secret ' …'` — затова причината го казва, вместо да го остави за гадаене.
+      const code = name === name.trim() ? 'SECRET_NOT_EXPANDED' : 'SECRET_NAME_HAS_SPACE';
+      return empty(code, { ...meta, secretOption: option });
+    }
     if (!publicPath && !secretPath) return empty('NO_PATHS', meta);
 
     let publicParsed = null;

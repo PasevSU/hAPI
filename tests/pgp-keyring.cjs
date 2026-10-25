@@ -42,6 +42,53 @@ const keyringWith = (env) => create({ env });
   ok('без пътища → available:false/NO_PATHS, стартът продължава');
 }
 
+// ── 1б. `!secret …` в опция: Supervisor не го е заместил ────────────────────
+// Това е точният случай от Home Assistant: `pgp_path_pass: '!secret  hapi_pgp_path_pass'`
+// с ДВЕ разстояния. HA отказва записа с `Unknown secret ' hapi_pgp_path_pass'`, а ако
+// стойността все пак стигне до add-on-а, причината трябва да назове интервала, а не
+// „файлът не се чете“.
+{
+  const spaced = keyringWith({
+    [ENV.public]: PUBLIC,
+    [ENV.secret]: SECRET,
+    [ENV.pass]: '!secret  hapi_pgp_path_pass',
+  }).status();
+  assert.equal(spaced.available, false, 'незаместен !secret не е ключ');
+  assert.equal(spaced.reason, 'SECRET_NAME_HAS_SPACE', 'две разстояния → SECRET_NAME_HAS_SPACE, получено: ' + spaced.reason);
+  assert.equal(spaced.secretOption, 'pgp_path_pass', 'причината казва КОЯ опция е сгрешена');
+  ok('!secret с две разстояния → SECRET_NAME_HAS_SPACE + име на опцията');
+
+  const unexpanded = keyringWith({ [ENV.public]: '!secret hapi_pgp_path_public' }).status();
+  assert.equal(unexpanded.reason, 'SECRET_NOT_EXPANDED', 'едно разстояние, но без замяна → SECRET_NOT_EXPANDED');
+  assert.equal(unexpanded.secretOption, 'pgp_path_public');
+  ok('!secret без замяна → SECRET_NOT_EXPANDED');
+
+  // `pgp_key_pass` има предимство пред файла, затова неговият `!secret` е по-важният.
+  const passOption = keyringWith({
+    [ENV.public]: PUBLIC,
+    [ENV.secret]: SECRET,
+    [ENV.pass]: '/nonexistent/path',
+    [ENV.keyPass]: '!secret pgp_key_pass',
+  }).status();
+  assert.equal(passOption.reason, 'SECRET_NOT_EXPANDED');
+  assert.equal(passOption.secretOption, 'pgp_key_pass', 'проверява се опцията, която реално се ползва');
+  ok('!secret в pgp_key_pass → сочи него, не файла');
+
+  // Обратното: щом `pgp_key_pass` е истинска стойност, сгрешеният път до файла НЕ се ползва
+  // и не бива да събаря ключа — иначе „поправката“ би счупила работеща инсталация.
+  const chosen = keyringWith({
+    [ENV.public]: PUBLIC,
+    [ENV.secret]: SECRET,
+    [ENV.pass]: '!secret  hapi_pgp_path_pass',
+    [ENV.keyPass]: PASS,
+  }).status();
+  assert.equal(chosen.available, true, 'неизползваният път не пречи');
+  assert.equal(chosen.canDecrypt, true);
+  assert.equal(chosen.passphraseSource, 'option');
+  assert.equal(chosen.reason, '');
+  ok('неизползван !secret път не чупи ключа (pgp_key_pass печели)');
+}
+
 // ── 2. Само публичен ключ: може да криптира, не може да декриптира ──────────
 {
   const s = keyringWith({ [ENV.public]: PUBLIC }).status();

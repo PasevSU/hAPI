@@ -178,6 +178,7 @@ add-on-а**, а не „по-късно от панела“. Стандартн
 | `token` силен, но има стар `/data/admin-token`                    | ползва се опцията; файлът не се презаписва — ✅                                                                                      |
 | PGP пътища липсват (нито един от трите)                           | **старт продължава**, `keyring.available = false`, причина `NO_PATHS` — ✅                                                          |
 | PGP пътища зададени, но файл/парола липсват                       | **старт продължава**, `available = false`, причината в `keyring.reason` (`*_UNREADABLE`, `PASSPHRASE_*`) — ✅                         |
+| някоя PGP опция съдържа `!secret …` без замяна                     | **старт продължава**, `available = false`, причина `SECRET_NOT_EXPANDED` (стар Supervisor) или `SECRET_NAME_HAS_SPACE` (излишно разстояние в името) + `secretOption` казва КОЯ опция — ✅ |
 | `pgp_encrypt_paths`/`pgp_encrypt_workdir` = `true`, а ключ липсва | **отказ при опит за криптиране**: `PGP_SECRET_KEY_REQUIRED` (иначе би се лъгало, че е криптирано) — ✅                               |
 | ключът е с Argon2 или неподдържана крива                          | `available = false` + `S2K_ARGON2_UNSUPPORTED` / `UNSUPPORTED_CURVE` — стартът продължава, освен ако криптирането е включено — ✅ |
 

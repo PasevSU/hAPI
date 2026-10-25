@@ -103,7 +103,18 @@ async function runToHealth(options, preExistingToken) {
   const literalSecret = runToExit({ token: '!secret hapi_token' });
   assert.equal(literalSecret.status, 1, 'буквален !secret трябва да се отхвърли');
   assert.match(literalSecret.stderr, /ADMIN_TOKEN_REQUIRED/, 'буквален !secret → ADMIN_TOKEN_REQUIRED');
+  // Съобщението трябва да назове ПРИЧИНАТА (незаместен !secret и правилото за едно
+  // разстояние), а не да казва „слаб токен“ — иначе човек търси дължината вместо интервала.
+  assert.match(literalSecret.stderr, /ONE space after "!secret"/, 'съобщението казва правилото за разстоянието');
+  assert.match(literalSecret.stderr, /Unknown secret/, 'съобщението показва как HA нарича грешката');
   cases.push('!secret … → отказ');
+
+  // 2б. Същото с ДВЕ разстояния — точният случай, който HA отказва с
+  // `Unknown secret ' hapi_token'` (името започва с интервал).
+  const spacedSecret = runToExit({ token: '!secret  hapi_token' });
+  assert.equal(spacedSecret.status, 1, 'две разстояния също се отхвърлят');
+  assert.match(spacedSecret.stderr, /ONE space after "!secret"/, 'и тук причината е разстоянието');
+  cases.push('!secret с две разстояния → същият отказ с причина');
 
   // 3. Твърде къс токен.
   const short = runToExit({ token: 'short-token' });

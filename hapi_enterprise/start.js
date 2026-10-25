@@ -83,6 +83,17 @@ function resolveAdminToken(optionToken) {
   const fromOptions = typeof optionToken === 'string' ? optionToken.trim() : '';
   if (!isWeakToken(fromOptions)) return fromOptions;
   if (fromOptions) {
+    // `!secret …` стига дотук само когато Supervisor НЕ го е заместил: по-стар Supervisor,
+    // грешно име или излишно разстояние след `!secret`. Казваме точно това — иначе човек
+    // търси дължината на токена вместо интервала. Кодът остава същият (той е договорът),
+    // пояснението е в текста.
+    if (fromOptions.startsWith('!secret')) {
+      fail(
+        'ADMIN_TOKEN_REQUIRED: the "token" option still contains a "!secret …" reference, so Supervisor did not ' +
+        'substitute it. Use exactly ONE space after "!secret" and the exact name from secrets.yaml — an extra ' +
+        'space becomes part of the name (Home Assistant then reports "Unknown secret \' name\'").',
+      );
+    }
     fail(
       'ADMIN_TOKEN_REQUIRED: the "token" option is too weak (needs 24+ characters, no placeholder and no repetition pattern)',
     );
