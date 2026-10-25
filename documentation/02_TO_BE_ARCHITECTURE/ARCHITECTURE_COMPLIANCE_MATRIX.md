@@ -84,6 +84,10 @@
 | `WEBHOOK_HMAC` — изходящото събитие е подписано и се повтаря (F4-7) | `webhooks.js` (`sign`/`verifySignature` върху `<t>.<тяло>`, `publicDetails` филтър, `publish`/`drain`, изчакване 30 s→1 h), `routes/webhooks.js` (6 маршрута, право `settings`), таблици `webhooks`/`webhook_deliveries` в `sqlite-store.js`, `webhooks.start()` в `server.js`, `publish` при качване и при копиране/преместване | `webhooks` (верен подпис · старо `t` → `STALE` · ключ веднъж · повторение и „изчерпано“ · тялото без тайни и пътища · HTTP 401/201/400/404) |
 | `SSE_LIVE_EVENTS` — живият поток носи същите събития, без да ги измисля (F4-7) | `event-stream.js` (`broadcast`/`open`, пръстен от 200, `Last-Event-ID` → `resync`, сърцебиене 20 s, таван 30 min), `routes/events.js` (право `metrics`), `stream` в `webhooks.js` (`publish` храни и потока), `eventStream.closeAll()` при спиране | `event-stream` (заглавки и `retry` · излъчване до всички · `Last-Event-ID` връща пропуснатите · старо id → `resync` · HTTP 401/200 и качване → събитие в потока) |
 | `WORM_MAIN_STORE` — доказателството не се презаписва (F7-3) | `worm.js` (`seal`/`unseal`/`isSealed`/`sealManifest`/`verify`), `sealFiles` в `server.js` след `qr.archived`, `worm.unseal` преди изтриване, `WRITABLE` в `verifyPortalFiles` | `worm` (0444 и `isSealed` · `unseal` пуска записа · `sealManifest` точно по манифеста · `verify` намира записваемо доказателство · липсващ файл → `MISSING`) |
+| `COURT_ROLES_IN_GUI` — съдът не вижда панел, който ще върне 403 | `rbac.js` (`whoami` с `read` за четирите съдебни роли), `ui/panel-registry.js` (`allowed`/`DENIED`), `ui/app.js` (`loadCapabilities`) | `court-whoami` (200 за съд · `evidence` без `settings`/`portals` · `DENIED` от регистъра · `settings` остава 403) |
+| `WORM_SEAL_EVERY_PLATFORM` — заключването не зависи от платформата | `worm.js` (`seal` без платформена врата), `routes/portal-qr.js` (`restore` отключва преди запис и заключва пак) | `worm` (презапис/дописване → EPERM · почистване минава), `portal-qr-restore` (след възстановяване файлът е `0444`) |
+| `AEAD_SECRET_KEY_INTEROP` — AEAD-защитеният ключ е сверен с ВТОРА реализация, не сам със себе си | `pgp.js` (`sealAeadSecretSection`/`openAeadSecretSection`) | `pgp-aead-interop` + `tests/lib/aead-interop.py` (Python/`cryptography` · двете посоки · двете подредби) |
+| `WEBVIEW2_SHELL` — GUI-ят има истински WebView2 прозорец, а не само браузър в режим на приложение | `START_HAPI_GUI.pyw` (pywebview → WebView2, иначе същата Edge/Chrome `--app=` команда) | `gui-starter-pyw` (`--check` · паритет с `.bat` · създаване на прозорец без `start()`) |
 | `COURT_ROLES` — съдът чете доказателства, но не ги променя (F7-1) | `rbac.js` (`ROLES`, `isRole`, способности `evidence`/`custody`/`expert_opinion`), `user_roles`/`group_roles` в `config.yaml`, преводите | `court-roles` (7 роли · съдът чете evidence/custody и не пише · няма портали/настройки/потребители · само `expert` представя становище · сгрешена роля пада към подразбирането · Ingress понижава), `oracle-rbac-matrix` (28 способности × 7 роли) |
 
 Външен пакет `hapi-evidence-portal v1.2` е сверен файл по файл — виж `EVIDENCE_PORTAL_V1.2_REVIEW.md`.
@@ -92,7 +96,7 @@
 
 | Показател | Стойност |
 | --- | --- |
-| Тестови файлове | 274 (`reports/RELEASE-STATUS.md`) |
+| Тестови файлове | 291 — числото се генерира в `reports/RELEASE-STATUS.md`, не се поддържа на ръка |
 | Матрица | `node scripts/test-matrix.cjs` — 100 % при 1 опит е целта; флейки при паралелни портове се отчитат изрично |
 | Проверки на изданието | `verify-release` 21/21 · `audit-gui-compat` 33/33 · `logic-audit --gate` · `bad-code-scan --gate` · `eslint` 0 |
 | Твърд бюджет | `server.js` ≤ 2722 реда, 13 компонента в `routes/` |
