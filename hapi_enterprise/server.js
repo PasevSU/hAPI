@@ -632,7 +632,7 @@ function folderMetaOf(p) {
 /** Заключена ли е папката (или някой неин родител)? Връща пътя на заключената или ''. */
 function lockedAncestor(meta, rel) {
   const parts = String(rel || '').split('/').filter(Boolean).slice(0, -1);
-  for (let i = 0; i <= parts.length; i++) {
+  for (let i = 0; i <= parts.length; i++) { // `<=` е нарочно: i === parts.length включва и самата папка, не само предшествениците (тест: portal-folder-lock)
     const key = '/' + parts.slice(0, i).join('/');
     if (meta[key] && meta[key].locked) return key;
   }
