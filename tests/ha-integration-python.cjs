@@ -143,11 +143,78 @@ assert.deepEqual(untranslated, [], 'причини без текст (HA ще п
 const unused = [...translated].filter((t) => !reasons.has(t) && t !== 'already_configured');
 assert.deepEqual(unused, [], 'преводи без код, който да ги връща: ' + unused.join(', '));
 
+// ── 6. Allowlist-ите на моста ──────────────────────────────────────────────
+// `_ALLOWED` и `_PUBLIC_TAIL` са ГРАНИЦАТА на сигурността на интеграцията: какво от
+// вътрешния портал и от публичния gateway стига до браузъра през HA. Те са само регулярен
+// израз в Python файл — досега нищо не ги проверяваше срещу реален списък от пътища, тоест
+// разширяване на израза (или забравена котва) щеше да мине незабелязано.
+// Изразът се ВЗИМА от кода, а не се преписва: иначе тестът пази копие, а не границата.
+const init = read('__init__.py');
+const patternOf = (name) => {
+  const at = init.indexOf(name + ' = re.compile(');
+  assert.ok(at >= 0, name + ' не се намира в __init__.py');
+  const open = init.indexOf('(', at);
+  const close = init.indexOf('\n)', open);
+  assert.ok(close > open, name + ': не се намира краят на re.compile(');
+  const parts = [...init.slice(open + 1, close).matchAll(/r"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+  assert.ok(parts.length >= 1, name + ': няма шаблон в re.compile(');
+  // Python `fullmatch` + име на група → същото в JS (`^…$`, `(?<име>…)`).
+  return new RegExp(parts.join('').replace(/\(\?P</g, '(?<'));
+};
+const ALLOWED = patternOf('_ALLOWED');
+const PUBLIC_TAIL = patternOf('_PUBLIC_TAIL');
+
+const ALLOWED_OK = [
+  ['p/demo', 'порталът'],
+  ['p/demo/files', 'списъкът файлове'],
+  ['p/demo/files/' + 'a1b2c3d4e5f6a1b2c3d4e5f6', 'един файл по id'],
+  ['p/demo/files/' + 'a1b2c3d4e5f6a1b2c3d4e5f6' + '/download', 'изтеглянето му'],
+  ['p/demo/manifest', 'манифестът на портала'],
+  ['p/demo/openapi.json', 'описанието на API-то'],
+  ['p/demo/qr.svg', 'QR кодът'],
+  ['p/demo/storage', 'хранилището'],
+];
+const ALLOWED_NO = [
+  ['admin/api/portals', 'административното API'],
+  ['admin', 'административният корен'],
+  ['p/Demo', 'главни букви не са slug'],
+  ['p/demo/', 'завършваща наклонена черта'],
+  ['p/demo/manifest/extra', 'излишен сегмент'],
+  ['p/demo/files/' + 'a'.repeat(23), '23 знака не са 24'],
+  ['p/demo/files/' + 'a'.repeat(25), '25 знака не са 24'],
+  ['p/demo/files/' + 'A'.repeat(24), 'главни букви не са hex'],
+  ['p/demo/images/logo.png', 'непознат подпът'],
+  ['p/' + 'a'.repeat(64), 'slug над 63 знака'],
+  ['p/demo/../admin/api/portals', 'обхождане нагоре'],
+];
+for (const [tail, why] of ALLOWED_OK) assert.match(tail, ALLOWED, `мостът трябва да пуска ${why}: ${tail}`);
+for (const [tail, why] of ALLOWED_NO) assert.doesNotMatch(tail, ALLOWED, `мостът НЕ бива да пуска ${why}: ${tail}`);
+
+const PUBLIC_OK = [
+  ['portals/demo', 'порталът'],
+  ['portals/demo/files', 'файловете му'],
+  ['files/a1b2c3', 'файл по id'],
+  ['files/a1b2c3/access', 'решението за достъп'],
+  ['files/a1b2c3/download', 'изтеглянето'],
+];
+const PUBLIC_NO = [
+  ['portals/Demo', 'главни букви'],
+  ['portals/demo/extra', 'излишен сегмент'],
+  ['portals/demo/files/download', 'изтегляне без id'],
+  ['files/zzz', 'не е hex'],
+  ['files/a1b2c3/access/extra', 'излишен сегмент'],
+  ['admin/api/files', 'административен път'],
+];
+for (const [tail, why] of PUBLIC_OK) assert.match(tail, PUBLIC_TAIL, `публичният вход трябва да пуска ${why}: ${tail}`);
+for (const [tail, why] of PUBLIC_NO) assert.doesNotMatch(tail, PUBLIC_TAIL, `публичният вход НЕ бива да пуска ${why}: ${tail}`);
+
 const summary =
   `${pyFiles.length} Python файла` +
   (compiled ? ` (${compiled} компилират се)` : ' (без компилация — няма python)') +
   ` · ${[...imported.values()].reduce((n, s) => n + s.size, 0)} имена от const.py` +
   ` · платформи: ${platforms.join(', ')}` +
   ` · ${keys.length} превода в 3 файла` +
-  ` · ${reasons.size} причини с текст`;
+  ` · ${reasons.size} причини с текст` +
+  ` · мостът пуска ${ALLOWED_OK.length} и спира ${ALLOWED_NO.length} пътя` +
+  ` · публичният вход пуска ${PUBLIC_OK.length} и спира ${PUBLIC_NO.length}`;
 console.log('PASS ha-integration-python: ' + summary);

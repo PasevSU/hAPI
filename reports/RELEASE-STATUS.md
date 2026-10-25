@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **295/295** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 493 файла · 83601 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 488 файла · 83040 реда · critical: 0 · high: 0 · medium: 0 · low: 190 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 493 файла · 83668 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 488 файла · 83107 реда · critical: 0 · high: 0 · medium: 0 · low: 190 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -46,6 +46,13 @@
   вместо да мълчи. **Проверено обратно:** добавен синтактичен гаф пада с
   `coordinator.py:215: invalid syntax`; несъществуващо име от `const` — с `PLATFORM_NAMES`;
   изтрит ключ от `bg.json` — с „разминава се с strings.json“.
+  Същият тест пази и **границата на сигурността на моста**: `_ALLOWED` и `_PUBLIC_TAIL` се
+  извличат от `__init__.py` (а не се преписват) и се сверяват с реален списък от пътища —
+  порталът минава за `p/<slug>`, `files`, `manifest`, `openapi.json`, `qr.svg`, `storage`, а
+  `admin/api/…`, главни букви, обхождане нагоре, 23/25 знака вместо 24 и излишен сегмент — не;
+  публичният вход пуска `portals/<slug>`, `files/<hex>`, `…/access`, `…/download`, а
+  административните пътища и излишните сегменти — не. Проверено обратно: разширяване на
+  израза до `^(?:p|admin)/.*` пада с „мостът НЕ бива да пуска административното API“.
 
 - **Изключение, което вече не пази нищо, е ГРЕШКА, а не мълчание.**
   `scripts/bad-code-allowlist.json` имаше 23 записа с обосновка, но нищо не проверяваше, че те
