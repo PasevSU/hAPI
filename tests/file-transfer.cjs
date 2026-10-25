@@ -144,7 +144,14 @@ let step = 'старт';
     assert.equal(proofCopy.status, 201, 'копирането на доказателство е разрешено — оригиналът остава');
     assert.equal(proofCopy.value.sha256, proof.sha256, 'копието е байт по байт');
 
-    console.log('file-transfer OK: копие с нов content_id · преместване с освобождаване на източника · откази 400/404/409 (заключен · версии · доказателство)');
+    // ── 7. Същото правило и при ръчно изтриване през API (не само при политиката) ────
+    step = 'ръчно изтриване на доказателство';
+    const del = await call(`/admin/api/portals/${A.id}/files/${proof.id}`, 'DELETE');
+    assert.equal(del.status, 409, 'файл в манифест не се трие и с бутона „Изтрий“');
+    assert.match(String(del.value.error), /qr-manifest/, 'причината е същата като при задържането');
+    assert.ok((await filesOf(A.id)).some((f) => f.id === proof.id), 'записът остава в регистъра');
+
+    console.log('file-transfer OK: копие с нов content_id · преместване с освобождаване на източника · откази 400/404/409 (заключен · версии · доказателство) · доказателство не се трие и ръчно');
   } finally {
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });

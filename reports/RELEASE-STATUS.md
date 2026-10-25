@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **264/264** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 439 файла · 74979 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 435 файла · 74615 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 439 файла · 74986 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 435 файла · 74622 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -53,6 +53,15 @@
   (`startTransfer`, избор на целеви портал); иконата `move` се връща в спрайта (беше махната
   заедно с бутоните „планирано“). Тест: `tests/file-transfer.cjs` (копие · преместване ·
   байтовете оцеляват · 400/404/409 по причина).
+
+- **`EVIDENCE_NEVER_DELETED` важи и за бутона „Изтрий“, не само за политиката.**
+  `DELETE /admin/api/portals/{id}/files/{fileId}` вече отказва с `409` файл, който влиза в
+  манифест на QR ревизия (причината е в отговора: `qr-manifest` / `qr-manifest-hash` /
+  `archive-unindexed` / `sealed-flag`), и пише `file.delete.refused` в одита. Досега правилото
+  пазеше само автоматичното задържане — човек с бутон можеше да изтрие точно това, което
+  манифестът твърди, че е публикувано. Скриването остава възможно: `accessMode: 'DISABLED'`
+  крие файла, без да губи байтовете. Тест: `tests/file-transfer.cjs` (ръчно изтриване на
+  архивиран файл → 409 с причина).
 
 Нов инструмент преди публикуване: `node scripts/artifact-smoke.cjs` разопакова
 `dist/hapi_enterprise-<версия>.tar.gz` и пуска сървъра **оттам**, после проверява, че новите
