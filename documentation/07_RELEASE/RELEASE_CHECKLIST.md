@@ -17,8 +17,13 @@
 - [ ] `node scripts/artifact-smoke.cjs` — разопакова архива и пуска сървъра **оттам**:
       новите функции трябва да работят в самото издание, не само в работното дърво
       (старт от архива · договор `file` · `qr` в списъка · `mirror` → 409 · `site-csp` пясъчник ·
-      `mirror-target` s3). Проверява класа грешка „модул забравен в COPY“.
-- [ ] `node scripts/verify-release.cjs --with-tests` — 22/22 сценария зелени (вкл. HACS структурата и S22: архивът е байт по байт равен на `hapi_enterprise/`).
+      `mirror-target` s3 · `transfer` copy със сверен SHA-256 и нов `content_id` ·
+      доказателство → `DELETE` 409). Проверява класа грешка „модул забравен в COPY“.
+- [ ] `node scripts/verify-release.cjs --with-tests` — 22/22 сценария зелени (вкл. HACS структурата,
+      S20 (целият набор минава) и S22: архивът е байт по байт равен на `hapi_enterprise/`).
+- [ ] `node scripts/api-reference.cjs --check` — справочникът на API е актуален (броят на операциите
+      и на кодовете за грешка се мени с всеки нов маршрут; `--check` го хваща).
+- [ ] `node scripts/source-inventory.cjs --check` — инвентарът на кода съвпада с диска.
 - [ ] `npm run audit` — без тайни и файлове над 5 MB в дървото.
 - [ ] `node tests/hacs-structure.cjs` — HACS структурата е валидна.
 - [ ] Security + crypto + interop + GUI E2E pass.
