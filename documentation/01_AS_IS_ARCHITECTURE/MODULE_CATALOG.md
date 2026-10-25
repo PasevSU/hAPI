@@ -13,12 +13,22 @@
 
 | Module | Responsibility |
 | ------ | -------------- |
-| `container.js` | DI container |
-| `event-bus.js` | Pub/sub events |
-| `repository.js` → `sqlite-repository.js` | Data access abstraction |
+| `container.js` | DI container — **необвързан**, виж бележката |
+| `event-bus.js` | Pub/sub events — **необвързан**, виж бележката |
+| `repository.js` → `sqlite-repository.js` | Data access abstraction — **необвързан**, виж бележката |
 | `sqlite-store.js` | Transactional SQLite |
 | `api-version.js` | API versioning |
-| `plugins.js` | Plugin loading |
+| `plugins.js` | Plugin loading — **необвързан**, виж бележката |
+
+> **Необвързани модули (Фаза 2 scaffolding).** `container.js`, `event-bus.js`, `plugins.js` и
+> `sqlite-repository.js` се копират в образа, но **нито един файл не ги require-ва** — те са
+> скелет, а не работеща архитектура. Дотогава каталогът ги описваше като част от нея, което е
+> същият вид невярно твърдение като „готов модул“, който нищо не ползва.
+>
+> Пази ги `tests/docker-runtime.cjs` — **обратната посока** на манифеста: дотогава се
+> проверяваше само „всеки required файл е в COPY“, а файл, който никой не изисква, се копираше
+> и пътуваше до потребителя без нищо да го хване. Списъкът с изключения в теста е
+> изричен и с причина за всеки ред.
 
 ## Security & crypto
 

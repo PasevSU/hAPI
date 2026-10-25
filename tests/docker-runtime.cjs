@@ -44,6 +44,50 @@ while (queue.length) {
 }
 assert.ok(seen.size >= 25, 'трябва да има поне 25 локални модула');
 for (const module of ['pgp.js', 'packager.js']) assert.ok(copied.has(module), 'Dockerfile COPY липсва ' + module);
+
+// ── Обратната посока: нищо мъртво в образа ───────────────────────────────────
+// Първата посока (всеки required е в COPY) не хваща мъртъв товар: файл, който никой не
+// изисква, се копира и пътува до потребителя. Одитът на 0.69.87 намери точно такова —
+// четири модула от „Фаза 2“, описани в MODULE_CATALOG като архитектура, но необвързани.
+//
+// Сканира се ЦЯЛОТО дърво (не само require-веригата от server.js, която не влиза в
+// `routes/`), защото модул може да се изисква и от маршрут с `require('../x')`.
+const codeFiles = [];
+const walkCode = (dir) => {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (['node_modules', '.git', 'dist', 'archive'].includes(entry.name)) continue;
+    const abs = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkCode(abs);
+    else if (entry.name.endsWith('.js') || entry.name.endsWith('.cjs')) codeFiles.push(abs);
+  }
+};
+walkCode(root);
+const requiredAnywhere = new Set();
+for (const file of codeFiles) {
+  const text = fs.readFileSync(file, 'utf8');
+  for (const m of text.matchAll(/require\(\s*['"](?:\.\.?\/)*([a-z0-9-]+)(?:\.js)?['"]\s*\)/g)) requiredAnywhere.add(m[1] + '.js');
+}
+// Списъкът е ИЗРИЧЕН и с причина; нов необвързан файл пада тук.
+const NOT_REQUIRED_BY_DESIGN = new Map([
+  ['server.js', 'стартира се като дете от start.js (spawn(node, [SERVER])), не се require-ва'],
+  ['start.js', 'входна точка (CMD → start.js)'],
+  ['storage-migrate.js', 'офлайн CLI (#!node), пуска се ръчно'],
+  ['secret-view.js', 'браузър скрипт, сервира се статично (files["/secret-view.js"])'],
+  // Необвързани модули от Фаза 2 — оставени съзнателно като скелет, но НЕ бива да се
+  // броят за работеща архитектура (вж. MODULE_CATALOG.md, бележката при тях):
+  ['container.js', 'Фаза 2.1 scaffolding — никой не го require-ва'],
+  ['event-bus.js', 'Фаза 2.2 scaffolding — никой не го require-ва'],
+  ['plugins.js', 'Фаза 2.4 scaffolding — никой не го require-ва'],
+  ['sqlite-repository.js', 'Фаза 2.3 scaffolding — никой не го require-ва'],
+]);
+const copyJs = [...copied].filter((n) => n.endsWith('.js'));
+const unwired = copyJs.filter((name) => !requiredAnywhere.has(name) && !NOT_REQUIRED_BY_DESIGN.has(name));
+assert.deepEqual(
+  unwired,
+  [],
+  'тези файлове се копират в образа, но никой не ги require-ва (мъртъв товар): ' + unwired.join(', ') +
+  '. Или ги свържи, или ги добави в NOT_REQUIRED_BY_DESIGN с причина.',
+);
 // Статичните файлове на Enterprise Control Center не се хващат от require-веригата:
 // build context-ът на Supervisor е САМО тази папка, затова всеки асет от UI_FILES
 // трябва да съществува в hapi_enterprise/ и да е покрит от COPY.
