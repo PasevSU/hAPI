@@ -6,7 +6,7 @@
 
 Източници (живи, не копия):
 
-- `hapi_enterprise/admin-api-spec.js` — 207 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
+- `hapi_enterprise/admin-api-spec.js` — 208 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
 - `hapi_enterprise/public-route-allowlist.js` — 32 правила за това какво Public Gateway пропуска.
 - `hapi_enterprise/routes/` — 15 компонента на HTTP слоя.
 
@@ -308,6 +308,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | GET | `/admin/api/evidence` | Делата и порталите, които викащият вижда (съдебните роли — само своите) | `evidence` |
 | GET | `/admin/api/evidence/assignments` | Кой потребител по кои дела е назначен | `settings` |
 | POST | `/admin/api/evidence/assign` | Назначаване на потребител по дела (`*` = всички) | `settings` |
+| GET | `/admin/api/evidence/vault` | Колко обекта и байта пази печатът на WORM (`.worm/<sha256>`) | `evidence` |
 
 ### forensic (`forensic`)
 
@@ -424,7 +425,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | 429 | Твърде много заявки (rate limit) | 3 |
 | 500 | Вътрешна грешка — подробностите са в журнала, не в отговора | 7 |
 | 502 | — | 2 |
-| 503 | — | 9 |
+| 503 | — | 10 |
 
 Публичните съобщения не съдържат физически пътища, тайни или вътрешна конфигурация: при липса на право отговорът е същият като при липсващ ресурс (`404`), за да не се разкрива съществуването.
 

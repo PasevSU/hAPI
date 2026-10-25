@@ -18,16 +18,34 @@
 //   • При преместване/копиране на доказателство защитата се сваля СЪЗНАТЕЛНО (викащият
 //     изрично я отключва), защото иначе легитимна операция би се проваляла с неясна грешка.
 //
+// ПЕЧАТЪТ — ЗАЩО ИЗТРИВАНЕТО ВЕЧЕ НЕ УНИЩОЖАВА ДОКАЗАТЕЛСТВОТО
+//   `chmod` спира презаписването, но не и изтриването: собственикът на директорията пак може
+//   да `unlink`-не файла. Досега това значеше, че `rm` на един файл убива доказателството, а
+//   `verify` само го ОТЧИТА — констатация след загуба не е защита.
+//   Затова при архивиране байтовете на всяко доказателство се слагат и в ПЕЧАТ:
+//   `<filesRoot>/.worm/<sha256>`, адресиран по съдържанието си. Изтриването на работния файл
+//   вече не унищожава байтовете — `vaultCheck` показва „работен: липсва, печат: наличен“, а
+//   `vaultRestore` ги връща и проверява хеша при връщането.
+//
 // ГРАНИЦАТА, КОЯТО СЕ КАЗВА НА ГЛАС
-//   `chmod` пази от ПРЕЗАПИСВАНЕ, не от ИЗТРИВАНЕ: собственикът на файла (процесът на
-//   add-on-а) пак може да го изтрие, защото правата върху директорията го позволяват. Затова
-//   тук НЕ се твърди „WORM като Object Lock“. Истинското неизменяемо съхранение иска
-//   файлова система с append-only атрибут или външно хранилище с Object Lock — и точно това
-//   има второто копие. Този модул затваря дупката „презапис без следа“, не цялата WORM тема.
+//   Печатът пази байтовете от изтриване, но НЕ прави файла физически неизтриваем: който има
+//   права върху `.worm`, може да изтрие и него. Това е „доказателството оцелява единично
+//   изтриване и се връща“, не „никоя роля не може да го изтрие“. Затова тук НЕ се твърди
+//   „WORM като Object Lock“: истинското неизменяемо съхранение иска файлова система с
+//   append-only атрибут или външно хранилище с Object Lock — и точно това има второто копие
+//   (`mirror-target.js`, режим `COMPLIANCE`). Цената на печата е ясна: доказателствата се
+//   пазят два пъти на диска.
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
+const crypto = require('node:crypto');
+const path = require('node:path');
 
 const READ_ONLY = 0o444;
 const WRITABLE = 0o600;
+// Печатът живее до файловете, но в собствена папка с точка отпред — `portal-qr.walk()`
+// пропуска имена, започващи с точка, така че печатът никога не влиза в нов манифест.
+const VAULT_NAME = '.worm';
+const SHA256_RE = /^[0-9a-f]{64}$/;
 // На Windows `chmod 0444` НЕ дава „само за четене“: файлът става НЕИЗТРИВАЕМ за
 // `fs.rm` дори с `force` (EPERM), което чупи `restore` и всяко почистване. Затова там
 // заключването не се прилага — и това се казва, вместо да се прави „наполовина“.
@@ -41,7 +59,155 @@ function create(deps = {}) {
     ? deps.audit
     : (event, details) => { console.warn('WORM AUDIT (no sink)', event, JSON.stringify(details || {})) };
   const filesRoot = deps.filesRoot || '';
-  const path = require('node:path');
+  // Печатът: `<filesRoot>/.worm`, освен ако не е зададен изрично (тест или друг том).
+  // Празен `vaultRoot` значи „няма печат“ — тогава `vaultPut` го казва с `NO_VAULT`,
+  // вместо да пише някъде другаде.
+  const vaultRoot = deps.vaultRoot === undefined
+    ? (filesRoot ? path.join(filesRoot, VAULT_NAME) : '')
+    : (deps.vaultRoot ? path.resolve(deps.vaultRoot) : '');
+
+  /** SHA-256 на файл, четен на парчета — доказателствата не се събират в паметта. */
+  function hashFile(filePath) {
+    return new Promise((resolve, reject) => {
+      const hash = crypto.createHash('sha256');
+      const stream = fsSync.createReadStream(filePath);
+      stream.on('error', reject);
+      stream.on('data', (chunk) => hash.update(chunk));
+      stream.on('end', () => resolve(hash.digest('hex')));
+    });
+  }
+
+  function vaultPathFor(sha) {
+    return path.join(vaultRoot, sha);
+  }
+
+  /**
+   * Слага байтовете в печата. Името е хешът на съдържанието, затова повторно слагане на
+   * същите байтове е безобидно (`wx` → `EEXIST` значи „вече е там“, не грешка).
+   * Ако манифестът носи `sha256` и той не съвпада с прочетеното, НЕ се записва печат:
+   * печат с чужда стойност би „потвърдил“ файл, който вече е подменен.
+   */
+  async function vaultPut(filePath, expectedSha) {
+    if (!vaultRoot) return { ok: false, reason: 'NO_VAULT' };
+    let sha;
+    try {
+      sha = await hashFile(filePath);
+    } catch (e) {
+      return { ok: false, reason: e.code === 'ENOENT' ? 'MISSING' : (e.code || 'ERROR') };
+    }
+    const declared = expectedSha ? String(expectedSha).toLowerCase() : '';
+    if (declared && SHA256_RE.test(declared) && declared !== sha) {
+      return { ok: false, reason: 'SHA_MISMATCH', sha256: sha };
+    }
+    try {
+      await fs.mkdir(vaultRoot, { recursive: true });
+      await fs.copyFile(filePath, vaultPathFor(sha), fsSync.constants.COPYFILE_EXCL);
+      return { ok: true, sha256: sha, created: true };
+    } catch (e) {
+      // `EEXIST`: съдържанието вече е в печата — файл с този хеш не се презаписва.
+      if (e.code === 'EEXIST') return { ok: true, sha256: sha, created: false };
+      return { ok: false, reason: e.code || 'ERROR' };
+    }
+  }
+
+  /**
+   * Състоянието на всяко доказателство по ДВЕ места: работния файл и печата. Точно това
+   * отличава „отчетено след загуба“ от „знаем къде са байтовете“.
+   */
+  async function vaultCheck(entries) {
+    const problems = [];
+    let checked = 0;
+    for (const entry of entries || []) {
+      if (!entry || !entry.path) continue;
+      checked += 1;
+      const declared = entry.sha256 ? String(entry.sha256).toLowerCase() : '';
+      const expected = SHA256_RE.test(declared) ? declared : '';
+      let working;
+      try {
+        const sha = await hashFile(entry.path);
+        working = !expected || sha === expected ? 'ok' : 'changed';
+      } catch {
+        working = 'missing';
+      }
+      let sealed = 'unknown';
+      if (expected && vaultRoot) {
+        try {
+          sealed = (await hashFile(vaultPathFor(expected))) === expected ? 'ok' : 'changed';
+        } catch {
+          sealed = 'missing';
+        }
+      }
+      problems.push({ path: entry.path, sha256: expected, working, sealed });
+    }
+    const lost = problems.filter((p) => p.working !== 'ok');
+    if (lost.length) void audit('worm.vault.problems', { checked, lost: lost.length });
+    return { checked, problems, ok: lost.length === 0 };
+  }
+
+  /**
+   * Връща байтовете от печата. По подразбиране НЕ пипа съществуващ работен файл: връщането
+   * върху нещо, което някой е сложил там, би било подмяна, а не възстановяване. Затова
+   * презапис иска изрично `force`.
+   */
+  async function vaultRestore(entry, options) {
+    const force = Boolean(options && options.force);
+    if (!vaultRoot) return { ok: false, reason: 'NO_VAULT' };
+    if (!entry || !entry.path) return { ok: false, reason: 'NO_PATH' };
+    const declared = entry.sha256 ? String(entry.sha256).toLowerCase() : '';
+    if (!SHA256_RE.test(declared)) return { ok: false, reason: 'NO_DIGEST' };
+    const from = vaultPathFor(declared);
+    let copySha;
+    try {
+      copySha = await hashFile(from);
+    } catch {
+      return { ok: false, reason: 'SEAL_MISSING' };
+    }
+    if (copySha !== declared) return { ok: false, reason: 'SEAL_CORRUPT' };
+    let present;
+    try {
+      await fs.stat(entry.path);
+      present = true;
+    } catch {
+      present = false;
+    }
+    if (present && !force) return { ok: false, reason: 'TARGET_EXISTS' };
+    // Първо настрана, после на място: прекъснато връщане не оставя половин файл.
+    const staging = entry.path + '.restore-' + process.pid + '.tmp';
+    try {
+      await fs.mkdir(path.dirname(entry.path), { recursive: true });
+      await fs.copyFile(from, staging);
+      await fs.rename(staging, entry.path);
+    } catch (e) {
+      await fs.rm(staging, { force: true }).catch(() => undefined);
+      return { ok: false, reason: e.code || 'ERROR' };
+    }
+    void audit('worm.vault.restored', { path: entry.path, sha256: declared, replaced: present });
+    return { ok: true, restored: true, sha256: declared, replaced: present };
+  }
+
+  /** Колко обекта и байта пази печатът — за диагностика, без да се обхожда цялото дърво. */
+  async function vaultStats() {
+    if (!vaultRoot) return { available: false, reason: 'NO_VAULT', objects: 0, bytes: 0 };
+    let names;
+    try {
+      names = await fs.readdir(vaultRoot);
+    } catch (e) {
+      return { available: false, reason: e.code === 'ENOENT' ? 'EMPTY' : (e.code || 'ERROR'), objects: 0, bytes: 0 };
+    }
+    let bytes = 0;
+    let objects = 0;
+    for (const name of names) {
+      if (!SHA256_RE.test(name)) continue;
+      try {
+        const stat = await fs.stat(vaultPathFor(name));
+        objects += 1;
+        bytes += stat.size;
+      } catch {
+        continue;
+      }
+    }
+    return { available: true, objects, bytes, root: vaultRoot };
+  }
 
   /**
    * Заключва ВСИЧКИ файлове от манифест на архивирана QR ревизия. Именно манифестът е
@@ -64,6 +230,8 @@ function create(deps = {}) {
       if (file.storagePath) byPath.set(String(file.storagePath).replace(/^\/+/, ''), file);
     }
     let sealed = 0;
+    let copied = 0;
+    let found = 0;
     const missing = [];
     for (const entry of entries) {
       if (!entry || !entry.path) continue;
@@ -79,12 +247,32 @@ function create(deps = {}) {
       if (known && known.storagePath) candidates.push(path.join(filesRoot, portal.id, String(known.id)));
       let done = false;
       for (const target of candidates) {
-        const out = await seal(target);
-        if (out.ok) { done = true; break }
+        // Наличието се проверява ИЗРИЧНО: `seal()` на Windows връща `UNSUPPORTED_PLATFORM`
+        // без да пипа диска, тоест по неговия резултат не може да се разбере има ли файл.
+        // Първата версия смяташе `ok === false` за „липсва“ и на Windows одитът крещеше
+        // „worm.seal.missing“ за файлове, които са си на мястото.
+        let present;
+        try {
+          present = (await fs.stat(target)).isFile();
+        } catch {
+          present = false;
+        }
+        if (!present) continue;
+        // Двете защити се правят заедно, защото пазят от различни неща: `seal` от презапис,
+        // печатът от изтриване. На Windows работи само печатът.
+        if ((await seal(target)).ok) sealed += 1;
+        const copy = await vaultPut(target, entry.sha256);
+        if (copy.ok) copied += 1;
+        else if (copy.reason !== 'NO_VAULT') log.warn('worm.vault.failed', { ns: 'worm', reason: copy.reason });
+        done = true;
+        break;
       }
-      if (done) sealed += 1; else missing.push(rel);
+      if (done) found += 1; else missing.push(rel);
     }
     if (sealed) void audit('worm.sealed', { portalId: portal.id, files: sealed });
+    // Печатът се отчита винаги, когато има намерени файлове — включително с `copies: 0`
+    // (няма печат), за да не изглежда „готово“, когато нищо не е запазено.
+    if (found) void audit('worm.sealed.copy', { portalId: portal.id, found, copies: copied });
     if (missing.length) void audit('worm.seal.missing', { portalId: portal.id, files: missing.slice(0, 20), count: missing.length });
     return sealed;
   }
@@ -145,7 +333,20 @@ function create(deps = {}) {
     return { checked, problems, ok: problems.length === 0 };
   }
 
-  return { seal, unseal, isSealed, verify, sealManifest, READ_ONLY, WRITABLE };
+  return {
+    seal,
+    unseal,
+    isSealed,
+    verify,
+    sealManifest,
+    vaultPut,
+    vaultCheck,
+    vaultRestore,
+    vaultStats,
+    READ_ONLY,
+    WRITABLE,
+    vaultRoot,
+  };
 }
 
-module.exports = { create, READ_ONLY, WRITABLE };
+module.exports = { create, READ_ONLY, WRITABLE, VAULT_NAME };

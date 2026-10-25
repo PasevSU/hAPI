@@ -4,6 +4,7 @@
 //   GET  /admin/api/evidence                    → делата и порталите, които ВИКАЩИЯТ вижда
 //   POST /admin/api/evidence/assign             → { user, cases: [...] } — назначаване (само admin)
 //   GET  /admin/api/evidence/assignments        → кой по кои дела е назначен (само admin)
+//   GET  /admin/api/evidence/vault              → колко обекта пази ПЕЧАТЪТ на WORM (.worm/<sha256>)
 //
 // Защо съществува: съдебните роли имаха способности `evidence`/`custody`, но нито един маршрут
 // не ги ползваше и нищо не ограничаваше видимостта по дело. Тук правата стават реални.
@@ -11,7 +12,7 @@
 // Договор: `handle()` връща `true`, когато заявката е за този компонент (и е приключена),
 // и `false`, когато трябва да я поеме следващият компонент.
 function create(deps) {
-  const { json, fail, parse, audit, adminGate, store, getPortals, getCases, roleOf } = deps;
+  const { json, fail, parse, audit, adminGate, store, getPortals, getCases, roleOf, worm } = deps;
   const caseAccess = require('../case-access');
 
   /** Кой е викащият и кои дела са му зададени. */
@@ -53,6 +54,21 @@ function create(deps) {
 
     // Четенето на доказателства е способността `evidence` — тя вече е реална.
     if (!adminGate(req, res, 'evidence', method)) return true;
+
+    // Състоянието на ПЕЧАТА (`.worm/<sha256>`): колко обекта и байта пази. Пътят до папката
+    // НЕ се връща — вътрешният layout не е част от договора. `available: false` с причина е
+    // по-честен отговор от „0 обекта“, който се чете като „всичко е наред“.
+    if (parts[3] === 'vault' && method === 'GET') {
+      if (!worm || typeof worm.vaultStats !== 'function') return fail(res, 503, 'WORM печатът не е достъпен'), true;
+      const stats = await worm.vaultStats();
+      return json(res, 200, {
+        available: stats.available === true,
+        objects: Number(stats.objects) || 0,
+        bytes: Number(stats.bytes) || 0,
+        reason: stats.available === true ? null : (stats.reason || 'UNKNOWN'),
+      }), true;
+    }
+
     if (!(parts.length === 3 && method === 'GET')) return fail(res, 404, 'Not found'), true;
 
     const me = caller(req);
