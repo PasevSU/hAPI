@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **269/269** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 448 файла · 76604 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 444 файла · 76240 реда · critical: 0 · high: 0 · medium: 3 · low: 182 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 448 файла · 76616 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 444 файла · 76252 реда · critical: 0 · high: 0 · medium: 3 · low: 182 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -45,7 +45,9 @@
   предимство пред файла), за да не се събори работеща инсталация. Съобщението на
   `ADMIN_TOKEN_REQUIRED` за буквално `!secret` вече казва правилото („точно едно разстояние“)
   и как Home Assistant нарича грешката. Тестове: `pgp-keyring` (четири нови случая) и
-  `start-token-required` (включително варианта с две разстояния).
+  `start-token-required` (включително варианта с две разстояния). `artifact-smoke` (вече 10
+  проверки) доказва, че и **разархивираното** издание разпознава точно този случай — файл,
+  който не влезе в архива, иначе минава незабелязано, защото тестовете в репото го виждат.
 
 - **`Idempotency-Key`: повторена заявка не изпълнява действието втори път (F4-5).** Всички
   променящи маршрути на admin API-то — качване на файл, преместване между портали, пакет,

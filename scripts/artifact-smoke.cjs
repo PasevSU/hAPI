@@ -102,6 +102,18 @@ const checks = [];
     if (spec.kind !== 's3' || spec.lockDays !== 30 || spec.bucket !== 'hapi-evidence') throw new Error('mirror-target в изданието е счупен');
     checks.push('mirror-target → s3 адрес с lock=30');
 
+    // `!secret` с ДВЕ разстояния: точно това кара Home Assistant да откаже запис с
+    // `Unknown secret ' hapi_pgp_path_pass'`. В изданието причината трябва да е ИМЕНУВАНА,
+    // а не `SECRET_UNREADABLE` — иначе човек търси файл, който никога не е бил път.
+    const keyring = require(path.join(appDir, 'path-crypto.js'));
+    const spaced = keyring
+      .create({ env: { PGP_PATH_PASS: '!secret  hapi_pgp_path_pass', PGP_PATH_PUBLIC: 'x.asc' } })
+      .status();
+    if (spaced.reason !== 'SECRET_NAME_HAS_SPACE' || spaced.secretOption !== 'pgp_path_pass') {
+      throw new Error('незаместен !secret в изданието → ' + spaced.reason + ' / ' + spaced.secretOption);
+    }
+    checks.push('незаместен !secret → SECRET_NAME_HAS_SPACE + име на опцията');
+
     // ── Новото в 0.69.87 трябва да работи ИМЕННО в публикувания архив ──────────────
     // `routes/file-transfer.js` е нов файл: ако не влезе в архива, тестовете в репото
     // минават, а при потребителя маршрутът липсва. Точно този клас грешка проверяваме.

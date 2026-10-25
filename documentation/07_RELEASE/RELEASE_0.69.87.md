@@ -226,7 +226,7 @@ add-on-а. Защитата е цената на смяната: без нея �
 | Инвентар на кода | `node scripts/source-inventory.cjs --check` | 168 файла, генериран от диска; `tests/source-inventory.cjs` хваща остарял документ |
 | Каталог на одитните събития | `node scripts/audit-events.cjs --check` | 164 събития от 12 файла, генериран от `audit(…)` |
 | Стил | `npx eslint .` | 0 |
-| Самото издание | `node scripts/artifact-smoke.cjs` | старт от архива · `file` договор · `qr` в списъка · 409 без огледало · `site-csp` пясъчник · `mirror-target` s3 · `transfer` copy със сверен SHA-256 и нов `content_id` · доказателство → `DELETE` 409 |
+| Самото издание | `node scripts/artifact-smoke.cjs` | 10 проверки: старт от архива · `file` договор · `qr` в списъка · 409 без огледало · `site-csp` пясъчник · `mirror-target` s3 · незаместен `!secret` → `SECRET_NAME_HAS_SPACE` · `transfer` copy със сверен SHA-256 и нов `content_id` · `Idempotency-Key` без второ копие · доказателство → `DELETE` 409 |
 
 ## 4. Какво съзнателно остана извън обхвата
 
