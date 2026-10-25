@@ -68,7 +68,7 @@ veraPDF, `legal hold` към Object Lock, Compose режим
 | ------ | --------------- | ------------------ |
 | OTS / Blockchain (панел 05 от план 18) | `docs/plan/18…` панел 05 | няма модул и **не може да има проверяем** такъв без външна услуга: OpenTimestamps иска календар, блокчейн иска възел/API. В среда без мрежа всяко „закотвено“ твърдение би било непроверено |
 | AEAD-защита на секретния PGP ключ (v6, `usage 253`) | `PGP_KEYRING_AND_WORK_FOLDER.md` §„Какво НЕ се поддържа“ | **поддържа се от 0.69.87** чрез нативния OCB на OpenSSL 3 (`pgp.js`, `tests/pgp-aead.cjs`). Остава открито САМО потвърждаването срещу чужда реализация: GnuPG 2.5.24 отговаря „S2K pseudo algo 253 is not yet supported“, тоест на тази машина няма еталон, който да произведе такъв ключ |
-| Роли за съд (judge/prosecutor/clerk/expert), F7-1 | `docs/plan/17…` `F7-1` | ролите съществуват (`rbac.js`, `tests/court-roles.cjs`), но НЕ са ограничени по ДЕЛО — `judge` вижда всички доказателства, не само на своето |
+| Роли за съд (judge/prosecutor/clerk/expert), F7-1 | `docs/plan/17…` `F7-1` | **затворени в 0.69.87**: ролите са в `rbac.js`, а достъпът по ДЕЛО — в `case-access.js` (таблица `user_cases`, fail-closed без назначение, портал без `caseId` е невидим за съд); маршрути `routes/evidence.js`, тест `tests/case-access.cjs` |
 | WORM, който пази и от ИЗТРИВАНЕ | `WORM_MAIN_STORE.md` §„Границата“ | `chmod 0444` пази от презаписване; изтриването се отказва от `retention.protectionOf` (409), не от правата |
 
 `Idempotency-Key` (F4-5) беше в този списък до 0.69.87 и вече е затворен: заглавката се

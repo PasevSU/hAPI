@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **107** backend модула · **14** HTTP компонента · **22** UI модула · **6** Python модула · **30** инструмента · **280** теста.
+Общо: **108** backend модула · **15** HTTP компонента · **22** UI модула · **6** Python модула · **30** инструмента · **281** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (107)
+### Backend модули (`hapi_enterprise/*.js`) (108)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -20,6 +20,7 @@
 | `hapi_enterprise/api-version.js` | Версиониране на API (Фаза 2.5): v2 е текущ, v1 (legacy) продължава да работи, |
 | `hapi_enterprise/audit-chain.js` | Одитен дневник с ХЕШ-ВЕРИГА: всеки запис носи `prevHash` на предишния, така че подмяна |
 | `hapi_enterprise/cabinet.js` | Filing cabinet: an admin-only document store (folders, subfolders, files) separate from portals. |
+| `hapi_enterprise/case-access.js` | ОГРАНИЧАВАНЕ ПО ДЕЛО (план 17, F7-1, DoD „достъп по дело“). |
 | `hapi_enterprise/cases.js` | Дела (cases): номер, заглавие, категория, „относно“, контакт и полета по желание. |
 | `hapi_enterprise/cms-sign.js` | Detached CMS/PKCS#7 подпис (RS-06) — това, което PDF четецът проверява. |
 | `hapi_enterprise/config-profiles.js` | Named configuration profiles. Each profile is a validated, atomically persisted |
@@ -122,12 +123,13 @@
 | `hapi_enterprise/worm.js` | WORM ЗА ОСНОВНОТО ХРАНИЛИЩЕ — файл, който е влязъл в доказателство, не се презаписва |
 | `hapi_enterprise/x509.js` | Минимален X.509 (self-signed) — за подписване на отчети и за устройствени сертификати. |
 
-### HTTP компоненти (`hapi_enterprise/routes/*.js`) (14)
+### HTTP компоненти (`hapi_enterprise/routes/*.js`) (15)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
 | `hapi_enterprise/routes/admin-docs.js` | Договорът за административното API — като компонент на HTTP слоя. |
 | `hapi_enterprise/routes/events.js` | SSE поток — административен компонент на HTTP слоя (F4-7, живата половина). |
+| `hapi_enterprise/routes/evidence.js` | Доказателства по ДЕЛО — компонент на HTTP слоя (план 17, F7-1 „достъп по дело“). |
 | `hapi_enterprise/routes/file-transfer.js` | Преместване и копиране на файл между портали (F2-10 / F2-11) — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/folders.js` | Папки на портала в хранилището — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/forensic.js` | Forensic и метаданни — компонент на HTTP слоя (план 18, панели 07 и 08). |

@@ -805,8 +805,7 @@ const linkCheck = require('./routes/link-check').create({
   json, fail, parse, audit, adminGate, baseUrl,
   publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
 });
-const eventStream = require('./event-stream').create({ log }); const webhooks = require('./webhooks').create({ store: metadataStore, audit, log, stream: eventStream });
-const webhooksRoutes = require('./routes/webhooks').create({ json, fail, parse, audit, adminGate, webhooks }); const eventsRoutes = require('./routes/events').create({ json, fail, adminGate, stream: eventStream }); const forensicRoutes = require('./routes/forensic').create({ json, fail, parse, audit, adminGate, fsp, path, filesRoot, getPortals: () => db.portals });
+const eventStream = require('./event-stream').create({ log }); const webhooks = require('./webhooks').create({ store: metadataStore, audit, log, stream: eventStream }); const webhooksRoutes = require('./routes/webhooks').create({ json, fail, parse, audit, adminGate, webhooks }); const eventsRoutes = require('./routes/events').create({ json, fail, adminGate, stream: eventStream }); const forensicRoutes = require('./routes/forensic').create({ json, fail, parse, audit, adminGate, fsp, path, filesRoot, getPortals: () => db.portals }); const evidenceRoutes = require('./routes/evidence').create({ json, fail, parse, audit, adminGate, store: metadataStore, getPortals: () => db.portals, getCases: () => db.cases, roleOf: (req) => rbac.role(req) });
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
 const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry }); const fileTransfer = require('./routes/file-transfer').create({ json, fail, parse, audit, update, clean, fsp, path, crypto, filesRoot, id, contentIds, storeMirrored, removeMirrored, portalFolder, portalFolderCopy, writeApiDir, baseUrl, observer, retention, getPortals: () => db.portals, publish: webhooks.publish }); const idempotency = require('./idempotency').create({ store: metadataStore, fail, audit, limit: () => runtime.effective().maxUploadBytes });
 async function handler(req, res) {
@@ -926,7 +925,7 @@ async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       return fail(res, 429, 'Too many requests');
     }
-    if (await idempotency.handle({ req, res, url, method })) return; if (await portalTokens.handle({ req, res, url, parts, method })) return; if (await portalStorage.handle({ req, res, url, parts, method })) return; if (await oidcRoutes.handle({ req, res, url, method })) return; if (await webhooksRoutes.handle({ req, res, url, parts, method })) return; if (await eventsRoutes.handle({ req, res, url, parts, method })) return; if (await forensicRoutes.handle({ req, res, url, parts, method })) return;
+    if (await idempotency.handle({ req, res, url, method })) return; if (await portalTokens.handle({ req, res, url, parts, method })) return; if (await portalStorage.handle({ req, res, url, parts, method })) return; if (await oidcRoutes.handle({ req, res, url, method })) return; if (await webhooksRoutes.handle({ req, res, url, parts, method })) return; if (await eventsRoutes.handle({ req, res, url, parts, method })) return; if (await forensicRoutes.handle({ req, res, url, parts, method })) return; if (await evidenceRoutes.handle({ req, res, url, parts, method })) return;
     if (url.pathname === '/api/v1/auth/login' && method === 'POST') {
       if (!loginPeerGate(req, res)) return;
       const b = await parse(req); const username = clean(b.username), password = String(b.password || '');

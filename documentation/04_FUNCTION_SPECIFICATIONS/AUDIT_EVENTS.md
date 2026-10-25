@@ -5,7 +5,7 @@
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **179** събития, излъчвани от **16** файла.
+Общо: **180** събития, излъчвани от **17** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -59,6 +59,7 @@
 | `directory.rule.add` | `hapi_enterprise/server.js` |
 | `directory.rule.remove` | `hapi_enterprise/server.js` |
 | `evidence-portal.deploy` | `hapi_enterprise/server.js` |
+| `evidence.assign` | `hapi_enterprise/routes/evidence.js` |
 | `exif.compare` | `hapi_enterprise/routes/forensic.js` |
 | `exif.read` | `hapi_enterprise/routes/forensic.js` |
 | `file.copy` | `hapi_enterprise/routes/file-transfer.js` |

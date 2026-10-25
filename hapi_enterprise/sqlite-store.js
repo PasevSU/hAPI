@@ -30,8 +30,9 @@ function open(jsonPath) {
  CREATE TABLE IF NOT EXISTS portal_sessions (token_hash TEXT PRIMARY KEY, portal_token_id TEXT NOT NULL REFERENCES portal_tokens(id) ON DELETE CASCADE, portal_id TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL);
  CREATE INDEX IF NOT EXISTS portal_sessions_token_idx ON portal_sessions(portal_token_id);
  -- ACL на потребителски акаунт: кои портали вижда. Празно = всички (старото поведение).
- CREATE TABLE IF NOT EXISTS user_portals (username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE, portal_id TEXT NOT NULL, PRIMARY KEY(username, portal_id));
- -- Idempotency-Key: запазен отговор на вече изпълнена променяща заявка. Ключът тук е
+ CREATE TABLE IF NOT EXISTS user_portals (username TEXT NOT NULL REFERENCES users(username) ON DELETE CASCADE, portal_id TEXT NOT NULL, PRIMARY KEY(username, portal_id)); -- Ограничаване по ДЕЛО (F7-1): кои дела вижда съдебна роля. Празно = НИЩО (fail-closed),
+ -- защото „забравено назначение“ не бива да значи „вижда всички доказателства“. Звезда = всички.
+ CREATE TABLE IF NOT EXISTS user_cases (username TEXT NOT NULL, case_id TEXT NOT NULL, PRIMARY KEY(username, case_id)); -- Idempotency-Key: запазен отговор на вече изпълнена променяща заявка. Ключът тук е
  -- „самоличност:ключ на клиента“ — така чужд клиент не може да прочете чужд отговор, нито
  -- да заеме ключа. NULL в status значи „заявката се изпълнява в момента“.
  CREATE TABLE IF NOT EXISTS idempotency (idem_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, status INTEGER, content_type TEXT, body BLOB, created_at TEXT NOT NULL, expires_at TEXT NOT NULL);
@@ -255,6 +256,18 @@ function open(jsonPath) {
   }
   function getPortalUsers(portalId) { return selectPortalUsers.all(portalId).map((r) => r.username) }
 
+  // ── Ограничаване по ДЕЛО (F7-1) ────────────────────────────────────────────
+  const insertUserCase = db.prepare('INSERT OR IGNORE INTO user_cases(username,case_id) VALUES(?,?)');
+  const deleteUserCasesStmt = db.prepare('DELETE FROM user_cases WHERE username=?');
+  const selectUserCases = db.prepare('SELECT case_id FROM user_cases WHERE username=? ORDER BY case_id');
+  /** Задава делата на потребител (замества старите). Празен списък = НИЩО, не „всички“. */
+  function setUserCases(username, caseIds) {
+    deleteUserCasesStmt.run(username);
+    for (const caseId of caseIds || []) insertUserCase.run(String(username), String(caseId));
+    return getUserCases(username);
+  }
+  function getUserCases(username) { return selectUserCases.all(username).map((r) => r.case_id) }
+
   // ── Idempotency-Key: повторена заявка получава запазения първи отговор ──────
   const idempotencyView = (row) => (row ? { key: row.idem_key, fingerprint: row.fingerprint, status: row.status == null ? null : Number(row.status), contentType: row.content_type || '', body: row.body ? Buffer.from(row.body) : null, createdAt: row.created_at, expiresAt: row.expires_at } : null);
   /** Заема ключа. `false` = ключът вече е зает (завършен или в ход) — викащият чете наново. */
@@ -319,6 +332,6 @@ function open(jsonPath) {
   /** Изчерпаните доставки се пазят известно време, за да се види в конзолата какво не е стигнало. */
   function purgeWebhookDeliveries(before = nowIso()) { return purgeDeliveriesStmt.run(before).changes }
 
-  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, createPortalToken, getPortalTokenByHash, listPortalTokens, revokePortalToken, createPortalSession, getPortalSession, deletePortalSession, purgeExpiredPortalAccess, setUserPortals, getUserPortals, setPortalUsers, getPortalUsers, reserveIdempotency, getIdempotency, completeIdempotency, forgetIdempotency, purgeIdempotency, createWebhook, listWebhooks, getWebhook, deleteWebhook, setWebhookDisabled, touchWebhook, enqueueWebhookDelivery, dueWebhookDeliveries, completeWebhookDelivery, failWebhookDelivery, countPendingWebhookDeliveries, purgeWebhookDeliveries, close: () => db.close() };
+  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, createPortalToken, getPortalTokenByHash, listPortalTokens, revokePortalToken, createPortalSession, getPortalSession, deletePortalSession, purgeExpiredPortalAccess, setUserPortals, getUserPortals, setPortalUsers, getPortalUsers, setUserCases, getUserCases, reserveIdempotency, getIdempotency, completeIdempotency, forgetIdempotency, purgeIdempotency, createWebhook, listWebhooks, getWebhook, deleteWebhook, setWebhookDisabled, touchWebhook, enqueueWebhookDelivery, dueWebhookDeliveries, completeWebhookDelivery, failWebhookDelivery, countPendingWebhookDeliveries, purgeWebhookDeliveries, close: () => db.close() };
 }
 module.exports = { open };
