@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **267/267** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **268/268** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 444 файла · 75700 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 440 файла · 75336 реда · critical: 0 · high: 0 · medium: 3 · low: 182 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 446 файла · 75893 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 442 файла · 75529 реда · critical: 0 · high: 0 · medium: 3 · low: 182 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 267 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 24 RBAC способности, 43 опции, 268 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -41,6 +41,17 @@
   след рестарт). Сега subpacket-ите се РАЗБИРАТ: проверява се, че в хешираната зона има
   `Issuer Fingerprint` (тип 33), а `Issuer Key ID` (тип 16) няма никъде. 30 последователни
   пуска без нито един провал.
+
+- **Каталог на одитните събития — генериран от кода.** Одитът е доказателството „кой
+  какво е правил“, но списъкът на събитията съществуваше само в grep: разминаване в име
+  (`file.delete` срещу `file.delete.refused`) не се хващаше от нищо. Сега
+  `scripts/audit-events.cjs` чете самите извиквания `audit(…)` (вкл. тернарните и
+  `auditChain.append`) и пише `documentation/04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md`:
+  162 събития от 11 файла, с източника на всяко. Деввт наследствени имена без точки
+  (`database_backup_created`, `qr_artifact_created`, `settings_changed`…) са изрично
+  отделени в §3, вместо да се премълчат. `tests/audit-events.cjs` проверява, че документът е
+  актуален, че `--check` хваща остарял и липсващ файл, че всяко събитие сочи съществуващ
+  файл и че разделът с наследството съвпада точно с имената извън конвенцията.
 
 - **Грешката е структура, не низ (RFC 9457).** Тялото на всяка 4xx/5xx грешка носи
   `type`, `title`, `status`, `detail` **заедно** със старото `error`, а типът остава

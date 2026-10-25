@@ -5,7 +5,7 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **100** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **27** инструмента · **267** теста.
+Общо: **100** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **28** инструмента · **268** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -169,12 +169,13 @@
 | `custom_components/hapi_enterprise/coordinator.py` | DataUpdateCoordinator for hAPI Enterprise telemetry. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (27)
+### Инструменти (`scripts/*.cjs`) (28)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
 | `scripts/api-reference.cjs` | Генерира `documentation/02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md` ОТ КОДА. |
 | `scripts/artifact-smoke.cjs` | Проверка на САМОТО ИЗДАНИЕ, не на работното дърво: разопакова `dist/hapi_enterprise-<в>.tar.gz` |
+| `scripts/audit-events.cjs` | КАТАЛОГ НА ОДИТНИТЕ СЪБИТИЯ — ГЕНЕРИРАН ОТ КОДА. |
 | `scripts/audit-gui-compat.cjs` | Двустепенна проверка: ПЪРВО целият GUI, и само при 100 % успех — съвместимостта на пакета. |
 | `scripts/bad-code-scan.cjs` | Сегментен скан за лош код. |
 | `scripts/build-haoss.cjs` | Builds a standalone, HACS-compatible integration repository in release/haoss. |
