@@ -79,6 +79,17 @@ assert.ok(
   `server.js е ${lines} реда (таван ${MAX_SERVER_LINES}). Нов маршрут се слага в routes/<дял>.js, не тук.`,
 );
 
+// ── 3б. Отговорът се пише точно веднъж ──────────────────────────────────────
+// Уловеното в error-log-а на жива инсталация: `ERR_HTTP_HEADERS_SENT` като ДВОЙКА редове,
+// при която втората грешка замазва първата. Затова catch-ът на handler-а трябва да провери
+// `res.headersSent` ПРЕДИ да пише отговор, а `json`/`fail` живеят в `respond.js`.
+assert.match(server, /require\('\.\/respond'\)/, 'server.js: json/fail трябва да идват от respond.js');
+assert.match(
+  server,
+  /catch \(e\) \{ const status[\s\S]{0,500}res\.headersSent/,
+  'server.js: catch-ът на handler-а не проверява res.headersSent — при вече започнал отговор ще се пише втори и ERR_HTTP_HEADERS_SENT ще замаже истинската грешка',
+);
+
 // ── 4. Компонентите влизат в образа ─────────────────────────────────────────
 const docker = read('hapi_enterprise/Dockerfile');
 assert.match(docker, /^COPY routes \/app\/routes\/$/m, 'Dockerfile: routes/ не се копира — add-on-ът няма да стартира');

@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **270/270** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 450 файла · 76865 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 446 файла · 76491 реда · critical: 0 · high: 0 · medium: 3 · low: 183 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 450 файла · 76876 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 446 файла · 76502 реда · critical: 0 · high: 0 · medium: 3 · low: 183 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -43,7 +43,12 @@
   която замазваше първата. Сега `json()` строи тялото първо (грешката става обикновено
   изключение преди писането), а `fail()` при изпратени заглавки само затваря връзката —
   първият отговор печели. Код: `hapi_enterprise/respond.js` (изнесен от `server.js`, който
-  става 2720/2722 реда); тест: `tests/respond.cjs`.
+  става 2720/2722 реда); тест: `tests/respond.cjs`. Допълнително `catch`-ът на `handler`-а
+  вече различава „късен отговор“ от сървърна грешка: при вече изпратени заглавки пише
+  `response.already-sent` като **warning** и НЕ добавя ред в `error-log`, защото там такива
+  редове замазваха истинските 500-ки (в живия лог бяха 10 от 10). Структурният тест
+  `server-structure` пази и двете: `json`/`fail` идват от `respond.js`, а `catch`-ът проверява
+  `res.headersSent`.
 
 - **Незаместен `!secret` в опция вече има точна причина.** Home Assistant отказва запис на
   конфигурацията с `Unknown secret ' hapi_pgp_path_pass'`, когато стойността е

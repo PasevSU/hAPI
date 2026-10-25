@@ -2572,7 +2572,7 @@ async function handler(req, res) {
         }
       } return fail(res, 404, 'Not found')
     } return fail(res, 404, 'Not found')
-  } catch (e) { const status = e && e.status || 500, message = e && e.message ? e.message : 'Internal error'; if (status >= 500) { req.log.error('unhandled', { err: message, status, code: e && e.code }); void errorLog.append('error', 'http', message) } else req.log.warn('request.rejected', { err: message, status }); return fail(res, status, e && e.status ? message : 'Internal error') }
+  } catch (e) { const status = e && e.status || 500, message = e && e.message ? e.message : 'Internal error'; if (res.headersSent) { req.log.warn('response.already-sent', { err: message, status }); if (!res.writableEnded) res.end(); return } if (status >= 500) { req.log.error('unhandled', { err: message, status, code: e && e.code }); void errorLog.append('error', 'http', message) } else req.log.warn('request.rejected', { err: message, status }); return fail(res, status, e && e.status ? message : 'Internal error') }
 }
 // Ключов пакет на диска (<storage>/keys/<N>-<отпечатък>/public.asc|private.asc) се
 // импортира при старт: без презапис, без дубликати. Ролите идват от subkeys/*.json,
