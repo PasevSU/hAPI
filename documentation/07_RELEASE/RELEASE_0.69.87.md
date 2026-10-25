@@ -186,7 +186,7 @@ add-on-а. Защитата е цената на смяната: без нея �
 | Гейт | Команда | Резултат |
 | ---- | ------- | -------- |
 | Тестова матрица | `node scripts/test-matrix.cjs --skip=release-status` | **260/260, 1 опит** |
-| Артефакти | `node scripts/verify-release.cjs` | **20/20** |
+| Артефакти | `node scripts/verify-release.cjs` | **21/21** (нов S22: архивът е байт по байт равен на `hapi_enterprise/` — 173 файла) |
 | Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | **0.69.87 · 261 теста**, независим от платформа и дата |
 | Логически одит | `node scripts/logic-audit.cjs --gate` | чисто |
 | Сканиране на лош код | `node scripts/bad-code-scan.cjs --gate` | чисто |

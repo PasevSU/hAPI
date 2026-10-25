@@ -85,7 +85,7 @@
 | --- | --- |
 | Тестови файлове | 247 (`reports/RELEASE-STATUS.md`) |
 | Матрица | `node scripts/test-matrix.cjs` — 100 % при 1 опит е целта; флейки при паралелни портове се отчитат изрично |
-| Проверки на изданието | `verify-release` 20/20 · `audit-gui-compat` 33/33 · `logic-audit --gate` · `bad-code-scan --gate` · `eslint` 0 |
+| Проверки на изданието | `verify-release` 21/21 · `audit-gui-compat` 33/33 · `logic-audit --gate` · `bad-code-scan --gate` · `eslint` 0 |
 | Твърд бюджет | `server.js` ≤ 2722 реда, 9 компонента в `routes/` |
 
 > Когато ред от §5 се затвори, тук се сменя статусът и се добавя тестът, който го пази. Матрицата не е „документ за четене“, а списък на това, което още не е направено.

@@ -579,6 +579,31 @@ if (flag('with-tests')) {
   });
 }
 
+// ── S22. Артефактът е същият код като репото ───────────────────────────────
+// Защо: S17 проверява хигиената, S18 — че tar го чете, S19 — че стартира. Никоя не
+// проверява, че файловете в архива са СЪЩИТЕ байтове като в `hapi_enterprise/`. Ако build
+// стъпка нормализира окончания на редове или пропусне файл, изданието се разминава с това,
+// което тестовете в репото проверяват — точно разминаването, което се вижда чак при
+// потребителя.
+check('S22', 'Артефакт: съдържанието съвпада байт по байт с hapi_enterprise/', () => {
+  const entries = archived(addonArchive).filter((e) => e.path.startsWith(lib.ADDON_DIR + '/') && !e.path.endsWith('/'));
+  const drift = [];
+  let compared = 0;
+  for (const entry of entries) {
+    const rel = entry.path.slice(lib.ADDON_DIR.length + 1);
+    const src = path.join(addonDir, ...rel.split('/'));
+    if (!fs.existsSync(src)) { drift.push('липсва в репото: ' + rel); continue }
+    if (!fs.readFileSync(src).equals(entry.data)) drift.push('различен: ' + rel);
+    compared++;
+  }
+  assert(
+    drift.length === 0,
+    'архивът се разминава с репото: ' + drift.slice(0, 5).join(', ') + (drift.length > 5 ? ` и още ${drift.length - 5}` : ''),
+  );
+  assert(compared >= 100, 'сравнени са само ' + compared + ' файла — архивът изглежда непълен');
+  return `${compared} файла байт по байт`;
+});
+
 // ── Отчет ───────────────────────────────────────────────────────────────────
 function report() {
   results.sort((a, b) => a.id.localeCompare(b.id));

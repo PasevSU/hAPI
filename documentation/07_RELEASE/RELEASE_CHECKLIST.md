@@ -18,7 +18,7 @@
       новите функции трябва да работят в самото издание, не само в работното дърво
       (старт от архива · договор `file` · `qr` в списъка · `mirror` → 409 · `site-csp` пясъчник ·
       `mirror-target` s3). Проверява класа грешка „модул забравен в COPY“.
-- [ ] `node scripts/verify-release.cjs --with-tests` — 21/21 сценария зелени (вкл. HACS структурата).
+- [ ] `node scripts/verify-release.cjs --with-tests` — 22/22 сценария зелени (вкл. HACS структурата и S22: архивът е байт по байт равен на `hapi_enterprise/`).
 - [ ] `npm run audit` — без тайни и файлове над 5 MB в дървото.
 - [ ] `node tests/hacs-structure.cjs` — HACS структурата е валидна.
 - [ ] Security + crypto + interop + GUI E2E pass.
