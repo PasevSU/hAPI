@@ -760,7 +760,7 @@ async function runStorageCheck(reason) {
 // общото състояние. Така файлът расте с нови маршрути, без да расте като монолит.
 const reportsRoutes = require('./routes/reports').create({
   root, json, fail, body, parse, audit, log, cryptoOptions, runtime,
-  reportSystemInfo, persistTsaRecords, adminGate, tsaKeep, pruneTsaRecords,
+  reportSystemInfo, persistTsaRecords, adminGate, tsaKeep, pruneTsaRecords, auditChain,
 });
 
 const generatorRoutes = require('./routes/generator').create({ generator, adminGate, audit, json, fail, parse });

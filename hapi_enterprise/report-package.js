@@ -8,6 +8,8 @@
 //   tsa/start.tsr         RFC 3161 токен за START (ако има)
 //   tsa/stop.tsr          RFC 3161 токен за STOP (ако има)
 //   signature.p7s         detached CMS/PKCS#7 подпис (ако има)
+//   audit/custody.jsonl   отрязък от одитната верига (hash-chained) — кой какво е правил
+//   audit/custody.json    проверката на веригата към момента на пакетиране + SHA-256 на отрязъка
 //   SHA256SUMS.txt        суми на всичко по-горе (за `sha256sum -c`)
 //
 // Статусът НЕ се закръгля нагоре:
@@ -41,9 +43,12 @@ function stampName(date) {
 
 /**
  * Какво съдържа пакетът и какъв е статусът му.
- * @param {{draft?:boolean, stamps?:object|null, cms?:{requested?:boolean, p7s?:Buffer|null}|null}} input
+ * `chain`: `undefined` — не се изисква (стар извикващ), `null` — изисква се, но липсва,
+ * обект — наличен е и влиза в пакета. Така старите извиквания не стават изведнъж INCOMPLETE,
+ * а нарочните — не могат да премълчат липсващата верига.
+ * @param {{draft?:boolean, stamps?:object|null, cms?:{requested?:boolean, p7s?:Buffer|null}|null, chain?:object|null}} input
  */
-function classify({ draft, stamps, cms }) {
+function classify({ draft, stamps, cms, chain }) {
   if (draft) return { status: DRAFT, missing: [], note: 'Чернова: не е подпечатана и не се представя за завършена.' };
   const missing = [];
   const startToken = stamps && stamps.start && stamps.start.token ? stamps.start.token : null;
@@ -51,6 +56,7 @@ function classify({ draft, stamps, cms }) {
   if (!startToken) missing.push('START токен (RFC 3161)');
   if (!stopToken) missing.push('STOP токен (RFC 3161)');
   if (cms && cms.requested && !cms.p7s) missing.push('CMS подпис (PKCS#7)');
+  if (chain === null) missing.push('Одитна верига (audit-chain.jsonl)');
   return {
     status: missing.length ? INCOMPLETE : READY,
     missing,
@@ -64,13 +70,13 @@ function classify({ draft, stamps, cms }) {
  * Строи ZIP пакета в паметта.
  * @returns {{zip:Buffer, name:string, evidence:object}}
  */
-function build({ manifest, pdf, stamps = null, cms = null, draft = false, createdAt = null } = {}) {
+function build({ manifest, pdf, stamps = null, cms = null, draft = false, createdAt = null, chain = undefined } = {}) {
   if (!pdf || !Buffer.isBuffer(pdf) || !pdf.length) throw Object.assign(new Error('липсва PDF за пакета'), { status: 400 });
   if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw Object.assign(new Error('файлът не е PDF'), { status: 400 });
 
   const digest = manifests.digest(manifest) || '';
   const pdfSha256 = sha256(pdf);
-  const verdict = classify({ draft, stamps, cms });
+  const verdict = classify({ draft, stamps, cms, chain });
   const at = createdAt || new Date().toISOString();
 
   const evidence = {
@@ -87,6 +93,17 @@ function build({ manifest, pdf, stamps = null, cms = null, draft = false, create
       closingDigest: (stamps && stamps.closingDigest) || null,
     },
     cms: cms && cms.p7s ? { sha256: sha256(cms.p7s), detached: true } : null,
+    // Отрязъкът от одитната верига е доказателството „кой какво е правил“. Пази се с
+    // проверката си към момента на пакетиране: по-късна подмяна на реда се вижда по `sha256`.
+    audit: chain && Array.isArray(chain.lines)
+      ? {
+          lines: chain.lines.length,
+          sha256: sha256(Buffer.from(chain.lines.join('\n') + (chain.lines.length ? '\n' : ''), 'utf8')),
+          count: Number(chain.count) || 0,
+          lastHash: chain.lastHash || '',
+          valid: chain.valid === true,
+        }
+      : null,
   };
 
   const entries = [
@@ -99,6 +116,28 @@ function build({ manifest, pdf, stamps = null, cms = null, draft = false, create
   if (startDer && startDer.length) entries.push({ name: 'tsa/start.tsr', data: startDer });
   if (stopDer && stopDer.length) entries.push({ name: 'tsa/stop.tsr', data: stopDer });
   if (cms && cms.p7s) entries.push({ name: 'signature.p7s', data: Buffer.from(cms.p7s) });
+  if (chain && Array.isArray(chain.lines) && chain.lines.length) {
+    const custody = chain.lines.join('\n') + '\n';
+    entries.push({ name: 'audit/custody.jsonl', data: Buffer.from(custody, 'utf8') });
+    entries.push({
+      name: 'audit/custody.json',
+      data: Buffer.from(
+        JSON.stringify(
+          {
+            lines: chain.lines.length,
+            sha256: sha256(Buffer.from(custody, 'utf8')),
+            chainCount: Number(chain.count) || 0,
+            chainLastHash: chain.lastHash || '',
+            chainValid: chain.valid === true,
+            note: 'Отрязък от hash-chained одита; пълната верига е в данните на add-on-а.',
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      ),
+    });
+  }
   const sums = entries.map((entry) => `${sha256(entry.data)}  ${entry.name}`).join('\n') + '\n';
   entries.push({ name: 'SHA256SUMS.txt', data: Buffer.from(sums, 'utf8') });
 

@@ -26,6 +26,7 @@ function create(deps) {
     adminGate,
     tsaKeep,
     pruneTsaRecords,
+    auditChain,
   } = deps;
   const crypto = require('node:crypto');
   const fsp = require('node:fs/promises');
@@ -151,7 +152,20 @@ function create(deps) {
             log.warn('report.package.cms.failed', { ns: 'report', err: e.message });
           }
         }
-        const pkg = require('../report-package').build({ manifest, pdf, stamps, cms, draft, createdAt: issuedAt || new Date().toISOString() });
+        // Отрязък от одитната верига: пакетът трябва да носи и „кой какво е правил“, а не само
+        // артефактите. Веригата се проверява ТУК — ако проверката не мине, отрязъкът пак влиза,
+        // но с `valid:false`; ако самият прочит не мине, подаваме `null` и пакетът става
+        // INCOMPLETE с изрична липса, вместо да се преструва на завършен.
+        let chain = null;
+        try {
+          const check = auditChain ? await auditChain.verify() : null;
+          const lines = auditChain ? await auditChain.lines(500) : [];
+          chain = { lines, count: (check && check.count) || 0, lastHash: (check && check.lastHash) || '', valid: !!(check && check.valid) };
+        } catch (e) {
+          log.warn('report.package.custody.failed', { ns: 'report', err: e.message });
+          chain = null;
+        }
+        const pkg = require('../report-package').build({ manifest, pdf, stamps, cms, draft, chain, createdAt: issuedAt || new Date().toISOString() });
         void audit('report.package', { profile: (manifest && manifest.profile) || '', status: pkg.evidence.status, missing: pkg.evidence.missing.length, digest: pkg.evidence.manifestSha256, pdfSha256: pkg.evidence.pdfSha256, tsa: wantTsa ? (stamps && stamps.ok ? 'ok' : 'fail') : 'not requested' });
         res.writeHead(201, {
           'Content-Type': 'application/zip',

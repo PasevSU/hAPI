@@ -59,6 +59,36 @@ for (const line of sums) {
   assert.equal(hash, sha256(read(entries, name)), 'сумата пасва за ' + name);
 }
 
+// ── 2б. Отрязък от одитната верига: наличен → в пакета; поискан и липсващ → липса ──
+const custodyLines = ['{"seq":1,"event":"file.upload"}', '{"seq":2,"event":"report.package"}'];
+const withChain = reportPackage.build({
+  manifest,
+  pdf,
+  stamps: { start: token('start'), stop: token('stop') },
+  chain: { lines: custodyLines, count: 2, lastHash: 'b'.repeat(64), valid: true },
+  createdAt: '2026-10-23T10:00:00.000Z',
+});
+assert.equal(withChain.evidence.status, 'READY', 'веригата не разваля READY');
+const chainEntries = ooxml.unzip(withChain.zip);
+assert.ok(chainEntries.has('audit/custody.jsonl'), 'пакетът носи отрязъка');
+assert.ok(chainEntries.has('audit/custody.json'), 'пакетът носи и проверката на веригата');
+const custody = chainEntries.get('audit/custody.jsonl')().toString('utf8');
+assert.equal(custody, custodyLines.join('\n') + '\n', 'отрязъкът е байт по байт такъв, какъвто е подаден');
+const chainEvidence = JSON.parse(chainEntries.get('evidence.json')().toString('utf8'));
+assert.equal(chainEvidence.audit.lines, 2);
+assert.equal(chainEvidence.audit.sha256, sha256(Buffer.from(custody, 'utf8')), 'отпечатъкът на отрязъка съвпада');
+assert.equal(chainEvidence.audit.count, 2);
+assert.equal(chainEvidence.audit.valid, true);
+const custodyMeta = JSON.parse(chainEntries.get('audit/custody.json')().toString('utf8'));
+assert.equal(custodyMeta.chainLastHash, 'b'.repeat(64), 'метаданните сочат последния хеш на веригата');
+// Поискана, но липсваща верига (прочитът е гръмнал) → INCOMPLETE, не тишина.
+const withoutChain = reportPackage.build({ manifest, pdf, stamps: { start: token('start'), stop: token('stop') }, chain: null, createdAt: '2026-10-23T10:00:00.000Z' });
+assert.equal(withoutChain.evidence.status, 'INCOMPLETE', 'липсващата верига прави пакета INCOMPLETE');
+assert.deepEqual(withoutChain.evidence.missing, ['Одитна верига (audit-chain.jsonl)'], 'липсата е изрична');
+assert.equal(withoutChain.evidence.audit, null, 'няма какво да се опише');
+// Стар извикващ (без `chain`) не изисква верига — обратна съвместимост.
+assert.equal(reportPackage.build({ manifest, pdf, stamps: { start: token('s'), stop: token('e') } }).evidence.status, 'READY', 'без `chain` пакетът остава както преди');
+
 // ── 3. Живият маршрут: 401 без токен, DRAFT и INCOMPLETE със статус в заглавка ─
 (async () => {
   const server = await startServer({});
@@ -93,6 +123,13 @@ for (const line of sums) {
     const plainEvidence = JSON.parse(plainRead('evidence.json').toString('utf8'));
     assert.equal(plainEvidence.status, 'INCOMPLETE');
     assert.ok(plainEvidence.missing.length >= 2, 'evidence.json изрежда липсите');
+    // Живият маршрут подава отрязък от ОДИТНАТА ВЕРИГА — иначе „пакет с доказателства“
+    // не носи кой какво е правил. Сървърът вече е записал събития (старт, портал…).
+    assert.ok(plainEntries.has('audit/custody.jsonl'), 'пакетът от живия маршрут носи отрязъка от одита');
+    const liveCustody = JSON.parse(plainRead('audit/custody.json').toString('utf8'));
+    assert.ok(liveCustody.lines >= 1, 'отрязъкът не е празен: ' + liveCustody.lines);
+    assert.equal(liveCustody.chainValid, true, 'веригата е проверена към момента на пакетиране');
+    assert.ok(plainEvidence.audit && plainEvidence.audit.valid === true, 'evidence.json носи проверката на веригата');
     // Статусът е авторитетен в evidence.json. PDF-ът се рисува с вграден шрифт, затова
     // текстът не се търси буквално; проверява се, че статусът РЕАЛНО стига до рендера —
     // PDF-ът на незеления пакет е различен от този на черновата (различен воден знак).

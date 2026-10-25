@@ -20,6 +20,13 @@ function createAuditChain(root) {
   }
   async function init() { if (initialized) return; const result = await verify(); if (!result.valid) throw Error('Audit chain corrupted: ' + result.reason); sequence = result.count; previous = result.lastHash; initialized = true }
   function append(event, details = {}) { const task = queue.then(async () => { await init(); const e = { seq: ++sequence, at: new Date().toISOString(), event, details, prevHash: previous }; e.hash = hash(canonical(e)); const line = JSON.stringify(e).replace(/[\u0000-\u001f\u007f\u2028\u2029]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')); await fs.appendFile(filename, line + '\n', { mode: 0o600 }); previous = e.hash; return e }); queue = task.catch(() => { }); return task }
-  return { append, verify: async () => { await queue; return verify() }, init };
+  async function tail(limit = 500) {
+    await queue;
+    let raw; try { raw = await fs.readFile(filename, 'utf8') } catch (e) { if (e.code === 'ENOENT') return []; throw e }
+    const rows = raw.split('\n').filter(Boolean);
+    const n = Math.max(1, Math.trunc(Number(limit) || 500));
+    return rows.slice(Math.max(0, rows.length - n));
+  }
+  return { append, verify: async () => { await queue; return verify() }, init, lines: tail };
 }
 module.exports = { createAuditChain };

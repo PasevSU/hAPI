@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **265/265** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 441 файла · 75363 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 437 файла · 74999 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 441 файла · 75460 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 437 файла · 75096 реда · critical: 0 · high: 0 · medium: 3 · low: 181 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -32,6 +32,16 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Доказателственият пакет носи и отрязък от одитната верига.** `report-package.js` събираше
+  PDF, манифест, `evidence.json`, TSA токени и CMS подпис — но не и „кой какво е правил“.
+  Сега в ZIP-а влизат `audit/custody.jsonl` (последните 500 реда от hash-chained одита) и
+  `audit/custody.json` с проверката на веригата към момента на пакетиране (`lines`, `sha256`,
+  `chainCount`, `chainLastHash`, `chainValid`); същото е и в `evidence.json` (`audit`).
+  Ако прочитът на веригата се провали, пакетът става `INCOMPLETE` с изрична липса
+  „Одитна верига“ — не се прави на завършен. Старите извикващи без `chain` остават със старото
+  поведение. Тест: `tests/report-package.cjs` (отрязък байт по байт · отпечатък · липса →
+  `INCOMPLETE` · живият маршрут носи непразен отрязък с `chainValid: true`).
 
 - **Инвентарът на кода вече се генерира, вместо да се поддържа на ръка.**
   `documentation/01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md` твърдеше „v0.50.0“ и изброяваше
