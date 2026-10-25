@@ -7,15 +7,19 @@ const path = require('node:path');
 // recovery. Job records are stored as atomic JSON files under `dir`. Handlers
 // are intentionally NOT serialized: on recovery the caller supplies
 // `resolveHandler(type, params)` so work can be rebuilt after a restart.
-class PauseRequestedError extends Error { constructor(){ super('Job paused'); this.name='PauseRequestedError'; } }
+class PauseRequestedError extends Error { constructor() { super('Job paused'); this.name = 'PauseRequestedError'; } }
 
-function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolveHandler } = {}) {
+function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolveHandler, onTerminal } = {}) {
   const hasDir = typeof dir === 'string' && dir.length > 0;
   if (hasDir) {
     fs.mkdirSync(dir, { recursive: true });
     if (fs.lstatSync(dir).isSymbolicLink()) throw Error('Unsafe job directory');
   }
   if (typeof resolveHandler !== 'function') resolveHandler = () => { throw Error('No job handler resolver'); };
+  // Известие при ЗАВЪРШВАНЕ (успех, отказ, отказ по искане). Липсващ слушател е `null`, а не
+  // мълчалива функция: иначе местата, които го викат, биха твърдели „излъчено“ без нищо да е
+  // излъчено.
+  const notify = typeof onTerminal === 'function' ? onTerminal : null;
 
   const jobs = new Map();
   const queue = [];
@@ -24,9 +28,11 @@ function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolv
   const fileFor = id => path.join(dir, id + '.json');
   function persist(j) {
     if (!hasDir) return;
-    const data = { id:j.id, type:j.type, params:j.params, status:j.status, createdAt:j.createdAt,
-      startedAt:j.startedAt, finishedAt:j.finishedAt, done:j.done, total:j.total, result:j.result,
-      error:j.error, errorCode:j.errorCode };
+    const data = {
+      id: j.id, type: j.type, params: j.params, status: j.status, createdAt: j.createdAt,
+      startedAt: j.startedAt, finishedAt: j.finishedAt, done: j.done, total: j.total, result: j.result,
+      error: j.error, errorCode: j.errorCode
+    };
     const tmp = fileFor(j.id) + '.' + crypto.randomBytes(6).toString('hex') + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(data), { mode: 0o600 });
     fs.renameSync(tmp, fileFor(j.id));
@@ -42,7 +48,7 @@ function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolv
   });
 
   function trim() {
-    const finished = [...jobs.values()].filter(j => ['succeeded','failed','cancelled','interrupted'].includes(j.status));
+    const finished = [...jobs.values()].filter(j => ['succeeded', 'failed', 'cancelled', 'interrupted'].includes(j.status));
     for (const j of finished.slice(0, Math.max(0, finished.length - maxHistory))) {
       jobs.delete(j.id);
       try { if (hasDir) fs.unlinkSync(fileFor(j.id)); } catch (e) { if (e.code !== 'ENOENT') console.error('job record cleanup failed', e.code || e.message); }
@@ -78,7 +84,14 @@ function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolv
       else if (job.controller.signal.aborted) { record(job, { status: 'cancelled' }); terminal = true; }
       else { record(job, { status: 'failed', error: 'Job failed', errorCode: (e && e.code) || '' }); console.error('Job error', job.type, e && e.code || ''); terminal = true; }
     } finally {
-      if (terminal) record(job, { finishedAt: new Date().toISOString() });
+      if (terminal) {
+        record(job, { finishedAt: new Date().toISOString() });
+        // Излъчва се СЛЕД записа: получателят трябва да види `succeeded`, а не „в ход“.
+        if (notify) {
+          try { notify({ id: job.id, type: job.type, status: job.status, result: job.result, error: job.error }) }
+          catch (e) { console.error('job notify failed', e && e.message); }
+        }
+      }
       running--;
       trim();
       pump();
@@ -158,8 +171,10 @@ function create({ dir, concurrency = 1, maxQueued = 50, maxHistory = 100, resolv
       return view(j);
     },
     stats() {
-      return { running, queued: queue.filter(j => j.status === 'queued').length,
-        paused: [...jobs.values()].filter(j => j.status === 'paused').length, concurrency };
+      return {
+        running, queued: queue.filter(j => j.status === 'queued').length,
+        paused: [...jobs.values()].filter(j => j.status === 'paused').length, concurrency
+      };
     }
   };
 }

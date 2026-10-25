@@ -22,9 +22,9 @@ const jobManager = require('./job-manager').create({
     if (type !== 'integrity-scan') throw Error('Unknown job type');
     const portalId = params && params.portalId;
     return async ctx => { const current = db.portals.find(x => x.id === portalId); if (!current) throw Object.assign(new Error('Portal removed'), { status: 404 }); const out = await verifyPortalFiles(current, ctx); if (!ctx.signal.aborted) void audit('integrity.verify', { portalId, summary: out.summary, job: true }); return out };
-  }
-});
-const operatorToken = process.env.OPERATOR_TOKEN || null, viewerToken = process.env.VIEWER_TOKEN || null;
+  },
+  onTerminal: (job) => { if (typeof webhooks !== 'undefined') webhooks.publish('job.completed', { jobId: job.id, type: job.type, status: job.status }) } // job.completed, след записа
+}); const operatorToken = process.env.OPERATOR_TOKEN || null, viewerToken = process.env.VIEWER_TOKEN || null;
 const parseRoles = v => { if (!v) return {}; if (typeof v === 'object' && !Array.isArray(v)) return v; try { const o = JSON.parse(v); if (!o || typeof o !== 'object' || Array.isArray(o)) return {}; return o } catch { return {} } };
 // Роли за Ingress потребители: env (USER_ROLES) или опции на add-on-а (user_roles).
 const addonOptions = (() => { try { return JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || '/data/options.json', 'utf8')) || {} } catch { return {} } })();
@@ -759,13 +759,13 @@ async function runStorageCheck(reason) {
 // общото състояние. Така файлът расте с нови маршрути, без да расте като монолит.
 const reportsRoutes = require('./routes/reports').create({
   root, json, fail, body, parse, audit, log, cryptoOptions, runtime,
-  reportSystemInfo, persistTsaRecords, adminGate, tsaKeep, pruneTsaRecords, auditChain,
+  reportSystemInfo, persistTsaRecords, adminGate, tsaKeep, pruneTsaRecords, auditChain, publish: (e, d) => webhooks.publish(e, d),
 });
 
 const generatorRoutes = require('./routes/generator').create({ generator, adminGate, audit, json, fail, parse });
 const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion });
 // Публични токени за портал (Stage D) и изтегляне на файл от ПАПКАТА му (един вход, не адрес за всеки файл).
-const portalTokens = require('./routes/portal-tokens').create({ json, fail, parse, audit, adminGate, store: metadataStore, policy: portalPolicy, resolvePortal, baseUrl, portalPath: (p) => links.portalLandingPath(p), randomToken: (prefix) => prefix + crypto.randomBytes(32).toString('base64url') });
+const portalTokens = require('./routes/portal-tokens').create({ json, fail, parse, audit, adminGate, store: metadataStore, policy: portalPolicy, resolvePortal, baseUrl, portalPath: (p) => links.portalLandingPath(p), randomToken: (prefix) => prefix + crypto.randomBytes(32).toString('base64url'), publish: (e, d) => webhooks.publish(e, d) });
 const qrRegistry = require('./portal-qr'); const integrityRegistry = require('./portal-integrity'); const worm = require('./worm').create({ log, audit, filesRoot }); const sealFiles = async (portal, manifest) => worm.sealManifest(portal, manifest); const oidcRoutes = require('./routes/oidc').create({ json, fail, audit, oidc: oidcLib, metadataStore, keyDigest, newSessionToken, cookieSecure: (req) => portalPolicy.isSecureRequest(req), baseUrl }); const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr: qrRegistry, archiveRoot: path.join(root, 'archives'), db: () => db }); const portalQr = require('./routes/portal-qr').create({ json, fail, parse, audit, fsp, path, portalRoot, update, qr: qrRegistry, integrity: integrityRegistry, archiveRoot: path.join(root, 'archives'), adminGate, db: () => db, sealFiles });
 // PGP ключохранилище (B2): ключовете идват само от изрични пътища; тук се държи една
 // инстанция, за да е еднакъв отговорът „има ли ключ“ за целия сървър.

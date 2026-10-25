@@ -374,9 +374,11 @@ add-on-а — виж бележката за `!secret` в [`PGP_KEYRING_AND_WORK
 
 - Целеви имена: `document.finalized`, `access.created`, `audit.anchored`, `job.completed`.
   Излъчват се САМО имената от списъка в `hapi_enterprise/webhooks.js` (`EVENTS`), и то при
-  изрично извикване на `publish(…)` от маршрут, който наистина е свършил работа. Днес това са
-  `document.finalized` (след успешно качване на файл) и `webhook.test` (пробна доставка).
-  `audit.anchored` НЕ се излъчва — одитната верига не „закотвя“ нищо във външна система.
+  изрично извикване на `publish(…)` от маршрут, който наистина е свършил работа. Днес ВСИЧКИ
+  четири от `EVENTS` се излъчват: `document.finalized` (качване и копиране/преместване),
+  `job.completed` (завършена задача, след записа), `access.created` (издаден токен за портал) и
+  `report.packaged` (сглобен пакет). `audit.anchored` НЕ се излъчва — одитната верига не
+  „закотвя“ нищо във външна система.
 - Действителните одитни събития са в генерирания
   [`04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md`](../04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md)
   (четени от `audit(…)` в кода); там се проверява и какво съществува. Одитът и webhook-ът са

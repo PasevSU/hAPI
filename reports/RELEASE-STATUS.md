@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **276/276** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **277/277** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 463 файла · 79018 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 459 файла · 78644 реда · critical: 0 · high: 0 · medium: 3 · low: 184 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 464 файла · 79132 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 460 файла · 78758 реда · critical: 0 · high: 0 · medium: 3 · low: 184 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 276 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 277 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -32,6 +32,17 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Всички обявени събития вече се излъчват.** `EVENTS` в `webhooks.js` е договор, но докато
+  кодът викаше `publish(…)` само за `document.finalized`, останалите три имена се приемаха при
+  абониране и мълчаха — абонаментът беше валиден, а събитието никога не идваше. Сега:
+  `job.completed` (от `onTerminal` в `job-manager.js`, СЛЕД записа на `finishedAt`, за да види
+  получателят „готово“, а не „в ход“), `access.created` (при издаден токен за портал),
+  `report.packaged` (след сглобен пакет с доказателства) и `document.finalized` (както досега).
+  `tests/webhook-events.cjs` пада, ако обявено име остане без излъчване, ако излъчено име липсва
+  в договора, ако събитие се излъчва от грешно място, или ако `job.completed` тръгне преди
+  записа. `WEBHOOKS.md`, `INTEGRATION_CONTRACTS.md` и `PLAN_STATUS` §4.1 са обновени — редът
+  „тези събития мълчат“ вече не е верен и е премахнат.
 
 - **Роли за съд (F7-1).** До 0.69.87 `rbac.js` познаваше три роли: `admin`, `operator`,
   `viewer`. За съд това не стига: `viewer` вижда всичко, което операторът вижда, включително

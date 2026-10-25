@@ -12,7 +12,7 @@
 // Договор като на останалите компоненти: `handle()` връща `true`, когато заявката е за
 // този компонент (и е приключена), и `false`, когато трябва да я поеме следващият.
 function create(deps) {
-  const { json, fail, parse, audit, adminGate, store, policy, resolvePortal, baseUrl, portalPath, randomToken } = deps;
+  const { json, fail, parse, audit, adminGate, store, policy, resolvePortal, baseUrl, portalPath, randomToken, publish } = deps;
 
   const MIN_TTL_SECONDS = 60;
   const MAX_TTL_SECONDS = 366 * 24 * 3600;
@@ -147,6 +147,9 @@ function create(deps) {
       const expiresAt = ttl ? new Date(Date.now() + ttl * 1000).toISOString() : null;
       store.createPortalToken({ id, portalId: portal.id, tokenHash: policy.digest(token), scopes, label, expiresAt });
       void audit('portal.token.create', { portalId: portal.id, tokenId: id, scopes, expiresAt });
+      // Издаден достъп е събитие за външния получател (напр. система, която следи кой има
+      // достъп до кой портал). Токенът НЕ влиза в тялото — само че достъп е създаден.
+      if (typeof publish === 'function') publish('access.created', { portalId: portal.id, kind: 'portal-token', scopes: scopes.length, expiresAt });
       // Токенът се връща ТУК и повече никъде — в базата стои само отпечатъкът.
       return json(res, 201, { id, portalId: portal.id, scopes, label, expiresAt, token, url: tokenUrl(req, token), sessionTtlSeconds: policy.sessionTtlSeconds, cookie: policy.snapshot().cookie }), true;
     }

@@ -30,7 +30,7 @@ const READ_ONLY = 0o444;
 const WRITABLE = 0o600;
 
 function create(deps = {}) {
-  const log = deps.log || { warn() {} };
+  const log = deps.log || { warn() { } };
   // Без одит (чист модулен тест) събитието отива в лога, а не се губи: `void` без запис би
   // направило „одитирано“ невярно твърдение.
   const audit = typeof deps.audit === 'function'

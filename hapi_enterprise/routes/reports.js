@@ -27,6 +27,7 @@ function create(deps) {
     tsaKeep,
     pruneTsaRecords,
     auditChain,
+    publish,
   } = deps;
   const crypto = require('node:crypto');
   const fsp = require('node:fs/promises');
@@ -167,6 +168,9 @@ function create(deps) {
         }
         const pkg = require('../report-package').build({ manifest, pdf, stamps, cms, draft, chain, createdAt: issuedAt || new Date().toISOString() });
         void audit('report.package', { profile: (manifest && manifest.profile) || '', status: pkg.evidence.status, missing: pkg.evidence.missing.length, digest: pkg.evidence.manifestSha256, pdfSha256: pkg.evidence.pdfSha256, tsa: wantTsa ? (stamps && stamps.ok ? 'ok' : 'fail') : 'not requested' });
+        // Пакетът е готов и е минал проверката — това е събитие за външен получател, не само
+        // ред в нашия одит. Излъчва се СЛЕД `build`, защото тогава `status` вече е известен.
+        if (typeof publish === 'function') publish('report.packaged', { profile: (manifest && manifest.profile) || '', status: pkg.evidence.status, digest: pkg.evidence.manifestSha256 });
         res.writeHead(201, {
           'Content-Type': 'application/zip',
           'Content-Length': pkg.zip.length,
