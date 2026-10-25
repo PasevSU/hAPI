@@ -5,6 +5,9 @@
 - [ ] Version bumped (`node scripts/build-release.cjs --version X.Y.Z` — пише в
       `hapi_enterprise/config.yaml` и `custom_components/hapi_enterprise/manifest.json`).
 - [ ] `CHANGELOG.md` има запис за версията.
+- [ ] `node scripts/sync-addon-changelog.cjs` — секцията на текущата версия влиза в
+      `hapi_enterprise/CHANGELOG.md`; без нея `dist/` остава с вчерашен текст и `verify-release`
+      пада на S08/S22 (проверено на два пъти).
 - [ ] Change-control record for all included changes.
 - [ ] Dependencies pinned/audited.
 
@@ -27,6 +30,12 @@
 - [ ] `node scripts/api-reference.cjs --check` — справочникът на API е актуален (броят на операциите
       и на кодовете за грешка се мени с всеки нов маршрут; `--check` го хваща).
 - [ ] `node scripts/source-inventory.cjs --check` — инвентарът на кода съвпада с диска.
+- [ ] `node scripts/audit-events.cjs --check` — каталогът на одитните събития съвпада с
+      извикванията `audit(…)` в кода.
+- [ ] `node scripts/docs-index.cjs --check` — пълният индекс на документацията е актуален и
+      нито един документ не е останал без входяща препратка.
+- [ ] `node scripts/error-codes.cjs --check` — каталогът на кодовете за грешка съвпада с кода
+      (нов код без запис тук значи код, който никой не може да потърси).
 - [ ] `npm run audit` — без тайни и файлове над 5 MB в дървото.
 - [ ] `node tests/hacs-structure.cjs` — HACS структурата е валидна.
 - [ ] Security + crypto + interop + GUI E2E pass.
