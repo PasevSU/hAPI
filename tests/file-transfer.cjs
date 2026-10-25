@@ -163,7 +163,25 @@ let step = 'старт';
     assert.match(String(delVersioned.value.error), /qr-manifest-version/, 'причината сочи историята на файла');
     assert.ok((await filesOf(A.id)).some((f) => f.id === proof.id), 'файлът остава');
 
-    console.log('file-transfer OK: копие с нов content_id · преместване с освобождаване на източника · откази 400/404/409 (заключен · версии · доказателство) · доказателство не се трие и ръчно, и след нова версия');
+    // ── 9. Портал с архивирани QR ревизии не се трие без изрично ?force=1 ──────────
+    step = 'изтриване на портал с доказателства';
+    const C = (await json('/admin/api/portals', 'POST', { slug: 'treti', title: 'Трети', visibility: 'public' })).value;
+    assert.ok(C.id, 'третият портал е създаден');
+    fs.mkdirSync(path.join(shareRoot, C.slug), { recursive: true });
+    fs.writeFileSync(path.join(shareRoot, C.slug, 'архив.txt'), 'съдържание за QR');
+    const archivedC = await json(`/admin/api/portals/${C.id}/qr/archive`, 'POST', { note: 'преди изтриване' });
+    assert.equal(archivedC.status, 201, 'QR архивът на третия портал е създаден');
+    const plainDelete = await call(`/admin/api/portals/${C.id}`, 'DELETE');
+    assert.equal(plainDelete.status, 409, 'портал с архивирани ревизии не се трие „направо“');
+    assert.match(String(plainDelete.value.error), /архивирани QR ревизии/, 'причината е изписана');
+    assert.ok((await call(`/admin/api/portals/${C.id}`)).value.id, 'порталът е непокътнат след отказа');
+    const forced = await call(`/admin/api/portals/${C.id}?force=1`, 'DELETE');
+    assert.equal(forced.status, 200, 'с ?force=1 изтриването минава: ' + JSON.stringify(forced.value));
+    assert.equal(forced.value.forced, true, 'отчетено е, че е принудително');
+    assert.equal(forced.value.purgedArchives, 1, 'архивът също е премахнат — иначе остава сирак');
+    assert.equal((await call(`/admin/api/portals/${C.id}`)).status, 404, 'порталът го няма');
+
+    console.log('file-transfer OK: копие с нов content_id · преместване с освобождаване на източника · откази 400/404/409 (заключен · версии · доказателство) · доказателство не се трие и ръчно, и след нова версия · портал с архиви иска ?force=1');
   } finally {
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });
