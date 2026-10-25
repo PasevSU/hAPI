@@ -21,18 +21,49 @@ function version() {
   return (yaml.match(/^version: "([^"]+)"/m) || [])[1] || 'неизвестна';
 }
 
-/** Първият коментар във файла, изчистен; линия от тирета не е описание. */
+/** Първият коментар във файла, изчистен; линия от тирета не е описание.
+ *  Разпознава `//`, блок `/* … *\/`, Python/shell `#` и docstring (`"""…"""` / `'''…'''`),
+ *  защото иначе интеграцията на HA излизаше „без заглавен коментар“, а тя има docstring. */
 function purposeOf(abs) {
   let lines;
   try {
-    lines = fs.readFileSync(abs, 'utf8').split(/\r?\n/, 14);
+    lines = fs.readFileSync(abs, 'utf8').split(/\r?\n/, 24);
   } catch {
     return '(не се чете)';
   }
+  const clean = (text) =>
+    text
+      .replace(/^\/+\s*/, '')
+      .replace(/^#+\s*/, '')
+      .replace(/^\*+\s*/, '')
+      .replace(/^["']{3}\s*/, '')
+      .replace(/["']{3}\s*$/, '')
+      .replace(/[\u2500-\u257f=*#-]{4,}/g, '')
+      .trim();
+  // Търси се ПЪРВИЯТ коментар в началото на файла, а не се спира на първия ред код: част от
+  // модулите започват с `'use strict'` и няколко `require`, а заглавието е след тях.
+  let inBlock = false;
   for (const raw of lines) {
     const line = raw.trim();
-    if (!line.startsWith('//')) continue;
-    const text = line.replace(/^\/+\s*/, '').replace(/[\u2500-\u257f=*#-]{4,}/g, '').trim();
+    if (!line) continue;
+    if (inBlock) {
+      if (line.startsWith('*/')) {
+        inBlock = false;
+        continue;
+      }
+      const text = clean(line);
+      if (text.length >= 6) return text.length > MAX_PURPOSE ? text.slice(0, MAX_PURPOSE - 1) + '…' : text;
+      continue;
+    }
+    if (line.startsWith('/*')) {
+      inBlock = true;
+      const text = clean(line);
+      if (text.length >= 6) return text.length > MAX_PURPOSE ? text.slice(0, MAX_PURPOSE - 1) + '…' : text;
+      continue;
+    }
+    const isComment = line.startsWith('//') || line.startsWith('#') || /^["']{3}/.test(line);
+    if (!isComment) continue;
+    const text = clean(line);
     if (text.length < 6) continue;
     return text.length > MAX_PURPOSE ? text.slice(0, MAX_PURPOSE - 1) + '…' : text;
   }

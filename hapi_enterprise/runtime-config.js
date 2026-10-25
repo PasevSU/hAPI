@@ -1,4 +1,7 @@
 'use strict';
+// Конфигурацията на средата: какво идва от опциите на add-on-а, кое е твърдо зададено и
+// как се проверява. Едно място, което решава „тази стойност откъде дойде“ — за да не се
+// разминават сървърът, тестовете и документацията.
 const fs = require('node:fs'), fsp = require('node:fs/promises'), path = require('node:path'), crypto = require('node:crypto');
 const DEFAULT = { artifactDirectory: 'qr-records', databaseFile: 'db.json', databaseDirectory: '.', organization: 'PasevSU DEV', project: 'Home Assistant Projects', campaign: 'NO TRUST Cybersecurity', backupSchedule: { enabled: false, intervalMinutes: 1440, maxBackups: 10 }, limits: { maxUploadMb: null, maxDownloadStreams: null, maxJobs: null, storageCheckMinutes: null, publicBaseUrl: '', corsOrigin: '', requirePortalToken: null, storeRawIp: null }, data: { conflictPolicy: 'queue', strictTaxonomy: false, defaultCategory: '', defaultGroup: '', maxTags: 30 }, retention: { enabled: false, fileDays: null, auditDays: null, fileAction: 'disable' }, preview: { enabled: true, thumbnails: true }, sensors: { ipMode: null, trustProxy: null, retentionDays: null, geoipPath: '' } };
 const INT = { maxUploadMb: [1, 2048], maxDownloadStreams: [1, 1024], maxJobs: [1, 4], storageCheckMinutes: [0, 10080] };

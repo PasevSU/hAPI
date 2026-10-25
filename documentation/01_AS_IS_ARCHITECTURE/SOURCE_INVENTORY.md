@@ -18,7 +18,7 @@
 | `hapi_enterprise/api-registry.js` | Създаване на хранилище за API на портал (Фаза 8): api/<slug>/ |
 | `hapi_enterprise/api-spec.js` | Генериране на публично API за портал (Фаза 8 / API-01…03) — чист JS, без I/O. |
 | `hapi_enterprise/api-version.js` | Версиониране на API (Фаза 2.5): v2 е текущ, v1 (legacy) продължава да работи, |
-| `hapi_enterprise/audit-chain.js` | (без заглавен коментар) |
+| `hapi_enterprise/audit-chain.js` | Одитен дневник с ХЕШ-ВЕРИГА: всеки запис носи `prevHash` на предишния, така че подмяна |
 | `hapi_enterprise/cabinet.js` | Filing cabinet: an admin-only document store (folders, subfolders, files) separate from portals. |
 | `hapi_enterprise/cases.js` | Дела (cases): номер, заглавие, категория, „относно“, контакт и полета по желание. |
 | `hapi_enterprise/cms-sign.js` | Detached CMS/PKCS#7 подпис (RS-06) — това, което PDF четецът проверява. |
@@ -85,7 +85,7 @@
 | `hapi_enterprise/report-stamp.js` | Фаза 11 / RS-05: реален RFC 3161 обхват върху отчет от Report Studio. |
 | `hapi_enterprise/repository.js` | Repository интерфейс (Фаза 2.3, ADR-04/P4). Дефинира persistence контракта за |
 | `hapi_enterprise/retention.js` | Retention policies: age-based expiry of uploaded files and the human-readable audit |
-| `hapi_enterprise/runtime-config.js` | (без заглавен коментар) |
+| `hapi_enterprise/runtime-config.js` | Конфигурацията на средата: какво идва от опциите на add-on-а, кое е твърдо зададено и |
 | `hapi_enterprise/secret-links.js` | Тайни връзки (zero-knowledge): тайната се шифрова В БРАУЗЪРА, а сървърът пази само |
 | `hapi_enterprise/secret-lock.js` | Сериализация на достъпа до една тайна по id: два едновременни прегледа не бива да |
 | `hapi_enterprise/secret-page.js` | Страница за преглед на тайна връзка. ЦЯЛАТА информация е във фрагмента на адреса |
@@ -101,7 +101,7 @@
 | `hapi_enterprise/standalone.js` | hAPI Enterprise — edge/standalone runtime. |
 | `hapi_enterprise/start.js` | hAPI Enterprise — add-on entrypoint. |
 | `hapi_enterprise/storage-check.js` | Storage health checks: verifies that each configured storage location exists, is a |
-| `hapi_enterprise/storage-migrate.js` | OFFLINE ONLY. Stop add-on before running. Never deletes source. |
+| `hapi_enterprise/storage-migrate.js` | !/usr/bin/env node |
 | `hapi_enterprise/storage-preflight.js` | Подразбиране от 0.69.87: `/share/hapi/data`. Документите са на едно предвидимо място, |
 | `hapi_enterprise/storage-tree.js` | Дърво на папка от хранилището (storage_root) — чист модул (UMD). |
 | `hapi_enterprise/throttle.js` | Ограничаване на скоростта на ПОТОКА (bandwidth pacing). |
@@ -161,12 +161,12 @@
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
-| `custom_components/hapi_enterprise/__init__.py` | (без заглавен коментар) |
-| `custom_components/hapi_enterprise/binary_sensor.py` | (без заглавен коментар) |
-| `custom_components/hapi_enterprise/config_flow.py` | (без заглавен коментар) |
-| `custom_components/hapi_enterprise/const.py` | (без заглавен коментар) |
-| `custom_components/hapi_enterprise/coordinator.py` | (без заглавен коментар) |
-| `custom_components/hapi_enterprise/sensor.py` | (без заглавен коментар) |
+| `custom_components/hapi_enterprise/__init__.py` | hAPI Enterprise Home Assistant integration. |
+| `custom_components/hapi_enterprise/binary_sensor.py` | Binary sensors for hAPI Enterprise: is something broken right now? |
+| `custom_components/hapi_enterprise/config_flow.py` | Config flow for the hAPI Enterprise integration. |
+| `custom_components/hapi_enterprise/const.py` | Constants for the hAPI Enterprise Home Assistant integration. |
+| `custom_components/hapi_enterprise/coordinator.py` | DataUpdateCoordinator for hAPI Enterprise telemetry. |
+| `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
 ### Инструменти (`scripts/*.cjs`) (27)
 
