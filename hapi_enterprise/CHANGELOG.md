@@ -19,7 +19,8 @@
   `response.already-sent` като **warning** и НЕ добавя ред в `error-log`, защото там такива
   редове замазваха истинските 500-ки (в живия лог бяха 10 от 10). Структурният тест
   `server-structure` пази и двете: `json`/`fail` идват от `respond.js`, а `catch`-ът проверява
-  `res.headersSent`.
+  `res.headersSent`. `artifact-smoke` (вече 11 проверки) пуска изданието и твърди, че в лога му
+  няма нито един `ERR_HTTP_HEADERS_SENT`.
 
 - **Незаместен `!secret` в опция вече има точна причина.** Home Assistant отказва запис на
   конфигурацията с `Unknown secret ' hapi_pgp_path_pass'`, когато стойността е

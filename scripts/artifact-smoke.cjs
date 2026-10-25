@@ -176,6 +176,14 @@ const checks = [];
     }
     checks.push('доказателство → DELETE 409 (qr-manifest)');
 
+    // Отговорът се пише точно веднъж (`SINGLE_RESPONSE`). Точно този клас грешка се виждаше
+    // в error-log-а на жива инсталация като двойки `ERR_HTTP_HEADERS_SENT`, при които втората
+    // грешка замазва първата. Проверява се ИЗДАНИЕТО, а не работното дърво.
+    if (/ERR_HTTP_HEADERS_SENT|Cannot write headers after they are sent/i.test(log)) {
+      throw new Error('изданието отговори два пъти на една заявка:\n' + log.slice(-500));
+    }
+    checks.push('нито един двоен отговор (няма ERR_HTTP_HEADERS_SENT)');
+
     console.log('artifact-smoke OK: ' + path.basename(archive) + ' · ' + checks.join(' · '));
   } finally {
     try { child.kill() } catch { /* вече е спрян */ }
