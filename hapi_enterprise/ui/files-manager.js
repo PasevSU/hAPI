@@ -22,6 +22,8 @@
     { id: 'versions', label: 'Версии', icon: 'versions' },
     { id: 'metadata', label: 'Метаданни', icon: 'metadata' },
     { id: 'rename', label: 'Преименувай', icon: 'rename' },
+    { id: 'move', label: 'Премести', icon: 'move' },
+    { id: 'copy', label: 'Копирай', icon: 'copy' },
     { id: 'access', label: 'Достъп', icon: 'access' },
     { id: 'share', label: 'Сподели / QR', icon: 'share' },
     { id: 'signedUrl', label: 'Подписан URL', icon: 'access' },
@@ -1347,7 +1349,7 @@
     if (id === 'lock') return toggleLock(f);
     if (id === 'package') return buildPackage();
     if (id === 'report') return openFileReport(f);
-    if (id === 'move' || id === 'copy') return toast('Планирано (F2-10 / F2-11): преместване и копиране между портали', '');
+    if (id === 'move' || id === 'copy') return startTransfer(f, id);
     if (id === 'encrypt') return toast('Шифроването се избира при качване на нов файл или версия', '');
     return undefined;
   }
@@ -1448,6 +1450,65 @@
     await reload();
     toast(locked ? 'Файлът е заключен' : 'Файлът е отключен', 'ok');
     render();
+  }
+
+  /**
+   * Прехвърляне между портали (F2-10 / F2-11). Целта се ИЗБИРА, не се гадае, и отказът се
+   * показва с причината от сървъра — там са и проверките (доказателство, ключалка, версии),
+   * защото интерфейсът не е мястото, където се решава какво е допустимо.
+   */
+  async function startTransfer(f, mode) {
+    const p = portal();
+    const targets = state.portals.filter((x) => !p || x.id !== p.id);
+    const verb = mode === 'move' ? 'Премести' : 'Копирай';
+    if (!targets.length) return toast('Няма друг портал, към който да се прехвърли файлът', 'err');
+    if (!connected()) {
+      // Демо режим: състоянието се мести в паметта, за да се види ефектът в списъка.
+      const target = targets[0];
+      return demoMutate(
+        `файлът е ${mode === 'move' ? 'преместен' : 'копиран'} в „${target.title || target.slug}“`,
+        () => {
+          const from = p ? p.files.indexOf(f) : -1;
+          if (mode === 'move' && from >= 0) p.files.splice(from, 1);
+          target.files.push(mode === 'move' ? f : Object.assign({}, f, { id: `${f.id}-copy` }));
+        },
+      );
+    }
+    const options = targets
+      .map((x) => `<option value="${esc(x.id)}">${esc(x.title || x.slug)}</option>`)
+      .join('');
+    const hint =
+      mode === 'move'
+        ? 'Файлът се маха от този портал само след успешен запис при целта и сверка по SHA-256. Доказателства (в QR манифест), заключени файлове и файлове с версии не се местят — за тях ползвай „Копирай“.'
+        : 'Копието получава свой идентификатор и свой QR в целевия портал. Оригиналът остава непокътнат.';
+    const m = showModal(`${verb} · ${f.name}`, {
+      html: `<form id="fm-transfer-form">
+        <label class="fm-field"><span>Целеви портал</span>
+          <select name="targetPortalId" required>${options}</select>
+        </label>
+        <p class="hint">${esc(hint)}</p>
+        <div class="fm-actions"><button type="submit" class="btn btn-primary">${verb}</button></div>
+      </form>`,
+    });
+    const form = m.querySelector('#fm-transfer-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('button[type=submit]');
+      if (btn) btn.disabled = true;
+      const r = await api(`${FP(f)}/transfer`, {
+        method: 'POST',
+        json: { mode, targetPortalId: form.targetPortalId.value },
+      });
+      if (!r.ok) {
+        if (btn) btn.disabled = false;
+        return toast(r.error || `HTTP ${r.status}`, 'err');
+      }
+      m.hidden = true;
+      await reload();
+      render();
+      const short = String((r.data && r.data.sha256) || '').slice(0, 12);
+      toast(`${verb === 'Премести' ? 'Преместено' : 'Копирано'} · сверено ${short}…`, 'ok');
+    });
   }
 
   async function preview(f) {

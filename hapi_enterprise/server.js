@@ -807,7 +807,7 @@ const linkCheck = require('./routes/link-check').create({
   publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
 });
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
-const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry });
+const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry }); const fileTransfer = require('./routes/file-transfer').create({ json, fail, parse, audit, update, clean, fsp, path, crypto, filesRoot, id, contentIds, storeMirrored, removeMirrored, portalFolder, portalFolderCopy, writeApiDir, baseUrl, observer, retention, getPortals: () => db.portals });
 async function handler(req, res) {
   try {
     if (req.url.startsWith('//')) req.url = req.url.replace(/^\/{2,}/, '/'); const url = new URL(req.url, 'http://localhost');
@@ -2219,7 +2219,7 @@ async function handler(req, res) {
           return json(res, 200, { portal: { id: p.id, slug: p.slug, title: p.title }, storageRoot: out.storageRoot, exists: out.exists, truncated: out.truncated, folderCount: out.folderCount, fileCount: out.fileCount, bytes: out.bytes, tree: out.tree, folderNotes, folderMeta, generatedAt: new Date().toISOString() });
         }
         // Папки на портала: нова, флагове, изтриване — компонент `routes/folders.js`.
-        if (await folders.handle({ req, res, url, parts, method, portal: p })) return; if (await portalQr.handle({ req, res, url, parts, method, portal: p })) return;
+        if (await folders.handle({ req, res, url, parts, method, portal: p })) return; if (await portalQr.handle({ req, res, url, parts, method, portal: p })) return; if (await fileTransfer.handle({ req, res, url, parts, method, portal: p })) return;
         // Прикачване на файл в папката на портала (storage_root): тялото е съдържанието,
         // пътят идва като ?path=/подпапка/файл.txt (родителските папки се създават).
         if (parts[4] === 'tree' && parts[5] === 'upload' && parts.length === 6 && method === 'POST') {

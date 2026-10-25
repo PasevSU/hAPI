@@ -7,17 +7,18 @@ const path = require('node:path');
 const m = require('../hapi_enterprise/ui/files-manager.js');
 
 // 1. Действията: 11 по план 17 §3.1 + Пакет (ZIP) + Бележка + трите за подпис
-//    (подписан URL, разписка, проверка на разписка) + Отчет — всичките с реален backend.
-assert.equal(m.ACTIONS.length, 15);
+//    (подписан URL, разписка, проверка на разписка) + Отчет + Премести + Копирай — всичките
+//    с реален backend (`POST …/files/{fileId}/transfer` за последните две).
+assert.equal(m.ACTIONS.length, 17);
 const ids = m.ACTIONS.map((a) => a.id);
 assert.deepEqual(
   [...ids].sort(),
-  ['access', 'delete', 'download', 'encrypt', 'metadata', 'note', 'package', 'preview', 'receipt', 'rename', 'report', 'share', 'signedUrl', 'verifyReceipt', 'versions'].sort(),
+  ['access', 'copy', 'delete', 'download', 'encrypt', 'metadata', 'move', 'note', 'package', 'preview', 'receipt', 'rename', 'report', 'share', 'signedUrl', 'verifyReceipt', 'versions'].sort(),
 );
 assert.equal(new Set(ids).size, ids.length);
 
-// 2. Няма „планирани“ бутони: преместване и копиране бяха махнати, защото нямаха
-//    backend — бутон, който само пише „скоро“, е имитация.
+// 2. Няма „планирани“ бутони: преместване и копиране се върнаха едва когато получиха
+//    backend (`routes/file-transfer.js`) — бутон, който само пише „скоро“, е имитация.
 assert.deepEqual(m.ACTIONS.filter((a) => a.planned).map((a) => a.id), []);
 assert.ok(m.ACTIONS.every((a) => typeof a.label === 'string' && a.label.length > 0));
 

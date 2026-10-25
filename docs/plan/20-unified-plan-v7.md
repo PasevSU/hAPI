@@ -285,9 +285,10 @@ flowchart LR
 6. ✅ Навигация и стилове за двата панела.
 7. ✅ Backend: `GET /admin/api/v2/export/rules`, `POST /admin/api/v2/export/preflight`.
 8. ✅ Backend: gateway listener на `8088` + `GET /api/public/v1/files/{id}/download` през `decide()`.
-9. 🟡 План 17: действията Преглед/Изтегли/Версии/… през `decide()` — режимите и
-   проверката са в `download-access.js`, но „Премести“/„Копирай“ между портали още са
-   надписани „планирано“ (`ui/files-manager.js`).
+9. ✅ План 17: действията Преглед/Изтегли/Версии/… през `decide()`; режимите и проверката са
+   в `download-access.js`. „Премести“/„Копирай“ между портали вече не са надпис „планирано“:
+   `POST …/files/{fileId}/transfer` (`routes/file-transfer.js`) и диалог за избор на целеви
+   портал в `ui/files-manager.js`; тест `tests/file-transfer.cjs`.
 10. ✅ Report Studio: Evidence Package от манифеста + `DRAFT`/`INCOMPLETE` статуси —
     `report-package.js` (`classify`/`build`, статуси `READY`/`INCOMPLETE`/`DRAFT`, `evidence.missing`),
     `tests/report-package.cjs`. Остава извън този слот: заверка на PDF/A-3 с veraPDF (външен

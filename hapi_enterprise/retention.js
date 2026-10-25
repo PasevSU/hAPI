@@ -95,6 +95,9 @@ function create({ filesRoot, auditPath, getSettings, getQrRegistry }) {
     let auditLinesPruned = 0; if (c.auditDays) { const cut = Date.now() - c.auditDays * MS; const lines = await auditLines(); const keep = lines.filter(l => { try { return Date.parse(JSON.parse(l).at) >= cut } catch { return false } }); auditLinesPruned = lines.length - keep.length; if (auditLinesPruned > 0) await fsp.writeFile(auditPath, keep.join('\n') + (keep.length ? '\n' : ''), { mode: 0o600 }) }
     return { ...prev, applied: true, deleted, disabled, auditLinesPruned, refused };
   }
-  return { preview, apply, evidenceIndex, CODE };
+  // `protection` е публичната форма на същото правило за други извикващи: преместване между
+  // портали (`routes/file-transfer.js`) пита „това доказателство ли е?“ преди да махне
+  // байтовете от портала-източник. Едно правило, един тест — не второ мнение по същия въпрос.
+  return { preview, apply, evidenceIndex, protection: (portal, file) => protectionOf(portal, file, evidenceIndex()), CODE };
 }
 module.exports = { create, CODE };

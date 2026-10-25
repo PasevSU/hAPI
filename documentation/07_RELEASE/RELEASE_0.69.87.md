@@ -20,6 +20,7 @@
 | 7 | `QR_BADGE_IN_LIST` — „QR vN · N арх.“ в реда на портала | `server.js` (`qrSummary`), `ui/files-manager.js` (`qrBadge`) | `portal-qr-badge` | състоянието на QR да се вижда без отваряне на портала |
 | 8 | `FILE_CONTRACT_PAGE` — договорът `file` като самостоятелна страница | `routes/portal-storage.js` (`serveFile`), `public-route-allowlist.js` | `portal-file-page` | спецификация §6: един файл, без папката и без филтрите на `order` |
 | 9 | `HTML_IN_SANDBOX` — недовереният HTML в изолиран контекст | `site-csp.js`, `server.js` (`/site/…`) | `portal-html-sandbox` | спецификация §7: без бисквитки, без API, без изпълнение с нашите права |
+| 10 | `TRANSFER_BETWEEN_PORTALS` — „Премести“/„Копирай“ са реални | `routes/file-transfer.js`, `ui/files-manager.js`, `ui/icons.js` | `file-transfer`, `files-manager` | бутон, който пише „планирано“, е имитация; преместването трябва да сверява байтовете и да не трие доказателство |
 
 ## 2. По промяна — какво, как и защо
 

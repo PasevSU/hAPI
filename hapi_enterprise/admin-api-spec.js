@@ -229,6 +229,7 @@ const ROUTES = [
   ['GET', '/admin/api/portals/{portalId}/files/{fileId}/download', 'Изтегляне на файл', 'files', 'portals'],
   ['GET', '/admin/api/portals/{portalId}/files/{fileId}/hashes', 'Отпечатъци на файла', 'files', 'portals'],
   ['PATCH', '/admin/api/portals/{portalId}/files/{fileId}/metadata', 'Метаданни на файла', 'files', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/files/{fileId}/transfer', 'Преместване или копиране на файл в друг портал', 'files', 'portals'],
   ['PATCH', '/admin/api/portals/{portalId}/files/{fileId}/lock', 'Заключване или отключване на файл', 'files', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/files/{fileId}/sign', 'Електронен подпис на файл (receipt)', 'files', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/files/{fileId}/verify-signature', 'Проверка на подписа на файл', 'files', 'portals'],

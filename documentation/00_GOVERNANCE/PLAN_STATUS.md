@@ -25,7 +25,7 @@
 | `00_GOVERNANCE/MILESTONES.md` | M6 (настройки) 0.51 🟡, M7 (миграция) 0.52 🟡, M8 (доказателствен портал) 0.53 🟡 | и трите са в продукция отдавна: `ui/settings-panel.js` + `job-manager.js`, `storage-migrate.js` + `workdir-migrate.js`, `evidence-portal.js` + OIDC + PKCS#7 + RFC 3161 | **изостанал** |
 | `00_GOVERNANCE/ROADMAP.md` | „Now (v0.50.0)“; фази 5–11 като следващи | фази 5, 6, 7 са готови; 8–11 частично (OpenAPI/спецификация ✅, Windows Edition ❌) | **изостанал** |
 | `docs/plan/21-next-updates.md` | състояние към 0.69.29, P0 = издаване | издаването минава през Release workflow; RS-05/06/07 са затворени | **исторически** |
-| `docs/plan/20-unified-plan-v7.md` §8.1 | слотове 1–8 ✅, 9 🟡, 10 ❌ | слот 10 (Evidence Package + `DRAFT`/`INCOMPLETE`) е реализиран в `report-package.js` | **поправено** — слот 10 е ✅ от 0.69.87, документът носи статус „исторически“ |
+| `docs/plan/20-unified-plan-v7.md` §8.1 | слотове 1–8 ✅, 9 🟡, 10 ❌ | слот 10 (Evidence Package + `DRAFT`/`INCOMPLETE`) е реализиран в `report-package.js`; слот 9 вече е ✅ — „Премести“/„Копирай“ между портали са реални (`routes/file-transfer.js` + `tests/file-transfer.cjs`) | **поправено** — слот 10 е ✅, слот 9 е ✅ от 0.69.87, документът носи статус „исторически“ |
 | `20-unified-plan-v7.md` §7–8 | W0–W7 ✅, W8 ❌ | същото: W8 (Windows Edition + WebView2) наистина липсва | **вярно** |
 | `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` + матрица §5 | 3 отворени реда (при първата проверка) | **0 отворени реда** — и трите са затворени в 0.69.87 (§4) | **актуално** ✔ |
 

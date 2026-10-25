@@ -6,9 +6,9 @@
 
 Източници (живи, не копия):
 
-- `hapi_enterprise/admin-api-spec.js` — 185 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
+- `hapi_enterprise/admin-api-spec.js` — 186 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
 - `hapi_enterprise/public-route-allowlist.js` — 32 правила за това какво Public Gateway пропуска.
-- `hapi_enterprise/routes/` — 10 компонента на HTTP слоя.
+- `hapi_enterprise/routes/` — 11 компонента на HTTP слоя.
 
 ```bash
 node scripts/api-reference.cjs           # записва документа
@@ -239,6 +239,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | GET | `/admin/api/portals/{portalId}/files/{fileId}/download` | Изтегляне на файл | `portals` |
 | GET | `/admin/api/portals/{portalId}/files/{fileId}/hashes` | Отпечатъци на файла | `portals` |
 | PATCH | `/admin/api/portals/{portalId}/files/{fileId}/metadata` | Метаданни на файла | `portals` |
+| POST | `/admin/api/portals/{portalId}/files/{fileId}/transfer` | Преместване или копиране на файл в друг портал | `portals` |
 | PATCH | `/admin/api/portals/{portalId}/files/{fileId}/lock` | Заключване или отключване на файл | `portals` |
 | POST | `/admin/api/portals/{portalId}/files/{fileId}/sign` | Електронен подпис на файл (receipt) | `portals` |
 | POST | `/admin/api/portals/{portalId}/files/{fileId}/verify-signature` | Проверка на подписа на файл | `portals` |
@@ -348,6 +349,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | Компонент | Отговаря за |
 | --- | --- |
 | `routes/admin-docs.js` | Административната документация и описанието на API-то |
+| `routes/file-transfer.js` | — |
 | `routes/folders.js` | Папки на портала: нова, флагове (видима/медийна/заключена + основание), изтриване |
 | `routes/generator.js` | Генератор на документи |
 | `routes/link-check.js` | Проверка на връзки |
@@ -364,12 +366,12 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 
 | Код | Значение | Срещания |
 | --- | --- | --- |
-| 400 | Невалидна заявка/път/име — проверката е преди докосване на диска | 109 |
+| 400 | Невалидна заявка/път/име — проверката е преди докосване на диска | 112 |
 | 401 | Липсва или невалидна идентичност (административен токен/бисквитка) | 6 |
 | 403 | Идентичността е известна, но правото липсва (напр. заключен файл, общ корен) | 22 |
-| 404 | Ресурсът не съществува ИЛИ не бива да се разкрива (нарочно еднакъв отговор) | 157 |
+| 404 | Ресурсът не съществува ИЛИ не бива да се разкрива (нарочно еднакъв отговор) | 160 |
 | 405 | Методът не се поддържа за този път | 7 |
-| 409 | Конфликт със състоянието (съществуващо име, прекратен QR, максимална дълбочина) | 23 |
+| 409 | Конфликт със състоянието (съществуващо име, прекратен QR, максимална дълбочина) | 26 |
 | 410 | Ресурсът е прекратен (blok: QR е съществувал, достъпът е спрян) | 3 |
 | 413 | Твърде голям payload за операцията | 3 |
 | 415 | — | 2 |
