@@ -77,6 +77,23 @@ response carries `Content-Security-Policy: sandbox …` without `allow-same-orig
 shared session and no way to call the admin API — a published page can no longer act with
 the visitor's rights. Assets (`.css`, `.js`, fonts) keep the normal static policy.
 
+A file can **move or be copied to another portal**
+(`POST /admin/api/portals/<id>/files/<fileId>/transfer` with `{mode, targetPortalId}`). The
+bytes are written with `wx` (never overwriting), then read back and compared by SHA-256; a
+mismatch removes the copy and leaves the registry untouched. The copy gets a **new
+`content_id`** because the identifier includes the portal — the same bytes in another portal
+are a different record — while `sha256` and the size stay the same, because the content is.
+On `move` the source is released only **after** the target write succeeds.
+
+**Evidence is not deleted** — not by the retention policy, not by the "Delete" button, not by
+deleting the portal. A file that is part of a QR manifest (or a `sealed` one, or one whose
+older version was published) is refused with `409` and the reason (`qr-manifest`,
+`qr-manifest-hash`, `qr-manifest-version`, `archive-unindexed`, `sealed-flag`), and the
+refusal is audited. Hiding stays possible: `accessMode: 'DISABLED'` keeps the bytes.
+Deleting a portal that has archived QR revisions needs an explicit `?force=1`, which also
+removes the archives and the registry entry (otherwise they would be left orphaned) and is
+recorded as `forced` in the audit log.
+
 ## Install
 
 **Fast path:** use the **ADD REPOSITORY** button above, then install **hAPI Enterprise**
