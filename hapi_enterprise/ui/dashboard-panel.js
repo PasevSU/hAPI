@@ -370,5 +370,5 @@
       </section>`;
   }
 
-  window.HapiDashboardPanel = { mount, mountAbout };
+  window.HapiDashboardPanel = { mount, mountAbout, unmount: stopLive };
 })();

@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **277/277** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **278/278** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 464 файла · 79257 реда · **1** отворени · 7 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 460 файла · 78883 реда · critical: 0 · high: 0 · medium: 3 · low: 184 — **има необяснени** |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 465 файла · 79345 реда · **1** отворени · 7 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 461 файла · 78971 реда · critical: 0 · high: 0 · medium: 3 · low: 184 — **има необяснени** |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 277 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 278 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -32,6 +32,16 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 4 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Таблото вече затваря живия поток, когато го напуснеш.** `startLive` отваря `EventSource`
+  към `/admin/api/events/stream`, но нищо не го затваряше при преминаване към друг раздел:
+  всяко връщане на таблото оставяше ВТОРА отворена връзка, а сървърът ги брои
+  (`/admin/api/events` → `clients`). Дефектът не се виждаше в нито един тест на панела,
+  защото всеки монтира панела веднъж и не го напуска. Сега `app.js` вика
+  `HapiDashboardPanel.unmount()` ПРЕДИ да изчисти изгледа, а `unmount` е `stopLive` —
+  `close()` и нулиране на референцията. `tests/live-stream-lifecycle.cjs` пази и четирите
+  неща: че куката се вика преди изчистването, че панелът я предоставя, че `startLive` първо
+  затваря предишния поток, и че без `EventSource` панелът казва „изключено“, вместо да хвърли.
 
 - **WORM на Windows е ИЗКЛЮЧЕНО съзнателно — защото там `chmod` не прави това, което се очаква.**
   След като заключването проработи, матрицата показа реалната последица: `chmod 0444` на Windows

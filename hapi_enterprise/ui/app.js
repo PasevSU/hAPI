@@ -171,6 +171,14 @@
 
   function renderView() {
     const view = $('#view');
+    // Панелът, който напускаме, получава шанс да освободи ресурси (напр. отворен SSE поток).
+    // Без това таблото оставяше връзка към сървъра след всяко преминаване — видимо като
+    // растящ брой клиенти в `/admin/api/events`. Проверката е през локална променлива, за да
+    // не изглежда като обявяване на панелен модул (виж `tests/gui-coverage.cjs`).
+    const dashboard = window.HapiDashboardPanel;
+    if (dashboard && typeof dashboard.unmount === 'function') {
+      try { dashboard.unmount() } catch { /* освобождаването не бива да чупи навигацията */ }
+    }
     // Табло и „Относно“: РЕАЛНИ данни от add-on-а (dashboard-panel.js). Тук няма демо числа.
     if (current === 'dashboard' && window.HapiDashboardPanel) {
       view.innerHTML = '';
