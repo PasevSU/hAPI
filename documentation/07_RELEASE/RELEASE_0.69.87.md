@@ -301,6 +301,8 @@ process/error Error [ERR_HTTP_HEADERS_SENT] … at json (server.js) at fail (ser
 
 ## 5. Свързани документи
 
+- [`07_RELEASE/AUDIT_0.69.87.md`](AUDIT_0.69.87.md) — **пълният одит**: произход → код → тест →
+  документ → комит, измерени гейтове, какво е проверено извън кода и какво НЕ е доказано.
 - [`00_GOVERNANCE/PLAN_STATUS.md`](../00_GOVERNANCE/PLAN_STATUS.md) — къде сме спрямо плана.
 - [`02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md`](../02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md) — инвариант по инвариант.
 - [`06_TESTING/TEST_CASE_CATALOG.md`](../06_TESTING/TEST_CASE_CATALOG.md) — кой тест кой инвариант пази.

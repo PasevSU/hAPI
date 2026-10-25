@@ -16,7 +16,9 @@
 друг портал; повторена заявка с `Idempotency-Key` не изпълнява действието втори път; данните
 по подразбиране са в `/share/hapi/data`; огледалото може да е S3 обект с Object Lock.
 Подробното описание е в
-[`documentation/07_RELEASE/RELEASE_0.69.87.md`](documentation/07_RELEASE/RELEASE_0.69.87.md).
+[`documentation/07_RELEASE/RELEASE_0.69.87.md`](documentation/07_RELEASE/RELEASE_0.69.87.md), а
+проследимостта и честният списък с недоказаното — в
+[`documentation/07_RELEASE/AUDIT_0.69.87.md`](documentation/07_RELEASE/AUDIT_0.69.87.md).
 
 ### Проверени локални гейтове
 
