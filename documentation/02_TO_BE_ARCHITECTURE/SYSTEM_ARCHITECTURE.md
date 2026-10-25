@@ -32,6 +32,8 @@ A single codebase, three deployment targets, one behavior:
 
 - **Identity & RBAC** — roles + SSO (`X-Remote-User-Name` / `-Id` / `-Display-Name`) + TOTP for sensitive ops.
 - **Observability** — bounded JSONL error log + audit chain + job progress events.
+- **Outbound events** — webhooks with HMAC (`webhooks.js`, F4-7, from 0.69.87): signed
+  `POST` to a subscriber's URL with retry; the queue lives in SQLite. SSE is still a plan.
 - **Compatibility** — same API contract across HA and Windows (see `INTEGRATION_CONTRACTS.md`).
 
 ## Deployment topologies

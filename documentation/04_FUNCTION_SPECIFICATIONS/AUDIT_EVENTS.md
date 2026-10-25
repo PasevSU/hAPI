@@ -5,7 +5,7 @@
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **164** събития, излъчвани от **12** файла.
+Общо: **172** събития, излъчвани от **14** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -176,6 +176,14 @@
 | `variable.add` | `hapi_enterprise/server.js` |
 | `variable.remove` | `hapi_enterprise/server.js` |
 | `variable.update` | `hapi_enterprise/server.js` |
+| `webhook.created` | `hapi_enterprise/routes/webhooks.js` |
+| `webhook.deleted` | `hapi_enterprise/routes/webhooks.js` |
+| `webhook.disabled` | `hapi_enterprise/routes/webhooks.js` |
+| `webhook.enabled` | `hapi_enterprise/routes/webhooks.js` |
+| `webhook.exhausted` | `hapi_enterprise/webhooks.js` |
+| `webhook.queued` | `hapi_enterprise/webhooks.js` |
+| `webhook.removed` | `hapi_enterprise/webhooks.js` |
+| `webhook.test` | `hapi_enterprise/webhooks.js` |
 
 ## 2. Защо това е договор, а не списък
 

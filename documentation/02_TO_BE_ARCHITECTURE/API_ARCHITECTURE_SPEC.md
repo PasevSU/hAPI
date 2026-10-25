@@ -345,6 +345,28 @@ Backend проверява:
 Код: `hapi_enterprise/idempotency.js`, таблица `idempotency` в `sqlite-store.js`.
 Тест: `tests/idempotency.cjs`.
 
+## 4.4c. Изходящи събития (`webhooks`, F4-7)
+
+Абонаментът е адрес + списък събития + ключ за подпис. Доставката е `POST` с тяло
+`{ id, event, at, details }` и три заглавки: `X-HAPI-Event`, `X-HAPI-Delivery` и
+`X-HAPI-Signature: t=<unix>,v1=<hex>`, където подписът е `HMAC-SHA256(ключ, "<t>.<тяло>")`.
+`t` влиза в подписа, за да не може прихванато съобщение да се поднесе отново по-късно.
+
+| Случай | Поведение |
+| ------ | --------- |
+| `2xx` | доставено; редът пада от опашката |
+| друг код или мрежова грешка | нов опит след 30 s → 2 m → 10 m → 1 h |
+| след петия неуспех | доставката е „изчерпана“ и се пази (вижда се в конзолата, не се трие) |
+| абонамент без ключ в паметта (след рестарт) | `NO_SIGNING_KEY` — не се праща неподписано |
+
+Опашката е в SQLite (`webhook_deliveries`), така че рестарт не губи чакащи доставки. Ключът се
+показва **един път** при създаването; в базата остава `sha256` отпечатък и последните 4 знака.
+Правото за всички маршрути е `settings`.
+
+Код: `hapi_enterprise/webhooks.js`, `hapi_enterprise/routes/webhooks.js`.
+Договор: [`04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md`](../04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md).
+Тест: `tests/webhooks.cjs`.
+
 ## 4.5. Изтриване на файл и доказателства
 
 `DELETE /admin/api/portals/{portalId}/files/{fileId}` се отказва с `409`, когато файлът влиза

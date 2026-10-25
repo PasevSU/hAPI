@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **102** backend модула · **11** HTTP компонента · **22** UI модула · **6** Python модула · **30** инструмента · **272** теста.
+Общо: **103** backend модула · **12** HTTP компонента · **22** UI модула · **6** Python модула · **30** инструмента · **273** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (102)
+### Backend модули (`hapi_enterprise/*.js`) (103)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -112,12 +112,13 @@
 | `hapi_enterprise/versioning.js` | Document versioning (Phase 4.3). Dependency-free helpers; physical I/O and |
 | `hapi_enterprise/virtual-storage.js` | Виртуално хранилище на портал (Фаза 8): йерархия topic → category → group → файл. |
 | `hapi_enterprise/visitor-intel.js` | Сензори за комуникацията на портала: кой влиза, какво тегли, колко пъти, от кое IP и — |
+| `hapi_enterprise/webhooks.js` | WEBHOOKS С HMAC — доставка на събития към външен адрес с подпис и повторение |
 | `hapi_enterprise/workdir-crypto.js` | L2: криптирана работна папка (бач B4 от `PLAN-0.69.67-LINKS-AND-FILES.md`). |
 | `hapi_enterprise/workdir-io.js` | L2 (бач B4): работната папка — единственото място, което знае как се пише и чете |
 | `hapi_enterprise/workdir-migrate.js` | L2 миграция (бач B4): откритите файлове в работните папки стават контейнери. |
 | `hapi_enterprise/x509.js` | Минимален X.509 (self-signed) — за подписване на отчети и за устройствени сертификати. |
 
-### HTTP компоненти (`hapi_enterprise/routes/*.js`) (11)
+### HTTP компоненти (`hapi_enterprise/routes/*.js`) (12)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -132,6 +133,7 @@
 | `hapi_enterprise/routes/portal-storage.js` | Изтегляне на файл ОТ ПАПКАТА на портала (публичен вход през портала, не отделен адрес). |
 | `hapi_enterprise/routes/portal-tokens.js` | Публични токени за един портал (Stage D) — HTTP слоят. |
 | `hapi_enterprise/routes/reports.js` | Report Studio + RFC 3161 — компонент на HTTP слоя. |
+| `hapi_enterprise/routes/webhooks.js` | Webhooks с HMAC — административен компонент на HTTP слоя (F4-7). |
 
 ### Интерфейс (`hapi_enterprise/ui/*.js`) (22)
 

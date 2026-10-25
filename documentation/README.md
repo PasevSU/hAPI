@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **113** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **114** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -114,6 +114,7 @@ _Генериран списък: **113** документа. Пише се от
 | `04_FUNCTION_SPECIFICATIONS/REPORT_OBJECTS.md` | Report Studio — обектна библиотека (договор) |
 | `04_FUNCTION_SPECIFICATIONS/REPORT_SCOPES.md` | Договор за отчетите: обхвати и къде живеят (Фаза 11 / Report Studio) |
 | `04_FUNCTION_SPECIFICATIONS/VISITOR_SENSORS.md` | Сензори за комуникацията (Visitor Sensors) |
+| `04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md` | Webhooks с HMAC (F4-7) |
 | `05_MIGRATION/BACKLOG-AFTER-0.69.67.md` | Backlog след 0.69.67 — какво остана ⏳ (предложение, НЕ е одобрено) |
 | `05_MIGRATION/CONFLICT_RESOLUTION.md` | Conflict Resolution — hAPI Enterprise |
 | `05_MIGRATION/DONOR_COMPARISON.md` | Donor Comparison — hAPI Enterprise |

@@ -73,8 +73,11 @@ try {
   assert.ok(adrEvents.length >= 2, 'ADR-0023 изрежда събития');
   for (const name of adrEvents) assert.ok(names.has(name), 'ADR-0023 назовава съществуващо събитие: ' + name);
   const contracts = readDoc('documentation/02_TO_BE_ARCHITECTURE/INTEGRATION_CONTRACTS.md');
-  assert.match(contracts, /Events \/ webhooks \(target — НЕ е реализирано\)/, 'целевите събития са отбелязани като нереализирани');
-  assert.match(contracts, /webhook с HMAC \*\*още не е реализиран\*\*/, 'липсата на webhooks е изречена, не премълчана');
+  // Договорът се промени в 0.69.87: webhook-ът с HMAC вече СЪЩЕСТВУВА. Тестът пази
+  // новото твърдение, за да не остане документът да казва „няма“, когато има.
+  assert.match(contracts, /Events \/ webhooks \(от 0\.69\.87\)/, 'договорът е отбелязан като реализиран');
+  assert.match(contracts, /X-HAPI-Signature/, 'договорът казва как се подписва');
+  assert.ok(!/webhook с HMAC \*\*още не е реализиран\*\*/.test(contracts), 'документът НЕ твърди, че webhook липсва');
 
   console.log(`audit-events OK: ${rows.length} събития · ${legacy.length} наследствени · актуален · хваща остарял и липсващ документ`);
 } finally {

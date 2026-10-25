@@ -370,13 +370,24 @@ add-on-а — виж бележката за `!secret` в [`PGP_KEYRING_AND_WORK
 | Verify    | hash/signature/timestamp recompute client-side    |
 | Auth      | time-limited token embedded in QR (never secrets) |
 
-## Events / webhooks (target — НЕ е реализирано)
+## Events / webhooks (от 0.69.87)
 
 - Целеви имена: `document.finalized`, `access.created`, `audit.anchored`, `job.completed`.
-  **Никое от тях не се излъчва днес** — те са проект, не договор.
+  Излъчват се САМО имената от списъка в `hapi_enterprise/webhooks.js` (`EVENTS`), и то при
+  изрично извикване на `publish(…)` от маршрут, който наистина е свършил работа. Днес това са
+  `document.finalized` (след успешно качване на файл) и `webhook.test` (пробна доставка).
+  `audit.anchored` НЕ се излъчва — одитната верига не „закотвя“ нищо във външна система.
 - Действителните одитни събития са в генерирания
   [`04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md`](../04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md)
-  (162 имена, четени от `audit(…)` в кода); там се проверява и какво съществува.
-- Доставка: SSE (на живо) + по избор webhook — webhook с HMAC **още не е реализиран**
-  (записано в `PLAN_STATUS` §4.1). Днес има само `notify.js` към Home Assistant, което не е
-  webhook с подпис и retry.
+  (четени от `audit(…)` в кода); там се проверява и какво съществува. Одитът и webhook-ът са
+  две различни неща: одитът е ЗА НАС, webhook-ът е ЗА ВЪНШНИЯ получател.
+- Доставка: `POST` към адреса на абонамента с тяло `{ id, event, at, details }`.
+  Заглавки: `X-HAPI-Event`, `X-HAPI-Delivery`, `X-HAPI-Signature: t=<unix>,v1=<hex>`.
+  Подписът е HMAC-SHA256 върху `<t>.<сурото тяло>`; получателят преизчислява със своя ключ и
+  отказва старо `t` (по подразбиране 300 s толеранс).
+- Повторение: 30 s → 2 m → 10 m → 1 h, после доставката е „изчерпана“ и остава видима в
+  конзолата, вместо да се изтрие. Опашката е в SQLite, за да оцелява рестарт.
+- Ключът се показва ЕДИН път при създаването; в базата има само SHA-256 отпечатък и последните
+  4 знака. Пълното описание: [`04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md`](../04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md).
+- `notify.js` към Home Assistant остава отделен механизъм: той праща съобщение до ЧОВЕК, не
+  събитие до интеграция, и не носи подпис.

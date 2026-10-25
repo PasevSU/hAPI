@@ -35,7 +35,14 @@ function open(jsonPath) {
  -- „самоличност:ключ на клиента“ — така чужд клиент не може да прочете чужд отговор, нито
  -- да заеме ключа. NULL в status значи „заявката се изпълнява в момента“.
  CREATE TABLE IF NOT EXISTS idempotency (idem_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, status INTEGER, content_type TEXT, body BLOB, created_at TEXT NOT NULL, expires_at TEXT NOT NULL);
- CREATE INDEX IF NOT EXISTS idempotency_expiry_idx ON idempotency(expires_at);`);
+ CREATE INDEX IF NOT EXISTS idempotency_expiry_idx ON idempotency(expires_at);
+ -- Webhooks (F4-7): абонамент = адрес + списък събития + SHA-256 на ключа за подпис.
+ -- Самият ключ НЕ се пази — показва се един път при създаването, както токените за портал.
+ CREATE TABLE IF NOT EXISTS webhooks (id TEXT PRIMARY KEY, url TEXT NOT NULL, events TEXT NOT NULL, label TEXT NOT NULL DEFAULT '', secret_hash TEXT NOT NULL, secret_hint TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, disabled INTEGER NOT NULL DEFAULT 0, last_status INTEGER, last_attempt_at TEXT, failures INTEGER NOT NULL DEFAULT 0);
+ -- Опашката е в базата, за да не се губи при рестарт. attempts е броячът на опитите,
+ -- next_attempt_at — кога да се опита пак; exhausted значи „спряхме да опитваме“.
+ CREATE TABLE IF NOT EXISTS webhook_deliveries (id TEXT PRIMARY KEY, webhook_id TEXT NOT NULL, event TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at TEXT NOT NULL, status INTEGER, error TEXT NOT NULL DEFAULT '', exhausted INTEGER NOT NULL DEFAULT 0);
+ CREATE INDEX IF NOT EXISTS webhook_deliveries_due_idx ON webhook_deliveries(exhausted, next_attempt_at);`);
   const get = db.prepare('SELECT payload FROM metadata WHERE id=1');
   const getSnapshot = db.prepare('SELECT payload, revision FROM metadata WHERE id=1');
   const getRevision = db.prepare('SELECT revision FROM metadata WHERE id=1');
@@ -78,6 +85,19 @@ function open(jsonPath) {
   const completeIdempotencyStmt = db.prepare('UPDATE idempotency SET status=?, content_type=?, body=? WHERE idem_key=? AND fingerprint=?');
   const deleteIdempotencyStmt = db.prepare('DELETE FROM idempotency WHERE idem_key=?');
   const purgeIdempotencyStmt = db.prepare('DELETE FROM idempotency WHERE expires_at<=?');
+  // ── Webhooks (F4-7) ────────────────────────────────────────────────────────
+  const insertWebhook = db.prepare('INSERT INTO webhooks(id,url,events,label,secret_hash,secret_hint,created_at,disabled) VALUES(?,?,?,?,?,?,?,0)');
+  const selectWebhooks = db.prepare('SELECT id,url,events,label,secret_hash,secret_hint,created_at,disabled,last_status,last_attempt_at,failures FROM webhooks ORDER BY created_at');
+  const selectWebhook = db.prepare('SELECT id,url,events,label,secret_hash,secret_hint,created_at,disabled,last_status,last_attempt_at,failures FROM webhooks WHERE id=?');
+  const deleteWebhookStmt = db.prepare('DELETE FROM webhooks WHERE id=?');
+  const setWebhookDisabledStmt = db.prepare('UPDATE webhooks SET disabled=? WHERE id=?');
+  const touchWebhookStmt = db.prepare('UPDATE webhooks SET last_status=?, last_attempt_at=?, failures=? WHERE id=?');
+  const insertDelivery = db.prepare('INSERT INTO webhook_deliveries(id,webhook_id,event,body,created_at,attempts,next_attempt_at,exhausted) VALUES(?,?,?,?,?,0,?,0)');
+  const selectDueDeliveries = db.prepare('SELECT id,webhook_id,event,body,created_at,attempts,next_attempt_at FROM webhook_deliveries WHERE exhausted=0 AND next_attempt_at<=? ORDER BY next_attempt_at LIMIT ?');
+  const completeDeliveryStmt = db.prepare('DELETE FROM webhook_deliveries WHERE id=?');
+  const failDeliveryStmt = db.prepare('UPDATE webhook_deliveries SET attempts=?, status=?, error=?, next_attempt_at=?, exhausted=? WHERE id=?');
+  const countPendingStmt = db.prepare('SELECT COUNT(*) AS n FROM webhook_deliveries WHERE exhausted=0');
+  const purgeDeliveriesStmt = db.prepare('DELETE FROM webhook_deliveries WHERE exhausted=1 AND created_at<=?');
   // `admin` е валиден скоуп: досега се отрязваше и това правеше невъзможен административен
   // достъп през сесия (напр. OIDC), дори когато потребителят е записан с него.
   const parseScopes = v => { try { const a = JSON.parse(v); return Array.isArray(a) ? a.filter(s => s === 'read' || s === 'download' || s === 'admin') : ['read', 'download'] } catch { return ['read', 'download'] } };
@@ -245,6 +265,60 @@ function open(jsonPath) {
   function forgetIdempotency(key) { return deleteIdempotencyStmt.run(key).changes > 0 }
   function purgeIdempotency(before = nowIso()) { return purgeIdempotencyStmt.run(before).changes }
 
-  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, createPortalToken, getPortalTokenByHash, listPortalTokens, revokePortalToken, createPortalSession, getPortalSession, deletePortalSession, purgeExpiredPortalAccess, setUserPortals, getUserPortals, setPortalUsers, getPortalUsers, reserveIdempotency, getIdempotency, completeIdempotency, forgetIdempotency, purgeIdempotency, close: () => db.close() };
+  // ── Webhooks (F4-7) ────────────────────────────────────────────────────────
+  const webhookView = (row) => (row ? {
+    id: row.id,
+    url: row.url,
+    events: String(row.events || '').split(',').filter(Boolean),
+    label: row.label || '',
+    secretHash: row.secret_hash,
+    secretHint: row.secret_hint || '',
+    createdAt: row.created_at,
+    disabled: Boolean(row.disabled),
+    lastStatus: row.last_status == null ? null : Number(row.last_status),
+    lastAttemptAt: row.last_attempt_at || null,
+    failures: Number(row.failures || 0),
+  } : null);
+  function createWebhook({ url, events, label, secretHash, secretHint }) {
+    const id = 'wh_' + require('node:crypto').randomBytes(9).toString('hex');
+    insertWebhook.run(id, url, (events || []).join(','), label || '', secretHash, secretHint || '', nowIso());
+    return webhookView(selectWebhook.get(id));
+  }
+  function listWebhooks() { return selectWebhooks.all().map(webhookView) }
+  function getWebhook(id) { return webhookView(selectWebhook.get(id)) }
+  function deleteWebhook(id) { return deleteWebhookStmt.run(id).changes > 0 }
+  function setWebhookDisabled(id, disabled) { return setWebhookDisabledStmt.run(disabled ? 1 : 0, id).changes > 0 }
+  function touchWebhook(id, { status, at, failures }) { return touchWebhookStmt.run(status == null ? null : Number(status), at || nowIso(), Number(failures || 0), id).changes > 0 }
+  function enqueueWebhookDelivery({ webhookId, event, body, nextAttemptAt }) {
+    const id = 'wd_' + require('node:crypto').randomBytes(9).toString('hex');
+    insertDelivery.run(id, webhookId, event, body, nowIso(), nextAttemptAt || nowIso());
+    return id;
+  }
+  function dueWebhookDeliveries(before = nowIso(), limit = 20) {
+    return selectDueDeliveries.all(before, Math.max(1, Math.min(200, Number(limit) || 20))).map((row) => ({
+      id: row.id, webhookId: row.webhook_id, event: row.event, body: row.body,
+      createdAt: row.created_at, attempts: Number(row.attempts || 0), nextAttemptAt: row.next_attempt_at,
+    }));
+  }
+  function completeWebhookDelivery(id, { status } = {}) {
+    const row = db.prepare('SELECT webhook_id FROM webhook_deliveries WHERE id=?').get(id);
+    const removed = completeDeliveryStmt.run(id).changes > 0;
+    if (row) touchWebhook(row.webhook_id, { status: status == null ? 200 : status, failures: 0 });
+    return removed;
+  }
+  function failWebhookDelivery(id, { status, error, attempts, nextAttemptAt, exhausted }) {
+    const row = db.prepare('SELECT webhook_id FROM webhook_deliveries WHERE id=?').get(id);
+    const changed = failDeliveryStmt.run(Number(attempts || 0), status == null ? null : Number(status), String(error || '').slice(0, 200), nextAttemptAt || nowIso(), exhausted ? 1 : 0, id).changes > 0;
+    if (row) {
+      const current = selectWebhook.get(row.webhook_id);
+      touchWebhook(row.webhook_id, { status: status == null ? null : status, failures: Number((current && current.failures) || 0) + 1 });
+    }
+    return changed;
+  }
+  function countPendingWebhookDeliveries() { const row = countPendingStmt.get(); return Number((row && row.n) || 0) }
+  /** Изчерпаните доставки се пазят известно време, за да се види в конзолата какво не е стигнало. */
+  function purgeWebhookDeliveries(before = nowIso()) { return purgeDeliveriesStmt.run(before).changes }
+
+  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, createPortalToken, getPortalTokenByHash, listPortalTokens, revokePortalToken, createPortalSession, getPortalSession, deletePortalSession, purgeExpiredPortalAccess, setUserPortals, getUserPortals, setPortalUsers, getPortalUsers, reserveIdempotency, getIdempotency, completeIdempotency, forgetIdempotency, purgeIdempotency, createWebhook, listWebhooks, getWebhook, deleteWebhook, setWebhookDisabled, touchWebhook, enqueueWebhookDelivery, dueWebhookDeliveries, completeWebhookDelivery, failWebhookDelivery, countPendingWebhookDeliveries, purgeWebhookDeliveries, close: () => db.close() };
 }
 module.exports = { open };

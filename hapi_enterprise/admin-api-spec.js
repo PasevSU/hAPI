@@ -51,6 +51,16 @@ const ROUTES = [
   ['POST', '/admin/api/rules/reload', 'Презареждане на правилата от диска', 'rules', 'portals'],
   ['POST', '/admin/api/notify/dispatch', 'Изпращане на известие по канал', 'rules', 'portals'],
 
+  // ── webhooks с HMAC (F4-7) ─────────────────────────────────────────────────
+  // Ключът за подпис се връща САМО в отговора на създаването; после само последните
+  // 4 знака. Правото е `settings`, защото абонаментът решава какво излиза навън.
+  ['GET', '/admin/api/webhooks', 'Абонаменти за webhooks, излъчваните събития и чакащи доставки', 'webhooks', 'settings'],
+  ['POST', '/admin/api/webhooks', 'Нов абонамент; отговорът носи ключа за подпис ЕДИН път', 'webhooks', 'settings'],
+  ['DELETE', '/admin/api/webhooks/{id}', 'Изтриване на абонамент (чакащите му доставки падат с него)', 'webhooks', 'settings'],
+  ['POST', '/admin/api/webhooks/{id}/test', 'Пробна доставка веднага — за да се види сгрешен адрес сега', 'webhooks', 'settings'],
+  ['POST', '/admin/api/webhooks/{id}/disable', 'Спиране на абонамент без триене (историята остава)', 'webhooks', 'settings'],
+  ['POST', '/admin/api/webhooks/{id}/enable', 'Пускане на спрян абонамент', 'webhooks', 'settings'],
+
   // ── задачи и резервни копия ────────────────────────────────────────────────
   ['GET', '/admin/api/jobs', 'Задачи и тяхната статистика', 'jobs', 'jobs'],
   ['GET', '/admin/api/database/backups', 'Списък на резервните копия', 'storage', 'portals'],

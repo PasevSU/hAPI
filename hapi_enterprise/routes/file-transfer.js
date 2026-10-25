@@ -24,7 +24,7 @@ function create(deps) {
   const {
     json, fail, parse, audit, update, clean, fsp, path, crypto, filesRoot,
     id, contentIds, storeMirrored, removeMirrored, portalFolder, portalFolderCopy,
-    writeApiDir, baseUrl, observer, retention, getPortals,
+    writeApiDir, baseUrl, observer, retention, getPortals, publish,
   } = deps;
 
   const MODES = ['move', 'copy'];
@@ -165,6 +165,8 @@ function create(deps) {
       encrypted: !!created.encrypted,
       mirror: mirrored || 'disabled',
     });
+    // Копието/преместването е нов завършен документ на новото място — събитие, не одит.
+    if (typeof publish === 'function') publish('document.finalized', { portalId: dst.id, fileId: created.id, bytes: created.size || 0 });
 
     json(res, 201, {
       mode,

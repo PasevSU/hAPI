@@ -66,16 +66,23 @@ veraPDF, `legal hold` към Object Lock, Compose режим
 
 | Липсва | Къде е записано | Какво точно липсва |
 | ------ | --------------- | ------------------ |
-| Webhooks с HMAC | `docs/plan/17…` `F4-7` | `notify.js` вика HA `notify.*`, което не е webhook с подпис и retry |
 | WORM за ОСНОВНОТО хранилище | `docs/plan/17…` `F7-3` | огледалото има `Object Lock` в `COMPLIANCE` режим; основното хранилище — не |
 | OTS / Blockchain, Forensic панел, EXIF | `docs/plan/18…` панели 05/07/08 | няма съответните модули |
 | AEAD-защита на секретния PGP ключ (v6, `usage 253`) | `PGP_KEYRING_AND_WORK_FOLDER.md` §„Какво НЕ се поддържа“ | ключът се отваря само без парола (`usage 0`) или с CFB+S2K (`254`/`255`) — Node няма OCB; кодът е `S2K_AEAD_UNSUPPORTED`, не обща грешка |
+| SSE поток за живи събития | `INTEGRATION_CONTRACTS.md` §Events | webhook-ът е реализиран, SSE — не |
 
 `Idempotency-Key` (F4-5) беше в този списък до 0.69.87 и вече е затворен: заглавката се
 обработва в `idempotency.js` (таблица `idempotency` в `sqlite-store.js`), договорът е описан в
 `API_ARCHITECTURE_SPEC.md` §4.4b, а `tests/idempotency.cjs` проверява повторението срещу жив
 сървър. С това F4-5 е изцяло покрит — `problem+json`, `Range`/`ETag`, `429` по самоличност и
 повторяемите заявки.
+
+`Webhooks с HMAC` (F4-7) също излезе от този списък в 0.69.87: абонаментите, подписът
+`X-HAPI-Signature` (HMAC-SHA256 върху `<t>.<тяло>`) и повторението с изчакване са в
+`webhooks.js` + `routes/webhooks.js`, опашката е в SQLite, договорът —
+[`04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md`](../04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md), тестът —
+`tests/webhooks.cjs`. Излъчват се само имената, които кодът наистина вика: днес
+`document.finalized` (след качване и след копиране/преместване).
 
 ## 5. Какво да се направи с изостаналите документи
 
