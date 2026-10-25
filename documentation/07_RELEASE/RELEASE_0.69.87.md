@@ -195,6 +195,7 @@ add-on-а. Защитата е цената на смяната: без нея �
 | Настройки в README | `node scripts/settings-defaults.cjs --check` | 43 настройки |
 | Документация | `node tests/docs-consistency.cjs` | OK, без счупени връзки |
 | Стил | `npx eslint .` | 0 |
+| Самото издание | `node scripts/artifact-smoke.cjs` | старт от архива · `file` договор · `qr` в списъка · 409 без огледало · `site-csp` пясъчник · `mirror-target` s3 |
 
 ## 4. Какво съзнателно остана извън обхвата
 

@@ -14,6 +14,10 @@
       при грешка серията се рестартира от начало, докато не се стигне 100%
       (`--attempts=N`), а `reports/test-matrix.json` показва времената и нестабилните тестове.
 - [ ] `node scripts/build-release.cjs` — строи `dist/`.
+- [ ] `node scripts/artifact-smoke.cjs` — разопакова архива и пуска сървъра **оттам**:
+      новите функции трябва да работят в самото издание, не само в работното дърво
+      (старт от архива · договор `file` · `qr` в списъка · `mirror` → 409 · `site-csp` пясъчник ·
+      `mirror-target` s3). Проверява класа грешка „модул забравен в COPY“.
 - [ ] `node scripts/verify-release.cjs --with-tests` — 21/21 сценария зелени (вкл. HACS структурата).
 - [ ] `npm run audit` — без тайни и файлове над 5 MB в дървото.
 - [ ] `node tests/hacs-structure.cjs` — HACS структурата е валидна.
