@@ -5,7 +5,7 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **108** backend модула · **15** HTTP компонента · **23** UI модула · **6** Python модула · **32** инструмента · **293** теста.
+Общо: **108** backend модула · **15** HTTP компонента · **23** UI модула · **6** Python модула · **33** инструмента · **294** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -182,7 +182,7 @@
 | `custom_components/hapi_enterprise/coordinator.py` | DataUpdateCoordinator for hAPI Enterprise telemetry. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (32)
+### Инструменти (`scripts/*.cjs`) (33)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -205,6 +205,7 @@
 | `scripts/join-package.cjs` | Слепване на разделен експортен пакет БЕЗ add-on. |
 | `scripts/logic-audit.cjs` | Логически одит — търси подозрителна ЛОГИКА, не синтаксис. |
 | `scripts/manifest-schema.cjs` | `config/schemas/manifest.schema.json` — ГЕНЕРИРАН ОТ КОДА. |
+| `scripts/openapi-admin.cjs` | МАШИННО ЧЕТИМИЯТ ДОГОВОР ЗА АДМИНИСТРАТИВНОТО API — като ФАЙЛ, а не само като код. |
 | `scripts/pre-push-audit.cjs` | Одит преди качване в GitHub: какво влиза в хранилището и няма ли тайни/едри файлове. |
 | `scripts/release-audit.cjs` | Одит на всички издания: какво е имало и вече го няма. |
 | `scripts/release-lib.cjs` | Помощни функции за изданието на hAPI Enterprise. |

@@ -1,0 +1,5670 @@
+{
+  "info": {
+    "name": "hAPI Enterprise — административно API 0.69.87",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Генериран от `hapi_enterprise/admin-api-spec.js` (node scripts/openapi-admin.cjs). Не се редактира на ръка."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8099"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "auth",
+      "item": [
+        {
+          "name": "Роля на текущия клиент, режим ingress и подразбираща се роля",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/whoami",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "whoami"
+              ]
+            },
+            "description": "Роля на текущия клиент, режим ingress и подразбираща се роля\n\nПраво (RBAC): `whoami`"
+          },
+          "response": []
+        },
+        {
+          "name": "Как панелът е свързан (адрес, ingress, публичен адрес)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/connection",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "connection"
+              ]
+            },
+            "description": "Как панелът е свързан (адрес, ingress, публичен адрес)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Вход през Home Assistant Ingress (само на административния порт)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/ingress-login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "ingress-login"
+              ]
+            },
+            "description": "Вход през Home Assistant Ingress (само на административния порт)\n\nДостъп: supervisor-or-local (не е RBAC)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "system",
+      "item": [
+        {
+          "name": "Диагностика: процес, трафик, каталог, хранилища",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/diagnostics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "diagnostics"
+              ]
+            },
+            "description": "Диагностика: процес, трафик, каталог, хранилища\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Броячи на трафика и порталите",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/metrics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "metrics"
+              ]
+            },
+            "description": "Броячи на трафика и порталите\n\nПраво (RBAC): `metrics`"
+          },
+          "response": []
+        },
+        {
+          "name": "Текущо натоварване и ефективен паралелизъм",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/load",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "load"
+              ]
+            },
+            "description": "Текущо натоварване и ефективен паралелизъм\n\nПраво (RBAC): `load`"
+          },
+          "response": []
+        },
+        {
+          "name": "Сензори за Home Assistant (обобщение)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/sensors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "sensors"
+              ]
+            },
+            "description": "Сензори за Home Assistant (обобщение)\n\nПраво (RBAC): `sensors`"
+          },
+          "response": []
+        },
+        {
+          "name": "Същите сензори във формат Prometheus",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/sensors/prometheus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "sensors",
+                "prometheus"
+              ]
+            },
+            "description": "Същите сензори във формат Prometheus\n\nПраво (RBAC): `sensors`"
+          },
+          "response": []
+        },
+        {
+          "name": "Живи данни за посетителите",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/sensors/visitors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "sensors",
+                "visitors"
+              ]
+            },
+            "description": "Живи данни за посетителите\n\nПраво (RBAC): `sensors`"
+          },
+          "response": []
+        },
+        {
+          "name": "Посетителите като CSV",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/sensors/visitors.csv",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "sensors",
+                "visitors.csv"
+              ]
+            },
+            "description": "Посетителите като CSV\n\nПраво (RBAC): `sensors`"
+          },
+          "response": []
+        },
+        {
+          "name": "Офлайн гео-обаждане от браузъра на посетителя",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/sensors/geo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "sensors",
+                "geo"
+              ]
+            },
+            "description": "Офлайн гео-обаждане от браузъра на посетителя\n\nПраво (RBAC): `sensors`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка дали публичен адрес наистина се отваря",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/links/check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "links",
+                "check"
+              ]
+            },
+            "description": "Проверка дали публичен адрес наистина се отваря\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Профил на един посетител",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/sensors/visitors/{visitorId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "sensors",
+                "visitors",
+                "{{visitorId}}"
+              ]
+            },
+            "description": "Профил на един посетител\n\nПраво (RBAC): `sensors`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтриване на посетител (GDPR, чл. 17)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/sensors/visitors/{visitorId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "sensors",
+                "visitors",
+                "{{visitorId}}"
+              ]
+            },
+            "description": "Изтриване на посетител (GDPR, чл. 17)\n\nПраво (RBAC): `sensors`"
+          },
+          "response": []
+        },
+        {
+          "name": "Тази спецификация",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/openapi.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "openapi.json"
+              ]
+            },
+            "description": "Тази спецификация\n\nПраво (RBAC): `whoami`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "logs",
+      "item": [
+        {
+          "name": "Последни редове от журнала",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "logs"
+              ]
+            },
+            "description": "Последни редове от журнала\n\nПраво (RBAC): `logs`"
+          },
+          "response": []
+        },
+        {
+          "name": "Смяна на нивото на журнала без рестарт",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/logs/level",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "logs",
+                "level"
+              ]
+            },
+            "description": "Смяна на нивото на журнала без рестарт\n\nПраво (RBAC): `logs`"
+          },
+          "response": []
+        },
+        {
+          "name": "Дневник на грешките (отделен от журнала)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/errors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "errors"
+              ]
+            },
+            "description": "Дневник на грешките (отделен от журнала)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "access",
+      "item": [
+        {
+          "name": "Списък на административните потребители",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "users"
+              ]
+            },
+            "description": "Списък на административните потребители\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Създаване на административен потребител",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "users"
+              ]
+            },
+            "description": "Създаване на административен потребител\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Настройки на средата (без тайни)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "settings"
+              ]
+            },
+            "description": "Настройки на средата (без тайни)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на настройки",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "settings"
+              ]
+            },
+            "description": "Промяна на настройки\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Конфигурационни профили",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/config-profiles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "config-profiles"
+              ]
+            },
+            "description": "Конфигурационни профили\n\nПраво (RBAC): `profiles`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нов/променен конфигурационен профил",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/config-profiles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "config-profiles"
+              ]
+            },
+            "description": "Нов/променен конфигурационен профил\n\nПраво (RBAC): `profiles`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "rules",
+      "item": [
+        {
+          "name": "Заредени правила",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "rules"
+              ]
+            },
+            "description": "Заредени правила\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Презареждане на правилата от диска",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/rules/reload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "rules",
+                "reload"
+              ]
+            },
+            "description": "Презареждане на правилата от диска\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изпращане на известие по канал",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/notify/dispatch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "notify",
+                "dispatch"
+              ]
+            },
+            "description": "Изпращане на известие по канал\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "jobs",
+      "item": [
+        {
+          "name": "Задачи и тяхната статистика",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/jobs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "jobs"
+              ]
+            },
+            "description": "Задачи и тяхната статистика\n\nПраво (RBAC): `jobs`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "storage",
+      "item": [
+        {
+          "name": "Списък на резервните копия",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/database/backups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "database",
+                "backups"
+              ]
+            },
+            "description": "Списък на резервните копия\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Резервно копие в момента",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/database/backup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "database",
+                "backup"
+              ]
+            },
+            "description": "Резервно копие в момента\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка на резервно копие",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/database/backups/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "database",
+                "backups",
+                "verify"
+              ]
+            },
+            "description": "Проверка на резервно копие\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "График на автоматичните копия",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/database/backup-schedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "database",
+                "backup-schedule"
+              ]
+            },
+            "description": "График на автоматичните копия\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на графика",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/database/backup-schedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "database",
+                "backup-schedule"
+              ]
+            },
+            "description": "Промяна на графика\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Политика за задържане",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/retention",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "retention"
+              ]
+            },
+            "description": "Политика за задържане\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на политиката за задържане",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/retention",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "retention"
+              ]
+            },
+            "description": "Промяна на политиката за задържане\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Състояние на хранилищата",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/storage/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "storage",
+                "status"
+              ]
+            },
+            "description": "Състояние на хранилищата\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка на хранилищата в момента",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/storage/check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "storage",
+                "check"
+              ]
+            },
+            "description": "Проверка на хранилищата в момента\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Сверка на огледалото с оригинала",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/storage/mirror/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "storage",
+                "mirror",
+                "verify"
+              ]
+            },
+            "description": "Сверка на огледалото с оригинала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "audit",
+      "item": [
+        {
+          "name": "Записи от одитната верига",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "audit"
+              ]
+            },
+            "description": "Записи от одитната верига\n\nПраво (RBAC): `audit`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка на хеш-веригата",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/audit/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "audit",
+                "verify"
+              ]
+            },
+            "description": "Проверка на хеш-веригата\n\nПраво (RBAC): `audit`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтегляне на одитната верига",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/audit/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "audit",
+                "export"
+              ]
+            },
+            "description": "Изтегляне на одитната верига\n\nПраво (RBAC): `audit`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "portals",
+      "item": [
+        {
+          "name": "Всички портали",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals"
+              ]
+            },
+            "description": "Всички портали\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нов портал",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals"
+              ]
+            },
+            "description": "Нов портал\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Сливане на портали в един",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/merge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "merge"
+              ]
+            },
+            "description": "Сливане на портали в един\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Категории и групи",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/taxonomy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "taxonomy"
+              ]
+            },
+            "description": "Категории и групи\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Добавяне на категория или група",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/taxonomy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "taxonomy"
+              ]
+            },
+            "description": "Добавяне на категория или група\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на категория или група",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/taxonomy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "taxonomy"
+              ]
+            },
+            "description": "Премахване на категория или група\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Списък на QR архивите",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/qr-artifacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "qr-artifacts"
+              ]
+            },
+            "description": "Списък на QR архивите\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Създаване/обновяване на QR архив",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/qr-artifacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "qr-artifacts"
+              ]
+            },
+            "description": "Създаване/обновяване на QR архив\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтриване на QR архив (с връщане при провал на записа)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/qr-artifacts/{qrId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "qr-artifacts",
+                "{{qrId}}"
+              ]
+            },
+            "description": "Изтриване на QR архив (с връщане при провал на записа)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Състояние на доказателствения портал",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/evidence-portal/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "evidence-portal",
+                "status"
+              ]
+            },
+            "description": "Състояние на доказателствения портал\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Публикуване на доказателствения портал",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/evidence-portal/deploy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "evidence-portal",
+                "deploy"
+              ]
+            },
+            "description": "Публикуване на доказателствения портал\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Един портал с неговите файлове",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}"
+              ]
+            },
+            "description": "Един портал с неговите файлове\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на портал",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}"
+              ]
+            },
+            "description": "Промяна на портал\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтриване на портал",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}"
+              ]
+            },
+            "description": "Изтриване на портал\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Препратки към публичното API на портала",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/api-info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "api-info"
+              ]
+            },
+            "description": "Препратки към публичното API на портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка на целостта на файловете на портала",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/integrity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "integrity"
+              ]
+            },
+            "description": "Проверка на целостта на файловете на портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Задача за проверка на целостта (фоново)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/integrity-jobs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "integrity-jobs"
+              ]
+            },
+            "description": "Задача за проверка на целостта (фоново)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Категории и групи, налични за портала",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/taxonomy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "taxonomy"
+              ]
+            },
+            "description": "Категории и групи, налични за портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Издаване на ключ за подписване на файловете на портала",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/signing-key",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "signing-key"
+              ]
+            },
+            "description": "Издаване на ключ за подписване на файловете на портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Бележки на портала",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "notes"
+              ]
+            },
+            "description": "Бележки на портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нова бележка",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "notes"
+              ]
+            },
+            "description": "Нова бележка\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на бележка",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/notes/{noteId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "notes",
+                "{{noteId}}"
+              ]
+            },
+            "description": "Промяна на бележка\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтриване на бележка",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/notes/{noteId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "notes",
+                "{{noteId}}"
+              ]
+            },
+            "description": "Изтриване на бележка\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Прикачени файлове към портала",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "attachments"
+              ]
+            },
+            "description": "Прикачени файлове към портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Ново прикачване",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "attachments"
+              ]
+            },
+            "description": "Ново прикачване\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтегляне на прикачен файл",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/attachments/{attachmentId}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "attachments",
+                "{{attachmentId}}",
+                "download"
+              ]
+            },
+            "description": "Изтегляне на прикачен файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Регистрирани HTML проекти",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/html-projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "html-projects"
+              ]
+            },
+            "description": "Регистрирани HTML проекти\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Регистриране на HTML проект",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/html-projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "html-projects"
+              ]
+            },
+            "description": "Регистриране на HTML проект\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на HTML проект",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/html-projects/{projectId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "html-projects",
+                "{{projectId}}"
+              ]
+            },
+            "description": "Премахване на HTML проект\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Публикуване на HTML към портала",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/html",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "html"
+              ]
+            },
+            "description": "Публикуване на HTML към портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Дървото на папката на портала",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/tree",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "tree"
+              ]
+            },
+            "description": "Дървото на папката на портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нова папка в дървото",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/tree/folder",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "tree",
+                "folder"
+              ]
+            },
+            "description": "Нова папка в дървото\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Флагове на папка (видима, медийна, заключена)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/tree/folder",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "tree",
+                "folder"
+              ]
+            },
+            "description": "Флагове на папка (видима, медийна, заключена)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Качване на файл в дървото на папката",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/tree/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "tree",
+                "upload"
+              ]
+            },
+            "description": "Качване на файл в дървото на папката\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Коментар към възел от дървото",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/tree/comment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "tree",
+                "comment"
+              ]
+            },
+            "description": "Коментар към възел от дървото\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Регистриране на външен файл в дървото",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/tree/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "tree",
+                "register"
+              ]
+            },
+            "description": "Регистриране на външен файл в дървото\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "API карта на папката като JSON",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/tree/api.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "tree",
+                "api.json"
+              ]
+            },
+            "description": "API карта на папката като JSON\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Активен QR, история на ревизиите и физическите архиви",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/qr",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "qr"
+              ]
+            },
+            "description": "Активен QR, история на ревизиите и физическите архиви\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Архивира: физически ZIP със SHA-256 + следващ QR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/qr/archive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "qr",
+                "archive"
+              ]
+            },
+            "description": "Архивира: физически ZIP със SHA-256 + следващ QR\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Прекратява активния QR (изисква основание)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/qr/block",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "qr",
+                "block"
+              ]
+            },
+            "description": "Прекратява активния QR (изисква основание)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверява целостта на архивите сега (байтове, манифест, файлове)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/qr/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "qr",
+                "verify"
+              ]
+            },
+            "description": "Проверява целостта на архивите сега (байтове, манифест, файлове)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Ревизия, манифест и наследник на конкретен QR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/qr/{qrId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "qr",
+                "{{qrId}}"
+              ]
+            },
+            "description": "Ревизия, манифест и наследник на конкретен QR\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Връща състоянието от архива (първо архивира текущото)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/qr/{qrId}/restore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "qr",
+                "{{qrId}}",
+                "restore"
+              ]
+            },
+            "description": "Връща състоянието от архива (първо архивира текущото)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Сваляне на архивния файл на конкретен QR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/qr/{qrId}/archive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "qr",
+                "{{qrId}}",
+                "archive"
+              ]
+            },
+            "description": "Сваляне на архивния файл на конкретен QR\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "export",
+      "item": [
+        {
+          "name": "Състояние на ключовете от pgp_path_* (без път и без парола)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/keyring",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "keyring"
+              ]
+            },
+            "description": "Състояние на ключовете от pgp_path_* (без път и без парола)\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "Препрочитане на ключовете от диска (одитира се)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/keyring/reload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "keyring",
+                "reload"
+              ]
+            },
+            "description": "Препрочитане на ключовете от диска (одитира се)\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "Еднократна L1 миграция: откритите вътрешни пътища стават шифротекст (с копие на базата)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/seal-paths",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "seal-paths"
+              ]
+            },
+            "description": "Еднократна L1 миграция: откритите вътрешни пътища стават шифротекст (с копие на базата)\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "Еднократна L2 миграция: файловете в работните папки стават контейнери (иска ?confirm=1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/seal-workdir",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "seal-workdir"
+              ]
+            },
+            "description": "Еднократна L2 миграция: файловете в работните папки стават контейнери (иска ?confirm=1)\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "PGP ключове и настройки на пакетите",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "keys"
+              ]
+            },
+            "description": "PGP ключове и настройки на пакетите\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "Прикачване на PGP ключ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "keys"
+              ]
+            },
+            "description": "Прикачване на PGP ключ\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "Внасяне на ключове от пакет",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/keys/import",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "keys",
+                "import"
+              ]
+            },
+            "description": "Внасяне на ключове от пакет\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на PGP ключ",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/keys/{keyId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "keys",
+                "{{keyId}}"
+              ]
+            },
+            "description": "Премахване на PGP ключ\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "Публичната част на ключ",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/keys/{keyId}/public",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "keys",
+                "{{keyId}}",
+                "public"
+              ]
+            },
+            "description": "Публичната част на ключ\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "Експортни пакети",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/packages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "packages"
+              ]
+            },
+            "description": "Експортни пакети\n\nПраво (RBAC): `packages`"
+          },
+          "response": []
+        },
+        {
+          "name": "Създаване на експортeн пакет",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/packages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "packages"
+              ]
+            },
+            "description": "Създаване на експортeн пакет\n\nПраво (RBAC): `packages`"
+          },
+          "response": []
+        },
+        {
+          "name": "Метаданни на експортен пакет",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/packages/{packageId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "packages",
+                "{{packageId}}"
+              ]
+            },
+            "description": "Метаданни на експортен пакет\n\nПраво (RBAC): `packages`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтегляне на пакета (`?part=N` при разделен пакет)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/packages/{packageId}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "packages",
+                "{{packageId}}",
+                "download"
+              ]
+            },
+            "description": "Изтегляне на пакета (`?part=N` при разделен пакет)\n\nПраво (RBAC): `packages`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка на подписа/целостта на пакета",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/packages/{packageId}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "packages",
+                "{{packageId}}",
+                "verify"
+              ]
+            },
+            "description": "Проверка на подписа/целостта на пакета\n\nПраво (RBAC): `packages`"
+          },
+          "response": []
+        },
+        {
+          "name": "Detached подпис на пакета",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/packages/{packageId}/signature",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "packages",
+                "{{packageId}}",
+                "signature"
+              ]
+            },
+            "description": "Detached подпис на пакета\n\nПраво (RBAC): `packages`"
+          },
+          "response": []
+        },
+        {
+          "name": "Настройки на пакетите (автоподписване, срок)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/packages/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "packages",
+                "settings"
+              ]
+            },
+            "description": "Настройки на пакетите (автоподписване, срок)\n\nПраво (RBAC): `packages`"
+          },
+          "response": []
+        },
+        {
+          "name": "Правила за експорт",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/export/rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "export",
+                "rules"
+              ]
+            },
+            "description": "Правила за експорт\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Предварителна проверка на експорт",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/export/preflight",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "export",
+                "preflight"
+              ]
+            },
+            "description": "Предварителна проверка на експорт\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "catalog",
+      "item": [
+        {
+          "name": "Всички дела в картотеката",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cases"
+              ]
+            },
+            "description": "Всички дела в картотеката\n\nПраво (RBAC): `cases`"
+          },
+          "response": []
+        },
+        {
+          "name": "Създаване на ново дело",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cases"
+              ]
+            },
+            "description": "Създаване на ново дело\n\nПраво (RBAC): `cases`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на дело",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cases/{caseId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cases",
+                "{{caseId}}"
+              ]
+            },
+            "description": "Промяна на дело\n\nПраво (RBAC): `cases`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на дело",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cases/{caseId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cases",
+                "{{caseId}}"
+              ]
+            },
+            "description": "Премахване на дело\n\nПраво (RBAC): `cases`"
+          },
+          "response": []
+        },
+        {
+          "name": "Променливи и техните типове",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/variables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "variables"
+              ]
+            },
+            "description": "Променливи и техните типове\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нова променлива",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/variables",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "variables"
+              ]
+            },
+            "description": "Нова променлива\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на променлива",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/variables/{key}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "variables",
+                "{{key}}"
+              ]
+            },
+            "description": "Промяна на променлива\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на променлива",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/variables/{key}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "variables",
+                "{{key}}"
+              ]
+            },
+            "description": "Премахване на променлива\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Указател: контакти и организации",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory"
+              ]
+            },
+            "description": "Указател: контакти и организации\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Внасяне на имейли в указателя",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/ingest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "ingest"
+              ]
+            },
+            "description": "Внасяне на имейли в указателя\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Ново правило за указателя",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "rules"
+              ]
+            },
+            "description": "Ново правило за указателя\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на правило",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/rules/{ruleId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "rules",
+                "{{ruleId}}"
+              ]
+            },
+            "description": "Премахване на правило\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нов контакт",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "contacts"
+              ]
+            },
+            "description": "Нов контакт\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на контакт",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/contacts/{contactId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "contacts",
+                "{{contactId}}"
+              ]
+            },
+            "description": "Промяна на контакт\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на контакт",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/contacts/{contactId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "contacts",
+                "{{contactId}}"
+              ]
+            },
+            "description": "Премахване на контакт\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нова организация",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/organizations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "organizations"
+              ]
+            },
+            "description": "Нова организация\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на организация",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/organizations/{orgId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "organizations",
+                "{{orgId}}"
+              ]
+            },
+            "description": "Промяна на организация\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на организация",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/organizations/{orgId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "organizations",
+                "{{orgId}}"
+              ]
+            },
+            "description": "Премахване на организация\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        },
+        {
+          "name": "Решаване на конфликт в указателя",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/directory/conflicts/{conflictId}/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "directory",
+                "conflicts",
+                "{{conflictId}}",
+                "resolve"
+              ]
+            },
+            "description": "Решаване на конфликт в указателя\n\nПраво (RBAC): `directory`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "cabinet",
+      "item": [
+        {
+          "name": "Възможности на шкафа",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "info"
+              ]
+            },
+            "description": "Възможности на шкафа\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Съдържание на папка",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "list"
+              ]
+            },
+            "description": "Съдържание на папка\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нова папка",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/folder",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "folder"
+              ]
+            },
+            "description": "Нова папка\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Създаване на нов файл",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "create"
+              ]
+            },
+            "description": "Създаване на нов файл\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Качване на файл",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "upload"
+              ]
+            },
+            "description": "Качване на файл\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Запис на текстов файл",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "save"
+              ]
+            },
+            "description": "Запис на текстов файл\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Съдържание на файл",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/file",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "file"
+              ]
+            },
+            "description": "Съдържание на файл\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтриване на файл или папка",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/entry",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "entry"
+              ]
+            },
+            "description": "Изтриване на файл или папка\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Преименуване",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/rename",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "rename"
+              ]
+            },
+            "description": "Преименуване\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Конвертиране на файл",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/convert",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "convert"
+              ]
+            },
+            "description": "Конвертиране на файл\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        },
+        {
+          "name": "Отваряне с приложение (само локално)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/cabinet/open",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "cabinet",
+                "open"
+              ]
+            },
+            "description": "Отваряне с приложение (само локално)\n\nПраво (RBAC): `cabinet`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "files",
+      "item": [
+        {
+          "name": "Файловете на портала (страницирани)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files"
+              ]
+            },
+            "description": "Файловете на портала (страницирани)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Качване на файл в портала",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files"
+              ]
+            },
+            "description": "Качване на файл в портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Права за достъп на много файлове наведнъж",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/bulk-access",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "bulk-access"
+              ]
+            },
+            "description": "Права за достъп на много файлове наведнъж\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на име/описание на файл",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}"
+              ]
+            },
+            "description": "Промяна на име/описание на файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтриване на файл",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}"
+              ]
+            },
+            "description": "Изтриване на файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Политика за достъп на файл",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/access",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "access"
+              ]
+            },
+            "description": "Политика за достъп на файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нов ключ за достъп до файл",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/access-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "access-keys"
+              ]
+            },
+            "description": "Нов ключ за достъп до файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Отнемане на ключ за достъп",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/access-keys/{keyId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "access-keys",
+                "{{keyId}}"
+              ]
+            },
+            "description": "Отнемане на ключ за достъп\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Ново изпращане на файл",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/sends",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "sends"
+              ]
+            },
+            "description": "Ново изпращане на файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изпращанията на файла",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/sends",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "sends"
+              ]
+            },
+            "description": "Изпращанията на файла\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Отмяна на изпращане",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/sends/{sendId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "sends",
+                "{{sendId}}"
+              ]
+            },
+            "description": "Отмяна на изпращане\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Подписан адрес за изтегляне",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/signed-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "signed-url"
+              ]
+            },
+            "description": "Подписан адрес за изтегляне\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтегляне на файл",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "download"
+              ]
+            },
+            "description": "Изтегляне на файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Отпечатъци на файла",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/hashes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "hashes"
+              ]
+            },
+            "description": "Отпечатъци на файла\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Метаданни на файла",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/metadata",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "metadata"
+              ]
+            },
+            "description": "Метаданни на файла\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Преместване или копиране на файл в друг портал",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/transfer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "transfer"
+              ]
+            },
+            "description": "Преместване или копиране на файл в друг портал\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Заключване или отключване на файл",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/lock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "lock"
+              ]
+            },
+            "description": "Заключване или отключване на файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Електронен подпис на файл (receipt)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/sign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "sign"
+              ]
+            },
+            "description": "Електронен подпис на файл (receipt)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка на подписа на файл",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/verify-signature",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "verify-signature"
+              ]
+            },
+            "description": "Проверка на подписа на файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Преглед на файла",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "preview"
+              ]
+            },
+            "description": "Преглед на файла\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Миниатюра на файла (SVG)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/thumbnail.svg",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "thumbnail.svg"
+              ]
+            },
+            "description": "Миниатюра на файла (SVG)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Версии на файла",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/versions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "versions"
+              ]
+            },
+            "description": "Версии на файла\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нова версия на файл",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/versions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "versions"
+              ]
+            },
+            "description": "Нова версия на файл\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтегляне на конкретна версия",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/versions/{versionId}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "versions",
+                "{{versionId}}",
+                "download"
+              ]
+            },
+            "description": "Изтегляне на конкретна версия\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Връщане към конкретна версия",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/versions/{versionId}/restore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "versions",
+                "{{versionId}}",
+                "restore"
+              ]
+            },
+            "description": "Връщане към конкретна версия\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "v2",
+      "item": [
+        {
+          "name": "Тайни връзки (пликове)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/secrets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "secrets"
+              ]
+            },
+            "description": "Тайни връзки (пликове)\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нова тайна връзка (плик от браузъра)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/secrets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "secrets"
+              ]
+            },
+            "description": "Нова тайна връзка (плик от браузъра)\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Отмяна на тайна връзка",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/secrets/{idHash}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "secrets",
+                "{{idHash}}"
+              ]
+            },
+            "description": "Отмяна на тайна връзка\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Профили на документооборота",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/profiles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "profiles"
+              ]
+            },
+            "description": "Профили на документооборота\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Групи записи",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/groups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "groups"
+              ]
+            },
+            "description": "Групи записи\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нова група",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/groups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "groups"
+              ]
+            },
+            "description": "Нова група\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Група с нейните записи",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/groups/{groupId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "groups",
+                "{{groupId}}"
+              ]
+            },
+            "description": "Група с нейните записи\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на група",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/groups/{groupId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "groups",
+                "{{groupId}}"
+              ]
+            },
+            "description": "Промяна на група\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на група",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/groups/{groupId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "groups",
+                "{{groupId}}"
+              ]
+            },
+            "description": "Премахване на група\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Записи (филтър по група и префикс)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/records",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "records"
+              ]
+            },
+            "description": "Записи (филтър по група и префикс)\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Създаване на нов запис",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/records",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "records"
+              ]
+            },
+            "description": "Създаване на нов запис\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Един запис",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/records/{recordId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "records",
+                "{{recordId}}"
+              ]
+            },
+            "description": "Един запис\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Промяна на полета на запис",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/records/{recordId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "records",
+                "{{recordId}}"
+              ]
+            },
+            "description": "Промяна на полета на запис\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на запис",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/records/{recordId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "records",
+                "{{recordId}}"
+              ]
+            },
+            "description": "Премахване на запис\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Свързване на запис с група",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/records/{recordId}/associate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "records",
+                "{{recordId}}",
+                "associate"
+              ]
+            },
+            "description": "Свързване на запис с група\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Откачане на запис от група",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/records/{recordId}/detach",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "records",
+                "{{recordId}}",
+                "detach"
+              ]
+            },
+            "description": "Откачане на запис от група\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Търсене в записите",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "search"
+              ]
+            },
+            "description": "Търсене в записите\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Преглед на шаблон с променливи (нищо не се записва)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/interpolate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "interpolate"
+              ]
+            },
+            "description": "Преглед на шаблон с променливи (нищо не се записва)\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Анализ на данни за миграция",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/migrate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "migrate"
+              ]
+            },
+            "description": "Анализ на данни за миграция\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Миграция (с dryRun)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/migrate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "migrate"
+              ]
+            },
+            "description": "Миграция (с dryRun)\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Готов ли е публичният API на портала",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/portals/{portalId}/api",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "portals",
+                "{{portalId}}",
+                "api"
+              ]
+            },
+            "description": "Готов ли е публичният API на портала\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Генериране на API файлове и QR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/portals/{portalId}/api",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "portals",
+                "{{portalId}}",
+                "api"
+              ]
+            },
+            "description": "Генериране на API файлове и QR\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Премахване на API файловете",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/portals/{portalId}/api",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "portals",
+                "{{portalId}}",
+                "api"
+              ]
+            },
+            "description": "Премахване на API файловете\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "reports",
+      "item": [
+        {
+          "name": "Рендер на отчет (PDF) от манифест",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/reports/render",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "reports",
+                "render"
+              ]
+            },
+            "description": "Рендер на отчет (PDF) от манифест\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Пакет с доказателства (PDF + манифест + токени)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/reports/package",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "reports",
+                "package"
+              ]
+            },
+            "description": "Пакет с доказателства (PDF + манифест + токени)\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Detached CMS подпис на отчет",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/reports/sign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "reports",
+                "sign"
+              ]
+            },
+            "description": "Detached CMS подпис на отчет\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка на detached CMS подпис",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/cms/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "cms",
+                "verify"
+              ]
+            },
+            "description": "Проверка на detached CMS подпис\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Състояние на RFC 3161 и последни токени",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/rfc3161",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "rfc3161"
+              ]
+            },
+            "description": "Състояние на RFC 3161 и последни токени\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Времеви печат START/STOP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/rfc3161",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "rfc3161"
+              ]
+            },
+            "description": "Времеви печат START/STOP\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка на запазените .tsr файлове",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/rfc3161/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "rfc3161",
+                "verify"
+              ]
+            },
+            "description": "Проверка на запазените .tsr файлове\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Проверка на запазените .tsr файлове (повторно)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/rfc3161/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "rfc3161",
+                "verify"
+              ]
+            },
+            "description": "Проверка на запазените .tsr файлове (повторно)\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "generator",
+      "item": [
+        {
+          "name": "Списък на шаблоните",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/generator/templates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "generator",
+                "templates"
+              ]
+            },
+            "description": "Списък на шаблоните\n\nПраво (RBAC): `generator`"
+          },
+          "response": []
+        },
+        {
+          "name": "Запис на шаблон",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/generator/templates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "generator",
+                "templates"
+              ]
+            },
+            "description": "Запис на шаблон\n\nПраво (RBAC): `generator`"
+          },
+          "response": []
+        },
+        {
+          "name": "Един шаблон (HTML като текст)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/generator/templates/{name}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "generator",
+                "templates",
+                "{{name}}"
+              ]
+            },
+            "description": "Един шаблон (HTML като текст)\n\nПраво (RBAC): `generator`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтриване на шаблон",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/generator/templates/{name}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "generator",
+                "templates",
+                "{{name}}"
+              ]
+            },
+            "description": "Изтриване на шаблон\n\nПраво (RBAC): `generator`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "events",
+      "item": [
+        {
+          "name": "Състояние на живия поток (свързани клиенти, помнени събития)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "events"
+              ]
+            },
+            "description": "Състояние на живия поток (свързани клиенти, помнени събития)\n\nПраво (RBAC): `metrics`"
+          },
+          "response": []
+        },
+        {
+          "name": "Жив поток от събития (text/event-stream, сърцебиене, Last-Event-ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/events/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "events",
+                "stream"
+              ]
+            },
+            "description": "Жив поток от събития (text/event-stream, сърцебиене, Last-Event-ID)\n\nПраво (RBAC): `metrics`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "evidence",
+      "item": [
+        {
+          "name": "Делата и порталите, които викащият вижда (съдебните роли — само своите)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/evidence",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "evidence"
+              ]
+            },
+            "description": "Делата и порталите, които викащият вижда (съдебните роли — само своите)\n\nПраво (RBAC): `evidence`"
+          },
+          "response": []
+        },
+        {
+          "name": "Кой потребител по кои дела е назначен",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/evidence/assignments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "evidence",
+                "assignments"
+              ]
+            },
+            "description": "Кой потребител по кои дела е назначен\n\nПраво (RBAC): `settings`"
+          },
+          "response": []
+        },
+        {
+          "name": "Назначаване на потребител по дела (`*` = всички)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/evidence/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "evidence",
+                "assign"
+              ]
+            },
+            "description": "Назначаване на потребител по дела (`*` = всички)\n\nПраво (RBAC): `settings`"
+          },
+          "response": []
+        },
+        {
+          "name": "Колко обекта и байта пази печатът на WORM (`.worm/<sha256>`)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/evidence/vault",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "evidence",
+                "vault"
+              ]
+            },
+            "description": "Колко обекта и байта пази печатът на WORM (`.worm/<sha256>`)\n\nПраво (RBAC): `evidence`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "forensic",
+      "item": [
+        {
+          "name": "EXIF/TIFF/PNG метаданни (GPS само при ?gps=1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/exif",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "exif"
+              ]
+            },
+            "description": "EXIF/TIFF/PNG метаданни (GPS само при ?gps=1)\n\nПраво (RBAC): `storage`"
+          },
+          "response": []
+        },
+        {
+          "name": "Сравнение на метаданните с втори файл",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/exif/compare",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "exif",
+                "compare"
+              ]
+            },
+            "description": "Сравнение на метаданните с втори файл\n\nПраво (RBAC): `storage`"
+          },
+          "response": []
+        },
+        {
+          "name": "Анализ по съдържание: тип, ентропия, структура, находки",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/files/{fileId}/forensic",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "files",
+                "{{fileId}}",
+                "forensic"
+              ]
+            },
+            "description": "Анализ по съдържание: тип, ентропия, структура, находки\n\nПраво (RBAC): `storage`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "webhooks",
+      "item": [
+        {
+          "name": "Абонаменти за webhooks, излъчваните събития и чакащи доставки",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "webhooks"
+              ]
+            },
+            "description": "Абонаменти за webhooks, излъчваните събития и чакащи доставки\n\nПраво (RBAC): `settings`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нов абонамент; отговорът носи ключа за подпис ЕДИН път",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "webhooks"
+              ]
+            },
+            "description": "Нов абонамент; отговорът носи ключа за подпис ЕДИН път\n\nПраво (RBAC): `settings`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтриване на абонамент (чакащите му доставки падат с него)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/webhooks/{id}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "webhooks",
+                "{{id}}"
+              ]
+            },
+            "description": "Изтриване на абонамент (чакащите му доставки падат с него)\n\nПраво (RBAC): `settings`"
+          },
+          "response": []
+        },
+        {
+          "name": "Пробна доставка веднага — за да се види сгрешен адрес сега",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/webhooks/{id}/test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "webhooks",
+                "{{id}}",
+                "test"
+              ]
+            },
+            "description": "Пробна доставка веднага — за да се види сгрешен адрес сега\n\nПраво (RBAC): `settings`"
+          },
+          "response": []
+        },
+        {
+          "name": "Спиране на абонамент без триене (историята остава)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/webhooks/{id}/disable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "webhooks",
+                "{{id}}",
+                "disable"
+              ]
+            },
+            "description": "Спиране на абонамент без триене (историята остава)\n\nПраво (RBAC): `settings`"
+          },
+          "response": []
+        },
+        {
+          "name": "Пускане на спрян абонамент",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/webhooks/{id}/enable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "webhooks",
+                "{{id}}",
+                "enable"
+              ]
+            },
+            "description": "Пускане на спрян абонамент\n\nПраво (RBAC): `settings`"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

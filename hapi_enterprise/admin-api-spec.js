@@ -23,7 +23,7 @@ const ROUTES = [
   // ── идентичност и готовност ────────────────────────────────────────────────
   ['GET', '/admin/api/whoami', 'Роля на текущия клиент, режим ingress и подразбираща се роля', 'auth', 'whoami'],
   ['GET', '/admin/api/connection', 'Как панелът е свързан (адрес, ingress, публичен адрес)', 'auth', 'portals'],
-  ['GET', '/admin/api/ingress-login', 'Вход през Home Assistant Ingress (само на административния порт)', 'auth', 'ingress'],
+  ['GET', '/admin/api/ingress-login', 'Вход през Home Assistant Ingress (само на административния порт)', 'auth', '@supervisor-or-local'],
   ['GET', '/admin/api/diagnostics', 'Диагностика: процес, трафик, каталог, хранилища', 'system', 'portals'],
   ['GET', '/admin/api/metrics', 'Броячи на трафика и порталите', 'system', 'metrics'],
   ['GET', '/admin/api/load', 'Текущо натоварване и ефективен паралелизъм', 'system', 'load'],
@@ -346,7 +346,12 @@ function build(options = {}) {
       operationId: `${method.toLowerCase()}_${p.replace(/^\/admin\/api\/?/, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/_+$/, '') || 'root'}`,
       tags: [tag],
       security: [{ adminToken: [] }],
-      'x-hapi-capability': capability,
+      // Правото се записва ТОЧНО каквото го налага кодът. Ако маршрутът НЕ минава през RBAC
+      // (например `ingress-login`, който пуска само Supervisor или localhost), това се казва
+      // изрично с `x-hapi-access` — иначе договорът би обещал право, което `rbac` не познава.
+      ...(capability.startsWith('@')
+        ? { 'x-hapi-access': capability.slice(1) }
+        : { 'x-hapi-capability': capability }),
       responses: {
         200: ok('Успех (тялото зависи от маршрута)'),
         401: { $ref: '#/components/responses/Unauthorized' },
@@ -368,7 +373,7 @@ function build(options = {}) {
       description:
         'Договорът за административното API. Токенът се подава като `Authorization: Bearer <token>`, ' +
         'а зад Home Assistant Ingress самоличността идва от Supervisor (`X-Remote-User-*`). ' +
-        'Правата се решават по роля (RBAC) за всеки маршрут — виж `x-hapi-capability`.',
+        'Правата се решават по роля (RBAC) за всеки маршрут — виж `x-hapi-capability`. Маршрут без RBAC (например входът през Ingress) носи `x-hapi-access` с причината.',
     },
     servers: [{ url: base || '/', description: base ? 'Адресът на този сървър' : 'Същият origin' }],
     tags: TAGS.map(([name, description]) => ({ name, description })),

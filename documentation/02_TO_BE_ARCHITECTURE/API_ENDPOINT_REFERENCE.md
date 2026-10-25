@@ -78,7 +78,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | --- | --- | --- | --- |
 | GET | `/admin/api/whoami` | Роля на текущия клиент, режим ingress и подразбираща се роля | `whoami` |
 | GET | `/admin/api/connection` | Как панелът е свързан (адрес, ingress, публичен адрес) | `portals` |
-| GET | `/admin/api/ingress-login` | Вход през Home Assistant Ingress (само на административния порт) | `ingress` |
+| GET | `/admin/api/ingress-login` | Вход през Home Assistant Ingress (само на административния порт) | `@supervisor-or-local` |
 
 ### Каталог (`catalog`)
 

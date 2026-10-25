@@ -54,6 +54,13 @@ for (const [method, p, summary, tag, capability] of spec.ROUTES) {
   assert.ok(summary && summary.length >= 10, 'резюме за ' + method + ' ' + p);
   assert.ok(tag, 'таг за ' + method + ' ' + p);
   assert.ok(capability, 'капацитет за ' + method + ' ' + p);
+  // `@…` значи „този маршрут НЕ се решава от RBAC“ (напр. ingress-login пуска само Supervisor
+  // или localhost). Изисква се да е записано изрично, защото договор, който обещава
+  // несъществуващо право, подвежда клиента по-лошо от липсващо поле.
+  if (!capability.startsWith('@')) {
+    assert.ok(Object.prototype.hasOwnProperty.call(require('../hapi_enterprise/rbac.js').CAPABILITIES, capability),
+      'право, което `rbac` не познава, за ' + method + ' ' + p + ': ' + capability);
+  }
   const key = method + ' ' + p;
   assert.ok(!seen.has(key), 'без дубликати: ' + key);
   seen.add(key);
