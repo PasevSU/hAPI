@@ -101,6 +101,19 @@ for (const stale of [addonName, integrationName, guiName]) {
   fs.rmSync(path.join(distDir, stale), { force: true });
 }
 
+// `dist/` е папката на ИЗДАНИЕТО, не архив на всички издания. До 0.69.87 там стояха 69 версии
+// (140 файла), а `SHA256SUMS.txt` и `RELEASE.json` описват само текущата — тоест човек, който
+// публикува на ръка, можеше да качи стар архив. Старите се махат; те са възпроизводими от
+// съответния таг, а `RELEASE.json` винаги сочи точно петте файла на текущото издание.
+const ARTIFACT = /^(hapi_enterprise-|hapi_enterprise-integration-|hapi-enterprise-gui-).*\.(tar\.gz|zip)$/;
+const removed = [];
+for (const name of fs.existsSync(distDir) ? fs.readdirSync(distDir) : []) {
+  if (!ARTIFACT.test(name) || name.includes(version)) continue;
+  fs.rmSync(path.join(distDir, name), { force: true });
+  removed.push(name);
+}
+if (removed.length) console.log(`  премахнати стари артефакти: ${removed.length} (dist/ пази само ${version})`);
+
 const addonBuf = step('Сглобяване на ' + addonName, () => lib.buildTarGz(addonEntries));
 fs.writeFileSync(path.join(distDir, addonName), addonBuf);
 
