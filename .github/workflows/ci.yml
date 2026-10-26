@@ -103,7 +103,7 @@ jobs:
       # (`/ghcr.io/<owner>/...` — с воден наклон), затова образът се строи направо
       # с buildx: без push, само доказателство, че Dockerfile-ът се билдва за
       # всяка архитектура, която config.yaml обещава.
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v4
 
       - uses: docker/setup-buildx-action@v3
 
