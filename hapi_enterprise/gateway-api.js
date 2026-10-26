@@ -116,6 +116,17 @@ function config() {
       relative: envSameOrigin || optSameOrigin || rawGateway.public?.relative === true,
     }),
   });
+  // Валидацията на `download_rules.json` е твърда: сгрешена стойност НЕ се поправя, а ЦЕЛИЯТ
+  // файл се изхвърля и се ползват вградените правила. Досега това ставаше мълчаливо и
+  // `status()` продължаваше да сочи файла като зареден — тоест оператор, който е сгрешил
+  // стойност, виждаше „всичко е наред“, а работеше нещо друго. Затова тук се логва причината
+  // и източникът става `invalid`, за да го види `/admin/api/rules` и readiness проверката.
+  const rulesCheck = R.validateRules(rules);
+  if (!rulesCheck.ok) {
+    if (apiLog) apiLog.warn('rules.invalid', { ns: 'rules', file: sources['download_rules.json'], errors: rulesCheck.errors });
+    else console.warn('rules: download_rules.json е невалиден → вградени правила: ' + rulesCheck.errors.join('; '));
+    sources['download_rules.json'] = 'invalid';
+  }
   cache = {
     gateway: GW.normalizeGateway(gatewayInput),
     access: readJson('download_access.json', FALLBACK.access),
@@ -124,7 +135,8 @@ function config() {
     rate: readJson('rate_limits.json', FALLBACK.rate),
     profiles: readJson('export_profiles.json', FALLBACK.profiles),
     permissions: readJson('export_permissions.json', FALLBACK.permissions),
-    rules: R.validateRules(rules).ok ? rules : R.DEFAULT_RULES,
+    rules: rulesCheck.ok ? rules : R.DEFAULT_RULES,
+    rulesErrors: rulesCheck.ok ? [] : rulesCheck.errors,
   };
   loadedAt = new Date().toISOString();
   return cache;
@@ -137,6 +149,10 @@ function status() {
     dirs: ruleDirs(),
     files: Object.fromEntries(RULE_FILES.map((name) => [name, sources[name] || 'default'])),
     missing: RULE_FILES.filter((name) => !sources[name] || sources[name] === 'default'),
+    // Отделно от `missing`: файлът е намерен, но е отхвърлен при валидация, тоест в сила са
+    // ВГРАДЕНИТЕ правила. Това е разлика, която операторът трябва да види изрично.
+    invalid: RULE_FILES.filter((name) => sources[name] === 'invalid'),
+    errors: current.rulesErrors || [],
     loadedAt,
     gateway: {
       published: current.gateway.public?.published === true,

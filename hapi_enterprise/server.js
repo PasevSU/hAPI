@@ -1366,7 +1366,7 @@ async function handler(req, res) {
       // за да остане `checks` стабилен договор за probe-овете: ok | degraded | failed.
       const verdict = require('./readiness').evaluate({ storageOk: checks.storage, metadata: db, quickCheck: metadataStore.quickCheck });
       checks.db = verdict.checks.db;
-      try { checks.rules = gatewayApi.status().missing.length === 0 } catch { checks.rules = false }
+      try { const st = gatewayApi.status(); checks.rules = st.missing.length === 0 && st.invalid.length === 0 } catch { checks.rules = false }
       return json(res, verdict.ready ? 200 : 503, { ready: verdict.ready, checks, db: { state: verdict.dbState, detail: verdict.dbDetail }, instance: { id: instanceState.id, pid: process.pid, since: instanceState.startedAt || null }, dataDir: root, uptime: Math.round(process.uptime()) });
     } if (url.pathname === '/admin/api/metrics' && method === 'GET') { if (!adminGate(req, res, 'metrics', method)) return; return json(res, 200, { ...counters, portals: db.portals.length }) }
     if (url.pathname === '/admin/api/audit/verify' && method === 'GET') { if (!adminGate(req, res, 'audit', method)) return; const result = await auditChain.verify(); return json(res, result.valid ? 200 : 409, { ...result, integrity: result.valid ? 'HASH_CHAIN_VALID' : 'FAILED', note: 'Hash chaining detects changes but is not externally anchored or tamper-proof against an administrator who can rewrite the entire chain.' }) }
