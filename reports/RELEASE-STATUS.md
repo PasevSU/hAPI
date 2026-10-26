@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **306/306** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **307/307** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 504 файла · 85052 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 499 файла · 84489 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 505 файла · 85142 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 500 файла · 84579 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 306 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 307 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,21 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Артефактите зависеха от края на редовете на работното копие.** `.gitattributes` казва
+  `* text=auto eol=lf`, тоест клонът дава LF, но работното копие на Windows имаше **85
+  проследени файла с CRLF** (12 в `hapi_enterprise/`, 2 в `custom_components/`, 43 в `tests/`).
+  Артефактите в `dist/` се сглобяват от работното копие — значи `SHA256SUMS.txt` щеше да е
+  различен за същото издание, ако се билдне от чист клон, тоест „същото“ издание нямаше да е
+  същото. Строителят (`scripts/release-lib.cjs`) вече привежда ТЕКСТОВИТЕ записи към LF при
+  пакетиране, независимо от копието, а работното дърво е нормализирано.
+  `tests/line-endings.cjs` проверява три неща: `.gitattributes` иска LF; индексът (това, което
+  клонът ще изтегли) няма `i/crlf`/`i/mixed`; и нито един от 234-те текстови записа в трите
+  артефакта за текущата версия не съдържа CRLF. Работното копие се отчита като информация
+  (`w/crlf`), защото инструментите на Windows пишат CRLF, а до потребителя стига артефактът.
+  **Проверено обратно:** запис с CRLF, сложен направо в индекса (`git update-index
+  --cacheinfo`), пада с „zzz-crlf-probe.txt (i/crlf)“; изключена нормализация в строителя плюс
+  CRLF в `hapi_enterprise/CHANGELOG.md` пада с „артефактите не бива да съдържат CRLF“.
 
 - **`npm run audit` падаше на собствената си документация — тоест гейтът беше невъзможен.**
   `RELEASE_CHECKLIST.md` иска „`npm run audit` — без тайни и файлове над 5 MB“, а одитът излизаше

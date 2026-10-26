@@ -190,11 +190,28 @@ function tarHeader(name, size, mtime, mode, type) {
   return buf;
 }
 
+/** Разширения, които се пакетират като ТЕКСТ — за тях краят на редовете се привежда към LF. */
+const TEXT_EXT = /\.(js|cjs|mjs|json|md|txt|ya?ml|html|css|py|pyw|bat|ps1|sh|toml|cfg|ini|gitignore|gitattributes|prettierrc|env)$/i;
+
+/**
+ * Данните на запис. Текстовите файлове се пакетират с LF независимо от това какъв край на
+ * редовете има работното копие: иначе `SHA256SUMS.txt` зависи от проверката (CRLF клон при
+ * Windows срещу LF при `git clone`) и „същото“ издание излиза с други байтове.
+ */
+function entryData(e) {
+  if (e.data) return e.data;
+  const data = fs.readFileSync(e.abs);
+  if (!TEXT_EXT.test(e.abs) || data.includes(0)) return data;
+  const text = data.toString('utf8');
+  if (!text.includes('\r\n')) return data;
+  return Buffer.from(text.replace(/\r\n/g, '\n'), 'utf8');
+}
+
 /** Сглобява .tar.gz от записи `{path, abs|data, mode, mtime}`. */
 function buildTarGz(entries) {
   const chunks = [];
   for (const e of entries) {
-    const data = e.data || fs.readFileSync(e.abs);
+    const data = entryData(e);
     if (Buffer.byteLength(e.path) > 100) throw new Error('Твърде дълъг път за USTAR: ' + e.path);
     chunks.push(tarHeader(e.path, data.length, e.mtime || 0, e.mode || 0o644, '0'), data);
     const pad = (512 - (data.length % 512)) % 512;
@@ -254,7 +271,7 @@ function buildZip(entries) {
   const centrals = [];
   let offset = 0;
   for (const e of entries) {
-    const data = e.data || fs.readFileSync(e.abs);
+    const data = entryData(e);
     const packed = zlib.deflateRawSync(data, { level: 9 });
     const name = Buffer.from(e.path, 'utf8');
     const crc = crc32(data);
