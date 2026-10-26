@@ -92,6 +92,15 @@ npm run lint:baseline   # rewrite the baseline (review the diff!)
 npm run lint:prune      # drop entries that no longer apply
 ```
 
+Two things that are easy to get wrong, so they are written down and asserted:
+
+- **ESLint applies the baseline by default.** `npx eslint .` exiting 0 means "no findings
+  beyond the baseline", not "no findings" — today the baseline covers 218 findings in 136
+  files (166 entries). To see the real list, move `eslint-suppressions.json` aside first.
+- **The baseline must stay exact.** `tests/eslint-baseline.cjs` measures the tree without
+  the baseline and requires the recorded counts to match one for one, so a fixed finding
+  that was never pruned fails the test instead of silently buying room for a new one.
+
 `prettier --check` is deliberately **not** a gate: the tree is not prettier-formatted and
 reformatting it would bury every real change. Run `npm run format` on the files you touch
 if you want it.
