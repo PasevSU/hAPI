@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **305/305** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **306/306** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 503 файла · 84942 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 498 файла · 84379 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 504 файла · 85052 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 499 файла · 84489 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 305 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 306 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,23 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **`npm run audit` падаше на собствената си документация — тоест гейтът беше невъзможен.**
+  `RELEASE_CHECKLIST.md` иска „`npm run audit` — без тайни и файлове над 5 MB“, а одитът излизаше
+  с код 1 заради три теста, които ползват официалния пример на AWS `AKIAIOSFODNN7EXAMPLE`.
+  Проверка, която не може да мине, се пренебрегва. Поправени са три неща в
+  `scripts/secret-patterns.cjs`: (1) правилото за AWS ключ вече изключва точно този пример;
+  (2) забранените имена бяха закотвени в началото на пътя и пускаха `config/.env`,
+  `data/admin-token`, `keys/id_rsa` — сега хващат и в подпапки; (3) правилото за GitHub токен
+  искаше интервал или начало на ред преди `ghp_`, тоест не хващаше нито `GITHUB_TOKEN=ghp_…`,
+  нито `'ghp_…'` — а точно така изглежда теч в код. `tests/secret-patterns.cjs` проверява
+  правилата в ДВЕТЕ посоки: 6 реалистични проби се хващат, 4 познати безопасни стойности — не;
+  забранените имена се хващат и в подпапки; сканът на 786 проследени файла не намира тайна
+  извън документираните тестови ключове (`tests/fixtures/pgp/`, вързани с README-то им); и
+  одитът завършва с код 0 — гейтът е изпълним днес. **Проверено обратно:** върнато старо
+  правило за AWS → одитът пада; закотвени шаблони → „config/.env трябва да е забранено име“;
+  махнато правило за GitHub → „правилото „GitHub токен“ съществува“; засаден `ghp_…` в
+  проследен файл → „GitHub токен: tests/zzz-leak-probe.cjs“.
 
 - **`npm run format` щеше да преформатира чуждия пакет на Evidence View.** `.prettierignore`
   пазеше `dist/`, `release/`, `docs/`, `documentation/`, но не и `hapi_enterprise/evidence-portal/`
