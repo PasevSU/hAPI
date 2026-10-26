@@ -1,7 +1,10 @@
 'use strict';
 // Общи правила за тайни, ползвани от одита (pre-push-audit) и от експорта за публикуване
 // (export-tracked). Едно място, за да не се разминават двете проверки.
-const TEXT_EXT = /\.(js|cjs|mjs|json|md|txt|yml|yaml|sh|py|html|css|bat|gitignore|gitattributes|prettierrc)$/i;
+// Разширенията, които се сканират за тайни. `.ps1` липсваше до 0.69.87, тоест скриптовете за
+// публикуване (които боравят с токени и хранилища) не се проверяваха изобщо — `pre-push-audit`
+// и експортът ги подминаваха.
+const TEXT_EXT = /\.(js|cjs|mjs|json|md|txt|yml|yaml|sh|py|html|css|bat|ps1|psm1|psd1|gitignore|gitattributes|prettierrc)$/i;
 
 const SECRETS = [
   // Истински JWT има три части (header.payload.signature); тестовите fixture-и са само header.

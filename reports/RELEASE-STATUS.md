@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **308/308** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **309/309** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 506 файла · 85209 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 501 файла · 84646 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 507 файла · 85267 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 502 файла · 84704 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 308 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 309 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,18 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Скриптовете за публикуване не се проверяваха с нищо.** Пет PowerShell скрипта в `scripts/`
+  и `release/` се пускат на ръка, тоест синтактична грешка в тях се открива едва когато човекът
+  вече е на път да публикува — а `tests/publish-script.cjs` покриваше само два от тях
+  (`release/publish-release.ps1`, `scripts/publish-haoss.ps1`). Освен това `.ps1` **липсваше в
+  `TEXT_EXT`**, тоест одитът за тайни и експортът ги подминаваха изцяло — включително скриптовете,
+  които боравят с токени за GitHub. Сега `tests/powershell-scripts.cjs` подава всеки скрипт от
+  `scripts/` и `release/` на самия PowerShell парсер (без изпълнение; прескача се, когато `pwsh`
+  липсва), а `TEXT_EXT` включва `ps1/psm1/psd1`. **Проверено обратно:** незатворен блок в
+  `sync-local-addon.ps1` пада с „всеки PowerShell скрипт трябва да се парсва без грешки“;
+  `ghp_…` в нов `.ps1` пада и в `secret-patterns` („не бива да има тайни“), и в одита
+  („намерени тайни: scripts/zzz-probe-secret.ps1 → GitHub токен“).
 
 - **`dist/` пазеше 69 издания, а манифестите — само едно.** В папката на изданието стояха
   **140 файла** (по един архив на версия от 0.69.19 до 0.69.87), докато `SHA256SUMS.txt` и
