@@ -839,7 +839,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
-      - run: npm run test:integration
+Забележка (0.69.87): `npm test` пуска ЦЕЛИЯ матрикс — `scripts/test-matrix.cjs` обхожда всеки `tests/*.cjs`, включително интеграционните сценарии. Отделна команда `test:integration` НЕ съществува и не бива да се цитира; в `.github/workflows/ci.yml` интеграционният job пуска `node scripts/build-release.cjs` и после всеки `tests/*.cjs` с таван от 300 s (вж. `CONTRIBUTING.md`).
 12. Рискове и смекчаване
 Риск	Вероятност	Влияние	Смекчаване
 OCR качество на български	Средна	Средно	Тест с реални документи; fallback eng
