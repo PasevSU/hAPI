@@ -122,6 +122,27 @@ const { freePort, stopChild } = require('./helpers.cjs');
       'сензорите показват tokenExhausted',
     );
 
+    // ── 2в. Отказът пред БРАУЗЪР е страница, не JSON ────────────────────────
+    // `/t/<токен>` се цъка от човек: `{"error":"Not found"}` е задънена улица. Затова при
+    // `Accept: text/html` отговорът е кратка страница, а API клиентът продължава да получава JSON.
+    const asPage = (token) => fetch(`${pubBase}/t/${encodeURIComponent(token)}`, { redirect: 'manual', headers: { accept: 'text/html' } });
+    const exhaustedPage = await asPage(limitedToken);
+    assert.equal(exhaustedPage.status, 410, 'изчерпана връзка в браузър → 410');
+    assert.match(String(exhaustedPage.headers.get('content-type')), /text\/html/, 'отказът е HTML за браузър');
+    const exhaustedHtml = await exhaustedPage.text();
+    assert.ok(exhaustedHtml.includes('вече е използвана'), 'страницата казва какво е станало');
+    assert.equal(exhaustedHtml.includes('"error"'), false, 'няма JSON тяло в страницата');
+    assert.equal(exhaustedHtml.includes(limitedToken), false, 'самият токен не се връща в страницата');
+    assert.match(String(exhaustedPage.headers.get('content-security-policy') || ''), /default-src 'none'/, 'страницата е с CSP');
+    const unknownPage = await asPage('x'.repeat(30));
+    assert.equal(unknownPage.status, 404, 'непознат токен в браузър → 404');
+    assert.match(await unknownPage.text(), /не е валидна/, 'непознатият токен изглежда като невалиден, без подробности');
+    // Същият отказ за API клиент остава JSON с машинен код.
+    const unknownJson = await fetch(`${pubBase}/t/${'y'.repeat(30)}`, { redirect: 'manual', headers: { accept: 'application/json' } });
+    assert.equal(unknownJson.status, 404, 'API клиентът получава същия код');
+    assert.match(String(unknownJson.headers.get('content-type')), /application\/json/, 'и JSON тяло, както досега');
+    await unknownJson.text();
+
     // ── 3. Изолация: A се отваря, B — не ─────────────────────────────────────
     assert.equal((await statusOf('/p/' + portalA.id, cookie)).status, 200, 'своят портал се отваря');
     assert.equal((await statusOf('/api/v1/p/alpha', cookie)).status, 200, 'API-то на своя портал работи');

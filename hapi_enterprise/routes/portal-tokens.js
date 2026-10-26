@@ -52,6 +52,31 @@ function create(deps) {
     return `${base}/t/${encodeURIComponent(token)}`;
   }
 
+  /**
+   * Отказ по адреса, който отваря БРАУЗЪР. `/t/<токен>` се цъка от човек, затова JSON тяло
+   * („{"error":"Not found"}“) е задънена улица: посетителят вижда машинен текст и не знае
+   * какво да прави. Затова при `Accept: text/html` се връща кратка страница, а API клиентът
+   * продължава да получава problem+json — един и същ код на отказа, различно тяло.
+   * Причината НЕ се разкрива: „невалиден“, „изтекъл“ и „отнет“ изглеждат еднакво, за да не
+   * може по адреса да се разбере дали токенът някога е съществувал.
+   */
+  function refuse(req, res, status, title, message) {
+    const wantsHtml = /text\/html/i.test(String((req.headers && req.headers.accept) || ''));
+    if (!wantsHtml) { fail(res, status, title); return; }
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const html = '<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'
+      + esc(title) + '</title><link rel="stylesheet" href="/portal.css"></head><body><main><h1>' + esc(title) + '</h1><p>'
+      + esc(message) + '</p></main></body></html>';
+    res.writeHead(status, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'Content-Security-Policy': "default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      'Referrer-Policy': 'no-referrer',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    res.end(html);
+  }
+
   // eslint-disable-next-line no-unused-vars -- `url` идва по договора на компонентите, тук не е нужен
   async function handle({ req, res, url, parts, method }) {
     // ── 1. Вход по токен ─────────────────────────────────────────────────────
@@ -61,28 +86,28 @@ function create(deps) {
       try {
         token = decodeURIComponent(parts[1]);
       } catch {
-        fail(res, 404, 'Not found'); return true;
+        refuse(req, res, 404, 'Връзката не е валидна', 'Провери адреса или поискай нов от този, който ти го е дал.'); return true;
       }
       if (!/^[A-Za-z0-9_-]{20,120}$/.test(token)) {
         policy.note('tokenUnknown');
         void audit('portal.token.denied', { reason: 'malformed' });
-        fail(res, 404, 'Not found'); return true;
+        refuse(req, res, 404, 'Връзката не е валидна', 'Провери адреса или поискай нов от този, който ти го е дал.'); return true;
       }
       const record = store.getPortalTokenByHash(policy.digest(token));
       if (!record) {
         policy.note('tokenUnknown');
         void audit('portal.token.denied', { reason: 'unknown' });
-        fail(res, 404, 'Not found'); return true;
+        refuse(req, res, 404, 'Връзката не е валидна', 'Провери адреса или поискай нов от този, който ти го е дал.'); return true;
       }
       if (record.revokedAt) {
         policy.note('revokedRefused');
         void audit('portal.token.denied', { reason: 'revoked', portalId: record.portalId, tokenId: record.id });
-        fail(res, 404, 'Not found'); return true;
+        refuse(req, res, 404, 'Връзката не е валидна', 'Достъпът по нея е спрян. Поискай нова от този, който ти я е дал.'); return true;
       }
       if (record.expiresAt && Date.parse(record.expiresAt) <= Date.now()) {
         policy.note('tokenExpired');
         void audit('portal.token.denied', { reason: 'expired', portalId: record.portalId, tokenId: record.id });
-        fail(res, 404, 'Not found'); return true;
+        refuse(req, res, 404, 'Връзката не е валидна', 'Достъпът по нея е спрян. Поискай нова от този, който ти я е дал.'); return true;
       }
       const portal = resolvePortal(record.portalId);
       if (!portal) {
@@ -95,7 +120,7 @@ function create(deps) {
       if (record.maxUses != null && !store.usePortalToken(record.id)) {
         policy.note('tokenExhausted');
         void audit('portal.token.denied', { reason: 'exhausted', portalId: portal.id, tokenId: record.id, maxUses: record.maxUses });
-        fail(res, 410, 'Link has been used'); return true;
+        refuse(req, res, 410, 'Връзката вече е използвана', 'Тази връзка беше с ограничен брой отваряния и те са изчерпани. Поискай нова.'); return true;
       }
       const session = randomToken('ps_');
       const expiresAt = new Date(Date.now() + policy.sessionTtlSeconds * 1000).toISOString();
