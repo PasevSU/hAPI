@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **303/303** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **304/304** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 501 файла · 84765 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 496 файла · 84202 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 502 файла · 84861 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 497 файла · 84298 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 303 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 304 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,19 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Преводите на опциите можеха да се разминат с `config.yaml` безнаказано.** Supervisor рисува
+  `configuration.<опция>.name/description` от `translations/{bg,en}.yaml`, тоест опция без
+  превод се вижда като сурово име на ключ, а превод за махната опция лъже, че има настройка.
+  Нищо не проверяваше нито едната посока. Измерено на 0.69.87: **43 опции, 43 записа в двата
+  езика, 172 полета, нула липси и нула сирачета** — тоест дефект днес НЯМА; гардът е сложен,
+  за да не се появи при следващата опция. `tests/addon-translations.cjs` иска всяка опция от
+  `options:` да има запис и в двата езика, всеки запис да носи и `name`, и `description`, никой
+  запис да не сочи несъществуваща опция (вкл. от `schema:`) и двата езика да покриват едно и
+  също множество. **Проверено обратно:** нова опция `zzz_probe` пада с „bg: без превод →
+  zzz_probe“; махнато `name:` при `token` в `en.yaml` пада с „en: непълен запис → token
+  (description)“; добавен `ghost_option` в `bg.yaml` пада с „bg: превод за несъществуваща
+  опция → ghost_option“.
 
 - **Зеленият lint не значеше „няма находки“.** `eslint-suppressions.json` е базовата линия за
   наследените находки и `ci.yml` твърдеше, че тя пази днешното състояние, а нова находка чупи
