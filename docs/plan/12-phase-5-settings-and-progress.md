@@ -31,7 +31,7 @@
 | Четене/запис | ✅ `GET`/`PATCH /admin/api/settings` | `server.js` ~377–386 |
 | Ефективни стойности + рестарт | ✅ `effective()` + `restartRequired` | `server.js` ~386 |
 | Профили на настройки | ✅ `config-profiles.js` + API | `server.js` ~485–503 |
-| Toast (еднократно) | ✅ `toast(msg, type)` | `admin.js` ~460 |
+| Toast (еднократно) | ✅ `toast(msg, type)` | `ui/app.js` `function toast` (в `admin.js` до 0.69.8) |
 | Опашка с прогрес | ✅ `job-manager.js` (`done/total`, pause/resume/cancel) | `server.js` `/admin/api/jobs` |
 
 **Извод:** backend-ът вече знае всичко; липсва (а) организиран UI за настройки и

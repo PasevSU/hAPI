@@ -25,7 +25,10 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const scripts = pkg.scripts || {};
 
 // ── 1. Документацията и CI цитират само съществуващи команди ────────────────
-const SKIP_DIR = /[\\/](node_modules|dist|release|build|archive|\.git|coverage)[\\/]/;
+// `reports/` е генериран: `RELEASE-STATUS.md` цитира дословно CHANGELOG-а, а CHANGELOG-ът
+// (изключен по-долу) има право да назовава премахнати команди. Инструкции се търсят там,
+// където ги има — в документацията и в CI.
+const SKIP_DIR = /[\\/](node_modules|dist|release|build|archive|reports|\.git|coverage)[\\/]/;
 const docs = [];
 const walk = (dir) => {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

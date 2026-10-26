@@ -35,7 +35,7 @@ the rest of `RS-06` — PDF/A-3 and the PKCS#7 signature — is open on purpose 
 | 7     | Evidence portal for judges/prosecutors: roles, PKCE/OIDC, SHA-256/512, PKCS#7, RFC 3161, chain of custody, WORM                              | `docs/plan/14-phase-7-evidence-portal.md`                   |
 | 8     | Public API v2 + SDK: contract-first OpenAPI 3.1, scoped tokens, `sdk/js`, webhooks                                                           | `docs/plan/15-unified-master-plan-v6.0.md` §6.9             |
 | 9     | Packaging: one build → HA add-on, Repo, Windows (code/portable/setup), Full; WebView2 runtime; 6 banners                                     | `docs/plan/15-unified-master-plan-v6.0.md` §6.10            |
-| 10    | Quality: HA integration test in CI, Playwright UI, Enterprise Control Center (13 panels), `server.js`/`admin.js` modularisation, `BUG-01…11` | `docs/plan/15-unified-master-plan-v6.0.md` §6.11            |
+| 10    | Quality: HA integration test in CI, Playwright UI, Enterprise Control Center (13 panels), `server.js` modularisation (`admin.js` беше премахнат в 0.69.8), `BUG-01…11` | `docs/plan/15-unified-master-plan-v6.0.md` §6.11            |
 | 11    | Report Studio: JSON manifest, 8 elements, locked `RFC 3161 START → STOP`, A4/PDF export, no fake tokens                                      | `docs/plan/15-unified-master-plan-v6.0.md` §6.12 · ADR-0025 |
 
 ## Direction of travel
