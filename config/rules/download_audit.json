@@ -1,18 +1,21 @@
 {
   "schema_version": "1.0",
+  "note": "Справочен договор, НЕ правило: файлът не е в RULE_FILES (gateway-api.js) и add-on-ът не го зарежда. Истината за одита е генерираният documentation/04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md (от кода) и записът на audit-chain.js. Срокът на съхранение се задава в настройките (retention.enabled/fileDays/auditDays), не тук — по подразбиране не се изтрива нищо.",
+  "record": ["seq", "at", "event", "details", "prevHash"],
   "events": [
-    "access.allowed",
-    "access.denied",
-    "download.start",
-    "download.complete",
-    "export.complete",
-    "export.failed",
-    "token.issued",
-    "token.revoked",
-    "gateway.published",
-    "gateway.unpublished"
-  ],
-  "fields": ["timestamp", "channel", "portal", "file_id", "user", "token_id", "ip", "status", "reason", "operation_id"],
-  "retention_days": 365,
-  "channels": { "ingress": "admin-audit", "public": "access-history" }
+    "file.download",
+    "file.download.admin",
+    "file.version.download",
+    "gateway.download",
+    "gateway.download.denied",
+    "package.download",
+    "package.public.download",
+    "portal.tree.file.download",
+    "qr.archive.download",
+    "attachment.download",
+    "portal.access.denied",
+    "portal.token.create",
+    "portal.token.denied",
+    "portal.token.revoke"
+  ]
 }

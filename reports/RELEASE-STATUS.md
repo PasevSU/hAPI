@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **296/296** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 494 файла · 83794 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 489 файла · 83233 реда · critical: 0 · high: 0 · medium: 0 · low: 190 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 494 файла · 83825 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 489 файла · 83264 реда · critical: 0 · high: 0 · medium: 0 · low: 190 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -33,6 +33,34 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **`download_audit.json` обещаваше одитен дневник, който системата не води.** Файлът изреждаше
+  десет събития — `download.start`, `download.complete`, `export.failed`, `token.issued`,
+  `gateway.published` и т.н. — и **девет от тях не съществуват в кода** (единственото вярно беше
+  `access.denied`). Носеше и `retention_days: 365`, докато срокът на съхранение е настройка
+  (`retention.*`), изключена по подразбиране, и списък с полета (`timestamp`, `channel`,
+  `portal`, …), каквито записът в `audit-chain.js` не съдържа — той пише
+  `{ seq, at, event, details, prevHash }`. Човек, който настройва очакванията си по този файл,
+  би търсил записи за изтегляния, които никога не са били правени.
+  Сега файлът изрежда **само** събития, които кодът наистина излъчва (`file.download`,
+  `file.download.admin`, `file.version.download`, `gateway.download`, `gateway.download.denied`,
+  `package.download`, `package.public.download`, `portal.tree.file.download`,
+  `qr.archive.download`, `attachment.download`, `portal.access.denied`, `portal.token.create`,
+  `portal.token.denied`, `portal.token.revoke`), носи истинската форма на записа и казва в
+  `note`, че **не се зарежда** от add-on-а: истината е генерираният
+  `documentation/04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md` и настройките за съхранение.
+  `tests/export-config.cjs` вече не сверява файла със собствения си списък, а с **каталога,
+  генериран от кода** (същият, който `tests/audit-events.cjs` пази), и с полетата на
+  `audit-chain.js`. Проверено обратно: добавено `download.start` пада с „събитие, което кодът
+  не излъчва“, а върнато `retention_days` — с „срокът на съхранение е настройка, не правило“.
+
+- **Файл в `config/rules/`, който никой не зарежда, е длъжен да го казва.**
+  `gateway-api.js` зарежда 8 файла (`RULE_FILES`), а в папката има 10: `download_audit.json` и
+  `portal_policies.json` са договори, не правила — но мълчаха за това и изглеждаха като
+  настройки, които работят. `tests/rules-declarations.cjs` вече изисква всеки незареждан файл да
+  носи `note`, който го обяснява, и двата файла го получиха (порталните политики живеят в
+  записите на порталите и се управляват от GUI-я). Проверено обратно: изтрит `note` пада с
+  „не се зарежда от add-on-а и няма note, който да го казва“.
 
 - **Декларативните правила твърдяха неща, които кодът не изпълнява.** `config/rules/*.json` се
   публикуват на клиенти през `GET /admin/api/v2/export/rules`, тоест всеки ред в тях е

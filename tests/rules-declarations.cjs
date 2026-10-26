@@ -97,12 +97,28 @@ if (defaults.block_minutes !== undefined) {
 }
 ok(`rate_limits: ${defaults.per_hour}/час · ${defaults.concurrent} едновременно`);
 
-// ── 5. Вградените копия ────────────────────────────────────────────────────
-// Пълното байтово сравнение е в `rules-parity`; тук се пази само, че файловете, които
-// този тест чете, съществуват и в образа (иначе той проверява нещо, което не пътува).
+// ── 5. Вградените копия и файловете, които НЕ се зареждат ──────────────────────
+// `gateway-api.RULE_FILES` изрежда какво add-on-ът зарежда. В папката има и файлове, които
+// не са в него (`download_audit.json`, `portal_policies.json`) — те са договори, не правила.
+// Файл в папка „rules“, който никой не зарежда, БЕЗ да го казва, е обещание за настройка,
+// която не работи; затова такъв файл е длъжен да носи `note` с обяснението.
 const bundled = path.join(root, 'hapi_enterprise', 'rules');
 for (const name of ['download_access.json', 'file_permissions.json', 'export_permissions.json', 'rate_limits.json']) {
   assert.ok(fs.existsSync(path.join(bundled, name)), 'липсва вграденото копие на ' + name);
 }
+const loaded = new Set(
+  (fs.readFileSync(path.join(root, 'hapi_enterprise', 'gateway-api.js'), 'utf8').match(/const RULE_FILES = \[([\s\S]*?)\];/)[1].match(/'([a-z_]+\.json)'/g) || []).map((s) => s.replace(/'/g, '')),
+);
+assert.ok(loaded.size >= 8, 'RULE_FILES трябва да изрежда поне 8 файла, намерени: ' + loaded.size);
+const inFolder = fs.readdirSync(rulesDir).filter((n) => n.endsWith('.json')).sort();
+for (const name of inFolder) {
+  const body = read(name);
+  if (loaded.has(name)) continue;
+  assert.ok(
+    typeof body.note === 'string' && body.note.trim().length > 40,
+    `config/rules/${name} не се зарежда от add-on-а и няма note, който да го казва`,
+  );
+}
+ok(`${inFolder.length} файла в папката, ${loaded.size} се зареждат, осталите се обявяват като справочни`);
 
 console.log('PASS rules-declarations: ' + checks.join(' · '));

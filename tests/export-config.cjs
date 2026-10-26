@@ -98,12 +98,27 @@ for (const p of tokens.policies) assert.ok(p.ttl_hours >= 1 && p.max_uses >= 1, 
 const rate = read('rules/rate_limits.json');
 assert.ok(rate.defaults.per_hour > 0 && rate.defaults.concurrent > 0 && rate.defaults.block_minutes > 0);
 
+// `download_audit.json` е справочен договор, НЕ правило — add-on-ът не го зарежда (виж
+// `RULE_FILES` в `gateway-api.js`). Затова тук се проверява само това, което файлът има право
+// да твърди: че споменава САМО събития, които кодът излъчва. Каталогът е генериран от кода
+// (`scripts/audit-events.cjs`), тоест това е сверка с кода, а не с втори списък.
 const audit = read('rules/download_audit.json');
-for (const event of ['access.allowed', 'access.denied', 'download.complete', 'export.failed']) {
-  assert.ok(audit.events.includes(event), event);
+const catalogue = fs.readFileSync(
+  path.join(__dirname, '..', 'documentation', '04_FUNCTION_SPECIFICATIONS', 'AUDIT_EVENTS.md'),
+  'utf8',
+);
+for (const event of audit.events) {
+  assert.ok(catalogue.includes('`' + event + '`'), 'download_audit.json: събитие, което кодът не излъчва → ' + event);
 }
-assert.equal(audit.channels.ingress, 'admin-audit');
-assert.equal(audit.channels.public, 'access-history');
+// Формата на записа идва от `audit-chain.js` (`{ seq, at, event, details, prevHash }`), не от файла.
+for (const field of audit.record) {
+  assert.ok(
+    new RegExp('(?:^|[{\\s])' + field + '\\s*:').test(fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'audit-chain.js'), 'utf8')),
+    'download_audit.json: поле, което записът в audit-chain.js не съдържа → ' + field,
+  );
+}
+assert.equal('retention_days' in audit, false, 'срокът на съхранение е настройка (retention.*), не правило');
+assert.equal('channels' in audit, false, 'каналите са в public-gateway.CHANNELS, не в правилата');
 
 // 9. Схеми: JSON Schema 2020-12, enums съответстват на модулите.
 const pkg = read('schemas/package_manifest.schema.json');

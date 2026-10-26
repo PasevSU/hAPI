@@ -1,5 +1,6 @@
 {
   "schema_version": "1.0",
+  "note": "Справочен договор, НЕ правило: файлът не е в RULE_FILES (gateway-api.js) и add-on-ът не го зарежда. Порталните политики живеят в записите на порталите (SQLite) и се управляват от GUI-я; тук са примерни стойности, които `tests/export-config.cjs` проверява с `public-gateway.validatePortal`, за да не се разминава формата им от кода.",
   "defaults": {
     "status": "active",
     "access": "KEY_REQUIRED",
