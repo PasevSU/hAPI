@@ -214,8 +214,8 @@
               <dt>QR</dt><dd>${p.qr ? 'включено' : 'изключено'}</dd>
               <dt>Наследяване</dt><dd>${p.inherit ? 'да' : 'не'}</dd>
               <dt>Storage root</dt><dd><code>${esc(p.storage_root)}</code></dd>
-              <dt>Ключ TTL</dt><dd>${p.token_policy.ttl_hours} ч.</dd>
-              <dt>Ключ лимит</dt><dd>${p.token_policy.max_uses} използвания</dd>
+              <dt>Ключ TTL</dt><dd>${p.token_policy.ttl_hours == null ? 'безсрочен (освен ако не се зададе при издаване)' : p.token_policy.ttl_hours + ' ч.'}</dd>
+              <dt>Ключ лимит</dt><dd>${p.token_policy.max_uses == null ? 'без лимит (освен ако не се зададе при издаване)' : p.token_policy.max_uses + ' отваряния'}</dd>
               <dt>Отзоваване</dt><dd>${p.token_policy.revocable ? 'разрешено' : 'забранено'}</dd>
               <dt>Landing URL</dt><dd><code>${esc(GW().publicUrl(p, base))}</code></dd>
               <dt>Portal API</dt><dd><code>${esc(GW().apiUrls(p, base).portal)}</code></dd>

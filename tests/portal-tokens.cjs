@@ -91,6 +91,37 @@ const { freePort, stopChild } = require('./helpers.cjs');
     assert.match(setCookie, /Max-Age=600/, 'сесията е краткотрайна (10 мин)');
     const cookie = setCookie.split(';')[0];
 
+    // ── 2б. Лимит на отварянията (`maxUses`) ─────────────────────────────────
+    // Планът иска „токени със срок/лимит/отзоваване“. Срокът и отзоваването ги имаше, лимитът
+    // беше само дума в `token_policies.json`. Сега се брои в базата и се проверява ПРЕДИ
+    // сесията: изчерпан токен не дава достъп, а отказът влиза в сензорите.
+    const limited = await jsonReq(adminBase, `/admin/api/portals/${portalA.id}/tokens`, 'POST', { scopes: ['read'], label: 'две отваряния', maxUses: 2 });
+    assert.equal(limited.status, 201, 'токен с лимит е издаден: ' + JSON.stringify(limited.data));
+    assert.equal(limited.data.maxUses, 2, 'лимитът се връща при издаването');
+    const limitedToken = limited.data.token;
+    assert.equal((await enter(limitedToken)).status, 302, 'първото отваряне минава');
+    assert.equal((await enter(limitedToken)).status, 302, 'второто отваряне минава');
+    const third = await enter(limitedToken);
+    assert.equal(third.status, 410, 'третото отваряне е отказано, получено: ' + third.status);
+    assert.equal(cookieOf(third), '', 'отказаният вход не дава бисквитка');
+    // Без лимит (както досега) токенът остава многократен — това не бива да се счупи.
+    assert.equal((await enter(token)).status, 302, 'токенът без maxUses не се изчерпва');
+    const afterUse = (await jsonReq(adminBase, `/admin/api/portals/${portalA.id}/tokens`, 'GET')).data.tokens;
+    const limitedRow = afterUse.find((t) => t.id === limited.data.id);
+    assert.equal(limitedRow.uses, 2, 'базата брои точно двете успешни отваряния');
+    assert.equal(limitedRow.maxUses, 2, 'лимитът се вижда в списъка');
+    // Невалиден лимит се отказва, вместо да се подразбере.
+    for (const bad of [0, -1, 1.5, 'две']) {
+      const res = await jsonReq(adminBase, `/admin/api/portals/${portalA.id}/tokens`, 'POST', { scopes: ['read'], maxUses: bad });
+      assert.equal(res.status, 400, `maxUses=${JSON.stringify(bad)} се отказва с 400, получено ${res.status}`);
+    }
+    // Сензорът вижда изчерпването като отказ, а не като мълчание.
+    const sensorsAfterLimit = await jsonReq(adminBase, '/admin/api/sensors', 'GET');
+    assert.ok(
+      JSON.stringify(sensorsAfterLimit.data).includes('tokenExhausted'),
+      'сензорите показват tokenExhausted',
+    );
+
     // ── 3. Изолация: A се отваря, B — не ─────────────────────────────────────
     assert.equal((await statusOf('/p/' + portalA.id, cookie)).status, 200, 'своят портал се отваря');
     assert.equal((await statusOf('/api/v1/p/alpha', cookie)).status, 200, 'API-то на своя портал работи');

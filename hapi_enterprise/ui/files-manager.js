@@ -54,12 +54,15 @@
   const plural = (n, one, many) => `${Number(n) || 0} ${Number(n) === 1 ? one : many}`;
   // Детерминирани дати за демо данните (за да има сортиране по дата).
   const demoDate = (i, hour) => new Date(Date.UTC(2026, 9, 20 - i * 3, hour || 9, 15, 0)).toISOString();
-  // Детерминиран демо SHA-256 (само за илюстрация на иконата за хеш).
   const demoHash = (i, j) => {
     let h = '';
     for (let k = 0; k < 64; k += 1) h += '0123456789abcdef'[(i * 7 + j * 13 + k * 5) % 16];
     return h;
   };
+  // Какво ВСЪЩИНСТВО прави backend-ът с портален токен, ако не се зададе нищо: без срок и без
+  // лимит на отварянията (`routes/portal-tokens.js` → `normalizeTtl`/`normalizeMaxUses` връщат
+  // null). Досега тук пишеше „168 часа / 10 използвания“ и панелът го показваше като факт за ключа.
+  const tokenPolicy = (src) => ({ ttl_hours: null, max_uses: null, revocable: true, ...(src || {}) });
 
   // ── Икони за метаданните ────────────────────────────────────────────────
   // Вместо дълъг текст в таблицата: икона + кратка стойност, пълната е в title.
@@ -270,8 +273,7 @@
       description: p.description || '',
       access: p.access || (p.visibility === 'public' ? 'FREE' : 'KEY_REQUIRED'),
       storage_root: p.storage_root || '/share',
-      token_policy: { ttl_hours: 168, max_uses: 10, revocable: true },
-      category: p.category || ['Правни дела', 'Договори', 'Експертизи', 'Публикации'][i % 4],
+      token_policy: tokenPolicy(p.token_policy),
       flag: p.flag || ['important', 'none', 'urgent', 'archive'][i % 4],
       subject: p.subject || ['посещение на лице', 'доставка на документи', 'експертен доклад', 'публично оповестяване'][i % 4],
       contactId: p.contactId || '',
@@ -846,7 +848,7 @@
       accessQuery: p.accessQuery || '',
       accessExpires: p.accessExpires || null,
       tokenRequired: Boolean(p.tokenRequired),
-      token_policy: { ttl_hours: 168, max_uses: 10, revocable: true },
+      token_policy: tokenPolicy(p.token_policy),
       files: (p.files || []).map(normalizeFile),
     };
   }
@@ -1142,7 +1144,7 @@
         createdAt: new Date().toISOString(),
         access: visibility === 'public' ? 'FREE' : 'KEY_REQUIRED',
         storage_root: storageRoot,
-        token_policy: { ttl_hours: 168, max_uses: 10, revocable: true },
+        token_policy: tokenPolicy(),
         files: [],
       };
       state.portals.push(p);
@@ -1195,7 +1197,7 @@
         createdAt: p.createdAt || '',
         access: p.visibility === 'public' ? 'FREE' : 'KEY_REQUIRED',
         storage_root: p.storage_root || '/share',
-        token_policy: { ttl_hours: 168, max_uses: 10, revocable: true },
+        token_policy: tokenPolicy(p.token_policy),
         files: (p.files || []).map(normalizeFile),
       }));
       state.portalIndex = Math.max(0, state.portals.findIndex((p) => p.id === created.data.id));

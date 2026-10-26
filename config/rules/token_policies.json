@@ -1,10 +1,6 @@
 {
   "schema_version": "1.0",
-  "defaults": { "ttl_hours": 168, "max_uses": 10, "revocable": true, "prefix": "hapi_" },
-  "reject_patterns": ["^eyJ"],
-  "policies": [
-    { "id": "standard", "ttl_hours": 168, "max_uses": 10 },
-    { "id": "one-time", "ttl_hours": 24, "max_uses": 1 },
-    { "id": "forensic-review", "ttl_hours": 48, "max_uses": 5, "note": "Само за дело; не наследява evidence.export." }
-  ]
+  "note": "Фактите за порталните токени, както ги изпълнява кодът (routes/portal-tokens.js). Токенът се издава с префикс pt_ и в базата остава само SHA-256 отпечатъкът. Без ttlSeconds е БЕЗСРОЧЕН, без maxUses е БЕЗ ЛИМИТ на отварянията; отнемането (DELETE) трие и сесиите веднага. HA JWT не може да мине за портален токен: името се проверява с ^[A-Za-z0-9_-]{20,120}$, а точките на JWT го провалят. Еднократните връзки не са портални токени — те са билети в send.js и one_time в политиката на файла.",
+  "defaults": { "prefix": "pt_", "revocable": true, "ttl_hours": null, "max_uses": null },
+  "scopes": ["read", "download"]
 }

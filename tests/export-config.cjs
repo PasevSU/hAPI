@@ -91,9 +91,21 @@ for (const name of ['Public_Report.pdf', 'Evidence_Package.zip', 'Internal_Audit
 }
 
 // 8. token_policies / rate_limits / download_audit.
+// `token_policies.json` описва фактите за порталните токени. Проверява се срещу КОДА:
+// префиксът и разрешените обхвати се вземат от `routes/portal-tokens.js`, а липсата на
+// подразбиращ се срок/лимит — от `normalizeTtl`/`normalizeMaxUses` (без стойност = null).
 const tokens = read('rules/token_policies.json');
-assert.ok(tokens.reject_patterns.includes('^eyJ'), 'HA JWT не е публичен ключ');
-for (const p of tokens.policies) assert.ok(p.ttl_hours >= 1 && p.max_uses >= 1, p.id);
+const tokenRoute = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'routes', 'portal-tokens.js'), 'utf8');
+const issuePrefix = (tokenRoute.match(/randomToken\('(pt_[A-Za-z0-9_-]*)'\)/) || [])[1];
+assert.ok(issuePrefix, 'токенът се издава с префикс от кода');
+assert.equal(tokens.defaults.prefix, issuePrefix, 'prefix в правилата трябва да е същият като в кода');
+const allowedScopes = JSON.parse((tokenRoute.match(/const allowed = (\[[^\]]*\])/) || [])[1].replace(/'/g, '"'));
+assert.deepEqual([...tokens.scopes].sort(), [...allowedScopes].sort(), 'scopes трябва да са точно тези, които маршрутът приема');
+assert.equal(tokens.defaults.ttl_hours, null, 'без ttlSeconds токенът е безсрочен — това е фактът');
+assert.equal(tokens.defaults.max_uses, null, 'без maxUses токенът е без лимит — това е фактът');
+for (const gone of ['policies', 'reject_patterns']) {
+  assert.equal(gone in tokens, false, `${gone} беше обещание без изпълнение и не бива да се връща`);
+}
 
 const rate = read('rules/rate_limits.json');
 assert.ok(rate.defaults.per_hour > 0 && rate.defaults.concurrent > 0 && rate.defaults.block_minutes > 0);

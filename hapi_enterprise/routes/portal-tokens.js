@@ -33,6 +33,19 @@ function create(deps) {
     return ttl;
   }
 
+  /**
+   * Колко пъти може да се отвори токенът. `undefined`/`null` = без лимит (както досега);
+   * число ≥ 1 = точно толкова отваряния. Лимитът се пази в базата (`portal_tokens.max_uses`).
+   */
+  function normalizeMaxUses(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const n = Number(value);
+    if (!Number.isInteger(n) || n < 1 || n > 100000) {
+      throw Object.assign(new Error('maxUses must be an integer 1..100000'), { status: 400 });
+    }
+    return n;
+  }
+
   /** Публичният адрес на токена — с базата на заявката, за да е валиден и зад прокси. */
   function tokenUrl(req, token) {
     const base = String(baseUrl(req) || '').replace(/\/+$/, '');
@@ -76,6 +89,13 @@ function create(deps) {
         // Порталите живеят в метаданните; токен към изтрит портал не отваря нищо.
         void audit('portal.token.denied', { reason: 'portal-missing', tokenId: record.id });
         fail(res, 404, 'Not found'); return true;
+      }
+      // Лимитът на отварянията се брои ТУК, преди сесията: изчерпан токен не бива да дава
+      // достъп. Броячът се вдига с условен UPDATE, за да не минат две едновременни заявки.
+      if (record.maxUses != null && !store.usePortalToken(record.id)) {
+        policy.note('tokenExhausted');
+        void audit('portal.token.denied', { reason: 'exhausted', portalId: portal.id, tokenId: record.id, maxUses: record.maxUses });
+        fail(res, 410, 'Link has been used'); return true;
       }
       const session = randomToken('ps_');
       const expiresAt = new Date(Date.now() + policy.sessionTtlSeconds * 1000).toISOString();
@@ -134,10 +154,11 @@ function create(deps) {
       } catch (e) {
         fail(res, e.status || 400, e.status ? e.message : 'Invalid JSON'); return true;
       }
-      let scopes, ttl;
+      let scopes, ttl, maxUses;
       try {
         scopes = normalizeScopes(payload && payload.scopes);
         ttl = normalizeTtl(payload && payload.ttlSeconds);
+        maxUses = normalizeMaxUses(payload && payload.maxUses);
       } catch (e) {
         fail(res, e.status || 400, e.message); return true;
       }
@@ -145,13 +166,13 @@ function create(deps) {
       const token = randomToken('pt_');
       const id = randomToken('tid_').slice(0, 20);
       const expiresAt = ttl ? new Date(Date.now() + ttl * 1000).toISOString() : null;
-      store.createPortalToken({ id, portalId: portal.id, tokenHash: policy.digest(token), scopes, label, expiresAt });
-      void audit('portal.token.create', { portalId: portal.id, tokenId: id, scopes, expiresAt });
+      store.createPortalToken({ id, portalId: portal.id, tokenHash: policy.digest(token), scopes, label, expiresAt, maxUses });
+      void audit('portal.token.create', { portalId: portal.id, tokenId: id, scopes, expiresAt, maxUses });
       // Издаден достъп е събитие за външния получател (напр. система, която следи кой има
       // достъп до кой портал). Токенът НЕ влиза в тялото — само че достъп е създаден.
       if (typeof publish === 'function') publish('access.created', { portalId: portal.id, kind: 'portal-token', scopes: scopes.length, expiresAt });
       // Токенът се връща ТУК и повече никъде — в базата стои само отпечатъкът.
-      return json(res, 201, { id, portalId: portal.id, scopes, label, expiresAt, token, url: tokenUrl(req, token), sessionTtlSeconds: policy.sessionTtlSeconds, cookie: policy.snapshot().cookie }), true;
+      return json(res, 201, { id, portalId: portal.id, scopes, label, expiresAt, maxUses, token, url: tokenUrl(req, token), sessionTtlSeconds: policy.sessionTtlSeconds, cookie: policy.snapshot().cookie }), true;
     }
     if (tail.length === 2 && method === 'DELETE') {
       const revoked = store.revokePortalToken(tail[1]);

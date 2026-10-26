@@ -23,7 +23,7 @@ function open(jsonPath) {
  -- токен съществува един път, в отговора на издаването. Няма FOREIGN KEY към
  -- portal_index, защото индексът се пресъздава при всеки запис на метаданните
  -- (ON DELETE CASCADE би изтрил токените). Порталите се проверяват в JS.
- CREATE TABLE IF NOT EXISTS portal_tokens (id TEXT PRIMARY KEY, portal_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, scopes TEXT NOT NULL, label TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, expires_at TEXT, revoked_at TEXT);
+ CREATE TABLE IF NOT EXISTS portal_tokens (id TEXT PRIMARY KEY, portal_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, scopes TEXT NOT NULL, label TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, expires_at TEXT, revoked_at TEXT, max_uses INTEGER, uses INTEGER NOT NULL DEFAULT 0);
  CREATE INDEX IF NOT EXISTS portal_tokens_portal_idx ON portal_tokens(portal_id);
  -- Краткотрайна бисквитка, издадена СЛЕД отваряне на /t/<token>. Живее само докато
  -- токенът е валиден: отнемането му трие и сесиите (без да се чака срокът).
@@ -44,6 +44,16 @@ function open(jsonPath) {
  -- next_attempt_at — кога да се опита пак; exhausted значи „спряхме да опитваме“.
  CREATE TABLE IF NOT EXISTS webhook_deliveries (id TEXT PRIMARY KEY, webhook_id TEXT NOT NULL, event TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at TEXT NOT NULL, status INTEGER, error TEXT NOT NULL DEFAULT '', exhausted INTEGER NOT NULL DEFAULT 0);
  CREATE INDEX IF NOT EXISTS webhook_deliveries_due_idx ON webhook_deliveries(exhausted, next_attempt_at);`);
+  // Добавени колони за вече съществуващи бази. `CREATE TABLE IF NOT EXISTS` не пипа стара
+  // таблица, затова лимитът на отварянията се добавя изрично — иначе на обновена инсталация
+  // `max_uses` просто не съществува и токенът остава без лимит, без никой да разбере.
+  const ensureColumn = (table, column, definition) => {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+    if (columns.includes(column)) return;
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  };
+  ensureColumn('portal_tokens', 'max_uses', 'INTEGER');
+  ensureColumn('portal_tokens', 'uses', 'INTEGER NOT NULL DEFAULT 0');
   const get = db.prepare('SELECT payload FROM metadata WHERE id=1');
   const getSnapshot = db.prepare('SELECT payload, revision FROM metadata WHERE id=1');
   const getRevision = db.prepare('SELECT revision FROM metadata WHERE id=1');
@@ -64,10 +74,13 @@ function open(jsonPath) {
   const deleteSessionStmt = db.prepare('DELETE FROM sessions WHERE token_hash=?');
   const deleteUserSessionsStmt = db.prepare('DELETE FROM sessions WHERE username=?');
   const deleteExpiredStmt = db.prepare('DELETE FROM sessions WHERE expires_at IS NOT NULL AND expires_at<=?');
-  const insertPortalToken = db.prepare('INSERT INTO portal_tokens(id,portal_id,token_hash,scopes,label,created_at,expires_at) VALUES(?,?,?,?,?,?,?)');
-  const selectPortalTokenByHash = db.prepare('SELECT id,portal_id,scopes,label,created_at,expires_at,revoked_at FROM portal_tokens WHERE token_hash=?');
-  const selectPortalTokens = db.prepare('SELECT id,portal_id,scopes,label,created_at,expires_at,revoked_at FROM portal_tokens WHERE portal_id=? ORDER BY created_at DESC');
+  const insertPortalToken = db.prepare('INSERT INTO portal_tokens(id,portal_id,token_hash,scopes,label,created_at,expires_at,max_uses,uses) VALUES(?,?,?,?,?,?,?,?,0)');
+  const selectPortalTokenByHash = db.prepare('SELECT id,portal_id,scopes,label,created_at,expires_at,revoked_at,max_uses,uses FROM portal_tokens WHERE token_hash=?');
+  const selectPortalTokens = db.prepare('SELECT id,portal_id,scopes,label,created_at,expires_at,revoked_at,max_uses,uses FROM portal_tokens WHERE portal_id=? ORDER BY created_at DESC');
   const revokePortalTokenStmt = db.prepare('UPDATE portal_tokens SET revoked_at=? WHERE id=? AND revoked_at IS NULL');
+  // Брояч на отварянията. Условно ИЗРАЗ: `uses` се вдига само докато лимитът не е стигнат,
+  // за да не може две едновременни заявки да минат отвъд него.
+  const countPortalTokenUse = db.prepare('UPDATE portal_tokens SET uses=uses+1 WHERE id=? AND (max_uses IS NULL OR uses<max_uses)');
   const insertPortalSession = db.prepare('INSERT INTO portal_sessions(token_hash,portal_token_id,portal_id,created_at,expires_at) VALUES(?,?,?,?,?)');
   // Сесията се чете ЗАЕДНО с токена: отнемане или смяна на правата важи веднага, без
   // да се чака срокът на бисквитката.
@@ -219,9 +232,11 @@ function open(jsonPath) {
   function purgeExpiredSessions() { deleteExpiredStmt.run(nowIso()) }
 
   // ── Stage D: публични токени за конкретен портал ───────────────────────────
-  const tokenView = (row) => (row ? { id: row.id, portalId: row.portal_id, scopes: parseScopes(row.scopes), label: row.label || '', createdAt: row.created_at, expiresAt: row.expires_at || null, revokedAt: row.revoked_at || null } : null);
-  function createPortalToken({ id, portalId, tokenHash, scopes, label, expiresAt }) { insertPortalToken.run(id, portalId, tokenHash, JSON.stringify(scopes || ['read']), label || '', nowIso(), expiresAt || null) }
+  const tokenView = (row) => (row ? { id: row.id, portalId: row.portal_id, scopes: parseScopes(row.scopes), label: row.label || '', createdAt: row.created_at, expiresAt: row.expires_at || null, revokedAt: row.revoked_at || null, maxUses: row.max_uses == null ? null : Number(row.max_uses), uses: Number(row.uses || 0) } : null);
+  function createPortalToken({ id, portalId, tokenHash, scopes, label, expiresAt, maxUses }) { insertPortalToken.run(id, portalId, tokenHash, JSON.stringify(scopes || ['read']), label || '', nowIso(), expiresAt || null, maxUses == null ? null : Number(maxUses)) }
   function getPortalTokenByHash(tokenHash) { return tokenView(selectPortalTokenByHash.get(tokenHash)) }
+  /** Отбелязва едно отваряне. `false` значи лимитът е стигнат (или едновременна заявка го е взела). */
+  function usePortalToken(id) { return countPortalTokenUse.run(id).changes > 0 }
   function listPortalTokens(portalId) { return selectPortalTokens.all(portalId).map(tokenView) }
   /** Отнемане: токенът спира и ВСИЧКИ сесии, произлезли от него — веднага. */
   function revokePortalToken(id) { const changed = revokePortalTokenStmt.run(nowIso(), id).changes > 0; if (changed) deletePortalSessionsByToken.run(id); return changed }
@@ -332,6 +347,6 @@ function open(jsonPath) {
   /** Изчерпаните доставки се пазят известно време, за да се види в конзолата какво не е стигнало. */
   function purgeWebhookDeliveries(before = nowIso()) { return purgeDeliveriesStmt.run(before).changes }
 
-  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, createPortalToken, getPortalTokenByHash, listPortalTokens, revokePortalToken, createPortalSession, getPortalSession, deletePortalSession, purgeExpiredPortalAccess, setUserPortals, getUserPortals, setPortalUsers, getPortalUsers, setUserCases, getUserCases, reserveIdempotency, getIdempotency, completeIdempotency, forgetIdempotency, purgeIdempotency, createWebhook, listWebhooks, getWebhook, deleteWebhook, setWebhookDisabled, touchWebhook, enqueueWebhookDelivery, dueWebhookDeliveries, completeWebhookDelivery, failWebhookDelivery, countPendingWebhookDeliveries, purgeWebhookDeliveries, close: () => db.close() };
+  return { load, save, revision, snapshot, stats, quickCheck, backup, restoreFrom, createUser, listUsers, getUser, updateUser, deleteUser, createSession, getSession, deleteSession, deleteUserSessions, purgeExpiredSessions, createPortalToken, getPortalTokenByHash, listPortalTokens, usePortalToken, revokePortalToken, createPortalSession, getPortalSession, deletePortalSession, purgeExpiredPortalAccess, setUserPortals, getUserPortals, setPortalUsers, getPortalUsers, setUserCases, getUserCases, reserveIdempotency, getIdempotency, completeIdempotency, forgetIdempotency, purgeIdempotency, createWebhook, listWebhooks, getWebhook, deleteWebhook, setWebhookDisabled, touchWebhook, enqueueWebhookDelivery, dueWebhookDeliveries, completeWebhookDelivery, failWebhookDelivery, countPendingWebhookDeliveries, purgeWebhookDeliveries, close: () => db.close() };
 }
 module.exports = { open };

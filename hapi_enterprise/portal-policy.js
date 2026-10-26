@@ -83,7 +83,7 @@ function create({ store, signedPortal, sessionTtlSeconds = 600, requireToken = f
   // `denied` е НАТРУПАНО (от старта), `events` пази само времето и причината, за да може
   // сензорът да покаже „има отказ СЕГА“, а не „имало е отказ някога“ (натрупаното никога
   // не се нулира и тревога по него би светела вечно).
-  const denied = { tokenUnknown: 0, tokenExpired: 0, revokedRefused: 0, crossPortal: 0, scopeDenied: 0, sessionInvalid: 0 };
+  const denied = { tokenUnknown: 0, tokenExpired: 0, revokedRefused: 0, tokenExhausted: 0, crossPortal: 0, scopeDenied: 0, sessionInvalid: 0 };
   const events = [];
   const noteKind = (kind) => {
     if (Object.hasOwn(denied, kind)) denied[kind] += 1;
@@ -150,7 +150,7 @@ function create({ store, signedPortal, sessionTtlSeconds = 600, requireToken = f
   /** Еднакъв отказ за всички случаи: 404 без обяснение навън, причината — в сензорите. */
   function snapshot() {
     const since = now() - windowSeconds * 1000;
-    const window = { seconds: windowSeconds, tokenUnknown: 0, tokenExpired: 0, revokedRefused: 0, crossPortal: 0, scopeDenied: 0, sessionInvalid: 0, total: 0 };
+    const window = { seconds: windowSeconds, tokenUnknown: 0, tokenExpired: 0, revokedRefused: 0, tokenExhausted: 0, crossPortal: 0, scopeDenied: 0, sessionInvalid: 0, total: 0 };
     for (const event of events) {
       if (event.at < since) continue;
       if (Object.hasOwn(window, event.kind)) window[event.kind] += 1;
