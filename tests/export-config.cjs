@@ -11,10 +11,22 @@ const M = require('../hapi_enterprise/export-manager.js');
 const root = path.join(__dirname, '..', 'config');
 const read = (p) => JSON.parse(fs.readFileSync(path.join(root, p), 'utf8'));
 
-// 1. download_rules.json = DEFAULT_RULES и е валиден.
+// 1. download_rules.json = DEFAULT_RULES (без обяснителния `note`) и е валиден.
+// `note` е коментар за човека, не правило: не влиза в DEFAULT_RULES и не се валидира.
 const rules = read('rules/download_rules.json');
 assert.equal(R.validateRules(rules).ok, true, JSON.stringify(R.validateRules(rules).errors));
-assert.deepEqual(rules, R.DEFAULT_RULES);
+const { note, ...rulesBody } = rules;
+assert.ok(typeof note === 'string' && note.length > 40, 'download_rules.json обяснява какво НЕ се редактира от него');
+// Ключовете, които никой не четеше, са премахнати: те бяха обещание за настройка, която
+// не работи (дължината на пътя и името на пакета са константи в export-rules.js). Проверява се
+// ПРЕДИ сравнението с DEFAULT_RULES, за да е ясно кой ключ е върнат.
+for (const gone of ['read_only_attribute', 'max_concurrent_downloads', 'temp_retention_hours', 'max_rel_path', 'package']) {
+  assert.equal(gone in rules, false, `download_rules.json не бива да обещава „${gone}“ — никой не го чете`);
+}
+assert.deepEqual(rulesBody, R.DEFAULT_RULES);
+// Константите, които тези ключове преструваха, че настройват, са реални и се публикуват отделно.
+assert.equal(R.MAX_REL_PATH, 240, 'дължината на пътя е константа в кода');
+assert.match(R.packageId(new Date(Date.UTC(2026, 0, 2, 3, 4, 5)), ''), /^RPT-\d{8}-\d{6}-CASE$/, 'името на пакета е константа в кода (RPT + CASE)');
 
 // 2. export_profiles.json = 12-те режима от модула.
 const profiles = read('rules/export_profiles.json');

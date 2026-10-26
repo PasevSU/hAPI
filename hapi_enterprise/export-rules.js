@@ -118,12 +118,7 @@
     overwrite: false,
     on_conflict: 'unique',
     verify_sha256: true,
-    read_only_attribute: false,
     temp_suffix: '.part',
-    max_concurrent_downloads: 2,
-    temp_retention_hours: 24,
-    max_rel_path: MAX_REL_PATH,
-    package: { prefix: 'RPT', case_fallback: 'CASE' },
     evidence: { verification: 'required', overwrite: 'forbidden' },
     storage: { allowed_roots: ['/data', '/share', '/media'] },
     capabilities: {

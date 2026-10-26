@@ -1,14 +1,10 @@
 {
   "schema_version": "1.0",
+  "note": "Тук са САМО правила, които кодът чете или валидира. Твърдите числа (максимална дължина на път, префикс и подразбиране на името на пакета) са константи в export-rules.js и се публикуват като MAX_REL_PATH и през packageId — не се редактират от този файл.",
   "overwrite": false,
   "on_conflict": "unique",
   "verify_sha256": true,
-  "read_only_attribute": false,
   "temp_suffix": ".part",
-  "max_concurrent_downloads": 2,
-  "temp_retention_hours": 24,
-  "max_rel_path": 240,
-  "package": { "prefix": "RPT", "case_fallback": "CASE" },
   "evidence": { "verification": "required", "overwrite": "forbidden" },
   "storage": { "allowed_roots": ["/data", "/share", "/media"] },
   "capabilities": {

@@ -6,6 +6,20 @@
 
 ## 0.69.87
 
+- **`download_rules.json` носеше пет „настройки“, които никой не чете.** Файлът се публикува на
+  клиенти през `GET /admin/api/v2/export/rules`, а в него стояха `read_only_attribute`,
+  `max_concurrent_downloads`, `temp_retention_hours`, `max_rel_path` и `package { prefix,
+  case_fallback }`. Нито един от тях не се четеше: дължината на пътя е константа
+  (`MAX_REL_PATH = 240`), името на пакета също (`RPT-…-CASE` в `packageId`), а останалите три
+  нямаха консуматор. Тоест човек, който смени `max_rel_path` на 100, не получаваше нищо — а
+  файлът изглеждаше като мястото, където се настройва. Петте ключа са премахнати от файла и от
+  `DEFAULT_RULES`, а файлът носи `note` кой какво НЕ се редактира от него; константите
+  продължават да се публикуват отделно (`export-rules.MAX_REL_PATH`, `packageId`).
+  `tests/export-config.cjs` вече сравнява файла с `DEFAULT_RULES` **без** обяснителния `note` и
+  изрично забранява връщането на тези пет ключа, а `MAX_REL_PATH` и форматът на `packageId` се
+  проверяват като факти на кода. **Проверено обратно:** върнат `package` пада с
+  „download_rules.json не бива да обещава „package“ — никой не го чете“.
+
 - **Сгрешен `download_rules.json` се виждаше като „зареден“, а в сила бяха други правила.**
   Файлът се валидира твърдо (`export-rules.validateRules`: `evidence.overwrite` трябва да е
   `forbidden`, `on_conflict` — от списъка и т.н.), но при невалидна стойност `gateway-api`
