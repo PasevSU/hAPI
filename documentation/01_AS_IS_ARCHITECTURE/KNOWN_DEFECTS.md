@@ -1,18 +1,28 @@
 # Known Defects — hAPI Enterprise
 
-> Tracked defects, their impact, and disposition. No evidence-integrity defects are known
-> to be open at v0.50.0.
+> Регистър на известните дефекти и какво е решението им. Проверен срещу кода при **0.69.87**.
+> `tests/known-defects.cjs` пази връзката с кода: затворен ред трябва да сочи съществуващ
+> файл, отворен ред с тежест „Висока“ не може да стои без причина, а ред, който твърди
+> липса на нещо, което кодът вече има, се хваща.
+>
+> **Защо регистърът се проверява:** до 0.69.87 тук стояха два реда с тежест „Висока“, които
+> описваха липси от времето на 0.50 (RFC 3161, PKCS#7), а кодът отдавна ги имаше. По
+> собствените правила на този документ такъв ред **блокира изданието** — тоест остарелият
+> регистър или блокираше всичко, или се игнорираше. И двете е по-лошо от липса на регистър.
 
-| ID | Area | Description | Severity | Status |
-| -- | ---- | ----------- | -------- | ------ |
-| DEF-01 | Docs | `docs/plan/07-security-v4.3.md` contains an appended copy of `06-multi-tenancy-v4.2.md` (concatenated by mistake). Master plan (`08`) supersedes. | Low | Accepted (documented) |
-| DEF-02 | Repo path | Local checkout folder is named `hAPI Enterptice` (typo for "Enterprise"). Cosmetic only. | Low | Open |
-| DEF-03 | Portal | Public portal (`portal.js`) is download-only; no in-browser hash verification yet — addressed by Phase 7. | Medium | Planned (Phase 7) |
-| DEF-04 | Crypto | No RFC 3161 timestamp / PKCS#7 detached signature yet — evidence lacks legal-grade sealing until Phase 7. | High | Planned (Phase 7) |
-| DEF-05 | Crypto | SHA-256 only (no SHA-512) in manifest — Phase 7 adds SHA-512. | Low | Planned (Phase 7) |
-| DEF-06 | Ops | WORM is partial (`flag:'wx'`); dedicated immutable evidence volume not yet present. | Medium | Planned (Phase 7) — оценка на готовите решения: `02_TO_BE_ARCHITECTURE/READY_MADE_COMPONENTS.md` (S3 Object Lock) |
+| ID | Област | Описание | Тежест | Състояние |
+| -- | ------ | -------- | ------- | --------- |
+| DEF-01 | Документация | `docs/plan/07-security-v4.3.md` съдържа прилепен препис на чата за multi-tenancy (от ~L1937) — втори език на истината в исторически документ. Главният план `08-master-plan-v5.0.md` е над него. | Ниска | Приет (документиран; документът е исторически) |
+| DEF-02 | — | „Локалната папка е `hAPI Enterptice`“ (печатна грешка) — папката е `D:\hAPI`; такъв дефект няма. | — | Затворен (не е дефект) |
+| DEF-03 | Портал | Публичната страница (`portal/portal.js`, `custom_components/hapi_enterprise/portal.js`) ПОКАЗВА SHA-256 на файла, но не сверява изтегленото в браузъра (`crypto.subtle` не се ползва). Сървърът сверява при сервиране (`integrity-scan`, `worm.verify`) — това е удобство за посетителя, не граница за сигурност. | Средна | Отворен (не блокира: сървърната сверка е налична) |
+| DEF-04 | Крипто | RFC 3161 времеви печат и PKCS#7 подпис — **затворени**: `tsa-client.js` (вкл. `/rfc3161/verify`), `cms-sign.js`, `report-stamp.js`; тестове `report-tsa-e2e`, `tsa-client`, `report-stamp`. | Висока | Затворен (0.69.87) |
+| DEF-05 | Крипто | SHA-512 в манифеста — **има го**: `report-manifest.js` (`HASH_ALGORITHMS`) = CRC32, MD5, SHA1, SHA256, SHA512. | Ниска | Затворен (0.69.87) |
+| DEF-06 | Експлоатация | WORM е частичен: `chmod 0444` пази от презаписване навсякъде (вкл. NTFS), а при архивиране байтовете влизат в печат `.worm/<sha256>` и се връщат с проверен хеш (`worm.js`, `tests/sealed-vault.cjs`). Физическата неизтриваемост иска `chattr +i` (root) или Object Lock — каквито основното хранилище няма. | Средна | Отворен (иска root/Object Lock, не код) |
 
-## Disposition rules
+## Правила за водене
 
-- `High` defects gate a release (see `07_RELEASE/RELEASE_CRITERIA.md`).
-- New defects are logged here and linked to a change-control record.
+- `Висока` тежест блокира изданието — затова отворен ред с такава тежест трябва да носи и
+  причина защо не блокира; `tests/known-defects.cjs` не пропуска друго.
+- Ред се затваря само срещу **код и тест**, не срещу намерение: затвореният ред изрежда
+  файловете, а тестът проверява, че те съществуват.
+- Нов дефект се записва тук и се свързва с `CHANGELOG.md`, когато се затвори.
