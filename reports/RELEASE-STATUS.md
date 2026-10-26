@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **298/298** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 496 файла · 84135 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 491 файла · 83574 реда · critical: 0 · high: 0 · medium: 0 · low: 192 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 496 файла · 84143 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 491 файла · 83582 реда · critical: 0 · high: 0 · medium: 0 · low: 192 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -33,6 +33,19 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **`rate_limits.json` обещаваше лимити, които никой не прилага.** Файлът обявяваше глобални
+  `per_hour: 60`, `concurrent: 2`, `burst: 10`, `block_minutes: 15` и **надстройки по портал**
+  (`public-notices` 300/час и 5 едновременни, `forensic-2026-114` 20/1), а backend-ът четеше
+  само `defaults` и то за публикуване: истинските лимити идват от политиката
+  (`download-access.DEFAULT_POLICY` + политиката на портала/файла), проверяват се в
+  `decide()` по `session.downloadsThisHour`/`session.concurrent` и по-строгият слой печели.
+  Значи „public-notices: 300 на час“ беше невярно — в сила беше 60. Файлът стана **справка**:
+  само реалните числа (`per_hour`, `concurrent`), които се сверяват с кода, и `note` кой ги
+  прилага. `burst`, `block_minutes` и `overrides` са премахнати. `tests/export-config.cjs`
+  сравнява числата с `DEFAULT_POLICY` и забранява връщането на тези три ключа. Проверено
+  обратно: върнат `block_minutes` пада с „rate_limits.json не бива да обещава „block_minutes“
+  — никой не го прилага“.
 
 - **`download_rules.json` носеше пет „настройки“, които никой не чете.** Файлът се публикува на
   клиенти през `GET /admin/api/v2/export/rules`, а в него стояха `read_only_attribute`,

@@ -4,6 +4,19 @@
 
 ## 0.69.87
 
+- **`rate_limits.json` обещаваше лимити, които никой не прилага.** Файлът обявяваше глобални
+  `per_hour: 60`, `concurrent: 2`, `burst: 10`, `block_minutes: 15` и **надстройки по портал**
+  (`public-notices` 300/час и 5 едновременни, `forensic-2026-114` 20/1), а backend-ът четеше
+  само `defaults` и то за публикуване: истинските лимити идват от политиката
+  (`download-access.DEFAULT_POLICY` + политиката на портала/файла), проверяват се в
+  `decide()` по `session.downloadsThisHour`/`session.concurrent` и по-строгият слой печели.
+  Значи „public-notices: 300 на час“ беше невярно — в сила беше 60. Файлът стана **справка**:
+  само реалните числа (`per_hour`, `concurrent`), които се сверяват с кода, и `note` кой ги
+  прилага. `burst`, `block_minutes` и `overrides` са премахнати. `tests/export-config.cjs`
+  сравнява числата с `DEFAULT_POLICY` и забранява връщането на тези три ключа. Проверено
+  обратно: върнат `block_minutes` пада с „rate_limits.json не бива да обещава „block_minutes“
+  — никой не го прилага“.
+
 - **`download_rules.json` носеше пет „настройки“, които никой не чете.** Файлът се публикува на
   клиенти през `GET /admin/api/v2/export/rules`, а в него стояха `read_only_attribute`,
   `max_concurrent_downloads`, `temp_retention_hours`, `max_rel_path` и `package { prefix,

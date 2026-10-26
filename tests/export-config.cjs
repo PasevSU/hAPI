@@ -119,8 +119,16 @@ for (const gone of ['policies', 'reject_patterns']) {
   assert.equal(gone in tokens, false, `${gone} беше обещание без изпълнение и не бива да се връща`);
 }
 
+// `rate_limits.json` е СПРАВКА за лимитите, които кодът наистина прилага: числата идват от
+// `download-access.DEFAULT_POLICY`, а не се въвеждат тук. `burst`/`block_minutes`/`overrides`
+// бяха обещания без изпълнение (никой не ги чете), затова ги няма.
 const rate = read('rules/rate_limits.json');
-assert.ok(rate.defaults.per_hour > 0 && rate.defaults.concurrent > 0 && rate.defaults.block_minutes > 0);
+assert.equal(rate.defaults.per_hour, A.DEFAULT_POLICY.rate_per_hour, 'per_hour = DEFAULT_POLICY.rate_per_hour');
+assert.equal(rate.defaults.concurrent, A.DEFAULT_POLICY.concurrency, 'concurrent = DEFAULT_POLICY.concurrency');
+assert.ok(rate.defaults.per_hour > 0 && rate.defaults.concurrent > 0, 'лимитите са положителни');
+for (const gone of ['burst', 'block_minutes', 'overrides']) {
+  assert.equal(gone in rate.defaults || gone in rate, false, `rate_limits.json не бива да обещава „${gone}“ — никой не го прилага`);
+}
 
 // `download_audit.json` е справочен договор, НЕ правило — add-on-ът не го зарежда (виж
 // `RULE_FILES` в `gateway-api.js`). Затова тук се проверява само това, което файлът има право
