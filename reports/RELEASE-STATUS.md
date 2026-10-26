@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **309/309** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **310/310** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 507 файла · 85267 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 502 файла · 84704 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 508 файла · 85387 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 503 файла · 84824 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 309 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 310 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,18 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Страницата на панела зареждаше файл, който не съществува.** `hapi_enterprise/ui/index.html`
+  имаше `<script src="links.js">`, а `ui/links.js` никога не е съществувал — тоест всяко
+  отваряне на панела даваше 404, а `portals.js` пазеше „резервен“ клон към `window.HapiLinks`
+  от същия файл, тоест недостижим код, който изглеждаше като защита. Махнати са и двете:
+  базовият адрес идва само от `api-base.js`. `tests/html-assets.cjs` сверява всяка локална
+  референция в 8-те HTML страници — относителните се търсят до страницата, а абсолютните
+  (`/portal.css`) трябва да съществуват в `hapi_enterprise/portal/` И да са обявени изрично
+  като маршрут в кода. **Проверено обратно:** върнат `<script src="links.js">` пада с „липсва
+  файл до страницата“; преименуван `/portal-x.css` пада с „няма такъв файл в
+  hapi_enterprise/portal/“; махнат маршрут `url.pathname === '/portal.css'` пада с „файлът е
+  там, но маршрутът не е обявен в кода“.
 
 - **Скриптовете за публикуване не се проверяваха с нищо.** Пет PowerShell скрипта в `scripts/`
   и `release/` се пускат на ръка, тоест синтактична грешка в тях се открива едва когато човекът
