@@ -8,3 +8,10 @@ img/
 docs/
 documentation/
 *.min.js
+# Чужди пакети: съдържанието им е сверено файл по файл с източника (еднакъв SHA-256, вж.
+# documentation/02_TO_BE_ARCHITECTURE/EVIDENCE_PORTAL_V1.2_REVIEW.md) — преформатирането му
+# чупи тази сверка, без да подобрява нищо. `npm run format` не бива да ги пипа.
+hapi_enterprise/evidence-portal/
+hapi_enterprise/generator/
+# История: архивните снимки се пазят такива, каквито са били.
+archive/

@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **304/304** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **305/305** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 502 файла · 84861 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 497 файла · 84298 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 503 файла · 84942 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 498 файла · 84379 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 304 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 305 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,19 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **`npm run format` щеше да преформатира чуждия пакет на Evidence View.** `.prettierignore`
+  пазеше `dist/`, `release/`, `docs/`, `documentation/`, но не и `hapi_enterprise/evidence-portal/`
+  и `hapi_enterprise/generator/`. Измерено: глобът на `npm run format` стига до **5 файла в
+  `evidence-portal/` и 6 в `generator/`** — а пакетът е сверен файл по файл с източника си с
+  еднакъв SHA-256 (`EVIDENCE_PORTAL_V1.2_REVIEW.md`), тоест едно форматиране щеше да изтрие
+  сверката, без да подобри нищо. Защитени са и `archive/` (историята се пази каквато е), и
+  чуждите дървета. `tests/format-scope.cjs` проверява обхвата в ДВЕТЕ посоки: prettier не пипа
+  чужди, генерирани и архивни дървета И първоначалният код СЕ проверява — иначе „нула различни
+  файла“ би идвало от игнориране на всичко. **Проверено обратно:** махнат
+  `hapi_enterprise/evidence-portal/` пада с „prettier би преформатирал 5 файла →
+  …/assets/app.js, …/assets/consent.js, …/assets/style.css“; добавен `hapi_enterprise/` в
+  игнорираните пада с „първоначалният код трябва да е в обхвата на prettier“.
 
 - **Преводите на опциите можеха да се разминат с `config.yaml` безнаказано.** Supervisor рисува
   `configuration.<опция>.name/description` от `translations/{bg,en}.yaml`, тоест опция без

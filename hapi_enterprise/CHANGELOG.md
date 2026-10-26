@@ -4,6 +4,19 @@
 
 ## 0.69.87
 
+- **`npm run format` щеше да преформатира чуждия пакет на Evidence View.** `.prettierignore`
+  пазеше `dist/`, `release/`, `docs/`, `documentation/`, но не и `hapi_enterprise/evidence-portal/`
+  и `hapi_enterprise/generator/`. Измерено: глобът на `npm run format` стига до **5 файла в
+  `evidence-portal/` и 6 в `generator/`** — а пакетът е сверен файл по файл с източника си с
+  еднакъв SHA-256 (`EVIDENCE_PORTAL_V1.2_REVIEW.md`), тоест едно форматиране щеше да изтрие
+  сверката, без да подобри нищо. Защитени са и `archive/` (историята се пази каквато е), и
+  чуждите дървета. `tests/format-scope.cjs` проверява обхвата в ДВЕТЕ посоки: prettier не пипа
+  чужди, генерирани и архивни дървета И първоначалният код СЕ проверява — иначе „нула различни
+  файла“ би идвало от игнориране на всичко. **Проверено обратно:** махнат
+  `hapi_enterprise/evidence-portal/` пада с „prettier би преформатирал 5 файла →
+  …/assets/app.js, …/assets/consent.js, …/assets/style.css“; добавен `hapi_enterprise/` в
+  игнорираните пада с „първоначалният код трябва да е в обхвата на prettier“.
+
 - **Преводите на опциите можеха да се разминат с `config.yaml` безнаказано.** Supervisor рисува
   `configuration.<опция>.name/description` от `translations/{bg,en}.yaml`, тоест опция без
   превод се вижда като сурово име на ключ, а превод за махната опция лъже, че има настройка.
