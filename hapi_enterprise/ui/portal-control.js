@@ -128,12 +128,19 @@
                 <p class="hint">Токенът важи <strong>само за този портал</strong> и се показва <strong>веднъж</strong> —
                   в базата остава само отпечатък. Адресът <code>/t/&lt;токен&gt;</code> издава кратка бисквитка
                   (10 мин) и отваря портала; работи и при включено <code>require_portal_token</code>, защото
-                  токенът Е ключът. Отнемането спира и вече отворените сесии.</p>
+                  токенът Е ключът. Отнемането спира и вече отворените сесии. Може да се зададе и
+                  <strong>лимит на отварянията</strong> — тогава токенът спира след последното.</p>
                 <div class="u-row u-row-2">
                   <select id="pf-token-ttl" title="Колко да важи токенът">
                     <option value="24">24 часа</option>
                     <option value="168">7 дни</option>
                     <option value="0">без срок</option>
+                  </select>
+                  <select id="pf-token-max" title="Колко пъти може да се отвори">
+                    <option value="0">без лимит на отварянията</option>
+                    <option value="1">еднократен (1 отваряне)</option>
+                    <option value="3">3 отваряния</option>
+                    <option value="10">10 отваряния</option>
                   </select>
                   <button type="button" class="btn btn-sm" id="pf-token-new">Издай токен за портал</button>
                 </div>

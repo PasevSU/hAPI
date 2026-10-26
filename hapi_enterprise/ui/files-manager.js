@@ -3279,8 +3279,13 @@
       tokenOut.className = 'pf-security-out ' + (kind || '');
     };
     const tokenRow = (t) => {
-      const state = t.revokedAt ? 'отнет' : t.expiresAt ? 'до ' + fmtDate(t.expiresAt) : 'без срок';
-      return `<li><code>${esc(t.label || t.id)}</code> · ${esc((t.scopes || []).join(', '))} · ${esc(state)}
+      // Изчерпаният токен не е „активен без срок“: той вече не отваря нищо, докато не се издаде
+      // нов. Затова състоянието се казва, вместо да се показва само брояч 2/2.
+      const exhausted = t.maxUses != null && Number(t.uses || 0) >= Number(t.maxUses);
+      const state = t.revokedAt ? 'отнет' : exhausted ? 'изчерпан' : t.expiresAt ? 'до ' + fmtDate(t.expiresAt) : 'без срок';
+      // Броячът се вижда: без него „еднократен“ е обещание, което не можеш да провериш.
+      const uses = t.maxUses == null ? `отворен ${Number(t.uses || 0)}× (без лимит)` : `отворен ${Number(t.uses || 0)}/${t.maxUses}×`;
+      return `<li><code>${esc(t.label || t.id)}</code> · ${esc((t.scopes || []).join(', '))} · ${esc(state)} · ${esc(uses)}
         ${t.revokedAt ? '' : `<button type="button" class="btn btn-sm" data-token-revoke="${esc(t.id)}">Отнеми</button>`}</li>`;
     };
     const bindRevoke = () => {
@@ -3302,8 +3307,11 @@
         if (!p) return;
         if (!connected()) return sayToken('Демо: токенът се издава от add-on-а', 'err');
         const hours = Number((q('#pf-token-ttl') || {}).value || 24);
+        const maxUses = Number((q('#pf-token-max') || {}).value || 0);
         const body = { scopes: ['read', 'download'], label: p.slug };
         if (hours > 0) body.ttlSeconds = hours * 3600;
+        // 0 в панела значи „без лимит“ — тогава полето не се праща изобщо.
+        if (maxUses > 0) body.maxUses = maxUses;
         const r = await api(`${P()}/tokens`, { method: 'POST', json: body });
         if (!r.ok) return sayToken(esc(r.error || `HTTP ${r.status}`), 'err');
         const url = r.data.url || '';
