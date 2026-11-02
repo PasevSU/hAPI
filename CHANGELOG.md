@@ -4,6 +4,13 @@
 (`custom_components/hapi_enterprise`). Версията има един източник на истина —
 `hapi_enterprise/config.yaml`; `manifest.json` трябва да носи същата стойност.
 
+## 0.69.90
+
+- **Форматиране на теста на HA моста.** `tests/ha-range-bridge.cjs` е минал през prettier —
+  същите проверки (Range/If-Range/ETag, `Location` + `Set-Cookie`, `session.request(method, …)`,
+  `async def post`), само с интервали. Поведение не се променя: тестът пази същия договор и
+  минава в матрицата.
+
 ## 0.69.89
 
 - **Публичната повърхност на порта на Home Assistant беше само половината.** `0.69.88` сложи там
