@@ -209,8 +209,8 @@ for (const [tail, why] of PUBLIC_OK) assert.match(tail, PUBLIC_TAIL, `публи
 for (const [tail, why] of PUBLIC_NO) assert.doesNotMatch(tail, PUBLIC_TAIL, `публичният вход НЕ бива да пуска ${why}: ${tail}`);
 
 // ── 8. Рекламираните публични пътища съществуват и на порта на Home Assistant ──
-// Панелът пише адреси по `links.js` (`/api/v1/p/<slug>`, `/p/<id>`, `/portal.css`). Ако
-// интеграцията не сервира СЪЩИТЕ пътища, адресите изглеждат правилни и отговарят
+// Панелът пише адреси по `links.js` (`/p/<id>`, `/api/v1/p/<slug>`, `/s/<id>`, `/site/…`).
+// Ако интеграцията не сервира СЪЩИТЕ пътища, адресите изглеждат правилни и отговарят
 // `404: Not found` — точно това се случи на живо.
 const linksSrc = fs.readFileSync(path.join(__dirname, '../hapi_enterprise/links.js'), 'utf8');
 const initSrc = read('__init__.py');
@@ -218,17 +218,24 @@ const advertised = [];
 for (const [pattern, why] of [
   [/return '(\/api\/v1\/p\/)'/, 'API-то на портала'],
   [/return '(\/p\/)'/, 'страницата зад QR кода'],
+  [/return '(\/s\/)'/, '„Бързият линк“ към файл'],
+  [/return '(\/site\/)'/, 'регистрираният HTML проект'],
 ]) {
   const found = pattern.exec(linksSrc);
   assert.ok(found, 'links.js строи ' + why);
   const prefix = found[1];
-  assert.ok(initSrc.includes('url = "' + prefix + '{tail:.*}"'), 'интеграцията сервира ' + why + ' на ' + prefix);
+  assert.ok(initSrc.includes('("' + prefix + '{tail:.*}"'), 'интеграцията сервира ' + why + ' на ' + prefix);
   advertised.push(prefix);
 }
-assert.match(initSrc, /_ASSETS = \("portal\.css", "portal\.js", "portal-i18n\.js"\)/, 'интеграцията сервира ресурсите на страницата от корена');
-for (const name of ['PublicPortalAPI()', 'PublicPortalPage()', 'PublicPortalAsset(_asset)']) {
-  assert.ok(initSrc.includes('register_view(' + name), 'изгледът е регистриран: ' + name);
+// Страниците и ресурсите, които браузърът иска сам (не се строят от links.js).
+const pagePaths = ['/portal.js', '/portal.css', '/portal-i18n.js', '/secret-view.js', '/secret', '/portal.html', '/file.html'];
+for (const page of pagePaths) {
+  assert.ok(initSrc.includes('("' + page + '"'), 'интеграцията сервира ' + page);
 }
+// POST е задължителен: `/package` (ZIP от страницата) и `/rating` (оценка от посетител)
+// са POST в allowlist-а на backend-а; само GET би ги оставил 405 на порта на HA.
+assert.match(initSrc, /async def post\(self, request, \*\*_kwargs\)/, 'публичните изгледи приемат и POST');
+assert.ok(initSrc.includes('hass.http.register_view(_public_view('), 'публичните изгледи се регистрират от един списък');
 
 const summary =
   `${pyFiles.length} Python файла` +
@@ -239,5 +246,6 @@ const summary =
   ` · ${reasons.size} причини с текст` +
   ` · мостът пуска ${ALLOWED_OK.length} и спира ${ALLOWED_NO.length} пътя` +
   ` · публичният вход пуска ${PUBLIC_OK.length} и спира ${PUBLIC_NO.length}` +
-  ` · ${advertised.length} рекламирани пътя имат изглед на порта на HA`;
+  ` · ${advertised.length} рекламирани пътя имат изглед на порта на HA` +
+  ` · ${pagePaths.length} страници/ресурса се сервират от корена`;
 console.log('PASS ha-integration-python: ' + summary);

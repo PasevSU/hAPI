@@ -70,10 +70,16 @@ _PUBLIC_TAIL = re.compile(
 )
 
 
-async def _forward(hass, request, url, headers, params, extra_headers=None):
-    """Stream an upstream response without buffering (Range/resume friendly)."""
+async def _forward(hass, request, url, headers, params, extra_headers=None, method="GET", body=None):
+    """Stream an upstream response without buffering (Range/resume friendly).
+
+    Redirects and cookies are passed through: `/t/<token>` answers with `Set-Cookie` and a
+    `Location`, and dropping either would break the only door into a private portal.
+    """
     session = async_get_clientsession(hass)
-    async with session.get(url, headers=headers, params=params, timeout=120, allow_redirects=False) as upstream:
+    async with session.request(
+        method, url, headers=headers, params=params, data=body, timeout=120, allow_redirects=False
+    ) as upstream:
         response_headers = {
             "Content-Type": upstream.headers.get("Content-Type", "application/octet-stream"),
             "Cache-Control": "no-store",
@@ -83,9 +89,11 @@ async def _forward(hass, request, url, headers, params, extra_headers=None):
         if extra_headers:
             response_headers.update(extra_headers)
         response = web.StreamResponse(status=upstream.status, headers=response_headers)
-        for field in ("Content-Length", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified"):
+        for field in ("Content-Length", "Content-Range", "Accept-Ranges", "ETag", "Last-Modified", "Location"):
             if upstream.headers.get(field):
                 response.headers[field] = upstream.headers[field]
+        for cookie in upstream.headers.getall("Set-Cookie", []):
+            response.headers.add("Set-Cookie", cookie)
         if upstream.headers.get("Content-Disposition"):
             response.headers["Content-Disposition"] = upstream.headers["Content-Disposition"]
         await response.prepare(request)
@@ -198,76 +206,72 @@ async def async_setup(hass, config):
             except (ClientError, TimeoutError):
                 raise web.HTTPBadGateway()
 
-    # The add-on writes links as `/p/<id>` and `/api/v1/p/<slug>/...` (links.js). On the Home
-    # Assistant origin those paths did not exist, so every QR code and every API address the
-    # panel printed answered `404: Not found` - the addresses looked right and were dead.
-    # These three views put the SAME paths on the Home Assistant port and stream them to the
-    # backend: no extra web server, no nginx, no published port.
-    class PublicPortalAPI(HomeAssistantView):
-        """`/api/v1/p/<slug>/...` on the Home Assistant port (the address the panel writes)."""
+    # The add-on writes links as `/p/<id>`, `/api/v1/p/<slug>/...`, `/s/<id>`, `/qr/<id>`,
+    # `/site/<slug>/<project>/` and `/secret` (links.js), and its own gateway serves them.
+    # On the Home Assistant origin NONE of those paths existed, so every QR code and every
+    # API address the panel printed answered `404: Not found` - the addresses looked right
+    # and were dead. These views put the SAME public paths on the Home Assistant port and
+    # stream them to the backend: no extra web server, no nginx, no published port.
+    #
+    # The list mirrors `hapi_enterprise/public-route-allowlist.js` (the backend's own public
+    # surface) without the auth/OIDC routes - those are hAPI's own session and must not be
+    # re-exported through Home Assistant - and without any `/admin` path.
+    def _public_view(path: str, view_name: str):
+        """One transparent proxy view for a public path on the Home Assistant port."""
 
-        url = "/api/v1/p/{tail:.*}"
-        name = "api:hapi_enterprise:portal_v1"
-        requires_auth = False  # The Node backend decides (FREE / KEY_REQUIRED / DISABLED).
+        class _PublicProxy(HomeAssistantView):
+            url = path
+            name = view_name
+            requires_auth = False  # The Node backend decides every request.
 
-        async def get(self, request, tail):
-            if not _ALLOWED.fullmatch(tail):
-                raise web.HTTPNotFound()
-            headers = {}
-            portal_key = request.headers.get("X-Portal-Key", "")
-            if portal_key:
-                if len(portal_key) > 512:
-                    raise web.HTTPUnauthorized()
-                headers["X-Portal-Key"] = portal_key
-            for field in ("Range", "If-Range"):
-                if request.headers.get(field):
-                    headers[field] = request.headers[field]
-            # `key` is the public form (`?key=...`); the rest are read-only filters.
-            allowed = {"key", "q", "limit", "offset", "order", "direction", "category", "group", "topic", "tag", "path"}
-            params = [(k, v) for k, v in request.query.items() if k in allowed and len(v) <= 512]
-            try:
-                return await _forward(hass, request, backend + "/api/v1/" + tail, headers, params)
-            except (ClientError, TimeoutError):
-                raise web.HTTPBadGateway
+            async def _proxy(self, request):
+                headers = {}
+                for field in ("Range", "If-Range", "Content-Type", "Idempotency-Key", "X-Portal-Key", "X-File-Key"):
+                    value = request.headers.get(field, "")
+                    if not value:
+                        continue
+                    if len(value) > 1024:
+                        raise web.HTTPBadRequest()
+                    headers[field] = value
+                body = None
+                if request.method in ("POST", "PUT", "PATCH"):
+                    body = await request.read()
+                    if len(body) > 4 * 1024 * 1024:
+                        raise web.HTTPRequestEntityTooLarge(max_size=4 * 1024 * 1024, actual_size=len(body))
+                # The query is forwarded as it came, so `?key=`, filters and pagination work.
+                params = [(k, v) for k, v in request.query.items() if len(v) <= 1024]
+                try:
+                    return await _forward(
+                        hass, request, backend + request.path, headers, params,
+                        method=request.method, body=body,
+                    )
+                except (ClientError, TimeoutError):
+                    raise web.HTTPBadGateway
 
-    class PublicPortalPage(HomeAssistantView):
-        """`/p/<id>` on the Home Assistant port - the page behind every QR code."""
+            async def get(self, request, **_kwargs):
+                return await self._proxy(request)
 
-        url = "/p/{tail:.*}"
-        name = "api:hapi_enterprise:portal_page"
-        requires_auth = False
+            async def post(self, request, **_kwargs):
+                return await self._proxy(request)
 
-        async def get(self, request, tail):
-            # Portal id (24 hex) or slug; nothing else is a page.
-            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", tail):
-                raise web.HTTPNotFound()
-            try:
-                return await _forward(hass, request, backend + "/p/" + tail, {}, [])
-            except (ClientError, TimeoutError):
-                raise web.HTTPBadGateway
+        return _PublicProxy()
 
-    class PublicPortalAsset(HomeAssistantView):
-        """`/portal.css`, `/portal.js`, `/portal-i18n.js` - the page loads them from the root.
-
-        Three EXACT paths, not a `/{asset}` wildcard: a catch-all at Home Assistant's root
-        would sit in front of `/lovelace`, `/auth` and every other panel.
-        """
-
-        requires_auth = False
-        _ASSETS = ("portal.css", "portal.js", "portal-i18n.js")
-
-        def __init__(self, asset):
-            if asset not in self._ASSETS:
-                raise ValueError("unknown portal asset: " + asset)
-            self.url = "/" + asset
-            self.name = "api:hapi_enterprise:asset_" + asset.replace(".", "_").replace("-", "_")
-
-        async def get(self, request):
-            asset = self.url.lstrip("/")
-            try:
-                return await _forward(hass, request, backend + "/" + asset, {}, [])
-            except (ClientError, TimeoutError):
-                raise web.HTTPBadGateway
+    for _path, _name in (
+        ("/api/v1/p/{tail:.*}", "portal_api"),
+        ("/p/{tail:.*}", "portal_page"),
+        ("/s/{tail:.*}", "send_link"),
+        ("/qr/{tail:.*}", "qr_page"),
+        ("/site/{tail:.*}", "html_project"),
+        ("/t/{tail:.*}", "portal_token_login"),
+        ("/portal.html", "portal_html"),
+        ("/file.html", "file_html"),
+        ("/secret", "secret_page"),
+        ("/secret-view.js", "asset_secret_view"),
+        ("/portal.js", "asset_portal_js"),
+        ("/portal.css", "asset_portal_css"),
+        ("/portal-i18n.js", "asset_portal_i18n"),
+    ):
+        hass.http.register_view(_public_view(_path, "api:hapi_enterprise:public_" + _name))
 
     class PublicGateway(HomeAssistantView):
         """Public API Gateway served by Home Assistant itself.
@@ -317,10 +321,6 @@ async def async_setup(hass, config):
         deprecated = True
 
     hass.http.register_view(PortalAPI())
-    hass.http.register_view(PublicPortalAPI())
-    hass.http.register_view(PublicPortalPage())
-    for _asset in PublicPortalAsset._ASSETS:
-        hass.http.register_view(PublicPortalAsset(_asset))
     hass.http.register_view(PublicGateway())
     hass.http.register_view(LegacyPublicGateway())
     return True
