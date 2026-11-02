@@ -53,6 +53,12 @@ const ingress = '/api/hassio_ingress/test-token_123';
     assert.equal(await status(pub, '/admin/api/ingress-login'), 404);
     assert.equal(await status(adm, '/admin/api/portals', { Authorization: 'Bearer ' + token }), 200);
     const ingressHeaders = { 'X-Ingress-Path': ingress };
+    // Проверката за връзка в панела (`ui/files-manager.js`, `ui/settings-panel.js`) вика
+    // `/health` по ingress адреса. Ако административният listener го отказва, панелът
+    // показва „HTTP 404 — няма връзка“, докато връзка има: точно този симптом се гонеше.
+    assert.equal(await status(adm, '/health'), 200, 'health се отваря на ingress listener-а');
+    assert.equal(await status(adm, ingress + '/health', ingressHeaders), 200, 'health се отваря по ingress пътя');
+    assert.equal(await status(pub, '/health'), 200, 'health остава достъпен и на публичния listener');
     assert.equal(await status(adm, ingress + '/ui/', ingressHeaders), 200);
     assert.equal(await status(adm, ingress + '/ui/app.js', ingressHeaders), 200);
     assert.equal(await status(adm, ingress + '/hapi_enterprise/qrcode.js', ingressHeaders), 200);

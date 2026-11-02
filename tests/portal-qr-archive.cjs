@@ -208,6 +208,19 @@ const cleaned = [];
     assert.match(blokHtml, /подадена е нова редакция на делото/, 'основанието е публично видимо');
     assert.equal(/документ-1\.txt/.test(blokHtml), false, 'blok не показва съдържание');
 
+    // ── 5.5 Празна папка: отказът е честен И назовава къде е гледал ────────
+    // Панелът показва този текст дословно; без адрес човекът не може да различи
+    // „наистина няма файлове“ от „порталът гледа друга папка“.
+    const emptySlug = slug + '-empty';
+    const emptyPortal = (await jsonOf('/admin/api/portals', 'POST', { slug: emptySlug, title: 'Празен QR', visibility: 'public' })).data;
+    cleaned.push(emptyPortal.slug);
+    const emptyFolder = path.join(shareRoot, emptySlug);
+    fs.mkdirSync(emptyFolder, { recursive: true });
+    const emptyArchive = await jsonOf(`/admin/api/portals/${emptyPortal.id}/qr/archive`, 'POST', {});
+    assert.equal(emptyArchive.status, 409, 'празна папка не се архивира');
+    assert.match(String(emptyArchive.data.error || emptyArchive.data), /Папката на портала е празна/, 'отказът казва причината');
+    assert.ok(String(emptyArchive.data.error || emptyArchive.data).includes(emptyFolder), 'отказът назовава папката: ' + emptyFolder);
+
     // ── 6. Дълбочина: три клона се приемат, четвърти — не ────────────────────
     const mk = (parentValue, name) => jsonOf(`/admin/api/portals/${portal.id}/tree/folder`, 'POST', { parent: parentValue, name });
     assert.equal((await mk('', 'a')).status, 201, 'клон 1');

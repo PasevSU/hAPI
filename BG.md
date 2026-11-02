@@ -3,7 +3,7 @@
 # 🏠 HOME ASSISTANT Portal Enterprise - hAPI Enterprise
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?color=ff00d8)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.94-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.95-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?color=ff00d8)](https://hacs.xyz)
 
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -280,8 +280,8 @@ node hapi_enterprise\standalone.js
 | Парола на PGP ключа (по избор) | `pgp_key_pass` | — | Празно: секретният ключ се приема за незащитен. По-добре `!secret hapi_pgp_path_pass` към файл, отколкото паролата да стои тук. |
 | Криптиране на вътрешните пътища | `pgp_encrypt_paths` | `false` | `false`: пътищата в базата остават в открит вид; `true` изисква зареден секретен ключ, иначе стартът пада с `PGP_SECRET_KEY_REQUIRED`. |
 | Криптиране на работната папка | `pgp_encrypt_workdir` | `false` | `false`: работните файлове се криптират само с вътрешния ключ; `true` ги обвива с PGP ключа (слой 2) и иска зареден секретен ключ. |
-| Потребителско име за конзолата | `username` | — | Празно: при първи старт се създава конзолен потребител `api`. През Ingress се ползва HA акаунтът. |
-| Парола за конзолата | `password` | — | Празно: при първи старт се генерира случайна парола и се записва в `api-credentials.txt` (права 0600). |
+| Потребителско име за конзолата (не се ползва — оставете празно) | `username` | — | Празно: при първи старт се създава конзолен потребител `api`. През Ingress се ползва HA акаунтът. |
+| Парола за конзолата (не се ползва — оставете празно) | `password` | — | Празно: при първи старт се генерира случайна парола и се записва в `api-credentials.txt` (права 0600). |
 | Име на базата и портала | `db_name` | `Files` | Именува първия портал (`Files`, slug `files`). Сменя се преди първия старт, ако трябва друго име. |
 | Папка за резервни копия | `backup_folder` | — | Празно: `<хранилище>/backups` в папката на add-on-а. Относителен път се решава в `/share`. |
 | Огледална папка за архивите | `backup_mirror` | — | Празно: без второ копие на резервните копия. Всяко зададено копие се проверява с SHA-256. |
@@ -306,7 +306,7 @@ node hapi_enterprise\standalone.js
 | Публикуване на QR портала за доказателства | `evidence_portal_deploy` | `true` | `true`: страницата Evidence View се копира в `www/hapi/data` от конфигурацията на HA (`/config/www/hapi/data` за HA, `/homeassistant/www/hapi/data` в контейнера на add-on-а) и се сервира на `/local/hapi/data/`. |
 | RFC 3161 времеви печати | `tsa_enabled` | `false` | `false`: RFC 3161 маршрутите отговарят `409` и не се създават токени. Нищо не се преструва. |
 | START TSA адрес | `tsa_start_url` | `https://zeitstempel.dfn.de/` | DFN услуга за времеви печат за START границата (отпечатъкът на манифеста). |
-| STOP TSA адрес | `tsa_stop_url` | `http://timestamp.digicert.com` | DigiCert услуга за времеви печат за STOP границата (затварящият отпечатък). |
+| STOP TSA адрес | `tsa_stop_url` | `https://timestamp.digicert.com` | DigiCert услуга за времеви печат за STOP границата (затварящият отпечатък). |
 | Подписване на експортните пакети | `sign_packages` | `false` | `false`: пакетите не се подписват, докато в конзолата не се прикачи частен ключ. |
 | Ключ за подписване | `signing_key` | — | Празно: подписването ползва избрания в конзолата ключ (Настройки → PGP ключове). |
 | Шифроване на файловете | `encrypt_files` | `false` | `false`: качванията се пазят както са; `X-File-Encrypt` пак решава за конкретната заявка. |

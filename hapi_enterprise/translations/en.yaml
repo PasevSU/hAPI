@@ -1,10 +1,12 @@
 configuration:
+  # Нищо в кода не чете тези две опции. Дотук описанието им обещаваше „вход в конзолата“,
+  # какъвто няма — човек слагаше парола в plaintext без полза.
   username:
-    name: Console user name
-    description: Optional user name for the standalone console login (not needed under Home Assistant Ingress).
+    name: Console user name (not used — leave empty)
+    description: Kept for old configurations only. No code reads it; sign-in goes through Home Assistant identity (user_roles / group_roles).
   password:
-    name: Console password
-    description: Optional console password for standalone deployments; Home Assistant users sign in with their own account.
+    name: Console password (not used — leave empty)
+    description: Kept for old configurations only. No code reads it. Do not store a real password here.
   token:
     name: Admin token (required)
     description: >-

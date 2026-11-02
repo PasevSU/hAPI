@@ -334,6 +334,13 @@ assert.match(src, /function showModal/);
 assert.match(src, /function ensureModal/);
 assert.match(src, /m\.id = 'fm-modal'/);
 assert.match(src, /function wireMenus/);
+// „Отвори портала“ в контролния панел (0.69.95): основното действие отваря ПОРТАЛА, а
+// изтеглянето на описанието е второстепенно и го казва с думите си. Дотук бутонът беше
+// само „api.json“ и човек, който искаше портала, получаваше файл.
+assert.match(src, /id="pf-open-portal"[^>]*data-open-portal-id=/, 'контролният панел има „Отвори портала“');
+assert.match(src, /Свали api\.json/, 'изтеглянето на описанието е надписано като изтегляне');
+assert.match(src, /\[data-open-portal\], \[data-open-portal-id\]/, 'щракването по ИД отваря портала');
+assert.match(src, /findIndex\(\(x\) => x\.id === byId\)/, 'ИД-то се превежда до индекс, а не се гадае');
 assert.equal(/window\.open/.test(src), false, 'прегледът не отваря нов таб');
 assert.equal(/target="_blank"/.test(src), false);
 assert.equal(/fm-actions-btn/.test(src), false, 'менюто с действия е заменено от бутоните');

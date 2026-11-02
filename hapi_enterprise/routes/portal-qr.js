@@ -53,7 +53,9 @@ function create(deps) {
     const p = portal;
     const rootAbs = path.resolve(portalRoot(p.storage_root || '/share'));
     const files = await qr.walk(rootAbs);
-    if (!files.length) throw Object.assign(new Error('Папката на портала е празна — няма какво да се архивира'), { status: 409 });
+    // Отказът назовава ПАПКАТА: „празна“ без адрес оставя човека да гадае дали порталът
+    // гледа където трябва — най-честата причина архив да не се направи.
+    if (!files.length) throw Object.assign(new Error('Папката на портала е празна (' + rootAbs + ') — няма какво да се архивира'), { status: 409 });
     const dir = path.join(archiveRoot, p.id);
     const reg = qr.registry(db(), p.id);
     qr.ensureFirst(db(), p);

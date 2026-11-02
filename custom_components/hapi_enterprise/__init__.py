@@ -226,11 +226,15 @@ async def async_setup(hass, config):
 
             async def _proxy(self, request):
                 headers = {}
-                for field in ("Range", "If-Range", "Content-Type", "Idempotency-Key", "X-Portal-Key", "X-File-Key"):
+                # `Cookie` се подава: `/t/<token>` отговаря с `Set-Cookie` и бисквитката е
+                # единственият начин следващата заявка да е същата сесия. Без нея частният
+                # портал се отваря веднъж (пренасочването) и след това дава 404 — тоест
+                # линкът „работи“, а порталът не се отваря.
+                for field in ("Range", "If-Range", "Content-Type", "Idempotency-Key", "X-Portal-Key", "X-File-Key", "Cookie"):
                     value = request.headers.get(field, "")
                     if not value:
                         continue
-                    if len(value) > 1024:
+                    if len(value) > (4096 if field == "Cookie" else 1024):
                         raise web.HTTPBadRequest()
                     headers[field] = value
                 body = None

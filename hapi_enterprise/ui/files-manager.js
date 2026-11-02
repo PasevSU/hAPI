@@ -3155,11 +3155,15 @@
       });
     });
     host.querySelectorAll('.pf-form, #pf-settings').forEach(wireExtras);
-    // Щракване върху портал отваря САМО него (списъкът се скрива), а в края на
+    // Щракване върху портал отваря САМО него (списъкът се крие), а в края на
     // страницата има бутон „← Списък с портали“.
-    host.querySelectorAll('[data-open-portal]').forEach((el) => {
+    // „Отвори портала“ в контролния панел идва с ИД, а не с индекс: блокът не знае
+    // позицията си в списъка и не бива да я гадае. Отваря се в СЪЩИЯ раздел — под HA
+    // Ingress нов таб губи сесията и адреса на add-on-а.
+    host.querySelectorAll('[data-open-portal], [data-open-portal-id]').forEach((el) => {
       el.addEventListener('click', () => {
-        const i = Number(el.dataset.openPortal);
+        const byId = el.dataset.openPortalId;
+        const i = byId ? state.portals.findIndex((x) => x.id === byId) : Number(el.dataset.openPortal);
         const target = state.portals[i];
         if (!target) return;
         state.portalIndex = i;

@@ -33,16 +33,8 @@ const addonOptions = (() => { try { return JSON.parse(fs.readFileSync(process.en
 const optionValue = (envKey, optionKey, fallback) => { const env = process.env[envKey]; if (env !== undefined && String(env).trim() !== '') return String(env).trim(); const value = addonOptions[optionKey]; return value === undefined || value === null ? fallback : String(value).trim() };
 const isEnabled = value => ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase());
 const portalFolderCopy = isEnabled(optionValue('PORTAL_FOLDER_COPY', 'portal_folder_copy', 'false'));
-const cryptoOptions = {
-  tsaEnabled: isEnabled(optionValue('TSA_ENABLED', 'tsa_enabled', 'false')),
-  tsaStart: optionValue('TSA_START_URL', 'tsa_start_url', 'https://zeitstempel.dfn.de/'),
-  tsaStop: optionValue('TSA_STOP_URL', 'tsa_stop_url', 'http://timestamp.digicert.com'),
-  signPackages: isEnabled(optionValue('SIGN_PACKAGES', 'sign_packages', 'false')),
-  signingKey: optionValue('SIGNING_KEY', 'signing_key', ''),
-  encryptFiles: isEnabled(optionValue('ENCRYPT_FILES', 'encrypt_files', 'false')),
-  tlsCert: optionValue('TLS_CERT', 'tls_cert', ''),
-  tlsKey: optionValue('TLS_KEY', 'tls_key', ''),
-};
+// TSA адресите и подписването: модулът пази подразбирането (https) и предупреждава за http.
+const cryptoOptions = require('./crypto-options').create({ optionValue, isEnabled });
 const rbac = require('./rbac').create({ adminToken, operatorToken, viewerToken, userRoles: parseRoles(process.env.USER_ROLES || addonOptions.user_roles), groupRoles: parseRoles(process.env.GROUP_ROLES || addonOptions.group_roles), defaultRole: process.env.DEFAULT_ROLE || 'admin', ssoRole: (req) => ssoRoleOf(req) });
 // Сензори: комуникация, файлове, извиквания, изтегляния, посещения. Агрегати без
 // лични данни; състоянието се записва в <DATA_DIR>/sensors.json и оцелява рестарт.
@@ -875,7 +867,10 @@ async function handler(req, res) {
     if (isAdminListener && corsOrigin) { res.setHeader('Access-Control-Allow-Origin', corsOrigin); res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS'); res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type,X-File-Name,X-File-Encrypt'); res.setHeader('Access-Control-Max-Age', '600'); res.setHeader('Vary', 'Origin') }
     if (ingressMode) {
       const adminPath = url.pathname === '/admin' || url.pathname.startsWith('/admin/') || url.pathname === '/' || url.pathname === '/ui' || url.pathname.startsWith('/ui/') || url.pathname.startsWith('/generator') || url.pathname.startsWith('/hapi_enterprise/') || (hasIngressPath && url.pathname.startsWith('/site/'));
-      if (isAdminListener && !adminPath) return fail(res, 404, 'Not found');
+      // `/health` не е нито административен, нито публичен: панелът проверява връзката си по
+      // ingress адреса (`ui/files-manager.js`, `ui/settings-panel.js`) и дотук получаваше 404,
+      // тоест „няма връзка“ при жива връзка. Затова се разрешава и на двата listener-а.
+      if (isAdminListener && !adminPath && url.pathname !== '/health') return fail(res, 404, 'Not found');
       if (!isAdminListener && adminPath) return fail(res, 404, 'Not found');
       if (isAdminListener && url.pathname === '/') {
         // Панелът се сервира от `/ui/`, а НЕ от корена на ingress-а: `ui/index.html` ползва

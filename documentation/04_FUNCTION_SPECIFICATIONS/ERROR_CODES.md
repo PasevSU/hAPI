@@ -1,11 +1,11 @@
 # Кодове за грешка — каталог
 
-> **Генериран документ.** Версия на кода: **0.69.94**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.95**. Пише се от
 > `node scripts/error-codes.cjs`, проверява се от `tests/error-codes.cjs`.
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
 
-Общо: **55** кода, излъчвани от `hapi_enterprise/`. От тях **37** носят
+Общо: **56** кода, излъчвани от `hapi_enterprise/`. От тях **37** носят
 собствено обяснение в кода; останалите се разпознават по кода и файла.
 
 ## Кодове по азбучен ред
@@ -50,6 +50,7 @@
 | `SECRET_PATH_RELATIVE` | — | `hapi_enterprise/path-crypto.js` |
 | `SECRET_UNREADABLE` | — | `hapi_enterprise/path-crypto.js` |
 | `STORAGE_LEGACY_LOCATION` | намерени са данни в | `hapi_enterprise/storage-preflight.js` |
+| `TSA_INSECURE_TRANSPORT` | — | `hapi_enterprise/crypto-options.js` |
 | `UNSUPPORTED_AEAD` | Този режим не е наличен за заключване | `hapi_enterprise/pgp.js` |
 | `UNSUPPORTED_ALGO` | — | `hapi_enterprise/pgp.js` |
 | `UNSUPPORTED_ALGORITHM` | — | `hapi_enterprise/pgp.js` |

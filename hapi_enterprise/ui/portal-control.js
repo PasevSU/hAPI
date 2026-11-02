@@ -86,8 +86,9 @@
             <div>
               <div class="u-row u-row-3">
                 ${api
-          ? `<button type="button" class="btn btn-sm" id="pf-dl-api">${ICON.download} api.json</button>
-                       <button type="button" class="btn btn-sm" id="pf-dl-openapi">${ICON.download} openapi.json</button>
+          ? `<button type="button" class="btn btn-primary btn-sm" id="pf-open-portal" data-open-portal-id="${esc(p.id)}" title="Отваря портала в панела (същият раздел, без нов таб — под Ingress нов таб губи сесията)">${ico('openWindow')} Отвори портала</button>
+                       <button type="button" class="btn btn-sm" id="pf-dl-api" title="Сваля описанието на API-то като файл — това НЕ е порталът">${ICON.download} Свали api.json</button>
+                       <button type="button" class="btn btn-sm" id="pf-dl-openapi" title="Сваля OpenAPI описанието като файл">${ICON.download} Свали openapi.json</button>
                        <button type="button" class="btn btn-sm" id="pf-copy-refs">${ICON.copy} Копирай препратките</button>`
           : ''
         }

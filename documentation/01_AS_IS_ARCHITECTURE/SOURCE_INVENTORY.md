@@ -1,16 +1,16 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.94**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.95**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **108** backend модула · **15** HTTP компонента · **23** UI модула · **6** Python модула · **33** инструмента · **318** теста.
+Общо: **109** backend модула · **15** HTTP компонента · **23** UI модула · **6** Python модула · **33** инструмента · **320** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (108)
+### Backend модули (`hapi_enterprise/*.js`) (109)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -27,6 +27,7 @@
 | `hapi_enterprise/container.js` | DI контейнер (Фаза 2.1, P1/P2). Лениво инстанцира сингълтони; поддържа |
 | `hapi_enterprise/content-id.js` | Идентичност на СЪДЪРЖАНИЕТО (`content_id`) — §11 и §12 от HAPI-ARCH-API-001. |
 | `hapi_enterprise/core-store.js` | Core hierarchical store (DOCFLOW Phases 1). Own SQLite file, additive to the legacy |
+| `hapi_enterprise/crypto-options.js` | Крипто опции на add-on-а: env (от start.js) има приоритет, после options.json, после |
 | `hapi_enterprise/decision-sensors.js` | От измерване към РЕШЕНИЕ: кой компонент, какъв проблем, от кога и какво да проверим. |
 | `hapi_enterprise/directory.js` | Variables registry + contact directory with domain rules, auto-fill and a conflict queue. |
 | `hapi_enterprise/download-access.js` | Download Access Control (FD-0) — централни правила за достъпност на изтегляне. |

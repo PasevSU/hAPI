@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.69.94"
+version: "0.69.95"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
@@ -77,8 +77,11 @@ options:
   # сервира Home Assistant на /local/hapi/data/portal.html. Изключено → нищо не се пише.
   evidence_portal_deploy: true
   tsa_enabled: false
+  # Двата адреса са https: времевият печат по открит канал (http) се подправя от всеки по
+  # пътя — отговорът е валиден, но с чуждо време. При останал http сървърът предупреждава
+  # (TSA_INSECURE_TRANSPORT) и не спира, за да не се чупят стари инсталации.
   tsa_start_url: "https://zeitstempel.dfn.de/"
-  tsa_stop_url: "http://timestamp.digicert.com"
+  tsa_stop_url: "https://timestamp.digicert.com"
   sign_packages: false
   signing_key: ""
   encrypt_files: false
