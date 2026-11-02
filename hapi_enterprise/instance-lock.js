@@ -55,6 +55,40 @@ function inspect(dir) {
   }
 }
 
+// ── Повторен опит при `rename` ────────────────────────────────────────────────
+// На Windows антивирусната/индексаторът може да държи новия файл за миг и `rename` да върне
+// EPERM/EBUSY/EACCES. Без повторен опит записът пада произволно (видяно в матрицата като
+// „EPERM ... .hapi-instance.json.tmp -> .hapi-instance.json“).
+const RETRYABLE_RENAME = new Set(['EPERM', 'EBUSY', 'EACCES', 'EEXIST']);
+
+/**
+ * ИСТИНСКО изчакване, не въртене на процесора. Старата версия въртеше `while (Date.now() <
+ * until) {}` — при задържан файл това изяжда цялото ядро до половин секунда И блокира
+ * събитийния цикъл на сървъра, който вика `heartbeat()` на всеки 30 секунди. `Atomics.wait`
+ * спи също синхронно, но без да гори процесор.
+ */
+function sleepSync(ms) {
+  try {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  } catch {
+    // Среда без SharedArrayBuffer/Atomics: остава кратко въртене, но то е последната врата.
+    const until = Date.now() + ms;
+    while (Date.now() < until) { /* само ако Atomics липсва */ }
+  }
+}
+
+function renameWithRetry(from, to, attempts = 8) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      fs.renameSync(from, to);
+      return;
+    } catch (e) {
+      if (!e || !RETRYABLE_RENAME.has(e.code) || attempt >= attempts) throw e;
+      sleepSync(15 * (attempt + 1));
+    }
+  }
+}
+
 function writeAtomic(dir, payload) {
   const target = lockPath(dir);
   const tmp = `${target}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
@@ -64,17 +98,7 @@ function writeAtomic(dir, payload) {
     // върне EPERM/EBUSY/EACCES. Без повторен опит заключването пада произволно (видяно в
     // матрицата като „EPERM ... .hapi-instance.json.tmp -> .hapi-instance.json“) и add-on-ът
     // отказва старт без причина. Същият похват се ползва в `api-registry.js`.
-    for (let attempt = 0; ; attempt += 1) {
-      try {
-        fs.renameSync(tmp, target);
-        break;
-      } catch (e) {
-        const retryable = e && ['EPERM', 'EBUSY', 'EACCES', 'EEXIST'].includes(e.code);
-        if (!retryable || attempt >= 8) throw e;
-        const until = Date.now() + 15 * (attempt + 1);
-        while (Date.now() < until) { /* кратко изчакване преди повторен опит */ }
-      }
-    }
+    renameWithRetry(tmp, target);
   } finally {
     try {
       fs.unlinkSync(tmp);
@@ -188,7 +212,9 @@ function writePeer(file, payload) {
   const tmp = `${file}.${Math.random().toString(16).slice(2)}.tmp`;
   try {
     fs.writeFileSync(tmp, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
-    fs.renameSync(tmp, file);
+    // Същият повторен опит като при заключването: в споделен режим файловете се пишат от
+    // НЯКОЛКО процеса, тоест задържан файл е по-вероятен, не по-малко.
+    renameWithRetry(tmp, file);
   } finally {
     try {
       fs.unlinkSync(tmp);

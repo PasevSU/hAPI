@@ -2070,7 +2070,7 @@ async function handler(req, res) {
       // може да отмени по `sha256(id)` или по чека.
       if (parts[3] === 'secrets') {
         if (parts.length === 4 && method === 'GET') {
-          await secretLinks.sweep(root).catch(() => { });
+          await secretLinks.sweep(root, undefined, (s) => log.warn('secret.sweep.skipped', { ns: 'secret', err: s.error, hash: String(s.hash).slice(0, 12) })).catch(() => { });
           return json(res, 200, { secrets: await secretLinks.list(root) });
         }
         if (parts.length === 4 && method === 'POST') {
@@ -2080,7 +2080,7 @@ async function handler(req, res) {
           const created = secretLinks.createRecord({ envelope: b.envelope, idHash: b.idHash, hint: b.hint, expiresIn: b.expires_in, maxViews: b.max_views });
           if (created.error) return fail(res, 400, created.error);
           await secretLinks.save(root, created.record);
-          void secretLinks.sweep(root).catch(() => { });
+          void secretLinks.sweep(root, undefined, (s) => log.warn('secret.sweep.skipped', { ns: 'secret', err: s.error, hash: String(s.hash).slice(0, 12) })).catch(() => { });
           void audit('secret.create', { receipt: created.record.receipt, idHash: String(created.record.idHash).slice(0, 12), maxViews: created.record.maxViews, requiresPassword: created.record.requiresPassword, expiresAt: created.record.expiresAt });
           // Линкът се сглобява от браузъра: тоя отговор не съдържа нито идентификатор,
           // нито ключ, защото сървърът не ги знае.

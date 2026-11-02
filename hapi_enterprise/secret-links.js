@@ -233,14 +233,33 @@ async function save(root, record) {
 }
 
 async function read(root, hash) {
-  if (!isValidHash(hash)) return null;
+  const result = await readRecord(root, hash);
+  return result.rec;
+}
+
+/**
+ * Като `read`, но казва ЗАЩО е няма запис. Разликата е важна за `sweep`: „не мога да го
+ * прочета“ (EACCES, EIO, EMFILE) не е същото като „файлът е боклук“ и не бива да води до
+ * изтриване на валидна тайна заради моментна грешка на диска.
+ * @returns {{rec:object|null, error:''|'invalid-hash'|'missing'|'corrupt'|string}}
+ */
+async function readRecord(root, hash) {
+  if (!isValidHash(hash)) return { rec: null, error: 'invalid-hash' };
+  let raw;
   try {
-    const raw = await fsp.readFile(recordPath(root, hash), 'utf8');
-    const rec = JSON.parse(raw);
-    return rec && rec.idHash === hash ? rec : null;
-  } catch {
-    return null;
+    raw = await fsp.readFile(recordPath(root, hash), 'utf8');
+  } catch (e) {
+    return { rec: null, error: e.code === 'ENOENT' ? 'missing' : (e.code || 'error') };
   }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { rec: null, error: 'corrupt' };
+  }
+  // Името на файла е `sha256(id)`; запис с друг `idHash` е подменен или объркан.
+  if (!parsed || parsed.idHash !== hash) return { rec: null, error: 'corrupt' };
+  return { rec: parsed, error: '' };
 }
 
 async function remove(root, hash) {
@@ -253,8 +272,14 @@ async function remove(root, hash) {
   }
 }
 
-/** Изтрива изтеклите и изчерпаните файлове. Връща броя изтрити. */
-async function sweep(root, now) {
+/**
+ * Изтрива изтеклите и изчерпаните файлове. Връща броя изтрити.
+ *
+ * Трие САМО запис, който е прочетен и преценен като невалиден. Запис, който не може да се
+ * прочете (права, зает файл, I/O грешка), се ПРОПУСКА и се съобщава през `onSkip` — иначе
+ * една моментна грешка на диска изтрива тайна, която още никой не е отворил.
+ */
+async function sweep(root, now, onSkip) {
   let removed = 0;
   let names = [];
   try {
@@ -266,10 +291,17 @@ async function sweep(root, now) {
   for (const name of names) {
     if (!name.endsWith('.json')) continue;
     const hash = name.slice(0, -'.json'.length);
-    const rec = await read(root, hash);
-    if (!rec || !inspectRecord(rec, now).ok) {
+    const { rec, error } = await readRecord(root, hash);
+    if (error === 'missing') continue; // вече го няма — нищо за триене
+    if (error === 'corrupt') {
       if (await remove(root, hash)) removed++;
+      continue;
     }
+    if (error) {
+      if (typeof onSkip === 'function') onSkip({ hash, error });
+      continue;
+    }
+    if (!inspectRecord(rec, now).ok && await remove(root, hash)) removed++;
   }
   return removed;
 }
@@ -328,6 +360,7 @@ module.exports = {
   recordPath,
   save,
   read,
+  readRecord,
   remove,
   sweep,
   list,

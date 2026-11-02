@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.111**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.112**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **109** backend модула · **15** HTTP компонента · **23** UI модула · **7** Python модула · **34** инструмента · **331** теста.
+Общо: **109** backend модула · **15** HTTP компонента · **23** UI модула · **7** Python модула · **35** инструмента · **334** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -184,7 +184,7 @@
 | `custom_components/hapi_enterprise/diagnostics.py` | Diagnostics for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (34)
+### Инструменти (`scripts/*.cjs`) (35)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -215,6 +215,7 @@
 | `scripts/release-status.cjs` | Генерира `reports/RELEASE-STATUS.md` от РЕАЛНИТЕ артефакти, вместо да се пише на ръка. |
 | `scripts/resume-package.cjs` | Възобновяване на прекъснат трансфер на експортен пакет (или който и да е файл с Range). |
 | `scripts/run-tests.cjs` | Пълен пакет: пуска всеки тест във файл последователно и обобщава. |
+| `scripts/script-audit.cjs` | ОБХОД НА СКРИПТОВИТЕ ФАЙЛОВЕ — търси фалшиви функции, мъртъв код, счупена логика и |
 | `scripts/secret-patterns.cjs` | Общи правила за тайни, ползвани от одита (pre-push-audit) и от експорта за публикуване |
 | `scripts/settings-defaults.cjs` | Генерира таблицата „Настройки по подразбиране“ от `config.yaml` и преводите, вместо |
 | `scripts/source-inventory.cjs` | Инвентар на изходния код — ГЕНЕРИРАН, за да не остарява. |
