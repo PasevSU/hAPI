@@ -38,6 +38,13 @@
       (нов код без запис тук значи код, който никой не може да потърси).
 - [ ] `npm run audit` — без тайни и файлове над 5 MB в дървото.
 - [ ] `node tests/hacs-structure.cjs` — HACS структурата е валидна.
+- [ ] `node tests/ha-support-matrix.cjs` — съвместимост с Home Assistant: всеки mount, който кодът
+      очаква (`share`, `media`, `homeassistant_config`, `app_config`, `ssl`), е обявен в `map`;
+      портовете в `ports`/`ports_description`/преводите съвпадат; `ingress_port` и `watchdog`
+      сочат портовете, които кодът слуша; `homeassistant_api` е включен, защото notify.js вика
+      Supervisor проксито; обявената минимална версия на HA не е под тази на използваните API-та;
+      всяка `arch` се билдва от базовия образ. Без него тези неща се проверяват само от hassfest
+      в чужд CI — тоест след като изданието вече е излязло.
 - [ ] Security + crypto + interop + GUI E2E pass.
 
 ## Artifacts
