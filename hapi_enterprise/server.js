@@ -871,7 +871,12 @@ async function handler(req, res) {
       // ingress адреса (`ui/files-manager.js`, `ui/settings-panel.js`) и дотук получаваше 404,
       // тоест „няма връзка“ при жива връзка. Затова се разрешава и на двата listener-а.
       if (isAdminListener && !adminPath && url.pathname !== '/health') return fail(res, 404, 'Not found');
-      if (!isAdminListener && adminPath) return fail(res, 404, 'Not found');
+      // Изключение за ПРОГРАМЕН клиент с Bearer токен (интеграцията на Home Assistant): тя
+      // чете `/admin/api/sensors`, а admin listener-ът (8098) приема само Supervisor и loopback
+      // — тоест HA не можеше да се свърже нито на 8098 (403), нито на публичния порт (404).
+      // Токенът е самоличността и RBAC го проверява на всеки маршрут; без токен — пак 404.
+      const tokenAdmin = /^Bearer\s+\S/.test(String(req.headers.authorization || '')) && url.pathname.startsWith('/admin/api/');
+      if (!isAdminListener && adminPath && !tokenAdmin) return fail(res, 404, 'Not found');
       if (isAdminListener && url.pathname === '/') {
         // Панелът се сервира от `/ui/`, а НЕ от корена на ingress-а: `ui/index.html` ползва
         // ОТНОСИТЕЛНИ адреси (`styles.css`, `bootstrap.js`, `app.js`, …). Ако документът е в

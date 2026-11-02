@@ -16,7 +16,12 @@ const ingress = '/api/hassio_ingress/test-token_123';
     const get = (port, p, headers) => fetch(`http://127.0.0.1:${port}${p}`, { headers });
     const status = async (port, p, headers) => (await get(port, p, headers)).status;
     assert.equal(await status(pub, '/admin'), 404);
-    assert.equal(await status(pub, '/admin/api/portals', { Authorization: 'Bearer ' + token }), 404);
+    // 0.69.96: админ API-то на ПУБЛИЧНИЯ listener е достъпно С БЕРEР ТОКЕН — това е пътят,
+    // по който интеграцията на Home Assistant чете `/admin/api/sensors` (ingress listener-ът
+    // приема само Supervisor и loopback, тоест HA не може да го ползва). Без токен остава 404.
+    assert.equal(await status(pub, '/admin/api/portals'), 404, 'без токен админ API-то е скрито');
+    assert.equal(await status(pub, '/admin/api/portals', { Authorization: 'Bearer ' + token }), 200, 'с токен минава (пътят на интеграцията)');
+    assert.equal(await status(pub, '/admin/api/portals', { Authorization: 'Bearer ' + 'x'.repeat(40) }), 401, 'грешен токен се отказва');
     assert.equal(await status(pub, '/admin.js'), 404);
     assert.equal(await status(adm, '/api/v1/portals'), 404);
     // Старият /admin е само пренасочване към Enterprise Control Center.

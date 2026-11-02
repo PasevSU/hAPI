@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.95**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.96**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **109** backend модула · **15** HTTP компонента · **23** UI модула · **6** Python модула · **33** инструмента · **320** теста.
+Общо: **109** backend модула · **15** HTTP компонента · **23** UI модула · **7** Python модула · **33** инструмента · **322** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -172,7 +172,7 @@
 | `hapi_enterprise/ui/settings-panel.js` | Настройки на връзката: админ токен, API адрес и публичен адрес за API/QR. |
 | `hapi_enterprise/ui/visitors-panel.js` | Панел „Кой влиза“ — чете сензорите за комуникацията (visitor-intel.js) през |
 
-### Home Assistant интеграция (`custom_components/**/*.py`) (6)
+### Home Assistant интеграция (`custom_components/**/*.py`) (7)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -181,6 +181,7 @@
 | `custom_components/hapi_enterprise/config_flow.py` | Config flow for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/const.py` | Constants for the hAPI Enterprise Home Assistant integration. |
 | `custom_components/hapi_enterprise/coordinator.py` | DataUpdateCoordinator for hAPI Enterprise telemetry. |
+| `custom_components/hapi_enterprise/diagnostics.py` | Diagnostics for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
 ### Инструменти (`scripts/*.cjs`) (33)
