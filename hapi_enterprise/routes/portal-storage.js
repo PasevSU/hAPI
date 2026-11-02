@@ -392,12 +392,36 @@ function create(deps) {
    * PUBLISHED_FILE_VISIBILITY: публикуваният файл НЕ изчезва само защото е заключен —
    * вижда се с режима си и с основанието, а съдържанието се отказва при поискване.
    * Скрива се само непубликуваното (чернова, `listed:false`).
+   *
+   * Връща ГОТОВИТЕ записи, а не суровите файлове: до 0.69.101 формата на записа се
+   * сглобяваше на две места в `server.js` и нито едно от тях не даваше адрес на файла —
+   * картата на папката изреждаше име и размер, а клиентът можеше да свали файла само ако
+   * сам се досети за `/tree/file?path=`. `apiBase` е адресът `<api>/tree`, за да е `url`
+   * абсолютен и еднакъв с останалите препратки в документа.
    */
-  function folderFilesOf(portal, node) {
-    return (node.files || []).filter((file) => {
-      const reg = (portal.files || []).find((f) => f.storagePath === '/' + file.path);
-      return !reg || reg.listed !== false;
-    });
+  function folderFilesOf(portal, node, apiBase = '') {
+    const base = String(apiBase || '').replace(/\/+$/, '');
+    return (node.files || [])
+      .filter((file) => {
+        const reg = (portal.files || []).find((f) => f.storagePath === '/' + file.path);
+        return !reg || reg.listed !== false;
+      })
+      .map((file) => {
+        const mode = folderFileMode(portal, file);
+        return {
+          name: file.name,
+          path: '/' + file.path,
+          size: file.size,
+          modifiedAt: file.modifiedAt || '',
+          mode,
+          key: mode === 'KEY_REQUIRED',
+          locked: mode !== 'FREE',
+          reason: lockReasonOf(portal, file.path),
+          // Адресът на СЪДЪРЖАНИЕТО: същата проверка, която пази `/tree/file`, решава
+          // дали този адрес ще даде байтовете или 403/404 — тук не се обещава достъп.
+          url: base ? base + '/file?path=' + encodeURIComponent('/' + file.path) : '',
+        };
+      });
   }
 
   /** Основанието за заключване, безопасно за публично показване (без вътрешни бележки). */

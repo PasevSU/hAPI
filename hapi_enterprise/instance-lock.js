@@ -60,7 +60,21 @@ function writeAtomic(dir, payload) {
   const tmp = `${target}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
   try {
     fs.writeFileSync(tmp, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
-    fs.renameSync(tmp, target);
+    // Windows: антивирусната/индексаторът може да държи новия файл за миг и `rename` да
+    // върне EPERM/EBUSY/EACCES. Без повторен опит заключването пада произволно (видяно в
+    // матрицата като „EPERM ... .hapi-instance.json.tmp -> .hapi-instance.json“) и add-on-ът
+    // отказва старт без причина. Същият похват се ползва в `api-registry.js`.
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        fs.renameSync(tmp, target);
+        break;
+      } catch (e) {
+        const retryable = e && ['EPERM', 'EBUSY', 'EACCES', 'EEXIST'].includes(e.code);
+        if (!retryable || attempt >= 8) throw e;
+        const until = Date.now() + 15 * (attempt + 1);
+        while (Date.now() < until) { /* кратко изчакване преди повторен опит */ }
+      }
+    }
   } finally {
     try {
       fs.unlinkSync(tmp);

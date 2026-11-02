@@ -12,6 +12,7 @@
 //   • символни връзки и скрити имена се пропускат — същата политика като при четене;
 //   • твърди лимити за брой файлове и байтове, за да не блокира add-on-а.
 const { seal, isSealed } = require('./workdir-crypto');
+const portalFolder = require('./portal-folder');
 
 const MAX_FILES = 5000;
 const MAX_BYTES = 512 * 1024 * 1024;
@@ -29,7 +30,10 @@ function factory(deps) {
     }
     list.sort((a, b) => a.name.localeCompare(b.name, 'bg'));
     for (const entry of list) {
-      if (entry.name.startsWith('.')) continue;
+      // Генерираните файлове на портала (`portal.html`, `api.json`, `openapi.json`) не се
+      // криптират: те се презаписват при всяка промяна и страницата/картата трябва да се
+      // четат от човек и от клиент, а не да са контейнери.
+      if (entry.name.startsWith('.') || (!rel && portalFolder.isGenerated(entry.name))) continue;
       if (entry.isSymbolicLink()) continue;
       const full = path.join(dir, entry.name);
       const next = rel ? rel + '/' + entry.name : entry.name;

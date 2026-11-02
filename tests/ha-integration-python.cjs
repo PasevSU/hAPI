@@ -174,6 +174,10 @@ const ALLOWED_OK = [
   ['p/demo/openapi.json', 'описанието на API-то'],
   ['p/demo/qr.json', 'JSON договорът на печата'],
   ['p/demo/ping', 'ръкостискът'],
+  ['p/demo/tree', 'договорът за папка (списъкът на публичната страница)'],
+  ['p/demo/tree/file', 'сващането на файл от папката'],
+  ['p/demo/tree/api.json', 'картата на папката'],
+  ['p/demo/tree/qr.svg', 'QR кодът на папката'],
   ['p/demo/qr.svg', 'QR кодът'],
   ['p/demo/storage', 'хранилището'],
 ];

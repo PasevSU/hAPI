@@ -109,6 +109,10 @@ function page(portal, base) {
       )}… · ${note}</li>`;
     })
     .join('\n');
+  // Живата страница: тя знае за ПАПКИТЕ на портала (`/tree`), докато този файл е само
+  // списък от регистрираните файлове. Без тази връзка човек, отворил `portal.html` в самата
+  // папка, вижда „още няма файлове“ и не разбира къде са подпапките му.
+  const live = `${root}/p/${encodeURIComponent(String(p.id || slug))}`;
   return `<!doctype html>
 <html lang="bg">
 <head>
@@ -119,6 +123,7 @@ function page(portal, base) {
 <body>
   <h1>${esc(p.title || slug)}</h1>
   <p>Портал <code>${esc(slug)}</code> на hAPI Enterprise. Файлове: ${files.length}.</p>
+  <p>Живата страница (с папките и търсенето): <a href="${esc(live)}">${esc(live)}</a></p>
   <ul>
 ${rows || '      <li>още няма файлове</li>'}
   </ul>
@@ -129,4 +134,62 @@ ${rows || '      <li>още няма файлове</li>'}
 `;
 }
 
-module.exports = { folderPath, safeName, ensure, store, remove, page };
+/**
+ * Генерираните файлове на портала, които живеят в САМАТА му папка.
+ *
+ * Те не са документи на човека: не влизат в списъка на папката, в експлорера, в ZIP пакета и
+ * в доказателствените архиви на QR-а. Иначе всеки архив щеше да „записва“ и връща
+ * `api.json`/`openapi.json`/`portal.html` заедно с документите, а броячите на папката щяха да
+ * растат с три, без човекът да е добавил нищо.
+ */
+const GENERATED = new Set(['portal.html', 'api.json', 'openapi.json']);
+const isGenerated = (name) => GENERATED.has(String(name || ''));
+
+/** Атомарен запис в папката на портала (tmp + rename), за да не се чете половин файл. */
+async function writeAtomic(file, content) {
+  const tmp = `${file}.${process.pid}.${require('node:crypto').randomBytes(6).toString('hex')}.tmp`;
+  try {
+    // 0600 като всички останали файлове на add-on-а: папката се чете от процеса и от
+    // споделянето на Home Assistant, а световно достъпни права не са нужни за страница.
+    await fsp.writeFile(tmp, content, { mode: 0o600 });
+    await fsp.rename(tmp, file);
+  } catch (e) {
+    await fsp.rm(tmp, { force: true }).catch(() => { });
+    throw e;
+  }
+}
+
+/**
+ * Записва `portal.html` (и, ако са подадени, `api.json` / `openapi.json`) в САМАТА папка на
+ * портала — до файловете на човека.
+ *
+ * Защо: до 0.69.102 тези файлове се записваха само в служебната директория на add-on-а
+ * (`data/api/<slug>/`). Човек, който отвори папката си в Home Assistant
+ * (`/share/USB/hapi/data/`), виждаше документите си и НЕ виждаше страницата на портала —
+ * тоест папката не можеше да се отвори сама. Сега в нея има `portal.html`, който сочи към
+ * живата страница (там се зареждат и подпапките).
+ *
+ * Общ корен (`/share`, `/media`) НЕ се пипа — това би сложило страница на един портал до
+ * папките на всички останали. Записва се само когато порталът има собствена папка.
+ * @returns {Promise<string[]>} имената на записаните файлове (празно, ако няма собствена папка)
+ */
+async function writeArtifacts(portal, base, artifacts = {}) {
+  const dir = folderPath(portal && portal.storage_root);
+  if (dir === path.resolve('/share') || dir === path.resolve('/media')) return [];
+  // Папката НЕ се създава тук: създаването на портал не бива да ражда папки в хранилището
+  // (това е отделна опция, `portal_folder_copy`). Ако папката вече съществува — файловете
+  // влизат в нея; ако не — порталът си работи както досега.
+  const stat = await fsp.stat(dir).catch(() => null);
+  if (!stat || !stat.isDirectory()) return [];
+  const jobs = [['portal.html', page(portal, base)]];
+  if (artifacts && artifacts.record) jobs.push(['api.json', JSON.stringify(artifacts.record, null, 2)]);
+  if (artifacts && artifacts.openapiText) jobs.push(['openapi.json', String(artifacts.openapiText)]);
+  const written = [];
+  for (const [name, content] of jobs) {
+    await writeAtomic(path.join(dir, name), content);
+    written.push(name);
+  }
+  return written;
+}
+
+module.exports = { folderPath, safeName, ensure, store, remove, page, writeArtifacts, isGenerated, GENERATED };

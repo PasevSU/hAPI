@@ -18,6 +18,7 @@ const fsp = require('node:fs/promises');
 const path = require('node:path');
 const ooxml = require('./ooxml');
 const contentId = require('./content-id');
+const portalFolder = require('./portal-folder');
 
 /** Максимална дълбочина: коренът е ниво 0, разрешени са нива 1, 2 и 3. */
 const MAX_DEPTH = 3;
@@ -102,7 +103,10 @@ async function walk(rootAbs, rel = '') {
   }
   const out = [];
   for (const entry of entries) {
-    if (entry.name.startsWith('.')) continue;
+    // Генерираните файлове на портала (`portal.html`, `api.json`, `openapi.json`) живеят в
+    // СЪЩАТА папка, но не са документи: архивът пази доказателство за документите, а не
+    // копие на собствената си карта — иначе всеки архив „връща“ и тях.
+    if (entry.name.startsWith('.') || (!rel && portalFolder.isGenerated(entry.name))) continue;
     const childRel = rel ? rel + '/' + entry.name : entry.name;
     if (entry.isDirectory()) {
       out.push(...(await walk(rootAbs, childRel)));

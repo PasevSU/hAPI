@@ -71,6 +71,11 @@ const assert = require('node:assert/strict');
     assert.equal(tree.value.fileCount, 4);
     assert.equal(tree.value.truncated, false);
     assert.deepEqual(tree.value.tree.folders.map((f) => f.name), ['docs', 'sub']);
+    // Генерираните файлове на портала (`portal.html`, `api.json`, `openapi.json`) живеят в
+    // същата папка, но НЕ са документи: не влизат в дървото, в списъка и в архивите.
+    for (const name of ['portal.html', 'api.json', 'openapi.json']) {
+      assert.equal(tree.value.tree.files.some((f) => f.name === name), false, 'генерираният ' + name + ' не е документ');
+    }
     const sub = tree.value.tree.folders[1];
     assert.equal(sub.path, 'sub');
     assert.equal(sub.folderCount, 1);

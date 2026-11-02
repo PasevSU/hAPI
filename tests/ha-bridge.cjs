@@ -27,7 +27,28 @@ const viewStart = py.indexOf('class PortalPage');
 const viewEnd = py.indexOf('def _entry_settings');
 const views = py.slice(viewStart, viewEnd > viewStart ? viewEnd : py.length);
 assert.doesNotMatch(views, /read_text\(/, 'view handler-ите не четат файлове синхронно');
-assert.match(py, /\|storage\)\)\?\$/, 'storage е разрешен в bridge whitelist-а');
+// Allowlist-ът се ВЗИМА от кода и се проверява с РЕАЛНИ пътища, а не с регулярен израз върху
+// текста. До 0.69.102 тук стоеше `/\|storage\)\)\?\$/` — той се счупи, щом списъкът се
+// разшири с договора за папка, макар в моста нищо да не беше сгрешено. Тестът, който пази
+// граница, трябва да проверява границата (пуска ли този път), не нейния правопис.
+const patternOf = (name) => {
+  const at = py.indexOf(name + ' = re.compile(');
+  assert.ok(at >= 0, name + ' не се намира в __init__.py');
+  const open = py.indexOf('(', at);
+  const close = py.indexOf('\n)', open);
+  assert.ok(close > open, name + ': не се намира краят на re.compile(');
+  const parts = [...py.slice(open + 1, close).matchAll(/r"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+  assert.ok(parts.length >= 1, name + ': няма шаблон в re.compile(');
+  return new RegExp(parts.join('').replace(/\(\?P</g, '(?<'));
+};
+const ALLOWED = patternOf('_ALLOWED');
+// Всичко, което `api.json` и картата на папката обявяват като адрес, трябва да минава.
+for (const tail of ['p/demo', 'p/demo/storage', 'p/demo/api.json', 'p/demo/openapi.json', 'p/demo/manifest', 'p/demo/qr.svg', 'p/demo/qr.json', 'p/demo/ping', 'p/demo/tree', 'p/demo/tree/file', 'p/demo/tree/api.json']) {
+  assert.match(tail, ALLOWED, 'мостът разрешава обявения адрес ' + tail);
+}
+for (const tail of ['admin/api/portals', 'admin', 'p/Demo', 'p/demo/unknown']) {
+  assert.doesNotMatch(tail, ALLOWED, 'мостът НЕ разрешава ' + tail);
+}
 assert.match(py, /allowed = \{[^}]*"path"/, 'path се препредава за virtual storage');
 
 console.log('PASS HA bridge contract: токенът е задължителна опция, портът 8099 е само за интеграцията');

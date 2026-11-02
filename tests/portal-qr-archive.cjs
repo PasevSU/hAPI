@@ -86,6 +86,10 @@ const cleaned = [];
           const abs = path.join(dir, entry.name);
           if (entry.isDirectory()) { walk(abs); continue }
           if (!entry.isFile()) continue;
+          // Генерираните файлове на портала (`portal.html`, `api.json`, `openapi.json`) са в
+          // същата папка, но не са доказателство: те се ПРЕЗАПИСВАТ при всяка промяна и
+          // затова не се заключват. Заключването важи за документите от манифеста.
+          if (['portal.html', 'api.json', 'openapi.json'].includes(path.relative(folder, abs))) continue;
           found.push({ name: path.relative(folder, abs), writableBits: fs.statSync(abs).mode & 0o222 });
         }
       };

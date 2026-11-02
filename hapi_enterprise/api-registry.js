@@ -86,13 +86,17 @@ function create(options = {}) {
     await fsp.mkdir(p.dir, { recursive: true, mode: 0o700 });
     const record = spec.buildApiRecord(portal, { baseUrl: base });
     const openapi = spec.buildOpenApi(portal, { baseUrl: base });
+    // Договорът се рендира ВЕДНЪЖ: този текст отива и в папката на портала, за да не се
+    // разминат двете копия при различно форматиране.
+    const openapiText = JSON.stringify(openapi, null, 2);
     await writeAtomic(p.api, JSON.stringify(record, null, 2));
-    await writeAtomic(p.openapi, JSON.stringify(openapi, null, 2));
+    await writeAtomic(p.openapi, openapiText);
     if (qrSvg) await writeAtomic(p.qr, String(qrSvg(qrPayload(record, portal, base))));
     // Човешката страница на портала: отваря се направо от папката, без add-on.
     await writeAtomic(p.page, portalFolder.page(portal, base));
     return {
       record,
+      openapiText,
       references: spec.buildReferences(base, p.slug),
       // `disk` е физическото място на файловете на API-то; `record.storage` е
       // виртуалното хранилище на портала (пътищата, които API-то обслужва).
