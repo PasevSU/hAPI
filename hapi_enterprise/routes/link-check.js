@@ -93,13 +93,28 @@ function create(deps) {
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       const status = res.status;
+      // Малко тяло се прочита САМО при грешка: по него се разпознава кой отговаря —
+      // aiohttp на Home Assistant връща точно `404: Not Found`, което изглежда като
+      // „липсва страница“, а всъщност казва „този адрес не е проксиран към hAPI“.
+      let body = '';
+      if (res.body && status >= 400) {
+        try {
+          const reader = res.body.getReader();
+          const chunk = await reader.read();
+          body = chunk && chunk.value ? Buffer.from(chunk.value).toString('utf8').slice(0, 64) : '';
+        } catch { /* тялото не е нужно за самата проверка */ }
+      }
       if (res.body && typeof res.body.cancel === 'function') await res.body.cancel().catch(() => { });
       const ok = status >= 200 && status < 400;
+      const byHomeAssistant = !ok && status === 404 && /^\s*404: Not Found\s*$/.test(body);
       return {
         ok,
         status,
         code: ok ? '' : `HTTP_${status}`,
-        reason: ok ? (status >= 300 ? explain('', status) : '') : explain('', status),
+        reason: byHomeAssistant
+          ? 'на този адрес отговаря Home Assistant, не hAPI — пътят не е проксиран към add-on-а'
+          : (ok ? (status >= 300 ? explain('', status) : '') : explain('', status)),
+        hint: byHomeAssistant ? 'инсталирай интеграцията (тя сервира публичните пътища на порта на HA) или насочи reverse proxy-то към add-on-а' : '',
         ...base,
         address,
         latencyMs: latency(),
@@ -131,8 +146,10 @@ function create(deps) {
       return true;
     }
     // Само собствени адреси: проверката не бива да се превръща в начин сървърът да
-    // отправя заявки към произволен хост.
-    const own = [String(publicBaseUrl() || ''), String(baseUrl(req) || '')]
+    // отправя заявки към произволен хост. Освен настройката се приема и адресът, който
+    // операторът е задал в средата (`PUBLIC_BASE_URL` от опциите на add-on-а) — точно него
+    // човек иска да провери, когато публичният вход не работи.
+    const own = [String(publicBaseUrl() || ''), String(process.env.PUBLIC_BASE_URL || ''), String(baseUrl(req) || '')]
       .map(hostOf)
       .filter(Boolean);
     if (!own.includes(u.host.toLowerCase())) {
