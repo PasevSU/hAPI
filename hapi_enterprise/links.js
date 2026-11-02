@@ -125,6 +125,22 @@ function baseFromRequest(input = {}) {
 }
 
 /**
+ * Префиксът, под който е монтиран hAPI (`X-Forwarded-Prefix`), или '' — валидиран.
+ *
+ * Зад Home Assistant публичните пътища живеят под негов префикс (`/hapi/api/v1/p/<slug>`),
+ * защото `/api/` е негово пространство. Сървърът получава префикса от proxy-то и го
+ * слага пред адресите, които сам строи — иначе страницата би търсила `/api/v1/p/…` в
+ * корена на HA.
+ * @param {object} headers
+ */
+function prefixFromHeaders(headers) {
+  const raw = String((headers && headers['x-forwarded-prefix']) || '').trim().replace(/\/+$/, '');
+  if (!/^(\/[A-Za-z0-9._~-]+){1,3}$/.test(raw)) return '';
+  // `.` и `..` не са префикс, а опит за излизане от пътя.
+  return raw.split('/').slice(1).some((part) => part === '.' || part === '..') ? '' : raw;
+}
+
+/**
  * Базовият адрес от адреса на страницата (`/ui/index.html`, `/ui/`, `/admin/…` или
  * Ingress префикс). Ползва се от панела, за да строим същите адреси като сървъра.
  * @param {{protocol?: string, origin?: string, pathname?: string}} where
@@ -204,6 +220,7 @@ const LINKS = {
   panelPath,
   baseFromRequest,
   baseFromLocation,
+  prefixFromHeaders,
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = LINKS;

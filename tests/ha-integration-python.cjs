@@ -235,6 +235,7 @@ for (const page of pagePaths) {
 // POST е задължителен: `/package` (ZIP от страницата) и `/rating` (оценка от посетител)
 // са POST в allowlist-а на backend-а; само GET би ги оставил 405 на порта на HA.
 assert.match(initSrc, /async def post\(self, request, \*\*_kwargs\)/, 'публичните изгледи приемат и POST');
+assert.ok(initSrc.includes('url = "/hapi/{tail:.*}"'), 'интеграцията има собствен префикс /hapi/… (защото `/api/` е на HA)');
 assert.ok(initSrc.includes('hass.http.register_view(_public_view('), 'публичните изгледи се регистрират от един списък');
 
 const summary =

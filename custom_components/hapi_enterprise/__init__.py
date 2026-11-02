@@ -273,6 +273,49 @@ async def async_setup(hass, config):
     ):
         hass.http.register_view(_public_view(_path, "api:hapi_enterprise:public_" + _name))
 
+    # The same surface under a prefix Home Assistant cannot own. `/api/…` belongs to Home
+    # Assistant itself (its API view serves `/api/{path}` and demands a session), so a view
+    # registered there can be shadowed by it. `/hapi/…` is ours: the backend receives the
+    # path as if hAPI were served at the root, plus `X-Forwarded-Prefix`, so every address
+    # the add-on builds itself stays inside the prefix.
+    class HapiPrefix(HomeAssistantView):
+        url = "/hapi/{tail:.*}"
+        name = "api:hapi_enterprise:prefix"
+        requires_auth = False
+
+        async def _proxy(self, request):
+            headers = {"X-Forwarded-Prefix": "/hapi"}
+            for field in ("Host", "X-Forwarded-Host", "X-Forwarded-Proto", "X-Portal-Key", "X-File-Key",
+                          "Range", "If-Range", "Content-Type", "Idempotency-Key"):
+                value = request.headers.get(field, "")
+                if not value:
+                    continue
+                if field not in ("Host", "X-Forwarded-Host", "X-Forwarded-Proto") and len(value) > 1024:
+                    raise web.HTTPBadRequest()
+                headers[field] = value
+            body = None
+            if request.method in ("POST", "PUT", "PATCH"):
+                body = await request.read()
+                if len(body) > 4 * 1024 * 1024:
+                    raise web.HTTPRequestEntityTooLarge(max_size=4 * 1024 * 1024, actual_size=len(body))
+            target = request.path[len("/hapi"):] or "/"
+            params = [(k, v) for k, v in request.query.items() if len(v) <= 1024]
+            try:
+                return await _forward(
+                    hass, request, backend + target, headers, params,
+                    method=request.method, body=body,
+                )
+            except (ClientError, TimeoutError):
+                raise web.HTTPBadGateway
+
+        async def get(self, request, **_kwargs):
+            return await self._proxy(request)
+
+        async def post(self, request, **_kwargs):
+            return await self._proxy(request)
+
+    hass.http.register_view(HapiPrefix())
+
     class PublicGateway(HomeAssistantView):
         """Public API Gateway served by Home Assistant itself.
         Canonical: https://<ha-host>:8123/api/hapi_enterprise/public/v1/portals/<slug>
