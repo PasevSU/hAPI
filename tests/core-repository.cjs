@@ -33,7 +33,10 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('nod
 
     // Variables (direct + list-for-record)
     await repo.setVariable(rec.id,'slug','portal-b',registry.fieldsFor('3000').find(f=>f.name==='slug'));
-    assert.equal((await repo.getVariable('3000-1-'+g.id+'-slug')||{}).value,'portal-b');
+    // Ключът е {префикс}-{db}-{група}.{запис}-{поле} (ADR-0013): областта е ЗАПИСЪТ, иначе два
+    // записа в една група делят един ключ и си презаписват стойностите.
+    assert.equal((await repo.getVariable('3000-1-'+g.id+'.'+rec.id+'-slug')||{}).value,'portal-b');
+    assert.equal(await repo.getVariable('3000-1-'+g.id+'-slug'),null,'старият групов ключ не се ползва');
     const fields=await repo.listVariablesForRecord(rec.id);
     assert.equal(fields.slug,'portal-b');
 

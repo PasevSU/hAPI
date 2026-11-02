@@ -3,7 +3,7 @@
 Генериран от `node scripts/script-audit.cjs`. Редът е за ВСЕКИ файл, включително когато
 сигналите са нула: така „обходено“ може да се провери, вместо да се вярва.
 
-Обходени: **190 файла · 49548 реда**.
+Обходени: **190 файла · 49607 реда**.
 Намерени: **203** сигнала — високи **0** · средни 0 · ниски 203.
 
 По правило: `swallow-promise` 88 · `unused-export` 100 · `sync-fs-in-request` 15
@@ -12,7 +12,7 @@
 
 | сегмент | файлове | редове | сигнали |
 | --- | ---: | ---: | ---: |
-| ядро | 101 | 24738 | 173 |
+| ядро | 101 | 24797 | 173 |
 | ui | 23 | 11972 | 11 |
 | скриптове | 35 | 6408 | 0 |
 | routes | 15 | 2440 | 14 |
@@ -31,7 +31,7 @@
 | `custom_components/hapi_enterprise/__init__.py` | 424 | 15 | — | чисто |
 | `custom_components/hapi_enterprise/binary_sensor.py` | 163 | 1 | — | чисто |
 | `custom_components/hapi_enterprise/config_flow.py` | 203 | 10 | — | чисто |
-| `custom_components/hapi_enterprise/const.py` | 27 | 341 | — | чисто |
+| `custom_components/hapi_enterprise/const.py` | 27 | 342 | — | чисто |
 | `custom_components/hapi_enterprise/coordinator.py` | 216 | 7 | — | чисто |
 | `custom_components/hapi_enterprise/diagnostics.py` | 84 | 12 | — | чисто |
 | `custom_components/hapi_enterprise/portal.js` | 500 | 180 | — | чисто |
@@ -48,7 +48,7 @@
 | `hapi_enterprise/config-profiles.js` | 25 | 4 | swallow-promise×1 | нисък |
 | `hapi_enterprise/container.js` | 44 | 17 | — | чисто |
 | `hapi_enterprise/content-id.js` | 47 | 3 | — | чисто |
-| `hapi_enterprise/core-store.js` | 270 | 0 | — | чисто |
+| `hapi_enterprise/core-store.js` | 327 | 1 | — | чисто |
 | `hapi_enterprise/crypto-options.js` | 40 | 2 | — | чисто |
 | `hapi_enterprise/decision-sensors.js` | 290 | 1 | — | чисто |
 | `hapi_enterprise/directory.js` | 301 | 24 | unused-export×2 | нисък |
@@ -73,7 +73,7 @@
 | `hapi_enterprise/interpolate.js` | 100 | 3 | — | чисто |
 | `hapi_enterprise/job-manager.js` | 183 | 5 | unused-export×1 | нисък |
 | `hapi_enterprise/layout.js` | 138 | 8 | — | чисто |
-| `hapi_enterprise/links.js` | 228 | 24 | — | чисто |
+| `hapi_enterprise/links.js` | 228 | 25 | — | чисто |
 | `hapi_enterprise/load-control.js` | 30 | 2 | — | чисто |
 | `hapi_enterprise/logger.js` | 243 | 3 | unused-export×1 | нисък |
 | `hapi_enterprise/migration-bridge.js` | 90 | 0 | — | чисто |
@@ -107,14 +107,14 @@
 | `hapi_enterprise/qrcode.js` | 2303 | 11 | — | чисто |
 | `hapi_enterprise/rbac.js` | 128 | 16 | — | чисто |
 | `hapi_enterprise/readiness.js` | 43 | 7 | — | чисто |
-| `hapi_enterprise/registry.js` | 113 | 11 | unused-export×1 | нисък |
+| `hapi_enterprise/registry.js` | 113 | 12 | unused-export×1 | нисък |
 | `hapi_enterprise/report-manifest.js` | 543 | 25 | — | чисто |
 | `hapi_enterprise/report-package.js` | 153 | 1 | unused-export×1 | нисък |
 | `hapi_enterprise/report-render.js` | 375 | 10 | unused-export×3 | нисък |
 | `hapi_enterprise/report-stamp.js` | 277 | 4 | unused-export×4 | нисък |
 | `hapi_enterprise/repository.js` | 20 | 8 | — | чисто |
 | `hapi_enterprise/respond.js` | 58 | 2 | — | чисто |
-| `hapi_enterprise/retention.js` | 139 | 14 | — | чисто |
+| `hapi_enterprise/retention.js` | 141 | 14 | — | чисто |
 | `hapi_enterprise/routes/admin-docs.js` | 38 | 1 | — | чисто |
 | `hapi_enterprise/routes/events.js` | 47 | 22 | — | чисто |
 | `hapi_enterprise/routes/evidence.js` | 95 | 34 | — | чисто |

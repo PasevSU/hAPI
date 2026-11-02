@@ -121,13 +121,15 @@ function create({ filesRoot, auditPath, getSettings, getQrRegistry }) {
       if (c.fileAction === 'delete') { await fsp.rm(path.join(filesRoot, it.portalId, it.fileId), { force: true }); p.files = p.files.filter(x => x.id !== it.fileId); deleted++ }
       else { f.accessMode = 'DISABLED'; f.expired = true; disabled++ }
     }
-    let auditLinesPruned = 0; if (c.auditDays) { const cut = Date.now() - c.auditDays * MS; const lines = await auditLines();
+    let auditLinesPruned = 0; if (c.auditDays) {
+      const cut = Date.now() - c.auditDays * MS; const lines = await auditLines();
       // Ред, който не може да се прочете или датира, НЕ се трие. `preview` вече го брои за
       // „неизтекъл“ (не знаем възрастта му), а `apply` го триеше — тоест отчетът казваше
       // „0 изтекли“, а файлът губеше редове. Повреден/недописан ред е точно това, което не
       // бива да изчезва: той е следа от прекъснат запис, а не изтекъл запис.
       const keep = lines.filter(l => { const t = auditLineAt(l); return t === null ? true : t >= cut });
-      auditLinesPruned = lines.length - keep.length; if (auditLinesPruned > 0) await fsp.writeFile(auditPath, keep.join('\n') + (keep.length ? '\n' : ''), { mode: 0o600 }) }
+      auditLinesPruned = lines.length - keep.length; if (auditLinesPruned > 0) await fsp.writeFile(auditPath, keep.join('\n') + (keep.length ? '\n' : ''), { mode: 0o600 })
+    }
     return { ...prev, applied: true, deleted, disabled, auditLinesPruned, refused };
   }
   // `protection` е публичната форма на същото правило за други извикващи: преместване между
