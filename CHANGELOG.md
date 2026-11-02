@@ -6,6 +6,18 @@
 
 ## 0.69.87
 
+- **Проверено на живо, не само по код: всичко, което панелът иска, се сервира.** Пуснах
+  standalone сървъра (`node hapi_enterprise/standalone.js`) и поисках през HTTP всеки ресурс,
+  който страниците зареждат: `/ui/` → 200 (3.7 KB HTML), `/ui/links.js` → **200 (9385 B)**,
+  `/ui/app.js` → 200 (17606 B), `/ui/tokens.css` → 200, `/hapi_enterprise/qrcode.js` → 200
+  (57110 B), `/hapi_enterprise/report-manifest.js` → 200, а произволен `/ui/nope.js` → 404
+  (allowlist-ът работи). На публичния listener: `/portal.css`, `/portal.js`, `/portal-i18n.js`
+  и `/health` → 200. Това потвърждава и поправката от предишния комит: `links.js` **се** сервира
+  на `/ui/links.js` през `UI_FILES`. Дефект не е намерен — но двата пътя, които не следват
+  правилото „файл до страницата“ (`/ui/links.js` и `/hapi_enterprise/qrcode.js`), вече се
+  проверяват в `tests/ingress-isolation.cjs`, заедно с 404 за произволен път под `/ui/`.
+  **Проверено обратно:** махнат специалният случай за `links.js` в `UI_FILES` → тестът пада.
+
 - **Никой не проверяваше, че страниците на add-on-а сочат съществуващи файлове.** `ui/index.html`
   зарежда `links.js`, който НЕ стои до страницата, а в корена на add-on-а — сървърът го сервира на
   `/ui/links.js` през allowlist-а `UI_FILES` (специалният случай `f === 'links.js'`). Това е

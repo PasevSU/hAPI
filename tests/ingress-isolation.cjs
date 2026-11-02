@@ -32,7 +32,17 @@ const ingress = '/api/hassio_ingress/test-token_123';
     assert.equal(await status(adm, '/ui/app.js'), 200);
     assert.equal(await status(adm, '/ui/tokens.css'), 200);
     assert.equal(await status(adm, '/ui/themes.css'), 200);
+    // `ui/index.html` зарежда `links.js`, който стои в КОРЕНА на add-on-а — сервира се на
+    // `/ui/links.js` през allowlist-а `UI_FILES`. Точно този път се проверява, защото е
+    // единственият, който не следва „файл до страницата“; счупен mapping = тих 404 и панел
+    // без `HapiLinks` (адресите на порталите падат към резервните стойности).
+    assert.equal(await status(adm, '/ui/links.js'), 200);
+    // Ядрото за QR идва от `bootstrap.js` на `/hapi_enterprise/qrcode.js` — без него панелът
+    // рисува линковете без QR и никой не разбира защо.
+    assert.equal(await status(adm, '/hapi_enterprise/qrcode.js'), 200);
     assert.equal(await status(adm, '/hapi_enterprise/report-manifest.js'), 200);
+    // Allowlist-ът наистина е allowlist: произволен път под `/ui/` не се сервира.
+    assert.equal(await status(adm, '/ui/nope.js'), 404);
     const controlCenter = await get(adm, '/ui/');
     assert.equal(controlCenter.status, 200);
     assert.equal(controlCenter.headers.get('content-type'), 'text/html; charset=utf-8');

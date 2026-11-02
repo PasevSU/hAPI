@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **311/311** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 509 файла · 85519 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 504 файла · 84956 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 509 файла · 85529 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 504 файла · 84966 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -33,6 +33,18 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Проверено на живо, не само по код: всичко, което панелът иска, се сервира.** Пуснах
+  standalone сървъра (`node hapi_enterprise/standalone.js`) и поисках през HTTP всеки ресурс,
+  който страниците зареждат: `/ui/` → 200 (3.7 KB HTML), `/ui/links.js` → **200 (9385 B)**,
+  `/ui/app.js` → 200 (17606 B), `/ui/tokens.css` → 200, `/hapi_enterprise/qrcode.js` → 200
+  (57110 B), `/hapi_enterprise/report-manifest.js` → 200, а произволен `/ui/nope.js` → 404
+  (allowlist-ът работи). На публичния listener: `/portal.css`, `/portal.js`, `/portal-i18n.js`
+  и `/health` → 200. Това потвърждава и поправката от предишния комит: `links.js` **се** сервира
+  на `/ui/links.js` през `UI_FILES`. Дефект не е намерен — но двата пътя, които не следват
+  правилото „файл до страницата“ (`/ui/links.js` и `/hapi_enterprise/qrcode.js`), вече се
+  проверяват в `tests/ingress-isolation.cjs`, заедно с 404 за произволен път под `/ui/`.
+  **Проверено обратно:** махнат специалният случай за `links.js` в `UI_FILES` → тестът пада.
 
 - **Никой не проверяваше, че страниците на add-on-а сочат съществуващи файлове.** `ui/index.html`
   зарежда `links.js`, който НЕ стои до страницата, а в корена на add-on-а — сървърът го сервира на
