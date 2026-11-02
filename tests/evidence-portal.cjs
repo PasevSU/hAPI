@@ -13,6 +13,22 @@ const portal = require(path.join(__dirname, '..', 'hapi_enterprise', 'evidence-p
 // 1. Пакетът е пълен — иначе публикуването щеше да е половинчато.
 assert.deepEqual(portal.missingSourceFiles(), [], 'всички файлове на портала са в пакета');
 
+// 1б. Планът изрежда СЪЩИТЕ файлове. Пакетът се променя лесно (нов модул, преместени демо
+// данни), а документът остава да описва старото — точно това се случи с
+// `data/demo-evidence.json`: той се публикува, а планът твърдеше, че демото е само в корена.
+const plan = fs.readFileSync(path.join(__dirname, '..', 'documentation', '04_FUNCTION_SPECIFICATIONS', 'EVIDENCE_VIEW_PORTAL.md'), 'utf8');
+for (const rel of portal.FILES) {
+  // Точно РЕД в таблицата на пакета, не просто споменаване в текста: файл, който се
+  // публикува, но липсва в инвентара, е план, който вече не описва изданието.
+  const row = new RegExp('^\\|\\s*`' + rel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`\\s*\\|', 'm');
+  assert.ok(row.test(plan), `планът (EVIDENCE_VIEW_PORTAL.md) трябва да изброи файла \`${rel}\` в таблицата на пакета`);
+}
+// И обратното: демо данните, които фронтендът РЕАЛНО тегли, трябва да са в списъка за публикуване.
+const appSource = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'evidence-portal', 'assets', 'app.js'), 'utf8');
+const demoFetch = (appSource.match(/fetch\('\.\/([^']+)'/) || [])[1];
+assert.ok(demoFetch, 'app.js тегли демо данните с относителен път');
+assert.ok(portal.FILES.includes(demoFetch), `файлът, който app.js тегли (\`${demoFetch}\`), трябва да е в FILES — иначе публикуваното демо дава 404`);
+
 // 2. Откриване на HA конфигурацията: трябва configuration.yaml или www/.
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-ha-config-'));
 fs.writeFileSync(path.join(root, 'configuration.yaml'), 'default_config:\n');
