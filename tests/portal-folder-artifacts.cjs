@@ -66,6 +66,22 @@ const clean = () => fs.rmSync(DIR, { recursive: true, force: true });
     assert.match(html, /^<!doctype html>/i, 'portal.html е валиден HTML документ');
     assert.ok(html.includes('newportal2b'), 'страницата носи името на портала');
     assert.ok(html.includes('/p/' + portal.id), 'страницата сочи ЖИВИЯ портал (там се зареждат папките): ' + portal.id);
+    // ── 2б. Страницата в папката изрежда ИСТИНСКАТА папка ─────────────────────
+    // До 0.69.107 тя показваше само регистрираните файлове и казваше „още няма файлове“,
+    // докато до нея лежеше „Договори 2026/анекс.txt“.
+    assert.ok(html.includes('Договори 2026'), 'страницата изрежда РЕАЛНАТА подпапка, не само регистрираните файлове');
+    assert.ok(html.includes('анекс.txt'), 'и файла в нея');
+    assert.equal(html.includes('още няма файлове'), false, 'и НЕ твърди, че няма файлове, при налични документи');
+    assert.equal(/href="[^"]*portal\.html"/.test(html), false, 'страницата не се изброява самата себе си');
+    assert.equal(/href="[^"]*(api|openapi)\.json"/.test(html), false, 'и не изброява генерираните до нея файлове като документи');
+    const folderHref = (html.match(/href="([^"]*\?folder=[^"]*)"/) || [])[1];
+    assert.ok(folderHref, 'подпапката има адрес в страницата: ' + folderHref);
+    const fileHref = (html.match(/href="([^"]*\/tree\/file\?path=[^"]*)"/) || [])[1];
+    assert.ok(fileHref, 'файлът има адрес към договора за един файл: ' + fileHref);
+    const servedPage = await fetch(`${server.base}/portal.html?folder=newportal2b`);
+    assert.equal(servedPage.status, 200, 'add-on-ът сервира СЪЩАТА страница: ' + servedPage.status);
+    const servedHtml = await servedPage.text();
+    assert.ok(servedHtml.includes('анекс.txt'), 'сервираната страница също вижда файловете от папката');
 
     // ── 3. api.json в папката е СЪЩИЯТ документ, който API-то сервира ────────
     const served = await (await fetch(`${server.base}/api/v1/p/newportal2b/api.json`)).json();

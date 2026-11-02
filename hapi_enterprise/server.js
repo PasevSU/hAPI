@@ -1501,7 +1501,7 @@ async function handler(req, res) {
       const portal = resolvePortal(url.searchParams.get('folder')); if (!portal) return fail(res, 404, 'Not found');
       // Същата политика като `/p/<id>` — едно решение за всички входове (portal-policy.js).
       if (!portalPolicy.decide({ req, url, portal, action: 'read' }).allowed) return fail(res, 404, 'Not found'); void recordTelemetry('visit', req, portal, null, url);
-      const html = portalFolder.page(portal, baseUrl(req));
+      const html = await portalFolder.listTree(portal.storage_root).then((tree) => portalFolder.page(portal, baseUrl(req), tree));
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
       return res.end(html);
     }

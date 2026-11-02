@@ -90,10 +90,57 @@ const esc = (s) =>
   String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /**
+ * Съдържанието на папката на портала — това, което човек вижда до `portal.html`.
+ *
+ * Защо е нужно на самата страница: `portal.html` се записва В папката на портала, за да я
+ * отвори човекът, който я разглежда в Home Assistant. До 0.69.107 тя изреждаше само
+ * РЕГИСТРИРАНИТЕ файлове (`p.files`, качванията през API-то) и при портал върху реална папка
+ * казваше „още няма файлове“, докато до нея лежаха десетки документи. Сега страницата изрежда
+ * истинските папки и файлове, а адресите им водят към живия портал (`/p/<id>?folder=…`) и към
+ * договора за един файл (`/tree/file?path=…`).
+ *
+ * Правила: скритите имена (`.` в началото) не се показват, генерираните файлове на портала
+ * (`portal.html`, `api.json`, `openapi.json`) — също, а списъкът е ограничен, за да остане
+ * страницата малка дори при хиляди документи.
+ */
+const LIST_MAX_FOLDERS = 200;
+const LIST_MAX_FILES = 300;
+const LIST_MAX_DEPTH = 5;
+
+async function listTree(root) {
+  const base = folderPath(root);
+  const state = { folders: [], files: [], truncated: false, depthLimited: false };
+  async function walk(dir, rel, depth) {
+    if (state.folders.length >= LIST_MAX_FOLDERS || state.files.length >= LIST_MAX_FILES) { state.truncated = true; return }
+    const entries = await fsp.readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (state.folders.length >= LIST_MAX_FOLDERS || state.files.length >= LIST_MAX_FILES) { state.truncated = true; return }
+      if (entry.name.startsWith('.')) continue;
+      // Генерираните файлове живеят само в корена на папката; в подпапка същото име е документ.
+      if (!rel && isGenerated(entry.name)) continue;
+      const childRel = rel ? rel + '/' + entry.name : entry.name;
+      if (entry.isDirectory()) {
+        state.folders.push({ name: entry.name, path: '/' + childRel, depth });
+        if (depth >= LIST_MAX_DEPTH) { state.depthLimited = true; continue }
+        await walk(path.join(dir, entry.name), childRel, depth + 1);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      const stat = await fsp.stat(path.join(dir, entry.name)).catch(() => null);
+      state.files.push({ name: entry.name, path: '/' + childRel, size: stat ? stat.size : 0 });
+    }
+  }
+  await walk(base, '', 1);
+  return state;
+}
+
+/**
  * Страницата `portal.html` на портала: обикновен HTML без стилове (CSP `style-src self`
  * не позволява вградени такива), който изрежда файловете и адресите им за изтегляне.
+ * `tree` (от `listTree`) добавя ИСТИНСКОТО съдържание на папката — тогава страницата не
+ * казва „няма файлове“, когато до нея има документи.
  */
-function page(portal, base) {
+function page(portal, base, tree = null) {
   const p = portal || {};
   const slug = String(p.slug || '');
   const root = String(base || '').replace(/\/+$/, '');
@@ -113,6 +160,25 @@ function page(portal, base) {
   // списък от регистрираните файлове. Без тази връзка човек, отворил `portal.html` в самата
   // папка, вижда „още няма файлове“ и не разбира къде са подпапките му.
   const live = `${root}/p/${encodeURIComponent(String(p.id || slug))}`;
+  // Истинското съдържание на папката: папките водят до живия портал с `?folder=`, файловете —
+  // до договора за един файл (`/tree/file?path=`). Същите адреси, които дава и `api.json`.
+  const folderItems = tree && tree.folders.length
+    ? tree.folders
+      .map((f) => `      <li><a href="${esc(`${live}?folder=${encodeURIComponent(f.path.replace(/^\/+/, ''))}`)}">${esc(f.name)}/</a></li>`)
+      .join('\n')
+    : '';
+  const fileItems = tree && tree.files.length
+    ? tree.files
+      .map((f) => `      <li><a href="${esc(`${root}/api/v1/p/${encodeURIComponent(slug)}/tree/file?path=${encodeURIComponent(f.path)}`)}">${esc(f.name)}</a> — ${Number(f.size) || 0} B</li>`)
+      .join('\n')
+    : '';
+  const treeBlock = folderItems || fileItems
+    ? `  <p>В папката: ${tree.folders.length} папки, ${tree.files.length} файла${
+      tree.truncated ? ' (показани са първите)' : ''}${tree.depthLimited ? `, по-дълбоки от ${LIST_MAX_DEPTH} нива не са обходени` : ''}.</p>
+${folderItems ? `  <h2>Папки</h2>\n  <ul>\n${folderItems}\n  </ul>\n` : ''}${fileItems ? `  <h2>Файлове</h2>\n  <ul>\n${fileItems}\n  </ul>\n` : ''}`
+    : '';
+  // „още няма файлове“ остава само когато няма нито регистрирани файлове, нито съдържание.
+  const empty = files.length || folderItems || fileItems ? '' : '      <li>още няма файлове</li>';
   return `<!doctype html>
 <html lang="bg">
 <head>
@@ -124,8 +190,9 @@ function page(portal, base) {
   <h1>${esc(p.title || slug)}</h1>
   <p>Портал <code>${esc(slug)}</code> на hAPI Enterprise. Файлове: ${files.length}.</p>
   <p>Живата страница (с папките и търсенето): <a href="${esc(live)}">${esc(live)}</a></p>
+${treeBlock}  <h2>Регистрирани файлове (качени през API-то)</h2>
   <ul>
-${rows || '      <li>още няма файлове</li>'}
+${rows || empty}
   </ul>
   <p>Страницата е генерирана от add-on-а при всяка промяна на портала; не се редактира на ръка.
   Машиночитаемото описание е в <code>api.json</code> и <code>openapi.json</code> до нея.</p>
@@ -187,7 +254,9 @@ async function writeArtifacts(portal, base, artifacts = {}) {
   // влизат в нея; ако не — порталът си работи както досега.
   const stat = await fsp.stat(dir).catch(() => null);
   if (!stat || !stat.isDirectory()) return [];
-  const jobs = [['portal.html', page(portal, base)]];
+  // Страницата изрежда ИСТИНСКОТО съдържание на папката, а не само регистрираните файлове.
+  const tree = await listTree(dir);
+  const jobs = [['portal.html', page(portal, base, tree)]];
   if (artifacts && artifacts.record) jobs.push(['api.json', JSON.stringify(artifacts.record, null, 2)]);
   if (artifacts && artifacts.openapiText) jobs.push(['openapi.json', String(artifacts.openapiText)]);
   const written = [];
@@ -227,4 +296,4 @@ async function removeArtifacts(root) {
   return removed;
 }
 
-module.exports = { folderPath, safeName, ensure, store, remove, page, writeArtifacts, folderReady, removeArtifacts, isGenerated, GENERATED };
+module.exports = { folderPath, safeName, ensure, store, remove, page, listTree, writeArtifacts, folderReady, removeArtifacts, isGenerated, GENERATED };
