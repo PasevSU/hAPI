@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **313/313** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **314/314** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 511 файла · 85822 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 506 файла · 85232 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 512 файла · 85882 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 507 файла · 85292 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 313 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 314 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,19 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Изданието качваше 5 от 6 файла, а манифестът описваше 6.** `dist/SHA256SUMS.txt` изброява
+  add-on архива, интеграцията, GUI пакета, `repository.yaml`, `RELEASE.json` и себе си, но стъпката
+  „Attach to GitHub release“ в `.github/workflows/release.yml` нямаше шаблон за
+  `hapi-enterprise-gui-*.zip`. Тоест човек, който сверява по публикувания манифест, стигаше до
+  файл, който изданието не носи — точно това се случи с `v0.69.87` и се поправи ръчно, като към
+  изданието беше качен файлът, който CI е построил (хешът му съвпада с реда в манифеста:
+  `ac507047…`). Шаблонът е добавен, а `tests/release-workflow-assets.cjs` пази договора: списъкът с
+  артефакти се строи от версията в `config.yaml` (същият списък, който пише `SHA256SUMS.txt`),
+  всяко име трябва да се покрива от шаблон в `files:` и workflow-ът трябва да пуска
+  `verify-release --with-tests` и `check-tag-version`. **Проверено обратно:** махнат GUI шаблон →
+  „всеки артефакт от манифеста се качва към изданието“; `verify-release` без `--with-tests` →
+  „workflow-ът пуска verify-release с тестовете“.
 
 - **Съвместимостта с Home Assistant се проверява с правила, а не с „изглежда правилно“.** Add-on-ът
   и интеграцията имаха `ha-compatibility` (43 правила), но той гледа на add-on-а като на файл, не

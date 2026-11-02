@@ -65,6 +65,7 @@ jobs:
           files: |
             dist/hapi_enterprise-*.tar.gz
             dist/hapi_enterprise-integration-*.zip
+            dist/hapi-enterprise-gui-*.zip
             dist/repository.yaml
             dist/RELEASE.json
             dist/SHA256SUMS.txt

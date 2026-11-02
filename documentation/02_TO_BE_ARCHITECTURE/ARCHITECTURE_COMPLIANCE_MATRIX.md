@@ -114,6 +114,8 @@
 
 | `HA_COMPAT` — add-on-ът и интеграцията спазват правилата на Home Assistant, а не разчитат на това, че „изглеждат правилни“ | `hapi_enterprise/config.yaml`, `custom_components/hapi_enterprise/manifest.json`, `custom_components/hapi_enterprise/strings.json`, `hacs.json`, `repository.yaml` | `ha-compat` (43 опции · `options` ↔ `schema` в двете посоки · схемата минава граматиката на Supervisor: `str?`/`bool`/`int(min,max)?`/`float`/`list(a\|b)`/`password`/`match(regex)?` · `map` само с позволени ключове и `:rw` · `watchdog` през `http://[HOST]:[PORT:8099]/health` · `manifest.json` с `domain` = име на папката, версия = версията на add-on-а, `requirements: []`, `iot_class`/`integration_type`/`codeowners` · `strings.json` ↔ `translations/en.json` с еднакви секции) · `ha-compatibility` (43/43 правила) · `addon-config` · `ha-integration-python` · `hacs-structure` |
 
+| `RELEASE_ASSETS` — изданието носи всеки файл, който манифестът му описва | `.github/workflows/release.yml` (`files:` на „Attach to GitHub release“), `scripts/build-release.cjs` (`SHA256SUMS.txt`) | `release-workflow-assets` (6 артефакта от версията · 6 шаблона · `verify-release --with-tests` и `check-tag-version` в стъпките) |
+
 Външен пакет `hapi-evidence-portal v1.2` е сверен файл по файл — виж `EVIDENCE_PORTAL_V1.2_REVIEW.md`.
 ## 6. Регресионна база
 
