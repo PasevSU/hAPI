@@ -198,9 +198,79 @@ async def async_setup(hass, config):
             except (ClientError, TimeoutError):
                 raise web.HTTPBadGateway()
 
+    # The add-on writes links as `/p/<id>` and `/api/v1/p/<slug>/...` (links.js). On the Home
+    # Assistant origin those paths did not exist, so every QR code and every API address the
+    # panel printed answered `404: Not found` - the addresses looked right and were dead.
+    # These three views put the SAME paths on the Home Assistant port and stream them to the
+    # backend: no extra web server, no nginx, no published port.
+    class PublicPortalAPI(HomeAssistantView):
+        """`/api/v1/p/<slug>/...` on the Home Assistant port (the address the panel writes)."""
+
+        url = "/api/v1/p/{tail:.*}"
+        name = "api:hapi_enterprise:portal_v1"
+        requires_auth = False  # The Node backend decides (FREE / KEY_REQUIRED / DISABLED).
+
+        async def get(self, request, tail):
+            if not _ALLOWED.fullmatch(tail):
+                raise web.HTTPNotFound()
+            headers = {}
+            portal_key = request.headers.get("X-Portal-Key", "")
+            if portal_key:
+                if len(portal_key) > 512:
+                    raise web.HTTPUnauthorized()
+                headers["X-Portal-Key"] = portal_key
+            for field in ("Range", "If-Range"):
+                if request.headers.get(field):
+                    headers[field] = request.headers[field]
+            # `key` is the public form (`?key=...`); the rest are read-only filters.
+            allowed = {"key", "q", "limit", "offset", "order", "direction", "category", "group", "topic", "tag", "path"}
+            params = [(k, v) for k, v in request.query.items() if k in allowed and len(v) <= 512]
+            try:
+                return await _forward(hass, request, backend + "/api/v1/" + tail, headers, params)
+            except (ClientError, TimeoutError):
+                raise web.HTTPBadGateway
+
+    class PublicPortalPage(HomeAssistantView):
+        """`/p/<id>` on the Home Assistant port - the page behind every QR code."""
+
+        url = "/p/{tail:.*}"
+        name = "api:hapi_enterprise:portal_page"
+        requires_auth = False
+
+        async def get(self, request, tail):
+            # Portal id (24 hex) or slug; nothing else is a page.
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", tail):
+                raise web.HTTPNotFound()
+            try:
+                return await _forward(hass, request, backend + "/p/" + tail, {}, [])
+            except (ClientError, TimeoutError):
+                raise web.HTTPBadGateway
+
+    class PublicPortalAsset(HomeAssistantView):
+        """`/portal.css`, `/portal.js`, `/portal-i18n.js` - the page loads them from the root.
+
+        Three EXACT paths, not a `/{asset}` wildcard: a catch-all at Home Assistant's root
+        would sit in front of `/lovelace`, `/auth` and every other panel.
+        """
+
+        requires_auth = False
+        _ASSETS = ("portal.css", "portal.js", "portal-i18n.js")
+
+        def __init__(self, asset):
+            if asset not in self._ASSETS:
+                raise ValueError("unknown portal asset: " + asset)
+            self.url = "/" + asset
+            self.name = "api:hapi_enterprise:asset_" + asset.replace(".", "_").replace("-", "_")
+
+        async def get(self, request):
+            asset = self.url.lstrip("/")
+            try:
+                return await _forward(hass, request, backend + "/" + asset, {}, [])
+            except (ClientError, TimeoutError):
+                raise web.HTTPBadGateway
+
     class PublicGateway(HomeAssistantView):
         """Public API Gateway served by Home Assistant itself.
-
         Canonical: https://<ha-host>:8123/api/hapi_enterprise/public/v1/portals/<slug>
 
         No HA session is required; the Node backend decides every request
@@ -247,6 +317,10 @@ async def async_setup(hass, config):
         deprecated = True
 
     hass.http.register_view(PortalAPI())
+    hass.http.register_view(PublicPortalAPI())
+    hass.http.register_view(PublicPortalPage())
+    for _asset in PublicPortalAsset._ASSETS:
+        hass.http.register_view(PublicPortalAsset(_asset))
     hass.http.register_view(PublicGateway())
     hass.http.register_view(LegacyPublicGateway())
     return True

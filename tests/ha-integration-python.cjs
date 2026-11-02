@@ -208,6 +208,28 @@ const PUBLIC_NO = [
 for (const [tail, why] of PUBLIC_OK) assert.match(tail, PUBLIC_TAIL, `публичният вход трябва да пуска ${why}: ${tail}`);
 for (const [tail, why] of PUBLIC_NO) assert.doesNotMatch(tail, PUBLIC_TAIL, `публичният вход НЕ бива да пуска ${why}: ${tail}`);
 
+// ── 8. Рекламираните публични пътища съществуват и на порта на Home Assistant ──
+// Панелът пише адреси по `links.js` (`/api/v1/p/<slug>`, `/p/<id>`, `/portal.css`). Ако
+// интеграцията не сервира СЪЩИТЕ пътища, адресите изглеждат правилни и отговарят
+// `404: Not found` — точно това се случи на живо.
+const linksSrc = fs.readFileSync(path.join(__dirname, '../hapi_enterprise/links.js'), 'utf8');
+const initSrc = read('__init__.py');
+const advertised = [];
+for (const [pattern, why] of [
+  [/return '(\/api\/v1\/p\/)'/, 'API-то на портала'],
+  [/return '(\/p\/)'/, 'страницата зад QR кода'],
+]) {
+  const found = pattern.exec(linksSrc);
+  assert.ok(found, 'links.js строи ' + why);
+  const prefix = found[1];
+  assert.ok(initSrc.includes('url = "' + prefix + '{tail:.*}"'), 'интеграцията сервира ' + why + ' на ' + prefix);
+  advertised.push(prefix);
+}
+assert.match(initSrc, /_ASSETS = \("portal\.css", "portal\.js", "portal-i18n\.js"\)/, 'интеграцията сервира ресурсите на страницата от корена');
+for (const name of ['PublicPortalAPI()', 'PublicPortalPage()', 'PublicPortalAsset(_asset)']) {
+  assert.ok(initSrc.includes('register_view(' + name), 'изгледът е регистриран: ' + name);
+}
+
 const summary =
   `${pyFiles.length} Python файла` +
   (compiled ? ` (${compiled} компилират се)` : ' (без компилация — няма python)') +
@@ -216,5 +238,6 @@ const summary =
   ` · ${keys.length} превода в 3 файла` +
   ` · ${reasons.size} причини с текст` +
   ` · мостът пуска ${ALLOWED_OK.length} и спира ${ALLOWED_NO.length} пътя` +
-  ` · публичният вход пуска ${PUBLIC_OK.length} и спира ${PUBLIC_NO.length}`;
+  ` · публичният вход пуска ${PUBLIC_OK.length} и спира ${PUBLIC_NO.length}` +
+  ` · ${advertised.length} рекламирани пътя имат изглед на порта на HA`;
 console.log('PASS ha-integration-python: ' + summary);

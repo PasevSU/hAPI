@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **314/314** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 512 файла · 85882 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 507 файла · 85292 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 512 файла · 85979 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 507 файла · 85389 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -33,6 +33,21 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Публичното API не отговаряше на адресите, които панелът сам пише.** Проверено на живо:
+  `https://<домейн>/api/v1/p/<slug>` връща **`404: Not Found` от Home Assistant**, а
+  `https://<домейн>/` връща самия HA. Причината: панелът строи адреси по `links.js`
+  (`/p/<id>`, `/api/v1/p/<slug>/…`, `/portal.css`), но на порта на Home Assistant тези пътища
+  изобщо не съществуваха — интеграцията сервираше само `/api/hapi_enterprise/…`. Gateway портът
+  на add-on-а (8088) нарочно не се публикува, тоест адресите изглеждаха правилни и бяха мъртви,
+  освен ако човек не вдигне отделен reverse proxy. Сега интеграцията регистрира СЪЩИТЕ пътища на
+  HA порта и ги стриймва към backend-а (`PublicPortalAPI`, `PublicPortalPage`,
+  `PublicPortalAsset`): страница, manifest, files, storage, qr, openapi и ресурсите на страницата
+  работят без HA сесия и без nginx, а административните пътища остават недостъпни.
+  `tests/ha-integration-python.cjs` взима пътищата **от `links.js`** и иска за всеки от тях изглед
+  в интеграцията — за да не се разминат отново. **Проверено обратно:** сменен път на API-то →
+  „интеграцията сервира API-то на портала на /api/v1/p/“; махнат `register_view` → „изгледът е
+  регистриран: PublicPortalPage()“.
 
 - **Изданието качваше 5 от 6 файла, а манифестът описваше 6.** `dist/SHA256SUMS.txt` изброява
   add-on архива, интеграцията, GUI пакета, `repository.yaml`, `RELEASE.json` и себе си, но стъпката
