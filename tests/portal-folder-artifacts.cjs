@@ -102,6 +102,26 @@ const clean = () => fs.rmSync(DIR, { recursive: true, force: true });
     assert.equal(download.status, 200, 'адресът сваля файла: ' + download.status);
     assert.equal(await download.text(), DOC, 'съдържанието е точното');
 
+    // ── 4б. Страницата, картата и списъкът сочат ЕДНО И СЪЩО ─────────────────
+    // Три места показват папката (страницата в папката, `api.json` и `/tree`). Ако те се
+    // разминат, човек вижда различен списък според това откъде е влязъл.
+    const diskPage = fs.readFileSync(pageFile, 'utf8');
+    const servedAgain = await (await fetch(`${server.base}/portal.html?folder=newportal2b`)).text();
+    assert.equal(servedAgain, diskPage, 'сервираната страница е байт по байт същата като записаната в папката');
+    const mapNow = await (await fetch(`${server.base}/api/v1/p/newportal2b/api.json`)).json();
+    const pageFileLink = (diskPage.match(/href="([^"]*\/tree\/file\?path=[^"]*)"/) || [])[1];
+    assert.ok(pageFileLink, 'страницата дава адрес за файловете');
+    assert.equal(pageFileLink.startsWith(mapNow.folder.treeUrl + '/file?path='), true,
+      'страницата ползва СЪЩИЯ договор за файл, който обявява картата: ' + pageFileLink);
+    // Всеки адрес, който страницата дава на човек, трябва да работи — иначе тя е списък от
+    // мъртви връзки, който изглежда валиден.
+    for (const href of [...diskPage.matchAll(/href="([^"]+)"/g)].map((m) => m[1])) {
+      const target = /^https?:/.test(href) ? href : server.base + href;
+      const res = await fetch(target);
+      assert.equal(res.status, 200, 'адресът от страницата работи: ' + decodeURIComponent(href) + ' → ' + res.status);
+      await res.text();
+    }
+
     // ── 5. Промяна на портала обновява страницата в папката ──────────────────
     const rename = await server.api(`/admin/api/portals/${portal.id}`, 'PATCH', { title: 'Договори по дело 2026' });
     assert.equal(rename.status, 200, 'заглавието се сменя: ' + rename.status);
