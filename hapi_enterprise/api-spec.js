@@ -84,7 +84,10 @@ function buildApiRecord(portal, options = {}) {
   const folder = hasOwnFolder(portal) && options.folderReady !== false
     ? {
       dedicated: true,
-      url: `${refs.apiUrl}/tree`,
+      // Имената са СПЕЦИАЛНО различни от `folderUrl` в панела (`adminPortal`): там това е
+      // ЧОВЕШКАТА страница с папката (`/p/<id>`), а тук — API-то на папката. Едно име с две
+      // значения е точно разминаването, което клиентът не може да различи.
+      treeUrl: `${refs.apiUrl}/tree`,
       apiJsonUrl: `${refs.apiUrl}/tree/api.json`,
       qrUrl: `${refs.apiUrl}/tree/qr.svg`,
       fileUrlTemplate: `/api/v1/p/${refs.slug}/tree/file?path=<path>`,
@@ -115,7 +118,7 @@ function buildApiRecord(portal, options = {}) {
     qrJson: refs.qrJsonUrl,
     ping: refs.pingUrl,
     links: folder
-      ? { ...refs, folderUrl: folder.url, folderApiJsonUrl: folder.apiJsonUrl, folderQrUrl: folder.qrUrl }
+      ? { ...refs, folderTreeUrl: folder.treeUrl, folderApiJsonUrl: folder.apiJsonUrl, folderQrUrl: folder.qrUrl }
       : refs,
     updatedAt: new Date().toISOString(),
   };
@@ -358,9 +361,10 @@ function buildOpenApi(portal, options = {}) {
       [`${p}/tree/qr.svg`]: {
         get: {
           summary: 'QR кодът на папката (картинка)',
+          description: 'Кодира ЧОВЕШКАТА страница `/p/<id>?folder=<папка>`, не JSON адреса: сканиран, кодът отваря портала на тази папка.',
           security: secured,
           parameters: [{ name: 'path', in: 'query', schema: { type: 'string' } }],
-          responses: { 200: { description: 'SVG' }, 403: { description: 'Общ корен — не се публикува' } },
+          responses: { 200: { description: 'SVG' }, 403: { description: 'Общ корен — не се публикува' }, 404: { description: 'Папката не съществува' } },
         },
       },
       [`${p}/tree/file`]: {

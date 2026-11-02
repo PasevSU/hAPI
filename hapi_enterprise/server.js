@@ -1724,16 +1724,16 @@ async function handler(req, res) {
         const node = st.resolve(out.tree, rel);
         if (!node) return fail(res, 404, 'Path not found');
         const apiRoot2 = portalApiUrl(p, baseUrl(req)) + '/tree';
-        const folderUrl = folder => `${apiRoot2}?path=${encodeURIComponent('/' + folder)}`;
-        const apiUrl = folderUrl(rel);
+        const folderUrl = folder => `${apiRoot2}?path=${encodeURIComponent('/' + folder)}`, apiUrl = folderUrl(rel);
         const folderView = {
           portal: { slug: p.slug, title: p.title },
           folder: { path: '/' + rel, name: node.name, parent: rel ? ('/' + rel.split('/').slice(0, -1).join('/')) : '/', folderCount: node.folderCount, fileCount: node.fileCount, bytes: node.bytes },
           urls: { listing: apiUrl, apiJson: apiRoot2 + '/api.json?path=' + encodeURIComponent('/' + rel), qr: apiRoot2 + '/qr.svg?path=' + encodeURIComponent('/' + rel) },
         };
         if (tail.length === 2 && tail[1] === 'qr.svg') {
+          // До 0.69.105 тук се кодираше JSON адресът `/tree?path=…` — сканиран, кодът отваряше суров JSON вместо страницата.
           res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
-          return res.end(qrSvg(apiUrl));
+          return res.end(qrSvg(links.joinQuery(portalLandingUrl(p, baseUrl(req)), links.portalFolderQuery(rel), p.visibility === 'public' && !requirePortalToken ? '' : portalAccess.issue(p.signingSecret || adminToken, p.id).query)));
         }
         if (tail.length === 2 && tail[1] === 'api.json') {
           void audit('folder.api', { portalId: p.id, path: '/' + rel });

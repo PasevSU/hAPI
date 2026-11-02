@@ -50,10 +50,14 @@ const spec = require('../hapi_enterprise/api-spec.js');
   // за общ корен `/share` договорът `/tree` отговаря 403 — картата не обещава заключени врати.
   const dedicated = spec.buildApiRecord({ slug: 'demo-portal', title: 'Demo', storage_root: '/share/USB/hapi/data' }, { baseUrl: '' });
   assert.equal(dedicated.folder.dedicated, true, 'портал със собствена папка обявява папката');
-  assert.equal(dedicated.folder.url, '/api/v1/p/demo-portal/tree', 'адресът на списъка е договорът `/tree`');
+  assert.equal(dedicated.folder.treeUrl, '/api/v1/p/demo-portal/tree', 'адресът на списъка е договорът `/tree`');
   assert.equal(dedicated.folder.apiJsonUrl, '/api/v1/p/demo-portal/tree/api.json');
   assert.equal(dedicated.folder.qrUrl, '/api/v1/p/demo-portal/tree/qr.svg');
-  assert.equal(dedicated.links.folderUrl, dedicated.folder.url, 'същият адрес е и в блока с препратки');
+  assert.equal(dedicated.links.folderTreeUrl, dedicated.folder.treeUrl, 'същият адрес е и в блока с препратки');
+  // Панелът ползва `api.folderUrl` за ЧОВЕШКАТА страница с папката (`/p/<id>`); ако картата
+  // използва същото име за API-то, клиентът получава две значения на един ключ.
+  assert.equal(dedicated.links.folderUrl, undefined, 'картата НЕ преизползва името folderUrl от панела');
+  assert.equal(dedicated.folder.url, undefined, 'и блокът за папката не ползва голо `url`');
   assert.match(dedicated.folder.fileUrlTemplate, /^\/api\/v1\/p\/demo-portal\/tree\/file\?path=<path>$/,
     'шаблонът за един файл е ОТНОСИТЕЛЕН — иначе изглежда като готов адрес, който дава 400');
   for (const shared of ['/share', '/media', '']) {

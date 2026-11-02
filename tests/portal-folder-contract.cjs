@@ -126,7 +126,7 @@ const clean = () => fs.rmSync(folder, { recursive: true, force: true });
     const apiMap = await (await fetch(`${server.base}/api/v1/p/${SLUG}/api.json`)).json();
     assert.ok(apiMap.folder, 'картата на API-то трябва да обявява папката: ' + JSON.stringify(Object.keys(apiMap)));
     assert.equal(apiMap.folder.dedicated, true, 'папката е собствена (не общия /share)');
-    for (const [name, url] of [['url', apiMap.folder.url], ['apiJsonUrl', apiMap.folder.apiJsonUrl], ['qrUrl', apiMap.folder.qrUrl]]) {
+    for (const [name, url] of [['url', apiMap.folder.treeUrl], ['apiJsonUrl', apiMap.folder.apiJsonUrl], ['qrUrl', apiMap.folder.qrUrl]]) {
       assert.match(String(url), /^https?:\/\//, `${name} е абсолютен адрес: ${url}`);
       const answer = await fetch(url);
       assert.equal(answer.status, 200, `обявеният ${name} отговаря 200: ${answer.status} → ${url}`);
