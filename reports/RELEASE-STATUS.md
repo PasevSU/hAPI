@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **312/312** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **313/313** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 510 файла · 85656 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 505 файла · 85066 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 511 файла · 85822 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 506 файла · 85232 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 312 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 313 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,25 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Съвместимостта с Home Assistant се проверява с правила, а не с „изглежда правилно“.** Add-on-ът
+  и интеграцията имаха `ha-compatibility` (43 правила), но той гледа на add-on-а като на файл, не
+  като на нещо, което Supervisor ще зареди. `tests/ha-compat.cjs` проверява точно това, което
+  Supervisor и HACS искат: задължителните ключове на `config.yaml` (`name`, `version`, `slug`,
+  `description`, `arch`, `startup`, `boot`, `backup`, `map`, `options`, `schema`, `panel_icon`),
+  semver версия, `arch` само от позволените стойности, `map` само с позволени ключове и `:rw` там,
+  където се пише, `watchdog` да сочи `http://[HOST]:[PORT:8099]/health`, а „изключен“ да не е
+  „изключен“ по подразбиране. Схемата на опциите минава **граматиката на Supervisor** —
+  `str?`/`bool`/`int(min,max)?`/`float`/`list(a|b)`/`password`/`match(regex)?` — и се проверява в
+  двете посоки: всяка опция има схема и всяка схема има опция (43 опции). За интеграцията:
+  `manifest.json` с `domain`, равен на името на папката, версия, равна на версията на add-on-а,
+  `requirements: []`, `iot_class`, `integration_type`, `codeowners` с `@`, `strings.json` и
+  `translations/en.json` с еднакви секции, `hacs.json` и `repository.yaml` на мястото им.
+  **Проверено обратно:** `int(0)?` вместо `int(0,8192)?` → „диапазонът е min,max“; схема без
+  опция → „всяка опция има схема“; версия `0.69.80` в `manifest.json` → „версията на
+  интеграцията е същата като на add-on-а“. **Записано изрично:** `map` пази `app_config:rw`
+  (историческото име на mount-а към `/config`); смяната към `addon_config:rw` би преместила данните
+  на съществуващите инсталации, затова тестът приема и двете имена, вместо да изисква новото.
 
 - **Порталът показваше SHA-256, без да го сверява.** `DEF-03` стоеше отворен: страницата пишеше
   хеша на файла, но сваляше каквото дойде. Сега `portal.js` (и двете копия — add-on и интеграция)
