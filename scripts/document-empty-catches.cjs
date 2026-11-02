@@ -1,6 +1,12 @@
 'use strict';
 // Еднократен инструмент: добавя КОНКРЕТНА причина във всеки празен `catch` в издавания код.
 // Пуска се веднъж; остава в repo, за да е ясно как са поставени причините.
+//
+// 0.69.106: планът е ИСТОРИЧЕСКИ и номерата на редовете му са от времето на `admin.js`, който
+// вече не съществува (панелът е в `ui/`). Затова скриптът: (1) прескача файл, който го няма,
+// вместо да пада с ENOENT, и (2) НЕ пише нищо без `--apply` — иначе застарял номер на ред
+// може да сложи обяснение на чужд празен `catch`. Без флаг той само REPORT-ва.
+const APPLY = process.argv.includes('--apply');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -50,13 +56,15 @@ const PLAN = {
 const CATCH = /catch\s*(?:\([^)]*\))?\s*\{\s*\}/;
 
 let changed = 0;
+const missing = [];
 for (const [rel, lines] of Object.entries(PLAN)) {
   const file = path.join(ROOT, rel);
+  if (!fs.existsSync(file)) { missing.push(rel); console.log(`· ${rel} вече не съществува — планът за него е история, прескачам`); continue }
   const src = fs.readFileSync(file, 'utf8').split('\n');
   for (const [lineNo, reason] of Object.entries(lines)) {
     const index = Number(lineNo) - 1;
     const line = src[index];
-    if (!line) throw Error(`${rel}:${lineNo} не съществува`);
+    if (!line) { console.log(`· ${rel}:${lineNo} е извън файла (${src.length} реда) — планът е остарял, прескачам`); continue }
     if (!CATCH.test(line)) {
       console.log(`· ${rel}:${lineNo} вече е с обяснение — пропускам`);
       continue;
@@ -67,7 +75,6 @@ for (const [rel, lines] of Object.entries(PLAN)) {
     });
     changed++;
   }
-  fs.writeFileSync(file, src.join('\n'));
-  console.log(`${rel}: обновени редове ${Object.keys(lines).join(', ')}`);
+  if (changed && APPLY) { fs.writeFileSync(file, src.join('\n')); console.log(`${rel}: обновени редове ${Object.keys(lines).join(', ')}`) }
 }
-console.log(`общо поправени празни catch-ове: ${changed}`);
+console.log(`празни catch-ове за поправяне: ${changed}${changed && !APPLY ? ' (само отчет — пусни с --apply, за да се запише)' : ''}${missing.length ? ` · липсващи файлове от плана: ${missing.join(', ')}` : ''}`);
