@@ -56,20 +56,20 @@
     const data = (window.HAPI_DATA && window.HAPI_DATA.portals) || [];
     const list = data.length
       ? data.map((p, i) => ({
-          id: String(p.slug || p.id || `portal-${i + 1}`),
-          slug: String(p.slug || p.id || `portal-${i + 1}`),
-          title: p.title || p.name || `Портал ${i + 1}`,
-          status: p.status || 'active',
-          access: p.access || (p.mode && p.mode.toUpperCase()) || (p.visibility === 'public' ? 'FREE' : 'KEY_REQUIRED'),
-          visibility: p.visibility === 'hidden' || p.visibility === 'private' ? 'hidden' : 'public',
-          storage_root: p.storage_root || '/share',
-          html: 'catalog',
-        }))
+        id: String(p.slug || p.id || `portal-${i + 1}`),
+        slug: String(p.slug || p.id || `portal-${i + 1}`),
+        title: p.title || p.name || `Портал ${i + 1}`,
+        status: p.status || 'active',
+        access: p.access || (p.mode && p.mode.toUpperCase()) || (p.visibility === 'public' ? 'FREE' : 'KEY_REQUIRED'),
+        visibility: p.visibility === 'hidden' || p.visibility === 'private' ? 'hidden' : 'public',
+        storage_root: p.storage_root || '/share',
+        html: 'catalog',
+      }))
       : [
-          { id: 'public-notices', slug: 'public-notices', title: 'Public notices', status: 'active', access: 'FREE', visibility: 'public', storage_root: '/share', html: 'catalog' },
-          { id: 'chronoseal-vault', slug: 'chronoseal-vault', title: 'ChronoSeal-Vault', status: 'active', access: 'KEY_REQUIRED', visibility: 'public', storage_root: '/share', html: 'catalog' },
-          { id: 'forensic-2026-114', slug: 'forensic-2026-114', title: 'Forensic — дело 2026-114', status: 'paused', access: 'PRIVATE', visibility: 'hidden', storage_root: '/share', html: 'none' },
-        ];
+        { id: 'public-notices', slug: 'public-notices', title: 'Public notices', status: 'active', access: 'FREE', visibility: 'public', storage_root: '/share', html: 'catalog' },
+        { id: 'chronoseal-vault', slug: 'chronoseal-vault', title: 'ChronoSeal-Vault', status: 'active', access: 'KEY_REQUIRED', visibility: 'public', storage_root: '/share', html: 'catalog' },
+        { id: 'forensic-2026-114', slug: 'forensic-2026-114', title: 'Forensic — дело 2026-114', status: 'paused', access: 'PRIVATE', visibility: 'hidden', storage_root: '/share', html: 'none' },
+      ];
     state.portals = list.map((p) => GW().normalizePortal(p));
     list.forEach((p) => {
       state.files[p.slug] = DEMO_FILES.map((f) => Object.assign({}, f));
@@ -137,13 +137,13 @@
             <thead><tr><th>Компонент</th>${GW().CHANNELS.map((c) => `<th>${esc(c.label)}</th>`).join('')}</tr></thead>
             <tbody>
               ${['purpose', 'access', 'auth', 'users', 'download', 'api', 'logs']
-                .map(
-                  (key) =>
-                    `<tr><td>${esc(
-                      { purpose: 'Предназначение', access: 'Достъп', auth: 'Автентикация', users: 'Потребители', download: 'Изтегляне', api: 'API', logs: 'Логове' }[key],
-                    )}</td>${GW().CHANNELS.map((c) => `<td>${esc(c[key])}</td>`).join('')}</tr>`,
-                )
-                .join('')}
+        .map(
+          (key) =>
+            `<tr><td>${esc(
+              { purpose: 'Предназначение', access: 'Достъп', auth: 'Автентикация', users: 'Потребители', download: 'Изтегляне', api: 'API', logs: 'Логове' }[key],
+            )}</td>${GW().CHANNELS.map((c) => `<td>${esc(c[key])}</td>`).join('')}</tr>`,
+        )
+        .join('')}
             </tbody>
           </table>
           <p class="hint">Ingress ${base.ingress.port} (само през Home Assistant) · Public ${base.public.port} (без HA сесия). Публичният канал не достига административни маршрути.</p>
@@ -152,9 +152,8 @@
 
       <div class="two-col u-mt">
         <section class="panel">
-          <div class="panel-head"><h2>Gateway</h2><span class="badge ${gw.public.published ? 'ok' : 'err'}">${
-            gw.public.published ? 'публикуван' : 'непубликуван'
-          }</span></div>
+          <div class="panel-head"><h2>Gateway</h2><span class="badge ${gw.public.published ? 'ok' : 'err'}">${gw.public.published ? 'публикуван' : 'непубликуван'
+      }</span></div>
           <div class="panel-body">
             <div class="two-col">
               <div class="field"><label>Ingress порт</label><input value="${esc(base.ingress.port)}" readonly /></div>
@@ -233,8 +232,8 @@
             <thead><tr><th>Файл</th><th>id</th><th>Размер</th><th>Политика</th><th>Видимост</th><th>Роли</th><th>Макс.</th><th>Състояние</th><th>Поведение</th><th>Адрес</th></tr></thead>
             <tbody>
               ${files()
-                .map(
-                  (f, i) => `<tr>
+        .map(
+          (f, i) => `<tr>
                     <td>${esc(f.name)}</td>
                     <td><code>${esc(f.id || '—')}</code></td>
                     <td>${fmtSize(f.size)}</td>
@@ -250,8 +249,8 @@
                     <td>${esc(GW().behaviourFor(p, f).label)}</td>
                     <td><code>${esc(GW().downloadUrl({ id: f.id }, base))}</code></td>
                   </tr>`,
-                )
-                .join('')}
+        )
+        .join('')}
             </tbody>
           </table>
           <p class="hint">По-слаба файлова политика не може да отмени порталната: при конфликт се прилага по-строгото правило.</p>
@@ -300,13 +299,12 @@
             <thead><tr><th>Път</th><th>Резултат</th></tr></thead>
             <tbody>
               ${['/config/secrets.yaml', '/admin/api/v2/portals', '/api/hassio/auth', '/p/../../etc/passwd', `/p/${esc(p.slug)}/`]
-                .map((path) => {
-                  const r = GW().isolate(path, base);
-                  return `<tr><td>${esc(path)}</td><td>${
-                    r.ok ? '<span class="state-chip ok">разрешено</span>' : `<span class="state-chip err">${esc(r.reason)}</span>`
-                  }</td></tr>`;
-                })
-                .join('')}
+        .map((path) => {
+          const r = GW().isolate(path, base);
+          return `<tr><td>${esc(path)}</td><td>${r.ok ? '<span class="state-chip ok">разрешено</span>' : `<span class="state-chip err">${esc(r.reason)}</span>`
+            }</td></tr>`;
+        })
+        .join('')}
             </tbody>
           </table>
         </div>
@@ -324,13 +322,12 @@
       <table class="grid">
         <thead><tr><th>Проверка</th><th>Резултат</th><th>Детайл</th></tr></thead>
         <tbody>${r.checks
-          .map(
-            (c) =>
-              `<tr><td>${esc(c.id)}</td><td>${
-                c.ok ? '<span class="state-chip ok">ok</span>' : '<span class="state-chip err">fail</span>'
-              }</td><td>${esc(c.detail || '')}</td></tr>`,
-          )
-          .join('')}</tbody>
+        .map(
+          (c) =>
+            `<tr><td>${esc(c.id)}</td><td>${c.ok ? '<span class="state-chip ok">ok</span>' : '<span class="state-chip err">fail</span>'
+            }</td><td>${esc(c.detail || '')}</td></tr>`,
+        )
+        .join('')}</tbody>
       </table>
     </div>`;
   }

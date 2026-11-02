@@ -1,6 +1,14 @@
 {
   "schema_version": "1.0",
   "note": "Фактите за порталните токени, както ги изпълнява кодът (routes/portal-tokens.js). Токенът се издава с префикс pt_ и в базата остава само SHA-256 отпечатъкът. Без ttlSeconds е БЕЗСРОЧЕН, без maxUses е БЕЗ ЛИМИТ на отварянията; отнемането (DELETE) трие и сесиите веднага. HA JWT не може да мине за портален токен: името се проверява с ^[A-Za-z0-9_-]{20,120}$, а точките на JWT го провалят. Еднократните връзки не са портални токени — те са билети в send.js и one_time в политиката на файла.",
-  "defaults": { "prefix": "pt_", "revocable": true, "ttl_hours": null, "max_uses": null },
-  "scopes": ["read", "download"]
+  "defaults": {
+    "prefix": "pt_",
+    "revocable": true,
+    "ttl_hours": null,
+    "max_uses": null
+  },
+  "scopes": [
+    "read",
+    "download"
+  ]
 }

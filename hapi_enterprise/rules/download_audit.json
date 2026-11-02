@@ -1,7 +1,13 @@
 {
   "schema_version": "1.0",
   "note": "Справочен договор, НЕ правило: файлът не е в RULE_FILES (gateway-api.js) и add-on-ът не го зарежда. Истината за одита е генерираният documentation/04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md (от кода) и записът на audit-chain.js. Срокът на съхранение се задава в настройките (retention.enabled/fileDays/auditDays), не тук — по подразбиране не се изтрива нищо.",
-  "record": ["seq", "at", "event", "details", "prevHash"],
+  "record": [
+    "seq",
+    "at",
+    "event",
+    "details",
+    "prevHash"
+  ],
   "events": [
     "file.download",
     "file.download.admin",

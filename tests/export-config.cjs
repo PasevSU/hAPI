@@ -153,15 +153,25 @@ assert.equal('retention_days' in audit, false, 'срокът на съхране
 assert.equal('channels' in audit, false, 'каналите са в public-gateway.CHANNELS, не в правилата');
 
 // 9. Схеми: JSON Schema 2020-12, enums съответстват на модулите.
+// ВАЖНО: дотук тук се искаше `pkg.properties.mode.enum` == `R.MODES` — поле `mode` в
+// `PACKAGE_INDEX.json` обаче НЕ съществува (то е в трансферната операция), а `entries` е
+// `files`; тоест тестът пазеше схема за формат, който кодът никога не е писал. Реалното
+// съответствие се проверява в `tests/schema-reality.cjs` върху истински пакет, а тук остава
+// връзката между изброените алгоритми и `report-manifest.HASH_ALGORITHMS`.
 const pkg = read('schemas/package_manifest.schema.json');
 assert.equal(pkg.$schema, 'https://json-schema.org/draft/2020-12/schema');
-assert.deepEqual(pkg.properties.mode.enum, R.MODES.map((m) => m.id));
-for (const field of ['path', 'size', 'sha256', 'kind', 'source', 'verified']) {
-  assert.ok(pkg.properties.entries.items.required.includes(field), field);
+// Наборът алгоритми е от средата (`crypto.getHashes()`), затова схемата НЕ го изброява —
+// затворен enum би се счупил на друг Node build. Проверява се формата, а съответствието с
+// реалния пакет — в `tests/schema-reality.cjs`.
+assert.equal(pkg.properties.hash_algorithms.items.type, 'string', 'алгоритмите са имена, не изброяване');
+assert.equal(pkg.properties.hash_algorithms.minItems, 1, 'всеки пакет носи поне един алгоритъм');
+for (const field of ['path', 'name', 'size', 'sha256', 'hashes', 'source']) {
+  assert.ok(pkg.properties.files.items.required.includes(field), 'PACKAGE_INDEX.files[] изисква ' + field);
 }
 
 const transfer = read('schemas/transfer_state.schema.json');
 assert.deepEqual(transfer.properties.state.enum, M.STATES);
+assert.deepEqual(transfer.properties.on_conflict.enum, Object.keys(R.ON_CONFLICT), 'политиките при конфликт в схемата са същите като в export-rules.js');
 assert.ok(transfer.properties.timeline);
 
 // 10. Add-on примерът пази разделението на каналите.

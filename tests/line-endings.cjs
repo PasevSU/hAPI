@@ -68,5 +68,5 @@ assert.deepEqual(crlfInside.slice(0, 10), [], `артефактите не би�
 
 console.log(
   `line-endings: ${eol.length} проследени · индексът е LF · ${textEntries} текстови записа в ${archives.length} артефакта без CRLF` +
-    ` · работното копие: ${workCrlf.length} файла с CRLF${workCrlf.length ? ` (${workCrlf.slice(0, 3).map((e) => e.file).join(', ')})` : ''} — наред`,
+  ` · работното копие: ${workCrlf.length} файла с CRLF${workCrlf.length ? ` (${workCrlf.slice(0, 3).map((e) => e.file).join(', ')})` : ''} — наред`,
 );

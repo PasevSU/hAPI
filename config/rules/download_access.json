@@ -1,6 +1,10 @@
 {
   "schema_version": "1.0",
-  "system": { "allow_downloads": true, "public_gateway": true, "mode": "FREE" },
+  "system": {
+    "allow_downloads": true,
+    "public_gateway": true,
+    "mode": "FREE"
+  },
   "default_policy": {
     "mode": "FREE",
     "roles": [],
@@ -10,7 +14,10 @@
     "verify_on_serve": true,
     "audit": true,
     "window": null,
-    "ip": { "allow": [], "deny": [] },
+    "ip": {
+      "allow": [],
+      "deny": []
+    },
     "concurrency": 2,
     "rate_per_hour": 60,
     "one_time": false

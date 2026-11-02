@@ -2,43 +2,210 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hapi-enterprise.local/schemas/package_manifest.schema.json",
   "title": "PACKAGE_INDEX.json",
-  "description": "Индекс на експортния пакет: по един запис за всеки файл с относителен път, размер, SHA-256, тип, източник и резултат от проверката.",
+  "description": "Индекс на експортния пакет. Описва ТОВА, което `hapi_enterprise/packager.js` наистина записва в `PACKAGE_INDEX.json` (schema_version 1.1): по един запис за всеки файл с относителен път, размер, пълен набор хешове и източник. До 0.69.87 тук стоеше схема за schema_version 1.0 с поле `entries` и `package_id` от вида `RPT-…`, каквито кодът никога не е произвеждал — тоест публикуваният договор не описваше нищо реално. Съответствието се проверява от `tests/schema-reality.cjs` върху истински пакет.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "package_id", "created_at", "mode", "complete", "entries"],
+  "required": [
+    "schema_version",
+    "package_id",
+    "created_at",
+    "compression",
+    "hash_algorithms",
+    "portal",
+    "signature",
+    "files",
+    "total_bytes"
+  ],
   "properties": {
-    "schema_version": { "const": "1.0" },
-    "package_id": { "type": "string", "pattern": "^RPT-[0-9]{8}-[0-9]{6}-[A-Z0-9]{1,24}$" },
-    "created_at": { "type": "string", "format": "date-time" },
-    "mode": {
-      "enum": ["single", "selected", "report", "evidence", "manifest", "certificates", "pdf", "template", "backup", "audit", "bulk", "verified"]
+    "schema_version": {
+      "const": "1.1"
     },
-    "complete": {
-      "type": "boolean",
-      "description": "false = диагностичен/непълен пакет (напр. липсва START или STOP)."
+    "package_id": {
+      "type": "string",
+      "description": "Вътрешният идентификатор на пакета (24 шестнайсетични знака), същият, с който се казват името на ZIP-а и записът в дневника.",
+      "pattern": "^[a-f0-9]{24}$"
     },
-    "notes": { "type": "string" },
-    "entries": {
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "compression": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "method",
+        "name"
+      ],
+      "description": "С какво е свит ZIP-ът — за да може получателят да провери, че чете същия формат.",
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9
+        },
+        "method": {
+          "type": "integer",
+          "description": "8 = deflate, 0 = store (номерата са на ZIP формата)"
+        },
+        "name": {
+          "enum": [
+            "deflate",
+            "store"
+          ]
+        }
+      }
+    },
+    "hash_algorithms": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Кои алгоритми присъстват във `files[].hashes`. Наборът зависи от средата (`crypto.getHashes()` в `packager.js`), затова НЕ е затворен списък: схема, която изброява алгоритми, би се счупила на друг Node build. За справка `report-manifest.HASH_ALGORITHMS` е наборът за манифестите (с главни букви, включва CRC32).",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]{2,15}$"
+      }
+    },
+    "portal": {
+      "type": "object",
+      "description": "Порталът, от който е пакетът. `null` е позволено: пакет може да се строи и без портал (напр. от папка).",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "slug",
+        "title",
+        "category",
+        "subject",
+        "flag",
+        "storage_root"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "flag": {
+          "type": "string"
+        },
+        "storage_root": {
+          "type": "string"
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "key_id",
+        "algorithm"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "signed",
+            "unsigned"
+          ]
+        },
+        "key_id": {
+          "type": "string"
+        },
+        "algorithm": {
+          "type": "string"
+        }
+      }
+    },
+    "files": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["path", "size", "sha256", "kind", "source", "verified"],
+        "required": [
+          "path",
+          "name",
+          "size",
+          "sha256",
+          "hashes",
+          "source"
+        ],
         "properties": {
           "path": {
             "type": "string",
             "minLength": 1,
             "maxLength": 240,
-            "not": { "pattern": "(^/|^[A-Za-z]:|^//|(^|/)\\.\\.(/|$))" }
+            "description": "Относителен път ВЪТРЕ в пакета; абсолютен път или `..` е грешка.",
+            "not": {
+              "pattern": "(^/|^[A-Za-z]:|^//|(^|/)\\.\\.(/|$))"
+            }
           },
-          "size": { "type": "integer", "minimum": 0 },
-          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-          "kind": {
-            "enum": ["pdf", "manifest", "hashes", "timestamps", "originals", "audit", "certificates", "templates", "index", "folder"]
+          "name": {
+            "type": "string",
+            "minLength": 1
           },
-          "source": { "type": "string" },
-          "verified": { "type": "boolean" }
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "hashes": {
+            "type": "object",
+            "description": "Пълен набор хешове по алгоритъм — същите имена като в `hash_algorithms`.",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{8,128}$"
+            }
+          },
+          "source": {
+            "type": "string",
+            "description": "`portal` (качен през портала) или `storage` (копиран от папката на портала).",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "total_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "excluded": {
+      "type": "array",
+      "description": "Какво НЕ е влезнало в пакета и защо — за да не изглежда липсващ файл като грешка.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "size",
+          "reason"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     }

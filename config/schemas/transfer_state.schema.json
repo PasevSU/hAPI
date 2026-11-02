@@ -5,9 +5,33 @@
   "description": "Журнал на една трансферна операция. При рестарт незавършените операции се проверяват, преди да бъдат възобновени.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["operation_id", "state", "mode", "created_at", "updated_at"],
+  "required": [
+    "operation_id",
+    "state",
+    "mode",
+    "verify_sha256",
+    "on_conflict",
+    "created_at",
+    "updated_at"
+  ],
   "properties": {
-    "operation_id": { "type": "string", "minLength": 8, "maxLength": 64 },
+    "operation_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 64
+    },
+    "verify_sha256": {
+      "type": "boolean",
+      "description": "Дали операцията сверява SHA-256 след копиране (по подразбиране вж. `export-rules.normalizeConfig`)."
+    },
+    "on_conflict": {
+      "enum": [
+        "unique",
+        "skip",
+        "abort"
+      ],
+      "description": "Политика при съществуващ файл; стойностите са от `export-rules.ON_CONFLICT`."
+    },
     "state": {
       "enum": [
         "QUEUED",
@@ -21,26 +45,68 @@
         "RECOVERY_REQUIRED"
       ]
     },
-    "mode": { "type": "string", "minLength": 1 },
-    "created_at": { "type": "string", "format": "date-time" },
-    "updated_at": { "type": "string", "format": "date-time" },
-    "source": { "type": "string" },
-    "destination": { "type": "string" },
-    "size": { "type": "integer", "minimum": 0 },
-    "expected_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
-    "written_bytes": { "type": "integer", "minimum": 0 },
-    "verified": { "type": "boolean" },
-    "error": { "type": ["string", "null"] },
+    "mode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string"
+    },
+    "destination": {
+      "type": "string"
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expected_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "written_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "verified": {
+      "type": "boolean"
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "timeline": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["state", "at"],
+        "required": [
+          "state",
+          "at"
+        ],
         "properties": {
-          "state": { "type": "string" },
-          "at": { "type": "string", "format": "date-time" },
-          "detail": { "type": "string" }
+          "state": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "detail": {
+            "type": "string"
+          }
         }
       }
     }

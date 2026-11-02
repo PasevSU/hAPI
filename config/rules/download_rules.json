@@ -5,8 +5,17 @@
   "on_conflict": "unique",
   "verify_sha256": true,
   "temp_suffix": ".part",
-  "evidence": { "verification": "required", "overwrite": "forbidden" },
-  "storage": { "allowed_roots": ["/data", "/share", "/media"] },
+  "evidence": {
+    "verification": "required",
+    "overwrite": "forbidden"
+  },
+  "storage": {
+    "allowed_roots": [
+      "/data",
+      "/share",
+      "/media"
+    ]
+  },
   "capabilities": {
     "compression": false,
     "split_archive": false,

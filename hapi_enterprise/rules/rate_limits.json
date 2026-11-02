@@ -1,5 +1,8 @@
 {
   "schema_version": "1.0",
   "note": "Това е СПРАВКА, а не настройка: истинските лимити идват от политиката (download_access.default_policy и политиката на портала/файла) и се проверяват в download-access.decide по session.downloadsThisHour и session.concurrent. По-строгият слой печели. Числата тук са същите като DEFAULT_POLICY в кода и се сверяват от tests/export-config.cjs — няма „надстройки по портал“, защото никой не ги прилага.",
-  "defaults": { "per_hour": 60, "concurrent": 2 }
+  "defaults": {
+    "per_hour": 60,
+    "concurrent": 2
+  }
 }

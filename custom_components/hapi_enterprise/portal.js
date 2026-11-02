@@ -353,11 +353,11 @@ function paint(filter) {
   const q = String(filter || "").trim().toLocaleLowerCase();
   const list = q
     ? allFiles.filter((f) =>
-        [f.name, f.topic, f.category, f.group, (f.tags || []).join(" ")]
-          .join(" ")
-          .toLocaleLowerCase()
-          .includes(q),
-      )
+      [f.name, f.topic, f.category, f.group, (f.tags || []).join(" ")]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(q),
+    )
     : allFiles;
   const box = $("files");
   box.replaceChildren(...list.map(fileCard));
