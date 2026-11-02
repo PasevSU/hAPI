@@ -365,7 +365,11 @@ assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\s*\|\|\s*'\
 // 0.69.63: папката на портала се създава от модула `portal-folder` (там отиват и файловете).
 assert.match(serverSrc, /await portalFolder\.ensure\(p\)/);
 assert.match(serverSrc, /if \(p\.storage_root === '\/share' \|\| p\.storage_root === '\/media'\)/);
-assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*\{\s*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\);\s*if\s*\(portalFolderCopy\)\s*await portalFolder\.ensure\(p\)/);
+// 0.69.105: при смяна на папката порталът напуска старата и тя не бива да остава с неговата
+// карта (`portal.html`/`api.json`), затова старата стойност се пази и се изчиства.
+assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*\{[^}]*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\);\s*if\s*\(portalFolderCopy\)\s*await portalFolder\.ensure\(p\)/);
+assert.match(serverSrc, /portalFolder\.removeArtifacts\(previousRoot\)/, 'старата папка се изчиства от генерираните файлове');
+assert.match(serverSrc, /portalFolder\.removeArtifacts\(p\)/, 'изтриването на портала чисти генерираните файлове');
 assert.match(serverSrc, /contactId:\s*portalContact\(db,\s*b\.contactId\)/);
 assert.match(serverSrc, /if\s*\(b\.contactId\s*!==\s*undefined\)\s*p\.contactId\s*=\s*portalContact\(db,\s*b\.contactId\)/);
 assert.match(serverSrc, /if\s*\(b\.caseId\s*!==\s*undefined\)\s*p\.caseId\s*=\s*portalCase\(db,\s*b\.caseId\)/);

@@ -198,4 +198,33 @@ async function writeArtifacts(portal, base, artifacts = {}) {
   return written;
 }
 
-module.exports = { folderPath, safeName, ensure, store, remove, page, writeArtifacts, folderReady, isGenerated, GENERATED };
+/**
+ * Маха ГЕНЕРИРАНИТЕ файлове от папка на портал, без да пипа документите на човека.
+ *
+ * Кога: порталът се изтрива или се премества в друга папка. Иначе в старата папка остава
+ * `portal.html` с адрес към портал, който вече не съществува (или живее другаде), и
+ * `api.json` със стария базов адрес — тоест документ, който изглежда валиден и лъже.
+ *
+ * `root` е `storage_root` (низ) или самият портал. Общ корен `/share`/`/media` не се пипа —
+ * там генерираните файлове не се и записват.
+ * @returns {Promise<string[]>} имената на премахнатите файлове
+ */
+async function removeArtifacts(root) {
+  const dir = folderPath(typeof root === 'string' ? root : root && root.storage_root);
+  if (dir === path.resolve('/share') || dir === path.resolve('/media')) return [];
+  const removed = [];
+  for (const name of GENERATED) {
+    const full = path.join(dir, name);
+    try {
+      await fsp.unlink(full);
+      removed.push(name);
+    } catch (e) {
+      // Липсващ файл не е грешка — точно това искаме. Друго (права, зает файл) се вдига,
+      // за да се види в лога, вместо да се премълчи.
+      if (e.code !== 'ENOENT') throw e;
+    }
+  }
+  return removed;
+}
+
+module.exports = { folderPath, safeName, ensure, store, remove, page, writeArtifacts, folderReady, removeArtifacts, isGenerated, GENERATED };

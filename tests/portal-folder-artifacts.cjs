@@ -93,7 +93,36 @@ const clean = () => fs.rmSync(DIR, { recursive: true, force: true });
     assert.ok(updated.includes('Договори по дело 2026'), 'страницата в папката е обновена, не е стар запис');
     assert.ok(updated.includes('/p/' + portal.id), 'живата връзка остава');
 
-    console.log(`portal-folder-artifacts OK: /share/USB/hapi/data/<папка> получава portal.html + api.json + openapi.json до документите · страницата сочи живия портал (/p/${portal.id.slice(0, 6)}…) · обновява се при промяна · подпапката и файлът ѝ се зареждат · общ корен не се пипа`);
+    // ── 6. Смяна на папката: новата получава файловете, старата НЕ остава с чужда карта ──
+    // Иначе в старата папка лежи `portal.html` с адрес към портал, който вече живее другаде:
+    // документ, който изглежда валиден и лъже. Документите на човека НЕ се пипат.
+    const second = path.join(shareRoot, 'hapi-folder-test-2-' + process.pid.toString(36));
+    fs.mkdirSync(second, { recursive: true });
+    try {
+      fs.writeFileSync(path.join(second, 'втори.txt'), 'документ в новата папка');
+      const moved = await server.api(`/admin/api/portals/${portal.id}`, 'PATCH', {
+        storage_root: '/share/' + path.basename(second),
+      });
+      assert.equal(moved.status, 200, 'папката се сменя: ' + moved.status + ' ' + JSON.stringify(moved.data).slice(0, 120));
+      for (const name of ['portal.html', 'api.json', 'openapi.json']) {
+        assert.ok(fs.existsSync(path.join(second, name)), 'новата папка получава ' + name);
+        assert.equal(fs.existsSync(path.join(DIR, name)), false, 'старата папка НЕ остава с ' + name);
+      }
+      assert.ok(fs.existsSync(path.join(DIR, 'Договори 2026', 'анекс.txt')), 'документът в старата папка е НЕПОКЪТНАТ');
+
+      // ── 7. Изтриване на портала: генерираните файлове изчезват, документите остават ──
+      const removed = await server.authFetch(`${server.base}/admin/api/portals/${portal.id}`, { method: 'DELETE' });
+      assert.equal(removed.status, 200, 'порталът се изтрива: ' + removed.status);
+      await removed.arrayBuffer();
+      for (const name of ['portal.html', 'api.json', 'openapi.json']) {
+        assert.equal(fs.existsSync(path.join(second, name)), false, 'след изтриване в папката не остава ' + name);
+      }
+      assert.ok(fs.existsSync(path.join(second, 'втори.txt')), 'документът в новата папка е НЕПОКЪТНАТ');
+    } finally {
+      fs.rmSync(second, { recursive: true, force: true });
+    }
+
+    console.log(`portal-folder-artifacts OK: /share/USB/hapi/data/<папка> получава portal.html + api.json + openapi.json до документите · страницата сочи живия портал (/p/${portal.id.slice(0, 6)}…) · обновява се при промяна · подпапката и файлът ѝ се зареждат · общ корен не се пипа · смяна на папката и изтриване не оставят чужда карта, документите остават`);
   } finally {
     await server.stop();
     clean();
