@@ -60,12 +60,36 @@ function buildReferences(baseUrl, slug, id) {
   };
 }
 
+/**
+ * Има ли порталът СОБСТВЕНА папка с документи (не общия `/share` или `/media`)?
+ *
+ * Защо има значение за картата: договорът `/<api>/tree` обслужва ИМЕННО такава папка. За
+ * портал без собствена папка той отговаря 403 (не се отдава целият `/share`), тоест адресът
+ * не бива да влиза в `api.json` — картата не обещава врати, които после са заключени.
+ */
+function hasOwnFolder(portal) {
+  const root = String((portal && portal.storage_root) || '').replace(/\/+$/, '');
+  return Boolean(root) && root !== '/share' && root !== '/media';
+}
+
 /** Съдържание на api.json — това, което клиентите четат, за да се свържат. */
 function buildApiRecord(portal, options = {}) {
   const refs = buildReferences(options.baseUrl, portal && portal.slug, portal && portal.id);
   const files = Array.isArray(options.files) ? options.files : Array.isArray(portal && portal.files) ? portal.files : [];
   const vs = virtualStorage();
   const tree = vs ? vs.buildTree(files) : { folderCount: 0, fileCount: files.length };
+  // Договорът за папката: трите адреса отговарят 2xx и без параметри, затова влизат и в
+  // `links` (клиентът ги обхожда). Адресът на ЕДИН файл е ШАБЛОН (иска `?path=`) и затова е
+  // относителен — иначе изглежда като готов адрес, който при обхождане дава 400.
+  const folder = hasOwnFolder(portal) && options.folderReady !== false
+    ? {
+      dedicated: true,
+      url: `${refs.apiUrl}/tree`,
+      apiJsonUrl: `${refs.apiUrl}/tree/api.json`,
+      qrUrl: `${refs.apiUrl}/tree/qr.svg`,
+      fileUrlTemplate: `/api/v1/p/${refs.slug}/tree/file?path=<path>`,
+    }
+    : null;
   return {
     slug: refs.slug,
     title: String((portal && portal.title) || refs.slug),
@@ -84,10 +108,15 @@ function buildApiRecord(portal, options = {}) {
       folderCount: tree.folderCount,
       fileCount: tree.fileCount,
     },
+    // Документите, които човекът държи в папката си, се виждат през `/tree`; до 0.69.103
+    // картата не го споменаваше и клиентът научаваше за папката само ако познава `portal.js`.
+    ...(folder ? { folder } : {}),
     qr: refs.qrUrl,
     qrJson: refs.qrJsonUrl,
     ping: refs.pingUrl,
-    links: refs,
+    links: folder
+      ? { ...refs, folderUrl: folder.url, folderApiJsonUrl: folder.apiJsonUrl, folderQrUrl: folder.qrUrl }
+      : refs,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -321,6 +350,30 @@ function buildOpenApi(portal, options = {}) {
           security: secured,
           parameters: [{ name: 'path', in: 'query', schema: { type: 'string' } }],
           responses: { 200: ok('API запис на папката'), 403: { description: 'Общ корен — не се публикува' }, 404: { description: 'Not found' } },
+        },
+      },
+      // Двете врати на същата папка, които дотук не бяха в договора: картинката за печат и
+      // съдържанието на ЕДИН файл (`?path=`). Същите адреси влизат и в `api.json`, когато
+      // порталът има собствена папка — договор и карта не бива да се разминават.
+      [`${p}/tree/qr.svg`]: {
+        get: {
+          summary: 'QR кодът на папката (картинка)',
+          security: secured,
+          parameters: [{ name: 'path', in: 'query', schema: { type: 'string' } }],
+          responses: { 200: { description: 'SVG' }, 403: { description: 'Общ корен — не се публикува' } },
+        },
+      },
+      [`${p}/tree/file`]: {
+        get: {
+          summary: 'Съдържанието на ЕДИН файл от папката',
+          security: secured,
+          parameters: [{ name: 'path', in: 'query', required: true, schema: { type: 'string' }, description: 'Относителен път на файла' }],
+          responses: {
+            200: { description: 'Байтовете на файла' },
+            400: { description: 'Невалиден път' },
+            403: { description: 'Файлът е заключен или папката не се отдава' },
+            404: { description: 'Няма такъв файл' },
+          },
         },
       },
       [`${p}/openapi.json`]: {

@@ -159,6 +159,12 @@ async function writeAtomic(file, content) {
   }
 }
 
+/** Съществува ли РЕАЛНО папката на портала (за обявяване на договора `/tree` в картата). */
+async function folderReady(portal) {
+  const stat = await fsp.stat(folderPath(portal && portal.storage_root)).catch(() => null);
+  return Boolean(stat && stat.isDirectory());
+}
+
 /**
  * Записва `portal.html` (и, ако са подадени, `api.json` / `openapi.json`) в САМАТА папка на
  * портала — до файловете на човека.
@@ -192,4 +198,4 @@ async function writeArtifacts(portal, base, artifacts = {}) {
   return written;
 }
 
-module.exports = { folderPath, safeName, ensure, store, remove, page, writeArtifacts, isGenerated, GENERATED };
+module.exports = { folderPath, safeName, ensure, store, remove, page, writeArtifacts, folderReady, isGenerated, GENERATED };

@@ -119,7 +119,41 @@ const clean = () => fs.rmSync(folder, { recursive: true, force: true });
     assert.equal(hidden.status, 404, 'адресът на необявения файл дава 404: ' + hidden.status);
     await hidden.text();
 
-    console.log(`portal-folder-contract OK: картата на папката дава url на всеки файл (${map.files.length} в корена) · адресът връща съдържанието · списъкът и картата сочат едно и също · заключен → 403, необявен → 404 и изчезва`);
+    // ── 6. Самата карта на API-то обявява папката и адресите ѝ работят ───────
+    // До 0.69.103 `api.json` не споменаваше папката: клиент, тръгнал от картата, виждаше
+    // `storage.fileCount: 0` (виртуалните файлове) и нямаше как да научи, че документите са
+    // в папката. Договорът `/tree` работеше, но не беше обявен никъде освен в `portal.js`.
+    const apiMap = await (await fetch(`${server.base}/api/v1/p/${SLUG}/api.json`)).json();
+    assert.ok(apiMap.folder, 'картата на API-то трябва да обявява папката: ' + JSON.stringify(Object.keys(apiMap)));
+    assert.equal(apiMap.folder.dedicated, true, 'папката е собствена (не общия /share)');
+    for (const [name, url] of [['url', apiMap.folder.url], ['apiJsonUrl', apiMap.folder.apiJsonUrl], ['qrUrl', apiMap.folder.qrUrl]]) {
+      assert.match(String(url), /^https?:\/\//, `${name} е абсолютен адрес: ${url}`);
+      const answer = await fetch(url);
+      assert.equal(answer.status, 200, `обявеният ${name} отговаря 200: ${answer.status} → ${url}`);
+      await answer.text();
+    }
+    assert.match(String(apiMap.folder.fileUrlTemplate), /\/tree\/file\?path=<path>$/, 'шаблонът за един файл е обявен: ' + apiMap.folder.fileUrlTemplate);
+    const apiOpenapi = await (await fetch(apiMap.openapi)).json();
+    for (const suffix of ['/tree', '/tree/api.json', '/tree/qr.svg', '/tree/file']) {
+      const key = '/api/v1/p/' + SLUG + suffix;
+      assert.ok(apiOpenapi.paths[key], 'договорът описва ' + key);
+    }
+
+    // …а портал БЕЗ собствена папка НЕ я обявява: за общ корен `/tree` дава 403 и картата
+    // не бива да обещава заключена врата. Порталът тук получава `/share` (общ корен), а не
+    // подразбиращата се `/share/<slug>`, защото такава папка може да съществува от предишен
+    // пуск — и тогава обявяването е ПРАВИЛНО.
+    const sharedSlug = 'obsht-koren-' + process.pid.toString(36);
+    const bare = await server.api('/admin/api/portals', 'POST', { slug: sharedSlug, title: 'Общ корен', visibility: 'public', storage_root: '/share' });
+    assert.equal(bare.status, 201, 'порталът върху общия корен се създава: ' + bare.status);
+    const bareMap = await (await fetch(`${server.base}/api/v1/p/${sharedSlug}/api.json`)).json();
+    assert.equal(bareMap.folder, undefined, 'портал върху /share не обявява папка');
+    assert.equal(/\/tree(\?|"|$)/.test(JSON.stringify(bareMap.links)), false, 'и не дава мъртви адреси в препратките');
+    const refusedTree = await fetch(`${server.base}/api/v1/p/${sharedSlug}/tree`);
+    assert.equal(refusedTree.status, 403, 'затова и `/tree` там е 403: ' + refusedTree.status);
+    await refusedTree.text();
+
+    console.log(`portal-folder-contract OK: картата на папката дава url на всеки файл (${map.files.length} в корена) · адресът връща съдържанието · списъкът и картата сочат едно и също · заключен → 403, необявен → 404 и изчезва · api.json обявява папката (3 адреса, всички 200), а портал без папка — не`);
   } finally {
     await server.stop();
     clean();

@@ -46,6 +46,22 @@ const spec = require('../hapi_enterprise/api-spec.js');
   assert.equal(withFiles.storage.fileCount, 1);
   assert.equal(withFiles.storage.folderCount, 1);
 
+  // Папката на портала: картата я обявява САМО когато порталът има собствена папка, защото
+  // за общ корен `/share` договорът `/tree` отговаря 403 — картата не обещава заключени врати.
+  const dedicated = spec.buildApiRecord({ slug: 'demo-portal', title: 'Demo', storage_root: '/share/USB/hapi/data' }, { baseUrl: '' });
+  assert.equal(dedicated.folder.dedicated, true, 'портал със собствена папка обявява папката');
+  assert.equal(dedicated.folder.url, '/api/v1/p/demo-portal/tree', 'адресът на списъка е договорът `/tree`');
+  assert.equal(dedicated.folder.apiJsonUrl, '/api/v1/p/demo-portal/tree/api.json');
+  assert.equal(dedicated.folder.qrUrl, '/api/v1/p/demo-portal/tree/qr.svg');
+  assert.equal(dedicated.links.folderUrl, dedicated.folder.url, 'същият адрес е и в блока с препратки');
+  assert.match(dedicated.folder.fileUrlTemplate, /^\/api\/v1\/p\/demo-portal\/tree\/file\?path=<path>$/,
+    'шаблонът за един файл е ОТНОСИТЕЛЕН — иначе изглежда като готов адрес, който дава 400');
+  for (const shared of ['/share', '/media', '']) {
+    const record = spec.buildApiRecord({ slug: 'demo-portal', title: 'Demo', storage_root: shared }, { baseUrl: '' });
+    assert.equal(record.folder, undefined, 'общ корен „' + (shared || '(празно)') + '“ НЕ обявява папка');
+    assert.equal(Object.keys(record.links).some((k) => k.startsWith('folder')), false, 'и не дава мъртви адреси в препратките');
+  }
+
   const openapi = spec.buildOpenApi({ slug: 'demo-portal', title: 'Demo' }, { baseUrl: 'https://x.test' });
   assert.equal(openapi.openapi, '3.1.0');
   assert.ok(openapi.paths['/api/v1/p/demo-portal/files/{fileId}/download']);

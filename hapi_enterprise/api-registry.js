@@ -84,7 +84,9 @@ function create(options = {}) {
   async function ensureNow(portal, base) {
     const p = paths(portal);
     await fsp.mkdir(p.dir, { recursive: true, mode: 0o700 });
-    const record = spec.buildApiRecord(portal, { baseUrl: base });
+    // Папката се обявява в картата само ако СЪЩЕСТВУВА: иначе `api.json` щеше да сочи
+    // `/tree`, който отговаря 404 „Folder not found“ — мъртва препратка в собствената карта.
+    const record = spec.buildApiRecord(portal, { baseUrl: base, folderReady: await portalFolder.folderReady(portal) });
     const openapi = spec.buildOpenApi(portal, { baseUrl: base });
     // Договорът се рендира ВЕДНЪЖ: този текст отива и в папката на портала, за да не се
     // разминат двете копия при различно форматиране.
