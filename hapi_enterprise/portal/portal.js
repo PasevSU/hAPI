@@ -300,6 +300,15 @@ function metaItem(label, value, opts) {
   return li;
 }
 
+/** SHA-256 на байтовете, които реално ще получи потребителят. `crypto.subtle` съществува само
+ * в защитен контекст (HTTPS или localhost), затова викащият проверява преди да го ползва. */
+async function sha256Hex(buffer) {
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 /** Изтегляне: FREE → директно; KEY_REQUIRED → с ключ в X-File-Key. */
 async function downloadFile(file, key) {
   setStatus(T("file.status.downloading", { name: file.name }));
@@ -317,6 +326,21 @@ async function downloadFile(file, key) {
       return;
     }
     const blob = await res.blob();
+    // Сверката е върху СЪЩИТЕ байтове, които се записват: ако хешът не съвпада, файлът НЕ се
+    // запазва. Дотук страницата само ПОКАЗВАШЕ SHA-256 — тоест обещание без проверка (DEF-03).
+    const expected = String(file.sha256 || "").toLowerCase();
+    let verdict = "none";
+    if (expected) {
+      if (crypto && crypto.subtle && crypto.subtle.digest) {
+        if ((await sha256Hex(await blob.arrayBuffer())) !== expected) {
+          setStatus(T("file.status.mismatch"), "err");
+          return;
+        }
+        verdict = "ok";
+      } else {
+        verdict = "noVerify";
+      }
+    }
     const link = document.createElement("a");
     const objectUrl = URL.createObjectURL(blob);
     link.href = objectUrl;
@@ -325,7 +349,9 @@ async function downloadFile(file, key) {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
-    setStatus(T("file.status.started", { name: file.name }), "ok");
+    if (verdict === "ok") setStatus(T("file.status.verified"), "ok");
+    else if (verdict === "noVerify") setStatus(T("file.status.noVerify"));
+    else setStatus(T("file.status.started", { name: file.name }), "ok");
   } catch {
     setStatus(T("file.status.offline"), "err");
   }

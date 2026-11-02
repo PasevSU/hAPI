@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **311/311** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **312/312** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.87 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 509 файла · 85529 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 504 файла · 84966 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 510 файла · 85656 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 505 файла · 85066 реда · critical: 0 · high: 0 · medium: 0 · low: 193 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 311 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 312 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
@@ -33,6 +33,18 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.87
+
+- **Порталът показваше SHA-256, без да го сверява.** `DEF-03` стоеше отворен: страницата пишеше
+  хеша на файла, но сваляше каквото дойде. Сега `portal.js` (и двете копия — add-on и интеграция)
+  смята `crypto.subtle.digest("SHA-256")` върху `blob.arrayBuffer()`, тоест върху СЪЩИТЕ байтове,
+  които се записват, и при разминаване **не записва файла** („SHA-256 НЕ съвпада“). Без WebCrypto
+  (страница, отворена по HTTP) свалянето продължава, но изрично казва „без сверка“ — вместо тихо
+  да се представи за проверено; текстовете са в трите езика на `portal-i18n.js`.
+  `tests/portal-hash-verify.cjs` пази връзката: сверката е преди `URL.createObjectURL`, при
+  разминаване има `return` преди записа, а липсващият `crypto.subtle` се отчита като „без сверка“.
+  **Проверено обратно:** махнат `return` при разминаване → „при разминаване има return преди
+  записа“; заместен `crypto.subtle.digest` с константа → „sha256Hex смята SHA-256 през
+  crypto.subtle“. Регистърът на дефектите вече дава DEF-03 за затворен (4 затворени реда).
 
 - **Проверено на живо, не само по код: всичко, което панелът иска, се сервира.** Пуснах
   standalone сървъра (`node hapi_enterprise/standalone.js`) и поисках през HTTP всеки ресурс,
