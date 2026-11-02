@@ -172,6 +172,8 @@ const ALLOWED_OK = [
   ['p/demo/manifest', 'манифестът на портала'],
   ['p/demo/api.json', 'картата на API-то (api.json)'],
   ['p/demo/openapi.json', 'описанието на API-то'],
+  ['p/demo/qr.json', 'JSON договорът на печата'],
+  ['p/demo/ping', 'ръкостискът'],
   ['p/demo/qr.svg', 'QR кодът'],
   ['p/demo/storage', 'хранилището'],
 ];

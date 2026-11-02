@@ -49,7 +49,14 @@ function buildReferences(baseUrl, slug, id) {
     filesUrl: `${prefix}/files`,
     storageUrl: `${prefix}/storage`,
     openapiUrl: `${prefix}/openapi.json`,
+    // `qrUrl` е КАРТИНКАТА (SVG) — това, което се печата и сканира. Машиночитаемото
+    // описание на печата (ревизии, архиви, отпечатъци) е `qr.json`; до 0.69.100 картата
+    // сочеше само картинката и клиентът нямаше как да научи, че JSON има.
     qrUrl: `${prefix}/qr.svg`,
+    qrJsonUrl: `${prefix}/qr.json`,
+    // Ръкостискът: доказва, че връзката до ТОЗИ портал е изградена (право за четене,
+    // активен QR, версии на договорите), без да дава съдържание.
+    pingUrl: `${prefix}/ping`,
   };
 }
 
@@ -78,6 +85,8 @@ function buildApiRecord(portal, options = {}) {
       fileCount: tree.fileCount,
     },
     qr: refs.qrUrl,
+    qrJson: refs.qrJsonUrl,
+    ping: refs.pingUrl,
     links: refs,
     updatedAt: new Date().toISOString(),
   };
@@ -124,6 +133,23 @@ function buildOpenApi(portal, options = {}) {
           summary: 'Манифест (списък + хешове, без съдържание)',
           security: secured,
           responses: { 200: ok('Manifest'), 401: { description: 'Липсва или е невалиден ключ' }, 404: { description: 'Not found' } },
+        },
+      },
+      // Публичният договор на печата: `qr.svg` е картинката, `qr.json` — машиночитаемото
+      // описание (активна ревизия, архиви, отпечатъци). Двете са едно обещание, затова
+      // договорът изрежда и двете; `qr` (без разширение) остава 301 към картинката.
+      [`${p}/qr.json`]: {
+        get: {
+          summary: 'QR договорът (активна ревизия, архиви, отпечатъци) — JSON',
+          security: secured,
+          responses: { 200: ok('QR contract'), 401: { description: 'Липсва или е невалиден ключ' }, 404: { description: 'Not found' } },
+        },
+      },
+      [`${p}/ping`]: {
+        get: {
+          summary: 'Ръкостиск: дали връзката до ТОЗИ портал работи (без съдържание)',
+          security: secured,
+          responses: { 200: ok('Handshake'), 401: { description: 'Липсва или е невалиден ключ' }, 404: { description: 'Not found' } },
         },
       },
       [`${p}/files`]: {

@@ -147,18 +147,21 @@ if (!python) {
     const filesDirect = await (await fetch(`http://127.0.0.1:${port}/api/v1/p/proxied/files`)).json();
     assert.deepEqual(filesBridge, filesDirect, 'списъкът файлове е същият през моста');
 
-    // 3б. Картата на API-то (`api.json`): до 0.69.99 адресът ѝ даваше 404 и на двата входа
-    //     (add-on-ът не я сервираше, а `_ALLOWED` не я пускаше през ключовия изглед на HA).
-    const mapDirect = await (await fetch(`http://127.0.0.1:${port}/api/v1/p/proxied/api.json`)).json();
-    // `updatedAt` е „сега“ при всяко четене — сверява се всичко останало.
-    const stable = (value) => ({ ...value, updatedAt: '' });
-    for (const [label, out] of [['публичния изглед', throughBridge('p/proxied/api.json')], ['ключовия изглед', throughBridge('p/proxied/api.json', true)]]) {
-      assert.equal(out.status, 200, `api.json се сервира през ${label}: ` + out.body.slice(0, 120));
-      const mapBridge = JSON.parse(out.body);
-      assert.equal(mapBridge.slug, 'proxied', `картата през ${label} е на СЪЩИЯ портал`);
-      assert.ok(String(mapBridge.apiUrl || '').endsWith('/api/v1/p/proxied'), 'картата носи адреса на API-то: ' + mapBridge.apiUrl);
-      assert.deepEqual(stable(mapBridge), stable(mapDirect), `картата през ${label} е същата като по правия път`);
+    // 3б. Договорните документи на портала — картата (`api.json`), QR договорът (`qr.json`)
+    //     и ръкостискът (`ping`). До 0.69.100 картата не се сервираше, а после и двата нови
+    //     адреса липсваха в `_ALLOWED`: документ, който ги обявява, а HA ги затваря, е
+    //     същата измама като мъртва препратка. Сверяват се през ДВАТА изгледа на интеграцията.
+    const stable = (value) => ({ ...value, updatedAt: '', time: '' });
+    for (const doc of ['api.json', 'qr.json', 'ping']) {
+      const direct = await (await fetch(`http://127.0.0.1:${port}/api/v1/p/proxied/${doc}`)).json();
+      for (const [label, keyed] of [['публичния изглед', false], ['ключовия изглед', true]]) {
+        const out = throughBridge('p/proxied/' + doc, keyed);
+        assert.equal(out.status, 200, `${doc} се сервира през ${label}: ` + out.body.slice(0, 120));
+        assert.deepEqual(stable(JSON.parse(out.body)), stable(direct), `${doc} през ${label} е същият като по правия път`);
+      }
     }
+    const mapDirect = await (await fetch(`http://127.0.0.1:${port}/api/v1/p/proxied/api.json`)).json();
+    assert.ok(String(mapDirect.qrJson || '').endsWith('/api/v1/p/proxied/qr.json'), 'картата обявява qr.json: ' + mapDirect.qrJson);
 
     // 4. Вход по токен (`/t/<токен>`): издава се токен за ЧАСТЕН портал и се проверява, че
     //    мостът подава пренасочването И бисквитката — без тях частният портал остава затворен.
@@ -177,7 +180,7 @@ if (!python) {
     assert.ok(String(login.location).includes('/p/'), 'пренасочването води към портала: ' + login.location);
     assert.ok(login.cookies.some((c) => /hapi_session=/.test(c)), 'мостът подава бисквитката за сесия');
 
-    console.log(`ha-integration-proxy OK: изгледът на интеграцията → истински hAPI · 200 · ${out.body.length}B · същото тяло като правия път · /files съвпада · /api.json съвпада през двата изгледа (${JSON.stringify(mapDirect).length}B) · /t/<токен> дава ${login.status} + бисквитка`);
+    console.log(`ha-integration-proxy OK: изгледът на интеграцията → истински hAPI · 200 · ${out.body.length}B · същото тяло като правия път · /files съвпада · api.json + qr.json + ping съвпадат през двата изгледа (${JSON.stringify(mapDirect).length}B) · /t/<токен> дава ${login.status} + бисквитка`);
   } finally {
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });
