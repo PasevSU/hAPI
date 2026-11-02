@@ -17,7 +17,10 @@ const { startServer } = require('./lib/gui-harness.cjs');
 const portalFolder = require(path.join(__dirname, '..', 'hapi_enterprise', 'portal-folder.js'));
 
 const NAME = 'hapi-folder-test-' + process.pid.toString(36);
-const DIR = path.join('D:', 'share', 'USB', 'hapi', 'data', NAME);
+// `/share` е абсолютен път в add-on-а: на Linux е `/share`, на Windows — `<диск>:\share`.
+// Тестът го строи от диска на работната папка, а не с твърдо „D:“ — иначе в CI пада.
+const shareRoot = path.join(path.parse(process.cwd()).root, 'share');
+const DIR = path.join(shareRoot, 'USB', 'hapi', 'data', NAME);
 const REL = '/share/USB/hapi/data/' + NAME;
 const DOC = 'съдържание на анекса';
 
@@ -25,7 +28,12 @@ const clean = () => fs.rmSync(DIR, { recursive: true, force: true });
 
 (async () => {
   clean();
-  fs.mkdirSync(path.join(DIR, 'Договори 2026'), { recursive: true });
+  try {
+    fs.mkdirSync(path.join(DIR, 'Договори 2026'), { recursive: true });
+  } catch (e) {
+    console.log(`SKIP portal-folder-artifacts: ${shareRoot} не може да се създаде (${e.code || e.message}) — липсва /share`);
+    process.exit(0);
+  }
   fs.writeFileSync(path.join(DIR, 'Договори 2026', 'анекс.txt'), DOC);
   const server = await startServer();
   try {

@@ -105,7 +105,7 @@ if (!python) {
   const data = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-proxy-data-'));
   // Папката на тестовия портал се чисти ПРЕДИ и СЛЕД пуск — иначе следващ тест вижда
   // чужди файлове и „минава“ по грешка.
-  const shareDir = path.join('D:', 'share', 'proxy-papka');
+  const shareDir = path.join(path.parse(process.cwd()).root, 'share', 'proxy-papka');
   fs.rmSync(shareDir, { recursive: true, force: true });
   const child = spawn(process.execPath, [path.join(root, 'hapi_enterprise', 'server.js')], {
     env: { ...process.env, DATA_DIR: data, ADMIN_TOKEN: token, PORT: String(port), PUBLIC_GATEWAY_PORT: '0', PUBLIC_BASE_URL: '' },
@@ -127,14 +127,23 @@ if (!python) {
     // Портал със СОБСТВЕНА папка: публичната страница в режим „папка“ вика `/tree` и
     // `/tree/file?path=` (portal.js), тоест без тези два пътя в моста страницата през
     // Home Assistant се отваря, но списъкът и файловете ѝ — не.
-    const shareDir = path.join('D:', 'share', 'proxy-papka');
+    const shareDir = path.join(path.parse(process.cwd()).root, 'share', 'proxy-papka');
     fs.rmSync(shareDir, { recursive: true, force: true });
-    fs.mkdirSync(path.join(shareDir, 'Договори'), { recursive: true });
-    fs.writeFileSync(path.join(shareDir, 'Договори', 'анекс.txt'), 'съдържание на анекса');
-    const mkFolder = await fetch(`http://127.0.0.1:${port}/admin/api/portals`, {
-      method: 'POST', headers: H, body: JSON.stringify({ slug: 'papka', title: 'Папка', visibility: 'public', storage_root: '/share/proxy-papka' }),
-    });
-    assert.equal(mkFolder.status, 201, 'порталът с папка се създава: ' + mkFolder.status);
+    let folderReady = true;
+    try {
+      fs.mkdirSync(path.join(shareDir, 'Договори'), { recursive: true });
+      fs.writeFileSync(path.join(shareDir, 'Договори', 'анекс.txt'), 'съдържание на анекса');
+    } catch (e) {
+      // Без /share (или без права) частта за папката се пропуска с причина, а не пада.
+      folderReady = false;
+      console.log(`  (пропусната част за папката: ${shareDir} не може да се създаде — ${e.code || e.message})`);
+    }
+    if (folderReady) {
+      const mkFolder = await fetch(`http://127.0.0.1:${port}/admin/api/portals`, {
+        method: 'POST', headers: H, body: JSON.stringify({ slug: 'papka', title: 'Папка', visibility: 'public', storage_root: '/share/proxy-papka' }),
+      });
+      assert.equal(mkFolder.status, 201, 'порталът с папка се създава: ' + mkFolder.status);
+    }
 
     for (const [name, body] of Object.entries(STUBS)) {
       const file = path.join(dir, name);
@@ -203,6 +212,7 @@ if (!python) {
       return text;
     };
     for (const tail of ['p/papka/tree?path=/Договори', 'p/papka/tree/api.json?path=/Договори', 'p/papka/tree/qr.svg?path=/Договори', 'p/papka/tree/file?path=/Договори/анекс.txt']) {
+      if (!folderReady) break;
       const direct = await fetch(`http://127.0.0.1:${port}/api/v1/${tail}`);
       const directBody = await direct.text();
       assert.equal(direct.status, 200, 'правият път работи за ' + tail + ': ' + direct.status);

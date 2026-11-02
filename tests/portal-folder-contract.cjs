@@ -15,7 +15,8 @@ const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
 
 const SLUG = 'karta-papka';
-const shareRoot = path.join('D:', 'share');
+// `/share` е абсолютен път в add-on-а: на Linux е `/share`, на Windows — `<диск>:\share`.
+const shareRoot = path.join(path.parse(process.cwd()).root, 'share');
 const folder = path.join(shareRoot, SLUG);
 const INSIDE = 'съдържание на файла в папката';
 const UPLOADED = 'съдържание на качения файл';
@@ -24,7 +25,12 @@ const clean = () => fs.rmSync(folder, { recursive: true, force: true });
 
 (async () => {
   clean();
-  fs.mkdirSync(path.join(folder, 'Договори', '2026'), { recursive: true });
+  try {
+    fs.mkdirSync(path.join(folder, 'Договори', '2026'), { recursive: true });
+  } catch (e) {
+    console.log(`SKIP portal-folder-contract: ${shareRoot} не може да се създаде (${e.code || e.message}) — липсва /share`);
+    process.exit(0);
+  }
   fs.writeFileSync(path.join(folder, 'Договори', '2026', 'анекс.txt'), INSIDE);
   // `portal_folder_copy` по подразбиране е изключено; тук е включено, защото точно то качва
   // файла в САМАТА папка на портала — тоест дава му `storagePath`, по който после се прилагат

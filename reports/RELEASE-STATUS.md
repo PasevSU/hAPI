@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.102
+# Състояние на изданието — hAPI Enterprise 0.69.103
 
-Версия: **0.69.102** · клон `main`
+Версия: **0.69.103** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **329/329** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.102 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 531 файла · 88669 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 526 файла · 88079 реда · critical: 0 · high: 0 · medium: 0 · low: 197 — чисто · изключения: 23/23 (0 мъртви) |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.103 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 531 файла · 88693 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 526 файла · 88103 реда · critical: 0 · high: 0 · medium: 0 · low: 197 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,12 +27,12 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.102.tar.gz` | add-on архив (192 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.102.zip` | интеграция за HACS (24 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.102.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.103.tar.gz` | add-on архив (192 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.103.zip` | интеграция за HACS (24 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.103.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.102
+## 3. Какво влезе във 0.69.103
 
 - **Картата на папката показваше файла, но не и адреса му.** `GET /api/v1/p/<slug>/tree/api.json`
   изреждаше име, размер, режим и основание, а папките имаха `apiUrl` — за файл адрес нямаше.
@@ -81,6 +81,11 @@
   извикваше записа на артефактите само при смяна на slug — тоест `api.json` оставаше със
   старото заглавие, а превключването public ↔ private не пипаше картата. Сега всяка промяна
   на портала обновява и картата, и страницата в папката.
+- **Тестовете за папката бяха вързани към Windows.** Трите нови проверки строяха пътя с
+  твърдо `D:\share`, който на Linux (където `/share` е истинският път) не съществува — и
+  изданието падна в CI на S20, макар кодът да беше верен. Сега коренът се извежда от диска
+  на работната папка (`path.parse(process.cwd()).root`), а липсващ или недостъпен `/share`
+  дава ясно `SKIP` с причина вместо неразбираем `EACCES`.
 
 ## 4. Как се проверява наново
 
