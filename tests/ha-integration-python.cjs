@@ -170,6 +170,7 @@ const ALLOWED_OK = [
   ['p/demo/files/' + 'a1b2c3d4e5f6a1b2c3d4e5f6', 'един файл по id'],
   ['p/demo/files/' + 'a1b2c3d4e5f6a1b2c3d4e5f6' + '/download', 'изтеглянето му'],
   ['p/demo/manifest', 'манифестът на портала'],
+  ['p/demo/api.json', 'картата на API-то (api.json)'],
   ['p/demo/openapi.json', 'описанието на API-то'],
   ['p/demo/qr.svg', 'QR кодът'],
   ['p/demo/storage', 'хранилището'],

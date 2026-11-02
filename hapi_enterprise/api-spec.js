@@ -110,6 +110,15 @@ function buildOpenApi(portal, options = {}) {
           responses: { 200: ok('Portal metadata'), 401: { description: 'Липсва или е невалиден ключ' }, 404: { description: 'Not found' } },
         },
       },
+      [`${p}/api.json`]: {
+        get: {
+          // Същият документ, който api-registry записва до портала и панелът сваля —
+          // тук е и адресът, на който клиент може да го поиска, без да познава диска.
+          summary: 'Картата на API-то (api.json: препратки, видимо хранилище, броячи)',
+          security: secured,
+          responses: { 200: ok('API map'), 401: { description: 'Липсва или е невалиден ключ' }, 404: { description: 'Not found' } },
+        },
+      },
       [`${p}/manifest`]: {
         get: {
           summary: 'Манифест (списък + хешове, без съдържание)',

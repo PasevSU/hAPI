@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.99
+# Състояние на изданието — hAPI Enterprise 0.69.100
 
-Версия: **0.69.99** · клон `main`
+Версия: **0.69.100** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,39 +14,46 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **325/325** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.99 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 527 файла · 87952 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 522 файла · 87362 реда · critical: 0 · high: 0 · medium: 0 · low: 195 — чисто · изключения: 23/23 (0 мъртви) |
+| Тестове | `node scripts/test-matrix.cjs` | **326/326** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.100 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 528 файла · 88109 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 523 файла · 87519 реда · critical: 0 · high: 0 · medium: 0 · low: 196 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 325 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 49 маршрута, 27 RBAC способности, 43 опции, 326 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.99.tar.gz` | add-on архив (192 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.99.zip` | интеграция за HACS (24 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.99.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.100.tar.gz` | add-on архив (192 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.100.zip` | интеграция за HACS (24 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.100.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.99
+## 3. Какво влезе във 0.69.100
 
-- **Липсващ превод в Home Assistant се вижда като ПРАЗНО място, без никаква грешка.** Текстовете се
-  взимат по ключ (`config.error.<key>`, `entity.sensor.<key>.name`), тоест забравен ключ в
-  `translations/en.json` или `bg.json` не чупи нищо видимо — просто съобщението изчезва. Точно така
-  се появи и празен текст при грешка в config flow-а, преди да има тест за това.
-  `tests/ha-translations.cjs` сравнява ПЪЛНИТЕ пътища на ключовете в трите файла **в двете посоки**
-  (липсващ превод и мъртъв превод), иска непразни текстове за заглавия/имена/грешки, и проверява
-  че всеки ключ, който `config_flow.py` връща, съществува в преводите. При премахнат
-  `cannot_connect` от `bg.json` тестът пада с „translations/bg.json: липсват ключове:
-  config.error.cannot_connect“.
-- **Изданието се казваше „v0.69.99“.** Заглавието се слагаше на ръка след всяко тагване; сега
-  `release.yml` го извежда от версията (`hAPI Enterprise <версия>`) и го подава към release-а, както
-  и бележките. Тестът иска `id: release_name` и подаването му, за да не изчезне тихо при следващо
-  редактиране на workflow-а.
+- **Картата на API-то съществуваше на диска, но не и на адреса си.** `api-registry` записва
+  `api/<slug>/api.json` при всяка промяна на портала, `layout.js` го обявява като
+  `/api/v1/p/<slug>/api.json`, панелът го предлага за сваляне — а сървърът отговаряше **404** на
+  този адрес. Клиент, който прочете картата от документите или от папката на портала, научаваше
+  къде е API-то само ако вече знае. Сега адресът връща СЪЩИЯ документ, който лежи до портала, но
+  изграден от живото състояние (както `manifest` и `storage`) — така след смяна на публичния
+  домейн картата не носи стария адрес. `api.json` влезе и в договора (`api-spec.js`), защото
+  `tests/api-spec-coverage.cjs` иска всеки подмаршрут от публичния блок да е описан — при
+  преименуван път в спецификацията тестът пада.
+- **През Home Assistant същият адрес беше затворен и от allowlist-а на моста.** `_ALLOWED` в
+  `custom_components/hapi_enterprise/__init__.py` изрежда какво от портала стига до браузъра;
+  `api.json` липсваше, тоест картата се отваряше на порта 8099 и даваше 404 на адреса на HA.
+  `tests/ha-integration-python.cjs` вече иска `p/<slug>/api.json` да минава, а
+  `tests/ha-integration-proxy.cjs` вика ИСТИНСКИЯ ключов изглед на интеграцията срещу жив add-on
+  и сверява, че тялото е същото като по правия път (до 0.69.99 този изглед не можеше да се
+  изпълни в тест — заготовката на сесията нямаше `get`, само `request`).
+- `tests/portal-api-map.cjs` пази обещанието от край до край: 200 и същият документ като на диска
+  (различава се само `updatedAt`), броячите съвпадат с манифеста, непознат slug и частен портал
+  без ключ дават 404, собственикът отваря частната карта по `/t/<токен>`, а след изтриване на файл
+  картата показва 2→1 и на адреса, и на диска.
 
 ## 4. Как се проверява наново
 

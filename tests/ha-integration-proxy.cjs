@@ -66,17 +66,21 @@ const LOADER = [
   '    async def read(self):',
   '        return b""',
   '',
-  'async def main(port, tail):',
+  'async def main(port, tail, keyed="0"):',
   '    hass = FakeHass(web.Session())',
   '    await integ.async_setup(hass, {"hapi_enterprise": {"backend_url": "http://127.0.0.1:%d" % port}})',
-  '    view = [v for v in hass.http.views if getattr(v, "url", "") == "/api/v1/p/{tail:.*}"][0] if tail.startswith("p/") else [v for v in hass.http.views if getattr(v, "url", "") == "/t/{tail:.*}"][0]',
+  '    if keyed == "1":',
+  '        view = [v for v in hass.http.views if getattr(v, "url", "") == "/api/hapi_enterprise/v1/{tail:.*}"][0]',
+  '    else:',
+  '        view = [v for v in hass.http.views if getattr(v, "url", "") == "/api/v1/p/{tail:.*}"][0] if tail.startswith("p/") else [v for v in hass.http.views if getattr(v, "url", "") == "/t/{tail:.*}"][0]',
   '    path = ("/api/v1/" + tail) if tail.startswith("p/") else ("/" + tail)',
-  '    response = await view.get(Request(path), tail=tail)',
+  '    headers = {"X-Portal-Key": "proxy-e2e-portal-key"} if keyed == "1" else None',
+  '    response = await view.get(Request(path, headers), tail=tail)',
   '    body = b"".join(response.chunks).decode("utf-8", "replace")',
   '    print(json.dumps({"status": response.status, "body": body, "type": response.headers.get("Content-Type"), "location": response.headers.get("Location", ""), "cookies": response.headers.getall("Set-Cookie", [])}))',
   '',
   'port, tail = int(sys.argv[1]), sys.argv[2]',
-  'asyncio.run(main(port, tail))',
+  'asyncio.run(main(port, tail, sys.argv[3] if len(sys.argv) > 3 else "0"))',
 ].join('\n');
 
 const python = findPython();
@@ -114,8 +118,8 @@ if (!python) {
     const loader = path.join(dir, 'proxy_once.py');
     fs.writeFileSync(loader, LOADER);
 
-    const throughBridge = (tail) => {
-      const run = spawnSync(python, [loader, String(port), tail], {
+    const throughBridge = (tail, keyed = false) => {
+      const run = spawnSync(python, [loader, String(port), tail, keyed ? '1' : '0'], {
         cwd: root,
         encoding: 'utf8',
         env: { ...process.env, PYTHONPATH: [dir, root].join(path.delimiter), PYTHONDONTWRITEBYTECODE: '1' },
@@ -143,6 +147,19 @@ if (!python) {
     const filesDirect = await (await fetch(`http://127.0.0.1:${port}/api/v1/p/proxied/files`)).json();
     assert.deepEqual(filesBridge, filesDirect, 'списъкът файлове е същият през моста');
 
+    // 3б. Картата на API-то (`api.json`): до 0.69.99 адресът ѝ даваше 404 и на двата входа
+    //     (add-on-ът не я сервираше, а `_ALLOWED` не я пускаше през ключовия изглед на HA).
+    const mapDirect = await (await fetch(`http://127.0.0.1:${port}/api/v1/p/proxied/api.json`)).json();
+    // `updatedAt` е „сега“ при всяко четене — сверява се всичко останало.
+    const stable = (value) => ({ ...value, updatedAt: '' });
+    for (const [label, out] of [['публичния изглед', throughBridge('p/proxied/api.json')], ['ключовия изглед', throughBridge('p/proxied/api.json', true)]]) {
+      assert.equal(out.status, 200, `api.json се сервира през ${label}: ` + out.body.slice(0, 120));
+      const mapBridge = JSON.parse(out.body);
+      assert.equal(mapBridge.slug, 'proxied', `картата през ${label} е на СЪЩИЯ портал`);
+      assert.ok(String(mapBridge.apiUrl || '').endsWith('/api/v1/p/proxied'), 'картата носи адреса на API-то: ' + mapBridge.apiUrl);
+      assert.deepEqual(stable(mapBridge), stable(mapDirect), `картата през ${label} е същата като по правия път`);
+    }
+
     // 4. Вход по токен (`/t/<токен>`): издава се токен за ЧАСТЕН портал и се проверява, че
     //    мостът подава пренасочването И бисквитката — без тях частният портал остава затворен.
     const hidden = await (await fetch(`http://127.0.0.1:${port}/admin/api/portals`, {
@@ -160,7 +177,7 @@ if (!python) {
     assert.ok(String(login.location).includes('/p/'), 'пренасочването води към портала: ' + login.location);
     assert.ok(login.cookies.some((c) => /hapi_session=/.test(c)), 'мостът подава бисквитката за сесия');
 
-    console.log(`ha-integration-proxy OK: изгледът на интеграцията → истински hAPI · 200 · ${out.body.length}B · същото тяло като правия път · /files съвпада · /t/<токен> дава ${login.status} + бисквитка`);
+    console.log(`ha-integration-proxy OK: изгледът на интеграцията → истински hAPI · 200 · ${out.body.length}B · същото тяло като правия път · /files съвпада · /api.json съвпада през двата изгледа (${JSON.stringify(mapDirect).length}B) · /t/<токен> дава ${login.status} + бисквитка`);
   } finally {
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });

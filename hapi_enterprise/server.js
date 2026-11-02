@@ -735,8 +735,7 @@ function qrSvg(text) { const q = require('./qrcode')(0, 'M'); q.addData(text); q
 // QR кодът сочи към публичната страница на портала, не към JSON API-то.
 const apiRegistry = require('./api-registry').create({ root: apiRoot, qrSvg: text => qrSvg(text), qrPayload: (record, portal, base) => portalLandingUrl(portal, base) });
 async function writeApiDir(p, base) { try { return await apiRegistry.ensure(p, { baseUrl: base || '' }) } catch (e) { log.error('api.dir.failed', { ns: 'api', slug: p.slug, err: e.message }) } }
-// Един източник на истина за договора: api-spec.js (същият модул, който пише api.json).
-function spec(p, base) { return require('./api-spec').buildOpenApi(p, { baseUrl: base || '' }) }
+function spec(p, base) { return require('./api-spec').buildOpenApi(p, { baseUrl: base || '' }) } // един източник на истина за договора: api-spec.js пише и api.json
 let lastStorageCheck = null, lastStorageCheckTime = 0;
 const storageCheckIntervalMs = eff.storageCheckIntervalMs;
 async function runStorageCheck(reason) {
@@ -1687,7 +1686,8 @@ async function handler(req, res) {
     if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'p') {
       const p = resolvePortal(parts[3]); if (!p) return fail(res, 404, 'Not found'); const tail = parts.slice(4); const downloadRoute = tail[0] === 'files' && tail[2] === 'download'; const fileForSigned = downloadRoute ? p.files.find(f => f.id === tail[1]) : null; const signed = !!(fileForSigned && fileMode(fileForSigned) === 'FREE' && !requirePortalToken && signedValid(url, p, fileForSigned)); const decision = portalPolicy.decide({ req, url, portal: p, action: downloadRoute ? 'download' : 'read' }); if (!signed && !decision.allowed) return fail(res, 404, 'Not found');
       if (!tail.length && method === 'GET') { observer.visit({ portalId: p.id }); void recordTelemetry('visit', req, p, null, url); return json(res, 200, publicPortal(p)); }
-      if (tail[0] === 'openapi.json' && tail.length === 1 && method === 'GET') { try { return json(res, 200, JSON.parse(await fsp.readFile(path.join(apiRoot, p.slug, 'openapi.json'), 'utf8'))) } catch { return json(res, 200, spec(p, baseUrl(req))) } }
+      // `api.json` — картата, която api-registry записва до портала: до 0.69.99 адресът от `layout.js` даваше 404.
+      if (tail.length === 1 && method === 'GET' && (tail[0] === 'api.json' || tail[0] === 'openapi.json')) { if (tail[0] === 'api.json') return json(res, 200, require('./api-spec').buildApiRecord(p, { baseUrl: baseUrl(req) })); try { return json(res, 200, JSON.parse(await fsp.readFile(path.join(apiRoot, p.slug, 'openapi.json'), 'utf8'))) } catch { return json(res, 200, spec(p, baseUrl(req))) } }
       // QR кодът води към ПУБЛИЧНАТА СТРАНИЦА на портала (/p/<slug>), не към JSON API-то:
       // сканиран с телефон, той отваря готовия списък с файлове, а не суров JSON.
       if (tail[0] === 'qr.svg' && tail.length === 1 && method === 'GET') { res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" }); return res.end(qrSvg(links.joinQuery(portalLandingUrl(p, baseUrl(req)), p.visibility === 'public' && !requirePortalToken ? '' : portalAccess.issue(p.signingSecret || adminToken, p.id).query))) }
