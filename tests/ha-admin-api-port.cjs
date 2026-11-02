@@ -60,11 +60,12 @@ const freePort = () => new Promise((resolve) => {
     assert.equal((await call(`http://127.0.0.1:${adminPort}/health`)).status, 200, 'health е достъпен и на ingress listener-а');
 
     // 6. Документацията трябва да сочи порта, който НАИСТИНА работи за интеграцията (8099),
-    //    а не admin listener-а (8098), който отказва на Home Assistant.
+    //    а не да предлага admin listener-а (8098) като адрес. Споменаването на 8098 е
+    //    позволено само за да се обясни, че е грешен порт.
     for (const file of ['strings.json', 'translations/en.json', 'translations/bg.json']) {
       const text = fs.readFileSync(path.join(root, 'custom_components', 'hapi_enterprise', file), 'utf8');
-      assert.equal(/8098/.test(text), false, file + ' не бива да сочи 8098 (той отказва на Home Assistant)');
-      assert.match(text, /8099/, file + ' трябва да сочи порта, който интеграцията наистина достига');
+      assert.equal(/hapi_enterprise:8098/.test(text), false, file + ' не бива да предлага адрес с 8098 (той отказва на Home Assistant)');
+      assert.match(text, /hapi_enterprise:8099/, file + ' трябва да сочи порта, който интеграцията наистина достига');
     }
 
     console.log('PASS ha-admin-api-port: без токен админ API-то е 404 · с валиден Bearer → 200 (whoami + sensors) · грешен токен → 401/403 · ingress listener непроменен · документацията сочи 8099');
