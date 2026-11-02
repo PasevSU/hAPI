@@ -57,6 +57,12 @@ jobs:
       - name: Build release notes from CHANGELOG
         run: node scripts/release-notes.cjs --out dist/RELEASE-NOTES.md
 
+      # Заглавието също се извежда от версията: иначе всяко издание се казва „v0.69.98“ и
+      # човек трябва да го преименува на ръка, за да разбере за какво е.
+      - name: Resolve release name
+        id: release_name
+        run: echo "value=hAPI Enterprise $(node -e "process.stdout.write(require('./scripts/release-notes.cjs').currentVersion())")" >> "$GITHUB_OUTPUT"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -68,6 +74,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
+          name: ${{ steps.release_name.outputs.value }}
           files: |
             dist/hapi_enterprise-*.tar.gz
             dist/hapi_enterprise-integration-*.zip
