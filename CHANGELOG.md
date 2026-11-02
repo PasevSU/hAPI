@@ -4,7 +4,7 @@
 (`custom_components/hapi_enterprise`). Версията има един източник на истина —
 `hapi_enterprise/config.yaml`; `manifest.json` трябва да носи същата стойност.
 
-## 0.69.87
+## 0.69.88
 
 - **Публичното API не отговаряше на адресите, които панелът сам пише.** Проверено на живо:
   `https://<домейн>/api/v1/p/<slug>` връща **`404: Not Found` от Home Assistant**, а
@@ -33,6 +33,8 @@
   `verify-release --with-tests` и `check-tag-version`. **Проверено обратно:** махнат GUI шаблон →
   „всеки артефакт от манифеста се качва към изданието“; `verify-release` без `--with-tests` →
   „workflow-ът пуска verify-release с тестовете“.
+
+## 0.69.87
 
 - **Съвместимостта с Home Assistant се проверява с правила, а не с „изглежда правилно“.** Add-on-ът
   и интеграцията имаха `ha-compatibility` (43 правила), но той гледа на add-on-а като на файл, не
