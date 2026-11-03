@@ -1061,6 +1061,29 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
         'бележката мина през сървъра: ' + app.requests.slice(-3).map((r) => r.method + ' ' + r.url).join(' · '),
       );
       await waitFor(() => /Бележка от сценария/.test(text(view())), { label: 'бележката в дървото на папките', timeout: BUDGET });
+      // Флаг „видима в публичния API“ — същата папка, същият ред, друг бутон.
+      const flag = await waitFor(
+        () => app.$$('[data-folder-flag-btn="visible"]').find((el) => (el.getAttribute('data-folder-flag-path') || '').includes(folder)),
+        { label: 'флагът „видима“ на папката', timeout: BUDGET },
+      );
+      const wasVisible = String(flag.getAttribute('class') || '').includes('on');
+      flag.click();
+      await waitFor(() => {
+        const again = app.$$('[data-folder-flag-btn="visible"]').find((el) => (el.getAttribute('data-folder-flag-path') || '').includes(folder));
+        return again && String(again.getAttribute('class') || '').includes('on') !== wasVisible ? again : null;
+      }, { label: 'смяната на флага „видима“', timeout: BUDGET });
+      // Изчистване на бележката: същият път — меню ⚙, бележка, „Изчисти“.
+      const forClear = await waitFor(ownGear, { label: 'менюто ⚙ на папката за изчистване', timeout: BUDGET });
+      forClear.click();
+      await settle('менюто на папката');
+      const openAgain = await waitFor(() => app.$('[data-folder-comment-open]'), { label: '„Бележка“ в менюто на папката', timeout: BUDGET });
+      openAgain.click();
+      await waitFor(() => app.$('[data-folder-comment-clear="' + rel + '"]'), { label: 'бутонът „Изчисти“ за бележката', timeout: BUDGET });
+      app.clearToasts();
+      app.click('[data-folder-comment-clear="' + rel + '"]', 'бутонът „Изчисти“ за бележката');
+      await waitFor(() => app.toast(), { label: 'отговорът при изчистване на бележката', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'бележката е изчистена: ' + app.toast().message);
+      await waitFor(() => !/Бележка от сценария/.test(text(view())), { label: 'бележката да изчезне от дървото', timeout: BUDGET });
       // QR на папката: същото меню, друг бутон — панелът показва адреса в прозорец.
       const again = await waitFor(ownGear, { label: 'менюто ⚙ на папката отново', timeout: BUDGET });
       again.click();
@@ -1150,6 +1173,77 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
         app.requests.some((r) => r.method === 'PATCH' && /\/files\//.test(r.url)),
         'действието мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
       );
+    });
+
+    // ── J56. Report Studio: колони на оформлението (columns блок) ─────────────
+    await journey('J56 Report Studio: колони на оформлението', async () => {
+      app.nav('report');
+      await settle('Report Studio');
+      app.click('#rs-new', 'бутонът „Нов“');
+      const item = await waitFor(
+        () => app.$$('#rs-lib [data-type]').find((el) => el.getAttribute('data-type') === 'columns'),
+        { label: 'обектът „Колони“ в библиотеката', timeout: BUDGET },
+      );
+      item.click();
+      const firstTitle = await waitFor(() => app.$('[data-lcol-title="0"]'), { label: 'заглавието на първата колона', timeout: BUDGET });
+      app.fill(firstTitle, 'Лява колона от сценария');
+      await waitFor(() => {
+        const again = app.$('[data-lcol-title="0"]');
+        return again && again.value === 'Лява колона от сценария' ? again : null;
+      }, { label: 'заглавието да се запази в блока', timeout: BUDGET });
+      // Текстът на колоната се пише със същия път (input → блокът се обновява).
+      const text2 = await waitFor(() => app.$('[data-lcol-text="1"]'), { label: 'текстът на втората колона', timeout: BUDGET });
+      app.fill(text2, 'Текст от сценария');
+      await waitFor(() => {
+        const again = app.$('[data-lcol-text="1"]');
+        return again && again.value === 'Текст от сценария' ? again : null;
+      }, { label: 'текстът да се запази в блока', timeout: BUDGET });
+      // „Добави колона“ вдига броя на колоните в самия блок — проверява се през документа,
+      // защото панелът нарочно пази полетата непокътнати, докато човекът пише.
+      const before = Number((text(app.$('#rs-count')).match(/\d+/) || [0])[0]);
+      app.click('#p-addlcol', 'бутонът „Добави колона“');
+      await settle('оформлението след новата колона');
+      assert.equal(Number((text(app.$('#rs-count')).match(/\d+/) || [0])[0]), before, 'документът не губи блокове при редакция на колоните');
+    });
+
+    // ── J57. Табло: комбо отчет през бутона ──────────────────────────────────
+    await journey('J57 табло: комбо отчет', async () => {
+      app.nav('dashboard');
+      await settle('таблото');
+      const button = await waitFor(() => app.$('[data-report]'), { label: 'бутонът за комбо отчет', timeout: BUDGET });
+      const kind = button.getAttribute('data-report');
+      app.clearToasts();
+      button.click();
+      // Отчетът се сглобява и се ОТВАРЯ в Report Studio — таблото води там, вместо да
+      // остави човека с празна бележка.
+      await waitFor(() => app.location.hash === '#report', { label: 'преминаването към Report Studio', timeout: BUDGET });
+      const count = await waitFor(() => {
+        const node = app.$('#rs-count');
+        return node && Number((text(node).match(/\d+/) || [0])[0]) > 0 ? node : null;
+      }, { label: 'сглобения отчет с блокове', timeout: BUDGET });
+      assert.match(kind, /combo/, 'натиснат е бутонът за комбо отчет: ' + kind);
+      assert.ok(Number((text(count).match(/\d+/) || [0])[0]) > 0, 'отчетът има блокове: ' + text(count));
+    });
+
+    // ── J58. Файл: копиране на хеш от „Пълни данни“ ───────────────────────────
+    await journey('J58 файл: копиране на хеш', async () => {
+      await ownPortalWithFile('gui-journey-file-copy');
+      const open = await waitFor(() => {
+        const nodes = app.$$('[data-open-file]');
+        return nodes.find((el) => /fayl-za-scenariy/.test(text(el))) || nodes[0];
+      }, { label: 'редът на файла', timeout: BUDGET });
+      open.click();
+      // Хешовете идват от сървъра след отваряне; бутонът за копиране носи САМАТА стойност,
+      // затова се избира първият с непразна стойност (адресът за изтегляне може да е празен).
+      const copy = await waitFor(() => app.$$('[data-copy]').find((el) => String(el.getAttribute('data-copy') || '').length >= 16), {
+        label: 'бутонът за копиране на хеша',
+        timeout: BUDGET,
+      });
+      const value = copy.getAttribute('data-copy');
+      app.clearToasts();
+      copy.click();
+      await waitFor(() => app.copied.includes(String(value)), { label: 'хешът в клипборда', timeout: BUDGET });
+      assert.ok(app.copied.length > 0, 'хешът е копиран, както при човек: ' + String(app.copied.slice(-1)[0]).slice(0, 24));
     });
 
     // Менюто „API ▾“ на файла НЕ се проверява тук: то се рисува само когато файлът има
