@@ -1271,6 +1271,10 @@
       }
       done += 1;
     }
+    // Качените файлове се ПРЕЧИТАТ от сървъра, преди панелът да каже „качени N“.
+    // До 0.69.115 тук само се броеше: съобщението казваше „качени 2 файла“, а списъкът
+    // оставаше празен до ръчно обновяване (намира го `tests/gui-journeys.cjs`).
+    if (done && connected()) await reload();
     return done;
   }
 
@@ -1852,7 +1856,31 @@
   // ── Рендер ───────────────────────────────────────────────────────────────
   function render() {
     if (!state.portals.length) {
-      host.innerHTML = '<p class="hint">Няма портали. Създай първия с „Нов портал“.</p>';
+      // Празното състояние също ТРЯБВА да има бутона, за който говори: до 0.69.115 тук
+      // се рисуваше само подсказката „Създай първия с «Нов портал»“ — без самия бутон.
+      // На чиста инсталация портал не можеше да се създаде от интерфейса изобщо
+      // (намира го `tests/gui-journeys.cjs`).
+      host.innerHTML = `
+        <div class="page-title">
+          <h1>Портали &amp; файлове</h1>
+          <p>Портал → API и QR → списък с файлове → контролен панел под избрания файл</p>
+          <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'свързан' : 'демо (без backend)'}</span>
+        </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Портали (0)</h2>
+            <div class="u-row u-row-2">
+              <button type="button" class="btn btn-sm btn-primary" id="pf-new">Нов портал</button>
+              <button type="button" class="btn btn-sm" id="pf-test" title="${esc(base() || 'демо режим')}">Връзка</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            ${state.newPortal ? newPortalForm() : '<p class="hint">Няма портали. Създай първия с „Нов портал“.</p>'}
+          </div>
+        </section>`;
+      // Бутоните в това състояние се свързват ТУК: пълният изглед вика `wire()` в края си,
+      // а този клон излизаше преди него и „Нов портал“ оставаше мъртъв дори когато се вижда.
+      wire();
       return;
     }
     const totalFiles = state.portals.reduce((n, x) => n + x.files.length, 0);

@@ -78,9 +78,16 @@ function parseHtml(html, ownerDocument) {
       el.setAttribute(m[1], decodeEntities(value == null ? '' : value));
     }
     const bare = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)(?=\s|$)/g;
-    while ((m = bare.exec(body.slice(nameMatch[1].length)))) {
+    // Браузърът приема ВСЕКИ атрибут без `=` за булев (`data-close-portal`, `hidden`,
+    // `multiple`, `webkitdirectory`). Досега тук се познаваха само няколко имена, а
+    // `data-close-portal` се губеше — тоест тестът не можеше да натисне бутона
+    // „← Списък с портали“, който в браузъра работи. Затова първо се махат двойките
+    // `name="value"` (за да не се вземе дума от стойност за атрибут), после останалото
+    // е булев атрибут.
+    const withoutPairs = body.replace(attrRe, ' ');
+    while ((m = bare.exec(withoutPairs.slice(nameMatch[1].length)))) {
       const name = m[1];
-      if (/^(class|id|href|src|type|name|value|placeholder|title|role)$/.test(name) && !el.hasAttribute(name)) el.setAttribute(name, '');
+      if (!el.hasAttribute(name)) el.setAttribute(name, '');
     }
     if (el.hasAttribute('class') && el.getAttribute('class') === '' && /class\b/.test(body)) el.setAttribute('class', '');
     push(el);
