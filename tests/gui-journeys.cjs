@@ -79,6 +79,34 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     await settle('картата на портала');
   };
 
+  /**
+   * Гарантира, че в отворения портал има файл, върху който да се работи — през интерфейса:
+   * ако сме влезли в папка, се връща обратно; ако списъкът е празен, качва файл през
+   * формата на панела. Така сценарият не зависи от състоянието, оставено от предишен.
+   */
+  const ensureFile = async () => {
+    await openPortal();
+    const back = app.$('#fm-back');
+    if (back) {
+      back.click();
+      await settle('корена на портала');
+    }
+    if (app.$('[data-open-file]')) return;
+    const filters = await waitFor(() => app.$('[data-toggle-filters]'), { label: 'иконата „Панел филтри“' });
+    filters.click();
+    app.click('#fm-upload', 'бутонът „Качи файл“');
+    const form = await waitFor(() => app.$('#fm-upload-form'), { label: 'формата за качване' });
+    const input = app.$('#fm-upload-form input[name="input"]');
+    const name = 'fayl-za-scenariy.txt';
+    input.files = [pseudoFile(name, 'съдържание за сценария')];
+    app.fill('#fm-upload-form input[name="name"]', name);
+    app.clearToasts();
+    form.dispatch('submit');
+    await waitFor(() => app.toast() && app.toast().kind === 'ok', { label: 'качения файл', timeout: BUDGET });
+    await settle('списъкът с файлове');
+    await waitFor(() => app.$('[data-open-file]'), { label: 'първият файл в списъка' });
+  };
+
   /** Отваря действие от менюто ⚙ на първия файл — същият път, който минава човек. */
   const openFileAction = async (action) => {
     const link = await waitFor(() => app.$$('[data-open-file]')[0], { label: 'първият файл в списъка' });
@@ -625,7 +653,7 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
 
     // ── J37. Файл: преименуване през формата на панела ────────────────────────
     await journey('J37 файл: преименуване', async () => {
-      await openPortal();
+      await ensureFile();
       await openFileAction('rename');
       const form = await waitFor(() => app.$('#fm-rename-form'), { label: 'формата за преименуване' });
       const field = app.$('#fm-rename-form input[name="name"]');
@@ -642,6 +670,7 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
 
     // ── J38. Файл: бележка през формата на панела ─────────────────────────────
     await journey('J38 файл: бележка', async () => {
+      await ensureFile();
       await openFileAction('note');
       const form = await waitFor(() => app.$('#fm-note-form'), { label: 'формата за бележка' });
       const field = app.$('#fm-note-form textarea[name="notes"]');
@@ -656,7 +685,7 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
 
     // ── J39. Файл: адресът се копира в клипборда на браузъра ──────────────────
     await journey('J39 файл: копира адреса', async () => {
-      await openPortal();
+      await ensureFile();
       await openFileAction('share');
       const button = await waitFor(() => app.$('#fm-copy-link'), { label: 'бутонът за копиране на адреса' });
       app.clearToasts();
