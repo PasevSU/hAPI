@@ -767,9 +767,14 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       await waitFor(() => app.$('#ct-form'), { label: 'формата за контакт' });
       app.fill('input[name="email"]', 'za.redakcia@example.org');
       app.fill('input[name="f_name"]', 'Контакт за редакция');
-      // Поле по желание: първо „＋ добави поле“, после се пише в НОВАТА редица.
+      // Поле по желание: първо „＋ добави поле“, после се пише в НОВАТА редица; второ поле
+      // се маха с „✕“ — за да се провери и премахването, не само добавянето.
       app.click('[data-extra-add]', 'бутонът „добави поле по желание“');
-      await waitFor(() => app.$$('[data-extra-key]').length >= 2, { label: 'новата редица за поле по желание' });
+      app.click('[data-extra-add]', 'бутонът „добави поле по желание“');
+      await waitFor(() => app.$$('[data-extra-key]').length >= 3, { label: 'двете нови редици за поле по желание' });
+      const removeButtons = app.$$('#ct-form [data-extra-remove]');
+      removeButtons[removeButtons.length - 1].click();
+      await waitFor(() => app.$$('[data-extra-key]').length === 2, { label: 'махнатата редица за поле по желание' });
       const keys = app.$$('[data-extra-key]');
       const values = app.$$('[data-extra-value]');
       app.fill(keys[keys.length - 1], 'Роля');
@@ -1245,6 +1250,11 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       await waitFor(() => app.copied.includes(String(value)), { label: 'хешът в клипборда', timeout: BUDGET });
       assert.ok(app.copied.length > 0, 'хешът е копиран, както при човек: ' + String(app.copied.slice(-1)[0]).slice(0, 24));
     });
+
+    // Отнемането на токен (`data-token-revoke`) НЕ се проверява тук: бутонът се рисува от
+    // списъка с токени, който панелът иска отделно и чийто отговор на runner-а не винаги носи
+    // издадения токен — сценарий, който чака него, би бил нестабилен. Пътят на издаване е в
+    // J34, а списъкът и отнемането се пазят от `tests/files-manager.cjs`.
 
     // Менюто „API ▾“ на файла НЕ се проверява тук: то се рисува само когато файлът има
     // подписан адрес (издава се асинхронно от панела), а „Копирай адреса“ зависи от
