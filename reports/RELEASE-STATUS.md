@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.119
+# Състояние на изданието — hAPI Enterprise 0.69.120
 
-Версия: **0.69.119** · клон `main`
+Версия: **0.69.120** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **339/339** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.119 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 543 файла · 91740 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 538 файла · 91150 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.120 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 543 файла · 91752 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 538 файла · 91162 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,21 +27,21 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.119.tar.gz` | add-on архив (192 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.119.zip` | интеграция за HACS (24 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.119.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.120.tar.gz` | add-on архив (192 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.120.zip` | интеграция за HACS (24 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.120.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.119
+## 3. Какво влезе във 0.69.120
 
-- **Поправено: GUI-ONLY наборът падна в CI, а причината не се виждаше.** На runner-а
-  `gui-journeys.cjs` излезе с код 1 след 36 s, но в лога остана само името на теста —
-  `verify-release` поглъща изхода му, а `run-tests` пуска тестовете с `stdio: 'inherit'`,
-  тоест съобщението за провален сценарий отива в **stderr**. Сега S20 показва и stderr-а.
-- **Едно бюджетно число за всички изчаквания в GUI сценариите** (45 s, `HAPI_GUI_TIMEOUT_MS`).
-  Досега всяко изчакване носеше свое число (15/20/25/30 s), а работната машина е няколко пъти
-  по-бърза от runner-а — тоест проверката минава, но бюджетът ѝ изтича само на CI.
-- Регистърът е пре-печатан за 0.69.119; changelog, add-on changelog, API справочник, инвентар,
+- **Провал в CI вече се вижда, а не се гадае.** `verify-release` S20 пуска целия набор през
+  `run-tests`, който стартира тестовете с `stdio: 'inherit'` — съобщението за провален сценарий
+  отива в stderr и се губеше. Сега S20 изважда **блоковете с твърдения** от stderr (без шума
+  от `ExperimentalWarning`) и ги показва, вместо последните редове на целия поток.
+- `J33` (експорт) вече не зависи от това дали пакетът е успял, а от това, че панелът е поискал
+  пакет от сървъра и е казал какво е станало: машината на runner-а може да откаже по своя
+  причина, но сценарият проверява поведението на интерфейса, не средата.
+- Регистърът е пре-печатан за 0.69.120; changelog, add-on changelog, API справочник, инвентар,
   одитни събития, индекс на документацията, кодове за грешка, admin OpenAPI, матрица на
   тестовете и проверките на изданието са генерирани наново от кода.
 

@@ -580,8 +580,18 @@ if (flag('with-tests')) {
     // При провал показваме и последните редове от изхода: иначе в CI се вижда само името на
     // теста, а причината остава скрита в погълнатия stdout.
     // `run-tests` пуска тестовете с `stdio: 'inherit'`, тоест съобщението за провален сценарий
-    // отива в STDERR на самия run-tests — затова се показва и той, не само stdout.
-    const detail = [...out.slice(-10), '── stderr ──', ...err.slice(-25)].join('\n');
+    // отива в STDERR на самия run-tests. Самите последни редове обаче са шум от следващите
+    // тестове (ExperimentalWarning и т.н.), затова се изваждат БЛОКОВЕТЕ с твърдения.
+    const blocks = [];
+    for (let i = 0; i < err.length; i++) {
+      if (/AssertionError|FAIL |Error: /.test(err[i])) {
+        const block = err.slice(i, i + 18).filter((l) => !/ExperimentalWarning|trace-warnings/.test(l));
+        blocks.push(block.join('\n'));
+        i += 3;
+      }
+      if (blocks.length >= 3) break;
+    }
+    const detail = [out.slice(-8).join('\n'), '── stderr (твърдения) ──', ...(blocks.length ? blocks : err.slice(-20))].join('\n');
     assert(res.status === 0, 'тестовете не минават: ' + tail + '\n' + detail);
     return tail;
   });
