@@ -95,6 +95,12 @@ function mountApp(addon, { lang = 'bg', token = addon.token } = {}) {
     document: doc,
     location,
     history,
+    // Браузърът смята `127.0.0.1` за сигурен контекст — затова интерфейсът на add-on-а
+    // ползва `navigator.clipboard`. Без този флаг панелът пада на `execCommand('copy')`,
+    // тоест „копирано“ не се случва и тестът не може да провери това, което вижда човекът.
+    isSecureContext: true,
+    // Браузърът има `CSS.escape`; панелът го ползва, за да намери полето на папка по път.
+    CSS: { escape: (value) => String(value).replace(/[^a-zA-Z0-9_\u00a0-\uffff-]/g, (c) => '\\' + c) },
     localStorage: storage({ 'hapi.apiBase': addon.base }),
     sessionStorage: storage(token ? { hapiAdminToken: token } : {}),
     fetch: fetchShim,

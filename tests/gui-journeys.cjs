@@ -890,6 +890,147 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       );
     });
 
+    // ── J47. Report Studio: колони на таблицата — добави, премести, махни ─────
+    await journey('J47 Report Studio: колони на таблица', async () => {
+      app.nav('report');
+      await settle('Report Studio');
+      app.click('#rs-new', 'бутонът „Нов“');
+      const item = await waitFor(
+        () => app.$$('#rs-lib [data-type]').find((el) => el.getAttribute('data-type') === 'table'),
+        { label: 'обектът „Таблица“ в библиотеката', timeout: BUDGET },
+      );
+      item.click();
+      await waitFor(() => app.$('#p-addcol'), { label: 'редактора на таблицата', timeout: BUDGET });
+      const cols = () => app.$$('[data-col="del"]').length;
+      const before = cols();
+      assert.ok(before > 0, 'таблицата има колони: ' + before);
+      app.fill('#p-newcol', 'Нова колона');
+      app.click('#p-addcol', 'бутонът „Добави“ за колона');
+      await waitFor(() => cols() === before + 1, { label: 'новата колона в списъка', timeout: BUDGET });
+      // „↑“/„↓“ местят колоната — натиска се същият бутон, който вижда човекът.
+      const down = app.$$('[data-col="down"]');
+      down[down.length - 1].click();
+      await waitFor(() => cols() === before + 1, { label: 'подредбата след „↓“', timeout: BUDGET });
+      const del = app.$$('[data-col="del"]');
+      del[del.length - 1].click();
+      await waitFor(() => cols() === before, { label: 'колоната да се махне', timeout: BUDGET });
+    });
+
+    // ── J48. Report Studio: избор на алгоритми в Hash таблица ─────────────────
+    await journey('J48 Report Studio: алгоритми на Hash таблица', async () => {
+      const item = await waitFor(
+        () => app.$$('#rs-lib [data-type]').find((el) => el.getAttribute('data-type') === 'hash-table'),
+        { label: 'обектът „Hash таблица“ в библиотеката', timeout: BUDGET },
+      );
+      item.click();
+      const boxes = await waitFor(() => (app.$$('[data-alg]').length ? app.$$('[data-alg]') : null), {
+        label: 'списъкът с алгоритми',
+        timeout: BUDGET,
+      });
+      const box = boxes[0];
+      const alg = box.getAttribute('data-alg');
+      assert.ok(alg, 'алгоритъмът има име: ' + alg);
+      const want = !box.checked;
+      app.check(box, want);
+      await waitFor(() => {
+        const again = app.$('[data-alg="' + alg + '"]');
+        return again && again.checked === want ? again : null;
+      }, { label: 'алгоритъмът „' + alg + '“ да стане ' + (want ? 'избран' : 'изключен'), timeout: BUDGET });
+      assert.equal(app.$('[data-alg="' + alg + '"]').checked, want, 'изборът на алгоритъм се пази в панела');
+    });
+
+    // ── J49. Gateway: смяна на достъп и видимост на файл ──────────────────────
+    await journey('J49 gateway: достъп и видимост на файл', async () => {
+      app.nav('gateway');
+      await settle('панелът „Публичен gateway“');
+      await waitFor(() => app.$('[data-file-access="0"]'), { label: 'първият ред с достъп', timeout: BUDGET });
+      const GW = app.window.PublicGatewayPanel;
+      assert.ok(GW && GW.state, 'панелът държи състоянието си');
+      const first = () => {
+        const s = GW.state;
+        return (s.files[s.portals[s.index || 0].slug] || [])[0];
+      };
+      const asked = app.requests.length;
+      const access = app.$$('[data-file-access="0"] option').map((o) => o.getAttribute('value')).filter(Boolean);
+      const nextAccess = access.find((v) => v !== first().access);
+      assert.ok(nextAccess, 'редът предлага друг режим на достъп: ' + access.join(', '));
+      app.select('[data-file-access="0"]', nextAccess);
+      await waitFor(() => first().access === nextAccess, { label: 'режимът на достъп „' + nextAccess + '“', timeout: BUDGET });
+      const visible = app.$$('[data-file-visibility="0"] option').map((o) => o.getAttribute('value')).filter(Boolean);
+      const nextVisibility = visible.find((v) => v !== first().visibility);
+      assert.ok(nextVisibility, 'редът предлага друга видимост: ' + visible.join(', '));
+      app.select('[data-file-visibility="0"]', nextVisibility);
+      await waitFor(() => first().visibility === nextVisibility, { label: 'видимостта „' + nextVisibility + '“', timeout: BUDGET });
+      assert.equal(app.requests.length, asked, 'решението за достъп се взима в панела, без заявка към add-on-а');
+    });
+
+    // ── J50. Файл: разписка и проверка на разписката ──────────────────────────
+    await journey('J50 файл: разписка и проверка', async () => {
+      await ownPortalWithFile('gui-journey-file-receipt');
+      await fileAction('receipt');
+      const form = await waitFor(() => app.$('form[data-receipt]'), { label: 'формата за разписка' });
+      form.dispatch('submit');
+      const out = await waitFor(() => {
+        const node = app.$('[data-receipt-out]');
+        const said = text(node);
+        return said && said !== 'Издавам…' ? node : null;
+      }, { label: 'разписката', timeout: BUDGET });
+      const receipt = text(out);
+      assert.match(receipt, /\{|mac|sha/i, 'панелът показва издадената разписка: ' + receipt.slice(0, 120));
+      assert.ok(app.copied.includes(receipt), 'разписката е копирана в клипборда, както при човек');
+      // Обратно: същата разписка се поставя в „Провери“ и панелът дава присъда.
+      await fileAction('verifyReceipt');
+      const verify = await waitFor(() => app.$('form[data-verify-receipt]'), { label: 'формата за проверка на разписка' });
+      app.fill('form[data-verify-receipt] textarea[name="receipt"]', receipt);
+      verify.dispatch('submit');
+      const verdict = await waitFor(() => {
+        const node = app.$('[data-verify-receipt-out]');
+        return node && text(node).length > 3 ? node : null;
+      }, { label: 'присъдата за разписката', timeout: BUDGET });
+      assert.match(text(verdict), /валидна|НЕВАЛИДНА|HTTP|несъответствие/i, 'панелът дава присъда: ' + text(verdict));
+      assert.ok(
+        app.requests.some((r) => r.method === 'POST' && /\/verify-signature$/.test(r.url)),
+        'проверката мина през сървъра: ' + app.requests.slice(-3).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+    });
+
+    // ── J51. Файл: „в списъка“ и „заключен“ през иконите на реда ─────────────
+    await journey('J51 файл: в списъка и заключване', async () => {
+      await ownPortalWithFile('gui-journey-file-flags');
+      const rowButton = (attr) => waitFor(() => {
+        const nodes = app.$$('[' + attr + ']');
+        return nodes.find((el) => {
+          const art = el.closest ? el.closest('.fm-file') : null;
+          return !art || /fayl-za-scenariy/.test(text(art));
+        }) || nodes[0];
+      }, { label: 'иконата „' + attr + '“ на файла', timeout: BUDGET });
+      const flag = async (attr, what) => {
+        const button = await rowButton(attr);
+        const id = button.getAttribute(attr);
+        const before = String(button.getAttribute('class') || '');
+        app.clearToasts();
+        button.click();
+        await waitFor(() => app.toast(), { label: 'отговорът за „' + what + '“', timeout: BUDGET });
+        assert.ok(['ok', 'err'].includes(app.toast().kind), 'панелът отговаря за „' + what + '“: ' + app.toast().message);
+        await settle('редът след „' + what + '“');
+        const again = await waitFor(() => app.$('[' + attr + '="' + id + '"]'), { label: 'иконата след „' + what + '“', timeout: BUDGET });
+        const after = String(again.getAttribute('class') || '');
+        assert.notEqual(after, before, 'иконата сменя състоянието си: ' + before + ' → ' + after);
+        return app.toast();
+      };
+      await flag('data-file-listed', 'видимост в списъка');
+      await flag('data-file-lock', 'заключване');
+      assert.ok(
+        app.requests.filter((r) => r.method === 'PATCH' && /\/files\//.test(r.url)).length >= 2,
+        'двете смени минаха през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+    });
+
+    // Менюто „API ▾“ на файла НЕ се проверява тук: то се рисува само когато файлът има
+    // подписан адрес (издава се асинхронно от панела), а „Копирай адреса“ зависи от
+    // клипборда на машината. Затова присъствието му се пази от `tests/files-manager.cjs`,
+    // а тук остава провереното с щракване: иконите „в списъка“ и „заключен“.
+
     // ── Отчет ─────────────────────────────────────────────────────────────────
     assert.deepEqual(failed, [], 'сценарии, които не минаха:\n  ' + failed.join('\n  '));
     console.log('PASS gui-journeys: ' + passed.length + ' сценария САМО през интерфейса · навигация, форми, секции, панели, тема, език · ' + app.requests.length + ' заявки, поискани от панелите');
