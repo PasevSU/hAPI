@@ -128,6 +128,9 @@ function parseHtml(html, ownerDocument) {
 // ── Селектори ───────────────────────────────────────────────────────────────────
 function parseCompound(text) {
   const out = { tag: null, id: null, classes: [], attrs: [] };
+  // Стойност в кавички може да е екранирана (`CSS.escape` дава `a\/b` за път с наклонена
+  // черта). Браузърът разчита екранирането до истинската стойност, затова и тук се маха.
+  const unescape = (value) => (value === undefined ? undefined : String(value).replace(/\\([\s\S])/g, '$1'));
   const re = /(^[a-zA-Z][-a-zA-Z0-9]*)|#([-a-zA-Z0-9_]+)|\.([-a-zA-Z0-9_]+)|\[\s*([-a-zA-Z0-9_:.]+)\s*(?:=\s*("([^"]*)"|'([^']*)'|([^\]\s]+)))?\s*\]/g;
   let m, consumed = 0;
   while ((m = re.exec(text))) {
@@ -135,7 +138,12 @@ function parseCompound(text) {
     if (m[1]) out.tag = m[1].toLowerCase();
     else if (m[2]) out.id = m[2];
     else if (m[3]) out.classes.push(m[3]);
-    else if (m[4]) out.attrs.push({ name: m[4].toLowerCase(), value: m[5] === undefined ? undefined : (m[6] !== undefined ? m[6] : m[7] !== undefined ? m[7] : m[8]) });
+    else if (m[4]) {
+      out.attrs.push({
+        name: m[4].toLowerCase(),
+        value: m[5] === undefined ? undefined : unescape(m[6] !== undefined ? m[6] : m[7] !== undefined ? m[7] : m[8]),
+      });
+    }
   }
   if (consumed !== text.replace(/\s+/g, ' ').trim().length) {
     throw new Error('dom-stub: неподдържан селектор «' + text + '» — разшири parseCompound, вместо да връщаш null');

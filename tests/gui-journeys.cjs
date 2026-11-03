@@ -1026,6 +1026,43 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       );
     });
 
+    // ── J53. Папка: бележка и QR от менюто ⚙ ─────────────────────────────────
+    await journey('J53 папка: бележка и QR от менюто', async () => {
+      await ownPortalWithFile('gui-journey-folder-gear');
+      app.click('#fm-new-folder', 'бутонът „Нова папка“');
+      await waitFor(() => app.$('#fm-new-folder-name'), { label: 'полето за име на папка' });
+      app.fill('#fm-new-folder-name', 'Papka-za-scenariy');
+      app.clearToasts();
+      app.$('#fm-new-folder-form').dispatch('submit');
+      await waitFor(() => app.toast(), { label: 'отговорът за новата папка', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'папката се създава: ' + app.toast().message);
+      const ownGear = () => app.$$('[data-folder-gear]').find((el) => /Papka-za-scenariy/.test(el.getAttribute('data-folder-gear') || ''));
+      const gear = await waitFor(ownGear, { label: 'менюто ⚙ на новата папка', timeout: BUDGET });
+      gear.click();
+      await settle('менюто на папката');
+      const open = await waitFor(() => app.$('[data-folder-comment-open]'), { label: '„Бележка“ в менюто на папката', timeout: BUDGET });
+      const rel = open.getAttribute('data-folder-comment-open');
+      open.click();
+      const box = await waitFor(() => app.$('[data-folder-comment="' + rel + '"]'), { label: 'полето за бележка на папката', timeout: BUDGET });
+      app.fill(box, 'Бележка от сценария');
+      app.clearToasts();
+      app.click('[data-folder-comment-save="' + rel + '"]', 'бутонът „Запази бележката“');
+      await waitFor(() => app.toast(), { label: 'отговорът за бележката на папката', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'бележката е запазена: ' + app.toast().message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'POST' && /\/tree\/comment$/.test(r.url)),
+        'бележката мина през сървъра: ' + app.requests.slice(-3).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+      await waitFor(() => /Бележка от сценария/.test(text(view())), { label: 'бележката в дървото на папките', timeout: BUDGET });
+      // QR на папката: същото меню, друг бутон — панелът показва адреса в прозорец.
+      const again = await waitFor(ownGear, { label: 'менюто ⚙ на папката отново', timeout: BUDGET });
+      again.click();
+      await settle('менюто на папката');
+      const qr = await waitFor(() => app.$('[data-folder-qr="' + rel + '"]'), { label: '„QR“ на папката', timeout: BUDGET });
+      qr.click();
+      await waitFor(() => text(app.document.body).includes('QR ·'), { label: 'прозорецът с QR на папката', timeout: BUDGET });
+    });
+
     // Менюто „API ▾“ на файла НЕ се проверява тук: то се рисува само когато файлът има
     // подписан адрес (издава се асинхронно от панела), а „Копирай адреса“ зависи от
     // клипборда на машината. Затова присъствието му се пази от `tests/files-manager.cjs`,
