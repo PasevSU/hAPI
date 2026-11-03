@@ -82,7 +82,10 @@ assert.match(src, /qrSvg/);
 assert.match(src, /const qrPage = api \? api\.folderUrl \|\| api\.landing/);
 assert.match(src, /qrSvg\(qrPage\)/);
 assert.equal(/qrSvg\(api\.qrUrl\)/.test(src), false, 'QR кодът не бива да кодира адреса на SVG-то');
-assert.match(src, /<dt>QR изображение<\/dt>/, 'SVG адресът е отделен ред, не „QR адрес“');
+// 0.69.146: панелът НЕ изрежда технически адреси — QR се ПОКАЗВА като изображение, а адресът
+// му не се печата. Един адрес в панела е порталът („Отвори портала“ / „Копирай адреса“).
+assert.match(src, /class="qf-svg"/, 'QR кодът се показва като изображение');
+assert.equal(/<dt>QR изображение<\/dt>/.test(src), false, 'адресът на SVG-то не е ред в панела');
 // Частен портал: адресите носят ПОДПИСАН достъп — без него връщат 404 (portal-access.js).
 const portalControlSrc = uiSrc('portal-control.js');
 assert.match(src, /const accessOf = \(p\) => \(\{ query:/, 'подписът идва от сървъра (accessQuery)');

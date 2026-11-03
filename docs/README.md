@@ -28,6 +28,7 @@ Ordered from the original core requirement to the latest consolidated master pla
 | `19-file-delivery-export-manager-plan.md` | File Delivery & Export Manager + Download Access Control: 12 export modes, package index, integrity pipeline, policies, FD-0…FD-9                                                                   |
 | `20-unified-plan-v7.md`                   | **Program plan (entry point):** two access channels (admin Ingress vs Public API Gateway), portal model, isolation, capability status, waves W0–W8 and the next 10 work slots                       |
 | `21-next-updates.md`                      | Short-horizon slice (derived, does not reorder `20`): release 0.63.0, Report Studio remainder (`RS-05…RS-07`), manifest-consumption decision                                                        |
+| `22-single-portal-entry-plan.md`          | **One address = the portal:** `<DATA_DIR>/portal.html` greeting page, the eight UI references collapse to one portal address + buttons, one machine entry (`api.json`)                              |
 
 > **Canonical documents:** `15-unified-master-plan-v6.0.md` defines product scope; `20-unified-plan-v7.md`
 > is the current program plan and orders execution across all other plans (it also carries the

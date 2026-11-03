@@ -57,8 +57,19 @@ Add-on-ът е отделен продукт и се инсталира като
 
 ```yaml
 hapi_enterprise:
-  backend_url: http://<адрес-на-add-on-а>:8099
+  backend_url: !secret hapi_backend_url
 ```
+
+В `secrets.yaml` (никога не се качва в git):
+
+```yaml
+hapi_backend_url: http://<адрес-на-add-on-а>:8099
+```
+
+> **Токен в YAML не се слага.** Bridge-ът не ползва административния токен — той се
+> въвежда в UI настройката (3а) и се пази от Home Assistant в `.storage`, а не в
+> `configuration.yaml`. Ако друг компонент все пак иска токен в YAML, той е
+> `!secret hapi_token` (стойността — в `secrets.yaml`), никога като открит текст.
 
 - `backend_url` е единственият задължителен параметър и се проверява стриктно
   (`http(s)://host:port`); при невалидна стойност bridge-ът не се вдига, но UI

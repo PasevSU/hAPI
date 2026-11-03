@@ -3279,18 +3279,15 @@
         savePortal(e.target);
       });
     }
-    // API/QR се създават заедно с портала — няма бутон „Генерирай“.
+    // API/QR се създават заедно с портала — няма бутон „Генерирай“. Панелът НЕ изрежда
+    // техническите адреси: те са информация, която порталът извежда сам, а тук остава
+    // единственият адрес — този на портала (копира се) и машинното описание (сваля се).
     if (q('#pf-dl-api') && state.api[portal().id]) {
       q('#pf-dl-api').addEventListener('click', () => downloadJson(`api-${portal().slug}.json`, state.api[portal().id].record));
     }
-    if (q('#pf-dl-openapi') && state.api[portal().id]) {
-      q('#pf-dl-openapi').addEventListener('click', () =>
-        downloadJson(`openapi-${portal().slug}.json`, state.api[portal().id].openapi),
-      );
-    }
-    if (q('#pf-copy-refs') && state.api[portal().id]) {
-      q('#pf-copy-refs').addEventListener('click', () =>
-        copyText(JSON.stringify(state.api[portal().id].refs, null, 2), 'Препратките са копирани'),
+    if (q('#pf-copy-portal') && state.api[portal().id]) {
+      q('#pf-copy-portal').addEventListener('click', () =>
+        copyText(state.api[portal().id].landing, 'Адресът на портала е копиран'),
       );
     }
     // Сигурност на портала: ротация на ключа и проверка за цялост (реални административни
@@ -3381,7 +3378,8 @@
         if (!r.ok) return sayToken(esc(r.error || `HTTP ${r.status}`), 'err');
         const url = r.data.url || '';
         sayToken(
-          `<p><strong>Готово.</strong> Адресът се показва само сега:</p><p><code>${esc(url)}</code></p>
+          `<p><strong>Готово.</strong> Адресът се показва само сега — той отваря портала без вход.</p>
+           <p class="pf-token-value">${esc(url)}</p>
            <button type="button" class="btn btn-sm" id="pf-token-copy">${ICON.copy} Копирай адреса</button>`,
           'ok',
         );

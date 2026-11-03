@@ -87,9 +87,8 @@
               <div class="u-row u-row-3">
                 ${api
           ? `<button type="button" class="btn btn-primary btn-sm" id="pf-open-portal" data-open-portal-id="${esc(p.id)}" title="Отваря портала в панела (същият раздел, без нов таб — под Ingress нов таб губи сесията)">${ico('openWindow')} Отвори портала</button>
-                       <button type="button" class="btn btn-sm" id="pf-dl-api" title="Сваля описанието на API-то като файл — това НЕ е порталът">${ICON.download} Свали api.json</button>
-                       <button type="button" class="btn btn-sm" id="pf-dl-openapi" title="Сваля OpenAPI описанието като файл">${ICON.download} Свали openapi.json</button>
-                       <button type="button" class="btn btn-sm" id="pf-copy-refs">${ICON.copy} Копирай препратките</button>`
+                       <button type="button" class="btn btn-sm" id="pf-copy-portal" title="Копира ЕДИНСТВЕНИЯ адрес на портала">${ICON.copy} Копирай адреса</button>
+                       <button type="button" class="btn btn-sm" id="pf-dl-api" title="Сваля машинното описание като файл — това НЕ е порталът">${ICON.download} Свали api.json</button>`
           : ''
         }
               </div>
@@ -97,18 +96,9 @@
           ? `<div class="pf-qr">${qr ? `<div class="qf-svg">${qr}</div>` : '<p class="hint">QR SVG не е наличен в тази среда.</p>'
           }
                        ${accessNote}
-                       <dl class="fm-meta">
-                         <dt>API</dt><dd><code>${esc(api.refs.apiUrl || '')}</code></dd>
-                         <dt>Манифест</dt><dd><code>${esc(api.refs.manifestUrl || '')}</code></dd>
-                         <dt>Файлове</dt><dd><code>${esc(api.refs.filesUrl || '')}</code></dd>
-                         <dt>Хранилище</dt><dd><code>${esc(api.refs.storageUrl || '')}</code></dd>
-                         <dt>OpenAPI</dt><dd><code>${esc(api.refs.openapiUrl || '')}</code></dd>
-                         <dt>Адрес на портала</dt><dd><code>${esc(api.landing || '')}</code></dd>
-                         <dt>Папка</dt><dd><code>${esc(api.folder ? '/' + api.folder : '—')}</code></dd>
-                         <dt>QR изображение</dt><dd><code>${esc(api.qrUrl || '')}</code></dd>
-                         <dt>Генерирано</dt><dd>${esc((api.at || '').slice(0, 19).replace('T', ' '))}</dd>
-                         <dt>Файлове в API</dt><dd>${p.files.length}</dd>
-                       </dl></div>`
+                       <p class="hint">Порталът извежда сам цялата информация за себе си — файлове, папки, хешове,
+                       достъп и машинното описание. Тук остава само адресът, с който се отваря:
+                       „Отвори портала“ го отваря, „Копирай адреса“ го дава за изпращане.</p></div>`
           : noApiHint
         }
               <div class="pf-security">

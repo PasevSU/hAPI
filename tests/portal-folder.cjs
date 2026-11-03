@@ -117,7 +117,11 @@ let created = null;
     assert.match(servedHtml, /Договор 2026\.pdf/, 'страницата на папката изрежда файловете');
     assert.match(servedHtml, new RegExp(`Портал <code>${slug}</code>`), 'страницата е за ТОЗИ портал');
     assert.equal((await api('/portal.html?folder=няма-такъв')).status, 404, 'непозната папка → 404');
-    assert.equal((await api('/portal.html')).status, 404, 'без ?folder= адресът не е страница на портал');
+    // 0.69.146: `/portal.html` БЕЗ параметри е самият портал (поздрав), не 404 — това е
+    // единственият адрес, който човек получава (вж. tests/portal-root-page.cjs).
+    const rootPage = await api('/portal.html');
+    assert.equal(rootPage.status, 200, 'без ?folder= /portal.html е страницата на портала');
+    assert.match(await rootPage.text(), /Здравейте!/, 'и поздравява');
 
     // ── 7в. Нов портал НЕ наследява чуждите файлове от общата папка ──────────
     // Всеки портал сочи собствена папка `/share/<slug>`, затова „новият портал“ е празен,

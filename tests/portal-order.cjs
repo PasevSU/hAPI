@@ -79,8 +79,8 @@ const cleaned = [];
     assert.equal((await api('/portal.html?order=' + encodeURIComponent('share/няма-такава'))).status, 404, 'непозната папка → 404');
     assert.equal((await api('/portal.html?order=' + encodeURIComponent('../etc'))).status, 404, 'излизане от папката → 404');
     assert.equal((await api('/portal.html?order=' + encodeURIComponent('share/' + slug + '/../..'))).status, 404, 'връщане назад → 404');
-    assert.equal((await api('/portal.html?order=')).status, 404, 'празен order не е страница на портал');
-    assert.equal((await api('/portal.html')).status, 404, 'без order адресът не е страница на портал');
+    assert.equal((await api('/portal.html?order=')).status, 200, 'празен order не чупи страницата — показва поздрав');
+    assert.equal((await api('/portal.html')).status, 200, 'без параметри /portal.html е страницата (поздрав)');
 
     const privSlug = slug + '-priv';
     const priv = (await jsonOf('/admin/api/portals', 'POST', { slug: privSlug, title: 'Частен', visibility: 'private' })).data;

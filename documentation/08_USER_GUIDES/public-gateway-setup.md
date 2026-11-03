@@ -222,8 +222,13 @@ self-only публичната повърхност на порта на HA.
 
 ```yaml
 hapi_enterprise:
-  backend_url: http://c838e403_portal_enterprise:8099   # реалният slug на add-on-а + PORT
+  backend_url: !secret hapi_backend_url
 ```
+
+В `secrets.yaml`: `hapi_backend_url: http://c838e403_portal_enterprise:8099` (реалният
+slug на add-on-а + `PORT`). Административният токен **не** се слага в YAML — той е в UI
+настройката на интеграцията (`!secret hapi_token` е за други компоненти, ако им трябва
+токен, и стойността му стои само в `secrets.yaml`).
 
 > За инсталацията на `192.168.50.4` hostname-ът е `c838e403_portal_enterprise`
 > (същият като в `/app/c838e403_portal_enterprise`), а вътрешният порт е `8099`
@@ -233,10 +238,15 @@ hapi_enterprise:
 4. Проверете на **същия IP и порт**:
 
 ```
-https://192.168.50.4:8123/api/public/v1/portals/<slug>
-https://192.168.50.4:8123/api/public/v1/files/<fileId>/access
-https://192.168.50.4:8123/api/public/v1/files/<fileId>/download
+https://192.168.50.4:8123/hapi/portal.html                  ← порталът (HTML, поздрав)
+https://192.168.50.4:8123/hapi/p/<id>                       ← конкретен портал (HTML)
+https://192.168.50.4:8123/api/hapi_enterprise/public/v1/portals/<slug>
+https://192.168.50.4:8123/api/hapi_enterprise/public/v1/files/<fileId>/access
+https://192.168.50.4:8123/api/hapi_enterprise/public/v1/files/<fileId>/download
 ```
+
+Старият адрес `/api/public/v1/...` работи за вече издадени връзки и QR кодове, но
+отговаря с `Deprecation` и `Link: rel="successor-version"`.
 
 5. Ключът се подава като `X-Portal-Key` (или `?key=`). HA сесия **не** е нужна.
 6. Административните маршрути не се проксират — `/admin/...` на `:8123` остава на HA.

@@ -180,6 +180,11 @@ ${folderItems ? `  <h2>Папки</h2>\n  <ul>\n${folderItems}\n  </ul>\n` : ''}
     : '';
   // „още няма файлове“ остава само когато няма нито регистрирани файлове, нито съдържание.
   const empty = files.length || folderItems || fileItems ? '' : '      <li>още няма файлове</li>';
+  // Поздравът е ПЪРВОТО нещо на страницата: човек трябва да разбере какво е това и кой го
+  // изпраща, преди да види списък с файлове. Описанието на портала е най-добрият поздрав,
+  // когато е попълнено; иначе се казва в едно изречение какво е това.
+  const hello = String(p.description || p.subject || '').trim()
+    || `Тук са файловете, които са споделени с вас. Портал „${String(p.title || slug)}“ на hAPI Enterprise.`;
   // Кратката информация за портала: това, което дотук се смяташе от посетителя по адресите.
   const facts = [
     `<dt>Идентификатор</dt><dd><code>${esc(String(p.id || ''))}</code></dd>`,
@@ -195,19 +200,60 @@ ${folderItems ? `  <h2>Папки</h2>\n  <ul>\n${folderItems}\n  </ul>\n` : ''}
 <title>${esc(p.title || slug)} — портал hAPI Enterprise</title>
 </head>
 <body>
-  <h1>${esc(p.title || slug)}</h1>
+  <h1>Здравейте! Това е портал „${esc(p.title || slug)}“.</h1>
+  <p>${esc(hello)}</p>
   <p>Портал <code>${esc(slug)}</code> на hAPI Enterprise. Файлове: ${files.length}.</p>
   <p><a class="btn btn-primary" href="${esc(live)}">Отвори портала</a> — там са папките, търсенето,
   QR кодът и всички действия.</p>
   <dl>
     ${facts}
   </dl>
-${treeBlock}  <h2>Регистрирани файлове (качени през API-то)</h2>
+${treeBlock}  <h2>Файлове, качени през портала</h2>
   <ul>
 ${rows || empty}
   </ul>
-  <p>Страницата е генерирана от add-on-а при всяка промяна на портала; не се редактира на ръка.
-  Машиночитаемото описание е в <code>api.json</code> и <code>openapi.json</code> до нея.</p>
+  <p>Цялата информация за портала е на тази страница: файловете, папките, броячите и
+  отпечатъците. Страницата е генерирана от add-on-а при всяка промяна на портала и не се
+  редактира на ръка.</p>
+</body>
+</html>
+`;
+}
+
+/**
+ * Началната страница на портала — `/portal.html` БЕЗ параметри.
+ *
+ * Защо: адресът на портала се дава на човек, а човек не знае slug и не бива да го знае.
+ * Дотук `/portal.html` работеше само с `?folder=<slug>`, тоест „порталът“ нямаше адрес без
+ * параметър. Тук е поздравът: един портал → неговите файлове; няколко → списък с бутони
+ * „Отвори“ (всички към `/p/<id>`, тоест пак HTML на същия адрес, без отделен порт); нула →
+ * едно изречение какво да се направи. Никъде няма технически адрес.
+ */
+function rootPage(portals, base) {
+  const root = String(base || '').replace(/\/+$/, '');
+  const list = (Array.isArray(portals) ? portals : []).filter(Boolean);
+  const items = list
+    .map((p) => {
+      const count = Array.isArray(p.files) ? p.files.length : 0;
+      return `      <li><strong>${esc(p.title || p.slug)}</strong> — ${count} ${count === 1 ? 'файл' : 'файла'} · ` +
+        `<a class="btn btn-sm" href="${esc(`${root}/p/${encodeURIComponent(String(p.id || p.slug))}`)}">Отвори</a></li>`;
+    })
+    .join('\n');
+  const body = list.length
+    ? `  <p>${list.length === 1 ? 'Порталът е един.' : `Портали: ${list.length}.`} Всеки се отваря с бутона до името си.</p>\n  <ul>\n${items}\n  </ul>`
+    : '  <p>Още няма портали. Първият се създава от панела на hAPI Enterprise.</p>';
+  return `<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>hAPI Enterprise — портал</title>
+</head>
+<body>
+  <h1>Здравейте! Това е hAPI Enterprise.</h1>
+  <p>Тук са порталите с файловете, които са споделени с вас.</p>
+${body}
+  <p>Страницата се генерира от add-on-а; не се редактира на ръка.</p>
 </body>
 </html>
 `;
@@ -308,4 +354,4 @@ async function removeArtifacts(root) {
   return removed;
 }
 
-module.exports = { folderPath, safeName, ensure, store, remove, page, listTree, writeArtifacts, folderReady, removeArtifacts, isGenerated, GENERATED };
+module.exports = { folderPath, safeName, ensure, store, remove, page, rootPage, listTree, writeArtifacts, folderReady, removeArtifacts, isGenerated, GENERATED };

@@ -756,6 +756,9 @@ const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseU
 // Публични токени за портал (Stage D) и изтегляне на файл от ПАПКАТА му (един вход, не адрес за всеки файл).
 const portalTokens = require('./routes/portal-tokens').create({ json, fail, parse, audit, adminGate, store: metadataStore, policy: portalPolicy, resolvePortal, baseUrl, portalPath: (p) => links.portalLandingPath(p), randomToken: (prefix) => prefix + crypto.randomBytes(32).toString('base64url'), publish: (e, d) => webhooks.publish(e, d) });
 const qrRegistry = require('./portal-qr'); const integrityRegistry = require('./portal-integrity'); const worm = require('./worm').create({ log, audit, filesRoot }); const sealFiles = async (portal, manifest, rootAbs) => worm.sealManifest(portal, manifest, rootAbs); const oidcRoutes = require('./routes/oidc').create({ json, fail, audit, oidc: oidcLib, metadataStore, keyDigest, newSessionToken, cookieSecure: (req) => portalPolicy.isSecureRequest(req), baseUrl }); const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr: qrRegistry, archiveRoot: path.join(root, 'archives'), db: () => db }); const portalQr = require('./routes/portal-qr').create({ json, fail, parse, audit, fsp, path, portalRoot, update, qr: qrRegistry, integrity: integrityRegistry, archiveRoot: path.join(root, 'archives'), adminGate, db: () => db, sealFiles, worm });
+// Публичната страница на портала: ЕДИН адрес (`/portal.html`), поздрав + порталите, до които
+// заявката има достъп. Логиката е в `routes/portal-page.js` — `server.js` има таван на редовете.
+const portalPage = require('./routes/portal-page').create({ fail, resolvePortal, policy: portalPolicy, portals: () => db.portals, baseUrl, recordTelemetry, portalFolder, links });
 // PGP ключохранилище (B2): ключовете идват само от изрични пътища; тук се държи една
 // инстанция, за да е еднакъв отговорът „има ли ключ“ за целия сървър.
 const keyring = require('./path-crypto').create({ env: process.env });
@@ -1492,17 +1495,9 @@ async function handler(req, res) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
       return res.end(html);
     }
-    // Страницата на портала за конкретна папка: `/portal.html?folder=<slug>`. Същият адрес,
-    // който се записва в папката (`portal.html`), се сервира и от add-on-а — така линкът към
-    // папката се отваря и показва файловете ѝ, вместо да е път до файл на диска.
-    if (url.pathname === '/portal.html' && method === 'GET' && url.searchParams.get('folder')) {
-      const portal = resolvePortal(url.searchParams.get('folder')); if (!portal) return fail(res, 404, 'Not found');
-      // Същата политика като `/p/<id>` — едно решение за всички входове (portal-policy.js).
-      if (!portalPolicy.decide({ req, url, portal, action: 'read' }).allowed) return fail(res, 404, 'Not found'); void recordTelemetry('visit', req, portal, null, url);
-      const html = await portalFolder.listTree(portal.storage_root).then((tree) => portalFolder.page(portal, baseUrl(req), tree));
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
-      return res.end(html);
-    }
+    // Страницата на портала е ЕДИН адрес: `/portal.html` (поздрав + порталите, до които има
+    // достъп) и `/portal.html?folder=<slug>` (същата страница за конкретна папка).
+    if (await portalPage.handle({ req, res, url })) return;
     if (url.pathname === '/portal-i18n.js' && method === 'GET') {
       // Речникът на публичната страница (BG/EN/DE) — отделен файл, за да се проверява
       // от тест и за да не се пълни portal.js с 200 реда текстове.

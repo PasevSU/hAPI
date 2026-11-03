@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.145**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.146**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **109** backend модула · **15** HTTP компонента · **23** UI модула · **8** Python модула · **35** инструмента · **341** теста.
+Общо: **109** backend модула · **16** HTTP компонента · **23** UI модула · **8** Python модула · **35** инструмента · **347** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -124,7 +124,7 @@
 | `hapi_enterprise/worm.js` | WORM ЗА ОСНОВНОТО ХРАНИЛИЩЕ — файл, който е влязъл в доказателство, не се презаписва |
 | `hapi_enterprise/x509.js` | Минимален X.509 (self-signed) — за подписване на отчети и за устройствени сертификати. |
 
-### HTTP компоненти (`hapi_enterprise/routes/*.js`) (15)
+### HTTP компоненти (`hapi_enterprise/routes/*.js`) (16)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -138,6 +138,7 @@
 | `hapi_enterprise/routes/link-check.js` | Проверка дали един публичен адрес НАИСТИНА се отваря — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/oidc.js` | OIDC вход — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/pgp-keyring.js` | PGP ключохранилище — компонент на HTTP слоя. |
+| `hapi_enterprise/routes/portal-page.js` | Публичната страница на портала — ЕДИН адрес, на адреса на add-on-а (и през Home Assistant). |
 | `hapi_enterprise/routes/portal-qr.js` | QR ревизиите на един портал — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/portal-storage.js` | Изтегляне на файл ОТ ПАПКАТА на портала (публичен вход през портала, не отделен адрес). |
 | `hapi_enterprise/routes/portal-tokens.js` | Публични токени за един портал (Stage D) — HTTP слоят. |

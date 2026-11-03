@@ -894,6 +894,24 @@ input[type="radio"] {
   color: var(--red);
 }
 
+/* Издаденият адрес е ИНФОРМАЦИЯ, не връзка: не се подчертава и не прилича на линк —
+   вижда се веднъж, избира се и се копира с бутона до него. */
+.pf-security-out code,
+.pf-token-value {
+  display: block;
+  margin: 6px 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: calc(var(--grid-gap) / 2);
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: var(--fs-11);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
 /* Формулярите в панелите на файла и резултатът им (подписан URL, разписка, проверка). */
 .fm-form {
   display: grid;
