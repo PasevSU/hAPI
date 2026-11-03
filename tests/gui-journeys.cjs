@@ -79,6 +79,45 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     await settle('картата на портала');
   };
 
+  /**
+   * Създава НОВ портал с ЕДИН файл — през формата, както го прави човек (същият път като J05).
+   * Така файловият сценарий не зависи от състоянието, което предишен сценарий е оставил:
+   * той си носи портала и файла. Именно тази зависимост правеше три сценария нестабилни в CI.
+   */
+  const ownPortalWithFile = async (slug) => {
+    await portalList();
+    app.click('#pf-new', 'бутонът „Нов портал“');
+    await waitFor(() => app.$('#pf-create'), { label: 'формата за нов портал' });
+    app.fill('[name="slug"]', slug);
+    app.fill('[name="title"]', 'Портал за файловия сценарий');
+    const folder = app.$('#pf-folder');
+    assert.ok(folder, 'формата има избор на папка с файлове');
+    folder.files = [pseudoFile('fayl-za-scenariy.txt', 'съдържание за сценария')];
+    app.select('[name="visibility"]', 'public');
+    app.clearToasts();
+    app.click('#pf-create', 'бутонът „Създай и генерирай API + QR“');
+    await waitFor(() => app.toast(), { label: 'порталът за сценария', timeout: BUDGET });
+    assert.equal(app.toast().kind, 'ok', 'порталът за сценария се създава: ' + app.toast().message);
+    await settle('файловете на новия портал');
+    assert.match(text(view()), /fayl-za-scenariy\.txt/, 'файлът е в новия портал');
+  };
+
+  /** Отваря действие от менюто ⚙ на файла „fayl-za-scenariy.txt“ — същият път като с мишка. */
+  const fileAction = async (action) => {
+    const row = await waitFor(() => {
+      const rows = app.$$('[data-file-gear]');
+      return rows.find((el) => {
+        const art = el.closest ? el.closest('.fm-file') : null;
+        return !art || /fayl-za-scenariy/.test(text(art));
+      }) || rows[0];
+    }, { label: 'менюто ⚙ на файла' });
+    row.click();
+    await settle('менюто на файла');
+    const item = await waitFor(() => app.$('[data-file-act="' + action + '"]'), { label: 'действието „' + action + '“' });
+    item.click();
+    await settle('формата за „' + action + '“');
+  };
+
   const journey = async (name, fn) => {
     try {
       await fn();
@@ -607,6 +646,39 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       app.click('#pf-qr-show', 'бутонът за историята на QR');
       await waitFor(() => /Активен QR|QR-/.test(text(app.$('#pf-qr-out'))), { label: 'историята на QR' });
       assert.match(text(app.$('#pf-qr-out')), /Активен QR|QR-\d/i, 'историята показва активния QR');
+    });
+
+    // ── J37. Файл: преименуване през формата на панела ────────────────────────
+    await journey('J37 файл: преименуване', async () => {
+      await ownPortalWithFile('gui-journey-file-rename');
+      await fileAction('rename');
+      const form = await waitFor(() => app.$('#fm-rename-form'), { label: 'формата за преименуване' });
+      const field = app.$('#fm-rename-form input[name="name"]');
+      assert.ok(field, 'формата има поле за име');
+      app.fill(field, 'preimenuvan-ot-panel.txt');
+      app.clearToasts();
+      form.dispatch('submit');
+      await waitFor(() => app.toast(), { label: 'отговорът от преименуването', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'файлът е преименуван: ' + app.toast().message);
+      assert.ok(app.requests.some((r) => r.method === 'PATCH' && /\/files\//.test(r.url)), 'преименуването мина през сървъра');
+      await settle('списъкът след преименуването');
+      assert.match(text(view()), /preimenuvan-ot-panel\.txt/, 'новото име се вижда в портала');
+    });
+
+    // ── J38. Файл: бележка през формата на панела ─────────────────────────────
+    await journey('J38 файл: бележка', async () => {
+      await ownPortalWithFile('gui-journey-file-note');
+      await fileAction('note');
+      const form = await waitFor(() => app.$('#fm-note-form'), { label: 'формата за бележка' });
+      const field = app.$('#fm-note-form textarea[name="notes"]');
+      assert.ok(field, 'формата има поле за бележка');
+      app.fill(field, 'Проверено от сценарий J38');
+      app.clearToasts();
+      form.dispatch('submit');
+      await waitFor(() => app.toast(), { label: 'отговорът за бележката', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'бележката е запазена: ' + app.toast().message);
+      assert.match(app.toast().message, /бележк|Запазен/i, 'панелът казва какво е станало: ' + app.toast().message);
+      assert.ok(app.requests.some((r) => r.method === 'PATCH' && /\/metadata$/.test(r.url)), 'бележката мина през сървъра');
     });
 
     // ── J40. Портал: отказите на QR панела — основание и идентичност ──────────
