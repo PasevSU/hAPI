@@ -159,10 +159,29 @@ const intJs = fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterpr
     doc.getElementById('skip').click();
     assert.equal(location.href, before, 'скокът не променя адреса');
 
+    // ── 4. Осталите публични страници: началната и страницата за един файл ─────────────
+    // Там CSP забранява скриптове (`script-src` липсва), затова „бутон“ е оформена връзка,
+    // а оправданието е, че ВСИЧКО останало е информация, не линк.
+    const landing = await (await fetch(`${base}/`)).text();
+    assert.equal(/<a[\s>]/i.test(landing), false, 'началната страница не дава линк към API-то');
+    assert.ok(landing.includes('/api/v1/portals'), 'адресът на API-то се вижда като информация');
+
+    // Един реален файл в папката на портала — страницата `/file.html` показва точно него.
+    const portalFolder = path.resolve('/share', 'nolinks-demo');
+    fs.mkdirSync(portalFolder, { recursive: true });
+    fs.writeFileSync(path.join(portalFolder, 'doklad.txt'), 'съдържание за едностраничния изглед', 'utf8');
+    const filePage = await (await fetch(`${base}/file.html?file=` + encodeURIComponent('nolinks-demo/doklad.txt'))).text();
+    assert.ok(filePage.includes('SHA-256'), 'страницата на файла показва отпечатъка');
+    assert.ok(filePage.includes('Адрес за изтегляне'), 'и адреса за изтегляне като информация');
+    const fileAnchors = filePage.match(/<a[\s>][^>]*>/gi) || [];
+    assert.equal(fileAnchors.length, 1, 'точно едно действие — бутонът „Изтегли файла“: ' + fileAnchors.join(' | '));
+    assert.match(fileAnchors[0], /class="btn"/, 'действието е оформено като бутон');
+    assert.equal(/href="#"|target="_blank"/.test(filePage), false, 'няма празни връзки и нови табове');
+
     console.log(
       'PASS portal-no-links: 0 линка в готовата страница · API/Манифест се разгъват В страницата · ' +
       'адресът се копира с бутон, но не се изписва · контактът и папките са бутони · ' +
-      'копие за интеграцията със същия договор',
+      'копие за интеграцията със същия договор · началната страница и /file.html дават информация, не линкове',
     );
   } finally {
     await server.stop();

@@ -281,7 +281,11 @@ function create(deps) {
       + '<dt>SHA-256</dt><dd><code>' + esc(sha) + '</code></dd>'
       + '<dt>Content ID</dt><dd><code>' + esc(cid || '—') + '</code></dd>'
       + '<dt>Публикуван в</dt><dd>' + (inQr && inQr.qrId ? esc(inQr.qrId) + (inQr.manifestId ? ' · ' + esc(inQr.manifestId) : '') : 'още не е в архив') + '</dd></dl>'
-      + (canDownload ? '<p><a class="btn" href="' + esc(downloadHref) + '">Изтегли файла</a></p>' : '<p>Съдържанието не се отдава за този достъп.</p>')
+      + (canDownload ? '<p><a class="btn" href="' + esc(downloadHref) + '" download>Изтегли файла</a></p>'
+        // PP-17: действието е бутон, а адресът НЕ се скрива — дава се като информация, ако
+        // бутонът не е достатъчен (CSP тук забранява скриптове, затова няма JS-бутон).
+        + '<p><small>Адрес за изтегляне: <code>' + esc(downloadHref) + '</code></small></p>'
+        : '<p>Съдържанието не се отдава за този достъп.</p>')
       + '<p><small>Тази страница показва само един файл; съдържанието на папката не се зарежда.</small></p>'
       + '</main></body></html>';
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
