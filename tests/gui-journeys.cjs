@@ -155,6 +155,27 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     return null;
   }, { label: 'бутонът „' + attr + '“ в картата на „' + needle + '“', timeout: BUDGET });
 
+  /**
+   * Картата на НАШИЯ портал в списъка. Търси се по същия начин, по който човек я намира с
+   * очи — през бутона „Отвори портала“, чийто ред носи адреса (slug), и после нагоре до
+   * картата. Така сценарият не зависи от поредността на порталите в списъка.
+   */
+  const portalCard = async (slug) => {
+    const row = await waitFor(() => {
+      for (const el of app.$$('[data-open-portal]')) {
+        let node = el;
+        for (let i = 0; i < 6 && node; i++) {
+          if (text(node).includes(slug)) return el;
+          node = node.parentNode;
+        }
+      }
+      return null;
+    }, { label: 'картата на портала „' + slug + '“', timeout: BUDGET });
+    const card = row.closest ? row.closest('.pf-portal') : null;
+    assert.ok(card, 'картата на портала се разпознава по класа .pf-portal');
+    return card;
+  };
+
   const journey = async (name, fn) => {
     try {
       await fn();
@@ -1421,15 +1442,188 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       );
     });
 
-    // Отнемането на токен (`data-token-revoke`) НЕ се проверява тук: бутонът се рисува от
-    // списъка с токени, който панелът иска отделно и чийто отговор на runner-а не винаги носи
-    // издадения токен — сценарий, който чака него, би бил нестабилен. Пътят на издаване е в
-    // J34, а списъкът и отнемането се пазят от `tests/files-manager.cjs`.
+    // ── J65. Тайна връзка: „Копирай“ слага ИМЕННО линка в клипборда ────────────
+    await journey('J65 тайна връзка: копиране на линка', async () => {
+      app.nav('settings');
+      await settle('„Настройки“');
+      await app.section('data');
+      await settle('секция „Данни“');
+      app.fill('#set-secret-text', 'тайна за копиране от сценария');
+      app.clearToasts();
+      app.action('secretCreate');
+      const copy = await waitFor(() => app.$('#set-secret-out [data-copy-secret]'), {
+        label: 'бутонът „Копирай“ на тайната',
+        timeout: BUDGET,
+      });
+      const link = String(copy.getAttribute('data-copy-secret') || '');
+      assert.match(link, /\/secret#/, 'бутонът носи линка на тайната: ' + link);
+      const before = app.copied.length;
+      app.clearToasts();
+      copy.click();
+      const said = await waitFor(() => {
+        const t = app.toast();
+        return t && /копиран/i.test(t.message) ? t : null;
+      }, { label: 'съобщението за копирания линк', timeout: BUDGET });
+      assert.equal(said.kind, 'ok', 'линкът е копиран: ' + said.message);
+      assert.equal(app.copied.length, before + 1, 'в клипборда е сложен точно един текст');
+      assert.equal(app.copied[app.copied.length - 1], link, 'копиран е ИМЕННО линкът на тайната');
+    });
 
-    // Менюто „API ▾“ на файла НЕ се проверява тук: то се рисува само когато файлът има
-    // подписан адрес (издава се асинхронно от панела), а „Копирай адреса“ зависи от
-    // клипборда на машината. Затова присъствието му се пази от `tests/files-manager.cjs`,
-    // а тук остава провереното с щракване: иконите „в списъка“ и „заключен“.
+    // ── J66. Портал: менюто „API ▾“ — копирай, отвори, изтегли ─────────────────
+    await journey('J66 портал: менюто „API ▾“', async () => {
+      const slug = 'gui-journey-api-menu';
+      await ownPortalWithFile(slug);
+      await portalList();
+      // Щракване върху заглавието: затваря евентуално отворено меню ⚙ от предишен
+      // сценарий, точно както човек би щракнал настрана, преди да отвори друго меню.
+      const title = app.$('#view h1');
+      if (title) title.click();
+      await settle('списъкът с портали');
+      // Менюто се отваря с щракване, както при човек — проверява се, че е ВИДИМО.
+      // Картата се търси НАНОВО при всяка стъпка: щракването върху „API ▾“ може да
+      // прерисува панела (затваря отворено меню ⚙ от предишен сценарий), а държан
+      // елемент от предишния изглед вече не е този, който човекът вижда.
+      const openMenu = async (step) => {
+        const fresh = await portalCard(slug);
+        const button = await waitFor(() => fresh.querySelector('[data-api-menu]'), {
+          label: 'бутонът „API ▾“ (' + step + ')',
+          timeout: BUDGET,
+        });
+        button.click();
+        return waitFor(() => {
+          const menu = button.parentNode ? button.parentNode.querySelector('.fm-menu') : null;
+          return menu && menu.hidden === false ? menu : null;
+        }, { label: 'менюто „API ▾“ да се отвори (' + step + ')', timeout: BUDGET });
+      };
+      const menu = await openMenu('копирай');
+      const copyButton = menu.querySelector('[data-api-copy]');
+      assert.ok(copyButton, 'менюто има „Копирай адреса“');
+      const apiUrl = String(copyButton.getAttribute('data-api-copy') || '');
+      assert.match(apiUrl, /^https?:\/\/|^\//, 'менюто носи адреса на API-то: ' + apiUrl);
+      app.clearToasts();
+      copyButton.click();
+      await waitFor(() => {
+        const t = app.toast();
+        return t && /Копирано/.test(t.message) ? t : null;
+      }, { label: 'съобщението за копирания адрес', timeout: BUDGET });
+      assert.equal(app.copied[app.copied.length - 1], apiUrl, 'копиран е адресът на API-то');
+      // „Отвори“ чете адреса от сървъра и го показва в изскачащия прозорец на панела.
+      const beforeOpen = app.requests.length;
+      const menuOpen = await openMenu('отвори');
+      menuOpen.querySelector('[data-api-open]').click();
+      await waitFor(() => app.requests.length > beforeOpen, { label: 'заявката при „Отвори“', timeout: BUDGET });
+      assert.ok(
+        app.requests.slice(beforeOpen).some((r) => r.url.endsWith(apiUrl)),
+        '„Отвори“ поиска ИМЕННО адреса на API-то: ' + app.requests.slice(beforeOpen).map((r) => r.url).join(' · '),
+      );
+      // „Изтегли“ също иска файла от сървъра; самият запис на диска е работа на браузъра,
+      // затова тук се проверява искането и съобщението, което човекът вижда.
+      const beforeDl = app.requests.length;
+      const menuDl = await openMenu('изтегли');
+      app.clearToasts();
+      menuDl.querySelector('[data-api-dl]').click();
+      await waitFor(() => app.toast(), { label: 'съобщението при „Изтегли“', timeout: BUDGET });
+      assert.ok(
+        app.requests.slice(beforeDl).some((r) => r.url.endsWith(apiUrl)),
+        '„Изтегли“ поиска файла от сървъра: ' + app.requests.slice(beforeDl).map((r) => r.url).join(' · '),
+      );
+    });
+
+    // ── J67. Портал: рекурсивният отчет води до „Отчети“ ──────────────────────
+    await journey('J67 портал: рекурсивен отчет', async () => {
+      const slug = 'gui-journey-report-recursive';
+      await ownPortalWithFile(slug);
+      await portalList();
+      const card = await portalCard(slug);
+      const button = await waitFor(() => card.querySelector('[data-report-recursive]'), {
+        label: 'бутонът за рекурсивен отчет',
+        timeout: BUDGET,
+      });
+      app.clearToasts();
+      button.click();
+      // Рекурсивният отчет включва и папките от хранилището, затова панелът първо иска
+      // дървото на портала, а после отваря сглобения отчет в Report Studio.
+      const said = await waitFor(() => {
+        const t = app.toast();
+        return t && /Отчети/.test(t.message) ? t : null;
+      }, { label: 'съобщението за отворения отчет', timeout: BUDGET });
+      assert.equal(said.kind, 'ok', 'отчетът се отваря: ' + said.message);
+      assert.ok(
+        app.requests.some((r) => /\/portals\/[^/]+\/tree$/.test(r.url)),
+        'рекурсивният отчет поиска дървото на портала: ' + app.requests.slice(-4).map((r) => r.url).join(' · '),
+      );
+      const count = await waitFor(() => {
+        const node = app.$('#rs-count');
+        return node && Number((text(node).match(/\d+/) || [0])[0]) > 0 ? node : null;
+      }, { label: 'сглобения отчет с блокове', timeout: BUDGET });
+      assert.ok(Number((text(count).match(/\d+/) || [0])[0]) > 0, 'отчетът има блокове: ' + text(count));
+    });
+
+    // ── J68. Портал: „Отвори портала“ от контролния панел (по идентификатор) ────
+    await journey('J68 портал: отваряне по идентификатор', async () => {
+      const slug = 'gui-journey-open-by-id';
+      await ownPortalWithFile(slug);
+      const open = await waitFor(() => app.$('#pf-open-portal'), { label: 'бутонът „Отвори портала“', timeout: BUDGET });
+      const id = open.getAttribute('data-open-portal-id');
+      assert.ok(id, 'бутонът носи идентификатора на портала');
+      const before = app.requests.length;
+      app.clearToasts();
+      open.click();
+      const again = await waitFor(() => app.$('#pf-open-portal'), { label: 'бутонът след отварянето', timeout: BUDGET });
+      await settle('картата на портала');
+      // Отварянето на вече отворения портал е САМО четене: не бива да има нито една
+      // промяна на сървъра (POST/PATCH/DELETE). Заявките за четене са позволени — панелът
+      // може да презареди дървото на папките, ако е било за друг портал.
+      const fresh = app.requests.slice(before);
+      assert.deepEqual(
+        fresh.filter((r) => r.method !== 'GET').map((r) => r.method + ' ' + r.url),
+        [],
+        'отварянето не променя нищо на сървъра: ' + fresh.map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+      assert.equal(again.getAttribute('data-open-portal-id'), id, 'панелът остава на СЪЩИЯ портал');
+      assert.ok(app.$('[data-close-portal]'), 'порталът е отворен в същия раздел (има „← Списък с портали“)');
+      assert.ok(!app.toast() || app.toast().kind !== 'err', 'отварянето мина без грешка: ' + (app.toast() ? app.toast().message : '—'));
+      assert.match(text(view()), /fayl-za-scenariy\.txt/, 'файловете на портала са на екрана след отварянето');
+    });
+
+    // ── J69. Файл: пълният пакет хешове и преизчисляването му ──────────────────
+    await journey('J69 файл: пълният пакет хешове', async () => {
+      await ownPortalWithFile('gui-journey-file-hashes');
+      const row = await waitFor(() => {
+        const nodes = app.$$('[data-open-file]');
+        return nodes.find((el) => /fayl-za-scenariy/.test(text(el))) || nodes[0];
+      }, { label: 'редът на файла', timeout: BUDGET });
+      row.click();
+      const block = await waitFor(() => app.$('[data-hash-block]'), { label: 'блокът „Пълен пакет хешове“', timeout: BUDGET });
+      assert.match(text(block), /Пълен пакет хешове/, 'блокът е в картата на файла: ' + text(block).slice(0, 80));
+      const again = await waitFor(() => app.$('#fm-hash-stack'), { label: 'бутонът за преизчисляване на хешовете', timeout: BUDGET });
+      const before = app.requests.length;
+      app.clearToasts();
+      again.click();
+      await waitFor(() => app.requests.slice(before).some((r) => /\/hashes$/.test(r.url)), {
+        label: 'заявката за хешовете',
+        timeout: BUDGET,
+      });
+      const asked = app.requests.slice(before).filter((r) => /\/hashes$/.test(r.url)).pop();
+      assert.equal(asked.method, 'GET', 'хешовете се четат от сървъра: ' + asked.method + ' ' + asked.url);
+    });
+
+    // Какво остава ИЗВЪН обхвата на щракването и защо — за да не се „попълва“ някога със
+    // сценарий, който минава, без да е минал през интерфейса:
+    //   • `data-token-revoke` — списъкът с токени се иска отделно и отговорът му на runner-а
+    //     не винаги носи издадения в J34 токен; сценарий, който го чака, би бил нестабилен.
+    //   • `data-qr-revoke` — артефактите се създават само от `POST /admin/api/qr-artifacts`,
+    //     а нито един бутон в интерфейса не го вика (панелът ги само чете и отменя).
+    //   • `data-record-assoc` / `data-record-detach` — записи в картотеката се създават от
+    //     миграцията или от API-то; интерфейсът няма бутон „нов запис“.
+    //   • `data-job` — бутоните „Пауза“/„Откажи“ се рисуват само за жива задача, а задачите
+    //     в този сценарий свършват, преди панелът да се отвори.
+    //   • `data-register-file` — появява се за файл, сложен в папката на портала ИЗВЪН
+    //     интерфейса (мрежов дял); в сценария няма такъв файл.
+    //   • `data-cms-download`, `data-pgp-remove`, `data-profile-apply/delete` — искат
+    //     предварително състояние на сървъра (подписан PDF, PGP ключ, профил на диска).
+    // Всички те са проверени в `tests/files-manager.cjs` и `tests/settings-panel.cjs` на
+    // ниво панел; тук остава само пътят, който човек наистина може да натисне.
 
     // ── Отчет ─────────────────────────────────────────────────────────────────
     assert.deepEqual(failed, [], 'сценарии, които не минаха:\n  ' + failed.join('\n  '));

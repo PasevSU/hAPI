@@ -1078,7 +1078,13 @@
       };
       const record = spec.buildApiRecord(portalObj, { baseUrl: linkBase() });
       const openapi = spec.buildOpenApi(portalObj, { baseUrl: linkBase() });
-      const refs = record.references || {};
+      // Адресите идват от `buildReferences`, а НЕ от `record.references`: `buildApiRecord`
+      // дава същите адреси на горно ниво (`apiUrl`, `manifest`, `files`, `storage`,
+      // `landing`), а ключ `references` в записа НЯМА. До 0.69.137 това оставяше `refs`
+      // празен обект: контролният панел показваше празни адреси (API, манифест, файлове,
+      // хранилище, OpenAPI), а менюто „API ▾“ на картата не се рисуваше никога — тоест
+      // трите му действия (копирай / отвори / изтегли) бяха недостъпни за човека.
+      const refs = spec.buildReferences(linkBase(), p.slug, p.id);
       // Подписаният достъп за частен портал ПРЕДИ адресите: без него `/p/<id>` и API-то
       // връщат 404 (вж. server.js → portalAuthorized / portal-access.js).
       const q = (access && access.query) || '';

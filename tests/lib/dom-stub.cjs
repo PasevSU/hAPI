@@ -232,8 +232,6 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
       this.style = {};
       this.value = '';
       this.checked = false;
-      this.disabled = false;
-      this.hidden = false;
       this.files = [];
       this.ownerDocument = doc;
       this.dataset = new Proxy(
@@ -259,6 +257,15 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
     }
     get id() { return this.getAttribute('id') || ''; }
     set id(v) { this.setAttribute('id', v) }
+    // Браузърът отразява `hidden` и `disabled` в АТРИБУТА и обратно: `<div hidden>` дава
+    // `el.hidden === true`, а `el.hidden = true` слага атрибута. Без това панел, който
+    // отваря меню с `menu.hidden = !open`, не може да бъде проверен: `<div class="fm-menu"
+    // hidden>` се разчиташе като „менюто е отворено“ и менюто „API ▾“ изглеждаше счупено,
+    // докато в браузър работи.
+    get hidden() { return this.hasAttribute('hidden') }
+    set hidden(v) { if (v) this.setAttribute('hidden', ''); else this.removeAttribute('hidden') }
+    get disabled() { return this.hasAttribute('disabled') }
+    set disabled(v) { if (v) this.setAttribute('disabled', ''); else this.removeAttribute('disabled') }
     // Браузърът отразява `href`/`src` в атрибут — без това `a.href = …` не се вижда
     // от тестовете (portal.js слага адресите точно така).
     get href() { return this.getAttribute('href') || ''; }
@@ -268,6 +275,21 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
     get className() { return this.getAttribute('class') || ''; }
     set className(v) { this.setAttribute('class', String(v == null ? '' : v)) }
     get children() { return this.childNodes.filter((n) => n.nodeType === 1) }
+    // Браузърът има `parentElement` (родителят, ако е елемент). Панелът го ползва, за да
+    // намери менюто до бутона („API ▾“): без това свойство менюто изглежда мъртво, докато
+    // в браузър се отваря.
+    get parentElement() { return this.parentNode && this.parentNode.nodeType === 1 ? this.parentNode : null }
+    get nextElementSibling() {
+      if (!this.parentNode) return null;
+      const list = this.parentNode.children;
+      return list[list.indexOf(this) + 1] || null;
+    }
+    get previousElementSibling() {
+      if (!this.parentNode) return null;
+      const list = this.parentNode.children;
+      const i = list.indexOf(this);
+      return i > 0 ? list[i - 1] : null;
+    }
     get firstChild() { return this.childNodes[0] || null }
     // Браузърът дава на формата достъп до полетата си по ИМЕ (`form.input`, `form.name`).
     // Панелите го ползват (напр. `uploadFile(form)`), затова стъбът трябва да го има —

@@ -2522,7 +2522,7 @@ async function handler(req, res) {
           if (parts.length === 7 && parts[6] === 'versions' && method === 'GET') return json(res, 200, { current: { version: f.version || 1, size: f.size, sha256: f.sha256, uploadedAt: f.uploadedAt, encrypted: !!f.encrypted }, versions: [...(f.versions || [])].sort((a, b) => b.version - a.version), total: (f.versions || []).length + 1 });
           if (parts.length === 7 && parts[6] === 'versions' && method === 'POST') {
             // Бележката е процентно-кодирана: HTTP заглавките са байтове и кирилица в тях е невалидна.
-          const note = (r => { try { return r ? decodeURIComponent(r) : ''; } catch { return r; } })(clean(req.headers['x-version-note'] || ''));
+            const note = (r => { try { return r ? decodeURIComponent(r) : ''; } catch { return r; } })(clean(req.headers['x-version-note'] || ''));
             const data = await body(req, runtime.effective().maxUploadBytes);
             const prev = versioning.snapshotCurrent(f, { note });
             const newVersion = versioning.nextVersion(f);
