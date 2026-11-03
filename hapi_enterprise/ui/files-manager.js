@@ -574,6 +574,12 @@
         if (!box) return;
         if (box.children.length >= 20) return toast('Максимум 20 полета', 'err');
         box.insertAdjacentHTML('beforeend', extrasRow('', ''));
+        // Новодобавеният ред НЕ получава собствен слушател: той се добавя след
+        // рисуването, а слушателите се слагат при него. Затова „✕“ се хваща от един
+        // делегиран слушател на контейнера — същият, който добавя реда.
+        const fresh = box.children[box.children.length - 1];
+        const first = fresh ? fresh.querySelector('[data-extra-key]') : null;
+        if (first && first.focus) first.focus();
         return;
       }
       const remove = target.closest('[data-extras-remove]');
@@ -3205,6 +3211,10 @@
         sync();
       });
     });
+    // Полетата по желание („＋ добави поле“ / „✕“) се срещат във формите на портала,
+    // на контакта и на делото — всички те са `.pf-form`, затова един делегиран слушател
+    // стига. Редът се добавя СЛЕД рисуването, тоест „✕“ на новия ред няма как да има
+    // собствен слушател; затова слушателят е на контейнера, не на бутона.
     host.querySelectorAll('.pf-form, #pf-settings').forEach(wireExtras);
     // Щракване върху портал отваря САМО него (списъкът се крие), а в края на
     // страницата има бутон „← Списък с портали“.
