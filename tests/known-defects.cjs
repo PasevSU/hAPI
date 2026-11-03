@@ -60,7 +60,9 @@ const findFile = (name) => {
 let closedRows = 0;
 for (const row of rows.filter(isClosed)) {
   closedRows += 1;
-  const files = [...row.description.matchAll(/`([a-z0-9-]+\.js)`/g)].map((m) => m[1]);
+  // `.cjs` също е файл с код: тестовете в това репо са `.cjs`, а дотук правилото виждаше само
+  // `.js` — тоест ред, доказан с тест, не можеше да бъде затворен честно (DEF-16).
+  const files = [...row.description.matchAll(/`([a-z0-9-]+\.(?:js|cjs))`/g)].map((m) => m[1]);
   // „Затворен (не е дефект)“ описва твърдение за средата, не липса в кода — там файл не се
   // изисква, но ако редът все пак сочи файл, той трябва да съществува.
   if (!/не е дефект/i.test(row.status)) {
