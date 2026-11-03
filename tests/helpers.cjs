@@ -100,6 +100,20 @@ async function canBind(host, port) {
   });
 }
 
+// Node's fetch refuses a FIXED list of numbers (undici's blocked ports): it throws
+// `fetch failed` with cause `bad port` before a packet leaves. The kernel happily hands
+// such numbers out as ephemeral ports, so a test could fail at random with a message that
+// says nothing about the test (виж internal.cjs в матрицата на 0.69.118). 6000, 6566,
+// 6665–6669, 6679, 6697 и 10080 са точно в динамичния диапазон на Windows.
+const BAD_PORTS = new Set([
+  0, 1, 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43, 53, 69, 77, 79, 87, 95,
+  101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 137, 139, 143, 161, 179,
+  389, 427, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 548, 554, 556, 563, 587, 601,
+  636, 989, 990, 993, 995, 1719, 1720, 1723, 2049, 3659, 4045, 5060, 5061, 6000, 6566,
+  6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080,
+]);
+const isBadPort = (port) => BAD_PORTS.has(port);
+
 async function freePort(host = '127.0.0.1', { tries = 60 } = {}) {
   for (let i = 0; i < tries; i++) {
     const port = await new Promise((resolve, reject) => {
@@ -121,6 +135,7 @@ async function freePort(host = '127.0.0.1', { tries = 60 } = {}) {
     // (`ERR_SOCKET_BAD_PORT`), затова оставяме 1000 номера резерв отгоре. Прагът НЕ е
     // 60000: на тази машина ядрото дава портове от порядъка на 61xxx.
     if (port > 64535) continue;
+    if (isBadPort(port)) continue;
     const probe = await canBind(host, port);
     if (probe.ok) {
       handedOut.add(port);
@@ -134,7 +149,7 @@ async function freePort(host = '127.0.0.1', { tries = 60 } = {}) {
   // диапазон на Windows и под прага за `port + 500`, който тестовете ползват).
   for (let i = 0; i < 200; i++) {
     const port = 40000 + Math.floor(Math.random() * 24000);
-    if (handedOut.has(port)) continue;
+    if (handedOut.has(port) || isBadPort(port)) continue;
     const probe = await canBind(host, port);
     if (probe.ok) {
       handedOut.add(port);

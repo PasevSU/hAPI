@@ -66,6 +66,28 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
     }
   };
 
+  /** Отваря първия портал — със същия бутон „Отвори портала“, който вижда човекът. */
+  const openPortal = async () => {
+    await portalList();
+    const open = await waitFor(() => app.$$('[data-open-portal]')[0], { label: 'бутонът „Отвори портала“' });
+    open.click();
+    await settle('картата на портала');
+  };
+
+  /** Отваря действие от менюто ⚙ на първия файл — същият път, който минава човек. */
+  const openFileAction = async (action) => {
+    const link = await waitFor(() => app.$$('[data-open-file]')[0], { label: 'първият файл в списъка' });
+    const id = link.getAttribute('data-open-file');
+    link.click();
+    await settle('панелът на файла');
+    const gear = await waitFor(() => app.$('[data-file-gear="' + id + '"]'), { label: 'менюто ⚙ на файла' });
+    gear.click();
+    await settle('менюто на файла');
+    const item = await waitFor(() => app.$('[data-file-act="' + action + '"]'), { label: 'действието „' + action + '“' });
+    item.click();
+    await settle('формата за „' + action + '“');
+  };
+
   const journey = async (name, fn) => {
     try {
       await fn();
@@ -525,6 +547,161 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       const toast = await act('cmsSign', { expect: /./, kind: 'err' });
       assert.ok(toast.message.length > 3, 'панелът казва какво липсва: ' + toast.message);
       assert.equal(app.requests.some((r) => r.method === 'POST' && r.url.includes('/cms')), false, 'без файл не се праща заявка');
+    });
+
+    // ── J33. Експорт: пакетът иска портал и панелът отказва без него ─────────
+    await journey('J33 експорт: пакет и подпис', async () => {
+      app.nav('export');
+      await settle('панелът „Експорт“');
+      const picker = await waitFor(() => app.$('#ec-pkg-portal'), { label: 'полето за портал в експорта' });
+      assert.ok(app.requests.some((r) => r.url.includes('/admin/api/portals')), 'панелът пита сървъра за порталите');
+      const options = [...picker.querySelectorAll('option')].filter((o) => o.value);
+      if (options.length) app.select('#ec-pkg-portal', options[0].value);
+      app.clearToasts();
+      app.click('#ec-pkg-build', 'бутонът „Създай и изтегли пакета“');
+      await waitFor(() => app.toast(), { label: 'отговорът от пакета', timeout: 30000 });
+      const built = app.toast();
+      // Двата изхода са истински: пакетът е готов или панелът казва защо не може.
+      assert.ok(built.message.length > 3, 'панелът казва какво е станало: ' + built.message);
+      assert.equal(built.kind, options.length ? 'ok' : 'err', 'присъдата отговаря на избора: ' + built.message);
+      if (options.length) {
+        assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.includes('/admin/api/packages')), 'пакетът се поиска от сървъра');
+        app.clearToasts();
+        app.click('#ec-pkg-verify', 'бутонът „Провери подписа“');
+        await waitFor(() => app.toast() || text(app.$('#ec-pkg-state')), { label: 'присъдата на подписа', timeout: 25000 });
+        const verdict = (app.toast() || {}).message || text(app.$('#ec-pkg-state'));
+        assert.ok(String(verdict).length > 3, 'панелът казва присъда за подписа: ' + verdict);
+      }
+    });
+
+    // ── J34. Портал: издаване на токен за достъп през картата ─────────────────
+    await journey('J34 портал: издава токен', async () => {
+      await openPortal();
+      const button = await waitFor(() => app.$('#pf-token-new'), { label: 'бутонът „Издай токен за портал“' });
+      app.clearToasts();
+      button.click();
+      const out = await waitFor(() => {
+        const node = app.$('#pf-token-out');
+        return node && text(node).length > 3 ? node : null;
+      }, { label: 'изходът с адреса на токена', timeout: 20000 });
+      assert.match(text(out), /Готово|адрес|Отказ|HTTP/i, 'панелът показва какво е станало с токена: ' + text(out));
+      assert.ok(app.requests.some((r) => r.method === 'POST' && /\/tokens$/.test(r.url)), 'токенът се издава от сървъра');
+    });
+
+    // ── J35. Портал: обновяване на ключа за подпис ────────────────────────────
+    await journey('J35 портал: обновява ключа', async () => {
+      const button = await waitFor(() => app.$('#pf-rotate-key'), { label: 'бутонът „Обнови ключа за подпис“' });
+      app.clearToasts();
+      button.click();
+      const out = await waitFor(() => {
+        const node = app.$('#pf-security-out');
+        return node && text(node).length > 3 ? node : null;
+      }, { label: 'отговорът за ключа', timeout: 20000 });
+      assert.match(text(out), /обновен|Ключът|Отказ|HTTP/i, 'картата казва какво е станало с ключа: ' + text(out));
+      assert.ok(app.requests.some((r) => r.method === 'POST' && /\/signing-key$/.test(r.url)), 'ключът се обновява от сървъра');
+    });
+
+    // ── J36. Портал: проверка на архивите и историята на QR ───────────────────
+    await journey('J36 портал: проверява архивите', async () => {
+      const verify = await waitFor(() => app.$('#pf-qr-verify'), { label: 'бутонът „Провери целостта на архивите“' });
+      app.clearToasts();
+      verify.click();
+      const out = await waitFor(() => {
+        const node = app.$('#pf-qr-out');
+        return node && text(node).length > 3 ? node : null;
+      }, { label: 'присъдата за архивите', timeout: 20000 });
+      assert.match(text(out), /наред|провали|Проверени|HTTP/i, 'присъдата за архивите е на екрана: ' + text(out));
+      app.click('#pf-qr-show', 'бутонът за историята на QR');
+      await waitFor(() => /Активен QR|QR-/.test(text(app.$('#pf-qr-out'))), { label: 'историята на QR' });
+      assert.match(text(app.$('#pf-qr-out')), /Активен QR|QR-\d/i, 'историята показва активния QR');
+    });
+
+    // ── J37. Файл: преименуване през формата на панела ────────────────────────
+    await journey('J37 файл: преименуване', async () => {
+      await openPortal();
+      await openFileAction('rename');
+      const form = await waitFor(() => app.$('#fm-rename-form'), { label: 'формата за преименуване' });
+      const field = app.$('#fm-rename-form input[name="name"]');
+      assert.ok(field, 'формата има поле за име');
+      app.fill(field, 'preimenuvan-ot-panel.txt');
+      app.clearToasts();
+      form.dispatch('submit');
+      await waitFor(() => app.toast(), { label: 'отговорът от преименуването', timeout: 20000 });
+      assert.equal(app.toast().kind, 'ok', 'файлът е преименуван: ' + app.toast().message);
+      assert.ok(app.requests.some((r) => r.method === 'PATCH' && /\/files\//.test(r.url)), 'преименуването мина през сървъра');
+      await settle('списъкът след преименуването');
+      assert.match(text(view()), /preimenuvan-ot-panel\.txt/, 'новото име се вижда в портала');
+    });
+
+    // ── J38. Файл: бележка през формата на панела ─────────────────────────────
+    await journey('J38 файл: бележка', async () => {
+      await openFileAction('note');
+      const form = await waitFor(() => app.$('#fm-note-form'), { label: 'формата за бележка' });
+      const field = app.$('#fm-note-form textarea[name="notes"]');
+      assert.ok(field, 'формата има поле за бележка');
+      app.fill(field, 'Проверено от сценарий J38');
+      app.clearToasts();
+      form.dispatch('submit');
+      await waitFor(() => app.toast(), { label: 'отговорът за бележката', timeout: 20000 });
+      assert.equal(app.toast().kind, 'ok', 'бележката е запазена: ' + app.toast().message);
+      assert.match(app.toast().message, /бележк|Запазен/i, 'панелът казва какво е станало: ' + app.toast().message);
+    });
+
+    // ── J39. Файл: адресът се копира в клипборда на браузъра ──────────────────
+    await journey('J39 файл: копира адреса', async () => {
+      await openPortal();
+      await openFileAction('share');
+      const button = await waitFor(() => app.$('#fm-copy-link'), { label: 'бутонът за копиране на адреса' });
+      app.clearToasts();
+      button.click();
+      await waitFor(() => app.toast() || app.copied.length, { label: 'копирането', timeout: 15000 });
+      const said = (app.toast() || {}).message || '';
+      assert.ok(app.copied.length > 0 || /копир/i.test(said), 'адресът е копиран: ' + said);
+      if (app.copied.length) {
+        assert.match(String(app.copied[app.copied.length - 1] || ''), /^https?:\/\//, 'копиран е истински адрес: ' + String(app.copied[app.copied.length - 1] || '').slice(0, 60));
+      }
+    });
+
+    // ── J40. Портал: отказите на QR панела — основание и идентичност ──────────
+    await journey('J40 портал: отказите на QR панела', async () => {
+      await openPortal();
+      const block = await waitFor(() => app.$('#pf-qr-block'), { label: 'бутонът за прекратяване на QR' });
+      app.fill('#pf-qr-reason', '');
+      const before = app.requests.length;
+      block.click();
+      const said = await waitFor(() => {
+        const node = app.$('#pf-qr-out');
+        return node && text(node).length > 3 ? node : null;
+      }, { label: 'отказът за липсващо основание', timeout: 10000 });
+      assert.match(text(said), /основание/i, 'панелът иска основание: ' + text(said));
+      assert.equal(app.requests.length, before, 'без основание не се праща заявка');
+      const restore = await waitFor(() => app.$('#pf-qr-restore'), { label: 'бутонът за връщане на състояние' });
+      app.fill('#pf-qr-restore-id', '123');
+      restore.click();
+      await waitFor(() => /QR-001|идентичност/i.test(text(app.$('#pf-qr-out'))), { label: 'отказът за невалиден QR идентификатор' });
+      assert.match(text(app.$('#pf-qr-out')), /QR-001|идентичност/i, 'панелът иска валиден идентификатор: ' + text(app.$('#pf-qr-out')));
+      assert.equal(app.requests.length, before, 'с невалиден идентификатор също не се праща заявка');
+    });
+
+    // ── J41. Report Studio: запазване и отмяна на действието ──────────────────
+    await journey('J41 Report Studio: запази и отмени', async () => {
+      app.nav('report');
+      await settle('Report Studio');
+      app.click('#rs-new', 'бутонът „Нов“');
+      const countNow = () => Number((text(app.$('#rs-count')).match(/\d+/) || [0])[0]);
+      const before = countNow();
+      const item = await waitFor(() => app.$$('#rs-lib [data-type]')[0], { label: 'първият обект в библиотеката' });
+      item.click();
+      await waitFor(() => countNow() > before, { label: 'блокът да влезе в документа' });
+      app.click('#rs-undo', 'бутонът „Отмени“');
+      await waitFor(() => countNow() === before, { label: 'отмяната на действието' });
+      app.click('#rs-redo', 'бутонът „Повтори“');
+      await waitFor(() => countNow() > before, { label: 'повторението на действието' });
+      app.clearToasts();
+      app.click('#rs-save', 'бутонът „Запази“');
+      await waitFor(() => app.toast() || text(app.$('#rs-state')), { label: 'отговорът при запазване', timeout: 20000 });
+      const said = (app.toast() || {}).message || text(app.$('#rs-state'));
+      assert.ok(String(said).length > 2, 'панелът казва какво е станало при запазване: ' + said);
     });
 
     // ── Отчет ─────────────────────────────────────────────────────────────────
