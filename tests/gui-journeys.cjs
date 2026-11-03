@@ -408,9 +408,128 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       assert.ok(opened.body.length > 0, 'страницата връща съдържание');
     });
 
+    // ── J25. Качване на файл през формата на панела ────────────────────────────
+    await journey('J25 качване на файл през панела', async () => {
+      await portalList();
+      const open = await waitFor(() => app.$$('[data-open-portal]')[0], { label: 'бутонът „Отвори портала“' });
+      open.click();
+      await settle('картата на портала');
+      // Бутонът „Качи файл“ стои в лентата с филтри — потребителят я отваря с иконата.
+      const filters = await waitFor(() => app.$('[data-toggle-filters]'), { label: 'иконата „Панел филтри“' });
+      filters.click();
+      app.click('#fm-upload', 'бутонът „Качи файл“');
+      const form = await waitFor(() => app.$('#fm-upload-form'), { label: 'формата за качване' });
+      const input = app.$('#fm-upload-form input[name="input"]');
+      assert.ok(input, 'формата има избор на файл');
+      input.files = [pseudoFile('prilozhenie-2.txt', 'още едно съдържание')];
+      app.fill('#fm-upload-form input[name="name"]', 'prilozhenie-2.txt');
+      app.clearToasts();
+      form.dispatch('submit');
+      await waitFor(() => app.toast(), { label: 'отговор от качването', timeout: 20000 });
+      assert.equal(app.toast().kind, 'ok', 'файлът е качен: ' + app.toast().message);
+      await settle('списъкът с файлове');
+      assert.match(text(view()), /prilozhenie-2\.txt/, 'новият файл се вижда в портала');
+      assert.ok(app.requests.some((r) => r.method === 'POST' && /\/files$/.test(r.url)), 'качването мина през сървъра');
+    });
+
+    // ── J26. Нова папка в портала през бутона на панела ───────────────────────
+    await journey('J26 нова папка през панела', async () => {
+      app.click('#fm-new-folder', 'бутонът „Нова папка“');
+      await waitFor(() => app.$('#fm-new-folder-name'), { label: 'полето за име на папка' });
+      app.fill('#fm-new-folder-name', 'Доказателства');
+      app.clearToasts();
+      app.$('#fm-new-folder-form').dispatch('submit');
+      await waitFor(() => app.toast() || text(view()).includes('Доказателства'), { label: 'отговорът за папката', timeout: 20000 });
+      await settle('дървото на папките');
+      assert.match(text(view()), /Доказателства|Папка/, 'панелът отчита новата папка');
+    });
+
+    // ── J27. Публичен gateway: проверка на достъп през панела ─────────────────
+    await journey('J27 gateway тества достъп', async () => {
+      app.nav('gateway');
+      await settle('панелът „Публичен gateway“');
+      await waitFor(() => app.$('#pg-test'), { label: 'бутонът „Тествай достъп“' });
+      // Волният токен е невалиден — решението се взима по договора на gateway и се показва.
+      app.fill('#pg-token', 'hapi_nevaliden_token_za_test');
+      app.clearToasts();
+      app.click('#pg-test', 'бутонът „Тествай достъп“');
+      await waitFor(() => app.toast(), { label: 'присъдата на проверката', timeout: 20000 });
+      assert.equal(app.toast().kind, 'err', 'невалиден токен се отказва: ' + app.toast().message);
+      assert.match(app.toast().message, /Отказ|няма достъп|невалид/i, 'панелът казва ПРИЧИНАТА: ' + app.toast().message);
+      await settle('решението да се нарисува');
+      assert.match(text(view()), /Достъп|Отказ|причина/i, 'решението остава на екрана, не само в известие');
+    });
+
+    // ── J28. Експорт: проверка на плана (preflight) през панела ───────────────
+    await journey('J28 експорт проверява плана', async () => {
+      app.nav('export');
+      await settle('панелът „Експорт“');
+      const button = await waitFor(() => app.$('#ec-prefight') || app.$('#ec-pkg-build'), { label: 'бутонът за проверка на плана' });
+      app.clearToasts();
+      button.click();
+      await waitFor(() => app.toast() || app.$('#ec-pkg-state'), { label: 'отговорът на експорта', timeout: 25000 });
+      const said = (app.toast() || {}).message || text(app.$('#ec-pkg-state'));
+      assert.ok(String(said).length > 3, 'панелът казва какво е станало: ' + said);
+    });
+
+    // ── J29. Report Studio: нов документ, блок и валидация ────────────────────
+    await journey('J29 Report Studio: блок и валидация', async () => {
+      app.nav('report');
+      await settle('Report Studio');
+      app.click('#rs-new', 'бутонът „Нов“');
+      const countNow = () => Number((text(app.$('#rs-count')).match(/\d+/) || [0])[0]);
+      const before = countNow();
+      assert.ok(before > 0, 'новият документ има блокове: ' + before);
+      const item = await waitFor(() => app.$$('#rs-lib [data-type]')[0], { label: 'първият обект в библиотеката' });
+      item.click();
+      await waitFor(() => countNow() > before, { label: 'блокът да влезе в документа' });
+      app.clearToasts();
+      app.click('#rs-validate', 'бутонът „Валидирай“');
+      await waitFor(() => app.toast(), { label: 'присъдата на валидатора' });
+      assert.match(app.toast().message, /валиден|Невалиден/i, 'валидаторът дава присъда: ' + app.toast().message);
+    });
+
+    // ── J30. Посетители: обновяване и CSV през панела ─────────────────────────
+    await journey('J30 посетители: обновяване', async () => {
+      app.nav('visitors');
+      await settle('панелът „Кой влиза“');
+      await waitFor(() => app.$('#v-refresh'), { label: 'бутонът „Обнови“' });
+      app.click('#v-refresh', 'бутонът „Обнови“');
+      await waitFor(() => !/зареждане/.test(text(app.$('#v-badge'))), { label: 'таблицата да се зареди' });
+      // Празната инсталация е валиден резултат: важното е, че панелът дава присъда и вика сървъра.
+      assert.ok(text(app.$('#v-badge')).length > 0, 'панелът казва състоянието си');
+      assert.ok(app.$('#v-visitors'), 'таблицата „Посетители“ е нарисувана');
+      assert.ok(app.requests.some((r) => r.url.includes('/admin/api/sensors') || r.url.includes('/admin/api/visitors')), 'данните идват от сървъра');
+    });
+
+    // ── J31. Потребители: изтриване през панела ───────────────────────────────
+    await journey('J31 изтриване на потребител през секция', async () => {
+      app.nav('users');
+      await settle('секция „Потребители“');
+      const button = await waitFor(() => app.$$('[data-user="journey-user"]')[0], { label: 'бутонът „Изтрий“ за journey-user' });
+      app.clearToasts();
+      button.click();
+      await waitFor(() => app.toast(), { label: 'отговорът от изтриването', timeout: 15000 });
+      assert.equal(app.toast().kind, 'ok', 'потребителят е изтрит: ' + app.toast().message);
+      await settle('таблицата след изтриване');
+      assert.equal(text(view()).includes('journey-user'), false, 'изтритият потребител изчезва от таблицата');
+      assert.ok(app.requests.some((r) => r.method === 'DELETE' && r.url.includes('/admin/api/users/')), 'изтриването мина през сървъра');
+    });
+
+    // ── J32. CMS: отказът също е сценарий — без файл подпис не се издава ──────
+    await journey('J32 CMS отказва без файл', async () => {
+      app.nav('settings');
+      await settle('„Настройки“');
+      app.section('cms');
+      await settle('секция „Подпис“');
+      const toast = await act('cmsSign', { expect: /./, kind: 'err' });
+      assert.ok(toast.message.length > 3, 'панелът казва какво липсва: ' + toast.message);
+      assert.equal(app.requests.some((r) => r.method === 'POST' && r.url.includes('/cms')), false, 'без файл не се праща заявка');
+    });
+
     // ── Отчет ─────────────────────────────────────────────────────────────────
     assert.deepEqual(failed, [], 'сценарии, които не минаха:\n  ' + failed.join('\n  '));
-    console.log('PASS gui-journeys: ' + passed.length + ' сценария САМО през интерфейса · навигация, форми, секции, тема, език · ' + app.requests.length + ' заявки, поискани от панелите');
+    console.log('PASS gui-journeys: ' + passed.length + ' сценария САМО през интерфейса · навигация, форми, секции, панели, тема, език · ' + app.requests.length + ' заявки, поискани от панелите');
   } finally {
     await server.stop();
   }

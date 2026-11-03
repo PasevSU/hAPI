@@ -7,7 +7,7 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], { env: { ...process.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token }, stdio: 'ignore' });
   const call = async (p, method = 'GET', data, auth = true) => { const r = await fetch(`http://127.0.0.1:${port}${p}`, { method, headers: { ...(auth ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' }, body: data }); return { status: r.status, data: await r.json() } };
   try {
-    let ready = false; for (let i = 0; i < 100; i++) { try { if ((await call('/health')).status === 200) { ready = true; break } } catch { } await new Promise(r => setTimeout(r, 30)) } assert(ready);
+    let ready = false; for (let i = 0; i < 300; i++) { try { if ((await call('/health')).status === 200) { ready = true; break } } catch { } await new Promise(r => setTimeout(r, 50)) } assert(ready, 'сървърът не вдигна /health за 15 s');
     assert.equal((await call('/admin/api/audit', 'GET', undefined, false)).status, 401);
     assert.equal((await call('/admin/api/audit?limit=501')).status, 400);
     const created = await call('/admin/api/portals', 'POST', JSON.stringify({ slug: 'audit-demo', title: 'Audit Demo' })); assert.equal(created.status, 201);

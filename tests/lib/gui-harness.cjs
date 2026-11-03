@@ -44,7 +44,10 @@ async function startServer({ dataDir, token, port, env, keepData } = {}) {
   if (child.stderr) child.stderr.on('data', (chunk) => { stderr = (stderr + chunk.toString()).slice(-4000); });
   const base = `http://127.0.0.1:${listenPort}`;
   let ready = false;
-  for (let i = 0; i < 120; i++) {
+  // 30 s, не 6: под натоварване (цялата матрица върви) стартът на add-on-а понякога
+  // надхвърляше 120×50 ms и тестът падаше с „сървърът не стартира“, без нищо счупено.
+  // Точно този флейк беше записан като „нестабилен“ в матрицата на 0.69.117.
+  for (let i = 0; i < 600; i++) {
     if (child.exitCode !== null) throw new Error('сървърът приключи преждевременно (код ' + child.exitCode + ')' + (stderr ? ': ' + stderr.trim() : ''));
     try {
       // Тялото се изчита — неизчетен отговор оставя сокет в пула и при спиране на

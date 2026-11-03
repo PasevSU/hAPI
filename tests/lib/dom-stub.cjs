@@ -171,6 +171,27 @@ function matchesSelector(el, parts) {
 }
 
 function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
+  // Както в браузър: поле с `name` става свойство на своята форма (`form.input`).
+  // Прави се след всяко `innerHTML`/`appendChild`, както го прави браузърът при разбор.
+  function linkFormControls(node) {
+    if (!node || node.nodeType !== 1) return;
+    const forms = node.tagName === 'form' ? [node] : [];
+    const walk = (current) => {
+      for (const child of current.childNodes) {
+        if (child.nodeType !== 1) continue;
+        if (child.tagName === 'form') forms.push(child);
+        walk(child);
+      }
+    };
+    walk(node);
+    for (const form of forms) {
+      for (const field of form.querySelectorAll('[name]')) {
+        const name = field.getAttribute('name');
+        if (name && !(name in form)) form[name] = field;
+      }
+    }
+  }
+
   class Element {
     constructor(tagName) {
       this.nodeType = 1;
@@ -219,6 +240,17 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
     set className(v) { this.setAttribute('class', String(v == null ? '' : v)) }
     get children() { return this.childNodes.filter((n) => n.nodeType === 1) }
     get firstChild() { return this.childNodes[0] || null }
+    // Браузърът дава на формата достъп до полетата си по ИМЕ (`form.input`, `form.name`).
+    // Панелите го ползват (напр. `uploadFile(form)`), затова стъбът трябва да го има —
+    // иначе тестът вижда TypeError, какъвто в браузър няма.
+    get elements() {
+      const out = {};
+      for (const field of this.querySelectorAll('[name]')) {
+        const name = field.getAttribute('name');
+        if (name) out[name] = field;
+      }
+      return out;
+    }
     get textContent() { return this.childNodes.map((n) => (n.nodeType === 3 ? n.data : n.textContent)).join('') }
     set textContent(v) { this.childNodes = []; if (v !== '' && v != null) this.childNodes.push({ nodeType: 3, data: String(v), parentNode: this }) }
     get innerHTML() {
@@ -236,6 +268,7 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
         node.parentNode = this;
         this.childNodes.push(node);
       });
+      linkFormControls(this);
     }
     setAttribute(name, value) {
       this.attributes.set(String(name).toLowerCase(), String(value == null ? '' : value));
@@ -244,7 +277,14 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
     getAttribute(name) { const v = this.attributes.get(String(name).toLowerCase()); return v === undefined ? null : v }
     hasAttribute(name) { return this.attributes.has(String(name).toLowerCase()) }
     removeAttribute(name) { this.attributes.delete(String(name).toLowerCase()) }
-    appendChild(node) { node.parentNode = this; this.childNodes.push(node); return node }
+    appendChild(node) {
+      node.parentNode = this;
+      this.childNodes.push(node);
+      // Поле, добавено във форма, става нейно свойство по име — както в браузъра.
+      if (this.tagName === 'form') linkFormControls(this);
+      else linkFormControls(node);
+      return node;
+    }
     // `append` приема и низове (браузърът ги превръща в текстови възли).
     append(...nodes) {
       for (const node of nodes) {

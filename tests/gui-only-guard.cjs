@@ -66,7 +66,7 @@ assert.match(journeys, /app\.click\('#pf-new'/, 'порталът се създ�
 assert.match(journeys, /app\.openLink\(/, 'адресът се отваря след като панелът го покаже');
 
 const journeyCalls = [...journeys.matchAll(/await journey\('/g)].length;
-assert.ok(journeyCalls >= 20, 'сценариите са поне 20 (сега ' + journeyCalls + ')');
+assert.ok(journeyCalls >= 30, 'сценариите са поне 30 (сега ' + journeyCalls + ')');
 
 // Всяка навигационна точка трябва да е достижима: сценарият проверява, че и 17-те са там.
 const navIds = [...app.matchAll(/\{ id: '([a-z]+)', ico: [^}]*\}/g)].map((m) => m[1]);

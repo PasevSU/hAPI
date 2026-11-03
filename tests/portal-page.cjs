@@ -6,7 +6,7 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
   const call = (p, opts = {}, admin = false) => fetch(`http://127.0.0.1:${admin ? adminPort : port}${p}`, opts);
   const json = async (p, method, body) => { const r = await call(p, { method, headers: { Authorization: 'Bearer ' + secret, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, true); assert(r.ok, `${method} ${p} ${r.status}`); return r.json() };
   try {
-    let ok = false; for (let i = 0; i < 100; i++) { try { await call('/'); ok = true; break } catch { await new Promise(r => setTimeout(r, 30)) } } assert(ok);
+    let ok = false; for (let i = 0; i < 300; i++) { try { await call('/'); ok = true; break } catch { await new Promise(r => setTimeout(r, 50)) } } assert(ok, 'сървърът не отвори / за 15 s');
     const p = await json('/admin/api/portals', 'POST', { slug: 'example', title: 'My Portal' });
     assert.equal((await call('/p/example')).status, 404);
     await json('/admin/api/users', 'POST', { username: 'viewer', password: 'viewer-pass-123', scopes: ['read', 'download'] });
