@@ -3,7 +3,7 @@
 Генериран от `node scripts/script-audit.cjs`. Редът е за ВСЕКИ файл, включително когато
 сигналите са нула: така „обходено“ може да се провери, вместо да се вярва.
 
-Обходени: **190 файла · 49607 реда**.
+Обходени: **190 файла · 49626 реда**.
 Намерени: **203** сигнала — високи **0** · средни 0 · ниски 203.
 
 По правило: `swallow-promise` 88 · `unused-export` 100 · `sync-fs-in-request` 15
@@ -12,7 +12,7 @@
 
 | сегмент | файлове | редове | сигнали |
 | --- | ---: | ---: | ---: |
-| ядро | 101 | 24797 | 173 |
+| ядро | 101 | 24816 | 173 |
 | ui | 23 | 11972 | 11 |
 | скриптове | 35 | 6408 | 0 |
 | routes | 15 | 2440 | 14 |
@@ -31,7 +31,7 @@
 | `custom_components/hapi_enterprise/__init__.py` | 424 | 15 | — | чисто |
 | `custom_components/hapi_enterprise/binary_sensor.py` | 163 | 1 | — | чисто |
 | `custom_components/hapi_enterprise/config_flow.py` | 203 | 10 | — | чисто |
-| `custom_components/hapi_enterprise/const.py` | 27 | 342 | — | чисто |
+| `custom_components/hapi_enterprise/const.py` | 27 | 343 | — | чисто |
 | `custom_components/hapi_enterprise/coordinator.py` | 216 | 7 | — | чисто |
 | `custom_components/hapi_enterprise/diagnostics.py` | 84 | 12 | — | чисто |
 | `custom_components/hapi_enterprise/portal.js` | 500 | 180 | — | чисто |
@@ -53,7 +53,7 @@
 | `hapi_enterprise/decision-sensors.js` | 290 | 1 | — | чисто |
 | `hapi_enterprise/directory.js` | 301 | 24 | unused-export×2 | нисък |
 | `hapi_enterprise/download-access.js` | 466 | 9 | — | чисто |
-| `hapi_enterprise/download-stream.js` | 128 | 0 | unused-export×1 | нисък |
+| `hapi_enterprise/download-stream.js` | 147 | 1 | unused-export×1 | нисък |
 | `hapi_enterprise/error-log.js` | 32 | 5 | swallow-promise×1 | нисък |
 | `hapi_enterprise/event-bus.js` | 44 | 2 | — | чисто |
 | `hapi_enterprise/event-stream.js` | 114 | 2 | unused-export×3 | нисък |

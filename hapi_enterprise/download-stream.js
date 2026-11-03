@@ -87,6 +87,25 @@ function create(deps) {
       status = 206;
     }
     const stream = fs.createReadStream(fp, stat.size ? { highWaterMark: 64 * 1024, start, end } : { highWaterMark: 64 * 1024 });
+    // ФАЙЛЪТ СЕ ОТВАРЯ ПРЕДИ ЗАГЛАВКИТЕ. Дотук `writeHead` минаваше веднага след създаването
+    // на потока, затова при липсващ или заключен файл (`ENOENT`, `EACCES`) `res.headersSent`
+    // вече беше истина и клонът `deps.fail(res, 500, …)` по-долу НИКОГА не се изпълняваше —
+    // клиентът получаваше 200 с празно тяло и скъсана връзка, вместо ясна причина. Сега
+    // грешката при отваряне се изчаква и се отговаря с код, преди да е изпратена заглавка.
+    const openError = await new Promise((resolve) => {
+      const onOpen = () => { stream.removeListener('error', onError); resolve(null) };
+      const onError = (e) => { stream.removeListener('open', onOpen); resolve(e) };
+      stream.once('open', onOpen);
+      stream.once('error', onError);
+    });
+    if (openError) {
+      releaseOnce();
+      const code = openError.code || '';
+      if (code !== 'ENOENT') loadControl.recordError();
+      void deps.errorLog.append('error', 'download-stream', code || openError.message);
+      deps.log.error('download.stream.failed', { ns: 'download', err: code || openError.message });
+      return deps.fail(res, code === 'ENOENT' ? 404 : 500, code === 'ENOENT' ? 'File unavailable' : 'Download failed');
+    }
     stream.once('error', (e) => {
       releaseOnce();
       loadControl.recordError();

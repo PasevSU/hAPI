@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-02T23:13:28.710Z",
+  "generatedAt": "2026-11-02T23:30:42.640Z",
   "files": 190,
-  "lines": 49607,
+  "lines": 49626,
   "bySeverity": {
     "high": 0,
     "medium": 0,
@@ -20,7 +20,7 @@
     },
     "ядро": {
       "files": 101,
-      "lines": 24797,
+      "lines": 24816,
       "findings": 173
     },
     "evidence-portal": {
@@ -88,7 +88,7 @@
       "file": "custom_components/hapi_enterprise/const.py",
       "segment": "интеграция",
       "lines": 27,
-      "tests": 342,
+      "tests": 343,
       "findings": 0,
       "rules": {}
     },
@@ -277,8 +277,8 @@
     {
       "file": "hapi_enterprise/download-stream.js",
       "segment": "ядро",
-      "lines": 128,
-      "tests": 0,
+      "lines": 147,
+      "tests": 1,
       "findings": 1,
       "rules": {
         "unused-export": 1
