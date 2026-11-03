@@ -132,6 +132,38 @@ for (const lang of ['en', 'bg']) {
   }
 }
 
+// 6б. hassfest: НИЗ В ПРЕВОДИТЕ НЕ БИВА ДА СЪДЪРЖА URL. Home Assistant иска примерните
+// адреси да са заместители (`{placeholder}`), а не текст — иначе валидацията на подадената
+// интеграция пада с `[TRANSLATIONS] ... should not contain URLs` (точно това се случи с
+// етикета на „Адрес на панела“ в 0.69.144). Проверява се и в двата речника, и в strings.json.
+const URL_IN_TEXT = /https?:\/\/[a-z0-9-]+(\.[a-z0-9-]+)+/i;
+const stringsOf = (node, path = '') => {
+  const out = [];
+  for (const [key, value] of Object.entries(node)) {
+    if (typeof value === 'string') out.push([`${path}.${key}`, value]);
+    else if (value && typeof value === 'object') out.push(...stringsOf(value, `${path}.${key}`));
+  }
+  return out;
+};
+for (const [name, dict] of [
+  ['strings.json', strings],
+  ['translations/en.json', json(path.posix.join('translations', 'en.json'))],
+  ['translations/bg.json', json(path.posix.join('translations', 'bg.json'))],
+]) {
+  const offending = stringsOf(dict).filter(([, text]) => URL_IN_TEXT.test(text));
+  assert.deepEqual(
+    offending.map(([at]) => at),
+    [],
+    name + ': URL в текст на превод (hassfest го забранява) — ползвай data_description или заместител',
+  );
+}
+
+// 6в. Преводите поддържат описание на полето — там се обяснява адресът на панела, без URL.
+for (const lang of ['en', 'bg']) {
+  const dict = json(path.posix.join('translations', lang + '.json'));
+  assert.ok(dict.config.step.user.data_description.panel_url, lang + ': липсва описание за panel_url');
+}
+
 // 7. __init__.py: entry hooks + запазени bridge изгледи.
 const init = read('__init__.py');
 for (const needle of ['async def async_setup_entry', 'async def async_unload_entry', 'async def async_update_entry']) {
