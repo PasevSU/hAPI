@@ -80,11 +80,16 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
   };
 
   /**
-   * Създава НОВ портал с ЕДИН файл — през формата, както го прави човек (същият път като J05).
+   * Създава НОВ портал с файловете от папката — през формата, както го прави човек (J05).
    * Така файловият сценарий не зависи от състоянието, което предишен сценарий е оставил:
-   * той си носи портала и файла. Именно тази зависимост правеше три сценария нестабилни в CI.
+   * той си носи портала и файловете. Именно тази зависимост правеше три сценария нестабилни
+   * в CI. По подразбиране файлът е един; сценариите за филтри подават няколко.
    */
-  const ownPortalWithFile = async (slug) => {
+  const ownPortalWithFile = async (slug, files) => {
+    const picked = Array.isArray(files) && files.length
+      ? files
+      : [pseudoFile('fayl-za-scenariy.txt', 'съдържание за сценария')];
+    const first = picked[0].name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     await portalList();
     app.click('#pf-new', 'бутонът „Нов портал“');
     await waitFor(() => app.$('#pf-create'), { label: 'формата за нов портал' });
@@ -92,7 +97,7 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     app.fill('[name="title"]', 'Портал за файловия сценарий');
     const folder = app.$('#pf-folder');
     assert.ok(folder, 'формата има избор на папка с файлове');
-    folder.files = [pseudoFile('fayl-za-scenariy.txt', 'съдържание за сценария')];
+    folder.files = picked;
     app.select('[name="visibility"]', 'public');
     app.clearToasts();
     app.click('#pf-create', 'бутонът „Създай и генерирай API + QR“');
@@ -101,9 +106,13 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       return said && /Порталът е създаден/.test(said.message) ? said : null;
     }, { label: 'порталът за сценария', timeout: BUDGET });
     assert.equal(app.toast().kind, 'ok', 'порталът за сценария се създава: ' + app.toast().message);
-    // Съобщението казва колко файла от папката са качени — то е доказателството, че файлът
-    // е стигнал до сървъра, а не че по-късно ще се появи.
-    assert.match(app.toast().message, /качени 1 файла/, 'файлът от папката е качен при създаването: ' + app.toast().message);
+    // Съобщението казва колко файла от папката са качени — то е доказателството, че файловете
+    // са стигнали до сървъра, а не че по-късно ще се появят.
+    assert.match(
+      app.toast().message,
+      new RegExp('качени ' + picked.length + ' файла'),
+      'файловете от папката са качени при създаването: ' + app.toast().message,
+    );
     // Панелът отваря новия портал САМ само когато списъкът е бил празен (J05); иначе остава
     // на списъка. Затова тук винаги се минава през списъка — със същите два бутона, които
     // човекът натиска („← Списък с портали“ и „Отвори портала“), и се отваря НАШИЯТ портал.
@@ -120,9 +129,9 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     }, { label: 'порталът „' + slug + '“ в списъка', timeout: BUDGET });
     row.click();
     await settle('картата на новия портал');
-    // Чакаме ИМЕННО файла, а не „изгледът да утихне“: панелът прерисува след отговора и на
+    // Чакаме ИМЕННО файловете, а не „изгледът да утихне“: панелът прерисува след отговора и на
     // по-бавна машина списъкът още не е готов, когато текстът „Зареждам“ изчезне.
-    await waitFor(() => /fayl-za-scenariy\.txt/.test(text(view())), { label: 'файлът в новия портал', timeout: BUDGET });
+    await waitFor(() => new RegExp(first).test(text(view())), { label: 'файловете в новия портал', timeout: BUDGET });
   };
 
   /** Отваря действие от менюто ⚙ на файла „fayl-za-scenariy.txt“ — същият път като с мишка. */
@@ -146,8 +155,7 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
    * контакта или делото и натиска „Редактирай“ / „Изтрий“ на НЕГО. Картата се разпознава
    * по класа `pf-portal`: търсене „нагоре по родителите“ без тази граница стига до
    * контейнера с ВСИЧКИ карти, чийто текст съдържа търсеното, и връща първия бутон.
-   */
-  const cardButton = async (attr, needle) => waitFor(() => {
+   */  const cardButton = async (attr, needle) => waitFor(() => {
     for (const el of app.$$('[' + attr + ']')) {
       const card = el.closest ? el.closest('.pf-portal') : null;
       if (card && text(card).includes(needle)) return el;
@@ -174,6 +182,27 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     const card = row.closest ? row.closest('.pf-portal') : null;
     assert.ok(card, 'картата на портала се разпознава по класа .pf-portal');
     return card;
+  };
+
+  /**
+   * Отваря панела с филтри на блока „Файлове в портала“.
+   *
+   * Защо с повторен опит: след отваряне на портала панелът прерисува картата, когато
+   * пристигне дървото на папките (`GET …/tree`). Ако човек натисне иконата точно преди
+   * това прерисуване, щракването отива във възел, който вече не е на екрана. Истинският
+   * браузър също би загубил такова щракване, затова тук се натиска НОВИЯТ бутон — докато
+   * полето за търсене наистина се появи.
+   */
+  const openFilters = async () => {
+    const deadline = Date.now() + BUDGET;
+    for (; ;) {
+      const toggle = app.$('[data-toggle-filters]');
+      if (toggle) toggle.click();
+      const search = app.$('#fm-search');
+      if (search) return search;
+      if (Date.now() > deadline) throw new Error('панелът с филтри не се отвори');
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    }
   };
 
   const journey = async (name, fn) => {
@@ -1606,6 +1635,74 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       });
       const asked = app.requests.slice(before).filter((r) => /\/hashes$/.test(r.url)).pop();
       assert.equal(asked.method, 'GET', 'хешовете се четат от сървъра: ' + asked.method + ' ' + asked.url);
+    });
+
+    // ── J70. Файлове: търсене, тип и подредба в панела с филтри ───────────────
+    await journey('J70 файлове: филтри и подредба', async () => {
+      await ownPortalWithFile('gui-journey-filters', [
+        pseudoFile('otchet-alfa.pdf', 'PDF съдържание'),
+        pseudoFile('belezhki-beta.txt', 'текстово съдържание'),
+        pseudoFile('snimka-gama.png', 'двоично съдържание'),
+      ]);
+      const names = () => app.$$('[data-open-file]').map((el) => text(el));
+      // Филтрите се отварят с иконата в главата на блока — същата, която вижда човекът.
+      const search = await openFilters();
+      assert.ok(app.$('#fm-type') && app.$('#fm-sort'), 'панелът показва и изборите за тип и подредба');
+      // Търсене по име: остава САМО файлът, който съдържа думата.
+      app.fill(search, 'alfa');
+      await waitFor(() => names().length === 1, { label: 'една карта след търсенето', timeout: BUDGET });
+      assert.match(names()[0], /otchet-alfa\.pdf/, 'търсенето оставя само файла с „alfa“: ' + names().join(' · '));
+      // Изчистване и филтър по тип: .txt е „Текст“ в избора на панела.
+      app.fill(search, '');
+      app.select('#fm-type', 'text');
+      await waitFor(() => names().length === 1, { label: 'една карта след филтъра по тип', timeout: BUDGET });
+      assert.match(names()[0], /belezhki-beta\.txt/, 'филтърът по тип оставя само текстовия файл: ' + names().join(' · '));
+      // Връщане към всички типове и подредба по име в обратен ред — първият ред се сменя.
+      app.select('#fm-type', 'all');
+      await waitFor(() => names().length === 3, { label: 'три карти без филтър', timeout: BUDGET });
+      app.select('#fm-sort', '-name');
+      await waitFor(() => /snimka-gama\.png/.test(names()[0] || ''), { label: 'подредбата по име в обратен ред', timeout: BUDGET });
+      assert.match(names()[0], /snimka-gama\.png/, 'при „Име ↓“ първи е последният по азбучен ред: ' + names().join(' · '));
+      app.select('#fm-sort', 'name');
+      await waitFor(() => /belezhki-beta\.txt/.test(names()[0] || ''), { label: 'подредбата по име', timeout: BUDGET });
+      assert.match(names()[0], /belezhki-beta\.txt/, 'при „Име ↑“ първи е belezhki-beta.txt: ' + names().join(' · '));
+    });
+
+    // ── J71. Файлове: масова смяна на политиката на два файла ─────────────────
+    await journey('J71 файлове: масова политика', async () => {
+      await ownPortalWithFile('gui-journey-bulk', [
+        pseudoFile('masov-alfa.pdf', 'PDF за масовата смяна'),
+        pseudoFile('masov-beta.txt', 'текст за масовата смяна'),
+      ]);
+      // Лентата с избраните живее във филтрите на блока — затова първо се отварят те.
+      await openFilters();
+      const picks = await waitFor(() => {
+        const nodes = app.$$('[data-pick]');
+        return nodes.length >= 2 ? nodes : null;
+      }, { label: 'бутоните за избор на файловете', timeout: BUDGET });
+      const first = picks[0].getAttribute('data-pick');
+      const second = picks[1].getAttribute('data-pick');
+      app.clearToasts();
+      picks[0].click();
+      await waitFor(() => app.$('#fm-bulk-apply'), { label: 'лентата с избраните файлове', timeout: BUDGET });
+      app.$('[data-pick="' + second + '"]').click();
+      const label = await waitFor(() => {
+        const node = app.$('.fm-bulk');
+        return node && /Избрани/.test(text(node)) ? node : null;
+      }, { label: 'броят на избраните файлове', timeout: BUDGET });
+      assert.match(text(label), /Избрани\s*2/, 'панелът брои два избрани файла: ' + text(label));
+      app.select('#fm-bulk-mode', 'DISABLED');
+      const before = app.requests.length;
+      app.$('#fm-bulk-apply').click();
+      const said = await waitFor(() => {
+        const t = app.toast();
+        return t && /Обновени/.test(t.message) ? t : null;
+      }, { label: 'съобщението за обновените файлове', timeout: BUDGET });
+      assert.equal(said.kind, 'ok', 'политиката е приложена: ' + said.message);
+      const bulk = app.requests.slice(before).filter((r) => r.method === 'POST' && /bulk-access$/.test(r.url)).pop();
+      assert.ok(bulk, 'масовата смяна мина през сървъра: ' + app.requests.slice(before).map((r) => r.method + ' ' + r.url).join(' · '));
+      assert.ok((bulk.body || '').includes(first) && (bulk.body || '').includes(second), 'заявката носи ИД на двата избрани файла: ' + bulk.body);
+      assert.match(bulk.body || '', /DISABLED/, 'заявката носи избраната политика: ' + bulk.body);
     });
 
     // Какво остава ИЗВЪН обхвата на щракването и защо — за да не се „попълва“ някога със
