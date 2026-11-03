@@ -138,6 +138,20 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     await settle('формата за „' + action + '“');
   };
 
+  /**
+   * Намира бутон в КАРТАТА, чийто текст съдържа `needle` — както човек търси с очи реда с
+   * контакта или делото и натиска „Редактирай“ / „Изтрий“ на НЕГО. Картата се разпознава
+   * по класа `pf-portal`: търсене „нагоре по родителите“ без тази граница стига до
+   * контейнера с ВСИЧКИ карти, чийто текст съдържа търсеното, и връща първия бутон.
+   */
+  const cardButton = async (attr, needle) => waitFor(() => {
+    for (const el of app.$$('[' + attr + ']')) {
+      const card = el.closest ? el.closest('.pf-portal') : null;
+      if (card && text(card).includes(needle)) return el;
+    }
+    return null;
+  }, { label: 'бутонът „' + attr + '“ в картата на „' + needle + '“', timeout: BUDGET });
+
   const journey = async (name, fn) => {
     try {
       await fn();
@@ -146,7 +160,6 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       failed.push(name + ': ' + error.message);
     }
   };
-
   try {
     // ── J01. Страницата се вдига като в браузър ────────────────────────────────
     await journey('J01 стартиране на index.html', async () => {
@@ -741,6 +754,140 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       await waitFor(() => app.toast() || text(app.$('#rs-state')), { label: 'отговорът при запазване', timeout: BUDGET });
       const said = (app.toast() || {}).message || text(app.$('#rs-state'));
       assert.ok(String(said).length > 2, 'панелът казва какво е станало при запазване: ' + said);
+    });
+
+    // ── J42. Контакт: поле по желание, редакция и изтриване ───────────────────
+    await journey('J42 контакт: редакция и изтриване', async () => {
+      app.nav('contacts');
+      await settle('панелът „Контакти“');
+      await waitFor(() => app.$('#ct-form'), { label: 'формата за контакт' });
+      app.fill('input[name="email"]', 'za.redakcia@example.org');
+      app.fill('input[name="f_name"]', 'Контакт за редакция');
+      // Поле по желание: първо „＋ добави поле“, после се пише в НОВАТА редица.
+      app.click('[data-extra-add]', 'бутонът „добави поле по желание“');
+      await waitFor(() => app.$$('[data-extra-key]').length >= 2, { label: 'новата редица за поле по желание' });
+      const keys = app.$$('[data-extra-key]');
+      const values = app.$$('[data-extra-value]');
+      app.fill(keys[keys.length - 1], 'Роля');
+      app.fill(values[values.length - 1], 'секретар');
+      app.clearToasts();
+      app.click('#ct-form button[type="submit"]', 'бутонът „Добави контакта“');
+      await waitFor(() => text(view()).includes('Контакт за редакция'), { label: 'контактът в списъка', timeout: BUDGET });
+      assert.match(text(view()), /Роля: секретар/, 'полето по желание се вижда в картата на контакта');
+      // Редакция през бутона на САМАТА карта.
+      const edit = await cardButton('data-edit-contact', 'Контакт за редакция');
+      edit.click();
+      await waitFor(() => /Редактиране на контакт/.test(text(view())), { label: 'формата за редакция на контакт' });
+      app.fill('input[name="f_name"]', 'Контакт след редакция');
+      app.clearToasts();
+      app.click('#ct-form button[type="submit"]', 'бутонът „Запази промените“');
+      await waitFor(() => text(view()).includes('Контакт след редакция'), { label: 'новото име в списъка', timeout: BUDGET });
+      assert.ok(
+        app.requests.some((r) => r.method === 'PATCH' && /\/directory\/contacts\//.test(r.url)),
+        'редакцията мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+      // Изтриване: същият бутон „Изтрий“; браузърът пита, човекът потвърждава.
+      const del = await cardButton('data-del-contact', 'Контакт след редакция');
+      app.clearToasts();
+      del.click();
+      await waitFor(() => app.toast(), { label: 'отговорът при изтриване на контакт', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'контактът е изтрит: ' + app.toast().message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'DELETE' && /\/directory\/contacts\//.test(r.url)),
+        'изтриването мина през сървъра',
+      );
+      await waitFor(() => !text(view()).includes('Контакт след редакция'), { label: 'контактът да изчезне от списъка', timeout: 15000 })
+        .catch(() => { throw new Error('контактът остана на екрана: ' + text(view()).slice(0, 400)); });
+    });
+
+    // ── J43. Дело: редакция и изтриване през картата ──────────────────────────
+    await journey('J43 дело: редакция и изтриване', async () => {
+      app.nav('cases');
+      await settle('панелът „Дела“');
+      await waitFor(() => app.$('#cs-form'), { label: 'формата за дело' });
+      app.fill('input[name="number"]', 'GUI-J-2026-043');
+      app.fill('input[name="title"]', 'Дело за редакция');
+      app.clearToasts();
+      app.click('#cs-form button[type="submit"]', 'бутонът „Добави делото“');
+      await waitFor(() => text(view()).includes('GUI-J-2026-043'), { label: 'делото в списъка', timeout: BUDGET });
+      const edit = await cardButton('data-edit-case', 'GUI-J-2026-043');
+      edit.click();
+      await waitFor(() => /Редактиране на дело/.test(text(view())), { label: 'формата за редакция на дело' });
+      app.fill('input[name="title"]', 'Дело след редакция');
+      app.clearToasts();
+      app.click('#cs-form button[type="submit"]', 'бутонът „Запази промените“');
+      await waitFor(() => text(view()).includes('Дело след редакция'), { label: 'новото заглавие в списъка', timeout: BUDGET });
+      assert.ok(
+        app.requests.some((r) => r.method === 'PATCH' && /\/admin\/api\/cases\//.test(r.url)),
+        'редакцията на делото мина през сървъра',
+      );
+      const del = await cardButton('data-del-case', 'GUI-J-2026-043');
+      app.clearToasts();
+      del.click();
+      await waitFor(() => app.toast(), { label: 'отговорът при изтриване на дело', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'делото е изтрито: ' + app.toast().message);
+      await waitFor(() => !text(view()).includes('GUI-J-2026-043'), { label: 'делото да изчезне от списъка', timeout: BUDGET });
+    });
+
+    // ── J44. Таблото води към друг панел (data-goto) ──────────────────────────
+    await journey('J44 таблото води към панел', async () => {
+      app.nav('dashboard');
+      await settle('таблото');
+      const links = await waitFor(() => (app.$$('[data-goto]').length ? app.$$('[data-goto]') : null), {
+        label: 'бързите връзки на таблото',
+        timeout: BUDGET,
+      });
+      const link = links[0];
+      const target = link.getAttribute('data-goto');
+      assert.ok(target, 'бързата връзка казва къде води: ' + target);
+      link.click();
+      await waitFor(() => app.location.hash === '#' + target, { label: 'преминаването към „' + target + '“', timeout: BUDGET });
+      assert.equal(app.location.hash, '#' + target, 'таблото води към „' + target + '“');
+      await waitFor(() => text(view()).length > 20, { label: 'панелът „' + target + '“ да се нарисува', timeout: BUDGET });
+      assert.equal(/Непозната секция/.test(text(view())), false, 'воденето не чупи панела');
+    });
+
+    // ── J45. Експорт: изборът на съдържание се пази в панела ──────────────────
+    await journey('J45 експорт: избор на съдържание', async () => {
+      app.nav('export');
+      await settle('панелът „Експорт“');
+      const all = await waitFor(() => (app.$$('[data-content]').length ? app.$$('[data-content]') : null), {
+        label: 'отметките за съдържание',
+        timeout: BUDGET,
+      });
+      // Първа отметка, която е СВАЛЕНА (или първата, ако всички са сложени) — сценарият
+      // обръща състоянието ѝ и проверява, че панелът го помни след прерисуването.
+      const box = all.find((el) => !el.checked) || all[0];
+      const id = box.getAttribute('data-content');
+      assert.ok(id, 'всяка отметка носи кой вид съдържание включва');
+      const want = !box.checked;
+      const before = app.requests.length;
+      app.check(box, want);
+      await waitFor(() => {
+        const again = app.$('[data-content="' + id + '"]');
+        return again && again.checked === want ? again : null;
+      }, { label: 'отметката „' + id + '“ да стане ' + (want ? 'сложена' : 'свалена'), timeout: BUDGET });
+      assert.equal(app.requests.length, before, 'изборът на съдържание не праща заявка — панелът го пази в себе си');
+    });
+
+    // ── J46. Файл: подписан адрес през менюто ⚙ ───────────────────────────────
+    await journey('J46 файл: подписан адрес', async () => {
+      await ownPortalWithFile('gui-journey-file-sign');
+      await fileAction('signedUrl');
+      const form = await waitFor(() => app.$('form[data-signed-url]'), { label: 'формата за подписан адрес' });
+      app.fill('form[data-signed-url] input[name="ttlSeconds"]', '600');
+      app.clearToasts();
+      form.dispatch('submit');
+      const out = await waitFor(() => {
+        const node = app.$('[data-signed-url-out]');
+        const said = text(node);
+        return said && said !== 'Издавам…' ? node : null;
+      }, { label: 'отговорът за подписания адрес', timeout: BUDGET });
+      assert.ok(text(out).length > 4, 'панелът казва какво е станало с подписания адрес: ' + text(out));
+      assert.ok(
+        app.requests.some((r) => r.method === 'POST' && /\/signed-url$/.test(r.url)),
+        'подписаният адрес се иска от сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
     });
 
     // ── Отчет ─────────────────────────────────────────────────────────────────

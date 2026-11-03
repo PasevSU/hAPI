@@ -230,6 +230,14 @@ function mountApp(addon, { lang = 'bg', token = addon.token } = {}) {
       const el = this.fill(selector, value);
       return el;
     },
+    /** Отбелязва или сваля отметка в поле за избор — както го прави човек с мишката. */
+    check(selector, checked = true) {
+      const el = typeof selector === 'string' ? requireEl(selector, 'поле за избор') : selector;
+      if (!el) throw new Error('няма поле за избор' + (selector ? ': ' + selector : ''));
+      el.checked = Boolean(checked);
+      el.dispatch('change');
+      return el;
+    },
     /** Натиска бутон на секция/панел по `data-action`. */
     action(name, { from = doc } = {}) {
       const btn = $$('[data-action]', from).find((b) => b.getAttribute('data-action') === name);

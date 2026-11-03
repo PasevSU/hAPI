@@ -90,6 +90,12 @@ function parseHtml(html, ownerDocument) {
       if (!el.hasAttribute(name)) el.setAttribute(name, '');
     }
     if (el.hasAttribute('class') && el.getAttribute('class') === '' && /class\b/.test(body)) el.setAttribute('class', '');
+    // Браузърът отразява булевите атрибути в СВОЙСТВА: `<input type="checkbox" checked>`
+    // дава `el.checked === true`, `<option selected>` — `el.selected === true`. Без това
+    // панел, който пита „отметнато ли е това поле“, не може да бъде проверен през
+    // интерфейса: всички отметки изглеждат свалени, дори когато са отбелязани.
+    if (el.hasAttribute('checked')) el.checked = true;
+    if (el.hasAttribute('selected')) el.selected = true;
     push(el);
     if (!VOID_TAGS.has(tagName) && !selfClose) stack.push(el);
     i = gt + 1;
@@ -309,8 +315,22 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
       this.listeners.set(type, list.filter((f) => f !== fn));
     }
     dispatch(type, extra = {}) {
-      const event = { type, target: this, currentTarget: this, defaultPrevented: false, preventDefault() { this.defaultPrevented = true }, stopPropagation() { }, ...extra };
-      for (const fn of (this.listeners.get(type) || []).slice()) fn(event);
+      const event = { type, target: this, currentTarget: this, defaultPrevented: false, preventDefault() { this.defaultPrevented = true }, stopPropagation() { this._stopped = true }, ...extra };
+      // Браузърът провежда събитието НАГОРЕ по дървото (bubbling): слушател, закачен на
+      // формата или на `document`, вижда щракването върху бутон вътре в нея. Досега тук се
+      // викаха само слушателите на самия елемент, тоест декларираното на контейнер
+      // поведение (напр. „＋ добави поле по желание“) никога не се задействаше и тестът
+      // не можеше да провери нещо, което в браузъра работи.
+      let node = this;
+      while (node && !event._stopped) {
+        event.currentTarget = node;
+        for (const fn of ((node.listeners && node.listeners.get(type)) || []).slice()) fn(event);
+        node = node.parentNode;
+      }
+      if (!event._stopped) {
+        event.currentTarget = doc;
+        for (const fn of (doc.listeners.get(type) || []).slice()) fn(event);
+      }
       // Браузърът пуска `submit` на формата, когато се натисне бутон type=submit
       // (освен ако click не е отменен). Без това формите на панелите не правят нищо.
       if (type === 'click' && !event.defaultPrevented) {
