@@ -189,6 +189,21 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
   // Прави се след всяко `innerHTML`/`appendChild`, както го прави браузърът при разбор.
   function linkFormControls(node) {
     if (!node || node.nodeType !== 1) return;
+    // `<select>` в браузъра има `value` от избраната опция (или от първата) — панелите
+    // четат точно `select.value`, затова без това формата „забравя“ избора след прерисуване
+    // (напр. „＋ нов контакт“ се връща на празно и контактът не се създава).
+    const selects = node.tagName === 'select' ? [node] : node.querySelectorAll('select');
+    for (const select of selects) {
+      if (select.value) continue;
+      const options = select.querySelectorAll('option');
+      const picked = options.find((option) => option.selected) || options[0];
+      if (picked) {
+        // `value=""` е ВАЛИДНА стойност („— без контакт —“), а не липса: иначе в тялото на
+        // заявката отива етикетът на опцията и сървърът отговаря „Unknown contact“.
+        const attribute = picked.getAttribute('value');
+        select.value = attribute === null ? picked.textContent : attribute;
+      }
+    }
     const forms = node.tagName === 'form' ? [node] : [];
     const walk = (current) => {
       for (const child of current.childNodes) {
@@ -283,6 +298,37 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
         this.childNodes.push(node);
       });
       linkFormControls(this);
+    }
+    /**
+     * Браузърът добавя разметка на позиция (`beforeend` е най-често ползваната — така
+     * панелите добавят ред към списък, без да прерисуват всичко). Без това добавянето на
+     * поле по желание хвърля и сценарият не може да стигне до „Създай“.
+     */
+    insertAdjacentHTML(position, html) {
+      const nodes = parseHtml(String(html), this.ownerDocument);
+      const place = String(position).toLowerCase();
+      const accept = (parent, node) => {
+        node.parentNode = parent;
+        return node;
+      };
+      if (place === 'beforeend') {
+        nodes.forEach((node) => this.childNodes.push(accept(this, node)));
+        linkFormControls(this);
+        return;
+      }
+      if (place === 'afterbegin') {
+        this.childNodes = nodes.map((node) => accept(this, node)).concat(this.childNodes);
+        linkFormControls(this);
+        return;
+      }
+      const parent = this.parentNode;
+      if (!parent) throw new Error('dom-stub: insertAdjacentHTML(«' + place + '») без родител');
+      const index = parent.childNodes.indexOf(this);
+      const insert = nodes.map((node) => accept(parent, node));
+      if (place === 'beforebegin') parent.childNodes.splice(index, 0, ...insert);
+      else if (place === 'afterend') parent.childNodes.splice(index + 1, 0, ...insert);
+      else throw new Error('dom-stub: неподдържана позиция за insertAdjacentHTML «' + place + '»');
+      linkFormControls(parent);
     }
     setAttribute(name, value) {
       this.attributes.set(String(name).toLowerCase(), String(value == null ? '' : value));

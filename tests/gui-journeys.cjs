@@ -157,7 +157,11 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       await fn();
       passed.push(name);
     } catch (error) {
-      failed.push(name + ': ' + error.message);
+      // Последната заявка се добавя към провала: тя показва какво панелът е поискал,
+      // когато твърдението е за отговор на сървъра.
+      const last = app.requests[app.requests.length - 1];
+      const tail = last ? ' | последна заявка: ' + last.method + ' ' + last.url + (last.body ? ' ' + last.body : '') : '';
+      failed.push(name + ': ' + error.message + tail);
     }
   };
   try {
@@ -1029,14 +1033,17 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     // ── J53. Папка: бележка и QR от менюто ⚙ ─────────────────────────────────
     await journey('J53 папка: бележка и QR от менюто', async () => {
       await ownPortalWithFile('gui-journey-folder-gear');
+      // Името е уникално за пускането: хранилището живее между пусканията и папка със
+      // същото име вече съществува от предишно — add-on-ът правилно отказва дубликат.
+      const folder = 'Papka-za-scenariy-' + String(Date.now()).slice(-6);
       app.click('#fm-new-folder', 'бутонът „Нова папка“');
       await waitFor(() => app.$('#fm-new-folder-name'), { label: 'полето за име на папка' });
-      app.fill('#fm-new-folder-name', 'Papka-za-scenariy');
+      app.fill('#fm-new-folder-name', folder);
       app.clearToasts();
       app.$('#fm-new-folder-form').dispatch('submit');
       await waitFor(() => app.toast(), { label: 'отговорът за новата папка', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'папката се създава: ' + app.toast().message);
-      const ownGear = () => app.$$('[data-folder-gear]').find((el) => /Papka-za-scenariy/.test(el.getAttribute('data-folder-gear') || ''));
+      const ownGear = () => app.$$('[data-folder-gear]').find((el) => (el.getAttribute('data-folder-gear') || '').includes(folder));
       const gear = await waitFor(ownGear, { label: 'менюто ⚙ на новата папка', timeout: BUDGET });
       gear.click();
       await settle('менюто на папката');
@@ -1061,6 +1068,88 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       const qr = await waitFor(() => app.$('[data-folder-qr="' + rel + '"]'), { label: '„QR“ на папката', timeout: BUDGET });
       qr.click();
       await waitFor(() => text(app.document.body).includes('QR ·'), { label: 'прозорецът с QR на папката', timeout: BUDGET });
+    });
+
+    // ── J54. Портал: контакт с поле по желание (добави, махни, запази) ────────
+    await journey('J54 портал: контакт с поле по желание', async () => {
+      // Имейлът е уникален за всяко пускане: хранилището на add-on-а живее между пусканията,
+      // а контакт със същия имейл вече може да съществува от предишно.
+      const email = 'extra.' + String(Date.now()) + '@example.org';
+      await portalList();
+      app.click('#pf-new', 'бутонът „Нов портал“');
+      await waitFor(() => app.$('#pf-create'), { label: 'формата за нов портал', timeout: BUDGET });
+      app.fill('[name="slug"]', 'gui-journey-extra-' + String(Date.now()).slice(-6));
+      app.fill('[name="title"]', 'Портал с контакт по желание');
+      app.select('[name="contactId"]', '__new__');
+      app.fill('[name="contact_email"]', email);
+      app.fill('[name="contact_name"]', 'Контакт с поле');
+      // Две полета по желание: едното се маха, другото остава.
+      app.click('[data-extras-add="contact"]', 'бутонът „＋ добави поле“');
+      app.click('[data-extras-add="contact"]', 'бутонът „＋ добави поле“');
+      await waitFor(() => app.$$('[data-extras="contact"] [data-extra-key]').length === 2, {
+        label: 'двете полета по желание',
+        timeout: BUDGET,
+      });
+      const keys = app.$$('[data-extras="contact"] [data-extra-key]');
+      const vals = app.$$('[data-extras="contact"] [data-extra-value]');
+      app.fill(keys[0], 'Съд');
+      app.fill(vals[0], 'РС-София');
+      // Второто поле се премахва със „✕“ — както би направил човек.
+      const removeButtons = app.$$('[data-extras="contact"] [data-extras-remove]');
+      removeButtons[removeButtons.length - 1].click();
+      await waitFor(() => app.$$('[data-extras="contact"] [data-extra-key]').length === 1, {
+        label: 'махнатото поле по желание',
+        timeout: BUDGET,
+      });
+      app.clearToasts();
+      app.click('#pf-create', 'бутонът „Създай и генерирай API + QR“');
+      await waitFor(() => app.toast(), { label: 'отговорът от създаването', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'порталът се създава: ' + app.toast().message);
+      // Панелът поиска създаването на контакта С ТОВА, което човекът е попълнил: едно поле
+      // по желание (второто е махнато с „✕“) и имейлът от формата. Проверява се тялото на
+      // заявката, а не списъкът в друг панел — той се зарежда при отваряне и би показал
+      // старо състояние, тоест тестът щеше да проверява кеша, не формата.
+      const posted = app.requests.filter((r) => r.method === 'POST' && /\/directory\/contacts$/.test(r.url)).pop();
+      assert.ok(posted, 'контактът е поискан от панела: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '));
+      const sent = JSON.parse(posted.body || '{}');
+      assert.equal(sent.email, email, 'имейлът от формата стигна до заявката');
+      assert.deepEqual(sent.extras, [{ key: 'Съд', value: 'РС-София' }], 'остана само едното поле по желание: ' + JSON.stringify(sent.extras));
+    });
+
+    // ── J55. Файл: избор и действие от плочката в картата ────────────────────
+    await journey('J55 файл: избор и действие', async () => {
+      await ownPortalWithFile('gui-journey-file-pick');
+      // Плочките за действие живеят в картата на ОТВОРЕНИЯ файл — отваря се редът.
+      const open = await waitFor(() => {
+        const nodes = app.$$('[data-open-file]');
+        return nodes.find((el) => /fayl-za-scenariy/.test(text(el))) || nodes[0];
+      }, { label: 'редът на файла', timeout: BUDGET });
+      open.click();
+      await settle('картата на файла');
+      const pick = await waitFor(() => {
+        const nodes = app.$$('[data-pick]');
+        return nodes.find((el) => {
+          const art = el.closest ? el.closest('.fm-file') : null;
+          return art && /fayl-za-scenariy/.test(text(art));
+        }) || nodes[0];
+      }, { label: 'бутонът за избор на файла', timeout: BUDGET });
+      const wasOn = String(pick.getAttribute('class') || '').includes('on');
+      pick.click();
+      await waitFor(() => {
+        const again = app.$('[data-pick="' + pick.getAttribute('data-pick') + '"]');
+        return again && String(again.getAttribute('class') || '').includes('on') !== wasOn ? again : null;
+      }, { label: 'смяната на избора', timeout: BUDGET });
+      // Плочка за действие в картата на файла — същият път като с мишка.
+      const tile = await waitFor(() => app.$('[data-act="lock"]') || app.$('[data-act]'), { label: 'плочка за действие', timeout: BUDGET });
+      const action = tile.getAttribute('data-act');
+      app.clearToasts();
+      tile.click();
+      await waitFor(() => app.toast(), { label: 'отговорът от „' + action + '“', timeout: BUDGET });
+      assert.ok(['ok', 'err'].includes(app.toast().kind), 'панелът отговаря на „' + action + '“: ' + app.toast().message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'PATCH' && /\/files\//.test(r.url)),
+        'действието мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
     });
 
     // Менюто „API ▾“ на файла НЕ се проверява тук: то се рисува само когато файлът има

@@ -553,22 +553,34 @@
     });
     return out.slice(0, 20);
   }
-  /** Добавяне/премахване на редове „поле по желание“ във всяка форма. */
+  /**
+   * Добавяне/премахване на редове „поле по желание“ във всяка форма.
+   *
+   * Слушателят е на КОНТЕЙНЕРА, а не на всеки бутон: новият ред се вмъква след рисуването
+   * (`insertAdjacentHTML`) и бутонът му „✕“ нямаше слушател — тоест „＋ добави поле“ работеше,
+   * а премахването на току-що добавеното поле не правеше нищо до следващо прерисуване.
+   * Намери го `tests/gui-journeys.cjs` (J54), който натиска точно тези два бутона.
+   */
   function wireExtras(root) {
-    root.querySelectorAll('[data-extras-add]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const scope = btn.dataset.extrasAdd;
+    if (!root || !root.dataset || root.dataset.extrasWired) return;
+    root.dataset.extrasWired = '1';
+    root.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!target || typeof target.closest !== 'function') return;
+      const add = target.closest('[data-extras-add]');
+      if (add) {
+        const scope = add.dataset.extrasAdd;
         const box = root.querySelector(`[data-extras="${scope}"] .pf-extras-rows`);
         if (!box) return;
         if (box.children.length >= 20) return toast('Максимум 20 полета', 'err');
         box.insertAdjacentHTML('beforeend', extrasRow('', ''));
-      });
-    });
-    root.querySelectorAll('[data-extras-remove]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const row = btn.closest('.pf-extra-row');
+        return;
+      }
+      const remove = target.closest('[data-extras-remove]');
+      if (remove) {
+        const row = remove.closest('.pf-extra-row');
         if (row) row.remove();
-      });
+      }
     });
   }
 

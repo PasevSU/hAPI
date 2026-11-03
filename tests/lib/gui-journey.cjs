@@ -87,7 +87,11 @@ function mountApp(addon, { lang = 'bg', token = addon.token } = {}) {
   // иначе тестът би „помагал“ на кода, който проверява.
   const fetchShim = (url, init = {}) => {
     const full = typeof url === 'string' && url.startsWith('/') ? addon.base + url : url;
-    requests.push({ url: String(full), method: String((init && init.method) || 'GET') });
+    const entry = { url: String(full), method: String((init && init.method) || 'GET') };
+    // Тялото се пази само за да може провален сценарий да каже КАКВО е поискал панелът —
+    // без него „Unknown contact“ от сървъра не се проследява до полето, което го е пратило.
+    if (init && typeof init.body === 'string') entry.body = init.body.slice(0, 400);
+    requests.push(entry);
     return fetch(full, init);
   };
   const sandbox = {
