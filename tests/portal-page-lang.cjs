@@ -69,7 +69,7 @@ async function mountPage(base, portalId, lang, { savedLang } = {}) {
 
 /** Текст на страницата без избора на език (имената на езиците са кирилски по природа). */
 const pageText = (doc) =>
-  ['main', 'title', 'visibility', 'copy-link', 'copy-id', 'api-link', 'manifest-link', 'foot-note']
+  ['main', 'title', 'visibility', 'copy-link', 'copy-id', 'api-open', 'manifest-open', 'foot-note']
     .map((id) => text(doc.getElementById(id)))
     .join(' ');
 

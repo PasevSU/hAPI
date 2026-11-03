@@ -1,6 +1,6 @@
 'use strict';
 // ОРАКУЛ (поведенчески): страницата НАИСТИНА рисува договора — id, резюме с брой файлове,
-// изписан адрес за изтегляне и работещ линк „Изтегли“.
+// бутон за копиране на адреса, панел с информацията и бутон „Изтегли“.
 //
 // За разлика от `portal-page-contract.cjs` (който проверява сървъра и текста на кода),
 // тук `portal.js` се изпълнява срещу ЖИВ сървър в тестов DOM. Така „показва N файла“ се
@@ -13,6 +13,11 @@ const { startServer, waitFor } = require('./lib/gui-harness.cjs');
 const { createDocument } = require('./lib/dom-stub.cjs');
 
 (async () => {
+  // Порталът получава СОБСТВЕНА папка `/share/<slug>` и се отваря в режим „папка“.
+  // Остатъци от предишно пускане (или от паралелен тест) добавят чужди карти към
+  // списъка — затова тук папката се изчиства, преди да се създаде порталът.
+  const shareDir = path.resolve('/share', 'render-demo');
+  try { fs.rmSync(shareDir, { recursive: true, force: true }) } catch { /* заключен файл на Windows */ }
   const server = await startServer({ keepData: true });
   const { api, authFetch, base } = server;
   try {
@@ -33,11 +38,15 @@ const { createDocument } = require('./lib/dom-stub.cjs');
       });
       return res.json();
     };
-    const free = await upload('dogovor.txt', 'свободен');
+    await upload('dogovor.txt', 'свободен');
     const keyed = await upload('akt.pdf', 'с ключ');
     const blocked = await upload('arhiv.zip', 'забранен');
-    await api(`/admin/api/portals/${portalId}/files/${keyed.id}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true, reason: 'тест: ключ' });
-    await api(`/admin/api/portals/${portalId}/files/${blocked.id}/access`, 'PATCH', { mode: 'DISABLED', listed: true, reason: 'тест: недостъпен' });
+    await api(`/admin/api/portals/${portalId}/files/${keyed.id}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true, reason: 'тест: ключ' }).then((r) =>
+      assert.equal(r.status, 200, 'файлът става KEY_REQUIRED: ' + JSON.stringify(r.data)),
+    );
+    await api(`/admin/api/portals/${portalId}/files/${blocked.id}/access`, 'PATCH', { mode: 'DISABLED', listed: true, reason: 'тест: недостъпен' }).then((r) =>
+      assert.equal(r.status, 200, 'файлът става DISABLED: ' + JSON.stringify(r.data)),
+    );
 
     // ── Монтиране: истинският HTML на страницата + истинският portal.js ───────────────
     const html = await (await fetch(`${base}/p/${portalId}`)).text();
@@ -96,23 +105,62 @@ const { createDocument } = require('./lib/dom-stub.cjs');
     assert.ok(chips.includes('Файлове: 3'), 'чипът с броя файлове: ' + chips.join(' | '));
     assert.ok(chips.some((t) => t.startsWith('Общ обем: ')), 'чипът с обема');
 
-    // ── PP-04: адресът за изтегляне е ИЗПИСАН за свободния и за файла с ключ ──────────
-    const linkCodes = [...doc.body.querySelectorAll('.file-link')].map((p) => p.querySelector('code').textContent);
-    assert.equal(linkCodes.length, 2, 'два файла показват адрес (забраненият — не)');
-    for (const code of linkCodes) assert.match(code, /\/api\/v1\/p\/(render-demo|[0-9a-f]+)\/files\/[^/]+\/download$/);
-    // Адресът е АБСОЛЮТЕН и е с базовия адрес от сървъра, а не с `location.origin`: това е
-    // линкът, който посетителят копира и праща нататък (правило 6 от договора за адресите).
-    for (const code of linkCodes) assert.ok(code.startsWith(base + '/api/v1/p/'), 'адресът за изтегляне е абсолютен: ' + code);
+    // ── PP-04: адресът НЕ е изписан; дава се бутон „Копирай адреса“ ──────────────────
+    // До 0.69.140 тук се проверяваше, че адресът за изтегляне е изписан като текст. Това
+    // беше „сайт с линкове“: посетителят трябваше да го копира сам. Сега адресът се дава
+    // като бутон, а информацията (име, размер, SHA-256, достъп) е на картата.
+    assert.equal(doc.body.querySelectorAll('.file-link').length, 0, 'няма изписан адрес за изтегляне');
+    assert.equal(doc.getElementById('files').textContent.includes('/download'), false, 'адресът не се вижда като текст');
+    const cardsNow = doc.body.querySelectorAll('.file');
+    const withCopy = cardsNow.filter((li) =>
+      li.querySelectorAll('button').some((b) => b.textContent.includes('Копирай адреса')),
+    );
+    assert.equal(
+      withCopy.length,
+      2,
+      'два файла дават бутон за копиране (забраненият — не). Има: ' +
+      cardsNow.map((li) => li.textContent.slice(0, 40).replace(/\s+/g, ' ')).join(' | '),
+    );
+    withCopy[0].querySelectorAll('button').find((b) => b.textContent.includes('Копирай адреса')).click();
+    await waitFor(() => copied.some((v) => /\/api\/v1\/p\/(render-demo|[0-9a-f]+)\/files\/[^/]+\/download$/.test(v)), { label: 'копиране на адреса за изтегляне' });
     const shownUrl = doc.getElementById('portal-url').textContent;
     assert.equal(shownUrl, `${base}/p/${portalId}`, 'изписаният адрес на портала е абсолютен и е по id');
     doc.getElementById('copy-link').click();
     await waitFor(() => copied.includes(shownUrl), { label: 'копиране на адреса на портала' });
 
-    // ── PP-05: „Изтегли“ е истински линк с download; ключът е поле + бутон ──────────
-    const anchors = doc.body.querySelectorAll('a.btn-primary').filter((a) => a.getAttribute('download'));
-    assert.equal(anchors.length, 1, 'точно един свободен файл има линк за сваляне');
-    assert.match(anchors[0].getAttribute('href'), new RegExp('/files/' + free.id + '/download$'));
-    assert.equal(anchors[0].getAttribute('download'), 'dogovor.txt', 'сваля се с истинското име');
+    // ── PP-04: „API“ и „Манифест“ разгъват информацията В страницата ────────────────
+    assert.equal(doc.getElementById('doc-info').hidden, true, 'панелът е скрит до поискване');
+    doc.getElementById('api-open').click();
+    await waitFor(() => doc.getElementById('doc-info').hidden === false, { label: 'панелът с информация се отваря' });
+    assert.equal(doc.getElementById('doc-info-title').textContent, 'Информация за портала', 'заглавието е за портала');
+    const apiInfo = doc.getElementById('doc-info-body').textContent;
+    assert.ok(apiInfo.includes(portalId), 'информацията показва идентификатора: ' + apiInfo.slice(0, 120));
+    assert.ok(apiInfo.includes('Документи по дело 2026-114'), 'и заглавието на портала');
+    assert.equal(apiInfo.includes('/api/v1/p/'), false, 'в панела няма адреси за копиране');
+    doc.getElementById('manifest-open').click();
+    await waitFor(
+      () => doc.getElementById('doc-info-title').textContent === 'Манифест на портала' && doc.getElementById('doc-info-body').textContent.includes('dogovor.txt'),
+      { label: 'манифестът се разгъва с файловете' },
+    );
+    const manifestInfo = doc.getElementById('doc-info-body').textContent;
+    assert.ok(manifestInfo.includes('SHA-256'), 'манифестът показва отпечатъците: ' + manifestInfo.slice(0, 160));
+    doc.getElementById('doc-info-close').click();
+    assert.equal(doc.getElementById('doc-info').hidden, true, 'бутонът „Затвори“ връща панела');
+
+    // ── PP-05: „Изтегли“ е БУТОН (със сверка на SHA-256); ключът е поле + бутон ──────
+    // Проверката е ПО КАРТАТА на файла, а не с общ селектор: така не зависи от реда на
+    // файловете и от това коя карта е първа в списъка.
+    const cards = doc.body.querySelectorAll('.file');
+    const cardOf = (name) => cards.find((li) => li.textContent.includes(name));
+    const freeCard = cardOf('dogovor.txt');
+    assert.ok(freeCard, 'картата на свободния файл е в списъка');
+    const freeButtons = freeCard.querySelectorAll('button').map((b) => b.textContent.trim());
+    assert.equal(
+      freeButtons.filter((t) => t.startsWith('Изтегли') && !t.includes('ключ')).length,
+      1,
+      'свободният файл има точно един бутон за сваляне (има: ' + freeButtons.join(' | ') + ')',
+    );
+    assert.equal(doc.body.querySelectorAll('a.btn-primary').length, 0, 'няма линк, който да сваля файл');
     const keyInputs = doc.body.querySelectorAll('input.key-input');
     assert.equal(keyInputs.length, 1, 'файлът с ключ има поле за ключ');
     assert.ok(doc.body.textContent.includes('Изтегли с ключ'), 'бутонът за ключ е изписан');
@@ -121,7 +169,7 @@ const { createDocument } = require('./lib/dom-stub.cjs');
     const blockedCard = doc.body.querySelectorAll('.file').find((li) => li.textContent.includes('arhiv.zip'));
     assert.ok(blockedCard, 'картата на забранения файл е в списъка');
     assert.equal(blockedCard.querySelectorAll('.file-link').length, 0, 'няма изписан адрес');
-    assert.equal(blockedCard.querySelectorAll('a.btn-primary').length, 0, 'няма линк за сваляне');
+    assert.equal(blockedCard.querySelectorAll('button.btn-primary').length, 0, 'няма бутон за сваляне');
     assert.ok(blockedCard.textContent.includes('Изтеглянето е забранено от издателя'));
 
     // ── INV-9: имената влизат като текст, не като HTML ───────────────────────────────
@@ -135,7 +183,8 @@ const { createDocument } = require('./lib/dom-stub.cjs');
 
     console.log(
       'PASS portal-page-render: id изписан и копируем · резюме „цялостен набор от 3 файла“ · ' +
-      '2 адреса за изтегляне · 1 линк с download · 1 поле за ключ · забраненият без адрес и бутон · ' +
+      '2 бутона за копиране на адреса (без изписан URL) · панел „Информация/Манифест“ в страницата · ' +
+      '1 бутон за сваляне · 1 поле за ключ · забраненият без адрес и бутон · ' +
       'бутон за пакет с броя на свободните файлове'
     );
   } finally {

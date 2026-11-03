@@ -72,7 +72,10 @@ body {
   padding: 8px 12px;
   background: var(--panel);
   color: var(--ink);
+  border: 0;
   border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
   z-index: 10;
 }
 
@@ -168,12 +171,28 @@ body {
   color: var(--muted);
 }
 
-.contact a {
+.contact .link-btn {
   color: var(--accent);
-  text-decoration: none;
 }
 
-.contact a:hover {
+.contact .link-btn:hover {
+  text-decoration: underline;
+}
+
+/* PP-04: контактът е бутон (действие), а не линк — изглежда като текст, за да не
+   пречи на изречението, но се натиска и отваря пощата/телефона. */
+.link-btn {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.link-btn:hover {
   text-decoration: underline;
 }
 
@@ -407,24 +426,50 @@ main {
   overflow-wrap: anywhere;
 }
 
-/* PP-04: адресът за изтегляне се вижда като текст — линкът се препредава, не само бутон. */
-.file-link {
-  display: flex;
-  flex-wrap: wrap;
+/* PP-04: адресът за изтегляне НЕ се изписва — има бутон „Копирай адреса“ до
+   „Изтегли“. Така страницата не дава текст, който посетителят да сглобява. */
+.file-folder {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.file-link-label {
-  flex: 0 0 auto;
-}
-
-.file-link code {
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--ink);
-  font-size: 0.78rem;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.file-folder:hover {
+  color: var(--accent);
+}
+
+/* Панелът „информация“: съдържанието, което дотук се даваше като линк към JSON. */
+.info-list {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 10px 18px;
+  margin: 0;
+}
+
+.info-list dt {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.info-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.info-list dd code,
+.info-list dd .mono {
+  font-size: 0.8rem;
+}
+
+.info-list .btn {
+  margin-inline-start: 8px;
 }
 
 .file-actions {

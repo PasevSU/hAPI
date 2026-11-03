@@ -146,14 +146,16 @@ function page(portal, base, tree = null) {
   const root = String(base || '').replace(/\/+$/, '');
   // Изключените файлове не се показват: адресът им не работи и редът би бил подвеждащ.
   const files = (Array.isArray(p.files) ? p.files : []).filter((f) => (f.accessMode || 'FREE') !== 'DISABLED');
+  const accessText = (mode) => (mode === 'KEY_REQUIRED' ? 'с ключ' : mode === 'DISABLED' ? 'изключен' : 'свободен');
+  // Всяко действие е БУТОН, а до него стои информацията за файла: име, размер, отпечатък,
+  // режим на достъп. Дотук редовете бяха само име-линк и човек не виждаше нищо друго.
   const rows = files
     .map((f) => {
-      const link = `${root}/api/v1/p/${encodeURIComponent(slug)}/files/${encodeURIComponent(f.id)}/download`;
+      const url = `${root}/api/v1/p/${encodeURIComponent(slug)}/files/${encodeURIComponent(f.id)}/download`;
       const mode = f.accessMode || 'FREE';
-      const note = mode === 'FREE' ? 'свободен' : mode === 'KEY_REQUIRED' ? 'изисква ключ' : 'изключен';
-      return `      <li><a href="${esc(link)}">${esc(f.name)}</a> — ${Number(f.size) || 0} B · ${esc(
+      return `      <li><strong>${esc(f.name)}</strong> — ${Number(f.size) || 0} B · SHA-256 ${esc(
         String(f.sha256 || '').slice(0, 16),
-      )}… · ${note}</li>`;
+      )}… · ${esc(accessText(mode))} · <a class="btn btn-sm" href="${esc(url)}" download>Свали</a></li>`;
     })
     .join('\n');
   // Живата страница: тя знае за ПАПКИТЕ на портала (`/tree`), докато този файл е само
@@ -164,21 +166,27 @@ function page(portal, base, tree = null) {
   // до договора за един файл (`/tree/file?path=`). Същите адреси, които дава и `api.json`.
   const folderItems = tree && tree.folders.length
     ? tree.folders
-      .map((f) => `      <li><a href="${esc(`${live}?folder=${encodeURIComponent(f.path.replace(/^\/+/, ''))}`)}">${esc(f.name)}/</a></li>`)
+      .map((f) => `      <li><strong>${esc(f.name)}/</strong> · <a class="btn btn-sm" href="${esc(`${live}?folder=${encodeURIComponent(f.path.replace(/^\/+/, ''))}`)}">Отвори</a></li>`)
       .join('\n')
     : '';
   const fileItems = tree && tree.files.length
     ? tree.files
-      .map((f) => `      <li><a href="${esc(`${root}/api/v1/p/${encodeURIComponent(slug)}/tree/file?path=${encodeURIComponent(f.path)}`)}">${esc(f.name)}</a> — ${Number(f.size) || 0} B</li>`)
+      .map((f) => `      <li><strong>${esc(f.name)}</strong> — ${Number(f.size) || 0} B · <a class="btn btn-sm" href="${esc(`${root}/api/v1/p/${encodeURIComponent(slug)}/tree/file?path=${encodeURIComponent(f.path)}`)}" download>Свали</a></li>`)
       .join('\n')
     : '';
   const treeBlock = folderItems || fileItems
-    ? `  <p>В папката: ${tree.folders.length} папки, ${tree.files.length} файла${
-      tree.truncated ? ' (показани са първите)' : ''}${tree.depthLimited ? `, по-дълбоки от ${LIST_MAX_DEPTH} нива не са обходени` : ''}.</p>
+    ? `  <p>В папката: ${tree.folders.length} папки, ${tree.files.length} файла${tree.truncated ? ' (показани са първите)' : ''}${tree.depthLimited ? `, по-дълбоки от ${LIST_MAX_DEPTH} нива не са обходени` : ''}.</p>
 ${folderItems ? `  <h2>Папки</h2>\n  <ul>\n${folderItems}\n  </ul>\n` : ''}${fileItems ? `  <h2>Файлове</h2>\n  <ul>\n${fileItems}\n  </ul>\n` : ''}`
     : '';
   // „още няма файлове“ остава само когато няма нито регистрирани файлове, нито съдържание.
   const empty = files.length || folderItems || fileItems ? '' : '      <li>още няма файлове</li>';
+  // Кратката информация за портала: това, което дотук се смяташе от посетителя по адресите.
+  const facts = [
+    `<dt>Идентификатор</dt><dd><code>${esc(String(p.id || ''))}</code></dd>`,
+    p.storage_root ? `<dt>Папка</dt><dd><code>${esc(String(p.storage_root))}</code></dd>` : '',
+    `<dt>Файлове в портала</dt><dd>${files.length}</dd>`,
+    tree ? `<dt>В папката</dt><dd>${tree.folders.length} папки, ${tree.files.length} файла</dd>` : '',
+  ].filter(Boolean).join('\n    ');
   return `<!doctype html>
 <html lang="bg">
 <head>
@@ -189,7 +197,11 @@ ${folderItems ? `  <h2>Папки</h2>\n  <ul>\n${folderItems}\n  </ul>\n` : ''}
 <body>
   <h1>${esc(p.title || slug)}</h1>
   <p>Портал <code>${esc(slug)}</code> на hAPI Enterprise. Файлове: ${files.length}.</p>
-  <p>Живата страница (с папките и търсенето): <a href="${esc(live)}">${esc(live)}</a></p>
+  <p><a class="btn btn-primary" href="${esc(live)}">Отвори портала</a> — там са папките, търсенето,
+  QR кодът и всички действия.</p>
+  <dl>
+    ${facts}
+  </dl>
 ${treeBlock}  <h2>Регистрирани файлове (качени през API-то)</h2>
   <ul>
 ${rows || empty}

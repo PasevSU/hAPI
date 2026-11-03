@@ -19,7 +19,9 @@
   <div id="hapi-boot" hidden data-base="{{BASE}}" data-api="{{API}}" data-folder="{{FOLDER}}" data-folders="{{FOLDERS}}"
     data-qr="{{QR}}"></div>
 
-  <a class="skip" href="#files" id="skip" data-i18n="nav.skip.content">Към съдържанието</a>
+  <!-- PP-04: страницата не съдържа НИТО ЕДИН линк. И скокът към съдържанието е бутон —
+       `<a>` се ползва само временно при сваляне на файл, за да отвори диалога на браузъра. -->
+  <button type="button" class="skip" id="skip" data-i18n="nav.skip.content">Към съдържанието</button>
 
   <header class="hero">
     <div class="wrap">
@@ -40,10 +42,13 @@
       </p>
       <div class="hero-actions">
         <button type="button" id="copy-link" class="btn btn-ghost" data-i18n="header.copyLink">Копирай адреса</button>
-        <a id="api-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer"
-          data-i18n="header.api">API</a>
-        <a id="manifest-link" class="btn btn-ghost" href="#" target="_blank" rel="noopener noreferrer"
-          data-i18n="header.manifest">Манифест</a>
+        <!-- PP-04: „API“ и „Манифест“ НЕ водят навън. Това са бутони, които разгъват
+             информацията в самата страница — посетителят не получава адрес за копиране
+             и не попада на суров JSON в нов таб. -->
+        <button type="button" id="api-open" class="btn btn-ghost" aria-controls="doc-info" aria-expanded="false"
+          data-i18n="header.api">API</button>
+        <button type="button" id="manifest-open" class="btn btn-ghost" aria-controls="doc-info" aria-expanded="false"
+          data-i18n="header.manifest">Манифест</button>
         <!-- PP-14: езикът на страницата е избор на посетителя, не на издателя. -->
         <label class="lang">
           <span class="sr-only" data-i18n="lang.label">Език</span>
@@ -70,6 +75,18 @@
           (ZIP)</button>
         <p id="package-note" class="more" role="status" aria-live="polite" hidden></p>
       </div>
+    </section>
+
+    <!-- PP-04: информацията, която дотук се даваше като линк към суров JSON, се
+         показва ТУК — в същата страница, с четими етикети. -->
+    <section class="panel doc-info" id="doc-info" aria-labelledby="doc-info-title" hidden>
+      <div class="panel-head">
+        <h2 id="doc-info-title"></h2>
+        <button type="button" id="doc-info-close" class="btn btn-ghost btn-sm" data-i18n="info.close">Затвори</button>
+      </div>
+      <p id="doc-info-note" class="hint"></p>
+      <p id="doc-info-status" class="status" role="status" aria-live="polite" hidden></p>
+      <dl id="doc-info-body" class="info-list"></dl>
     </section>
 
     <section class="panel" aria-labelledby="files-title">

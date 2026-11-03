@@ -361,6 +361,153 @@ async function downloadFile(file, key) {
 const downloadUrlFor = (file) =>
   absolute(withAuth("/files/" + encodeURIComponent(file.id) + "/download"));
 
+// ── Информация В страницата (PP-04) ─────────────────────────────────────────
+// Дотук „API“ и „Манифест“ бяха линкове към суров JSON в нов таб, а адресът за
+// изтегляне се изписваше като текст за копиране. Сега същото съдържание се разгъва
+// ТУК, с четими етикети: страницата не дава адреси, които посетителят да сглобява.
+let infoKind = "";
+let infoWired = false;
+
+/** Възел ли е стойността (така `<dd>` може да носи и бутон, не само текст). */
+const isNode = (value) => Boolean(value) && typeof value === "object" && typeof value.nodeType === "number";
+
+/** Един ред „етикет: стойност“ в панела с информация. */
+function infoRow(label, value, opts) {
+  const list = $("doc-info-body");
+  if (!list) return;
+  const dt = document.createElement("dt");
+  dt.textContent = label;
+  const dd = document.createElement("dd");
+  if (opts && opts.mono) dd.className = "mono";
+  if (isNode(value)) dd.append(value);
+  else dd.textContent = String(value == null || value === "" ? "—" : value);
+  list.append(dt, dd);
+}
+
+/** Бутон за копиране на стойност, която не се изписва на страницата. */
+function copyButton(value, label, okText) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn btn-ghost btn-sm";
+  btn.textContent = label;
+  btn.addEventListener("click", () => copy(value, okText));
+  return btn;
+}
+
+/** Какво знае страницата за самия портал — без адреси и без JSON. */
+function renderApiInfo() {
+  const data = portal || {};
+  const total = prof ? prof.total : allFiles.length;
+  const noun = prof ? prof.noun : nounOf("file");
+  const bytes = allFiles.reduce((sum, f) => sum + (Number(f.size) || 0), 0);
+  infoRow(T("info.label.title"), data.title || T("doc.title"));
+  infoRow(T("info.label.id"), data.id || "", { mono: true });
+  infoRow(T("info.label.slug"), data.slug || "");
+  infoRow(T("info.label.visibility"), data.visibility === "public" ? T("access.public") : T("access.private"));
+  infoRow(
+    T("info.label.content"),
+    total + " " + nounFor(total, noun) + " · " + fmtSize(bytes),
+  );
+  const c = data.contact || null;
+  const who = c ? [c.name, c.organization, c.department].filter(Boolean).join(" · ") : "";
+  if (who) infoRow(T("info.label.contact"), who);
+  const created = fmtDate(data.createdAt);
+  if (created) infoRow(T("info.label.created"), created);
+  const updated = fmtDate(data.updatedAt);
+  if (updated) infoRow(T("info.label.updated"), updated);
+}
+
+/** Манифест: сървърът дава пътища, размери и отпечатъци — показваме тях, не адреси. */
+async function renderManifestInfo() {
+  const status = $("doc-info-status");
+  let data = null;
+  try {
+    const res = await fetch(withAuth("/manifest"), { referrerPolicy: "no-referrer" });
+    if (res.ok) data = await res.json();
+  } catch {
+    data = null;
+  }
+  // Затворен или сменен, докато зареждаше — не рисуваме върху чуждо съдържание.
+  if (infoKind !== "manifest") return;
+  if (status) {
+    status.hidden = true;
+    status.textContent = "";
+  }
+  const list = $("doc-info-body");
+  if (list) list.replaceChildren();
+  if (!data || !Array.isArray(data.files)) {
+    if (status) {
+      status.hidden = false;
+      status.textContent = T("info.error");
+    }
+    return;
+  }
+  const storage = data.storage || {};
+  infoRow(T("info.label.folders"), Number(storage.folderCount) || 0);
+  infoRow(T("info.label.files"), Number(storage.fileCount) || data.files.length);
+  for (const f of data.files) {
+    const mode =
+      f.accessMode === "KEY_REQUIRED" ? T("access.key") : f.accessMode === "DISABLED" ? T("access.disabled") : T("access.free");
+    const detail = document.createElement("span");
+    detail.className = "info-value";
+    detail.append(document.createTextNode([f.path || "", fmtSize(f.size), mode].filter(Boolean).join(" · ")));
+    if (f.sha256) {
+      const hash = document.createElement("code");
+      hash.className = "mono";
+      hash.title = T("file.sha.title", { full: f.sha256 });
+      hash.textContent = T("file.sha.label", { short: short(f.sha256, 16) });
+      detail.append(document.createTextNode(" "), hash, copyButton(f.sha256, T("file.sha.copy"), T("file.sha.copied")));
+    }
+    infoRow(f.name || "", detail);
+  }
+}
+
+/** Затваря панела с информация и връща бутоните в спокойно състояние. */
+function closeInfo() {
+  infoKind = "";
+  const box = $("doc-info");
+  if (box) box.hidden = true;
+  for (const id of ["api-open", "manifest-open"]) {
+    const btn = $(id);
+    if (btn) btn.setAttribute("aria-expanded", "false");
+  }
+}
+
+/** Разгъва информацията за портала или за манифеста — в самата страница. */
+async function openInfo(kind) {
+  const box = $("doc-info");
+  if (!box) return;
+  if (infoKind === kind && !box.hidden) {
+    closeInfo();
+    return;
+  }
+  infoKind = kind;
+  box.hidden = false;
+  const isApi = kind === "api";
+  const apiBtn = $("api-open");
+  const manifestBtn = $("manifest-open");
+  if (apiBtn) apiBtn.setAttribute("aria-expanded", isApi ? "true" : "false");
+  if (manifestBtn) manifestBtn.setAttribute("aria-expanded", isApi ? "false" : "true");
+  $("doc-info-title").textContent = isApi ? T("info.api.title") : T("info.manifest.title");
+  $("doc-info-note").textContent = isApi ? T("info.api.note") : T("info.manifest.note");
+  const status = $("doc-info-status");
+  if (status) {
+    status.hidden = true;
+    status.textContent = "";
+  }
+  const body = $("doc-info-body");
+  if (body) body.replaceChildren();
+  if (isApi) renderApiInfo();
+  else {
+    if (status) {
+      status.hidden = false;
+      status.textContent = T("info.loading");
+    }
+    await renderManifestInfo();
+  }
+  if (typeof box.scrollIntoView === "function") box.scrollIntoView({ block: "nearest" });
+}
+
 /**
  * Резюме на портала (PP-03/PP-06): какво представлява и какво съдържа —
  * брой файлове, общ обем, вид на артефактите, дата и режим на достъп.
@@ -452,28 +599,8 @@ function fileCard(file) {
 
   const actions = document.createElement("div");
   actions.className = "file-actions";
-  // PP-04: адресът за изтегляне се ИЗПИСВА като текст и се копира. Забраненият файл
-  // не показва адрес — адрес, който връща 403, е подвеждащ.
-  if (file.accessMode !== "DISABLED") {
-    const link = document.createElement("p");
-    link.className = "file-link";
-    const label = document.createElement("span");
-    label.className = "file-link-label";
-    label.textContent =
-      file.accessMode === "KEY_REQUIRED" ? T("file.link.labelKey") : T("file.link.label");
-    const code = document.createElement("code");
-    code.className = "mono";
-    code.textContent = downloadUrlFor(file);
-    const copyLink = document.createElement("button");
-    copyLink.type = "button";
-    copyLink.className = "icon-btn";
-    copyLink.title = T("file.link.copy");
-    copyLink.setAttribute("aria-label", T("file.link.copyFor", { name: file.name }));
-    copyLink.append(icon("copy"));
-    copyLink.addEventListener("click", () => copy(downloadUrlFor(file), T("file.link.copied")));
-    link.append(label, code, copyLink);
-    li.append(link);
-  }
+  // PP-04: адресът НЕ се изписва. Долу влиза бутон „Копирай адреса“ — за препредаване,
+  // без посетителят да сглобява път от текст. Забраненият файл не получава нищо.
   if (file.accessMode === "DISABLED") {
     const blocked = document.createElement("span");
     blocked.className = "chip chip-warn";
@@ -496,13 +623,24 @@ function fileCard(file) {
     });
     actions.append(input, btn);
   } else {
-    // PP-05: истински линк с `download` — натискането стартира сваляне дори без JS.
-    const a = document.createElement("a");
-    a.className = "btn btn-primary";
-    a.href = withAuth("/files/" + encodeURIComponent(file.id) + "/download");
-    a.setAttribute("download", file.name);
-    a.append(icon("download"), document.createTextNode(T("file.download")));
-    actions.append(a);
+    // PP-05: бутон, не линк — свалянето минава през съшата проверка на SHA-256 и не
+    // излага адрес, който посетителят да копира или да отвори на ръка.
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-primary";
+    btn.append(icon("download"), document.createTextNode(T("file.download")));
+    btn.addEventListener("click", () => downloadFile(file, ""));
+    actions.append(btn);
+  }
+  if (file.accessMode !== "DISABLED") {
+    const copyLink = document.createElement("button");
+    copyLink.type = "button";
+    copyLink.className = "btn btn-ghost btn-sm";
+    copyLink.title = T("file.link.copy");
+    copyLink.setAttribute("aria-label", T("file.link.copyFor", { name: file.name }));
+    copyLink.append(icon("copy"), document.createTextNode(T("file.link.label")));
+    copyLink.addEventListener("click", () => copy(downloadUrlFor(file), T("file.link.copied")));
+    actions.append(copyLink);
   }
   li.append(actions);
   return li;
@@ -618,14 +756,18 @@ function paint(filter) {
       for (const sub of folderSubs) {
         const li = document.createElement("li");
         li.className = "file";
-        const link = document.createElement("a");
-        link.className = "file-name";
-        link.href =
-          location.pathname +
-          "?folder=" +
-          encodeURIComponent(sub.path) +
-          (keptQuery() ? "&" + keptQuery() : "");
+        // PP-04: подпапката се отваря с бутон — страницата не дава линкове за копиране.
+        const link = document.createElement("button");
+        link.type = "button";
+        link.className = "file-name file-folder";
         link.textContent = "📁 " + sub.name;
+        link.addEventListener("click", () => {
+          location.href =
+            location.pathname +
+            "?folder=" +
+            encodeURIComponent(sub.path) +
+            (keptQuery() ? "&" + keptQuery() : "");
+        });
         li.append(link);
         rows.unshift(li);
       }
@@ -718,23 +860,27 @@ function paintPortal(data) {
     el.replaceChildren();
     if (parts) el.append(document.createTextNode(parts));
     if (c.email) {
-      const a = document.createElement("a");
-      a.href = "mailto:" + c.email;
-      a.textContent = c.email;
-      el.append(document.createTextNode(parts ? " · " : ""), a);
+      const mail = document.createElement("button");
+      mail.type = "button";
+      mail.className = "link-btn";
+      mail.textContent = c.email;
+      mail.title = T("contact.mail");
+      mail.addEventListener("click", () => { location.href = "mailto:" + c.email; });
+      el.append(document.createTextNode(parts ? " · " : ""), mail);
     }
     if (c.phone) {
-      const a = document.createElement("a");
-      a.href = "tel:" + c.phone.replace(/[^+0-9]/g, "");
-      a.textContent = c.phone;
-      el.append(document.createTextNode(c.email || parts ? " · " : ""), a);
+      const tel = document.createElement("button");
+      tel.type = "button";
+      tel.className = "link-btn";
+      tel.textContent = c.phone;
+      tel.title = T("contact.tel");
+      tel.addEventListener("click", () => { location.href = "tel:" + c.phone.replace(/[^+0-9]/g, ""); });
+      el.append(document.createTextNode(c.email || parts ? " · " : ""), tel);
     }
     el.hidden = false;
   }
 
   const urls = data.urls || {};
-  const apiUrl = urls.api || apiBase;
-  const manifestUrl = urls.manifest || apiBase + "/manifest";
   // PP-01: идентификаторът на портала — видим и копируем. Адресът се променя със slug-а,
   // id-то остава същият, затова то е това, което се казва по телефон/в поддръжка.
   const portalId = String(data.id || "");
@@ -742,8 +888,18 @@ function paintPortal(data) {
   idEl.textContent = portalId;
   idEl.title = T("header.portalId") + ": " + portalId;
   $("copy-id").addEventListener("click", () => copy(portalId, T("header.copyId.ok")));
-  $("api-link").href = apiUrl + (token ? "?portal_token=" + encodeURIComponent(token) : "");
-  $("manifest-link").href = manifestUrl + (token ? "?portal_token=" + encodeURIComponent(token) : "");
+  // PP-04: API и Манифест са бутони, които разгъват информацията в СТРАНИЦАТА — няма
+  // адрес, който да се отваря навън. Слушателите се вързват веднъж: `paintPortal` се
+  // вика и при смяна на езика.
+  if (!infoWired) {
+    infoWired = true;
+    const apiBtn = $("api-open");
+    const manifestBtn = $("manifest-open");
+    const closeBtn = $("doc-info-close");
+    if (apiBtn) apiBtn.addEventListener("click", () => void openInfo("api"));
+    if (manifestBtn) manifestBtn.addEventListener("click", () => void openInfo("manifest"));
+    if (closeBtn) closeBtn.addEventListener("click", closeInfo);
+  }
   $("qr").src = (urls.qr || apiBase + "/qr.svg") + (token ? "?portal_token=" + encodeURIComponent(token) : "");
   // Адресът на страницата идва от сървъра (`urls.landing`, по id) — той е този, който се
   // копира и споделя, затова е абсолютен.
@@ -781,6 +937,12 @@ function applyLanguage() {
   applyWording(prof);
   paintSummary(portal);
   paint($("q") ? $("q").value : "");
+  // Отвореният панел с информация се преизвежда на новия език, а не остава на стария.
+  if (infoKind) {
+    const kind = infoKind;
+    infoKind = "";
+    void openInfo(kind);
+  }
 }
 
 /** Смяна на езика от посетителя: запомня се и се прилага веднага, без презареждане. */
@@ -830,9 +992,14 @@ async function loadQrInfo() {
     list.className = "summary-list";
     for (const rev of archives) {
       const item = document.createElement("li");
-      const link = document.createElement("a");
-      link.href = absolute(withAuth("/qr/" + encodeURIComponent(rev.id) + "/archive"));
+      // PP-04: архивът се сваля с бутон, а не с линк, който се вижда и копира.
+      const link = document.createElement("button");
+      link.type = "button";
+      link.className = "btn btn-ghost btn-sm";
       link.textContent = T("qr.archive.item", { id: rev.id, size: fmtSize(rev.archive.size) });
+      link.addEventListener("click", () => {
+        location.href = absolute(withAuth("/qr/" + encodeURIComponent(rev.id) + "/archive"));
+      });
       item.append(link);
       list.append(item);
     }
@@ -882,3 +1049,17 @@ async function loadQrInfo() {
 })();
 
 $("q").addEventListener("input", (e) => paint(e.target.value));
+
+// PP-04: „Към съдържанието“ е бутон — мести фокуса върху списъка, без да пипа адреса.
+const skipButton = $("skip");
+if (skipButton) {
+  skipButton.addEventListener("click", () => {
+    const target = $("files-title") || $("files");
+    if (!target) return;
+    if (typeof target.focus === "function") {
+      target.setAttribute("tabindex", "-1");
+      target.focus();
+    }
+    if (typeof target.scrollIntoView === "function") target.scrollIntoView({ block: "start" });
+  });
+}

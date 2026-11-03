@@ -558,11 +558,6 @@
       "count": 1
     }
   },
-  "tests/portal-page-render.cjs": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "tests/preview.cjs": {
     "no-empty": {
       "count": 1

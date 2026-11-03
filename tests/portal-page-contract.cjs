@@ -67,19 +67,23 @@ const svgFor = (text) => {
     for (const needle of [
       'portal-id', // PP-01
       'paintSummary', // PP-03
-      'downloadUrlFor', // PP-04
-      'a.setAttribute("download"', // PP-05 — истински линк за сваляне
+      'downloadUrlFor', // PP-04 — адресът съществува, но не се изписва
+      'openInfo', // PP-04 — API/Манифест се разгъват В страницата
       'withAuth(', // PP-10
       'applyLanguage', // PP-14 — езикът се прилага на едно място
       'I18N', // PP-14 — текстовете идват от речника
     ]) {
       assert.ok(script.includes(needle), `portal.js съдържа ${needle}`);
     }
+    // Линковете навън са махнати: страницата не строи адрес, който да се отваря в нов таб.
+    for (const gone of ['api-link', 'manifest-link', 'target="_blank"']) {
+      assert.equal(script.includes(gone), false, `portal.js вече не съдържа ${gone}`);
+    }
     // Точните формулировки живеят в речника (portal-i18n.js) — там се проверяват,
     // за да не се разминават българският текст и преводите.
     const i18nScript = await (await fetch(`${base}/portal-i18n.js`)).text();
     for (const needle of [
-      'Адрес за изтегляне', // PP-04
+      'Копирай адреса', // PP-04 — действието е бутон, не изписан адрес
       'Този портал е цялостен набор от ', // PP-06
       'още не съдържа файлове', // PP-03 при празен портал
       'Сканирай кода', // PP-02 — подсказката при QR кода
@@ -89,7 +93,7 @@ const svgFor = (text) => {
     assert.equal(/\/admin\/api\/packages/.test(script), false, 'страницата не обещава ZIP пакет, който не съществува');
     assert.equal(/innerHTML\s*=\s*[^'"`]*(file\.|data\.|listing)/.test(script), false, 'данните не влизат през innerHTML (INV-9)');
     const css = await (await fetch(`${base}/portal.css`)).text();
-    for (const cls of ['.summary-panel', '.summary-text', '.file-link', '.ident', '.btn-sm']) {
+    for (const cls of ['.summary-panel', '.summary-text', '.info-list', '.ident', '.btn-sm']) {
       assert.ok(css.includes(cls), `portal.css съдържа ${cls}`);
     }
 
@@ -133,7 +137,7 @@ const svgFor = (text) => {
     assert.equal(emptyView.fileCount, 0);
 
     console.log(
-      'PASS portal-page-contract: id + QR + резюме · адрес за изтегляне изписан · FREE 200/KEY 403→200/DISABLED 403 · ' +
+      'PASS portal-page-contract: id + QR + резюме · без изписан адрес (бутон за копиране) · FREE 200/KEY 403→200/DISABLED 403 · ' +
       'QR = SVG(/p/<id>) · съобщение само за админ (401/503)'
     );
   } finally {

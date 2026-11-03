@@ -157,13 +157,18 @@ const stage = async (name, fn) => {
     });
 
     // ── S06: публичната страница и QR кодът ───────────────────────────────────────
-    await stage('S06 страница · id/резюме/адреси · QR = SVG(/p/<id>)', async () => {
+    await stage('S06 страница · id/резюме/бутони · QR = SVG(/p/<id>)', async () => {
       const page = await fetch(landing);
       assert.equal(page.status, 200);
       const html = await page.text();
       for (const id of ['portal-id', 'summary', 'summary-list', 'qr', 'files']) assert.ok(html.includes(`id="${id}"`), 'липсва #' + id);
+      // 0.69.141: страницата не е „сайт с линкове“ — API/Манифест разгъват информация
+      // В страницата, а свалянето е бутон, не линк с `download`.
+      for (const id of ['api-open', 'manifest-open', 'doc-info', 'doc-info-body']) assert.ok(html.includes(`id="${id}"`), 'липсва #' + id);
+      assert.equal(/<a[\s>]/i.test(html.replace(/<!--[\s\S]*?-->/g, '')), false, 'страницата не съдържа <a> елементи');
       const script = await (await fetch(`${base}/portal.js`)).text();
-      for (const needle of ['paintSummary', 'downloadUrlFor', 'a.setAttribute("download"', 'withAuth(']) assert.ok(script.includes(needle), 'липсва ' + needle);
+      for (const needle of ['paintSummary', 'downloadUrlFor', 'openInfo', 'withAuth(']) assert.ok(script.includes(needle), 'липсва ' + needle);
+      assert.equal(script.includes('a.setAttribute("download"'), false, 'свалянето вече не е линк, а бутон');
 
       const view = await (await fetch(`${base}/api/v1/p/${portalId}`)).json();
       assert.equal(view.id, portalId);

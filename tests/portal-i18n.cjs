@@ -77,7 +77,7 @@ console.log('· всеки ключ от HTML и от portal.js съществу
 console.log('· статичният HTML е преводим и без JavaScript');
 {
   // Всяка видима част на страницата има ключ — иначе смяната на езика оставя български.
-  for (const id of ['title', 'summary-title', 'files-title', 'qr-title', 'visibility', 'copy-id', 'copy-link', 'api-link', 'manifest-link']) {
+  for (const id of ['title', 'summary-title', 'files-title', 'qr-title', 'visibility', 'copy-id', 'copy-link', 'api-open', 'manifest-open', 'doc-info-close']) {
     const tag = new RegExp('<[^>]*id="' + id + '"[^>]*>', 'i').exec(html);
     assert.ok(tag, 'има елемент #' + id);
     const hasKey = /data-i18n/.test(tag[0]) || id === 'title';
