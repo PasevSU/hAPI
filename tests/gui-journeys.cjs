@@ -1705,6 +1705,54 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       assert.match(bulk.body || '', /DISABLED/, 'заявката носи избраната политика: ' + bulk.body);
     });
 
+    // ── J72. Настройки: профил на настройките — запис и изтриване ─────────────
+    await journey('J72 настройки: профил запис и изтриване', async () => {
+      // Профилът живее в общия таб на „Настройки“ (не в секция) — там е и полето за име.
+      app.nav('settings');
+      await settle('„Настройки“');
+      const tab = app.$('[data-section="general"]');
+      if (tab) {
+        tab.click();
+        await settle('общия таб на „Настройки“');
+      }
+      const name = 'profil-ot-scenariy-' + String(Date.now()).slice(-6);
+      const field = await waitFor(() => app.$('#set-profile-name'), { label: 'полето за име на профил', timeout: BUDGET });
+      app.fill(field, name);
+      app.clearToasts();
+      app.click('#set-profile-save', 'бутонът „Запази профил“');
+      const said = await waitFor(() => {
+        const t = app.toast();
+        return t && /профил/i.test(t.message) ? t : null;
+      }, { label: 'съобщението за записания профил', timeout: BUDGET });
+      assert.equal(said.kind, 'ok', 'профилът е записан: ' + said.message);
+      const saved = app.requests.filter((r) => r.method === 'POST' && /config-profiles$/.test(r.url)).pop();
+      assert.ok(saved, 'записът мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '));
+      assert.ok((saved.body || '').includes(name), 'заявката носи ИМЕТО на профила: ' + saved.body);
+      // Списъкът се пре-чита след записа — профилът се появява с бутоните си.
+      const del = await waitFor(() => {
+        for (const el of app.$$('[data-profile-delete]')) {
+          if ((el.getAttribute('data-profile-delete') || '') === name) return el;
+        }
+        return null;
+      }, { label: 'редът на новия профил в списъка', timeout: BUDGET });
+      assert.ok(app.$$('[data-profile-apply]').length >= 1, 'профилът има и бутон „Приложи“');
+      app.clearToasts();
+      del.click();
+      const removed = await waitFor(() => {
+        const t = app.toast();
+        return t && /профил/i.test(t.message) ? t : null;
+      }, { label: 'съобщението за изтрития профил', timeout: BUDGET });
+      assert.equal(removed.kind, 'ok', 'профилът е изтрит: ' + removed.message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'DELETE' && r.url.includes('/config-profiles/' + name)),
+        'изтриването мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+      await waitFor(() => !app.$$('[data-profile-delete]').some((el) => el.getAttribute('data-profile-delete') === name), {
+        label: 'профилът да изчезне от списъка',
+        timeout: BUDGET,
+      });
+    });
+
     // Какво остава ИЗВЪН обхвата на щракването и защо — за да не се „попълва“ някога със
     // сценарий, който минава, без да е минал през интерфейса:
     //   • `data-token-revoke` — списъкът с токени се иска отделно и отговорът му на runner-а
