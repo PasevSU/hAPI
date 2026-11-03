@@ -147,6 +147,33 @@ assert.match(init, /return True/, '__init__.py: UI настройката не �
 // Порталната страница през моста показва и QR код → пътят трябва да е разрешен.
 assert.match(init, /openapi\\\.json\|qr\\\.svg|qr\\\.svg/, '__init__.py: мостът не разрешава qr.svg');
 
+// 7б. Връзката към портала: устройството в Home Assistant трябва да сочи към панела на
+// hAPI. Без `configuration_url` страницата на устройството е задънена улица — човек вижда
+// сензорите и не знае откъде се управлява порталът.
+const entity = read('entity.py');
+assert.match(entity, /configuration_url/, 'entity.py: device_info носи configuration_url');
+assert.match(entity, /PANEL_PATH = "\/ui\/"/, 'entity.py: по подразбиране сочи към панела на hAPI (/ui/)');
+assert.match(entity, /def panel_url/, 'entity.py: адресът се решава на едно място');
+assert.match(entity, /CONF_PANEL_URL/, 'entity.py: изричният адрес от настройките има приоритет');
+assert.match(entity, /if url:/, 'entity.py: без известен адрес връзка НЕ се показва (мъртва връзка е по-лоша)');
+assert.match(entity, /def portal_device_info/, 'entity.py: описанието на устройството е общо');
+// Двете платформи ползват помощника, а не собствени копия на речника.
+for (const [name, source] of [['sensor.py', sensor], ['binary_sensor.py', binarySensor]]) {
+  assert.match(source, /from \.entity import portal_device_info/, name + ': внася помощника');
+  assert.equal(/self\._attr_device_info = \{/.test(source), false, name + ': няма собствен речник на device_info');
+  const uses = (source.match(/portal_device_info\(/g) || []).length;
+  assert.ok(uses >= 1, name + ': поне един обект ползва помощника');
+}
+// Полетата за адреса съществуват и в двете форми (първоначална и опции) — и в двата езика.
+assert.match(consts, /CONF_PANEL_URL = "panel_url"/, 'const.py: името на полето');
+assert.match(flow, /CONF_PANEL_URL/, 'config_flow.py: полето е част от схемата');
+assert.match(flow, /vol\.Optional\(\s*CONF_PANEL_URL/, 'config_flow.py: адресът на панела е по избор');
+for (const lang of ['en', 'bg']) {
+  const dict = json(path.posix.join('translations', lang + '.json'));
+  assert.ok(dict.config.step.user.data.panel_url, lang + ': липсва поле panel_url при настройка');
+  assert.ok(dict.options.step.init.data.panel_url, lang + ': липсва поле panel_url при опциите');
+}
+
 // 8. Порталната страница на интеграцията е същата адаптивна страница като в add-on-а.
 const portalPage = read('portal.html');
 const portalScript = read('portal.js');
