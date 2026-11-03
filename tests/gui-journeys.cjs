@@ -92,8 +92,14 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       await settle('корена на портала');
     }
     if (app.$('[data-open-file]')) return;
-    const filters = await waitFor(() => app.$('[data-toggle-filters]'), { label: 'иконата „Панел филтри“' });
-    filters.click();
+    // Лентата с филтри е ПРЕВКЛЮЧВАТЕЛ, а не „отвори“: ако вече е отворена (панелът я помни
+    // между сценариите), повторното натискане я ЗАТВАРЯ и „Качи файл“ изчезва. Затова се
+    // натиска само когато бутонът наистина липсва.
+    if (!app.$('#fm-upload')) {
+      const filters = await waitFor(() => app.$('[data-toggle-filters]'), { label: 'иконата „Панел филтри“' });
+      filters.click();
+      await settle('лентата с филтри');
+    }
     app.click('#fm-upload', 'бутонът „Качи файл“');
     const form = await waitFor(() => app.$('#fm-upload-form'), { label: 'формата за качване' });
     const input = app.$('#fm-upload-form input[name="input"]');
