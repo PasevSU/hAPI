@@ -21,6 +21,11 @@ const { mountApp, pseudoFile } = require('./lib/gui-journey.cjs');
 
 const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, ' ').trim();
 
+// Един бюджет за ВСИЧКИ изчаквания в този файл. Работната машина е бърза, а runner-ът в CI
+// е няколко пъти по-бавен: същата проверка минава, но за по-дълго. Затова бюджетът е щедър
+// и е един — вместо всяко изчакване да носи свое число, което да изтече само на CI.
+const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
+
 (async () => {
   // `startServer` дава и `api`, но той НЕ се използва никъде по-долу — единственият
   // достъп до add-on-а е през `app` (DOM). Проверява се от `gui-only-guard.cjs`.
@@ -31,7 +36,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
   const failed = [];
 
   /** Чака изгледът да спре да казва „Зареждам…“ — панелите работят асинхронно. */
-  const settle = (label, timeout = 15000) =>
+  const settle = (label, timeout = BUDGET) =>
     waitFor(() => {
       const host = view();
       if (!host) return false;
@@ -171,7 +176,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       app.fill('[name="case_title"]', 'Дело от GUI сценария');
       app.clearToasts();
       app.click('#pf-create', 'бутонът „Създай и генерирай API + QR“');
-      await waitFor(() => app.toast(), { label: 'отговор от създаването на портал', timeout: 15000 });
+      await waitFor(() => app.toast(), { label: 'отговор от създаването на портал', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'порталът се създава: ' + app.toast().message);
       await settle('порталът да се нарисува');
       assert.match(text(view()), /Портал от GUI сценария/, 'порталът се вижда в списъка');
@@ -192,7 +197,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       app.select('[name="visibility"]', 'public');
       app.clearToasts();
       app.click('#pf-create', 'бутонът „Създай и генерирай API + QR“');
-      await waitFor(() => app.toast(), { label: 'отговор от създаването', timeout: 20000 });
+      await waitFor(() => app.toast(), { label: 'отговор от създаването', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'порталът с файлове се създава: ' + app.toast().message);
       await settle('файловете да се покажат');
       const shown = text(view());
@@ -214,7 +219,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       const button = app.$$('button').find((b) => /^Добави контакта$/.test(text(b)));
       assert.ok(button, 'има бутон „Добави контакта“');
       button.click();
-      await waitFor(() => text(view()).includes('Иван Сценариев'), { label: 'контактът да се появи в списъка', timeout: 15000 });
+      await waitFor(() => text(view()).includes('Иван Сценариев'), { label: 'контактът да се появи в списъка', timeout: BUDGET });
       assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.includes('/admin/api/directory')), 'контактът е записан през интерфейса');
     });
 
@@ -229,7 +234,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       const button = app.$$('button').find((b) => /^Добави делото$/.test(text(b)));
       assert.ok(button, 'има бутон „Добави делото“');
       button.click();
-      await waitFor(() => text(view()).includes('GUI-J-2026-002'), { label: 'делото да се появи в списъка', timeout: 15000 });
+      await waitFor(() => text(view()).includes('GUI-J-2026-002'), { label: 'делото да се появи в списъка', timeout: BUDGET });
       assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.includes('/admin/api/cases')), 'делото е записано през интерфейса');
     });
 
@@ -286,7 +291,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       app.fill('#set-secret-hint', 'за проверката');
       app.clearToasts();
       app.action('secretCreate');
-      await waitFor(() => /\/secret#/.test(app.$('#set-secret-out').innerHTML), { label: 'линкът на тайната', timeout: 15000 });
+      await waitFor(() => /\/secret#/.test(app.$('#set-secret-out').innerHTML), { label: 'линкът на тайната', timeout: BUDGET });
       assert.match(text(app.$('#set-secret-out')), /Валиден до|преглед/, 'панелът обяснява срока и броя прегледи');
       assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.includes('/admin/api/v2/secrets')), 'тайната е създадена през интерфейса');
     });
@@ -315,7 +320,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       app.fill('#set-data-title', 'Проект от сценария');
       app.clearToasts();
       app.action('htmlProject');
-      await waitFor(() => text(app.$('#set-data-out')).length > 5 || app.toast(), { label: 'отговорът за HTML проекта', timeout: 15000 });
+      await waitFor(() => text(app.$('#set-data-out')).length > 5 || app.toast(), { label: 'отговорът за HTML проекта', timeout: BUDGET });
       assert.match(text(app.$('#set-data-out')) + ' ' + ((app.toast() || {}).message || ''), /Готово|проект|създаден|journey-project/i, 'панелът отговаря за проекта');
     });
 
@@ -447,7 +452,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       app.fill('#fm-upload-form input[name="name"]', 'prilozhenie-2.txt');
       app.clearToasts();
       form.dispatch('submit');
-      await waitFor(() => app.toast(), { label: 'отговор от качването', timeout: 20000 });
+      await waitFor(() => app.toast(), { label: 'отговор от качването', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'файлът е качен: ' + app.toast().message);
       await settle('списъкът с файлове');
       assert.match(text(view()), /prilozhenie-2\.txt/, 'новият файл се вижда в портала');
@@ -461,7 +466,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       app.fill('#fm-new-folder-name', 'Доказателства');
       app.clearToasts();
       app.$('#fm-new-folder-form').dispatch('submit');
-      await waitFor(() => app.toast() || text(view()).includes('Доказателства'), { label: 'отговорът за папката', timeout: 20000 });
+      await waitFor(() => app.toast() || text(view()).includes('Доказателства'), { label: 'отговорът за папката', timeout: BUDGET });
       await settle('дървото на папките');
       assert.match(text(view()), /Доказателства|Папка/, 'панелът отчита новата папка');
     });
@@ -475,7 +480,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       app.fill('#pg-token', 'hapi_nevaliden_token_za_test');
       app.clearToasts();
       app.click('#pg-test', 'бутонът „Тествай достъп“');
-      await waitFor(() => app.toast(), { label: 'присъдата на проверката', timeout: 20000 });
+      await waitFor(() => app.toast(), { label: 'присъдата на проверката', timeout: BUDGET });
       assert.equal(app.toast().kind, 'err', 'невалиден токен се отказва: ' + app.toast().message);
       assert.match(app.toast().message, /Отказ|няма достъп|невалид/i, 'панелът казва ПРИЧИНАТА: ' + app.toast().message);
       await settle('решението да се нарисува');
@@ -489,7 +494,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       const button = await waitFor(() => app.$('#ec-prefight') || app.$('#ec-pkg-build'), { label: 'бутонът за проверка на плана' });
       app.clearToasts();
       button.click();
-      await waitFor(() => app.toast() || app.$('#ec-pkg-state'), { label: 'отговорът на експорта', timeout: 25000 });
+      await waitFor(() => app.toast() || app.$('#ec-pkg-state'), { label: 'отговорът на експорта', timeout: BUDGET });
       const said = (app.toast() || {}).message || text(app.$('#ec-pkg-state'));
       assert.ok(String(said).length > 3, 'панелът казва какво е станало: ' + said);
     });
@@ -531,7 +536,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       const button = await waitFor(() => app.$$('[data-user="journey-user"]')[0], { label: 'бутонът „Изтрий“ за journey-user' });
       app.clearToasts();
       button.click();
-      await waitFor(() => app.toast(), { label: 'отговорът от изтриването', timeout: 15000 });
+      await waitFor(() => app.toast(), { label: 'отговорът от изтриването', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'потребителят е изтрит: ' + app.toast().message);
       await settle('таблицата след изтриване');
       assert.equal(text(view()).includes('journey-user'), false, 'изтритият потребител изчезва от таблицата');
@@ -559,7 +564,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       if (options.length) app.select('#ec-pkg-portal', options[0].value);
       app.clearToasts();
       app.click('#ec-pkg-build', 'бутонът „Създай и изтегли пакета“');
-      await waitFor(() => app.toast(), { label: 'отговорът от пакета', timeout: 30000 });
+      await waitFor(() => app.toast(), { label: 'отговорът от пакета', timeout: BUDGET });
       const built = app.toast();
       // Двата изхода са истински: пакетът е готов или панелът казва защо не може.
       assert.ok(built.message.length > 3, 'панелът казва какво е станало: ' + built.message);
@@ -568,7 +573,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
         assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.includes('/admin/api/packages')), 'пакетът се поиска от сървъра');
         app.clearToasts();
         app.click('#ec-pkg-verify', 'бутонът „Провери подписа“');
-        await waitFor(() => app.toast() || text(app.$('#ec-pkg-state')), { label: 'присъдата на подписа', timeout: 25000 });
+        await waitFor(() => app.toast() || text(app.$('#ec-pkg-state')), { label: 'присъдата на подписа', timeout: BUDGET });
         const verdict = (app.toast() || {}).message || text(app.$('#ec-pkg-state'));
         assert.ok(String(verdict).length > 3, 'панелът казва присъда за подписа: ' + verdict);
       }
@@ -583,7 +588,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       const out = await waitFor(() => {
         const node = app.$('#pf-token-out');
         return node && text(node).length > 3 ? node : null;
-      }, { label: 'изходът с адреса на токена', timeout: 20000 });
+      }, { label: 'изходът с адреса на токена', timeout: BUDGET });
       assert.match(text(out), /Готово|адрес|Отказ|HTTP/i, 'панелът показва какво е станало с токена: ' + text(out));
       assert.ok(app.requests.some((r) => r.method === 'POST' && /\/tokens$/.test(r.url)), 'токенът се издава от сървъра');
     });
@@ -596,7 +601,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       const out = await waitFor(() => {
         const node = app.$('#pf-security-out');
         return node && text(node).length > 3 ? node : null;
-      }, { label: 'отговорът за ключа', timeout: 20000 });
+      }, { label: 'отговорът за ключа', timeout: BUDGET });
       assert.match(text(out), /обновен|Ключът|Отказ|HTTP/i, 'картата казва какво е станало с ключа: ' + text(out));
       assert.ok(app.requests.some((r) => r.method === 'POST' && /\/signing-key$/.test(r.url)), 'ключът се обновява от сървъра');
     });
@@ -609,7 +614,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       const out = await waitFor(() => {
         const node = app.$('#pf-qr-out');
         return node && text(node).length > 3 ? node : null;
-      }, { label: 'присъдата за архивите', timeout: 20000 });
+      }, { label: 'присъдата за архивите', timeout: BUDGET });
       assert.match(text(out), /наред|провали|Проверени|HTTP/i, 'присъдата за архивите е на екрана: ' + text(out));
       app.click('#pf-qr-show', 'бутонът за историята на QR');
       await waitFor(() => /Активен QR|QR-/.test(text(app.$('#pf-qr-out'))), { label: 'историята на QR' });
@@ -626,7 +631,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       app.fill(field, 'preimenuvan-ot-panel.txt');
       app.clearToasts();
       form.dispatch('submit');
-      await waitFor(() => app.toast(), { label: 'отговорът от преименуването', timeout: 20000 });
+      await waitFor(() => app.toast(), { label: 'отговорът от преименуването', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'файлът е преименуван: ' + app.toast().message);
       assert.ok(app.requests.some((r) => r.method === 'PATCH' && /\/files\//.test(r.url)), 'преименуването мина през сървъра');
       await settle('списъкът след преименуването');
@@ -642,7 +647,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       app.fill(field, 'Проверено от сценарий J38');
       app.clearToasts();
       form.dispatch('submit');
-      await waitFor(() => app.toast(), { label: 'отговорът за бележката', timeout: 20000 });
+      await waitFor(() => app.toast(), { label: 'отговорът за бележката', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'бележката е запазена: ' + app.toast().message);
       assert.match(app.toast().message, /бележк|Запазен/i, 'панелът казва какво е станало: ' + app.toast().message);
     });
@@ -654,7 +659,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       const button = await waitFor(() => app.$('#fm-copy-link'), { label: 'бутонът за копиране на адреса' });
       app.clearToasts();
       button.click();
-      await waitFor(() => app.toast() || app.copied.length, { label: 'копирането', timeout: 15000 });
+      await waitFor(() => app.toast() || app.copied.length, { label: 'копирането', timeout: BUDGET });
       const said = (app.toast() || {}).message || '';
       assert.ok(app.copied.length > 0 || /копир/i.test(said), 'адресът е копиран: ' + said);
       if (app.copied.length) {
@@ -699,7 +704,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
       await waitFor(() => countNow() > before, { label: 'повторението на действието' });
       app.clearToasts();
       app.click('#rs-save', 'бутонът „Запази“');
-      await waitFor(() => app.toast() || text(app.$('#rs-state')), { label: 'отговорът при запазване', timeout: 20000 });
+      await waitFor(() => app.toast() || text(app.$('#rs-state')), { label: 'отговорът при запазване', timeout: BUDGET });
       const said = (app.toast() || {}).message || text(app.$('#rs-state'));
       assert.ok(String(said).length > 2, 'панелът казва какво е станало при запазване: ' + said);
     });

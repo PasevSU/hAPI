@@ -575,10 +575,14 @@ if (flag('with-tests')) {
   check('S20', 'Тестове: целият набор минава', () => {
     const res = spawnSync(process.execPath, [path.join(root, 'scripts', 'run-tests.cjs')], { cwd: root, stdio: 'pipe', encoding: 'utf8' });
     const out = String(res.stdout || '').trim().split(/\r?\n/);
+    const err = String(res.stderr || '').trim().split(/\r?\n/);
     const tail = out.slice(-1)[0];
     // При провал показваме и последните редове от изхода: иначе в CI се вижда само името на
     // теста, а причината остава скрита в погълнатия stdout.
-    assert(res.status === 0, 'тестовете не минават: ' + tail + '\n' + out.slice(-15).join('\n'));
+    // `run-tests` пуска тестовете с `stdio: 'inherit'`, тоест съобщението за провален сценарий
+    // отива в STDERR на самия run-tests — затова се показва и той, не само stdout.
+    const detail = [...out.slice(-10), '── stderr ──', ...err.slice(-25)].join('\n');
+    assert(res.status === 0, 'тестовете не минават: ' + tail + '\n' + detail);
     return tail;
   });
 }
