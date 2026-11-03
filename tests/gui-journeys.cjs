@@ -1365,6 +1365,62 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       );
     });
 
+    // ── J63. Файл: нова версия и възстановяване на предишната ─────────────────
+    await journey('J63 файл: нова версия и възстановяване', async () => {
+      await ownPortalWithFile('gui-journey-file-version');
+      const open = await waitFor(() => {
+        const nodes = app.$$('[data-open-file]');
+        return nodes.find((el) => /fayl-za-scenariy/.test(text(el))) || nodes[0];
+      }, { label: 'редът на файла', timeout: BUDGET });
+      open.click();
+      await fileAction('versions');
+      const upload = await waitFor(() => app.$('#fm-version-upload'), { label: 'бутонът „Качи версия“', timeout: BUDGET });
+      const picker = app.$('#fm-version-file');
+      assert.ok(picker, 'картата има избор на файл за нова версия');
+      picker.files = [pseudoFile('fayl-za-scenariy.txt', 'второ съдържание за сценария')];
+      app.fill('#fm-version-note', 'втора версия от сценария');
+      app.clearToasts();
+      upload.click();
+      await waitFor(() => app.toast(), { label: 'съобщението за новата версия', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'версията е качена: ' + app.toast().message);
+      // Списъкът с версиите се чете при отваряне на панела „Версии“, затова човекът го
+      // отваря отново (същият бутон от менюто ⚙), за да види архивираната версия.
+      await fileAction('versions');
+      const restore = await waitFor(() => app.$('[data-restore]'), { label: 'бутонът „Възстанови“ за предишна версия', timeout: BUDGET });
+      const vn = restore.getAttribute('data-restore');
+      app.clearToasts();
+      restore.click();
+      await waitFor(() => {
+        const said = app.toast();
+        return said && /версия/i.test(said.message) ? said : null;
+      }, { label: 'съобщението за възстановената версия', timeout: BUDGET });
+      assert.match(app.toast().message, /версия/i, 'панелът казва какво е възстановено: ' + app.toast().message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'POST' && new RegExp('/versions/' + vn + '/restore$').test(r.url)),
+        'възстановяването мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+    });
+
+    // ── J64. Хранилище: внасяне на цяла папка с потвърждение ──────────────────
+    await journey('J64 хранилище: внасяне на папка', async () => {
+      app.nav('portals');
+      await settle('панелът „Портали“');
+      const importFolder = await waitFor(() => app.$('[data-import-folder]'), { label: 'бутонът „Внеси папка“', timeout: BUDGET });
+      app.clearToasts();
+      importFolder.click();
+      const input = await waitFor(() => app.$('#fm-dir-input'), { label: 'скритият избор на папка', timeout: BUDGET });
+      const file = pseudoFile('vnos.txt', 'съдържание от внасянето');
+      file.webkitRelativePath = 'Vnasqne/' + 'vnos.txt';
+      input.files = [file];
+      input.dispatch('change');
+      await waitFor(() => app.toast(), { label: 'отговорът при внасянето на папката', timeout: BUDGET });
+      assert.ok(['ok', 'err'].includes(app.toast().kind), 'панелът отчита внасянето: ' + app.toast().message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'POST' && /\/tree\//.test(r.url)),
+        'внасянето мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+    });
+
     // Отнемането на токен (`data-token-revoke`) НЕ се проверява тук: бутонът се рисува от
     // списъка с токени, който панелът иска отделно и чийто отговор на runner-а не винаги носи
     // издадения токен — сценарий, който чака него, би бил нестабилен. Пътят на издаване е в

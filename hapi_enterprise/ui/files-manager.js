@@ -1747,7 +1747,12 @@
     const r = await api(`${FP(f)}/versions`, {
       method: 'POST',
       body: buffer,
-      headers: { 'X-Version-Note': String(note || '').slice(0, 200) },
+      // Бележката НЕ може да влезе в заглавка както е: HTTP заглавките са байтове и
+      // браузърът отказва кирилица с „Cannot convert argument to a ByteString“ — тоест
+      // „Качи версия“ с бележка на български не правеше нищо освен неясна грешка. Затова
+      // бележката се кодира като процентно-кодиран низ (както `X-File-Name` по-горе), а
+      // сървърът я декодира.
+      headers: { 'X-Version-Note': encodeURIComponent(String(note || '').slice(0, 200)) },
     });
     if (!r.ok) return toast(r.error, 'err');
     await reload();
