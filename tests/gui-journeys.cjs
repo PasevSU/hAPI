@@ -1251,6 +1251,48 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       assert.ok(app.copied.length > 0, 'хешът е копиран, както при човек: ' + String(app.copied.slice(-1)[0]).slice(0, 24));
     });
 
+    // ── J59. Портал: контролният панел се сгъва и разгъва ────────────────────
+    await journey('J59 портал: контролният панел се сгъва', async () => {
+      await ownPortalWithFile('gui-journey-control-tog');
+      const toggle = await waitFor(() => app.$('[data-pf-control-tog]'), { label: 'заглавието на контролния панел', timeout: BUDGET });
+      const body = () => app.$('[data-pf-control-tog]') && app.$('#pf-settings');
+      assert.ok(body(), 'контролният панел е отворен в началото');
+      toggle.click();
+      await waitFor(() => !app.$('#pf-settings'), { label: 'сгънатия контролен панел', timeout: BUDGET });
+      const again = await waitFor(() => app.$('[data-pf-control-tog]'), { label: 'заглавието след сгъване', timeout: BUDGET });
+      again.click();
+      await waitFor(() => app.$('#pf-settings'), { label: 'разгънатия контролен панел', timeout: BUDGET });
+    });
+
+    // ── J60. Портал: отчет за портала от картата му ──────────────────────────
+    await journey('J60 портал: отчет за портала', async () => {
+      const report = await waitFor(() => app.$('[data-report-portal]'), { label: 'бутонът „Отчет за портала“', timeout: BUDGET });
+      report.click();
+      // Отчетът се сглобява и се отваря в Report Studio — същият път като от таблото.
+      await waitFor(() => app.location.hash === '#report', { label: 'преминаването към Report Studio', timeout: BUDGET });
+      const count = await waitFor(() => {
+        const node = app.$('#rs-count');
+        return node && Number((text(node).match(/\d+/) || [0])[0]) > 0 ? node : null;
+      }, { label: 'отчетът с блокове', timeout: BUDGET });
+      assert.ok(Number((text(count).match(/\d+/) || [0])[0]) > 0, 'отчетът за портала има блокове: ' + text(count));
+    });
+
+    // ── J61. Портал: пакетът на портала от картата му ────────────────────────
+    await journey('J61 портал: пакетът на портала', async () => {
+      app.nav('portals');
+      await settle('панелът „Портали“');
+      const pkg = await waitFor(() => app.$('[data-pkg-portal]'), { label: 'бутонът за пакета на портала', timeout: BUDGET });
+      const asked = app.requests.length;
+      app.clearToasts();
+      pkg.click();
+      await waitFor(() => app.requests.length > asked, { label: 'заявката за пакета', timeout: BUDGET });
+      const made = app.requests.slice(asked).map((r) => r.method + ' ' + r.url);
+      assert.ok(
+        made.some((r) => /\/packages/.test(r)),
+        'пакетът се поиска от сървъра: ' + made.join(' · '),
+      );
+    });
+
     // Отнемането на токен (`data-token-revoke`) НЕ се проверява тук: бутонът се рисува от
     // списъка с токени, който панелът иска отделно и чийто отговор на runner-а не винаги носи
     // издадения токен — сценарий, който чака него, би бил нестабилен. Пътят на издаване е в
