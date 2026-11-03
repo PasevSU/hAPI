@@ -96,7 +96,10 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     app.select('[name="visibility"]', 'public');
     app.clearToasts();
     app.click('#pf-create', 'бутонът „Създай и генерирай API + QR“');
-    await waitFor(() => app.toast(), { label: 'порталът за сценария', timeout: BUDGET });
+    await waitFor(() => {
+      const said = app.toast();
+      return said && /Порталът е създаден/.test(said.message) ? said : null;
+    }, { label: 'порталът за сценария', timeout: BUDGET });
     assert.equal(app.toast().kind, 'ok', 'порталът за сценария се създава: ' + app.toast().message);
     // Съобщението казва колко файла от папката са качени — то е доказателството, че файлът
     // е стигнал до сървъра, а не че по-късно ще се появи.
@@ -1290,6 +1293,75 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       assert.ok(
         made.some((r) => /\/packages/.test(r)),
         'пакетът се поиска от сървъра: ' + made.join(' · '),
+      );
+      // Пакетът довършва с изтегляне — изчаква се тук, за да не влезе в следващия сценарий.
+      await waitFor(() => app.requests.some((r) => /\/packages\/[^/]+\/download$/.test(r.url)), {
+        label: 'изтеглянето на пакета',
+        timeout: BUDGET,
+      });
+    });
+
+    // ── J62. Хранилище: прикачи файл, качи в папка, пакет и изтриване ────────
+    await journey('J62 хранилище: прикачи, качи, пакет, изтрий', async () => {
+      await ownPortalWithFile('gui-journey-storage');
+      const folder = 'Papka-hranilishte-' + String(Date.now()).slice(-6);
+      const ownButton = (attr) => app.$$('[' + attr + ']').find((el) => (el.getAttribute(attr) || '').includes(folder));
+      app.click('#fm-new-folder', 'бутонът „Нова папка“');
+      await waitFor(() => app.$('#fm-new-folder-name'), { label: 'полето за име на папка' });
+      app.fill('#fm-new-folder-name', folder);
+      app.clearToasts();
+      app.$('#fm-new-folder-form').dispatch('submit');
+      await waitFor(() => app.toast(), { label: 'отговорът за новата папка', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'папката се създава: ' + app.toast().message);
+      // Прикачване на файл: бутонът отваря избора, човекът избира файл — тук файлът се дава
+      // на самия input и се пуска `change`, както го прави браузърът след избор.
+      const attach = await waitFor(() => app.$('[data-attach-file]'), { label: 'бутонът „Прикачи файл“', timeout: BUDGET });
+      app.clearToasts();
+      attach.click();
+      const first = await waitFor(() => app.$('#fm-file-input'), { label: 'скритият избор на файл', timeout: BUDGET });
+      first.files = [pseudoFile('prilka-ot-scenariy.txt', 'съдържание от J62')];
+      first.dispatch('change');
+      await waitFor(() => app.toast(), { label: 'отговорът при прикачването', timeout: BUDGET });
+      assert.ok(['ok', 'err'].includes(app.toast().kind), 'панелът казва какво е станало: ' + app.toast().message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'POST' && /\/tree\//.test(r.url)),
+        'качването мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+      // Качване В папката — бутонът на самата папка носи нейния път.
+      const folderUpload = await waitFor(() => ownButton('data-folder-upload'), { label: 'бутонът за качване в папката', timeout: BUDGET });
+      app.clearToasts();
+      folderUpload.click();
+      const second = await waitFor(() => app.$('#fm-file-input'), { label: 'изборът на файл за папката', timeout: BUDGET });
+      second.files = [pseudoFile('v-papkata.txt', 'вътре в папката')];
+      second.dispatch('change');
+      await waitFor(() => app.toast(), { label: 'отговорът при качването в папката', timeout: BUDGET });
+      assert.ok(['ok', 'err'].includes(app.toast().kind), 'панелът отчита качването в папката: ' + app.toast().message);
+      // Пакет на папката: панелът иска пакет за НЕЯ от сървъра.
+      const pkg = await waitFor(() => ownButton('data-folder-pkg'), { label: 'бутонът за пакет на папката', timeout: BUDGET });
+      app.clearToasts();
+      pkg.click();
+      await waitFor(() => app.requests.some((r) => r.method === 'POST' && /\/packages$/.test(r.url)), {
+        label: 'заявката за пакета на папката',
+        timeout: BUDGET,
+      });
+      const built = app.requests.filter((r) => r.method === 'POST' && /\/packages$/.test(r.url)).pop();
+      assert.match(built.body || '', new RegExp(folder), 'пакетът е поискан за нашата папка: ' + (built.body || ''));
+      // Изтриване на папката: бутонът е в менюто ⚙ на папката; браузърът пита, човекът
+      // потвърждава (папката има файл, затова add-on-ът отговаря 409 и панелът пита втори път).
+      const gearForDelete = await waitFor(
+        () => app.$$('[data-folder-gear]').find((el) => (el.getAttribute('data-folder-gear') || '').includes(folder)),
+        { label: 'менюто ⚙ на папката за изтриване', timeout: BUDGET },
+      );
+      gearForDelete.click();
+      await settle('менюто на папката');
+      const del = await waitFor(() => ownButton('data-folder-delete'), { label: 'бутонът за изтриване на папката', timeout: BUDGET });
+      app.clearToasts();
+      del.click();
+      await waitFor(() => app.toast(), { label: 'отговорът при изтриване на папката', timeout: BUDGET });
+      assert.equal(app.toast().kind, 'ok', 'папката е изтрита: ' + app.toast().message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'DELETE' && /\/tree\/folder/.test(r.url)),
+        'изтриването мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
       );
     });
 
