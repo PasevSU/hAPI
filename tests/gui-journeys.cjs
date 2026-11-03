@@ -98,22 +98,25 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     app.click('#pf-create', 'бутонът „Създай и генерирай API + QR“');
     await waitFor(() => app.toast(), { label: 'порталът за сценария', timeout: BUDGET });
     assert.equal(app.toast().kind, 'ok', 'порталът за сценария се създава: ' + app.toast().message);
-    // Панелът отваря новия портал САМ само когато списъкът е бил празен (J05). При вече
-    // създадени портали остава на списъка — затова се отваря ИМЕННО нашият, по slug.
-    if (!app.$('[data-open-file]')) {
-      const row = await waitFor(() => {
-        for (const el of app.$$('[data-open-portal]')) {
-          let node = el;
-          for (let i = 0; i < 5 && node; i++) {
-            if (text(node).includes(slug)) return el;
-            node = node.parentNode;
-          }
+    // Съобщението казва колко файла от папката са качени — то е доказателството, че файлът
+    // е стигнал до сървъра, а не че по-късно ще се появи.
+    assert.match(app.toast().message, /качени 1 файла/, 'файлът от папката е качен при създаването: ' + app.toast().message);
+    // Панелът отваря новия портал САМ само когато списъкът е бил празен (J05); иначе остава
+    // на списъка. Затова тук винаги се минава през списъка — със същите два бутона, които
+    // човекът натиска („← Списък с портали“ и „Отвори портала“), и се отваря НАШИЯТ портал.
+    await portalList();
+    const row = await waitFor(() => {
+      for (const el of app.$$('[data-open-portal]')) {
+        let node = el;
+        for (let i = 0; i < 6 && node; i++) {
+          if (text(node).includes(slug)) return el;
+          node = node.parentNode;
         }
-        return null;
-      }, { label: 'порталът „' + slug + '“ в списъка' });
-      row.click();
-      await settle('картата на новия портал');
-    }
+      }
+      return null;
+    }, { label: 'порталът „' + slug + '“ в списъка', timeout: BUDGET });
+    row.click();
+    await settle('картата на новия портал');
     // Чакаме ИМЕННО файла, а не „изгледът да утихне“: панелът прерисува след отговора и на
     // по-бавна машина списъкът още не е готов, когато текстът „Зареждам“ изчезне.
     await waitFor(() => /fayl-za-scenariy\.txt/.test(text(view())), { label: 'файлът в новия портал', timeout: BUDGET });
