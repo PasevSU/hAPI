@@ -98,8 +98,9 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     app.click('#pf-create', 'бутонът „Създай и генерирай API + QR“');
     await waitFor(() => app.toast(), { label: 'порталът за сценария', timeout: BUDGET });
     assert.equal(app.toast().kind, 'ok', 'порталът за сценария се създава: ' + app.toast().message);
-    await settle('файловете на новия портал');
-    assert.match(text(view()), /fayl-za-scenariy\.txt/, 'файлът е в новия портал');
+    // Чакаме ИМЕННО файла, а не „изгледът да утихне“: панелът прерисува след отговора и на
+    // по-бавна машина списъкът още не е готов, когато текстът „Зареждам“ изчезне.
+    await waitFor(() => /fayl-za-scenariy\.txt/.test(text(view())), { label: 'файлът в новия портал', timeout: BUDGET });
   };
 
   /** Отваря действие от менюто ⚙ на файла „fayl-za-scenariy.txt“ — същият път като с мишка. */

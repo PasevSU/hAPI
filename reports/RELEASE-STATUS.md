@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.124
+# Състояние на изданието — hAPI Enterprise 0.69.125
 
-Версия: **0.69.124** · клон `main`
+Версия: **0.69.125** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **339/339** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.124 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 543 файла · 91767 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 538 файла · 91177 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.125 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 543 файла · 91768 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 538 файла · 91178 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,23 +27,18 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.124.tar.gz` | add-on архив (192 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.124.zip` | интеграция за HACS (24 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.124.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.125.tar.gz` | add-on архив (192 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.125.zip` | интеграция за HACS (24 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.125.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.124
+## 3. Какво влезе във 0.69.125
 
-- **Файловите сценарии се връщат — вече самодостатъчни.** В 0.69.123 три сценария отпаднаха,
-  защото разчитаха на портал и файл, оставени от предишен сценарий, а на runner-а в CI такъв
-  файл не се появяваше. Сега всеки от тях **си създава свой портал с файл през същата форма**,
-  с която го прави човек (`#pf-new` → slug, заглавие, папка с файл → „Създай и генерирай API +
-  QR“), и после работи върху своя файл. Няма зависимост от състояние, няма ред за натискане,
-  който може да липсва.
-- Върнати са: **преименуване през формата** (`#fm-rename-form`, PATCH към сървъра, новото име се
-  вижда в портала) и **бележка през формата** (`#fm-note-form`, PATCH `…/metadata`).
-- GUI-ONLY сценариите стават **40**; прагът в `tests/gui-only-guard.cjs` остава 35.
-- Регистърът е пре-печатан за 0.69.124; changelog, add-on changelog, API справочник, инвентар,
+- **Изчакването в новия файлов сценарий е за ФАЙЛА, не за „изгледът да утихне“.** Панелът
+  прерисува след отговора на създаването, а `settle` гледа само дали текстът „Зареждам“ е
+  изчезнал — на runner-а това става преди списъкът с файлове да е готов и проверката падаше
+  веднага след успешно създаден портал. Сега се чака самият файл по име (до 45 s).
+- Регистърът е пре-печатан за 0.69.125; changelog, add-on changelog, API справочник, инвентар,
   одитни събития, индекс на документацията, кодове за грешка, admin OpenAPI, матрица на
   тестовете и проверките на изданието са генерирани наново от кода.
 
