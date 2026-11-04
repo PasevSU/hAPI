@@ -127,6 +127,21 @@ async function mountAt(target) {
       'и подпапката: ' + JSON.stringify((treeJson.folders || []).map((f) => f.name)),
     );
 
+    console.log('── ЖИВО (истински файлове на диска) ' + '─'.repeat(46));
+    console.log('  папка на портала : ' + folder);
+    for (const f of fs.readdirSync(folder, { withFileTypes: true })) {
+      if (f.isDirectory()) {
+        console.log('  📁 ' + f.name + '/' + (fs.readdirSync(path.join(folder, f.name)).map((n) => ' → ' + n).join('')));
+      } else {
+        const bytes = fs.readFileSync(path.join(folder, f.name));
+        const sha = require('node:crypto').createHash('sha256').update(bytes).digest('hex');
+        console.log('  📄 ' + f.name + ' · ' + bytes.length + ' B · SHA-256 ' + sha.slice(0, 16) + '…');
+      }
+    }
+    console.log('  QR кодът води до : ' + target);
+    console.log('  договор за папка : ' + apiUrl + '/tree?path=/');
+    console.log('  страницата показва: ' + shown.replace(/\s+/g, ' ').slice(0, 150));
+    console.log('──' + '─'.repeat(60));
     console.log(
       'PASS qr-leads-to-folder: QR кодът (' + target.replace(/^https?:\/\/[^/]+/, '') + ') отваря страницата с бутон ' +
       '„Отвори папката“, който показва истинските файлове от папката (' + names.join(', ') + ') без нито един <a>',

@@ -759,6 +759,38 @@
   // смяна на реда на зареждане връщаше адреса на Home Assistant.
   const defaultBase = () => (typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '');
   const base = () => (localStorage.getItem('hapi.apiBase') || defaultBase()).replace(/\/$/, '');
+  // Адресът на САМИЯ документ идва САМО от `api-base.js` (`window.hapiApiBase` и
+  // `window.hapiIngressPrefix`) — този файл не строи произход от `location` (вж.
+  // `tests/files-manager.cjs`).
+  //
+  // Защо е нужно: `api.json` съдържа ПУБЛИЧНИЯ адрес (`https://<домейн>/api/v1/p/…`), а
+  // панелът се отваря на произхода на Home Assistant (или на add-on-а). `fetch` към другия
+  // произход се блокира от `Content-Security-Policy: connect-src 'self'` — точно това
+  // виждаше човекът: `Connecting to 'https://pasev.asuscomm.com/api/v1/p/newportal2c'
+  // violates …`. Затова заявката се обръща на ОТНОСИТЕЛЕН път: същият път, същият сървър,
+  // но произходът е този на документа. Показваният и копираният адрес остава публичният.
+  /** Публичен адрес → същият път на произхода на панела (иначе CSP я блокира). */
+  function sameOrigin(url) {
+    const raw = String(url || '');
+    // Относителен адрес вече е на произхода на документа — не се пипа.
+    if (!raw || !/^https?:\/\//i.test(raw)) return raw;
+    let baseOrigin;
+    try {
+      baseOrigin = new URL(window.hapiApiBase() || '', 'http://localhost').origin;
+    } catch {
+      return raw;
+    }
+    if (!baseOrigin) return raw;
+    try {
+      const u = new URL(raw);
+      // Същият произход като панела — адресът е верен такъв, какъвто е.
+      if (u.origin === baseOrigin) return raw;
+      const prefix = typeof window.hapiIngressPrefix === 'function' ? window.hapiIngressPrefix() : '';
+      return prefix + u.pathname + u.search;
+    } catch {
+      return raw;
+    }
+  }
   // Адрес за ПУБЛИЧНИТЕ препратки (api.json, QR, подписан URL). При Home Assistant
   // Ingress адресът на интерфейса не е публичен — той иска вход в HA, затова се ползва
   // сървърната настройка `limits.publicBaseUrl`.
@@ -2778,7 +2810,7 @@
       });
     }
     try {
-      const res = await fetch(url, { headers: token() ? { Authorization: `Bearer ${token()}` } : {} });
+      const res = await fetch(sameOrigin(url), { headers: token() ? { Authorization: `Bearer ${token()}` } : {} });
       if (!res.ok) return toast(`HTTP ${res.status}`, 'err');
       const text = await res.text();
       showModal(`OPEN · ${title || 'API'}`, { html: `<pre>${esc(text.slice(0, 200000))}</pre>` });
@@ -2789,7 +2821,7 @@
   async function downloadUrl(url, name) {
     if (!connected()) return toast('Демо: изтеглянето изисква свързан add-on', '');
     try {
-      const res = await fetch(url, { headers: token() ? { Authorization: `Bearer ${token()}` } : {} });
+      const res = await fetch(sameOrigin(url), { headers: token() ? { Authorization: `Bearer ${token()}` } : {} });
       if (!res.ok) return toast(`HTTP ${res.status}`, 'err');
       const blob = await res.blob();
       const u = URL.createObjectURL(blob);
