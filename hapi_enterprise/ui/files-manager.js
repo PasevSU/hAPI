@@ -3290,6 +3290,16 @@
         copyText(state.api[portal().id].landing, 'Адресът на портала е копиран'),
       );
     }
+    // Връзката с ПАПКАТА (0.69.147): страницата, която изрежда истинските файлове на диска.
+    // Относителен адрес `../portal.html?folder=` работи и на самия add-on (`/ui/`), и под
+    // Ingress (`/api/hassio_ingress/<токен>/ui/`), защото води до корена на същия origin.
+    if (q('#pf-open-folder')) {
+      q('#pf-open-folder').addEventListener('click', () => {
+        const slug = q('#pf-open-folder').dataset.openFolder || (portal() && portal().slug) || '';
+        if (!slug) return toast('Порталът няма папка — задай „Папка с файлове“ и запази', 'err');
+        window.location.href = '../portal.html?folder=' + encodeURIComponent(slug);
+      });
+    }
     // Сигурност на портала: ротация на ключа и проверка за цялост (реални административни
     // маршрути; без тях функциите съществуваха само в API).
     const securityOut = q('#pf-security-out');

@@ -70,9 +70,29 @@ const PANEL_MODULES = [
       { label: 'порталът, отворен в панела' },
     );
 
+    // ── 5. „Отвори папката“ — ГУИ-то води до СТРАНИЦАТА С ФАЙЛОВЕТЕ ────────────
+    // Порталът е QR кодът, който води до файловете. Затова панелът има и бутон към
+    // папката на портала — и адресът, който той строи, трябва наистина да се отваря.
+    const folderBtn = await waitFor(() => host.querySelector('#pf-open-folder'), { label: 'бутонът „Отвори папката“' });
+    assert.equal(folderBtn.dataset.openFolder, 'link-from-gui', 'бутонът носи slug-а на портала');
+    folderBtn.click();
+    const target = await waitFor(
+      () => (/portal\.html\?folder=/.test(String(ui.window.location.href)) ? String(ui.window.location.href) : null),
+      { label: 'адресът на папката от панела' },
+    );
+    // Панелът живее в `/ui/`, затова адресът е относителен (`../portal.html?…`).
+    const absolute = server.base + '/' + target.replace(/^\.\.\//, '');
+    const folderPage = await fetch(absolute);
+    const folderHtml = await folderPage.text();
+    assert.equal(folderPage.status, 200, 'страницата на папката се отваря: ' + absolute + ' → ' + folderPage.status);
+    assert.match(folderPage.headers.get('content-type') || '', /text\/html/, 'това е страница, не JSON');
+    assert.ok(folderHtml.includes('Портал от панела'), 'страницата е за ТОЗИ портал: ' + absolute);
+    assert.equal(/\/admin\//.test(absolute), false, 'адресът не води до административния API');
+
     console.log(
       'PASS gui-open-portal-link: панелът копира ' + link.replace(/^https?:\/\/[^/]+/, '') +
-      ' · адресът отваря портала (200 · HTML · portal.js) · „Отвори портала“ го отваря в панела',
+      ' · адресът отваря портала (200 · HTML · portal.js) · „Отвори портала“ го отваря в панела' +
+      ' · „Отвори папката“ води до страницата на папката (' + absolute.replace(/^https?:\/\/[^/]+/, '') + ')',
     );
   } finally {
     await stopChild(server.child);

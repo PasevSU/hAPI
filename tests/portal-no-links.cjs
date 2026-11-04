@@ -28,8 +28,8 @@ const intJs = fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterpr
 (async () => {
   // ── 1. Статичният HTML: няма нито един `<a>` ─────────────────────────────────────
   for (const [name, source, buttons] of [
-    ['add-on', html, ['api-open', 'manifest-open', 'doc-info-close', 'copy-link', 'copy-id']],
-    ['интеграция', intHtml, ['api-open', 'manifest-open', 'doc-info-close', 'copy-link']],
+    ['add-on', html, ['api-open', 'manifest-open', 'doc-info-close', 'copy-link', 'copy-id', 'folder-open']],
+    ['интеграция', intHtml, ['api-open', 'manifest-open', 'doc-info-close', 'copy-link', 'folder-open']],
   ]) {
     assert.equal(/<a[\s>]/i.test(markupOnly(source)), false, `${name}: страницата не съдържа <a> елементи`);
     for (const id of buttons) {

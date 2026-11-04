@@ -91,6 +91,10 @@
                        <button type="button" class="btn btn-sm" id="pf-dl-api" title="Сваля машинното описание като файл — това НЕ е порталът">${ICON.download} Свали api.json</button>`
           : ''
         }
+                <!-- Връзката с ПАПКАТА: страницата, която изрежда истинските файлове на диска
+                     (portal.html?folder=&lt;slug&gt;). Не зависи от API-обекта — затова е извън
+                     условния блок и е налична винаги, щом порталът има собствена папка. -->
+                <button type="button" class="btn btn-sm" id="pf-open-folder" data-open-folder="${esc(p.slug || '')}" title="Отваря страницата на папката на портала — истинските файлове на диска">${ICON.folder} Отвори папката</button>
               </div>
               ${api
           ? `<div class="pf-qr">${qr ? `<div class="qf-svg">${qr}</div>` : '<p class="hint">QR SVG не е наличен в тази среда.</p>'

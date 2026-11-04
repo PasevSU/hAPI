@@ -907,6 +907,27 @@ function paintPortal(data) {
   $("portal-url").textContent = landingUrl;
   $("copy-link").addEventListener("click", () => copy(landingUrl, T("header.copyLink.ok")));
 
+  // Копчето към ПАПКАТА: порталът е QR кодът, който води до файловете — затова страницата
+  // има директен вход към папката на портала (режим „папка“), а не само списък с
+  // регистрираните файлове. Показва се само когато порталът наистина има папка.
+  const folderBtn = $("folder-open");
+  if (folderBtn) {
+    // Сървърът казва дали порталът има собствена папка на две места: в `#hapi-boot`
+    // (`{{FOLDERS}}`, това зарежда режима „папка“ при отваряне) и в `urls.folders`
+    // (същото, машиночитаемо). Копчето се показва и когато страницата вече е в режим
+    // „папка“ — тогава то просто води обратно до списъка след търсене.
+    const canFolder = folderMode || boot.folders === "1" || Boolean(boot.folder) || urls.folders === "1";
+    folderBtn.hidden = !canFolder;
+    if (canFolder && !folderBtn.dataset.wired) {
+      folderBtn.dataset.wired = "1";
+      folderBtn.addEventListener("click", async () => {
+        if (!folderMode) await loadFolder(urls.folder || boot.folder || "");
+        const target = $("files-title") || $("files");
+        if (target && target.scrollIntoView) target.scrollIntoView({ block: "start" });
+      });
+    }
+  }
+
   // PP-12: пакетът се предлага само когато има файлове без ключ и е включен в add-on-а.
   const pkg = data.package || {};
   const pkgBtn = $("package-btn");

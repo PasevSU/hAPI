@@ -58,8 +58,16 @@ assert.equal(
   false,
   'интеграцията не чете `Authorization` от заявката — това е работа на Home Assistant',
 );
-// Прокситата подават СВОЯ ключ за портал нагоре, а не HA токена.
-assert.match(source, /headers = \{"Authorization": "Bearer " \+ portal_key\}/, 'към hAPI отива ключът на портала');
+// Прокситата подават СВОЯ ключ за портал нагоре, а не HA токена. От 0.69.147 ключът се
+// подава САМО когато го има: публичен портал се отваря без ключ и решението е на Node
+// backend-а — иначе страницата заковаваше на „Зареждане…“ с 401 от нашата проксита.
+assert.match(source, /if portal_key:\s*\n\s*headers\["Authorization"\] = "Bearer " \+ portal_key/,
+  'към hAPI отива ключът на портала (когато има такъв)');
+assert.equal(
+  /if not portal_key or len\(portal_key\)/.test(source),
+  false,
+  'липсващ ключ НЕ се отказва с 401 тук — публичният портал се решава от backend-а',
+);
 
 // ── 5. Административният токен не се приема в YAML ─────────────────────────
 const schema = (source.match(/CONFIG_SCHEMA = vol\.Schema\(([\s\S]*?)\n\)/m) || [])[1] || '';
