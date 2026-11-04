@@ -336,6 +336,16 @@ assert.match(src, /function apiMenu/);
 assert.match(src, /data-api-copy/);
 assert.match(src, /data-api-open/);
 assert.match(src, /data-api-dl/);
+// 0.69.152: в заглавния ред на портала НЯМА отделен бутон „API ▾“ — адресът е и линкът, и
+// менюто към него (копирай / отвори / изтегли api.json). Иначе две имена сочеха едно място.
+assert.match(src, /pf-address-btn/);
+assert.match(src, /pf-address-label/);
+assert.equal(
+  /qrBadge\(x\)\}\s*\$\{apiMenu\(/.test(src),
+  false,
+  'в заглавния ред на картата не стои отделно меню „API ▾“',
+);
+assert.match(css, /\.pf-address-btn \{/);
 assert.match(src, /function showModal/);
 assert.match(src, /function ensureModal/);
 assert.match(src, /m\.id = 'fm-modal'/);

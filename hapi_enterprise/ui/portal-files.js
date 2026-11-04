@@ -171,55 +171,55 @@
           <input type="file" id="fm-file-input" class="u-hidden" />
           <input type="file" id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple />
           ${state.filters
-        ? `<div class="fm-toolbar">
+          ? `<div class="fm-toolbar">
             <input id="fm-search" placeholder="Търси по име или тема" value="${esc(state.query)}" />
             <select id="fm-type">
               ${[['all', 'Всички типове'], ['pdf', 'PDF'], ['docx', 'DOCX'], ['xlsx', 'XLSX'], ['text', 'Текст'], ['archive', 'Архив'], ['other', 'Други']]
-          .map(([v, l]) => `<option value="${v}" ${state.type === v ? 'selected' : ''}>${l}</option>`)
-          .join('')}
+            .map(([v, l]) => `<option value="${v}" ${state.type === v ? 'selected' : ''}>${l}</option>`)
+            .join('')}
             </select>
             <select id="fm-access">
               ${[['all', 'Всички политики'], ['FREE', 'FREE'], ['KEY_REQUIRED', 'KEY_REQUIRED'], ['DISABLED', 'DISABLED']]
-          .map(([v, l]) => `<option value="${v}" ${state.access === v ? 'selected' : ''}>${l}</option>`)
-          .join('')}
+            .map(([v, l]) => `<option value="${v}" ${state.access === v ? 'selected' : ''}>${l}</option>`)
+            .join('')}
             </select>
             <select id="fm-topic">
               ${['all', ...[...new Set(files.map((f) => f.topic).filter(Boolean))].sort()]
-          .map((v) => `<option value="${esc(v)}" ${state.topic === v ? 'selected' : ''}>${esc(v === 'all' ? 'Всички теми' : v)}</option>`)
-          .join('')}
+            .map((v) => `<option value="${esc(v)}" ${state.topic === v ? 'selected' : ''}>${esc(v === 'all' ? 'Всички теми' : v)}</option>`)
+            .join('')}
             </select>
             <select id="fm-category">
               ${['all', ...[...new Set(files.map((f) => f.category).filter(Boolean))].sort()]
-          .map((v) => `<option value="${esc(v)}" ${state.category === v ? 'selected' : ''}>${esc(v === 'all' ? 'Всички категории' : v)}</option>`)
-          .join('')}
+            .map((v) => `<option value="${esc(v)}" ${state.category === v ? 'selected' : ''}>${esc(v === 'all' ? 'Всички категории' : v)}</option>`)
+            .join('')}
             </select>
             <select id="fm-sort">
               ${[['name', 'Име ↑'], ['-name', 'Име ↓'], ['size', 'Размер ↑'], ['-size', 'Размер ↓'], ['-date', 'Дата ↓']]
-          .map(([v, l]) => `<option value="${v}" ${state.sort === v ? 'selected' : ''}>${l}</option>`)
-          .join('')}
+            .map(([v, l]) => `<option value="${v}" ${state.sort === v ? 'selected' : ''}>${l}</option>`)
+            .join('')}
             </select>
             <button type="button" class="btn btn-sm btn-primary" id="fm-upload" title="Качи регистриран файл в портала (с метаданни)">Качи файл</button>
             ${state.selectedIds.size
-          ? `<span class="fm-bulk">Избрани ${state.selectedIds.size}
+            ? `<span class="fm-bulk">Избрани ${state.selectedIds.size}
                      <select id="fm-bulk-mode">
                        <option value="FREE">FREE</option>
                        <option value="KEY_REQUIRED">KEY_REQUIRED</option>
                        <option value="DISABLED">DISABLED</option>
                      </select>
                      <button type="button" class="btn btn-sm" id="fm-bulk-apply">Приложи</button></span>`
+            : ''
+          }
+          </div>`
           : ''
         }
-          </div>`
-        : ''
-      }
           ${state.panel === 'upload'
-        ? `<div class="pf-form u-mt">${uploadForm()}</div>`
-        : `<div class="fm-files-box u-mt">${scoped.length
-          ? `<div class="fm-files">${visible.map((x) => (x.storage ? storageCard(x, ctx) : card(x, ctx))).join('')}</div>`
-          : `<p class="hint">${scope ? `Папката ${esc(treePath(scope))} няма файлове.` : 'Порталът няма файлове. Използвай „Качи файл“.'
-          }</p>`
-        }</div>`
-      }
+          ? `<div class="pf-form u-mt">${uploadForm()}</div>`
+          : `<div class="fm-files-box u-mt">${scoped.length
+            ? `<div class="fm-files">${visible.map((x) => (x.storage ? storageCard(x, ctx) : card(x, ctx))).join('')}</div>`
+            : `<p class="hint">${scope ? `Папката ${esc(treePath(scope))} няма файлове.` : 'Порталът няма файлове. Използвай „Качи файл“.'
+            }</p>`
+          }</div>`
+        }
         </div>` : ''}
       </section>`;
   }

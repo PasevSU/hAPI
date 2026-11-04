@@ -114,9 +114,11 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       const host = ui.container();
       w.FilesManagerPanel.mount(host);
       await waitFor(() => host.textContent.includes('gui-portal'), { label: 'картата на портала' });
-      const chip = host.querySelectorAll('.fm-ico').map((el) => el.getAttribute('title') || '').find((t) => t.startsWith('Адрес на портала'));
-      assert.ok(chip, 'картата показва адрес на портала');
-      const signed = chip.replace(/^Адрес на портала: /, '');
+      // От 0.69.152 адресът е бутон (линк + меню), а не табелка до бутон „API ▾“ — затова се
+      // чете текстът му, а не `title` на плочка.
+      const address = host.querySelector('[data-api-menu]');
+      assert.ok(address, 'картата показва адрес на портала');
+      const signed = String(address.textContent || '').trim();
       assert.match(signed, /\?expires=\d+&sig=[a-f0-9]{64}$/, 'адресът на частен портал носи подпис: ' + signed);
       const ok = await fetch(signed);
       await ok.text();

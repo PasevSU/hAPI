@@ -1434,6 +1434,43 @@ input[type="radio"] {
   gap: 8px;
 }
 
+/* Адресът на портала е ЕДНОВРЕМЕННО линкът и менюто към него (0.69.152): натискането му
+   дава копирай / отвори / изтегли api.json. Дотогава до него стоеше отделен бутон
+   „API ▾“ — две имена за едно място. Изглежда като табелка, за да не расте заглавният ред. */
+.pf-address-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: var(--w-100);
+  padding: 2px 10px;
+  height: 2em;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: rgba(148, 178, 220, 0.1);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-12);
+  cursor: pointer;
+}
+
+.pf-address-btn:hover,
+.pf-address-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pf-address-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-address-btn svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
 .pf-portal.pf-open {
   border-color: rgba(34, 211, 238, 0.55);
   border-left-color: var(--accent);

@@ -567,8 +567,10 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       const open = await waitFor(() => app.$$('[data-open-portal]')[0], { label: 'бутонът „Отвори портала“' });
       open.click();
       await settle('картата на портала');
-      const chip = await waitFor(() => app.$$('.fm-ico').map((el) => el.getAttribute('title') || '').find((t) => t.startsWith('Адрес на портала')), { label: 'адресът на портала' });
-      const url = chip.replace(/^Адрес на портала: /, '').trim();
+      // От 0.69.152 адресът на портала е БУТОН (линк + меню), а не табелка до бутон „API ▾“:
+      // показва го текстът на самия бутон.
+      const trigger = await waitFor(() => app.$('[data-api-menu]'), { label: 'адресът на портала', timeout: BUDGET });
+      const url = text(trigger).trim();
       assert.match(url, /\/p\/[0-9a-zA-Z-]+/, 'адресът е човешката страница на портала: ' + url);
       // Едно отваряне на вече показания линк — каквото прави човек, като го натисне.
       const opened = await app.openLink(url);
@@ -1526,8 +1528,8 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       assert.equal(app.copied[app.copied.length - 1], link, 'копиран е ИМЕННО линкът на тайната');
     });
 
-    // ── J66. Портал: менюто „API ▾“ — копирай, отвори, изтегли ─────────────────
-    await journey('J66 портал: менюто „API ▾“', async () => {
+    // ── J66. Портал: адресът отваря менюто — копирай, отвори, изтегли ──────────
+    await journey('J66 портал: адресът отваря менюто', async () => {
       const slug = 'gui-journey-api-menu';
       await ownPortalWithFile(slug);
       await portalList();
@@ -1543,16 +1545,24 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       const openMenu = async (step) => {
         const fresh = await portalCard(slug);
         const button = await waitFor(() => fresh.querySelector('[data-api-menu]'), {
-          label: 'бутонът „API ▾“ (' + step + ')',
+          label: 'бутонът с адреса (' + step + ')',
           timeout: BUDGET,
         });
         button.click();
         return waitFor(() => {
           const menu = button.parentNode ? button.parentNode.querySelector('.fm-menu') : null;
           return menu && menu.hidden === false ? menu : null;
-        }, { label: 'менюто „API ▾“ да се отвори (' + step + ')', timeout: BUDGET });
+        }, { label: 'менюто на адреса да се отвори (' + step + ')', timeout: BUDGET });
       };
       const menu = await openMenu('копирай');
+      // 0.69.152: в заглавния ред на картата НЯМА отделен бутон „API ▾“ — натиска се САМИЯТ
+      // адрес и дава същите три действия. Проверява се точно това: едно меню в картата, а
+      // текстът му е адресът, не „API“.
+      const card = await portalCard(slug);
+      const triggers = card.querySelectorAll('[data-api-menu]');
+      assert.equal(triggers.length, 1, 'в картата има точно едно меню за адреса, а е ' + triggers.length);
+      assert.equal(/API/.test(text(triggers[0])), false, 'бутонът не се казва „API“, а е адресът: ' + text(triggers[0]));
+      assert.match(text(triggers[0]), /p\/|https?:\/\/|^\//, 'бутонът показва адреса на портала: ' + text(triggers[0]));
       const copyButton = menu.querySelector('[data-api-copy]');
       assert.ok(copyButton, 'менюто има „Копирай адреса“');
       const apiUrl = String(copyButton.getAttribute('data-api-copy') || '');

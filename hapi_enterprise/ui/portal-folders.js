@@ -170,7 +170,7 @@
         ${open ? `<div class="pf-block-body">
           <p class="hint">${status}</p>
           ${state.newFolder
-        ? `<form class="pf-form u-mb" id="fm-new-folder-form">
+          ? `<form class="pf-form u-mb" id="fm-new-folder-form">
                    <div class="field"><label>Име на новата папка (в <code>${esc(parent)}</code>)</label>
                      <input id="fm-new-folder-name" maxlength="100" placeholder="напр. Доказателства" autocomplete="off" />
                    </div>
@@ -179,17 +179,17 @@
                      <button type="button" class="btn btn-sm" id="fm-new-folder-cancel">Отказ</button>
                    </div>
                  </form>`
-        : ''
-      }
+          : ''
+        }
           <div class="fm-folders-box">
             <div class="fm-folders">${!root
-        ? `<p class="hint">${t.error ? 'Папките не са заредени.' : 'Зареждане на папките…'}</p>`
-        : empty
-          ? `<p class="hint">${connected() ? 'Папката е празна или липсва.' : 'Няма папки в демо данните.'}</p>`
-          : folderMenus(root)
-            .map((node) => folderMenu(node, (node.path || '').split('/').filter(Boolean).length, ctx))
-            .join('')
-      }</div>
+          ? `<p class="hint">${t.error ? 'Папките не са заредени.' : 'Зареждане на папките…'}</p>`
+          : empty
+            ? `<p class="hint">${connected() ? 'Папката е празна или липсва.' : 'Няма папки в демо данните.'}</p>`
+            : folderMenus(root)
+              .map((node) => folderMenu(node, (node.path || '').split('/').filter(Boolean).length, ctx))
+              .join('')
+        }</div>
           </div>
         </div>` : ''}
       </section>`;

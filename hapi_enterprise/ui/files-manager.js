@@ -2032,6 +2032,7 @@
   /** Една карта на портал: в списъка се разгъва, а в самостоятелен изглед е „страница“. */
   function portalCard(x, i, single) {
     const api = state.api[x.id];
+    const apiUrl = (api && api.refs && api.refs.apiUrl) || '';
     const land = (api && api.landing) || `${linkBase()}/p/${x.id || x.slug}`;
     const ctc = contactOf(x.contactId);
     const kase = caseOf(x.caseId);
@@ -2054,7 +2055,6 @@
         : '<span class="state-chip warn">няма API/QR</span>'
       }
                     ${qrBadge(x)}
-                    ${apiMenu((api && api.refs && api.refs.apiUrl) || '', 'api.json', 'api.json')}
                     <button type="button" class="fm-ico-btn pf-pkg-btn" data-pkg-portal="${i}" title="Изтегли пакета (ZIP с всички файлове от хранилището: ${esc(
         x.storage_root || '/share',
       )})" aria-label="Изтегли пакета">${ICON.download}</button>
@@ -2088,7 +2088,14 @@
                   <div class="fm-ico-row u-grid u-grid-chips">
                     ${chip(ICON.created, 'Дата на създаване', x.createdAt || '—', fmtDate(x.createdAt))}
                     ${x.notes ? chip(ICON.modified, 'Бележки', x.notes, 'има бележка') : ''}
-                    ${chip(ico('share'), 'Адрес на портала', land, land)}
+                    ${apiUrl
+        ? apiMenu(
+          apiUrl, 'api.json', 'api.json',
+          `<span aria-hidden="true">${ico('share')}</span> <span class="pf-address-label">${esc(land)}</span>`,
+          'pf-address-btn',
+        )
+        : chip(ico('share'), 'Адрес на портала', land, land)
+      }
                   </div>
                   ${x.notes ? `<p class="fm-file-notes">${ICON.modified} ${esc(x.notes)}</p>` : ''}
                   <hr class="u-divider" />
@@ -2570,11 +2577,18 @@
     </form>`;
   }
 
-  /** Меню за API: показва адреса, при натискане → копирай / отвори / изтегли. */
-  function apiMenu(url, label, extra) {
+  /**
+   * Менюто с действията върху адреса: копирай / отвори / изтегли `api.json`.
+   *
+   * `trigger` е съдържанието на бутона, който го отваря. До 0.69.151 на картата на портала
+   * стоеше отделен бутон „API ▾“, а адресът — до него като обикновена табелка: две неща за
+   * едно и също място. Сега човекът натиска САМИЯ адрес и получава същите три действия, а
+   * в заглавния ред остава само линкът.
+   */
+  function apiMenu(url, label, extra, trigger, triggerClass) {
     if (!url) return '';
     return `<div class="fm-menu-wrap">
-      <button type="button" class="btn btn-sm" data-api-menu title="${esc(url)}">API ▾</button>
+      <button type="button" class="${triggerClass || 'btn btn-sm'}" data-api-menu title="${esc(url)}" aria-haspopup="menu" aria-expanded="false">${trigger == null ? 'API ▾' : trigger}</button>
       <div class="fm-menu" hidden>
         <p class="hint u-mb">${esc(url)}</p>
         <button type="button" class="fm-menu-item" data-api-copy="${esc(url)}" title="Копирай адреса"><span aria-hidden="true">${ICON.copy}</span> <span class="fm-menu-label">Копирай</span></button>
