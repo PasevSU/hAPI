@@ -4,7 +4,12 @@ assert.match(cfg, /^\s{2}token:\s*""$/m, 'опцията `token` трябва д
 assert.match(cfg, /token:\s*password\?/, 'схемата трябва да приема `token` като password');
 assert.match(run, /ADMIN_TOKEN_REQUIRED/, 'стартът трябва да отказва без токен');
 assert.match(run, /optionText\('token'\)/, 'токенът се чете от опцията');
-assert.match(cfg, /db_name:\s*str\?/); assert.match(cfg, /backup_folder:\s*str\?/); assert.match(run, /\/data\/admin-token/); assert.match(run, /REQUIRE_PORTAL_TOKEN\s*=\s*'true'/); assert.doesNotMatch(run, /Admin token:/);// PG-6: публичният gateway се излага на IP/порта на Home Assistant (без HA сесия).
+assert.match(cfg, /db_name:\s*str\?/); assert.match(cfg, /backup_folder:\s*str\?/); assert.match(run, /\/data\/admin-token/);
+// Токен за всеки портал: режимът съществува, но НЕ е закован (0.69.150). Докато беше
+// `'true'`, всеки адрес на портал — вкл. публичен и QR кодът — отговаряше 404.
+assert.match(run, /REQUIRE_PORTAL_TOKEN\s*=\s*process\.env\.REQUIRE_PORTAL_TOKEN\s*===\s*'true'/);
+assert.doesNotMatch(run, /REQUIRE_PORTAL_TOKEN\s*=\s*'true'/, 'режимът не бива да е закован на „винаги иска токен“');
+assert.doesNotMatch(run, /Admin token:/);// PG-6: публичният gateway се излага на IP/порта на Home Assistant (без HA сесия).
 assert.match(py, /url = "\/api\/public\/v1\/\{tail:\.\*\}"/);
 assert.match(py, /api:hapi_enterprise:gateway/);
 assert.match(py, /hass\.http\.register_view\(PublicGateway\(\)\)/);

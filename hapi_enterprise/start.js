@@ -214,11 +214,19 @@ function publicBaseUrl(raw) {
 const publicBase = publicBaseUrl(optionText('public_domain'));
 if (publicBase) env.PUBLIC_BASE_URL = publicBase;
 
-// Режим на add-on-а: Ingress автоматично влиза, порталът иска токен, първият
-// старт се seed-ва. Стойностите са фиксирани, защото това е add-on, не edge режим.
+// Режим на add-on-а: Ingress автоматично влиза, първият старт се seed-ва. Стойностите са
+// фиксирани, защото това е add-on, не edge режим.
 env.INGRESS_MODE = 'true';
 env.HAPI_FIRST_RUN_SEED = '1';
-env.REQUIRE_PORTAL_TOKEN = 'true';
+// Токен за всеки портал — ПО ИЗБОР, не закован.
+//
+// Докато тук стоеше `'true'`, на реалната инсталация ВСЕКИ адрес на портал — включително
+// публичен и адресът, който носи QR кодът — отговаряше 404: `portal-policy.js` прескача
+// правилото „публичен портал без идентичност“, а `adminPortal` тогава връща празен
+// `accessQuery`, тоест и подписаният достъп липсва. Панелът сам го потвърждаваше с
+// `link.check … status: 404` секунда след `portal.access.denied · no-identity`.
+// Затова режимът остава възможен, но трябва да се поиска изрично.
+env.REQUIRE_PORTAL_TOKEN = process.env.REQUIRE_PORTAL_TOKEN === 'true' ? 'true' : 'false';
 env.PUBLIC_BIND_HOST = process.env.PUBLIC_BIND_HOST || '0.0.0.0';
 env.ADMIN_PORT = process.env.ADMIN_PORT || '8098';
 env.PORT = process.env.PORT || '8099';

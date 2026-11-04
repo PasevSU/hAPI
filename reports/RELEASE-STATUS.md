@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.149
+# Състояние на изданието — hAPI Enterprise 0.69.150
 
-Версия: **0.69.149** · клон `main`
+Версия: **0.69.150** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,40 +14,41 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **352/352** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.149 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 560 файла · 95888 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 555 файла · 94950 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
+| Тестове | `node scripts/test-matrix.cjs` | **353/353** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.150 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 561 файла · 96004 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 556 файла · 95066 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 27 RBAC способности, 43 опции, 352 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 27 RBAC способности, 43 опции, 353 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.149.tar.gz` | add-on архив (193 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.149.zip` | интеграция за HACS (25 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.149.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.150.tar.gz` | add-on архив (193 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.150.zip` | интеграция за HACS (25 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.150.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.149
+## 3. Какво влезе във 0.69.150
 
-- **Тестер, който налага Content-Security-Policy в тестовете.** Досега GUI тестовете вървяха
-  в DOM без браузър — тоест без политика — и заявка към чужд произход минаваше зелено, а се
-  блокираше едва при човека (`Connecting to 'https://pasev.asuscomm.com/api/v1/p/newportal2c'
-  violates "connect-src 'self'"`). Сега `tests/lib/csp.cjs` обвива `fetch` в харнеса и
-  **отказва** всяка заявка извън произхода на документа, точно както прави браузърът; всички
-  GUI тестове минават под тази политика.
-- **Политиката не се измисля.** `tests/gui-csp-guard.cjs` взима `connect-src` от ИСТИНСКАТА
-  заглавка, която add-on-ът изпраща за `/ui/index.html`, и пада, ако тестерът налага друго.
-- **Тестерът е проверен, че хваща.** Отделен контрол: нарочна заявка към чужд произход се
-  отказва с грешка от типа, който страницата вижда, и се записва; плюс проверка на самия код —
-  при временно върнато старо поведение (`fetch(url)` вместо `fetch(sameOrigin(url))`) тестът
-  пада с точно съобщението от конзолата на човека, а с поправката минава.
-- **`ui.cspViolations()`** е достъпно на всеки тест: списък на нарушенията, които панелът е
-  направил. Празен списък значи „под политиката няма скрити заявки навън“.
+- **Поправено (висока тежест): на реалната инсталация ВСЕКИ адрес на портал отваряше 404 —
+  включително публичен и адресът, който носи QR кодът.** `start.js` налагаше
+  `REQUIRE_PORTAL_TOKEN='true'`; при този флаг `portal-policy.js` прескача правилото „публичен
+  портал без идентичност“, а `adminPortal` връща празен `accessQuery` — тоест нито един адрес
+  не можеше да се отвори. Одитът на add-on-а го е записал: `portal.access.denied · reason:
+  no-identity` и секунда след него `link.check · host: pasev.asuscomm.com · status: 404`.
+- **Режимът „искай токен за всеки портал“ вече е по избор**, не закован:
+  `REQUIRE_PORTAL_TOKEN=true` в средата го включва, по подразбиране е изключен. Така публичният
+  портал се отваря на голия си адрес, а частният — с подписан достъп, който панелът и QR кодът
+  носят (важи 1 час).
+- **Причината да не се хване досега:** всички тестове пускат `server.js` директно, а add-on-ът
+  върви през `start.js`, който сменя средата. Нов `tests/start-portal-open.cjs` пуска
+  **истинския entrypoint** и проверява резултата: публичен → 200 със страницата на портала,
+  частен → 404, а с `REQUIRE_PORTAL_TOKEN=true` → 404 и за публичен. На стария код тестът пада
+  с `404 !== 200` — точно това виждаше човекът в браузъра.
 
 ## 4. Как се проверява наново
 
