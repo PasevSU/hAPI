@@ -12,6 +12,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { spawn } = require('node:child_process');
 const { stopChild, freePort } = require('../helpers.cjs');
+const { createCspGuard } = require('./csp.cjs');
 const { createDocument, StubEvent } = require('./dom-stub.cjs');
 
 const root = path.join(__dirname, '..', '..');
@@ -115,7 +116,7 @@ function storage(initial = {}) {
  * Монтира интерфейса в отделен `vm` контекст.
  * `server` идва от `startServer()`; `lang` сменя езика на речника.
  */
-function mountUi(server, { lang = 'bg', modules = [] } = {}) {
+function mountUi(server, { lang = 'bg', modules = [], csp = true } = {}) {
   const doc = createDocument({ lang });
   const toasts = [];
   const copied = [];
@@ -134,10 +135,14 @@ function mountUi(server, { lang = 'bg', modules = [] } = {}) {
     toString: () => server.base + '/ui/index.html',
   };
   // `fetch` минава през Authorization, както го прави панелът (той слага своя токен).
-  const fetchShim = (url, init = {}) => {
+  const rawFetch = (url, init = {}) => {
     const full = typeof url === 'string' && url.startsWith('/') ? server.base + url : url;
     return server.authFetch(full, init);
   };
+  // Политиката се НАЛАГА. Без това заявка към чужд произход минаваше в теста и се
+  // проваляше само при човека (`connect-src 'self'`). Вж. `tests/lib/csp.cjs`.
+  const guard = csp ? createCspGuard({ origin: server.base }) : { wrapFetch: (f) => f, violations: [] };
+  const fetchShim = guard.wrapFetch(rawFetch);
   const sandbox = {
     window: null,
     document: doc,
@@ -235,6 +240,10 @@ function mountUi(server, { lang = 'bg', modules = [] } = {}) {
     },
     lastToast: () => toasts[toasts.length - 1] || null,
     clearToasts: () => { toasts.length = 0 },
+    /** Нарушения на Content-Security-Policy, записани при заявките на панела. */
+    cspViolations: () => guard.violations,
+    /** Сурова `fetch` без политика — само за контролния тест на самия тестер. */
+    rawFetch,
   };
 }
 

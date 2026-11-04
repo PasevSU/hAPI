@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.148
+# Състояние на изданието — hAPI Enterprise 0.69.149
 
-Версия: **0.69.148** · клон `main`
+Версия: **0.69.149** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,47 +14,40 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **351/351** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.148 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 558 файла · 95713 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 553 файла · 94775 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
+| Тестове | `node scripts/test-matrix.cjs` | **352/352** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.149 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 560 файла · 95888 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 555 файла · 94950 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 27 RBAC способности, 43 опции, 351 тестови файла |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 области, 48 маршрута, 27 RBAC способности, 43 опции, 352 тестови файла |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.148.tar.gz` | add-on архив (193 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.148.zip` | интеграция за HACS (25 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.148.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.149.tar.gz` | add-on архив (193 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.149.zip` | интеграция за HACS (25 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.149.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.148
+## 3. Какво влезе във 0.69.149
 
-- **Поправено: панелът не можеше да отвори портала пред домейн (CSP `connect-src 'self'`).**
-  В конзолата на Home Assistant се виждаше `Connecting to 'https://pasev.asuscomm.com/api/v1/p/<slug>'
-  violates the following Content-Security-Policy directive: "connect-src 'self'"` и „Отвори“ /
-  „Изтегли“ в менюто на API-то не правеха нищо. Причината: `api.json` съдържа ПУБЛИЧНИЯ адрес
-  (той е верен — него получателят копира и сканира), а панелът се отваря на произхода на Home
-  Assistant (или на add-on-а). Заявка към другия произход се блокира от политиката на браузъра.
-  Сега панелът обръща препратката на **относителен път** (`/api/v1/p/<slug>`) — същият път и
-  същият сървър, но произходът е този на документа, тоест заявката остава в `connect-src 'self'`.
-  Показваният и копираният адрес не се променя: той си остава публичният.
-- **Произходът идва само от `api-base.js`.** Помощникът `sameOrigin()` не чете `location`
-  (това е договорът на файла — вж. `files-manager.js`): Ingress префиксът
-  (`/api/hassio_ingress/<токен>`) се взима от `window.hapiIngressPrefix()`, а базовият адрес —
-  от `window.hapiApiBase()`. Така поправката важи и за add-on-а директно, и зад Ingress.
-- **Живата проверка на папката печата какво има на диска.** `tests/qr-leads-to-folder.cjs`
-  създава истински файлове в папката на портала и отпечатва пътя, размера и SHA-256 на всеки,
-  адреса, който носи QR кодът, и какво показва страницата — за да се види резултатът, а не да
-  се вярва на описание.
-- **Тест.** Нов `tests/gui-csp-same-origin.cjs`: менюто показва публичния адрес
-  (`https://pasev.asuscomm.com/...`), а заявката, която панелът прави при натискане, е
-  относителна и отива на същия път на произхода на панела; прозорецът показва `api.json`,
-  а не съобщение за грешка.
+- **Тестер, който налага Content-Security-Policy в тестовете.** Досега GUI тестовете вървяха
+  в DOM без браузър — тоест без политика — и заявка към чужд произход минаваше зелено, а се
+  блокираше едва при човека (`Connecting to 'https://pasev.asuscomm.com/api/v1/p/newportal2c'
+  violates "connect-src 'self'"`). Сега `tests/lib/csp.cjs` обвива `fetch` в харнеса и
+  **отказва** всяка заявка извън произхода на документа, точно както прави браузърът; всички
+  GUI тестове минават под тази политика.
+- **Политиката не се измисля.** `tests/gui-csp-guard.cjs` взима `connect-src` от ИСТИНСКАТА
+  заглавка, която add-on-ът изпраща за `/ui/index.html`, и пада, ако тестерът налага друго.
+- **Тестерът е проверен, че хваща.** Отделен контрол: нарочна заявка към чужд произход се
+  отказва с грешка от типа, който страницата вижда, и се записва; плюс проверка на самия код —
+  при временно върнато старо поведение (`fetch(url)` вместо `fetch(sameOrigin(url))`) тестът
+  пада с точно съобщението от конзолата на човека, а с поправката минава.
+- **`ui.cspViolations()`** е достъпно на всеки тест: списък на нарушенията, които панелът е
+  направил. Празен списък значи „под политиката няма скрити заявки навън“.
 
 ## 4. Как се проверява наново
 
