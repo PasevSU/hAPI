@@ -62,7 +62,7 @@ function mountIntegrationPortal(server, slug) {
       async arrayBuffer() { return new ArrayBuffer(0) }
     },
     crypto: require('node:crypto').webcrypto,
-    navigator: { clipboard: { writeText: async () => {} } },
+    navigator: { clipboard: { writeText: async () => { } } },
     fetch: (url, init) => (String(url).startsWith('/') ? bridge(url, init) : fetch(url, init)),
   };
   sandbox.window = sandbox;
