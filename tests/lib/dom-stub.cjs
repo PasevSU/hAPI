@@ -272,6 +272,11 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
     set href(v) { this.setAttribute('href', String(v == null ? '' : v)) }
     get src() { return this.getAttribute('src') || ''; }
     set src(v) { this.setAttribute('src', String(v == null ? '' : v)) }
+    // Същото за `title`: подсказката на бутона (`el.title = 'Скрий менюто'`) е АТРИБУТ в
+    // браузъра. Без отражение тестът четеше старата стойност от HTML-а и обявяваше за
+    // счупена подсказка, която при човека се сменя — или, по-лошо, минаваше, без да провери.
+    get title() { return this.getAttribute('title') || ''; }
+    set title(v) { this.setAttribute('title', String(v == null ? '' : v)) }
     get className() { return this.getAttribute('class') || ''; }
     set className(v) { this.setAttribute('class', String(v == null ? '' : v)) }
     get children() { return this.childNodes.filter((n) => n.nodeType === 1) }

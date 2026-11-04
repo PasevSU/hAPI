@@ -9,7 +9,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { startServer, mountUi, waitFor } = require('./lib/gui-harness.cjs');
+const { startServer, mountUi, waitFor, expandPortalBlocks } = require('./lib/gui-harness.cjs');
 
 const MODULES = [
   'data.js',
@@ -110,6 +110,8 @@ const pending = (ui) => {
       w.FilesManagerPanel.state.openPortal = portal.id;
       w.FilesManagerPanel.state.portalIndex = 0;
       w.FilesManagerPanel.mount(host);
+      // Блоковете са сгънати по подразбиране — разгъваме ги с истинските им заглавия.
+      await expandPortalBlocks(host);
       await waitFor(() => host.querySelector('[data-report-portal="0"]'), { label: 'бутонът за отчет на портала' });
 
       ui.navigations.length = 0;
@@ -135,6 +137,7 @@ const pending = (ui) => {
       w.FilesManagerPanel.state.openPortal = portal.id;
       w.FilesManagerPanel.state.portalIndex = 0;
       w.FilesManagerPanel.mount(host);
+      await expandPortalBlocks(host);
       await waitFor(() => host.querySelector('[data-file-gear="' + fileA.id + '"]'), { label: 'зъбчатката на файла' });
       host.querySelector('[data-file-gear="' + fileA.id + '"]').click();
       await waitFor(() => host.querySelector('[data-file-act="report"][data-file-id="' + fileA.id + '"]'), { label: 'редът „Отчет“ в опциите на файла' });

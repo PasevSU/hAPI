@@ -12,7 +12,7 @@
 //   • адресът води към техническа страница (JSON) вместо към портала;
 //   • бутонът „Отвори портала“ не отваря портала в панела (същият origin).
 const assert = require('node:assert/strict');
-const { startServer, mountUi, waitFor } = require('./lib/gui-harness.cjs');
+const { startServer, mountUi, waitFor, expandPortalBlocks } = require('./lib/gui-harness.cjs');
 const { stopChild } = require('./helpers.cjs');
 
 const PANEL_MODULES = [
@@ -43,6 +43,8 @@ const PANEL_MODULES = [
     ui.window.FilesManagerPanel.state.panel = 'actions';
     ui.window.FilesManagerPanel.mount(host);
     await waitFor(() => host.textContent.includes('Контролен панел на портала'), { label: 'контролният панел' });
+    // Блоковете са сгънати по подразбиране — разгъваме ги с истинските им заглавия.
+    await expandPortalBlocks(host);
 
     const copy = await waitFor(() => host.querySelector('#pf-copy-portal'), { label: 'бутонът „Копирай адреса“' });
     const open = await waitFor(() => host.querySelector('#pf-open-portal'), { label: 'бутонът „Отвори портала“' });

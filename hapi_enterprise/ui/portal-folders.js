@@ -137,6 +137,8 @@
     const root = data && data.tree ? data.tree : null;
     const empty = Boolean(root) && !(root.files || []).length && !(root.folders || []).length;
     const parent = treePath(state.tree.open || '');
+    // Блокът е СГЪНАТ по подразбиране (както всички блокове на портала).
+    const open = state.foldersOpen === true;
     const status = !connected()
       ? 'Демо: папките са от метаданните на файловете (тема → категория → група).'
       : t.error
@@ -150,21 +152,22 @@
           }`
           : 'Папките не са заредени.';
     return `
-      <section class="pf-block" data-block="folders">
+      <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="folders">
         <div class="pf-block-head">
-          <h5>${ico('folder')} Папки на портала</h5>
-          <span class="fm-ico-actions">
+          <h5><button type="button" class="link-btn pf-block-tog" data-pf-folders-tog aria-expanded="${open}" title="${open ? 'Сгъни' : 'Разгъни'
+      } папките на портала">${ico(open ? 'chevronDown' : 'chevronRight')} ${ico('folder')} Папки на портала</button></h5>
+          ${open ? `<span class="fm-ico-actions">
             <button type="button" class="fm-ico-btn" data-import-folder title="Прикачи папка с файлове в ${esc(
-      treePath(state.tree.open || ''),
-    )}">${ico('attachFolder')}</button>
+        treePath(state.tree.open || ''),
+      )}">${ico('attachFolder')}</button>
             <button type="button" class="fm-ico-btn" id="fm-new-folder" title="Създай папка в ${esc(
-      treePath(state.tree.open || ''),
-    )}">${ico('plus')}</button>
+        treePath(state.tree.open || ''),
+      )}">${ico('plus')}</button>
             <button type="button" class="fm-ico-btn" id="fm-tree-refresh" title="Прочети папката наново от диска">${ICON.refresh
-      }</button>
-          </span>
+        }</button>
+          </span>` : ''}
         </div>
-        <div class="pf-block-body">
+        ${open ? `<div class="pf-block-body">
           <p class="hint">${status}</p>
           ${state.newFolder
         ? `<form class="pf-form u-mb" id="fm-new-folder-form">
@@ -188,7 +191,7 @@
             .join('')
       }</div>
           </div>
-        </div>
+        </div>` : ''}
       </section>`;
   }
 

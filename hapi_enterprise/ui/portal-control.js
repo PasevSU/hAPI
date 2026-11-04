@@ -7,8 +7,9 @@
   /** HTML на блока „Контролен панел на портала: <заглавие>“ + API/QR. */
   function render(ctx) {
     const { esc, state, p, api, FLAGS, ICON, ico, fmtDate, qrSvg, contactSelect, caseSelect, newContactFields, newCaseFields } = ctx;
-    // Блокът се сгъва/разгъва — по подразбиране е отворен (`controlOpen !== false`).
-    const open = state.controlOpen !== false;
+    // Блокът се сгъва/разгъва — по подразбиране е СГЪНАТ (`controlOpen === true` го разгъва),
+    // както всички блокове на портала: отвореният портал показва заглавия, не стена от текст.
+    const open = state.controlOpen === true;
     // QR кодът кодира СТРАНИЦАТА на портала заедно с ПАПКАТА (`?folder=`), а НЕ адреса
     // на SVG изображението: сканиран, той трябва да отвори портала с неговите файлове.
     const qrPage = api ? api.folderUrl || api.landing || (api.refs && api.refs.landingUrl) || '' : '';
@@ -166,6 +167,16 @@
                   <button type="button" class="btn btn-sm" id="pf-qr-restore">Върни това състояние</button>
                 </div>
                 <output class="pf-security-out" id="pf-qr-out" aria-live="polite"></output>
+              </div>
+              <div class="pf-security">
+                <h6>${ico('lock')} Закриване на портала</h6>
+                <p class="hint">Закритият портал излиза от списъка и адресът му казва „Порталът е закрит“,
+                  а данните му отиват в <strong>архив за съхранение</strong> — нищо не се трие.
+                  Порталите се пазят <strong>6 месеца</strong> и през цялото време се връщат с едно натискане
+                  от „Затворени портали“; след срока се изтрива окончателно.</p>
+                <div class="u-row u-row-1">
+                  <button type="button" class="btn btn-sm" data-close-portal-submit="${esc(p.id)}" title="Премести портала в архив за съхранение">✕ Закрий портала</button>
+                </div>
               </div>
             </div>
           </div>

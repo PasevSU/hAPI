@@ -273,7 +273,10 @@ assert.match(src, /class="fm-ico-row u-grid u-grid-chips"/);
 assert.match(src, /class="u-grid u-grid-fields"/);
 // 7и. Шрифтовете също са в проценти: няма нито един font-size в px, има обща скала.assert.equal(/font-size:\s*[\d.]+px/.test(css), false, 'няма font-size в px');
 assert.match(css, /html \{ font-size: 100%; \}/);
-assert.match(css, /font-size: 87\.5%;/);
+// 0.69.151: основата на панела е 100% (16px), не дребните 87.5% (14px) — от нея зависи
+// целият мащаб `--fs-*`, тоест „по-едър шрифт“ значи по-едър панел, а не само по-едър текст.
+assert.match(css, /body \{[\s\S]*?font-size: 100%;/);
+assert.equal(/font-size: 87\.5%;/.test(css), false, 'старата дребна основа е махната');
 assert.match(css, /--fs-10-5: 75%;/);
 assert.match(css, /--fs-11-5: 82%;/);
 assert.match(css, /--fs-12-5: 89%;/);
@@ -372,7 +375,11 @@ assert.match(serverSrc, /if \(p\.storage_root === '\/share' \|\| p\.storage_root
 // карта (`portal.html`/`api.json`), затова старата стойност се пази и се изчиства.
 assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*\{[^}]*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\);\s*if\s*\(portalFolderCopy\)\s*await portalFolder\.ensure\(p\)/);
 assert.match(serverSrc, /portalFolder\.removeArtifacts\(previousRoot\)/, 'старата папка се изчиства от генерираните файлове');
-assert.match(serverSrc, /portalFolder\.removeArtifacts\(p\)/, 'изтриването на портала чисти генерираните файлове');
+// От 0.69.151 изтриването на портал живее в `routes/portal-archive.js` (закриване в архив,
+// 6 месеца преди окончателно триене) — `server.js` има таван на редовете. Затова тук се
+// проверява същият инвариант, но в модула, който наистина го изпълнява.
+const archiveSrc = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'routes', 'portal-archive.js'), 'utf8');
+assert.match(archiveSrc, /portalFolder\.removeArtifacts\(/, 'изтриването/закриването на портала чисти генерираните файлове');
 assert.match(serverSrc, /contactId:\s*portalContact\(db,\s*b\.contactId\)/);
 assert.match(serverSrc, /if\s*\(b\.contactId\s*!==\s*undefined\)\s*p\.contactId\s*=\s*portalContact\(db,\s*b\.contactId\)/);
 assert.match(serverSrc, /if\s*\(b\.caseId\s*!==\s*undefined\)\s*p\.caseId\s*=\s*portalCase\(db,\s*b\.caseId\)/);
@@ -477,9 +484,13 @@ assert.match(css, /\.fm-folder-name \{[\s\S]*?font-size: var\(--fs-12-5\)/);
 assert.match(css, /\.fm-folder\[data-depth="1"\] \.fm-folder-name \{ padding-left: 0\.7em; \}/);
 // Изобразяването на файловете (картите) не се променя — папките са отделен блок.
 assert.match(src, /function portalDetail\(p\)/);
+// От 0.69.151 заглавието е БУТОН (блоковете са сгънати по подразбиране), но текстът пак
+// показва папката и броя файлове — проверява се и двете, за да не се загуби информацията
+// при превръщането на заглавието в превключвател.
+assert.match(src, /data-pf-files-tog/, 'блокът „Файлове в портала“ има превключвател');
 assert.match(
   src,
-  /<h5>\$\{ico\('file'\)\} Файлове в портала \(\$\{scoped\.length\}\) · <code>\$\{esc\(treePath\(scope\)\)\}<\/code><\/h5>/,
+  /Файлове в портала \(\$\{scoped\.length\}\) · <code>\$\{esc\(treePath\(scope\)\)\}<\/code>/,
   'заглавието показва папката и броя файлове',
 );
 // Икони в заглавния ред: прикачи папка, прикачи файл, панел филтри.
@@ -594,10 +605,17 @@ assert.match(src, /state-chip enc" title="Шифрован/);
 // 4. Няма бутон „Генерирай API + QR“ — API/QR се създават с портала.
 assert.equal(/pf-generate/.test(src), false, 'бутонът „Генерирай API + QR“ е премахнат');
 assert.match(src, /API и QR се създават заедно с портала/);
-// 5. „Контролен панел на портала“ се сгъва/разгъва.
+// 5. Блоковете на портала се сгъват/разгъват и са СГЪНАТИ по подразбиране (0.69.151):
+// порталът се отваря като списък от заглавия, а не като стена от текст, в която файловете
+// са някъде надолу.
 assert.match(src, /data-pf-control-tog/);
-assert.match(src, /const open = state\.controlOpen !== false;/);
-assert.match(src, /state\.controlOpen = state\.controlOpen === false;/);
+assert.match(src, /data-pf-folders-tog/);
+assert.match(src, /data-pf-files-tog/);
+assert.match(src, /const open = state\.controlOpen === true;/);
+assert.match(src, /controlOpen: false,/);
+assert.match(src, /foldersOpen: false,/);
+assert.match(src, /filesOpen: false,/);
+assert.match(src, /state\[flag\] = state\[flag\] !== true;/);
 assert.match(css, /\.pf-block-tog \{/);
 assert.match(css, /\.pf-collapsed \.pf-block-head \{ border-bottom: 0;/);
 

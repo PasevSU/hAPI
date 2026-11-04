@@ -286,6 +286,10 @@ const ROUTES = [
   ['GET', '/admin/api/portals/{portalId}/qr/{qrId}', 'Ревизия, манифест и наследник на конкретен QR', 'portals', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/qr/{qrId}/restore', 'Връща състоянието от архива (първо архивира текущото)', 'portals', 'portals'],
   ['GET', '/admin/api/portals/{portalId}/qr/{qrId}/archive', 'Сваляне на архивния файл на конкретен QR', 'portals', 'portals'],
+  // Закриване на портал (0.69.151): данните отиват в архив за съхранение и се пазят 6 месеца.
+  ['POST', '/admin/api/portals/{portalId}/close', 'Закрива портала: данните влизат в архив за съхранение (183 дни)', 'portals', 'portals'],
+  ['GET', '/admin/api/portals/archive', 'Затворените портали с оставащи дни до изтриване', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/archive/{portalId}/restore', 'Връща закрит портал от архива с файловете и адреса му', 'portals', 'portals'],
 
   // ── самият договор ────────────────────────────────────────────────────────
   ['GET', '/admin/api/openapi.json', 'Тази спецификация', 'system', 'whoami'],

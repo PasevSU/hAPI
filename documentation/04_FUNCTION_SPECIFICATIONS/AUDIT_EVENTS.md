@@ -1,11 +1,11 @@
 # Одитни събития — каталог
 
-> **Генериран документ.** Версия на кода: **0.69.150**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.151**. Пише се от
 > `node scripts/audit-events.cjs`, проверява се от `tests/audit-events.cjs`.
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **183** събития, излъчвани от **17** файла.
+Общо: **186** събития, излъчвани от **18** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -127,11 +127,14 @@
 | `portal.acl.update` | `hapi_enterprise/routes/portal-tokens.js` |
 | `portal.api.generate` | `hapi_enterprise/server.js` |
 | `portal.api.remove` | `hapi_enterprise/server.js` |
-| `portal.delete` | `hapi_enterprise/server.js` |
-| `portal.delete.refused` | `hapi_enterprise/server.js` |
+| `portal.close` | `hapi_enterprise/routes/portal-archive.js` |
+| `portal.delete` | `hapi_enterprise/routes/portal-archive.js` |
+| `portal.delete.refused` | `hapi_enterprise/routes/portal-archive.js` |
 | `portal.file.open` | `hapi_enterprise/routes/portal-storage.js` |
 | `portal.merge` | `hapi_enterprise/server.js` |
 | `portal.order.open` | `hapi_enterprise/routes/portal-storage.js` |
+| `portal.purge` | `hapi_enterprise/routes/portal-archive.js` |
+| `portal.restore` | `hapi_enterprise/routes/portal-archive.js` |
 | `portal.session.issue` | `hapi_enterprise/routes/portal-tokens.js` |
 | `portal.token.create` | `hapi_enterprise/routes/portal-tokens.js` |
 | `portal.token.denied` | `hapi_enterprise/routes/portal-tokens.js` |

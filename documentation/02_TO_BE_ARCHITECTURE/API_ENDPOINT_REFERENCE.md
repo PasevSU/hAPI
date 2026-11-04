@@ -2,13 +2,13 @@
 
 **Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 (API Architecture & Runtime Logic Specification)
 
-**Генериран от кода на hAPI Enterprise 0.69.150.** Не се редактира на ръка.
+**Генериран от кода на hAPI Enterprise 0.69.151.** Не се редактира на ръка.
 
 Източници (живи, не копия):
 
-- `hapi_enterprise/admin-api-spec.js` — 208 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
+- `hapi_enterprise/admin-api-spec.js` — 211 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
 - `hapi_enterprise/public-route-allowlist.js` — 32 правила за това какво Public Gateway пропуска.
-- `hapi_enterprise/routes/` — 16 компонента на HTTP слоя.
+- `hapi_enterprise/routes/` — 17 компонента на HTTP слоя.
 
 ```bash
 node scripts/api-reference.cjs           # записва документа
@@ -173,6 +173,9 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | GET | `/admin/api/portals/{portalId}/qr/{qrId}` | Ревизия, манифест и наследник на конкретен QR | `portals` |
 | POST | `/admin/api/portals/{portalId}/qr/{qrId}/restore` | Връща състоянието от архива (първо архивира текущото) | `portals` |
 | GET | `/admin/api/portals/{portalId}/qr/{qrId}/archive` | Сваляне на архивния файл на конкретен QR | `portals` |
+| POST | `/admin/api/portals/{portalId}/close` | Закрива портала: данните влизат в архив за съхранение (183 дни) | `portals` |
+| GET | `/admin/api/portals/archive` | Затворените портали с оставащи дни до изтриване | `portals` |
+| POST | `/admin/api/portals/archive/{portalId}/restore` | Връща закрит портал от архива с файловете и адреса му | `portals` |
 
 ### Правила за изтегляне (`rules`)
 
@@ -400,6 +403,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | `routes/link-check.js` | Проверка на връзки |
 | `routes/oidc.js` | — |
 | `routes/pgp-keyring.js` | PGP ключове и миграции L1/L2 |
+| `routes/portal-archive.js` | — |
 | `routes/portal-page.js` | — |
 | `routes/portal-qr.js` | QR ревизии: архив (физически ZIP), прекратяване, манифести |
 | `routes/portal-storage.js` | Универсалният вход `?order=`, `blok`, изтегляне от папката, публичен QR договор |
@@ -416,7 +420,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | 400 | Невалидна заявка/път/име — проверката е преди докосване на диска | 116 |
 | 401 | Липсва или невалидна идентичност (административен токен/бисквитка) | 6 |
 | 403 | Идентичността е известна, но правото липсва (напр. заключен файл, общ корен) | 22 |
-| 404 | Ресурсът не съществува ИЛИ не бива да се разкрива (нарочно еднакъв отговор) | 161 |
+| 404 | Ресурсът не съществува ИЛИ не бива да се разкрива (нарочно еднакъв отговор) | 163 |
 | 405 | Методът не се поддържа за този път | 9 |
 | 409 | Конфликт със състоянието (съществуващо име, прекратен QR, максимална дълбочина) | 30 |
 | 410 | Ресурсът е прекратен (blok: QR е съществувал, достъпът е спрян) | 3 |

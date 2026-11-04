@@ -1402,6 +1402,38 @@ input[type="radio"] {
   border-left-color: var(--accent);
 }
 
+/* Затворени портали: архив за съхранение с 6-месечен срок. Отделени са визуално от
+   активните — закритият портал не е „портал с проблем“, а портал, който вече не съществува
+   за външния свят, но данните му още се пазят. */
+.pf-archive {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pf-archive-head {
+  margin: 0;
+  font-size: var(--fs-15);
+  color: var(--muted);
+}
+
+.pf-archived {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 1.2%;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.pf-archived-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .pf-portal.pf-open {
   border-color: rgba(34, 211, 238, 0.55);
   border-left-color: var(--accent);

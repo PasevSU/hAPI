@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "hAPI Enterprise — административно API 0.69.150",
+    "name": "hAPI Enterprise — административно API 0.69.151",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Генериран от `hapi_enterprise/admin-api-spec.js` (node scripts/openapi-admin.cjs). Не се редактира на ръка."
   },
@@ -2290,6 +2290,87 @@
               ]
             },
             "description": "Сваляне на архивния файл на конкретен QR\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Закрива портала: данните влизат в архив за съхранение (183 дни)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/close",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "close"
+              ]
+            },
+            "description": "Закрива портала: данните влизат в архив за съхранение (183 дни)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Затворените портали с оставащи дни до изтриване",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/archive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "archive"
+              ]
+            },
+            "description": "Затворените портали с оставащи дни до изтриване\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Връща закрит портал от архива с файловете и адреса му",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/archive/{portalId}/restore",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "archive",
+                "{{portalId}}",
+                "restore"
+              ]
+            },
+            "description": "Връща закрит портал от архива с файловете и адреса му\n\nПраво (RBAC): `portals`"
           },
           "response": []
         }

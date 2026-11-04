@@ -209,6 +209,9 @@
   let host = null;
   const state = {
     portals: [],
+    // Затворените портали (архив за съхранение): пазят се 6 месеца преди окончателно
+    // изтриване и се връщат с едно натискане. Идват от `/admin/api/portals/archive`.
+    archived: [],
     contacts: [],
     cases: [],
     portalIndex: 0,
@@ -246,8 +249,13 @@
     gear: null,
     // Отворено падащо меню ⚙ на кой файл (id на файла; null = затворено).
     fileGear: null,
-    // Блокът „Контролен панел на портала“ може да се сгъва (по подразбиране е отворен).
-    controlOpen: true,
+    // Сгъващи се блокове на портала. По подразбиране ВСИЧКИ са СГЪНАТИ: отворен портал
+    // показва само заглавията си, а човекът разгъва това, което му трябва — иначе дългият
+    // портал се отваря като стена от текст и трябва да се скролира до средата, за да се
+    // стигне до файловете.
+    controlOpen: false,
+    foldersOpen: false,
+    filesOpen: false,
     newFolder: false,
     busy: false,
     error: '',
@@ -1037,6 +1045,10 @@
     const all = await api('/admin/api/portals');
     if (!all.ok || !all.data || !Array.isArray(all.data.portals)) return false;
     const list = all.data.portals.map(portalFromApi);
+    // Затворените се четат заедно със списъка: срокът им изтича на сървъра, затова
+    // „остават N дни“ е истинското число, а не сметка в интерфейса.
+    const arch = await api('/admin/api/portals/archive');
+    state.archived = arch.ok && arch.data && Array.isArray(arch.data.portals) ? arch.data.portals : [];
     const previous = state.openPortal;
     state.portals = list;
     // Списъкът е изходното състояние: отворен остава само портал, който още съществува.
@@ -1937,6 +1949,7 @@
           </div>
           <div class="panel-body">
             ${state.newPortal ? newPortalForm() : '<p class="hint">Няма портали. Създай първия с „Нов портал“.</p>'}
+            ${archiveSection()}
           </div>
         </section>`;
       // Бутоните в това състояние се свързват ТУК: пълният изглед вика `wire()` в края си,
@@ -2002,6 +2015,7 @@
         : '<p class="hint">Няма портал по това търсене.</p>'
       }
           </div>
+          ${openP ? '' : archiveSection()}
           ${openP
         ? `<div class="u-row u-row-1 u-mt">
                    <button type="button" class="btn btn-primary" data-close-portal>← Списък с портали</button>
@@ -2086,6 +2100,69 @@
       }
                   ${single ? `<div class="pf-panel-body">${portalDetail(x)}</div>` : ''}
                 </article>`;
+  }
+
+  /**
+   * Закрива портала: адресът спира да работи, данните отиват в архив за съхранение и се
+   * пазят 6 месеца. Потвърждението е ЗАДЪЛЖИТЕЛНО — това е действието, което маха адреса,
+   * който човек вече е раздал.
+   */
+  async function closePortal(id) {
+    const target = state.portals.find((x) => x.id === id) || portal();
+    if (!target) return;
+    if (!connected()) return toast('Демо: закриването става от add-on-а (свързан режим)', 'err');
+    const ok = window.confirm(`Да закрия ли портала „${target.title}“?\n\nАдресът му спира да работи, данните отиват в архив за съхранение и се пазят 6 месеца. През това време порталът се връща с едно натискане.`);
+    if (!ok) return;
+    const r = await api(`/admin/api/portals/${encodeURIComponent(target.id)}/close`, { method: 'POST' });
+    if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
+    state.openPortal = null;
+    state.portalIndex = 0;
+    state.selected = null;
+    state.selectedIds.clear();
+    await loadPortals();
+    render();
+    const until = r.data && r.data.purgeAfter ? new Date(r.data.purgeAfter).toLocaleDateString('bg-BG') : '';
+    toast(`Порталът е закрит и е в архив за съхранение${until ? ' до ' + until : ''}`, 'ok');
+  }
+
+  /** Връща закрит портал от архива — с файловете и с адреса му. */
+  async function restorePortal(id) {
+    if (!id) return;
+    if (!connected()) return toast('Демо: връщането става от add-on-а (свързан режим)', 'err');
+    const r = await api(`/admin/api/portals/archive/${encodeURIComponent(id)}/restore`, { method: 'POST' });
+    if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
+    await loadPortals();
+    render();
+    toast(`Порталът „${(r.data && r.data.title) || ''}“ е върнат от архива`, 'ok');
+  }
+
+  /**
+   * „Затворени портали“ — порталите в архив за съхранение. Показват се и когато няма нито
+   * един активен портал: иначе човек остава с празен екран и няма как да върне закрития.
+   */
+  function archiveSection() {
+    if (!state.archived.length) return '';
+    const days = state.archived[0].retentionDays || 183;
+    return `<div class="pf-archive u-mt">
+            <h3 class="pf-archive-head">Затворени портали (${state.archived.length})</h3>
+            <p class="hint">Закритите портали се пазят ${esc(String(days))} дни в архив за съхранение и след това
+              се изтриват окончателно. Дотогава всеки се връща с едно натискане, а адресът му казва
+              „Порталът е закрит“.</p>
+            ${state.archived.map(archiveCard).join('')}
+          </div>`;
+  }
+
+  function archiveCard(x) {
+    return `<article class="pf-archived">
+            <div class="pf-archived-head">
+              <strong>${esc(x.title || 'без заглавие')}</strong>
+              <code class="fm-code">${esc(x.slug || '')}</code>
+              <span class="chip">файлове: ${esc(String(x.files || 0))}</span>
+              <span class="state-chip warn">остават ${esc(String(x.daysLeft || 0))} дни</span>
+              <button type="button" class="btn btn-sm" data-archive-restore="${esc(x.id)}" title="Връща портала с файловете му и адреса">↩ Върни портала</button>
+            </div>
+            <p class="fm-file-sub">закрит на ${esc(fmtDate(x.closedAt))} · изтрива се на ${esc(fmtDate(x.purgeAfter))} · пази се в <code>archives/closed/${esc(x.id)}</code></p>
+          </article>`;
   }
 
   function newPortalForm() {
@@ -3283,6 +3360,14 @@
         render();
       });
     });
+    // Закриване и връщане на портал: единствените две действия, които местят портала
+    // между активния списък и архива за съхранение.
+    host.querySelectorAll('[data-close-portal-submit]').forEach((el) => {
+      el.addEventListener('click', () => void closePortal(el.dataset.closePortalSubmit || ''));
+    });
+    host.querySelectorAll('[data-archive-restore]').forEach((el) => {
+      el.addEventListener('click', () => void restorePortal(el.dataset.archiveRestore || ''));
+    });
     host.querySelectorAll('[data-pkg-portal]').forEach((el) => {
       el.addEventListener('click', () => {
         const i = Number(el.dataset.pkgPortal);
@@ -3298,11 +3383,18 @@
     host.querySelectorAll('[data-report-recursive]').forEach((el) => {
       el.addEventListener('click', () => { void openPortalReport(Number(el.dataset.reportRecursive), true) });
     });
-    // „Контролен панел на портала“ се сгъва/разгъва от заглавието си.
-    host.querySelectorAll('[data-pf-control-tog]').forEach((el) => {
-      el.addEventListener('click', () => {
-        state.controlOpen = state.controlOpen === false;
-        render();
+    // Всеки блок на портала се сгъва/разгъва от заглавието си. Една карта „кой бутон кой
+    // флаг отваря“ — иначе три еднакви слушателя се разминават при следваща промяна.
+    [
+      ['[data-pf-control-tog]', 'controlOpen'],
+      ['[data-pf-folders-tog]', 'foldersOpen'],
+      ['[data-pf-files-tog]', 'filesOpen'],
+    ].forEach(([selector, flag]) => {
+      host.querySelectorAll(selector).forEach((el) => {
+        el.addEventListener('click', () => {
+          state[flag] = state[flag] !== true;
+          render();
+        });
       });
     });
     if (q('#pf-settings')) {

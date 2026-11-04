@@ -322,6 +322,31 @@
       document.body.classList.toggle('light');
     });
 
+    // Скриване на менюто. Под Home Assistant Ingress панелът се отваря в страничната
+    // лента, където лявото меню яде ширината на картите. Състоянието се помни, за да
+    // не се цъка при всяко отваряне, и се обявява с `aria-expanded` за екранни четци.
+    const navToggle = $('#nav-toggle');
+    if (navToggle) {
+      const applyNav = (collapsed) => {
+        document.body.classList.toggle('nav-collapsed', collapsed);
+        navToggle.setAttribute('aria-expanded', String(!collapsed));
+        navToggle.title = collapsed ? 'Покажи менюто' : 'Скрий менюто';
+        try {
+          localStorage.setItem('hapi.navCollapsed', collapsed ? '1' : '0');
+        } catch {
+          // забранен storage (личен режим) — състоянието просто не се помни
+        }
+      };
+      let saved;
+      try {
+        saved = localStorage.getItem('hapi.navCollapsed') === '1';
+      } catch {
+        // забранен storage (личен режим) — състоянието просто не се помни
+      }
+      applyNav(saved);
+      navToggle.addEventListener('click', () => applyNav(!document.body.classList.contains('nav-collapsed')));
+    }
+
     document.querySelector('.langs button[data-lang="bg"]').classList.add('active');
     const versionEl = document.getElementById('app-version');
     if (versionEl) versionEl.textContent = versionLabel();

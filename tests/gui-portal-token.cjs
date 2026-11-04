@@ -8,7 +8,7 @@
 //   • с бисквитката порталът се отваря (200), а без нея — не;
 //   • „Покажи издадените“ връща списък, а „Отнеми“ спира бисквитката веднага.
 const assert = require('node:assert/strict');
-const { startServer, mountUi, waitFor } = require('./lib/gui-harness.cjs');
+const { startServer, mountUi, waitFor, expandPortalBlocks } = require('./lib/gui-harness.cjs');
 const { stopChild } = require('./helpers.cjs');
 
 const PANEL_MODULES = [
@@ -41,6 +41,8 @@ const cookieOf = (res) => {
     ui.window.FilesManagerPanel.state.openPortal = portalId;
     ui.window.FilesManagerPanel.state.panel = 'actions';
     ui.window.FilesManagerPanel.mount(host);
+    // Блоковете са сгънати по подразбиране — разгъваме ги с истинските им заглавия.
+    await expandPortalBlocks(host);
 
     await waitFor(() => host.textContent.includes('Публичен достъп'), { label: 'секцията „Публичен достъп“' });
 

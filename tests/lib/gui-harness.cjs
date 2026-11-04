@@ -270,4 +270,33 @@ function clickAll(host, selector) {
   return nodes.length;
 }
 
-module.exports = { startServer, mountUi, waitFor, clickAll, storage, root, uiDir, SHARED };
+/**
+ * Разгъва трите блока на портала — със СЪЩИТЕ заглавия, които човек натиска.
+ *
+ * От 0.69.151 блоковете („Контролен панел“, „Папки“, „Файлове“) са СГЪНАТИ по подразбиране,
+ * затова тест, който работи с вътрешността им, първо ги разгъва — вместо да подменя
+ * състоянието през `state` и така да проверява код, до който човекът не стига.
+ * Връща броя натискания (0 = вече бяха разгънати).
+ */
+async function expandPortalBlocks(host, { timeout = 10000 } = {}) {
+  // Блоковете се появяват, след като панелът прочете порталите от сървъра (асинхронно) —
+  // затова първо се чака заглавието, иначе помощникът „натиска“ нищо и тестът пада по-късно
+  // с подвеждащо „секцията липсва“.
+  await waitFor(() => host.querySelector('[data-pf-control-tog]'), { label: 'блоковете на портала', timeout });
+  let clicks = 0;
+  for (const selector of ['[data-pf-control-tog]', '[data-pf-folders-tog]', '[data-pf-files-tog]']) {
+    const toggle = host.querySelector(selector);
+    if (toggle && toggle.getAttribute('aria-expanded') === 'false') {
+      toggle.click();
+      clicks++;
+      // `render()` прерисува цялата карта — чакаме НОВИЯ възел да обяви „разгънат“.
+      await waitFor(() => {
+        const again = host.querySelector(selector);
+        return again && again.getAttribute('aria-expanded') === 'true';
+      }, { label: 'блокът ' + selector + ' да се разгъне', timeout: 5000 });
+    }
+  }
+  return clicks;
+}
+
+module.exports = { startServer, mountUi, waitFor, clickAll, storage, root, uiDir, SHARED, expandPortalBlocks };

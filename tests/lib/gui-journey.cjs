@@ -52,7 +52,7 @@ function storage(initial = {}) {
  *
  * `addon` е това, което връща `startServer()`; навън оттук НЕ излиза неговият `api`.
  */
-function mountApp(addon, { lang = 'bg', token = addon.token } = {}) {
+function mountApp(addon, { lang = 'bg', token = addon.token, local = {} } = {}) {
   const html = fs.readFileSync(path.join(uiDir, 'index.html'), 'utf8');
   const bodyMarkup = html.slice(html.indexOf('<body>') + '<body>'.length, html.indexOf('<script'));
   const scriptOrder = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]);
@@ -105,7 +105,7 @@ function mountApp(addon, { lang = 'bg', token = addon.token } = {}) {
     isSecureContext: true,
     // Браузърът има `CSS.escape`; панелът го ползва, за да намери полето на папка по път.
     CSS: { escape: (value) => String(value).replace(/[^a-zA-Z0-9_\u00a0-\uffff-]/g, (c) => '\\' + c) },
-    localStorage: storage({ 'hapi.apiBase': addon.base }),
+    localStorage: storage({ 'hapi.apiBase': addon.base, ...local }),
     sessionStorage: storage(token ? { hapiAdminToken: token } : {}),
     fetch: fetchShim,
     URL: Object.assign(class extends URL { }, {

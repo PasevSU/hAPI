@@ -149,22 +149,25 @@
     const { esc, state, p, files, scoped, visible, scope, ICON, ico } = ctx;
     const treePath = ctx.treePath;
     const uploadForm = ctx.uploadForm;
+    // Блокът е СГЪНАТ по подразбиране (както всички блокове на портала).
+    const open = state.filesOpen === true;
     return `
-      <section class="pf-block" data-block="files">
+      <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="files">
         <div class="pf-block-head">
-          <h5>${ico('file')} Файлове в портала (${scoped.length}) · <code>${esc(treePath(scope))}</code></h5>
-          <span class="fm-ico-actions">
+          <h5><button type="button" class="link-btn pf-block-tog" data-pf-files-tog aria-expanded="${open}" title="${open ? 'Сгъни' : 'Разгъни'
+      } файловете на портала">${ico(open ? 'chevronDown' : 'chevronRight')} ${ico('file')} Файлове в портала (${scoped.length}) · <code>${esc(treePath(scope))}</code></button></h5>
+          ${open ? `<span class="fm-ico-actions">
             <button type="button" class="fm-ico-btn" data-import-folder title="Прикачи папка с файлове в ${esc(
-      treePath(scope),
-    )}">${ico('attachFolder')} <span class="fm-ico-label">цяла папка</span></button>
+        treePath(scope),
+      )}">${ico('attachFolder')} <span class="fm-ico-label">цяла папка</span></button>
             <button type="button" class="fm-ico-btn" data-attach-file title="Прикачи файл в ${esc(
-      treePath(scope),
-    )}">${ICON.upload} <span class="fm-ico-label">един файл</span></button>
+        treePath(scope),
+      )}">${ICON.upload} <span class="fm-ico-label">един файл</span></button>
             <button type="button" class="fm-ico-btn ${state.filters ? 'on' : ''}" data-toggle-filters aria-expanded="${state.filters
-      }" title="Панел филтри">${ICON.filters}</button>
-          </span>
+        }" title="Панел филтри">${ICON.filters}</button>
+          </span>` : ''}
         </div>
-        <div class="pf-block-body">
+        ${open ? `<div class="pf-block-body">
           <input type="file" id="fm-file-input" class="u-hidden" />
           <input type="file" id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple />
           ${state.filters
@@ -217,7 +220,7 @@
           }</p>`
         }</div>`
       }
-        </div>
+        </div>` : ''}
       </section>`;
   }
 

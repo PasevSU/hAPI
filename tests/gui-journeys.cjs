@@ -77,6 +77,27 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     const open = await waitFor(() => app.$$('[data-open-portal]')[0], { label: 'бутонът „Отвори портала“' });
     open.click();
     await settle('картата на портала');
+    await expandBlocks();
+  };
+
+  /**
+   * Разгъва трите блока на портала — със същите заглавия, които човек натиска.
+   * От 0.69.151 блоковете са СГЪНАТИ по подразбиране (така порталът се отваря като списък
+   * от заглавия, а не като стена от текст), затова сценарий, който работи с настройките,
+   * папките или файловете, първо ги разгъва. Елементите се вземат НАНОВО след всяко
+   * натискане: `render()` прерисува цялата карта.
+   */
+  const expandBlocks = async () => {
+    for (const selector of ['[data-pf-control-tog]', '[data-pf-folders-tog]', '[data-pf-files-tog]']) {
+      const toggle = app.$(selector);
+      if (toggle && toggle.getAttribute('aria-expanded') === 'false') {
+        // `render()` се изпълнява СИНХРОННО в слушателя на бутона — затова няма нужда от
+        // изчакване след всяко натискане (то правеше сценариите забележимо по-бавни).
+        toggle.click();
+        const after = app.$(selector);
+        assert.equal(after.getAttribute('aria-expanded'), 'true', 'блокът „' + selector + '“ се разгъна');
+      }
+    }
   };
 
   /**
@@ -129,6 +150,9 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     }, { label: 'порталът „' + slug + '“ в списъка', timeout: BUDGET });
     row.click();
     await settle('картата на новия портал');
+    // Блоковете са сгънати по подразбиране — файловете се появяват след разгъване, точно
+    // както при човек, който търси файловете на портала.
+    await expandBlocks();
     // Чакаме ИМЕННО файловете, а не „изгледът да утихне“: панелът прерисува след отговора и на
     // по-бавна машина списъкът още не е готов, когато текстът „Зареждам“ изчезне.
     await waitFor(() => new RegExp(first).test(text(view())), { label: 'файловете в новия портал', timeout: BUDGET });
@@ -314,6 +338,8 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       app.click('#pf-create', 'бутонът „Създай и генерирай API + QR“');
       await waitFor(() => app.toast(), { label: 'отговор от създаването', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'порталът с файлове се създава: ' + app.toast().message);
+      // Блоковете са сгънати по подразбиране (0.69.151) — файловете се виждат след разгъване.
+      await expandBlocks();
       await settle('файловете да се покажат');
       const shown = text(view());
       assert.match(shown, /dokument\.txt/, 'каченият файл се вижда в портала');
@@ -556,6 +582,7 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       const open = await waitFor(() => app.$$('[data-open-portal]')[0], { label: 'бутонът „Отвори портала“' });
       open.click();
       await settle('картата на портала');
+      await expandBlocks();
       // Бутонът „Качи файл“ стои в лентата с филтри — потребителят я отваря с иконата.
       const filters = await waitFor(() => app.$('[data-toggle-filters]'), { label: 'иконата „Панел филтри“' });
       filters.click();
@@ -1307,9 +1334,10 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     // ── J59. Портал: контролният панел се сгъва и разгъва ────────────────────
     await journey('J59 портал: контролният панел се сгъва', async () => {
       await ownPortalWithFile('gui-journey-control-tog');
+      // `ownPortalWithFile` разгъва блоковете (те са сгънати по подразбиране — виж J74).
       const toggle = await waitFor(() => app.$('[data-pf-control-tog]'), { label: 'заглавието на контролния панел', timeout: BUDGET });
       const body = () => app.$('[data-pf-control-tog]') && app.$('#pf-settings');
-      assert.ok(body(), 'контролният панел е отворен в началото');
+      assert.ok(body(), 'контролният панел е разгънат след помощника');
       toggle.click();
       await waitFor(() => !app.$('#pf-settings'), { label: 'сгънатия контролен панел', timeout: BUDGET });
       const again = await waitFor(() => app.$('[data-pf-control-tog]'), { label: 'заглавието след сгъване', timeout: BUDGET });
@@ -1751,6 +1779,105 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
         label: 'профилът да изчезне от списъка',
         timeout: BUDGET,
       });
+    });
+
+    // ── J73. Портал: закриване в архив за съхранение и връщане ─────────────────
+    await journey('J73 портал: закриване в архив и връщане', async () => {
+      await ownPortalWithFile('gui-journey-archive');
+      const close = await waitFor(() => app.$('[data-close-portal-submit]'), {
+        label: 'бутонът „Закрий портала“',
+        timeout: BUDGET,
+      });
+      app.clearToasts();
+      // Машината отговаря „да“ на въпроса — както човек, който вече е решил.
+      close.click();
+      const said = await waitFor(() => {
+        const t = app.toast();
+        return t && /закрит и е в архив/.test(t.message) ? t : null;
+      }, { label: 'известието за закриване', timeout: BUDGET });
+      assert.equal(said.kind, 'ok', 'закриването минава: ' + said.message);
+      await settle('списъка след закриване');
+      // Секцията „Затворени портали“ показва ИСТИНСКИЯ срок от сървъра (183 дни), а не
+      // сметка, измислена в интерфейса.
+      const archived = await waitFor(() => app.$('.pf-archive'), {
+        label: 'секцията „Затворени портали“',
+        timeout: BUDGET,
+      });
+      const archiveText = text(archived);
+      assert.match(archiveText, /Затворени портали/, 'има секция „Затворени портали“: ' + archiveText);
+      assert.match(archiveText, /остават 183 дни/, 'срокът е 6 месеца: ' + archiveText);
+      assert.ok(archiveText.includes('gui-journey-archive'), 'закритият портал е посочен със своя slug');
+      // Връщане — със същия бутон, който вижда човекът.
+      const restore = await waitFor(() => app.$('[data-archive-restore]'), {
+        label: 'бутонът „Върни портала“',
+        timeout: BUDGET,
+      });
+      app.clearToasts();
+      restore.click();
+      const back = await waitFor(() => {
+        const t = app.toast();
+        return t && /върнат от архива/.test(t.message) ? t : null;
+      }, { label: 'известието за връщане', timeout: BUDGET });
+      assert.equal(back.kind, 'ok', 'връщането минава: ' + back.message);
+      await settle('списъка след връщане');
+      assert.equal(app.$('.pf-archive'), null, 'след връщането секцията „Затворени портали“ изчезва');
+      await waitFor(() => {
+        for (const el of app.$$('[data-open-portal]')) {
+          let node = el;
+          for (let i = 0; i < 6 && node; i++) {
+            if (text(node).includes('gui-journey-archive')) return el;
+            node = node.parentNode;
+          }
+        }
+        return null;
+      }, { label: 'върнатият портал отново в списъка', timeout: BUDGET });
+    });
+
+    // ── J74. Портал: сгънатите блокове ОСТАВАТ сгънати ──────────────────────────
+    // Самото „по подразбиране“ (чест монтаж на панела) се проверява в
+    // `tests/ui-shell-nav.cjs` §7 — там приложението се зарежда наново. Тук се проверява
+    // другото свойство: изборът на човека не се губи при излизане от портала и връщане.
+    await journey('J74 портал: сгънатите блокове остават сгънати', async () => {
+      await ownPortalWithFile('gui-journey-collapsed');
+      const blocks = [
+        ['[data-pf-control-tog]', '#pf-settings', 'контролния панел'],
+        ['[data-pf-folders-tog]', '.fm-folders', 'папките'],
+        ['[data-pf-files-tog]', '.fm-files-box', 'файловете'],
+      ];
+      // Сгъваме и трите със същите заглавия, които човек натиска.
+      for (const [toggleSel, , what] of blocks) {
+        const toggle = await waitFor(() => app.$(toggleSel), { label: 'заглавието на ' + what, timeout: BUDGET });
+        assert.equal(toggle.getAttribute('aria-expanded'), 'true', 'преди сгъването „' + what + '“ е разгънат');
+        toggle.click();
+        await settle('„' + what + '“ да се сгъне');
+      }
+      for (const [toggleSel, bodySel, what] of blocks) {
+        assert.equal(app.$(toggleSel).getAttribute('aria-expanded'), 'false', '„' + what + '“ е сгънат');
+        assert.equal(app.$(bodySel), null, 'тялото на „' + what + '“ не се рисува, докато е сгънато');
+      }
+      // Излизаме от портала и се връщаме — състоянието не се губи.
+      await portalList();
+      const row = await waitFor(() => {
+        for (const el of app.$$('[data-open-portal]')) {
+          let node = el;
+          for (let i = 0; i < 6 && node; i++) {
+            if (text(node).includes('gui-journey-collapsed')) return el;
+            node = node.parentNode;
+          }
+        }
+        return null;
+      }, { label: 'порталът „gui-journey-collapsed“ в списъка', timeout: BUDGET });
+      row.click();
+      await settle('картата на портала');
+      for (const [toggleSel, bodySel, what] of blocks) {
+        const toggle = await waitFor(() => app.$(toggleSel), { label: 'заглавието на ' + what, timeout: BUDGET });
+        assert.equal(toggle.getAttribute('aria-expanded'), 'false', '„' + what + '“ остава сгънат след връщане');
+        assert.equal(app.$(bodySel), null, 'и тялото му пак липсва: ' + what);
+      }
+      // И се разгъва с едно натискане — иначе „сгънато“ би значело „скрито завинаги“.
+      app.$('[data-pf-files-tog]').click();
+      await waitFor(() => app.$('.fm-files-box'), { label: 'файловете след разгъване', timeout: BUDGET });
+      assert.equal(app.$('[data-pf-files-tog]').getAttribute('aria-expanded'), 'true', 'след натискане блокът е разгънат');
     });
 
     // Какво остава ИЗВЪН обхвата на щракването и защо — за да не се „попълва“ някога със

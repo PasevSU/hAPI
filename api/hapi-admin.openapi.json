@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "hAPI Enterprise — административно API",
-    "version": "0.69.150",
+    "version": "0.69.151",
     "description": "Договорът за административното API. Токенът се подава като `Authorization: Bearer <token>`, а зад Home Assistant Ingress самоличността идва от Supervisor (`X-Remote-User-*`). Правата се решават по роля (RBAC) за всеки маршрут — виж `x-hapi-capability`. Маршрут без RBAC (например входът през Ingress) носи `x-hapi-access` с причината."
   },
   "servers": [
@@ -8603,6 +8603,139 @@
             "description": "Идентификатор: qrId"
           }
         ]
+      }
+    },
+    "/admin/api/portals/{portalId}/close": {
+      "post": {
+        "summary": "Закрива портала: данните влизат в архив за съхранение (183 дни)",
+        "operationId": "post_portals_portalId_close",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ],
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/api/portals/archive": {
+      "get": {
+        "summary": "Затворените портали с оставащи дни до изтриване",
+        "operationId": "get_portals_archive",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/admin/api/portals/archive/{portalId}/restore": {
+      "post": {
+        "summary": "Връща закрит портал от архива с файловете и адреса му",
+        "operationId": "post_portals_archive_portalId_restore",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ],
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
       }
     },
     "/admin/api/openapi.json": {
