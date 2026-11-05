@@ -15,11 +15,13 @@ ha apps update 99438e72_hapi_enterprise
 преди всяко издание се проверява, че образът е публичен:
 
 ```powershell
-pwsh -File scripts/check-addon-image.ps1 -Version 0.69.156
-#   OK   ghcr.io/pasevsu/amd64-addon-hapi_enterprise:0.69.156 · HTTP 200
-#   OK   ghcr.io/pasevsu/aarch64-addon-hapi_enterprise:0.69.156 · HTTP 200
-#   OK   ghcr.io/pasevsu/armv7-addon-hapi_enterprise:0.69.156 · HTTP 200
+pwsh -File scripts/check-addon-image.ps1 -Version 0.69.163
+#   OK   ghcr.io/pasevsu/amd64-addon-hapi_enterprise:0.69.163 · HTTP 200
+#   OK   ghcr.io/pasevsu/aarch64-addon-hapi_enterprise:0.69.163 · HTTP 200
 ```
+
+Два реда, не три: от 0.69.163 `arch` е само `amd64` + `aarch64` — Supervisor пази
+`armv7`/`armhf`/`i386` в `ARCH_DEPRECATED` и 32-bit HAOS вече не се публикува.
 
 Скриптът пита **registry API-то** (`https://ghcr.io/v2/<owner>/<repo>/manifests/<tag>`) с
 анонимна заявка — точно това прави Supervisor. Две грешки, които вече са поправени и не бива

@@ -206,8 +206,9 @@ GUI 33/33 · съвместимост 28/28, `logic-audit` и `bad-code-scan` ч
 - Реален build и инсталация през Home Assistant Supervisor и браузърна Ingress сесия.
 - Прекъсване на NAS/мрежово хранилище и cross-filesystem recovery drill.
 - Независим security review.
-- Rating-забележки, които HA приема: контейнерът работи като root без AppArmor профил
-  и `armv7` е deprecated `arch` (приема се с warning).
+- Rating-забележки, които HA приема: контейнерът работи като root без AppArmor профил.
+  (`armv7` повече не се обещава — от 0.69.163 `arch` е само `amd64` + `aarch64`, защото
+  Supervisor пази 32-bit стойностите в `ARCH_DEPRECATED`.)
 
 ## История (предишни снимки)
 

@@ -78,7 +78,7 @@ const AREAS = [
   { area: 'TSA предпазител', owner: 'tsa-breaker.cjs', endpoints: ['/admin/api/v2/rfc3161', 'breakerSnapshot'] },
   { area: 'TSA доказателства (живот и проверка)', owner: 'tsa-evidence.cjs', endpoints: ['/admin/api/v2/rfc3161/verify', 'TSA_KEEP'] },
   { area: 'огледало на файловете', owner: 'storage-mirror.cjs', endpoints: ['/admin/api/storage/mirror/verify', 'STORAGE_MIRROR'] },
-  { area: 'Raspberry Pi и ARM съвместимост', owner: 'raspberrypi-compat.cjs', endpoints: ['armv7', 'memory_limit_mb'] },
+  { area: 'Raspberry Pi и ARM съвместимост', owner: 'raspberrypi-compat.cjs', endpoints: ['aarch64', 'memory_limit_mb'] },
   { area: 'подписване с fallback', owner: 'signing-fallback.cjs', endpoints: ['/admin/api/packages', 'signingFallback'] },
   { area: 'хаос и устойчивост', owner: 'chaos-resilience.cjs', endpoints: ['/admin/api/audit/verify', '/ready'] },
   { area: 'една инстанция на data директория', owner: 'instance-lock.cjs', endpoints: ['INSTANCE_ID', 'INSTANCE_LOCKED', 'instance-lock'] },

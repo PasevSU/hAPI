@@ -165,9 +165,9 @@ assert.ok(vnum(floor) >= vnum(needed),
 const dockerfile = read(ADDON, 'Dockerfile');
 const from = (/^FROM\s+(\S+)/m.exec(dockerfile) || [])[1];
 assert.ok(from, 'Dockerfile има FROM');
-// Официалният `node:22-alpine` се публикува за тези платформи; `armv7` = linux/arm/v7.
-// Тагът е ЗАКАЧЕН (напр. `node:22.21.1-alpine3.23`) — това е нарочно: плаващ таг прави
-// изданието невъзпроизводимо. Проверява се семейството, не точният номер.
+// Официалният `node:22-alpine` се публикува за тези платформи. От 0.69.163 `arch` държи само
+// 64-битовите (Supervisor: ARCH_ALL = aarch64 + amd64); `armv7` остава в картата само за да
+// може проверката да обясни защо такъв запис не би се билдвал, ако някой го върне.
 const NODE_PLATFORMS = { amd64: 'linux/amd64', aarch64: 'linux/arm64', armv7: 'linux/arm/v7' };
 assert.match(from, /^node:22(\.\d+)*-(alpine|bookworm|bullseye)/, 'базовият образ е node 22 (многоархивен): ' + from);
 for (const arch of yamlBlock('arch')) {

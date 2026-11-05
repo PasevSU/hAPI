@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.162-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.163-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
@@ -511,7 +511,7 @@ Scrape example (Home Assistant or any Prometheus-compatible agent):
 ## Raspberry Pi and small boards
 
 The add-on builds from `node:22.21.1-alpine3.23`, an official multi-architecture image
-(`linux/amd64`, `linux/arm64`, `linux/arm/v7`). There is no `--platform` pin and no
+(`linux/amd64`, `linux/arm64`). There is no `--platform` pin and no
 `npm install`: every dependency is a Node built-in, so the same `Dockerfile` produces a
 working image on each architecture.
 
@@ -523,9 +523,9 @@ rebuilds are no longer byte-identical; security wins over bit-for-bit reproducib
 | Board / OS                                 | `arch`    | Notes                                            |
 | ------------------------------------------ | --------- | ------------------------------------------------ |
 | Raspberry Pi 4/5, 64-bit Raspberry Pi OS   | `aarch64` | Recommended — most RAM, best throughput.         |
-| Raspberry Pi 3/4/5, 32-bit Raspberry Pi OS | `armv7`   | Works; keep the heap cap and portals modest.     |
-| Raspberry Pi 2 with 32-bit Raspberry Pi OS | `armv7`   | Works, but 1 GB RAM: set `memory_limit_mb: 256`. |
-| Raspberry Pi Zero / Pi 1 (`armhf`, armv6)  | —         | **Not supported**: Node 22 has no armv6 build.   |
+| Raspberry Pi 3, 64-bit Raspberry Pi OS     | `aarch64` | Works; keep the heap cap and portals modest.     |
+| Raspberry Pi 2 with 64-bit Raspberry Pi OS | `aarch64` | Works, but 1 GB RAM: set `memory_limit_mb: 256`. |
+| 32-bit systems (armv7/armhf), Pi Zero / Pi 1 | —       | **Not supported**: Supervisor lists `armv7`/`armhf` as deprecated and HAOS ships no 32-bit images; Node 22 has no armv6 build. |
 
 Recommendations for a Pi installation:
 
