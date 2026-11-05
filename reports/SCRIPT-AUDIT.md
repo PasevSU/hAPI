@@ -3,7 +3,7 @@
 Генериран от `node scripts/script-audit.cjs`. Редът е за ВСЕКИ файл, включително когато
 сигналите са нула: така „обходено“ може да се провери, вместо да се вярва.
 
-Обходени: **195 файла · 51279 реда**.
+Обходени: **196 файла · 51434 реда**.
 Намерени: **212** сигнала — високи **0** · средни 0 · ниски 212.
 
 По правило: `swallow-promise` 99 · `unused-export` 98 · `sync-fs-in-request` 15
@@ -14,7 +14,7 @@
 | --- | ---: | ---: | ---: |
 | ядро | 101 | 24885 | 170 |
 | ui | 23 | 12215 | 11 |
-| скриптове | 37 | 6691 | 0 |
+| скриптове | 38 | 6846 | 0 |
 | routes | 17 | 2798 | 25 |
 | интеграция | 9 | 2669 | 1 |
 | portal | 2 | 1573 | 2 |
@@ -31,7 +31,7 @@
 | `custom_components/hapi_enterprise/__init__.py` | 463 | 19 | — | чисто |
 | `custom_components/hapi_enterprise/binary_sensor.py` | 158 | 3 | — | чисто |
 | `custom_components/hapi_enterprise/config_flow.py` | 220 | 11 | — | чисто |
-| `custom_components/hapi_enterprise/const.py` | 32 | 368 | — | чисто |
+| `custom_components/hapi_enterprise/const.py` | 32 | 369 | — | чисто |
 | `custom_components/hapi_enterprise/coordinator.py` | 216 | 8 | — | чисто |
 | `custom_components/hapi_enterprise/diagnostics.py` | 84 | 15 | — | чисто |
 | `custom_components/hapi_enterprise/entity.py` | 57 | 4 | — | чисто |
@@ -74,7 +74,7 @@
 | `hapi_enterprise/interpolate.js` | 100 | 5 | — | чисто |
 | `hapi_enterprise/job-manager.js` | 183 | 6 | unused-export×1 | нисък |
 | `hapi_enterprise/layout.js` | 138 | 10 | — | чисто |
-| `hapi_enterprise/links.js` | 228 | 30 | — | чисто |
+| `hapi_enterprise/links.js` | 228 | 31 | — | чисто |
 | `hapi_enterprise/load-control.js` | 30 | 3 | — | чисто |
 | `hapi_enterprise/logger.js` | 243 | 4 | unused-export×1 | нисък |
 | `hapi_enterprise/migration-bridge.js` | 90 | 0 | — | чисто |
@@ -147,7 +147,7 @@
 | `hapi_enterprise/sqlite-repository.js` | 52 | 3 | — | чисто |
 | `hapi_enterprise/sqlite-store.js` | 353 | 12 | — | чисто |
 | `hapi_enterprise/standalone.js` | 126 | 8 | unused-export×4 | нисък |
-| `hapi_enterprise/start.js` | 277 | 76 | — | чисто |
+| `hapi_enterprise/start.js` | 277 | 77 | — | чисто |
 | `hapi_enterprise/storage-check.js` | 20 | 3 | — | чисто |
 | `hapi_enterprise/storage-migrate.js` | 23 | 4 | — | чисто |
 | `hapi_enterprise/storage-preflight.js` | 77 | 8 | unused-export×5 | нисък |
@@ -198,6 +198,7 @@
 | `scripts/decrypt-package.cjs` | 61 | 1 | — | чисто |
 | `scripts/dev-dashboard.cjs` | 284 | 0 | — | чисто |
 | `scripts/docs-index.cjs` | 104 | 3 | — | чисто |
+| `scripts/docs-manual.cjs` | 155 | 2 | — | чисто |
 | `scripts/document-empty-catches.cjs` | 81 | 0 | — | чисто |
 | `scripts/error-codes.cjs` | 123 | 2 | — | чисто |
 | `scripts/export-release.cjs` | 146 | 1 | — | чисто |

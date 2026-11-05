@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.160**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.161**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **109** backend модула · **17** HTTP компонента · **23** UI модула · **8** Python модула · **37** инструмента · **357** теста.
+Общо: **109** backend модула · **17** HTTP компонента · **23** UI модула · **8** Python модула · **38** инструмента · **358** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -187,7 +187,7 @@
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (37)
+### Инструменти (`scripts/*.cjs`) (38)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -203,6 +203,7 @@
 | `scripts/decrypt-package.cjs` | Разшифроване на криптиран експортен пакет БЕЗ add-on. |
 | `scripts/dev-dashboard.cjs` | команди (запаметявани в dashboard-commands.json) |
 | `scripts/docs-index.cjs` | ПЪЛНО СЪДЪРЖАНИЕ НА `documentation/` — ГЕНЕРИРАНО ОТ ДИСКА. |
+| `scripts/docs-manual.cjs` | ГЕНЕРАТОР НА ПРИЛОЖЕНИЯТА КЪМ ПЪЛНОТО РЪКОВОДСТВО (0.69.161). |
 | `scripts/document-empty-catches.cjs` | Еднократен инструмент: добавя КОНКРЕТНА причина във всеки празен `catch` в издавания код. |
 | `scripts/error-codes.cjs` | КАТАЛОГ НА КОДОВЕТЕ ЗА ГРЕШКА — ГЕНЕРИРАН ОТ КОДА. |
 | `scripts/export-release.cjs` | Изнася готовото издание в папка за качване (по подразбиране Downloads). |

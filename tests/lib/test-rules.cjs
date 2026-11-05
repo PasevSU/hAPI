@@ -71,6 +71,7 @@ const RULES = [
   { id: "docker-runtime", area: "общо", title: "Docker runtime", owner: "tests/docker-runtime.cjs" },
   { id: "docs-consistency", area: "документация", title: "Docs consistency", owner: "tests/docs-consistency.cjs" },
   { id: "docs-index", area: "документация", title: "Docs index", owner: "tests/docs-index.cjs" },
+  { id: "docs-manual", area: "документация", title: "Docs manual", owner: "tests/docs-manual.cjs" },
   { id: "docx-pdf", area: "общо", title: "Docx pdf", owner: "tests/docx-pdf.cjs" },
   { id: "dom-harness", area: "общо", title: "Dom harness", owner: "tests/dom-harness.cjs" },
   { id: "download-access", area: "общо", title: "Download access", owner: "tests/download-access.cjs" },

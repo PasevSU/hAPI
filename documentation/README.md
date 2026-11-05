@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **118** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **127** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -152,4 +152,13 @@ _Генериран списък: **118** документа. Пише се от
 | `08_USER_GUIDES/USER_GUIDE_BG.md` | hAPI Enterprise — Ръководство за потребителя |
 | `08_USER_GUIDES/USER_GUIDE_DE.md` | hAPI Enterprise — Benutzerhandbuch |
 | `08_USER_GUIDES/USER_GUIDE_EN.md` | hAPI Enterprise — User Guide |
+| `09_COMPLETE_MANUAL/01-overview.md` | 1. Какво е hAPI Enterprise |
+| `09_COMPLETE_MANUAL/02-install.md` | 2. Инсталация и първи старт |
+| `09_COMPLETE_MANUAL/03-configure.md` | 3. Конфигурация — какво виждаш след инсталация |
+| `09_COMPLETE_MANUAL/04-operate.md` | 4. Работа: портали, файлове, връзки, отчети |
+| `09_COMPLETE_MANUAL/05-security.md` | 5. Сигурност и достъп |
+| `09_COMPLETE_MANUAL/06-troubleshooting.md` | 6. Диагностика — по симптом |
+| `09_COMPLETE_MANUAL/APPENDIX-A-OPTIONS.md` | Приложение А — всички опции на add-on-а |
+| `09_COMPLETE_MANUAL/APPENDIX-B-API.md` | Приложение Б — административни маршрути |
+| `09_COMPLETE_MANUAL/README.md` | Пълно ръководство на hAPI Enterprise |
 <!-- doc-index:end -->

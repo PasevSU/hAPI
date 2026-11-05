@@ -3,7 +3,7 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 357 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 358 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
@@ -24,11 +24,11 @@
 | TSA | 4 |
 | backup | 4 |
 | админ API | 4 |
+| документация | 4 |
 | правила | 4 |
 | публичен API | 4 |
 | HTML | 3 |
 | грешки | 3 |
-| документация | 3 |
 | огледало | 3 |
 | одит | 3 |
 | HACS издание | 2 |
@@ -447,6 +447,15 @@
 | `admin-throttle` | Admin throttle | `tests/admin-throttle.cjs` |
 | `admin-token-shape` | Admin token shape | `tests/admin-token-shape.cjs` |
 
+## документация (4)
+
+| Правило | Заглавие | Файл |
+| --- | --- | --- |
+| `doc-citations` | Doc citations | `tests/doc-citations.cjs` |
+| `docs-consistency` | Docs consistency | `tests/docs-consistency.cjs` |
+| `docs-index` | Docs index | `tests/docs-index.cjs` |
+| `docs-manual` | Docs manual | `tests/docs-manual.cjs` |
+
 ## правила (4)
 
 | Правило | Заглавие | Файл |
@@ -480,14 +489,6 @@
 | `error-codes` | Error codes | `tests/error-codes.cjs` |
 | `error-log` | Error log | `tests/error-log.cjs` |
 | `error-logging` | Error logging | `tests/error-logging.cjs` |
-
-## документация (3)
-
-| Правило | Заглавие | Файл |
-| --- | --- | --- |
-| `doc-citations` | Doc citations | `tests/doc-citations.cjs` |
-| `docs-consistency` | Docs consistency | `tests/docs-consistency.cjs` |
-| `docs-index` | Docs index | `tests/docs-index.cjs` |
 
 ## огледало (3)
 
