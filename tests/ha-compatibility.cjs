@@ -145,6 +145,15 @@ check('HA-M06', 'манифест', 'blocker', 'map покрива всички 
   return map.join(', ');
 });
 
+// Картата в маркетплейса (store) показва линк „Документация“ само ако manifest-ът има
+// ключ `documentation:` — `url:` е адресът на add-on-а в хранилището, не упътването.
+check('HA-M13', 'манифест', 'warn', 'документация за store картата', () => {
+  const doc = scalar('documentation');
+  need(doc !== undefined, 'липсва `documentation:` → картата в store-а е с documentation: false');
+  need(/^https:\/\//.test(unquote(doc)), 'documentation трябва да е https адрес');
+  return unquote(doc);
+});
+
 check('HA-M07', 'манифест', 'blocker', 'watchdog сочи реален health маршрут', () => {
   const watchdog = unquote(scalar('watchdog'));
   need(watchdog, 'липсва watchdog');

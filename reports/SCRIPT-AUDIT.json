@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-11-02T23:30:42.640Z",
-  "files": 190,
-  "lines": 49626,
+  "generatedAt": "2026-11-05T00:33:41.839Z",
+  "files": 193,
+  "lines": 51010,
   "bySeverity": {
     "high": 0,
     "medium": 0,
-    "low": 203
+    "low": 212
   },
   "byRule": {
-    "swallow-promise": 88,
-    "unused-export": 100,
+    "swallow-promise": 99,
+    "unused-export": 98,
     "sync-fs-in-request": 15
   },
   "segments": {
     "интеграция": {
-      "files": 8,
-      "lines": 2237,
-      "findings": 0
+      "files": 9,
+      "lines": 2669,
+      "findings": 1
     },
     "ядро": {
       "files": 101,
-      "lines": 24816,
-      "findings": 173
+      "lines": 24885,
+      "findings": 170
     },
     "evidence-portal": {
       "files": 2,
@@ -40,22 +40,22 @@
     },
     "portal": {
       "files": 2,
-      "lines": 1305,
+      "lines": 1573,
       "findings": 2
     },
     "routes": {
-      "files": 15,
-      "lines": 2440,
-      "findings": 14
+      "files": 17,
+      "lines": 2798,
+      "findings": 25
     },
     "ui": {
       "files": 23,
-      "lines": 11972,
+      "lines": 12215,
       "findings": 11
     },
     "скриптове": {
       "files": 35,
-      "lines": 6408,
+      "lines": 6422,
       "findings": 0
     }
   },
@@ -63,32 +63,32 @@
     {
       "file": "custom_components/hapi_enterprise/__init__.py",
       "segment": "интеграция",
-      "lines": 424,
-      "tests": 15,
+      "lines": 463,
+      "tests": 19,
       "findings": 0,
       "rules": {}
     },
     {
       "file": "custom_components/hapi_enterprise/binary_sensor.py",
       "segment": "интеграция",
-      "lines": 163,
-      "tests": 1,
+      "lines": 158,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
     {
       "file": "custom_components/hapi_enterprise/config_flow.py",
       "segment": "интеграция",
-      "lines": 203,
-      "tests": 10,
+      "lines": 220,
+      "tests": 11,
       "findings": 0,
       "rules": {}
     },
     {
       "file": "custom_components/hapi_enterprise/const.py",
       "segment": "интеграция",
-      "lines": 27,
-      "tests": 343,
+      "lines": 32,
+      "tests": 366,
       "findings": 0,
       "rules": {}
     },
@@ -96,7 +96,7 @@
       "file": "custom_components/hapi_enterprise/coordinator.py",
       "segment": "интеграция",
       "lines": 216,
-      "tests": 7,
+      "tests": 8,
       "findings": 0,
       "rules": {}
     },
@@ -104,30 +104,40 @@
       "file": "custom_components/hapi_enterprise/diagnostics.py",
       "segment": "интеграция",
       "lines": 84,
-      "tests": 12,
+      "tests": 14,
+      "findings": 0,
+      "rules": {}
+    },
+    {
+      "file": "custom_components/hapi_enterprise/entity.py",
+      "segment": "интеграция",
+      "lines": 57,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
     {
       "file": "custom_components/hapi_enterprise/portal.js",
       "segment": "интеграция",
-      "lines": 500,
-      "tests": 180,
-      "findings": 0,
-      "rules": {}
+      "lines": 848,
+      "tests": 195,
+      "findings": 1,
+      "rules": {
+        "swallow-promise": 1
+      }
     },
     {
       "file": "custom_components/hapi_enterprise/sensor.py",
       "segment": "интеграция",
-      "lines": 620,
-      "tests": 6,
+      "lines": 591,
+      "tests": 8,
       "findings": 0,
       "rules": {}
     },
     {
       "file": "hapi_enterprise/admin-api-spec.js",
       "segment": "ядро",
-      "lines": 425,
+      "lines": 429,
       "tests": 3,
       "findings": 0,
       "rules": {}
@@ -146,7 +156,7 @@
       "file": "hapi_enterprise/api-spec.js",
       "segment": "ядро",
       "lines": 402,
-      "tests": 11,
+      "tests": 13,
       "findings": 0,
       "rules": {}
     },
@@ -192,7 +202,7 @@
       "file": "hapi_enterprise/cases.js",
       "segment": "ядро",
       "lines": 98,
-      "tests": 45,
+      "tests": 46,
       "findings": 0,
       "rules": {}
     },
@@ -210,7 +220,7 @@
       "file": "hapi_enterprise/config-profiles.js",
       "segment": "ядро",
       "lines": 25,
-      "tests": 4,
+      "tests": 5,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -220,7 +230,7 @@
       "file": "hapi_enterprise/container.js",
       "segment": "ядро",
       "lines": 44,
-      "tests": 17,
+      "tests": 21,
       "findings": 0,
       "rules": {}
     },
@@ -260,7 +270,7 @@
       "file": "hapi_enterprise/directory.js",
       "segment": "ядро",
       "lines": 301,
-      "tests": 24,
+      "tests": 28,
       "findings": 2,
       "rules": {
         "unused-export": 2
@@ -270,7 +280,7 @@
       "file": "hapi_enterprise/download-access.js",
       "segment": "ядро",
       "lines": 466,
-      "tests": 9,
+      "tests": 10,
       "findings": 0,
       "rules": {}
     },
@@ -298,7 +308,7 @@
       "file": "hapi_enterprise/event-bus.js",
       "segment": "ядро",
       "lines": 44,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -316,7 +326,7 @@
       "file": "hapi_enterprise/evidence-portal.js",
       "segment": "ядро",
       "lines": 206,
-      "tests": 7,
+      "tests": 8,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -326,7 +336,7 @@
       "file": "hapi_enterprise/evidence-portal/assets/app.js",
       "segment": "evidence-portal",
       "lines": 46,
-      "tests": 39,
+      "tests": 43,
       "findings": 2,
       "rules": {
         "swallow-promise": 2
@@ -354,7 +364,7 @@
       "file": "hapi_enterprise/export-manager.js",
       "segment": "ядро",
       "lines": 416,
-      "tests": 5,
+      "tests": 6,
       "findings": 5,
       "rules": {
         "swallow-promise": 5
@@ -364,7 +374,7 @@
       "file": "hapi_enterprise/export-rules.js",
       "segment": "ядро",
       "lines": 450,
-      "tests": 12,
+      "tests": 13,
       "findings": 0,
       "rules": {}
     },
@@ -390,10 +400,10 @@
       "file": "hapi_enterprise/gateway-api.js",
       "segment": "ядро",
       "lines": 386,
-      "tests": 5,
-      "findings": 8,
+      "tests": 6,
+      "findings": 7,
       "rules": {
-        "unused-export": 5,
+        "unused-export": 4,
         "sync-fs-in-request": 3
       }
     },
@@ -401,7 +411,7 @@
       "file": "hapi_enterprise/generator.js",
       "segment": "ядро",
       "lines": 193,
-      "tests": 14,
+      "tests": 15,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -411,7 +421,7 @@
       "file": "hapi_enterprise/generator/app.js",
       "segment": "generator",
       "lines": 285,
-      "tests": 39,
+      "tests": 43,
       "findings": 0,
       "rules": {}
     },
@@ -439,7 +449,7 @@
       "file": "hapi_enterprise/interpolate.js",
       "segment": "ядро",
       "lines": 100,
-      "tests": 3,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
@@ -457,7 +467,7 @@
       "file": "hapi_enterprise/layout.js",
       "segment": "ядро",
       "lines": 138,
-      "tests": 8,
+      "tests": 9,
       "findings": 0,
       "rules": {}
     },
@@ -465,7 +475,7 @@
       "file": "hapi_enterprise/links.js",
       "segment": "ядро",
       "lines": 228,
-      "tests": 25,
+      "tests": 29,
       "findings": 0,
       "rules": {}
     },
@@ -510,7 +520,7 @@
       "file": "hapi_enterprise/notify.js",
       "segment": "ядро",
       "lines": 41,
-      "tests": 9,
+      "tests": 10,
       "findings": 0,
       "rules": {}
     },
@@ -574,7 +584,7 @@
       "file": "hapi_enterprise/pdf-writer.js",
       "segment": "ядро",
       "lines": 437,
-      "tests": 9,
+      "tests": 10,
       "findings": 0,
       "rules": {}
     },
@@ -582,7 +592,7 @@
       "file": "hapi_enterprise/pgp.js",
       "segment": "ядро",
       "lines": 1554,
-      "tests": 30,
+      "tests": 31,
       "findings": 2,
       "rules": {
         "unused-export": 2
@@ -592,7 +602,7 @@
       "file": "hapi_enterprise/plugins.js",
       "segment": "ядро",
       "lines": 24,
-      "tests": 4,
+      "tests": 5,
       "findings": 0,
       "rules": {}
     },
@@ -600,7 +610,7 @@
       "file": "hapi_enterprise/plugins/ocr.js",
       "segment": "plugins",
       "lines": 32,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -608,7 +618,7 @@
       "file": "hapi_enterprise/plugins/renderer.js",
       "segment": "plugins",
       "lines": 28,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -616,7 +626,7 @@
       "file": "hapi_enterprise/plugins/storage.js",
       "segment": "plugins",
       "lines": 30,
-      "tests": 58,
+      "tests": 63,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -635,8 +645,8 @@
     {
       "file": "hapi_enterprise/portal-folder.js",
       "segment": "ядро",
-      "lines": 300,
-      "tests": 9,
+      "lines": 358,
+      "tests": 12,
       "findings": 5,
       "rules": {
         "unused-export": 1,
@@ -677,16 +687,16 @@
     {
       "file": "hapi_enterprise/portal/portal-i18n.js",
       "segment": "portal",
-      "lines": 420,
-      "tests": 8,
+      "lines": 486,
+      "tests": 12,
       "findings": 0,
       "rules": {}
     },
     {
       "file": "hapi_enterprise/portal/portal.js",
       "segment": "portal",
-      "lines": 885,
-      "tests": 180,
+      "lines": 1087,
+      "tests": 195,
       "findings": 2,
       "rules": {
         "swallow-promise": 2
@@ -722,7 +732,7 @@
       "file": "hapi_enterprise/public-gateway.js",
       "segment": "ядро",
       "lines": 430,
-      "tests": 8,
+      "tests": 12,
       "findings": 0,
       "rules": {}
     },
@@ -748,7 +758,7 @@
       "file": "hapi_enterprise/qrcode.js",
       "segment": "ядро",
       "lines": 2303,
-      "tests": 11,
+      "tests": 12,
       "findings": 0,
       "rules": {}
     },
@@ -782,7 +792,7 @@
       "file": "hapi_enterprise/report-manifest.js",
       "segment": "ядро",
       "lines": 543,
-      "tests": 25,
+      "tests": 26,
       "findings": 0,
       "rules": {}
     },
@@ -820,7 +830,7 @@
       "file": "hapi_enterprise/repository.js",
       "segment": "ядро",
       "lines": 20,
-      "tests": 8,
+      "tests": 9,
       "findings": 0,
       "rules": {}
     },
@@ -836,7 +846,7 @@
       "file": "hapi_enterprise/retention.js",
       "segment": "ядро",
       "lines": 141,
-      "tests": 14,
+      "tests": 15,
       "findings": 0,
       "rules": {}
     },
@@ -860,7 +870,7 @@
       "file": "hapi_enterprise/routes/evidence.js",
       "segment": "routes",
       "lines": 95,
-      "tests": 34,
+      "tests": 35,
       "findings": 0,
       "rules": {}
     },
@@ -878,7 +888,7 @@
       "file": "hapi_enterprise/routes/folders.js",
       "segment": "routes",
       "lines": 189,
-      "tests": 19,
+      "tests": 29,
       "findings": 2,
       "rules": {
         "swallow-promise": 2
@@ -896,7 +906,7 @@
       "file": "hapi_enterprise/routes/generator.js",
       "segment": "routes",
       "lines": 65,
-      "tests": 14,
+      "tests": 15,
       "findings": 0,
       "rules": {}
     },
@@ -927,6 +937,24 @@
       "rules": {}
     },
     {
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "segment": "routes",
+      "lines": 290,
+      "tests": 2,
+      "findings": 11,
+      "rules": {
+        "swallow-promise": 11
+      }
+    },
+    {
+      "file": "hapi_enterprise/routes/portal-page.js",
+      "segment": "routes",
+      "lines": 64,
+      "tests": 6,
+      "findings": 0,
+      "rules": {}
+    },
+    {
       "file": "hapi_enterprise/routes/portal-qr.js",
       "segment": "routes",
       "lines": 258,
@@ -939,7 +967,7 @@
     {
       "file": "hapi_enterprise/routes/portal-storage.js",
       "segment": "routes",
-      "lines": 437,
+      "lines": 441,
       "tests": 3,
       "findings": 1,
       "rules": {
@@ -958,7 +986,7 @@
       "file": "hapi_enterprise/routes/reports.js",
       "segment": "routes",
       "lines": 314,
-      "tests": 22,
+      "tests": 23,
       "findings": 0,
       "rules": {}
     },
@@ -1010,7 +1038,7 @@
       "file": "hapi_enterprise/secret-view.js",
       "segment": "ядро",
       "lines": 205,
-      "tests": 4,
+      "tests": 5,
       "findings": 0,
       "rules": {}
     },
@@ -1027,12 +1055,12 @@
     {
       "file": "hapi_enterprise/server.js",
       "segment": "ядро",
-      "lines": 2723,
-      "tests": 208,
-      "findings": 45,
+      "lines": 2722,
+      "tests": 224,
+      "findings": 44,
       "rules": {
         "sync-fs-in-request": 12,
-        "swallow-promise": 33
+        "swallow-promise": 32
       }
     },
     {
@@ -1075,7 +1103,7 @@
       "file": "hapi_enterprise/sqlite-repository.js",
       "segment": "ядро",
       "lines": 52,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1091,7 +1119,7 @@
       "file": "hapi_enterprise/standalone.js",
       "segment": "ядро",
       "lines": 126,
-      "tests": 7,
+      "tests": 8,
       "findings": 4,
       "rules": {
         "unused-export": 4
@@ -1100,8 +1128,8 @@
     {
       "file": "hapi_enterprise/start.js",
       "segment": "ядро",
-      "lines": 269,
-      "tests": 72,
+      "lines": 277,
+      "tests": 74,
       "findings": 0,
       "rules": {}
     },
@@ -1117,7 +1145,7 @@
       "file": "hapi_enterprise/storage-migrate.js",
       "segment": "ядро",
       "lines": 23,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1135,7 +1163,7 @@
       "file": "hapi_enterprise/storage-tree.js",
       "segment": "ядро",
       "lines": 201,
-      "tests": 7,
+      "tests": 8,
       "findings": 0,
       "rules": {}
     },
@@ -1170,8 +1198,8 @@
     {
       "file": "hapi_enterprise/ui/app.js",
       "segment": "ui",
-      "lines": 347,
-      "tests": 39,
+      "lines": 372,
+      "tests": 43,
       "findings": 0,
       "rules": {}
     },
@@ -1179,7 +1207,7 @@
       "file": "hapi_enterprise/ui/bootstrap.js",
       "segment": "ui",
       "lines": 52,
-      "tests": 10,
+      "tests": 11,
       "findings": 0,
       "rules": {}
     },
@@ -1187,7 +1215,7 @@
       "file": "hapi_enterprise/ui/dashboard-panel.js",
       "segment": "ui",
       "lines": 398,
-      "tests": 6,
+      "tests": 9,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -1197,7 +1225,7 @@
       "file": "hapi_enterprise/ui/data.js",
       "segment": "ui",
       "lines": 207,
-      "tests": 182,
+      "tests": 202,
       "findings": 0,
       "rules": {}
     },
@@ -1205,7 +1233,7 @@
       "file": "hapi_enterprise/ui/directory-panel.js",
       "segment": "ui",
       "lines": 496,
-      "tests": 3,
+      "tests": 6,
       "findings": 0,
       "rules": {}
     },
@@ -1213,15 +1241,15 @@
       "file": "hapi_enterprise/ui/export-center.js",
       "segment": "ui",
       "lines": 624,
-      "tests": 3,
+      "tests": 6,
       "findings": 0,
       "rules": {}
     },
     {
       "file": "hapi_enterprise/ui/files-manager.js",
       "segment": "ui",
-      "lines": 3841,
-      "tests": 19,
+      "lines": 4048,
+      "tests": 26,
       "findings": 9,
       "rules": {
         "swallow-promise": 9
@@ -1231,7 +1259,7 @@
       "file": "hapi_enterprise/ui/i18n.js",
       "segment": "ui",
       "lines": 422,
-      "tests": 14,
+      "tests": 18,
       "findings": 0,
       "rules": {}
     },
@@ -1239,7 +1267,7 @@
       "file": "hapi_enterprise/ui/icons.js",
       "segment": "ui",
       "lines": 106,
-      "tests": 11,
+      "tests": 14,
       "findings": 0,
       "rules": {}
     },
@@ -1254,24 +1282,24 @@
     {
       "file": "hapi_enterprise/ui/portal-control.js",
       "segment": "ui",
-      "lines": 186,
-      "tests": 7,
+      "lines": 191,
+      "tests": 11,
       "findings": 0,
       "rules": {}
     },
     {
       "file": "hapi_enterprise/ui/portal-files.js",
       "segment": "ui",
-      "lines": 226,
-      "tests": 10,
+      "lines": 229,
+      "tests": 13,
       "findings": 0,
       "rules": {}
     },
     {
       "file": "hapi_enterprise/ui/portal-folders.js",
       "segment": "ui",
-      "lines": 197,
-      "tests": 6,
+      "lines": 200,
+      "tests": 9,
       "findings": 0,
       "rules": {}
     },
@@ -1279,7 +1307,7 @@
       "file": "hapi_enterprise/ui/portals.js",
       "segment": "ui",
       "lines": 286,
-      "tests": 148,
+      "tests": 161,
       "findings": 0,
       "rules": {}
     },
@@ -1287,7 +1315,7 @@
       "file": "hapi_enterprise/ui/public-gateway.js",
       "segment": "ui",
       "lines": 449,
-      "tests": 8,
+      "tests": 12,
       "findings": 0,
       "rules": {}
     },
@@ -1311,7 +1339,7 @@
       "file": "hapi_enterprise/ui/report-sign.js",
       "segment": "ui",
       "lines": 198,
-      "tests": 4,
+      "tests": 7,
       "findings": 0,
       "rules": {}
     },
@@ -1319,7 +1347,7 @@
       "file": "hapi_enterprise/ui/report-studio.js",
       "segment": "ui",
       "lines": 1272,
-      "tests": 10,
+      "tests": 13,
       "findings": 0,
       "rules": {}
     },
@@ -1327,7 +1355,7 @@
       "file": "hapi_enterprise/ui/secret-share.js",
       "segment": "ui",
       "lines": 242,
-      "tests": 4,
+      "tests": 7,
       "findings": 0,
       "rules": {}
     },
@@ -1335,7 +1363,7 @@
       "file": "hapi_enterprise/ui/settings-panel.js",
       "segment": "ui",
       "lines": 1538,
-      "tests": 20,
+      "tests": 25,
       "findings": 0,
       "rules": {}
     },
@@ -1343,7 +1371,7 @@
       "file": "hapi_enterprise/ui/visitors-panel.js",
       "segment": "ui",
       "lines": 249,
-      "tests": 5,
+      "tests": 8,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -1361,7 +1389,7 @@
       "file": "hapi_enterprise/virtual-storage.js",
       "segment": "ядро",
       "lines": 156,
-      "tests": 6,
+      "tests": 7,
       "findings": 0,
       "rules": {}
     },
@@ -1370,10 +1398,8 @@
       "segment": "ядро",
       "lines": 549,
       "tests": 2,
-      "findings": 1,
-      "rules": {
-        "unused-export": 1
-      }
+      "findings": 0,
+      "rules": {}
     },
     {
       "file": "hapi_enterprise/webhooks.js",
@@ -1518,7 +1544,7 @@
       "file": "scripts/docs-index.cjs",
       "segment": "скриптове",
       "lines": 104,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -1630,7 +1656,7 @@
       "file": "scripts/release-status.cjs",
       "segment": "скриптове",
       "lines": 213,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -1709,13 +1735,21 @@
     {
       "file": "scripts/verify-release.cjs",
       "segment": "скриптове",
-      "lines": 653,
+      "lines": 667,
       "tests": 4,
       "findings": 0,
       "rules": {}
     }
   ],
   "findings": [
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "custom_components/hapi_enterprise/portal.js",
+      "line": 448,
+      "text": "const data = await res.json().catch(() => null);"
+    },
     {
       "rule": "swallow-promise",
       "sev": "low",
@@ -1947,14 +1981,6 @@
       "file": "hapi_enterprise/gateway-api.js",
       "line": 1,
       "text": "BUNDLED_DIR"
-    },
-    {
-      "rule": "unused-export",
-      "sev": "low",
-      "why": "експорт без външен клиент (ползва се само в модула) — разширява публичния договор",
-      "file": "hapi_enterprise/gateway-api.js",
-      "line": 1,
-      "text": "ruleDirs"
     },
     {
       "rule": "unused-export",
@@ -2233,7 +2259,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/portal-folder.js",
-      "line": 224,
+      "line": 282,
       "text": "await fsp.rm(tmp, { force: true }).catch(() => { });"
     },
     {
@@ -2241,7 +2267,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/portal-folder.js",
-      "line": 231,
+      "line": 289,
       "text": "const stat = await fsp.stat(folderPath(portal && portal.storage_root)).catch(() => null);"
     },
     {
@@ -2249,7 +2275,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/portal-folder.js",
-      "line": 255,
+      "line": 313,
       "text": "const stat = await fsp.stat(dir).catch(() => null);"
     },
     {
@@ -2337,7 +2363,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/portal/portal.js",
-      "line": 587,
+      "line": 725,
       "text": "const data = await res.json().catch(() => null);"
     },
     {
@@ -2345,7 +2371,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/portal/portal.js",
-      "line": 805,
+      "line": 988,
       "text": "const data = await res.json().catch(() => null);"
     },
     {
@@ -2544,6 +2570,94 @@
       "rule": "swallow-promise",
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 132,
+      "text": "await fsp.rm(dir, { recursive: true, force: true }).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 136,
+      "text": "await fsp.rm(path.join(apiRoot, portal.slug), { recursive: true, force: true }).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 137,
+      "text": "await portalFolder.removeArtifacts(portal).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 138,
+      "text": "if (mirrorPortalDir) await fsp.rm(mirrorPortalDir(portal.id), { recursive: true, force: true }).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 163,
+      "text": "await fsp.rm(dir, { recursive: true, force: true }).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 166,
+      "text": "await portalFolder.ensure(record).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 181,
+      "text": "await fsp.rm(archiveDir(entry.id), { recursive: true, force: true }).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 238,
+      "text": "await portalFolder.removeArtifacts(portal).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 239,
+      "text": "if (mirrorPortalDir) await fsp.rm(mirrorPortalDir(portal.id), { recursive: true, force: true }).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 243,
+      "text": "await fsp.rm(path.join(archiveRoot, portal.id), { recursive: true, force: true }).catch(() => { });"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
+      "file": "hapi_enterprise/routes/portal-archive.js",
+      "line": 283,
+      "text": "const timer = setInterval(() => { purgeDue().catch(() => { }); }, PURGE_EVERY_MS);"
+    },
+    {
+      "rule": "swallow-promise",
+      "sev": "low",
+      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/routes/portal-qr.js",
       "line": 77,
       "text": "await fsp.rm(full, { force: true }).catch(() => { });"
@@ -2561,7 +2675,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/routes/portal-storage.js",
-      "line": 336,
+      "line": 340,
       "text": "const data = await fsp.readFile(path.join(archiveRoot, portal.id, archive.file)).catch(() => null);"
     },
     {
@@ -2745,7 +2859,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 737,
+      "line": 740,
       "text": "async function writeApiDir(p, base) { try { const made = await apiRegistry.ensure(p, { baseUrl: base || '' }); await portalFolder.writeArtifacts(p, base || '', "
     },
     {
@@ -2753,7 +2867,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1145,
+      "line": 1151,
       "text": "try { const st = await fsp.stat(location); return { name: path.basename(location), available: st.isDirectory(), writable: !!(await fsp.access(location, fs.const"
     },
     {
@@ -2761,7 +2875,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1281,
+      "line": 1287,
       "text": "else { const bytes = await fsp.readFile(primary); if (mirror.kind === 'path') await fsp.rm(mirrorFilePath(p.id, f.id), { force: true }).catch(() => { }); const "
     },
     {
@@ -2769,7 +2883,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1282,
+      "line": 1288,
       "text": "const afterPrimary = await shaOf(primary).catch(() => null);"
     },
     {
@@ -2777,7 +2891,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1324,
+      "line": 1330,
       "text": "result = await new Promise((resolve, reject) => { const run = queue.then(() => { try { const r = metadataStore.restoreFrom(source); sharedData.refresh(); resolv"
     },
     {
@@ -2785,7 +2899,7 @@
       "sev": "low",
       "why": "синхронен достъп до диска в процес, който обслужва заявки — блокира ВСИЧКИ клиенти",
       "file": "hapi_enterprise/server.js",
-      "line": 1442,
+      "line": 1448,
       "text": "const uiFile = rel => { const candidates = [path.join(__dirname, rel)]; const prefix = 'hapi_enterprise/'; if (rel.startsWith(prefix)) candidates.push(path.join"
     },
     {
@@ -2793,7 +2907,7 @@
       "sev": "low",
       "why": "синхронен достъп до диска в процес, който обслужва заявки — блокира ВСИЧКИ клиенти",
       "file": "hapi_enterprise/server.js",
-      "line": 1447,
+      "line": 1453,
       "text": "return res.end(fs.readFileSync(file));"
     },
     {
@@ -2801,7 +2915,7 @@
       "sev": "low",
       "why": "синхронен достъп до диска в процес, който обслужва заявки — блокира ВСИЧКИ клиенти",
       "file": "hapi_enterprise/server.js",
-      "line": 1476,
+      "line": 1482,
       "text": "try { manifest = JSON.parse(fs.readFileSync(path.join(root, a.relativeDirectory, 'manifest.json'), 'utf8')) } catch { /* липсващ или повреден манифест значи пра"
     },
     {
@@ -2809,7 +2923,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1574,
+      "line": 1572,
       "text": "if (rec) await secretLinks.remove(root, rec.idHash).catch(() => { });"
     },
     {
@@ -2817,7 +2931,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1597,
+      "line": 1595,
       "text": "if (rec) await secretLinks.remove(root, rec.idHash).catch(() => { });"
     },
     {
@@ -2825,7 +2939,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1876,
+      "line": 1874,
       "text": "const stat = await fsp.stat(path.join(dir, entry.name)).catch(() => null);"
     },
     {
@@ -2833,7 +2947,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1879,
+      "line": 1877,
       "text": "const sealedSize = stat ? await workdirIo.size(path.join(dir, entry.name)).catch(() => null) : null;"
     },
     {
@@ -2841,7 +2955,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1919,
+      "line": 1917,
       "text": "if (parts.length === 3 && method === 'GET') { await packager.prune({ maxAgeHours: settings.ttlHours, maxCount: settings.maxKept }).catch(() => { }); return json"
     },
     {
@@ -2849,7 +2963,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 1962,
+      "line": 1960,
       "text": "await packager.prune({ maxAgeHours: settings.ttlHours, maxCount: settings.maxKept }).catch(() => { });"
     },
     {
@@ -2857,7 +2971,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2073,
+      "line": 2071,
       "text": "await secretLinks.sweep(root, undefined, (s) => log.warn('secret.sweep.skipped', { ns: 'secret', err: s.error, hash: String(s.hash).slice(0, 12) })).catch(() =>"
     },
     {
@@ -2865,7 +2979,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2083,
+      "line": 2081,
       "text": "void secretLinks.sweep(root, undefined, (s) => log.warn('secret.sweep.skipped', { ns: 'secret', err: s.error, hash: String(s.hash).slice(0, 12) })).catch(() => "
     },
     {
@@ -2873,7 +2987,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2176,
+      "line": 2174,
       "text": "return json(res, 201, await update(async () => { if (getPortal(slug)) throw Object.assign(new Error('Slug exists'), { status: 409 }); const p = { id: id(), slug"
     },
     {
@@ -2881,7 +2995,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2190,
+      "line": 2188,
       "text": "} catch (e) { for (const [from, to] of moved.reverse()) await fsp.rename(to, from).catch(() => { }); throw e }"
     },
     {
@@ -2889,7 +3003,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2372,
+      "line": 2370,
       "text": "if (parts.length === 4 && method === 'PATCH') { const b = await parse(req); return json(res, 200, await update(async () => { if (b.title !== undefined) { if (!c"
     },
     {
@@ -2897,15 +3011,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2373,
-      "text": "if (parts.length === 4 && method === 'DELETE') { const force = url.searchParams.get('force') === '1'; const archivedRevs = (db.portalQr && db.portalQr[p.id] && "
-    },
-    {
-      "rule": "swallow-promise",
-      "sev": "low",
-      "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
-      "file": "hapi_enterprise/server.js",
-      "line": 2448,
+      "line": 2446,
       "text": "const base = await fsp.realpath(htmlProjectsRoot).catch(() => null); if (!base) return fail(res, 400, 'Project storage unavailable');"
     },
     {
@@ -2913,7 +3019,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2474,
+      "line": 2472,
       "text": "if (parts[4] === 'files' && parts.length === 5 && method === 'POST') { const rawName = String(req.headers['x-file-name'] || ''); let decoded; try { decoded = de"
     },
     {
@@ -2921,7 +3027,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2487,
+      "line": 2485,
       "text": "if (parts.length === 6 && method === 'DELETE') { const why = retention.protection(p, f); if (why) { void audit('file.delete.refused', { portalId: p.id, fileId: "
     },
     {
@@ -2929,7 +3035,7 @@
       "sev": "low",
       "why": "синхронен достъп до диска в процес, който обслужва заявки — блокира ВСИЧКИ клиенти",
       "file": "hapi_enterprise/server.js",
-      "line": 2500,
+      "line": 2498,
       "text": "const plain = fileCrypto.decrypt(fs.readFileSync(fp), adminToken); size = plain.length; for (const a of algos) hashes[a].update(plain);"
     },
     {
@@ -2937,7 +3043,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2536,
+      "line": 2535,
       "text": "try { await fsp.writeFile(curPath, stored, { flag: 'wx', mode: 0o600 }) } catch (e) { await fsp.rename(archPath, curPath).catch(() => { }); throw e }"
     },
     {
@@ -2945,7 +3051,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2544,
+      "line": 2543,
       "text": "}, async () => { await fsp.rm(curPath, { force: true }).catch(() => { }); await fsp.rename(archPath, curPath).catch(() => { }) });"
     },
     {
@@ -2953,7 +3059,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2545,
+      "line": 2544,
       "text": "for (const vn of result.pruned) await fsp.rm(versioning.versionPath(filesRoot, p.id, f.id, vn), { force: true }).catch(() => { });"
     },
     {
@@ -2961,7 +3067,7 @@
       "sev": "low",
       "why": "синхронен достъп до диска в процес, който обслужва заявки — блокира ВСИЧКИ клиенти",
       "file": "hapi_enterprise/server.js",
-      "line": 2553,
+      "line": 2552,
       "text": "if (v.encrypted) { let buf; try { buf = fileCrypto.decrypt(fs.readFileSync(vp), adminToken) } catch { return fail(res, 500, 'Decryption failed') } res.writeHead"
     },
     {
@@ -2969,7 +3075,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2566,
+      "line": 2565,
       "text": "try { await fsp.copyFile(vp, curPath) } catch (e) { await fsp.rename(archPath, curPath).catch(() => { }); throw e }"
     },
     {
@@ -2977,7 +3083,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2571,
+      "line": 2570,
       "text": "}, async () => { await fsp.rm(curPath, { force: true }).catch(() => { }); await fsp.rename(archPath, curPath).catch(() => { }) });"
     },
     {
@@ -2985,7 +3091,7 @@
       "sev": "low",
       "why": "синхронен достъп до диска в процес, който обслужва заявки — блокира ВСИЧКИ клиенти",
       "file": "hapi_enterprise/server.js",
-      "line": 2618,
+      "line": 2617,
       "text": "let init = {}; try { init = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || '/data/options.json', 'utf8')) } catch { /* липсващи опции значат празен обек"
     },
     {
@@ -2993,7 +3099,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2702,
+      "line": 2701,
       "text": "if (foldersNormalized) { await update(() => { }); log.info('portal.folders.normalized', { ns: 'portal', portals: foldersNormalized }) } applyBackupSchedule(); w"
     },
     {
@@ -3001,7 +3107,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/server.js",
-      "line": 2720,
+      "line": 2719,
       "text": "const shutdown = signal => { if (shuttingDown) return; shuttingDown = true; log.info('shutdown', { ns: 'server', signal }); webhooks.stop(); eventStream.closeAl"
     },
     {
@@ -3169,7 +3275,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/ui/files-manager.js",
-      "line": 1005,
+      "line": 1067,
       "text": "await loadMonitor().catch(() => { });"
     },
     {
@@ -3177,7 +3283,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/ui/files-manager.js",
-      "line": 3127,
+      "line": 3307,
       "text": "void loadMonitor().catch(() => { }).then(render);"
     },
     {
@@ -3185,7 +3291,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/ui/files-manager.js",
-      "line": 3801,
+      "line": 4008,
       "text": ".catch(() => { })"
     },
     {
@@ -3193,7 +3299,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/ui/files-manager.js",
-      "line": 3803,
+      "line": 4010,
       "text": ".catch(() => { })"
     },
     {
@@ -3201,7 +3307,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/ui/files-manager.js",
-      "line": 3805,
+      "line": 4012,
       "text": ".catch(() => { })"
     },
     {
@@ -3209,7 +3315,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/ui/files-manager.js",
-      "line": 3807,
+      "line": 4014,
       "text": ".catch(() => { })"
     },
     {
@@ -3217,7 +3323,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/ui/files-manager.js",
-      "line": 3809,
+      "line": 4016,
       "text": ".catch(() => { })"
     },
     {
@@ -3225,7 +3331,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/ui/files-manager.js",
-      "line": 3811,
+      "line": 4018,
       "text": ".catch(() => { })"
     },
     {
@@ -3233,7 +3339,7 @@
       "sev": "low",
       "why": "обещание, чиято грешка се хвърля на пода — при отказ никой не разбира",
       "file": "hapi_enterprise/ui/files-manager.js",
-      "line": 3813,
+      "line": 4020,
       "text": ".catch(() => { })"
     },
     {
@@ -3243,14 +3349,6 @@
       "file": "hapi_enterprise/ui/visitors-panel.js",
       "line": 24,
       "text": "const data = await res.json().catch(() => null);"
-    },
-    {
-      "rule": "unused-export",
-      "sev": "low",
-      "why": "експорт без външен клиент (ползва се само в модула) — разширява публичния договор",
-      "file": "hapi_enterprise/visitor-intel.js",
-      "line": 1,
-      "text": "isPrivate"
     },
     {
       "rule": "unused-export",
