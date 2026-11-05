@@ -3,7 +3,7 @@
 # 🏠 HOME ASSISTANT Portal Enterprise - hAPI Enterprise
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?color=ff00d8)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.161-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.162-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?color=ff00d8)](https://hacs.xyz)
 
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -195,12 +195,15 @@ Ein vollständiges HACS-kompatibles Repository:
   - Fail-closed-Bridge und Portalseite (`/api/hapi_enterprise/v1/…`,
     `/api/hapi_enterprise/portal/<id>`),
   - **UI-Einrichtung** (Config-/Options-Flow) — URL, Admin-Token, Intervall,
-  - **7 Telemetrie-Sensoren** (Besuche, Downloads, Dateien, Portale, Dateispeicher,
-    Datenbankgröße, Telemetriegröße),
+  - **Telemetrie-Sensoren** (Besuche, Downloads, Dateien, Portale, Dateispeicher,
+    Datenbankgröße, Telemetriegröße, Besucher, Ablehnungen, Sicherheit, QR, Version —
+    insgesamt 29 Sensoren und 3 Binary-Sensoren an einem Gerät),
   - `brand/icon.png` und `brand/logo.png` für die neue Home-Assistant-Oberfläche,
 - `repository.yaml` und `hacs.json` für Installation mit einem Klick.
 
 Schritte: [`documentation/08_USER_GUIDES/install-hacs.md`](documentation/08_USER_GUIDES/install-hacs.md).
+Das vollständige Handbuch (Installation, Konfiguration, Betrieb, Sicherheit,
+Fehlersuche) beginnt bei [`documentation/09_COMPLETE_MANUAL/`](documentation/09_COMPLETE_MANUAL/).
 
 Lege vor dem Start in der Add-on-**Konfiguration** ein eindeutiges Admin-Token mit
 mindestens 24 Zeichen fest. Der Start wird verweigert, wenn das Token fehlt, zu kurz oder

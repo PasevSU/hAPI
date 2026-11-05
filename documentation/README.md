@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **127** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **128** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -158,6 +158,7 @@ _Генериран списък: **127** документа. Пише се от
 | `09_COMPLETE_MANUAL/04-operate.md` | 4. Работа: портали, файлове, връзки, отчети |
 | `09_COMPLETE_MANUAL/05-security.md` | 5. Сигурност и достъп |
 | `09_COMPLETE_MANUAL/06-troubleshooting.md` | 6. Диагностика — по симптом |
+| `09_COMPLETE_MANUAL/07-integration-and-ui.md` | 7. Интеграцията и интерфейсът в Home Assistant |
 | `09_COMPLETE_MANUAL/APPENDIX-A-OPTIONS.md` | Приложение А — всички опции на add-on-а |
 | `09_COMPLETE_MANUAL/APPENDIX-B-API.md` | Приложение Б — административни маршрути |
 | `09_COMPLETE_MANUAL/README.md` | Пълно ръководство на hAPI Enterprise |

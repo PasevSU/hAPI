@@ -3,7 +3,7 @@
 # 🏠 HOME ASSISTANT Portal Enterprise - hAPI Enterprise
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?color=ff00d8)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.161-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.162-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?color=ff00d8)](https://hacs.xyz)
 
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -197,12 +197,15 @@ Windows edge средата:
   - fail-closed мост и портална страница (`/api/hapi_enterprise/v1/…`,
     `/api/hapi_enterprise/portal/<id>`),
   - **UI настройка** (config/options flow) — адрес, административен токен и интервал,
-  - **7 сензора** за телеметрията (посещения, изтегляния, файлове, портали, място за
-    файлове, размер на базата, размер на телеметрията),
+  - **сензори за телеметрията** (посещения, изтегляния, файлове, портали, място за
+    файлове, размер на базата, размер на телеметрията, посетители, откази, сигурност,
+    QR, версия — общо 29 сензора и 3 binary сензора в едно устройство),
   - `brand/icon.png` и `brand/logo.png` за новия интерфейс на Home Assistant,
 - `repository.yaml` и `hacs.json` за добавяне / инсталиране с един клик.
 
 Стъпките са в [`documentation/08_USER_GUIDES/install-hacs.md`](documentation/08_USER_GUIDES/install-hacs.md).
+Цялостното ръководство (инсталация, конфигурация, експлоатация, сигурност,
+диагностика) започва от [`documentation/09_COMPLETE_MANUAL/`](documentation/09_COMPLETE_MANUAL/).
 
 Преди стартиране задай уникален admin токен с поне 24 знака в **Configuration** на
 добавката. Стартирането отказва при липсващ/кратък токен, стойността-заглушка или
