@@ -71,25 +71,41 @@ try {
     }
 
     if ($HaHost) {
-        # Копираме съдържанието на папката, без да трием чужди файлове: ако в изданието някой
-        # файл е премахнат, той ще остане — затова накрая се показва разликата по брой файлове.
         & tar -czf (Join-Path $work 'integration.tgz') -C (Join-Path $work 'unpacked/custom_components') hapi_enterprise
         if ($LASTEXITCODE -ne 0) { throw 'опаковането се провали' }
-        & ssh -o BatchMode=yes "$HaUser@$HaHost" "mkdir -p /config/custom_components && rm -rf /config/custom_components/hapi_enterprise"
-        if ($LASTEXITCODE -ne 0) { throw "подготовката на папката на $HaHost се провали" }
-        & scp -q (Join-Path $work 'integration.tgz') "${HaUser}@${HaHost}:/tmp/hapi-integration.tgz"
-        if ($LASTEXITCODE -ne 0) { throw 'копирането към HA се провали' }
+
+        # РЕДЪТ Е ВАЖЕН: първо КОПИРАМЕ, после разменяме. По-рано тук стоеше
+        # `rm -rf …/hapi_enterprise` ПРЕДИ `scp` — при скъсана връзка интеграцията на HA
+        # оставаше изтрита, а следващият рестарт на Home Assistant я няма. Сега старият
+        # вариант остава на място, докато новият не е разархивиран успешно в /tmp.
+        $remoteTgz = "/tmp/hapi-integration-$([guid]::NewGuid().ToString('N').Substring(0, 8)).tgz"
+        & scp -q (Join-Path $work 'integration.tgz') "${HaUser}@${HaHost}:$remoteTgz"
+        if ($LASTEXITCODE -ne 0) { throw 'копирането към HA се провали (старата версия е непокътната)' }
+
         # Внимание с кавичките: PowerShell НЕ разбира `\"` (екранирането е с обратен апостроф),
-        # затова вътрешните кавички стигат до отдалечения shell смутени и grep пада с
+        # затова вътрешните кавички стигат до отдалечения shell счупени и grep пада с
         # „bad regex“. Затова тук няма кавички — само `grep -m1 version`.
-        & ssh -o BatchMode=yes "$HaUser@$HaHost" 'tar -xzf /tmp/hapi-integration.tgz -C /config/custom_components && rm -f /tmp/hapi-integration.tgz && grep -m1 version /config/custom_components/hapi_enterprise/manifest.json'
-        if ($LASTEXITCODE -ne 0) { throw 'разархивирането на HA се провали' }
-        Write-Host "Готово на $HaHost. Рестартирай Home Assistant, за да се зареди новата версия."
+        $swap = "set -e; " +
+        "rm -rf /tmp/hapi-int; mkdir -p /tmp/hapi-int; " +
+        "tar -xzf $remoteTgz -C /tmp/hapi-int; " +
+        "mkdir -p /config/custom_components; " +
+        "rm -rf /config/custom_components/hapi_enterprise.bak; " +
+        "if [ -d /config/custom_components/hapi_enterprise ]; then mv /config/custom_components/hapi_enterprise /config/custom_components/hapi_enterprise.bak; fi; " +
+        "if mv /tmp/hapi-int/hapi_enterprise /config/custom_components/hapi_enterprise; then " +
+        "rm -rf /config/custom_components/hapi_enterprise.bak /tmp/hapi-int $remoteTgz; " +
+        "else mv /config/custom_components/hapi_enterprise.bak /config/custom_components/hapi_enterprise; echo ROLLBACK; exit 1; fi; " +
+        "grep -m1 version /config/custom_components/hapi_enterprise/manifest.json"
+        & ssh -o BatchMode=yes "$HaUser@$HaHost" $swap
+        if ($LASTEXITCODE -ne 0) { throw 'подмяната на HA се провали (върната е предишната версия)' }
+        Write-Host "Готово на $HaHost. Рестартирай Home Assistant, да се зареди новата версия."
     }
     else {
+        # Същият принцип локално: новото се сглобява до старото и се разменя накрая.
+        $staging = "$target.new"
+        if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
+        Copy-Item $src $staging -Recurse -Force
         if (Test-Path $target) { Remove-Item $target -Recurse -Force }
-        New-Item -ItemType Directory -Force -Path (Split-Path $target) | Out-Null
-        Copy-Item $src $target -Recurse -Force
+        Move-Item $staging $target
         Write-Host "Готово: $target · версия $($manifest.version). Рестартирай Home Assistant."
     }
 }

@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **117** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **118** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -145,6 +145,7 @@ _Генериран списък: **117** документа. Пише се от
 | `08_USER_GUIDES/install-hacs.md` | Инсталиране през HACS |
 | `08_USER_GUIDES/installation-layout.md` | Инсталация: коя папка къде отива |
 | `08_USER_GUIDES/oidc-login.md` | Вход през външен доставчик (Pocket ID / Keycloak) — ръководство |
+| `08_USER_GUIDES/operations.md` | Ежедневни операции — обновяване, образ, секрети |
 | `08_USER_GUIDES/pgp-keys-setup.md` | PGP ключове и криптирана работна папка — как се настройва |
 | `08_USER_GUIDES/portals-contacts-cases.md` | Портали & файлове — контакт, дело, папка и полета по избор |
 | `08_USER_GUIDES/public-gateway-setup.md` | Public API Gateway — свързване на собствен домейн към работещ Home Assistant |

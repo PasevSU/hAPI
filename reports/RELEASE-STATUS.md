@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.156
+# Състояние на изданието — hAPI Enterprise 0.69.157
 
-Версия: **0.69.156** · клон `main`
+Версия: **0.69.157** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **356/356** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.156 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 569 файла · 97303 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 564 файла · 96365 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.157 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 569 файла · 97319 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 564 файла · 96381 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,28 +27,25 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.156.tar.gz` | add-on архив (194 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.156.zip` | интеграция за HACS (25 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.156.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.157.tar.gz` | add-on архив (194 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.157.zip` | интеграция за HACS (25 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.157.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.156
+## 3. Какво влезе във 0.69.157
 
-- **Нов одит на `secrets.yaml` — без да печата стойности.** `scripts/audit-ha-secrets.ps1`
-  сваля `/config/secrets.yaml` от инсталацията, разпознава формата на всяка стойност (HA
-  long-lived token, GitHub PAT / fine-grained, AWS ключ, частен ключ, обикновен низ) и показва
-  кой `!secret <име>` се ползва ЖИВО в кой YAML файл. Отпечатват се само име, форма, дължина и
-  файл — никога стойността, защото изходът отива в лог или чат (точно това издаде два живи
-  ключа наведнъж, когато се четеше на ръка).
-  Първият пуск срещу реалната инсталация намери: **63 ключа, 3 чувствителни, 62 непотребявани** —
-  в това число **жив GitHub personal access token** и **HA long-lived token**, които никой YAML
-  не ползва. Тези два се махат от файла и се ОТЗОВАТ при доставчика; скриптът ги изброява с
-  връзка към https://github.com/settings/tokens.
-- **Защо `--include` не работи на HA:** `grep` там е BusyBox и не познава `--include`, а
-  `find … -exec … \;` се чупи през `ssh`. Скриптът минава с цикъл по файловете и подминава
-  закоментираните редове — иначе десетки изключени `# !secret …` се броят за употреба и одитът
-  лъже, че всичко се ползва.
-- `scripts/check-ps-syntax.ps1` вече проверява и четирите PowerShell скрипта.
+- **`update-integration.ps1` вече разменя интеграцията атомарно.** Дотук редът беше
+  `rm -rf …/hapi_enterprise` **преди** `scp`: при скъсана връзка (или грешен път) интеграцията
+  на HA оставаше изтрита и следващият рестарт на Home Assistant я нямаше. Сега архивът се качва
+  първо, новото се разархивира в `/tmp`, старият вариант се мести на `hapi_enterprise.bak`,
+  новият заема мястото му и едва тогава `.bak` се трие; при провал старият се връща на място.
+  Локалният режим работи по същия принцип (`hapi_enterprise.new` → размяна).
+  Проверено на живата инсталация: 0.69.156 → 0.69.156 с атомарна размяна.
+- **Ново ръководство `documentation/08_USER_GUIDES/operations.md`** — трите неща след всяко
+  издание с точните команди и с измерените числа: store-ът тегли готов образ (129 s build →
+  14 s pull), интеграцията се обновява с една команда, `secrets.yaml` се одитира без да се
+  показват стойности; плюс стъпките за смяна на администраторския токен (в UI, защото CLI `ha`
+  няма команда за опции).
 
 ## 4. Как се проверява наново
 
