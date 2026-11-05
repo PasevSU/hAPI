@@ -178,20 +178,41 @@ for (const option of options) {
   );
 }
 
-// ── 6. Няма тест извън картата (всеки файл е регистриран сценарий) ─────────
-const owners = new Set(AREAS.map((a) => a.owner));
-const unregistered = testFiles.filter((f) => !owners.has(f));
-// Файловете, които не са „област“, а помощни/юнит проверки, се допускат само ако
-// наистина тестват нещо (имат assert) — така не се губи файл без дом.
-for (const file of unregistered) {
+// ── 6. ВСЕКИ тестов файл е ПРАВИЛО с идентификатор ──────────────────────────
+// Дотук тук имаше вратичка: файл, който не е в картата, се допускаше „ако съдържа
+// assert“ — тоест ~290 от ~356 файла нямаха нито име, нито дом и нов тест можеше да
+// влезе, без никой да го регистрира. Сега каталогът `tests/test-rules.cjs` (произвеждан от
+// scripts/gen-test-rules.cjs) е ЕДИНСТВЕНИЯТ списък на правилата и трябва да съвпада с
+// папката в двете посоки.
+const { RULES } = require('./lib/test-rules.cjs');
+const ruleIds = RULES.map((r) => r.id);
+assert.equal(new Set(ruleIds).size, ruleIds.length, 'дублирани идентификатори на правила');
+assert.deepEqual(ruleIds, [...ruleIds].sort(), 'правилата не са подредени по id — пусни gen-test-rules.cjs');
+
+const byOwner = new Map(RULES.map((r) => [r.owner, r]));
+for (const file of testFiles) {
+  if (file === 'test-rules.cjs') continue;
   assert.ok(
-    testText.get(file).includes('assert'),
-    `${file} не е регистриран в картата и не съдържа assert — или го регистрирай, или го изтрий`,
+    byOwner.has('tests/' + file),
+    `тестовият файл ${file} не е правило — пусни: node scripts/gen-test-rules.cjs (после прегледай областта му)`,
   );
+}
+for (const rule of RULES) {
+  assert.ok(fs.existsSync(path.join(root, rule.owner)), `правило ${rule.id}: липсва ${rule.owner}`);
+  assert.ok(rule.area, `правило ${rule.id}: липсва област`);
+  // Не всяко правило ползва `assert` буквално: ha-compatibility има свои `need()`/`check()`.
+  // Затова се приема всеки от трите проверяващи примитива.
+  assert.ok(
+    /assert|need\(|check\('/.test(testText.get(path.basename(rule.owner))),
+    `правило ${rule.id}: ${rule.owner} не проверява нищо (няма assert/need/check)`,
+  );
+}
+// Курираната карта по-горе трябва да е ПОДМНОЖЕСТВО на каталога — иначе две истини.
+for (const area of AREAS) {
+  assert.ok(byOwner.has('tests/' + area.owner), `област „${area.area}“: ${area.owner} липсва в каталога на правилата`);
 }
 
 console.log(
-  `PASS scenario matrix: ${AREAS.length} области, ${routes.size} маршрута, ` +
-  `${capabilities.length} RBAC способности, ${options.length} опции, ` +
-  `${testFiles.length} тестови файла`,
+  `PASS scenario matrix: ${AREAS.length} курирани области, ${RULES.length} правила (= тестови файлове), ` +
+  `${routes.size} маршрута, ${capabilities.length} RBAC способности, ${options.length} опции`,
 );

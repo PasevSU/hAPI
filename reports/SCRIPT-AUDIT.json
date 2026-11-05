@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-05T00:33:41.839Z",
-  "files": 193,
-  "lines": 51010,
+  "generatedAt": "2026-11-05T03:57:39.503Z",
+  "files": 194,
+  "lines": 51147,
   "bySeverity": {
     "high": 0,
     "medium": 0,
@@ -54,8 +54,8 @@
       "findings": 11
     },
     "скриптове": {
-      "files": 35,
-      "lines": 6422,
+      "files": 36,
+      "lines": 6559,
       "findings": 0
     }
   },
@@ -88,7 +88,7 @@
       "file": "custom_components/hapi_enterprise/const.py",
       "segment": "интеграция",
       "lines": 32,
-      "tests": 366,
+      "tests": 367,
       "findings": 0,
       "rules": {}
     },
@@ -104,7 +104,7 @@
       "file": "custom_components/hapi_enterprise/diagnostics.py",
       "segment": "интеграция",
       "lines": 84,
-      "tests": 14,
+      "tests": 15,
       "findings": 0,
       "rules": {}
     },
@@ -120,7 +120,7 @@
       "file": "custom_components/hapi_enterprise/portal.js",
       "segment": "интеграция",
       "lines": 848,
-      "tests": 195,
+      "tests": 196,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -130,7 +130,7 @@
       "file": "custom_components/hapi_enterprise/sensor.py",
       "segment": "интеграция",
       "lines": 591,
-      "tests": 8,
+      "tests": 9,
       "findings": 0,
       "rules": {}
     },
@@ -138,7 +138,7 @@
       "file": "hapi_enterprise/admin-api-spec.js",
       "segment": "ядро",
       "lines": 429,
-      "tests": 3,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
@@ -156,7 +156,7 @@
       "file": "hapi_enterprise/api-spec.js",
       "segment": "ядро",
       "lines": 402,
-      "tests": 13,
+      "tests": 14,
       "findings": 0,
       "rules": {}
     },
@@ -164,7 +164,7 @@
       "file": "hapi_enterprise/api-version.js",
       "segment": "ядро",
       "lines": 23,
-      "tests": 1,
+      "tests": 2,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -174,7 +174,7 @@
       "file": "hapi_enterprise/audit-chain.js",
       "segment": "ядро",
       "lines": 33,
-      "tests": 9,
+      "tests": 10,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -184,7 +184,7 @@
       "file": "hapi_enterprise/cabinet.js",
       "segment": "ядро",
       "lines": 88,
-      "tests": 10,
+      "tests": 11,
       "findings": 0,
       "rules": {}
     },
@@ -192,7 +192,7 @@
       "file": "hapi_enterprise/case-access.js",
       "segment": "ядро",
       "lines": 66,
-      "tests": 1,
+      "tests": 2,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -202,7 +202,7 @@
       "file": "hapi_enterprise/cases.js",
       "segment": "ядро",
       "lines": 98,
-      "tests": 46,
+      "tests": 47,
       "findings": 0,
       "rules": {}
     },
@@ -220,7 +220,7 @@
       "file": "hapi_enterprise/config-profiles.js",
       "segment": "ядро",
       "lines": 25,
-      "tests": 5,
+      "tests": 6,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -230,7 +230,7 @@
       "file": "hapi_enterprise/container.js",
       "segment": "ядро",
       "lines": 44,
-      "tests": 21,
+      "tests": 22,
       "findings": 0,
       "rules": {}
     },
@@ -238,7 +238,7 @@
       "file": "hapi_enterprise/content-id.js",
       "segment": "ядро",
       "lines": 47,
-      "tests": 3,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
@@ -246,7 +246,7 @@
       "file": "hapi_enterprise/core-store.js",
       "segment": "ядро",
       "lines": 327,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -254,7 +254,7 @@
       "file": "hapi_enterprise/crypto-options.js",
       "segment": "ядро",
       "lines": 40,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -262,7 +262,7 @@
       "file": "hapi_enterprise/decision-sensors.js",
       "segment": "ядро",
       "lines": 290,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -270,7 +270,7 @@
       "file": "hapi_enterprise/directory.js",
       "segment": "ядро",
       "lines": 301,
-      "tests": 28,
+      "tests": 29,
       "findings": 2,
       "rules": {
         "unused-export": 2
@@ -280,7 +280,7 @@
       "file": "hapi_enterprise/download-access.js",
       "segment": "ядро",
       "lines": 466,
-      "tests": 10,
+      "tests": 11,
       "findings": 0,
       "rules": {}
     },
@@ -288,7 +288,7 @@
       "file": "hapi_enterprise/download-stream.js",
       "segment": "ядро",
       "lines": 147,
-      "tests": 1,
+      "tests": 2,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -298,7 +298,7 @@
       "file": "hapi_enterprise/error-log.js",
       "segment": "ядро",
       "lines": 32,
-      "tests": 5,
+      "tests": 6,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -316,7 +316,7 @@
       "file": "hapi_enterprise/event-stream.js",
       "segment": "ядро",
       "lines": 114,
-      "tests": 2,
+      "tests": 3,
       "findings": 3,
       "rules": {
         "unused-export": 3
@@ -326,7 +326,7 @@
       "file": "hapi_enterprise/evidence-portal.js",
       "segment": "ядро",
       "lines": 206,
-      "tests": 8,
+      "tests": 9,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -336,7 +336,7 @@
       "file": "hapi_enterprise/evidence-portal/assets/app.js",
       "segment": "evidence-portal",
       "lines": 46,
-      "tests": 43,
+      "tests": 44,
       "findings": 2,
       "rules": {
         "swallow-promise": 2
@@ -354,7 +354,7 @@
       "file": "hapi_enterprise/exif.js",
       "segment": "ядро",
       "lines": 242,
-      "tests": 1,
+      "tests": 2,
       "findings": 4,
       "rules": {
         "unused-export": 4
@@ -364,7 +364,7 @@
       "file": "hapi_enterprise/export-manager.js",
       "segment": "ядро",
       "lines": 416,
-      "tests": 6,
+      "tests": 7,
       "findings": 5,
       "rules": {
         "swallow-promise": 5
@@ -374,7 +374,7 @@
       "file": "hapi_enterprise/export-rules.js",
       "segment": "ядро",
       "lines": 450,
-      "tests": 13,
+      "tests": 14,
       "findings": 0,
       "rules": {}
     },
@@ -390,7 +390,7 @@
       "file": "hapi_enterprise/forensic.js",
       "segment": "ядро",
       "lines": 175,
-      "tests": 8,
+      "tests": 9,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -400,7 +400,7 @@
       "file": "hapi_enterprise/gateway-api.js",
       "segment": "ядро",
       "lines": 386,
-      "tests": 6,
+      "tests": 7,
       "findings": 7,
       "rules": {
         "unused-export": 4,
@@ -411,7 +411,7 @@
       "file": "hapi_enterprise/generator.js",
       "segment": "ядро",
       "lines": 193,
-      "tests": 15,
+      "tests": 16,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -421,7 +421,7 @@
       "file": "hapi_enterprise/generator/app.js",
       "segment": "generator",
       "lines": 285,
-      "tests": 43,
+      "tests": 44,
       "findings": 0,
       "rules": {}
     },
@@ -429,7 +429,7 @@
       "file": "hapi_enterprise/idempotency.js",
       "segment": "ядро",
       "lines": 216,
-      "tests": 1,
+      "tests": 2,
       "findings": 4,
       "rules": {
         "unused-export": 4
@@ -439,7 +439,7 @@
       "file": "hapi_enterprise/instance-lock.js",
       "segment": "ядро",
       "lines": 334,
-      "tests": 7,
+      "tests": 8,
       "findings": 4,
       "rules": {
         "unused-export": 4
@@ -449,7 +449,7 @@
       "file": "hapi_enterprise/interpolate.js",
       "segment": "ядро",
       "lines": 100,
-      "tests": 4,
+      "tests": 5,
       "findings": 0,
       "rules": {}
     },
@@ -457,7 +457,7 @@
       "file": "hapi_enterprise/job-manager.js",
       "segment": "ядро",
       "lines": 183,
-      "tests": 5,
+      "tests": 6,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -467,7 +467,7 @@
       "file": "hapi_enterprise/layout.js",
       "segment": "ядро",
       "lines": 138,
-      "tests": 9,
+      "tests": 10,
       "findings": 0,
       "rules": {}
     },
@@ -475,7 +475,7 @@
       "file": "hapi_enterprise/links.js",
       "segment": "ядро",
       "lines": 228,
-      "tests": 29,
+      "tests": 30,
       "findings": 0,
       "rules": {}
     },
@@ -483,7 +483,7 @@
       "file": "hapi_enterprise/load-control.js",
       "segment": "ядро",
       "lines": 30,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -491,7 +491,7 @@
       "file": "hapi_enterprise/logger.js",
       "segment": "ядро",
       "lines": 243,
-      "tests": 3,
+      "tests": 4,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -509,7 +509,7 @@
       "file": "hapi_enterprise/mirror-target.js",
       "segment": "ядро",
       "lines": 232,
-      "tests": 3,
+      "tests": 4,
       "findings": 6,
       "rules": {
         "unused-export": 4,
@@ -538,7 +538,7 @@
       "file": "hapi_enterprise/oidc.js",
       "segment": "ядро",
       "lines": 187,
-      "tests": 2,
+      "tests": 3,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -564,7 +564,7 @@
       "file": "hapi_enterprise/packager.js",
       "segment": "ядро",
       "lines": 486,
-      "tests": 7,
+      "tests": 8,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -592,7 +592,7 @@
       "file": "hapi_enterprise/pgp.js",
       "segment": "ядро",
       "lines": 1554,
-      "tests": 31,
+      "tests": 32,
       "findings": 2,
       "rules": {
         "unused-export": 2
@@ -602,7 +602,7 @@
       "file": "hapi_enterprise/plugins.js",
       "segment": "ядро",
       "lines": 24,
-      "tests": 5,
+      "tests": 6,
       "findings": 0,
       "rules": {}
     },
@@ -626,7 +626,7 @@
       "file": "hapi_enterprise/plugins/storage.js",
       "segment": "plugins",
       "lines": 30,
-      "tests": 63,
+      "tests": 64,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -646,7 +646,7 @@
       "file": "hapi_enterprise/portal-folder.js",
       "segment": "ядро",
       "lines": 358,
-      "tests": 12,
+      "tests": 13,
       "findings": 5,
       "rules": {
         "unused-export": 1,
@@ -657,7 +657,7 @@
       "file": "hapi_enterprise/portal-integrity.js",
       "segment": "ядро",
       "lines": 167,
-      "tests": 2,
+      "tests": 3,
       "findings": 3,
       "rules": {
         "unused-export": 1,
@@ -678,7 +678,7 @@
       "file": "hapi_enterprise/portal-qr.js",
       "segment": "ядро",
       "lines": 234,
-      "tests": 3,
+      "tests": 4,
       "findings": 3,
       "rules": {
         "unused-export": 3
@@ -688,7 +688,7 @@
       "file": "hapi_enterprise/portal/portal-i18n.js",
       "segment": "portal",
       "lines": 486,
-      "tests": 12,
+      "tests": 13,
       "findings": 0,
       "rules": {}
     },
@@ -696,7 +696,7 @@
       "file": "hapi_enterprise/portal/portal.js",
       "segment": "portal",
       "lines": 1087,
-      "tests": 195,
+      "tests": 196,
       "findings": 2,
       "rules": {
         "swallow-promise": 2
@@ -706,7 +706,7 @@
       "file": "hapi_enterprise/preview.js",
       "segment": "ядро",
       "lines": 116,
-      "tests": 16,
+      "tests": 17,
       "findings": 3,
       "rules": {
         "unused-export": 3
@@ -716,7 +716,7 @@
       "file": "hapi_enterprise/problem.js",
       "segment": "ядро",
       "lines": 41,
-      "tests": 4,
+      "tests": 5,
       "findings": 0,
       "rules": {}
     },
@@ -724,7 +724,7 @@
       "file": "hapi_enterprise/process-guards.js",
       "segment": "ядро",
       "lines": 49,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -732,7 +732,7 @@
       "file": "hapi_enterprise/public-gateway.js",
       "segment": "ядро",
       "lines": 430,
-      "tests": 12,
+      "tests": 13,
       "findings": 0,
       "rules": {}
     },
@@ -740,7 +740,7 @@
       "file": "hapi_enterprise/public-package.js",
       "segment": "ядро",
       "lines": 108,
-      "tests": 1,
+      "tests": 2,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -750,7 +750,7 @@
       "file": "hapi_enterprise/public-route-allowlist.js",
       "segment": "ядро",
       "lines": 112,
-      "tests": 3,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
@@ -766,7 +766,7 @@
       "file": "hapi_enterprise/rbac.js",
       "segment": "ядро",
       "lines": 128,
-      "tests": 16,
+      "tests": 17,
       "findings": 0,
       "rules": {}
     },
@@ -774,7 +774,7 @@
       "file": "hapi_enterprise/readiness.js",
       "segment": "ядро",
       "lines": 43,
-      "tests": 7,
+      "tests": 8,
       "findings": 0,
       "rules": {}
     },
@@ -782,7 +782,7 @@
       "file": "hapi_enterprise/registry.js",
       "segment": "ядро",
       "lines": 113,
-      "tests": 12,
+      "tests": 13,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -792,7 +792,7 @@
       "file": "hapi_enterprise/report-manifest.js",
       "segment": "ядро",
       "lines": 543,
-      "tests": 26,
+      "tests": 27,
       "findings": 0,
       "rules": {}
     },
@@ -800,7 +800,7 @@
       "file": "hapi_enterprise/report-package.js",
       "segment": "ядро",
       "lines": 153,
-      "tests": 1,
+      "tests": 2,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -810,7 +810,7 @@
       "file": "hapi_enterprise/report-render.js",
       "segment": "ядро",
       "lines": 375,
-      "tests": 10,
+      "tests": 11,
       "findings": 3,
       "rules": {
         "unused-export": 3
@@ -820,7 +820,7 @@
       "file": "hapi_enterprise/report-stamp.js",
       "segment": "ядро",
       "lines": 277,
-      "tests": 4,
+      "tests": 5,
       "findings": 4,
       "rules": {
         "unused-export": 4
@@ -830,7 +830,7 @@
       "file": "hapi_enterprise/repository.js",
       "segment": "ядро",
       "lines": 20,
-      "tests": 9,
+      "tests": 10,
       "findings": 0,
       "rules": {}
     },
@@ -838,7 +838,7 @@
       "file": "hapi_enterprise/respond.js",
       "segment": "ядро",
       "lines": 58,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -846,7 +846,7 @@
       "file": "hapi_enterprise/retention.js",
       "segment": "ядро",
       "lines": 141,
-      "tests": 15,
+      "tests": 16,
       "findings": 0,
       "rules": {}
     },
@@ -862,7 +862,7 @@
       "file": "hapi_enterprise/routes/events.js",
       "segment": "routes",
       "lines": 47,
-      "tests": 22,
+      "tests": 23,
       "findings": 0,
       "rules": {}
     },
@@ -870,7 +870,7 @@
       "file": "hapi_enterprise/routes/evidence.js",
       "segment": "routes",
       "lines": 95,
-      "tests": 35,
+      "tests": 36,
       "findings": 0,
       "rules": {}
     },
@@ -878,7 +878,7 @@
       "file": "hapi_enterprise/routes/file-transfer.js",
       "segment": "routes",
       "lines": 186,
-      "tests": 4,
+      "tests": 5,
       "findings": 8,
       "rules": {
         "swallow-promise": 8
@@ -898,7 +898,7 @@
       "file": "hapi_enterprise/routes/forensic.js",
       "segment": "routes",
       "lines": 86,
-      "tests": 8,
+      "tests": 9,
       "findings": 0,
       "rules": {}
     },
@@ -906,7 +906,7 @@
       "file": "hapi_enterprise/routes/generator.js",
       "segment": "routes",
       "lines": 65,
-      "tests": 15,
+      "tests": 16,
       "findings": 0,
       "rules": {}
     },
@@ -914,7 +914,7 @@
       "file": "hapi_enterprise/routes/link-check.js",
       "segment": "routes",
       "lines": 168,
-      "tests": 2,
+      "tests": 3,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -924,7 +924,7 @@
       "file": "hapi_enterprise/routes/oidc.js",
       "segment": "routes",
       "lines": 145,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -932,7 +932,7 @@
       "file": "hapi_enterprise/routes/pgp-keyring.js",
       "segment": "routes",
       "lines": 92,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -940,7 +940,7 @@
       "file": "hapi_enterprise/routes/portal-archive.js",
       "segment": "routes",
       "lines": 290,
-      "tests": 2,
+      "tests": 3,
       "findings": 11,
       "rules": {
         "swallow-promise": 11
@@ -950,7 +950,7 @@
       "file": "hapi_enterprise/routes/portal-page.js",
       "segment": "routes",
       "lines": 64,
-      "tests": 6,
+      "tests": 7,
       "findings": 0,
       "rules": {}
     },
@@ -958,7 +958,7 @@
       "file": "hapi_enterprise/routes/portal-qr.js",
       "segment": "routes",
       "lines": 258,
-      "tests": 3,
+      "tests": 4,
       "findings": 2,
       "rules": {
         "swallow-promise": 2
@@ -978,7 +978,7 @@
       "file": "hapi_enterprise/routes/portal-tokens.js",
       "segment": "routes",
       "lines": 215,
-      "tests": 3,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
@@ -994,7 +994,7 @@
       "file": "hapi_enterprise/routes/webhooks.js",
       "segment": "routes",
       "lines": 105,
-      "tests": 4,
+      "tests": 5,
       "findings": 0,
       "rules": {}
     },
@@ -1002,7 +1002,7 @@
       "file": "hapi_enterprise/runtime-config.js",
       "segment": "ядро",
       "lines": 179,
-      "tests": 10,
+      "tests": 11,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -1012,7 +1012,7 @@
       "file": "hapi_enterprise/secret-links.js",
       "segment": "ядро",
       "lines": 368,
-      "tests": 5,
+      "tests": 6,
       "findings": 8,
       "rules": {
         "unused-export": 8
@@ -1022,7 +1022,7 @@
       "file": "hapi_enterprise/secret-lock.js",
       "segment": "ядро",
       "lines": 42,
-      "tests": 3,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
@@ -1046,7 +1046,7 @@
       "file": "hapi_enterprise/send.js",
       "segment": "ядро",
       "lines": 141,
-      "tests": 6,
+      "tests": 7,
       "findings": 1,
       "rules": {
         "unused-export": 1
@@ -1056,7 +1056,7 @@
       "file": "hapi_enterprise/server.js",
       "segment": "ядро",
       "lines": 2722,
-      "tests": 224,
+      "tests": 225,
       "findings": 44,
       "rules": {
         "sync-fs-in-request": 12,
@@ -1067,7 +1067,7 @@
       "file": "hapi_enterprise/share-links.js",
       "segment": "ядро",
       "lines": 103,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1075,7 +1075,7 @@
       "file": "hapi_enterprise/shared-data.js",
       "segment": "ядро",
       "lines": 362,
-      "tests": 5,
+      "tests": 6,
       "findings": 2,
       "rules": {
         "unused-export": 2
@@ -1085,7 +1085,7 @@
       "file": "hapi_enterprise/signer.js",
       "segment": "ядро",
       "lines": 34,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1111,7 +1111,7 @@
       "file": "hapi_enterprise/sqlite-store.js",
       "segment": "ядро",
       "lines": 353,
-      "tests": 11,
+      "tests": 12,
       "findings": 0,
       "rules": {}
     },
@@ -1129,7 +1129,7 @@
       "file": "hapi_enterprise/start.js",
       "segment": "ядро",
       "lines": 277,
-      "tests": 74,
+      "tests": 75,
       "findings": 0,
       "rules": {}
     },
@@ -1137,7 +1137,7 @@
       "file": "hapi_enterprise/storage-check.js",
       "segment": "ядро",
       "lines": 20,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1145,7 +1145,7 @@
       "file": "hapi_enterprise/storage-migrate.js",
       "segment": "ядро",
       "lines": 23,
-      "tests": 3,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
@@ -1163,7 +1163,7 @@
       "file": "hapi_enterprise/storage-tree.js",
       "segment": "ядро",
       "lines": 201,
-      "tests": 8,
+      "tests": 9,
       "findings": 0,
       "rules": {}
     },
@@ -1171,7 +1171,7 @@
       "file": "hapi_enterprise/throttle.js",
       "segment": "ядро",
       "lines": 112,
-      "tests": 2,
+      "tests": 3,
       "findings": 3,
       "rules": {
         "unused-export": 3
@@ -1181,7 +1181,7 @@
       "file": "hapi_enterprise/tsa-client.js",
       "segment": "ядро",
       "lines": 450,
-      "tests": 7,
+      "tests": 8,
       "findings": 4,
       "rules": {
         "unused-export": 4
@@ -1191,7 +1191,7 @@
       "file": "hapi_enterprise/ui/api-base.js",
       "segment": "ui",
       "lines": 60,
-      "tests": 3,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
@@ -1199,7 +1199,7 @@
       "file": "hapi_enterprise/ui/app.js",
       "segment": "ui",
       "lines": 372,
-      "tests": 43,
+      "tests": 44,
       "findings": 0,
       "rules": {}
     },
@@ -1225,7 +1225,7 @@
       "file": "hapi_enterprise/ui/data.js",
       "segment": "ui",
       "lines": 207,
-      "tests": 202,
+      "tests": 203,
       "findings": 0,
       "rules": {}
     },
@@ -1249,7 +1249,7 @@
       "file": "hapi_enterprise/ui/files-manager.js",
       "segment": "ui",
       "lines": 4048,
-      "tests": 26,
+      "tests": 27,
       "findings": 9,
       "rules": {
         "swallow-promise": 9
@@ -1259,7 +1259,7 @@
       "file": "hapi_enterprise/ui/i18n.js",
       "segment": "ui",
       "lines": 422,
-      "tests": 18,
+      "tests": 19,
       "findings": 0,
       "rules": {}
     },
@@ -1267,7 +1267,7 @@
       "file": "hapi_enterprise/ui/icons.js",
       "segment": "ui",
       "lines": 106,
-      "tests": 14,
+      "tests": 15,
       "findings": 0,
       "rules": {}
     },
@@ -1275,7 +1275,7 @@
       "file": "hapi_enterprise/ui/panel-registry.js",
       "segment": "ui",
       "lines": 202,
-      "tests": 6,
+      "tests": 7,
       "findings": 0,
       "rules": {}
     },
@@ -1315,7 +1315,7 @@
       "file": "hapi_enterprise/ui/public-gateway.js",
       "segment": "ui",
       "lines": 449,
-      "tests": 12,
+      "tests": 13,
       "findings": 0,
       "rules": {}
     },
@@ -1323,7 +1323,7 @@
       "file": "hapi_enterprise/ui/report-objects.js",
       "segment": "ui",
       "lines": 85,
-      "tests": 6,
+      "tests": 7,
       "findings": 0,
       "rules": {}
     },
@@ -1331,7 +1331,7 @@
       "file": "hapi_enterprise/ui/report-scope.js",
       "segment": "ui",
       "lines": 289,
-      "tests": 4,
+      "tests": 5,
       "findings": 0,
       "rules": {}
     },
@@ -1347,7 +1347,7 @@
       "file": "hapi_enterprise/ui/report-studio.js",
       "segment": "ui",
       "lines": 1272,
-      "tests": 13,
+      "tests": 14,
       "findings": 0,
       "rules": {}
     },
@@ -1371,7 +1371,7 @@
       "file": "hapi_enterprise/ui/visitors-panel.js",
       "segment": "ui",
       "lines": 249,
-      "tests": 8,
+      "tests": 9,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -1381,7 +1381,7 @@
       "file": "hapi_enterprise/versioning.js",
       "segment": "ядро",
       "lines": 57,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1389,7 +1389,7 @@
       "file": "hapi_enterprise/virtual-storage.js",
       "segment": "ядро",
       "lines": 156,
-      "tests": 7,
+      "tests": 8,
       "findings": 0,
       "rules": {}
     },
@@ -1405,7 +1405,7 @@
       "file": "hapi_enterprise/webhooks.js",
       "segment": "ядро",
       "lines": 336,
-      "tests": 4,
+      "tests": 5,
       "findings": 3,
       "rules": {
         "unused-export": 2,
@@ -1444,7 +1444,7 @@
       "file": "hapi_enterprise/worm.js",
       "segment": "ядро",
       "lines": 364,
-      "tests": 5,
+      "tests": 6,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -1464,7 +1464,7 @@
       "file": "scripts/api-reference.cjs",
       "segment": "скриптове",
       "lines": 157,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1480,7 +1480,7 @@
       "file": "scripts/audit-events.cjs",
       "segment": "скриптове",
       "lines": 128,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1544,7 +1544,7 @@
       "file": "scripts/docs-index.cjs",
       "segment": "скриптове",
       "lines": 104,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1560,7 +1560,7 @@
       "file": "scripts/error-codes.cjs",
       "segment": "скриптове",
       "lines": 123,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -1576,7 +1576,7 @@
       "file": "scripts/export-tracked.cjs",
       "segment": "скриптове",
       "lines": 105,
-      "tests": 3,
+      "tests": 4,
       "findings": 0,
       "rules": {}
     },
@@ -1585,6 +1585,14 @@
       "segment": "скриптове",
       "lines": 111,
       "tests": 1,
+      "findings": 0,
+      "rules": {}
+    },
+    {
+      "file": "scripts/gen-test-rules.cjs",
+      "segment": "скриптове",
+      "lines": 137,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -1600,7 +1608,7 @@
       "file": "scripts/logic-audit.cjs",
       "segment": "скриптове",
       "lines": 394,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1608,7 +1616,7 @@
       "file": "scripts/manifest-schema.cjs",
       "segment": "скриптове",
       "lines": 71,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -1616,7 +1624,7 @@
       "file": "scripts/openapi-admin.cjs",
       "segment": "скриптове",
       "lines": 119,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -1648,7 +1656,7 @@
       "file": "scripts/release-notes.cjs",
       "segment": "скриптове",
       "lines": 76,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -1656,7 +1664,7 @@
       "file": "scripts/release-status.cjs",
       "segment": "скриптове",
       "lines": 213,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1688,7 +1696,7 @@
       "file": "scripts/secret-patterns.cjs",
       "segment": "скриптове",
       "lines": 40,
-      "tests": 2,
+      "tests": 3,
       "findings": 0,
       "rules": {}
     },
@@ -1696,7 +1704,7 @@
       "file": "scripts/settings-defaults.cjs",
       "segment": "скриптове",
       "lines": 339,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
@@ -1704,7 +1712,7 @@
       "file": "scripts/source-inventory.cjs",
       "segment": "скриптове",
       "lines": 161,
-      "tests": 1,
+      "tests": 2,
       "findings": 0,
       "rules": {}
     },
