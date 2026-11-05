@@ -53,13 +53,18 @@ jobs:
 
       # Версията се чете от манифеста, не от тага: така образът и `config.yaml` не могат
       # да се разминат, дори ако тагът е сбъркан.
+      #
+      # Owner-ът ЗАДЪЛЖИТЕЛНО се сваля до малки букви: Docker отказва таг с главни букви в
+      # името на хранилището (`repository name must be lowercase`), а GitHub login-ът е
+      # `PasevSU`. Първият пуск на този workflow падна точно на това.
       - name: Версия от config.yaml
         id: meta
         run: |
           version=$(grep -m1 '^version:' hapi_enterprise/config.yaml | sed -E 's/.*"([^"]+)".*/\1/')
+          owner=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "image=ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-addon-hapi_enterprise" >> "$GITHUB_OUTPUT"
-          echo "::notice::образ ${{ matrix.arch }} за версия $version"
+          echo "image=ghcr.io/${owner}/${{ matrix.arch }}-addon-hapi_enterprise" >> "$GITHUB_OUTPUT"
+          echo "::notice::образ ${{ matrix.arch }} за версия $version · ${owner}"
 
       - name: Build и push
         uses: docker/build-push-action@v6
