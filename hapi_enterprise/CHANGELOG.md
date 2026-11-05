@@ -1,30 +1,23 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.153**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.154**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.153
+## 0.69.154
 
-- **Картата в store-а вече има линк „Документация“.** В `config.yaml` липсваше ключът
-  `documentation:` — `url:` сочи add-on-а в хранилището, не упътването, затова Supervisor
-  показваше `documentation: false`. Добавен е и се пази от ново правило **HA-M13** в
-  `ha-compatibility.cjs`.
-- **Интеграцията пази състоянието си в `entry.runtime_data`, не в `hass.data[DOMAIN]`.**
-  Дотук координаторът се слагаше в речник, индексиран по `entry_id`: работи, но при
-  презареждане ключът оставаше, ако някой забрави да го изчисти, а платформите трябваше да
-  знаят как е устроен речникът. `ConfigEntry.runtime_data` (HA ≥ 2024.6, колкото е и
-  минимумът ни) прави същото, но животът на данните следва живота на вписването. Миграцията
-  е в `__init__.py`, `sensor.py`, `binary_sensor.py`, `diagnostics.py`; пази се от нов
-  `tests/integration-runtime-data.cjs`, който пада и ако някой върне `hass.data`, и ако
-  минимумът на HA падне под 2024.6.
-- **Готов образ на add-on-а (GHCR).** Нов workflow `.github/workflows/addon-image.yml`
-  строи `ghcr.io/<owner>/{arch}-addon-hapi_enterprise` за `amd64`, `aarch64` и `armv7` при
-  всеки таг и го публикува с тагове `<версия>` и `latest`. Причината: без `image:` store-ът
-  строи образа на машината — измерено **127 s** на Raspberry Pi 4 за всяко обновяване.
-  `image:` в `config.yaml` още НЕ е включен: първо образът трябва да е публикуван и **public**
-  в GHCR, иначе Supervisor не може да го изтегли анонимно. Проверката е
-  `scripts/check-addon-image.ps1 -Version 0.69.153`.
-- **Обновяване на интеграцията с една команда.** `scripts/update-integration.ps1` сваля
-  публикуваното издание и слага `custom_components/hapi_enterprise` на място (локално или на
-  Home Assistant през SSH), без да пипа `configuration.yaml` и без да рестартира HA — рестартът
-  остава решение на човека. Досега това се правеше на ръка, затова интеграцията на диска
-  изоставаше от add-on-а.
+- **Store-ът вече ТЕГЛИ образа, вместо да го строи на машината.** В `config.yaml` е добавен
+  `image: "ghcr.io/pasevsu/{arch}-addon-hapi_enterprise"` — `{arch}` се замества от
+  Supervisor, а тагът идва от `version:`. Дотук всяко обновяване на Raspberry Pi 4 минаваше
+  през `docker buildx build` (измерено 129 s за 0.69.153) и падаше, ако мрежата или
+  toolchain-ът не са налице. Сега обновяването е дръпване на готов образ.
+- **Проверката на образа беше счупена по два начина — поправена.** `check-addon-image.ps1`
+  питаше `https://ghcr.io/<owner>/<repo>/manifests/<tag>` без `/v2/` (това е адрес на сайта,
+  не на registry API-то) и приемаше само multi-arch index, макар нашият workflow да строи
+  по една архитектура на job. И двете даваха `404` върху СЪЩЕСТВУВАЩ образ — тоест скриптът
+  щеше да блокира включването на `image:` завинаги. Сега приема и четирите вида манифест и
+  минава за всички архитектури (`OK` за amd64, aarch64, armv7).
+- **Първият пуск на новия workflow падна с `repository name must be lowercase`.** GHCR
+  изисква малки букви в името на хранилището, а login-ът е `PasevSU`. Owner-ът се сваля с
+  `tr '[:upper:]' '[:lower:]'`. Пази се от ново правило **HA-M14** в `ha-compatibility.cjs`:
+  то проверява едновременно формата на `image:` (малки букви, `ghcr.io/<owner>/{arch}-addon-<slug>`)
+  и че workflow-ът строи ВСЯКА архитектура, обявена в `arch:` — защото липсваща архитектура
+  значи обновяване, което пада само на нея.

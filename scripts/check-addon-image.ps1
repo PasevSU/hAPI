@@ -19,13 +19,20 @@ $failed = 0
 
 foreach ($a in $Arch) {
     $image = "ghcr.io/$($Owner.ToLower())/$a-addon-$Slug"
-    $manifest = "https://$image/manifests/$Version"
+    # Пътят ЗАДЪЛЖИТЕЛНО минава през `/v2/`: това е адресът на registry API-то.
+    # Без него `https://ghcr.io/<owner>/<repo>/manifests/<tag>` е страница на сайта и
+    # отговаря 404 — образът изглежда липсващ, въпреки че е качен.
+    $manifest = "https://ghcr.io/v2/$($Owner.ToLower())/$a-addon-$Slug/manifests/$Version"
     # Анонимна заявка: точно това прави Supervisor. При private пакет отговорът е 401/403.
     try {
         $token = (Invoke-RestMethod -Uri "https://ghcr.io/token?scope=repository:$($Owner.ToLower())/$a-addon-$Slug`:pull" -TimeoutSec 30).token
+        # Accept трябва да изброява и ЧЕТИРИТЕ вида манифест. Нашият workflow строи с
+        # buildx по една архитектура на job, тоест push-ва ОБИКНОВЕН image manifest, а не
+        # multi-arch index — при Accept само на index/list GHCR отговаря 404 и образът
+        # изглежда „липсва“, въпреки че е качен.
         $res = Invoke-WebRequest -Uri $manifest -Headers @{
             Authorization = "Bearer $token"
-            Accept        = 'application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json'
+            Accept        = 'application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json'
         } -TimeoutSec 30 -UseBasicParsing
         Write-Host ("  OK   {0}:{1} · HTTP {2}" -f $image, $Version, $res.StatusCode)
     }

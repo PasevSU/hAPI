@@ -154,6 +154,21 @@ check('HA-M13', 'манифест', 'warn', 'документация за store
   return unquote(doc);
 });
 
+// Готовият образ е договор с два входа: `image:` в манифеста и workflow, който го
+// публикува за ВСЯКА обявена архитектура. Ако едното липсва, store-ът или строи на
+// машината (бавно), или тегли несъществуващ таг (обновяването пада).
+const imageWorkflow = read('.github/workflows/addon-image.yml');
+check('HA-M14', 'манифест', 'blocker', 'готов образ: image по конвенцията + workflow за всяка arch', () => {
+  const image = unquote(scalar('image'));
+  need(image, 'липсва `image:` → store-ът строи образа на машината (129 s на Raspberry Pi 4)');
+  need(image.toLowerCase() === image, 'image съдържа главни букви — Docker отказва такъв таг');
+  need(/^ghcr\.io\/[a-z0-9._-]+\/\{arch\}-addon-[a-z0-9._-]+$/.test(image), `image „${image}“ не е ghcr.io/<owner>/{arch}-addon-<slug>`);
+  need(image.includes(`{arch}-addon-${ADDON}`), `image трябва да сочи {arch}-addon-${ADDON}`);
+  for (const arch of sectionItems('arch')) need(imageWorkflow.includes(`arch: ${arch}`), `workflow-ът не строи ${arch}`);
+  need(/tr '\[:upper:\]' '\[:lower:\]'/.test(imageWorkflow), 'workflow-ът не сваля owner-а до малки букви → push пада с „repository name must be lowercase“');
+  return image;
+});
+
 check('HA-M07', 'манифест', 'blocker', 'watchdog сочи реален health маршрут', () => {
   const watchdog = unquote(scalar('watchdog'));
   need(watchdog, 'липсва watchdog');
