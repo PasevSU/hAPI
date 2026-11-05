@@ -11,7 +11,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Version,
     [string]$Owner = 'PasevSU',
     [string]$Slug = 'hapi_enterprise',
-    [string[]]$Arch = @('amd64', 'aarch64')
+    [string[]]$Arch = @('amd64', 'aarch64', 'armv7')
 )
 
 $ErrorActionPreference = 'Stop'

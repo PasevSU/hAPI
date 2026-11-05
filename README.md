@@ -17,9 +17,9 @@
 # hAPI Enterprise — Home Assistant add-on
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.163-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.164-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.13-blue?logo=nodedotjs)](https://nodejs.org)
-[![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational)](hapi_enterprise/README.md#raspberry-pi-and-small-boards)
+[![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-informational)](hapi_enterprise/README.md#raspberry-pi-and-small-boards)
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
 [![Български](https://img.shields.io/badge/BG-ЕЗИК-green?logo=translate&labelColor=gray&style=flat-square)](BG.md)
 [![Deutsch](https://img.shields.io/badge/DE-SPRACHE-green?logo=translate&labelColor=gray&style=flat-square)](DE.md)

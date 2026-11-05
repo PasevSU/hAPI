@@ -322,6 +322,17 @@ const exportSrc = fs.readFileSync(require('node:path').join(__dirname, '..', 'ha
 assert.doesNotMatch(exportSrc, /ec-pkg-sign|ec-pkg-key|Автоподписване с PGP/);
 assert.match(exportSrc, /ec-pkg-build/);
 assert.match(exportSrc, /Настройки → PGP ключ и автоподписване/);
+for (const id of [
+  'ec-pkg-portal', 'ec-pkg-compression', 'ec-pkg-encryption', 'ec-pkg-password',
+  'ec-pkg-split', 'ec-pkg-rate', 'ec-pkg-parallel', 'ec-mode', 'ec-format', 'ec-location', 'ec-case',
+]) {
+  assert.match(exportSrc, new RegExp(`<label for="${id}">`), `Export Center: label-ът е свързан с #${id}`);
+}
+assert.match(src, /m\.setAttribute\('aria-modal', 'true'\)/);
+assert.match(src, /m\.addEventListener\('keydown', \(e\) => \{\s*if \(e\.key !== 'Tab'/);
+assert.match(src, /e\.shiftKey && document\.activeElement === first/);
+assert.match(src, /back\.isConnected/);
+assert.match(src, /getElementById\('view'\)/);
 // Свързаният режим взима порталите от add-on-а, а не демо данните.
 assert.match(src, /async function loadPortals/);
 assert.match(src, /then\(loadPortals\)/);

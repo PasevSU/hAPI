@@ -112,27 +112,27 @@
         <div class="panel-body">
           <p class="hint">Пакетът е ZIP с <code>PACKAGE_INDEX.json</code>, <code>hashes/sha256sum.txt</code>, манифест и оригиналите. Дали се подписва с PGP се задава в <strong>„Настройки → PGP ключ и автоподписване“</strong> — тук не се пита.</p>
           <div class="u-grid u-grid-fields">
-            <div class="field"><label>Портал</label>
+            <div class="field"><label for="ec-pkg-portal">Портал</label>
               <select id="ec-pkg-portal" ${dis}>${portals}</select>
             </div>
-            <div class="field"><label>Компресия на пакета</label>
+            <div class="field"><label for="ec-pkg-compression">Компресия на пакета</label>
               <select id="ec-pkg-compression" ${dis}>
                 ${option('none', p.compression, 'Без компресия (0)')}
                 ${option('default', p.compression, 'Обичайна (6)')}
                 ${option('max', p.compression, 'Максимална (9)')}
               </select>
             </div>
-            <div class="field"><label>Криптиране на пакета</label>
+            <div class="field"><label for="ec-pkg-encryption">Криптиране на пакета</label>
               <select id="ec-pkg-encryption" ${dis}>
                 ${option('none', p.encryption, 'Без криптиране')}
                 ${option('password', p.encryption, 'С парола (AES-256-GCM)')}
               </select>
             </div>
-            <div class="field"><label>Парола за пакета</label>
+            <div class="field"><label for="ec-pkg-password">Парола за пакета</label>
               <input type="password" id="ec-pkg-password" autocomplete="new-password" placeholder="минимум 8 знака · празно = генерирана"
                 value="${esc(p.password)}" ${off} />
             </div>
-            <div class="field"><label>Размер на частта</label>
+            <div class="field"><label for="ec-pkg-split">Размер на частта</label>
               <select id="ec-pkg-split" ${dis}>
                 ${option('none', p.split, 'Без разделяне')}
                 ${option('10', p.split, 'Части по 10 MB')}
@@ -140,7 +140,7 @@
                 ${option('100', p.split, 'Части по 100 MB')}
               </select>
             </div>
-            <div class="field"><label>Ограничение на скоростта</label>
+            <div class="field"><label for="ec-pkg-rate">Ограничение на скоростта</label>
               <select id="ec-pkg-rate" ${dis}>
                 ${option('0', String(p.rateKbps), 'Без ограничение')}
                 ${option('128', String(p.rateKbps), '128 KB/s')}
@@ -148,7 +148,7 @@
                 ${option('2048', String(p.rateKbps), '2 MB/s')}
               </select>
             </div>
-            <div class="field"><label>Паралелни заявки</label>
+            <div class="field"><label for="ec-pkg-parallel">Паралелни заявки</label>
               <select id="ec-pkg-parallel" ${dis}>
                 ${option('1', String(p.parallelChunks), '1 (един поток)')}
                 ${option('2', String(p.parallelChunks), '2 потока')}
@@ -202,7 +202,7 @@
           <div class="panel-head"><h2>Режим на експортиране</h2><span class="badge">${esc(cfg.mode)}</span></div>
           <div class="panel-body">
             <div class="field">
-              <label>Режим</label>
+              <label for="ec-mode">Режим</label>
               <select id="ec-mode">
                 ${R()
         .MODES.map((m) => `<option value="${m.id}" ${m.id === cfg.mode ? 'selected' : ''}>${esc(m.label)}</option>`)
@@ -222,7 +222,7 @@
             </div>
             <div class="two-col">
               <div class="field">
-                <label>Формат</label>
+                <label for="ec-format">Формат</label>
                 <select id="ec-format">
                   ${Object.entries(R().FORMATS)
         .map(([id, f]) => `<option value="${id}" ${id === cfg.format ? 'selected' : ''}>${esc(f.label)}</option>`)
@@ -230,7 +230,7 @@
                 </select>
               </div>
               <div class="field">
-                <label>Местоназначение</label>
+                <label for="ec-location">Местоназначение</label>
                 <select id="ec-location">
                   ${Object.entries(R().LOCATIONS)
         .map(([id, l]) => `<option value="${id}" ${id === cfg.location ? 'selected' : ''}>${esc(l.label)}</option>`)
@@ -239,7 +239,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Дело (за име на пакета)</label>
+              <label for="ec-case">Дело (за име на пакета)</label>
               <input id="ec-case" value="${esc(cfg.caseId)}" placeholder="CASE001" />
             </div>
           </div>

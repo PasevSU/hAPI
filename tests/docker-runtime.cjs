@@ -5,7 +5,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '../hapi_enterprise');
 const docker = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
 const run = fs.readFileSync(path.join(root, 'start.js'), 'utf8');
-assert.match(docker, /^FROM node:22\.21\.1-alpine3\.23$/m);
+assert.match(docker, /^FROM node:22\.23\.2-alpine3\.24$/m);
 assert.match(docker, /node:sqlite/);
 assert.match(run, /node:sqlite/);
 assert.doesNotMatch(docker, /apk add.*nodejs/);

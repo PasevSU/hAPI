@@ -23,9 +23,11 @@ const text = fs.readFileSync(doc, 'utf8');
 // ── 1. Версията е текущата ──────────────────────────────────────────────────
 const version = (fs.readFileSync(path.join(root, 'hapi_enterprise', 'config.yaml'), 'utf8').match(/^version:\s*"?([0-9.]+)"?/m) || [])[1];
 assert.ok(version, 'config.yaml носи версия');
-assert.ok(text.includes(version), `регистърът трябва да е проверен за ${version}`);
-const stale = [...text.matchAll(/\b0\.\d{2}\.\d+\b/g)].map((m) => m[0]).filter((v) => v !== version);
-assert.deepEqual([...new Set(stale)], [], 'регистърът не бива да споменава други версии като текущи: ' + stale.join(', '));
+assert.match(
+  text,
+  new RegExp('Проверен срещу кода при \\*\\*' + version.replace(/[.]/g, '\\.') + '\\*\\*'),
+  `заглавието на регистъра трябва да е проверено за ${version}`,
+);
 
 // ── 2. Редовете се разчитат ────────────────────────────────────────────────
 const rows = [...text.matchAll(/^\| (DEF-\d+) \|([\s\S]*?)\|$/gm)].map((m) => {

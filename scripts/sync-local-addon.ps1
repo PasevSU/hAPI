@@ -5,6 +5,7 @@
 #   pwsh -NoProfile -File scripts/sync-local-addon.ps1 -WhatIf        # само преглед
 #   pwsh -NoProfile -File scripts/sync-local-addon.ps1 -VerifyOnly    # проверка без копиране
 #   pwsh -NoProfile -File scripts/sync-local-addon.ps1 -Backup        # с backup на старата версия
+#   pwsh -NoProfile -File scripts/sync-local-addon.ps1 -BuildLocal     # build от source, без GHCR image
 #
 # Защо: Supervisor показва като локален add-on всяка папка в /addons с `config.yaml`
 # в корена. GitHub хранилището дава отделен add-on (0.54.0), затова за локална работа
@@ -15,7 +16,8 @@ param(
   [string]$IntegrationTarget = '\\192.168.50.4\config\custom_components\hapi_enterprise',
   [string]$Source,
   [switch]$Backup,
-  [switch]$VerifyOnly
+  [switch]$VerifyOnly,
+  [switch]$BuildLocal
 )
 
 $ErrorActionPreference = 'Stop'
@@ -73,6 +75,7 @@ $version = (Select-String -Path $srcConfig -Pattern '^version:\s*"?([0-9.]+)"?' 
 
 Write-Host "Източник: $Source (версия $version)"
 Write-Host "Цел:      $Target"
+if ($BuildLocal) { Write-Host 'Режим:    локален build от Dockerfile (без image tag/GHCR pull)' }
 
 if ($VerifyOnly) {
   Assert-AddonLayout $Target
@@ -115,6 +118,14 @@ $dstConfig = Join-Path $Target 'config.yaml'
 if (-not (Test-Path $dstConfig)) { throw "Синхронизацията не създаде $dstConfig" }
 $dstVersion = (Select-String -Path $dstConfig -Pattern '^version:\s*"?([0-9.]+)"?' | Select-Object -First 1).Matches[0].Groups[1].Value
 if ($dstVersion -ne $version) { throw "Версията в целта е $dstVersion, очаквах $version" }
+if ($BuildLocal) {
+  $dstText = Get-Content $dstConfig -Raw
+  $imageLines = [regex]::Matches($dstText, '(?m)^image:\s*.*(?:\r?\n|$)')
+  if ($imageLines.Count -ne 1) { throw "config.yaml трябва да има точно един image: ред за локално изключване; намерени $($imageLines.Count)" }
+  $dstText = [regex]::Replace($dstText, '(?m)^image:\s*.*(?:\r?\n|$)', '')
+  Set-Content -Path $dstConfig -Value $dstText -NoNewline -Encoding utf8
+  if (Select-String -Path $dstConfig -Pattern '^image:' -Quiet) { throw 'config.yaml: image: остана включен в local-build копието' }
+}
 foreach ($file in @('Dockerfile', 'server.js', 'start.js', 'observer.js', 'instance-lock.js', 'readiness.js')) {
   if (-not (Test-Path (Join-Path $Target $file))) { throw "Липсва $file в $Target" }
 }
@@ -135,7 +146,12 @@ if ($IntegrationTarget -and (Test-Path $integrationSource)) {
 }
 Write-Host ''
 Write-Host 'В Home Assistant:'
-Write-Host '  1) Settings → Add-ons → ⋮ → Check for updates (или Reload repositories)'
+Write-Host '  1) Settings → Add-ons → ⋮ → Reload repositories'
 Write-Host '  2) „hAPI Enterprise“ трябва да е с версията по-горе (секция Local apps)'
-Write-Host '  3) Rebuild/Инсталиране; при промени — Rebuild, за да се пре-билдне образът'
+if ($BuildLocal) {
+  Write-Host '  3) Install/Rebuild Local app — Supervisor build-ва текущия source, без да тегли GHCR tag'
+}
+else {
+  Write-Host '  3) Install/Rebuild Local app'
+}
 Write-Host '  4) Махни GitHub репото от ⋮ → Repositories, ако не искаш дубликат (той е 0.54.0)'

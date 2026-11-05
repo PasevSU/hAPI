@@ -2608,6 +2608,7 @@
     m.id = 'fm-modal';
     m.className = 'fm-modal';
     m.hidden = true;
+    m.tabIndex = -1;
     m.setAttribute('role', 'dialog');
     m.setAttribute('aria-modal', 'true');
     m.setAttribute('aria-labelledby', 'fm-modal-title');
@@ -2625,6 +2626,27 @@
       if (e.target === m) closeModal();
     });
     m.querySelector('#fm-modal-close').addEventListener('click', closeModal);
+    m.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab' || m.hidden) return;
+      const focusable = [...m.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])',
+      )].filter((el) => !el.hidden && el.getAttribute('aria-hidden') !== 'true');
+      if (!focusable.length) {
+        e.preventDefault();
+        m.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const outside = !m.contains(document.activeElement);
+      if (outside || (e.shiftKey && document.activeElement === first)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
     return m;
   }
   function closeModal() {
@@ -2646,7 +2668,11 @@
       state.issuedKey = '';
       if (host) render();
     }
-    if (back && back.focus) back.focus();
+    if (back && back.isConnected && back.focus) back.focus();
+    else {
+      const view = document.getElementById('view');
+      if (view && view.focus) view.focus();
+    }
   }
   /** Показва HTML текст или URL (iframe) в модалния прозорец. */
   function showModal(title, opts) {

@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.69.163"
+version: "0.69.164"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
@@ -8,19 +8,18 @@ url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
 documentation: "https://github.com/PasevSU/hAPI#readme"
 # Готов образ (0.69.154). Без `image:` store-ът СТРОИ образа на машината при всяко
 # обновяване — измерено 129 s на Raspberry Pi 4, зависимо от интернет и от toolchain.
-# С `image:` Supervisor само тегли. `{arch}` се замества с amd64 / aarch64, а тагът идва
-# от `version:` по-горе. Образът се публикува от
+# С `image:` Supervisor само тегли. `{arch}` се замества с amd64 / aarch64 / armv7, а
+# тагът идва от `version:` по-горе. Образът се публикува от
 # .github/workflows/addon-image.yml като ghcr.io/<owner>/{arch}-addon-hapi_enterprise.
 image: "ghcr.io/pasevsu/{arch}-addon-hapi_enterprise"
-# САМО 64-битови архитектури (0.69.163). Supervisor пази `ARCH_ALL = [aarch64, amd64]`, а
-# `armv7`/`armhf`/`i386` са в `ARCH_DEPRECATED` — за тях се пише warning при всяко зареждане
-# на store-а, а когато приложение има САМО такива, Supervisor вдига repair „deprecated_arch_app“.
-# HAOS също не се публикува за 32-bit машини, тоест обещанието беше празно.
 arch:
-  # 32-bit не се обещава: armv7/armhf са deprecated в Supervisor, а armhf (Pi Zero/1, armv6)
-  # никога не е имало Node 22 билд. Тук остават само платформите, за които има публикуван образ.
   - amd64
   - aarch64
+  # 32-bit Raspberry Pi OS (Pi 2/3/4/5). Official node:22-alpine ships linux/arm/v7;
+  # armhf (Pi Zero/1, armv6) has no Node 22 build, so it is deliberately not claimed.
+  # Забележка: Supervisor вече смята `armv7` за deprecated (приема го с warning) —
+  # маха се само с решение да отпадне 32-bit поддръжката.
+  - armv7
 homeassistant: "2024.6.0"
 startup: application
 boot: auto

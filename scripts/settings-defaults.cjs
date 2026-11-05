@@ -161,12 +161,12 @@ const MEANING = {
     bg: 'Празно: без карта на групи. HA не подава групи; reverse proxy, който ги добавя, може.',
   },
   storage_location: {
-    en: '`share` (default): documents live in `/share/hapi/data`, visible over Samba and surviving an add-on reinstall. `addon_config` keeps them in the add-on folder, `media` in the other shared folder.',
-    bg: '`share` (подразбиране): документите са в `/share/hapi/data`, видими през Samba и оцеляват преинсталиране на add-on-а. `addon_config` ги пази в папката на add-on-а, `media` — в другата споделена папка.',
+    en: '`addon_config` (default): data lives in the add-on folder and is included in Supervisor snapshots. `share` uses `/share/hapi/data` and is visible over Samba; `media` uses the other shared folder.',
+    bg: '`addon_config` (подразбиране): данните са в папката на add-on-а и влизат в snapshot-ите на Supervisor. `share` ползва `/share/hapi/data` и е видимо през Samba; `media` ползва другата споделена папка.',
   },
   storage_subdirectory: {
-    en: '`hapi/data`: one predictable subfolder inside the chosen location (up to three levels). If an older installation kept its data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty.',
-    bg: '`hapi/data`: една предвидима подпапка в избраното място (до три нива). Ако по-стара инсталация е пазила данните в предишната папка, add-on-ът продължава да ги ползва и пише `STORAGE_LEGACY_LOCATION`, вместо да стартира празен.',
+    en: '`hapi_enterprise` is the default subfolder (up to three levels are allowed). If an older installation kept data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty.',
+    bg: '`hapi_enterprise` е подразбираната подпапка (позволени са до три нива). Ако по-стара инсталация е пазила данните в предишната папка, add-on-ът продължава да ги ползва и пише `STORAGE_LEGACY_LOCATION`, вместо да стартира празен.',
   },
   storage_mode: {
     en: '`local`: the mounted folder is used directly. `ha_network` refuses to start when the mount is inactive.',
@@ -177,8 +177,8 @@ const MEANING = {
     bg: 'Празно: има значение само при `storage_mode: ha_network`, където името на mount-а е задължително.',
   },
   min_free_mb: {
-    en: '`100`: startup fails below 100 MB free. Raise it to `500`+ when you scan large folders.',
-    bg: '`100`: стартът се отказва под 100 MB свободни. Вдигни до `500`+ при сканиране на големи папки.',
+    en: '`1000`: startup fails below 1000 MB free. Lower it only if the host has less space available.',
+    bg: '`1000`: стартът се отказва под 1000 MB свободни. Намали прага само ако хостът има по-малко място.',
   },
   log_level: {
     en: '`info`: no per-request lines. `debug` logs one line per HTTP request; `trace` is for deep diagnostics.',

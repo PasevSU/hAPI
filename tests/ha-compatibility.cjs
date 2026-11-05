@@ -121,9 +121,9 @@ check('HA-M03', 'манифест', 'blocker', 'arch е валиден и пок
   return arch.join('+');
 });
 
-check('HA-M04', 'манифест', 'blocker', 'без deprecated arch стойности (Supervisor ги извежда като warning)', () => {
+check('HA-M04', 'манифест', 'info', 'deprecated arch стойности (приети от Supervisor)', () => {
   const deprecated = sectionItems('arch').filter((a) => ['armv7', 'armhf', 'i386'].includes(a));
-  need(!deprecated.length, 'Supervisor ги приема с warning и вдига repair приложение с САМО такива: ' + deprecated.join(', '));
+  need(!deprecated.length, 'Supervisor ги приема с warning: ' + deprecated.join(', '));
   return 'няма';
 });
 

@@ -15,7 +15,7 @@ Compose се добавя като втори режим само с два ко
 
 | Факт | Стойност | Откъде |
 | --- | --- | --- |
-| Един контейнер | `node:22.21.1-alpine3.23`, `CMD node /app/start.js` | `hapi_enterprise/Dockerfile` |
+| Един контейнер | `node:22.23.2-alpine3.24`, `CMD node /app/start.js` | `hapi_enterprise/Dockerfile` |
 | База | `node:sqlite` (вградена в Node), WAL, `synchronous=FULL` | `sqlite-store.js:5,12` |
 | Резервно копие | `backup: cold` — Supervisor спира add-on-а за snapshot | `config.yaml` |
 | Runtime зависимости | **нула** (`dependencies` липсва в `package.json`) | `package.json` |

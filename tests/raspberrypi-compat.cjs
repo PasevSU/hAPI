@@ -3,9 +3,8 @@
 //
 // Това е договорът за хардуер — проверява се, че обещанието „работи на Pi“ не е
 // само текст:
-//   • `arch` в config.yaml съдържа точно поддържаните архитектури — само 64-битовите
-//     (amd64, aarch64) — и НЕ обещава нито една от deprecated стойностите на Supervisor
-//     (armv7, armhf, i386), нито armv6, за които Node 22 няма билд;
+//   • `arch` в config.yaml съдържа точно поддържаните от базовата снимка архитектури
+//     (amd64, aarch64, armv7) и НЕ обещава armhf/armv6, за които Node 22 няма билд;
 //   • Dockerfile-ът е архитектурно неутрален: официална multi-arch снимка без
 //     `--platform`, без `apk add` и без `npm install` (всичко е Node built-in);
 //   • package.json няма runtime зависимости → няма native модули за компилиране;
@@ -27,19 +26,13 @@ assert.ok(archBlock, 'config.yaml: липсва arch списък');
 const arches = [...archBlock[1].matchAll(/^ {2}- ([a-z0-9]+)$/gm)].map((m) => m[1]);
 assert.deepEqual(
   arches.sort(),
-  ['aarch64', 'amd64'],
-  `arch трябва да е точно 64-битовите amd64+aarch64, намерени: ${arches.join(',')}`,
+  ['aarch64', 'amd64', 'armv7'],
+  `arch трябва да е точно amd64+aarch64+armv7, намерени: ${arches.join(',')}`,
 );
-// Supervisor: ARCH_ALL = [aarch64, amd64], ARCH_DEPRECATED = [armhf, armv7, i386]. Обещано
-// deprecated значи warning при всяко зареждане на store-а и repair, ако е единственото.
-for (const forbidden of ['armv7', 'armhf', 'i386', 'armv6']) {
-  assert.ok(
-    !arches.includes(forbidden),
-    `${forbidden} е deprecated в Supervisor (или няма Node 22 билд) — не бива да се обещава`,
-  );
+for (const unsupported of ['armhf', 'i386', 'armv6']) {
+  assert.ok(!arches.includes(unsupported), `armhf/armv6 няма Node 22 билд — ${unsupported} не бива да се обещава`);
 }
-assert.match(archBlock[0], /armhf[\s\S]{0,120}Pi Zero/i, 'коментарът в arch обяснява защо armhf липсва');
-assert.match(archBlock[0], /ARCH_DEPRECATED|deprecated/i, 'коментарът в arch казва защо 32-bit отпада');
+assert.match(archBlock[0], /armhf[\s\S]{0,60}Pi Zero/i, 'коментарът в arch обяснява защо armhf липсва');
 
 // ── 2. Dockerfile: архитектурно неутрален ───────────────────────────────────
 const dockerfile = read('hapi_enterprise/Dockerfile');
@@ -50,7 +43,7 @@ assert.ok(!/--platform=/.test(dockerfile), 'не се фиксира --platform 
 assert.ok(!/--platform=\S*arm64\/v8/.test(dockerfile), 'без arm64/v8 фиксация');
 assert.ok(!/^\s*RUN\s+.*\bapk\s+add\b/m.test(dockerfile), 'без apk пакети — те са архитектурно-зависими');
 assert.ok(!/npm (install|ci)/.test(dockerfile), 'без npm install по време на билд');
-assert.match(dockerfile, /linux\/arm64/, 'коментарът изброява поддържаните платформи');
+assert.match(dockerfile, /linux\/arm\/v7/, 'коментарът изброява поддържаните платформи');
 assert.match(dockerfile, /Multi-arch/i, 'Dockerfile документира multi-arch основанието');
 
 // ── 3. Без native зависимости ──────────────────────────────────────────────
@@ -93,11 +86,11 @@ assert.match(startJs, /requires Node\.js >=22\.13/, 'липсва Node >=22.13 �
 // ── 5. Документация ────────────────────────────────────────────────────────
 const readme = read('hapi_enterprise/README.md');
 assert.match(readme, /## Raspberry Pi and small boards/, 'липсва секция за Raspberry Pi');
-for (const needle of ['aarch64', 'Pi Zero', 'memory_limit_mb', 'linux/arm64', '32-bit']) {
+for (const needle of ['aarch64', 'armv7', 'Pi Zero', 'memory_limit_mb', 'linux/arm/v7']) {
   assert.ok(readme.includes(needle), `README не споменава „${needle}“`);
 }
 const rootReadme = read('README.md');
-assert.match(rootReadme, /arch-amd64%20%7C%20aarch64/, 'root README: баджът не показва поддържаните архитектури');
+assert.match(rootReadme, /arch-amd64%20%7C%20aarch64%20%7C%20armv7/, 'root README: баджът не показва armv7');
 
 // add-on-ът не бива да изисква x86-специфични инструменти в runtime пътя.
 const serverSrc = read('hapi_enterprise/server.js');

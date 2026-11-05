@@ -10,11 +10,6 @@
 (`ghcr.io/pasevsu/<arch>-addon-hapi_enterprise`) — измерено 14 s вместо 129 s за build на
 Raspberry Pi 4. Ако тегленето се провали, виж [диагностиката](06-troubleshooting.md).
 
-Поддържат се **само 64-битови архитектури** — `amd64` и `aarch64`. 32-bit системи
-(`armv7`/`armhf`) не се обещават: Supervisor ги пази в `ARCH_DEPRECATED`, HAOS не се
-публикува за тях, а Pi Zero/1 (armv6) дори няма Node 22 билд. На 32-bit машина add-on-ът
-няма да се появи като съвместим — това е нарочно, а не липсващ файл.
-
 ## 2.2. Единственото задължително нещо: токенът
 
 Отвори **Конфигурация** на add-on-а и попълни `token`:
@@ -32,7 +27,7 @@ Raspberry Pi 4. Ако тегленето се провали, виж [диаг�
 След **Start** в лога трябва да видиш трите listener-а и реда за старт:
 
 ```
-INFO  server startup node=v22.21.1 ... dataDir=/config/hapi_enterprise ingress=true ... port=8099 adminPort=8098 tsa=true
+INFO  server startup node=v22.23.2 ... dataDir=/config/hapi_enterprise ingress=true ... port=8099 adminPort=8098 tsa=true
 INFO  server listening listener=public host=0.0.0.0 port=8099
 INFO  server listening listener=ingress-admin host=0.0.0.0 port=8098
 INFO  server listening listener=public-gateway host=0.0.0.0 port=8088
@@ -79,3 +74,12 @@ ha apps stop 99438e72_hapi_enterprise                        # спиране
 Връщане към предишна версия: Add-on → меню → **Tагове/версии** (Supervisor пази предишния
 образ до следващото обновяване) или от snapshot. Данните не се пипат от обновяването — те са в
 `/config/hapi_enterprise` и остават.
+
+## 2.7. Watchdog
+
+`watchdog:` в `config.yaml` задава адреса за проверка, но **не включва watchdog-а**. Това е
+отделен ключ за всяко приложение и **по подразбиране е изключен**. Ако искаш Supervisor да
+рестартира add-on-а при спиране или неуспешна проверка, отвори страницата му **Информация**,
+включи превключвателя **Watchdog**, после стартирай add-on-а и потвърди, че състоянието му е
+„Started“. Адресът за проверка е `/health` на порта 8099; `/health` показва, че процесът е
+жив, а не че всички зависимости са готови.

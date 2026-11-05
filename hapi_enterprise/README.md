@@ -15,10 +15,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.163-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.164-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
-  <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
+  <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-informational" alt="Architectures">
 </p>
 
 # hAPI Enterprise — Home Assistant add-on
@@ -52,8 +52,8 @@ account.
   audit trail is hash-chained, so tampering is detectable.
 - **One backend, two worlds** — the same Node.js service runs as a Home Assistant add-on
   and on a Windows edge machine.
-- **Home Assistant native** — Ingress console in the sidebar, Supervisor watchdog, cold
-  backups, RBAC mapped to HA users/groups.
+- **Home Assistant native** — Ingress console in the sidebar, an optional per-app Supervisor
+  watchdog, cold backups, RBAC mapped to HA users/groups.
 
 ## How it works
 
@@ -128,7 +128,7 @@ sensors) is installed through HACS from the same repository — see
 ## Requirements
 
 - Home Assistant OS or Home Assistant Supervised (the add-on needs the Supervisor).
-- Architecture `amd64` or `aarch64`.
+- Architecture `amd64`, `aarch64` or `armv7` (Supervisor may warn that `armv7` is deprecated).
 - **One mandatory field: `token`.** The console still authenticates with the Home Assistant
   user who opens it, but the add-on also needs an internal key for encryption, signed-URL
   HMAC and the audit chain. Put it in `secrets.yaml` as `hapi_token` (24+ characters) and
@@ -148,12 +148,11 @@ Five minutes of preparation avoids almost every first-start surprise.
 
 1. **Take a Home Assistant snapshot first** — Settings → System → Backups → *Create
    backup*. The add-on uses `backup: cold`, so future snapshots stop it for a moment.
-2. **Decide where documents live.** The default is `share` → `/share/hapi/data`.
-   - `share` (**default**) — documents land in the shared folder (`/share/hapi/data`),
-     visible over Samba and to other add-ons, and they survive an add-on reinstall.
-   - `addon_config` — the vault stays inside the add-on's own folder
-     (`/addon_configs/hapi_enterprise` on the host). Pick this when the documents must
-     stay out of the shared folder.
+2. **Decide where documents live.** The default is `addon_config` →
+   `/config/hapi_enterprise` in the container (the add-on's own configuration folder).
+   - `addon_config` (**default**) — data is included in Supervisor snapshots and stays
+     separate from `/share`.
+   - `share` — documents go to `/share/hapi/data`, visible over Samba and to other add-ons.
 3. **For network storage**, create the mount in Settings → System → Storage **before**
    starting the add-on. With `storage_mode: ha_network` the add-on refuses to start when
    the mount is inactive instead of silently writing to the boot disk.
@@ -200,10 +199,10 @@ tls_key: ""
 
 | Option                 | Recommended                | Why                                                                   |
 | ---------------------- | -------------------------- | --------------------------------------------------------------------- |
-| `storage_location`     | `share`                    | Documents survive an add-on reinstall and are reachable over Samba; use `addon_config` if they must stay out of the shared folder. |
-| `storage_subdirectory` | `hapi/data`                | One predictable folder under the chosen location (up to three levels). |
+| `storage_location`     | `share` (deliberate choice) | The shipped default is `addon_config`; choose `share` for Samba access. |
+| `storage_subdirectory` | `hapi/data` (with `share`) | The shipped default is `hapi_enterprise`; up to three path levels are allowed. |
 | `storage_mode`         | `local`                    | `ha_network` only with an active mount, otherwise startup fails.      |
-| `min_free_mb`          | `200` (500+ for scans)     | Fails closed before a half-written upload fills the disk.             |
+| `min_free_mb`          | `1000` (500+ for scans)    | Fails closed before a half-written upload fills the disk.             |
 | `log_level`            | `info`                     | `debug` writes one line per request — use it only while diagnosing.   |
 | `public_domain`        | your external host         | QR codes are absolute URLs; empty domain = LAN-only portals.          |
 | `public_same_origin`   | `true`                     | The integration serves the public API on HA's own host and port.      |
@@ -265,11 +264,11 @@ this tab. Options apply on add-on restart.
 | Same-origin URLs | `public_same_origin` | `true` | `false`: absolute URLs are built from `public_domain`. `true` emits relative URLs on the HA host and port. |
 | User roles | `user_roles` | `{"pasev-admin":"admin"}` | Empty: every Ingress user is `admin`. The map is for demotion, e.g. `{"guest": "viewer"}`. |
 | Group roles | `group_roles` | — | Empty: no group mapping. Home Assistant does not send groups; a reverse proxy that adds them can. |
-| Storage location | `storage_location` | `addon_config` | `share` (default): documents live in `/share/hapi/data`, visible over Samba and surviving an add-on reinstall. `addon_config` keeps them in the add-on folder, `media` in the other shared folder. |
-| Storage subdirectory | `storage_subdirectory` | `hapi_enterprise` | `hapi/data`: one predictable subfolder inside the chosen location (up to three levels). If an older installation kept its data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |
+| Storage location | `storage_location` | `addon_config` | `addon_config` (default): data lives in the add-on folder and is included in Supervisor snapshots. `share` uses `/share/hapi/data` and is visible over Samba; `media` uses the other shared folder. |
+| Storage subdirectory | `storage_subdirectory` | `hapi_enterprise` | `hapi_enterprise` is the default subfolder (up to three levels are allowed). If an older installation kept data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |
 | Storage mode | `storage_mode` | `local` | `local`: the mounted folder is used directly. `ha_network` refuses to start when the mount is inactive. |
 | Network storage name | `storage_mount_name` | — | Empty: only meaningful with `storage_mode: ha_network`, where the mount name is required. |
-| Minimum free space (MB) | `min_free_mb` | `1000` | `100`: startup fails below 100 MB free. Raise it to `500`+ when you scan large folders. |
+| Minimum free space (MB) | `min_free_mb` | `1000` | `1000`: startup fails below 1000 MB free. Lower it only if the host has less space available. |
 | Log level | `log_level` | `info` | `info`: no per-request lines. `debug` logs one line per HTTP request; `trace` is for deep diagnostics. |
 | Rules directory | `config_dir` | — | Empty: `/config/rules`, where the built-in rules are copied on first start and can be edited. |
 | Publish the QR evidence portal | `evidence_portal_deploy` | `true` | `true`: the Evidence View page is copied to `www/hapi/data` in the Home Assistant configuration (`/config/www/hapi/data` for HA, `/homeassistant/www/hapi/data` inside the add-on) and served at `/local/hapi/data/`. |
@@ -372,21 +371,21 @@ reports `primary` / `mirror` state (`ok`, `mismatch`, `missing`).
 | Path      | Access | Used for                                                                                              |
 | --------- | ------ | ----------------------------------------------------------------------------------------------------- |
 | `/config` | `rw`   | Add-on folder (`app_configs/<slug>` on the host): options, translations, `admin-token`                 |
-| `/share`  | `rw`   | **Default data location** (`/share/hapi/data`): database, files, audit chain, receipts, backups, portal folders |
+| `/config` | `rw`   | **Default data location** (`/config/hapi_enterprise`): database, files, audit chain, receipts, backups, portal folders |
+| `/share`  | `rw`   | Optional shared storage (`storage_location: share`), visible over Samba |
 | `/media`  | `rw`   | Optional media/documents folder (`storage_location: media`)                                           |
 
 The add-on folder comes from `map: app_config:rw`; there is no `/addon_config` mount.
 `DATA_DIR` is not `/data`: it is `<storage_location>/<storage_subdirectory>`, resolved by
-`storage-preflight.js` at start. Since 0.69.87 the default is **`/share/hapi/data`**
-(`storage_location: share`, `storage_subdirectory: hapi/data`); `addon_config` and `media`
-remain valid choices, and the subdirectory may have up to three levels (`documents/hapi/data`).
+`storage-preflight.js` at start. The current default is **`/config/hapi_enterprise`**
+(`storage_location: addon_config`, `storage_subdirectory: hapi_enterprise`); `share` and
+`media` remain valid choices, and the subdirectory may have up to three levels.
 
-> **Upgrading from an older version.** The old default was `addon_config/hapi_enterprise`.
-> If that folder holds data and the new location is empty, the add-on **keeps using the old
-> path** and logs `STORAGE_LEGACY_LOCATION` — otherwise the upgrade would start with an empty
-> database and the portals would look lost. To move: stop the add-on, move
-> `/config/hapi_enterprise` to `/share/hapi/data`, start it again. Back up the chosen folder
-> and `/share` together — the database references documents by path.
+> **Upgrading from an older version.** Earlier defaults used `share/hapi/data`. If that
+> folder holds data and the configured location is empty, the add-on **keeps using the old
+> path** and logs `STORAGE_LEGACY_LOCATION` — otherwise the upgrade could start with an empty
+> database. Back up both locations before changing storage options; do not move the database
+> without its referenced files.
 
 ## Document Generator (`/generator/`)
 
@@ -510,8 +509,8 @@ Scrape example (Home Assistant or any Prometheus-compatible agent):
 
 ## Raspberry Pi and small boards
 
-The add-on builds from `node:22.21.1-alpine3.23`, an official multi-architecture image
-(`linux/amd64`, `linux/arm64`). There is no `--platform` pin and no
+The add-on builds from `node:22.23.2-alpine3.24`, an official multi-architecture image
+(`linux/amd64`, `linux/arm64`, `linux/arm/v7`). There is no `--platform` pin and no
 `npm install`: every dependency is a Node built-in, so the same `Dockerfile` produces a
 working image on each architecture.
 
@@ -523,9 +522,9 @@ rebuilds are no longer byte-identical; security wins over bit-for-bit reproducib
 | Board / OS                                 | `arch`    | Notes                                            |
 | ------------------------------------------ | --------- | ------------------------------------------------ |
 | Raspberry Pi 4/5, 64-bit Raspberry Pi OS   | `aarch64` | Recommended — most RAM, best throughput.         |
-| Raspberry Pi 3, 64-bit Raspberry Pi OS     | `aarch64` | Works; keep the heap cap and portals modest.     |
-| Raspberry Pi 2 with 64-bit Raspberry Pi OS | `aarch64` | Works, but 1 GB RAM: set `memory_limit_mb: 256`. |
-| 32-bit systems (armv7/armhf), Pi Zero / Pi 1 | —       | **Not supported**: Supervisor lists `armv7`/`armhf` as deprecated and HAOS ships no 32-bit images; Node 22 has no armv6 build. |
+| Raspberry Pi 3/4/5, 32-bit Raspberry Pi OS | `armv7`   | Works; keep the heap cap and portals modest.     |
+| Raspberry Pi 2 with 32-bit Raspberry Pi OS | `armv7`   | Works, but 1 GB RAM: set `memory_limit_mb: 256`. |
+| Raspberry Pi Zero / Pi 1 (`armhf`, armv6)  | —         | **Not supported**: Node 22 has no armv6 build.   |
 
 Recommendations for a Pi installation:
 
@@ -651,8 +650,9 @@ boundaries into real tokens — the interface never invents one.
 
 ## Health, backups and stop behaviour
 
-- `watchdog: http://[HOST]:[PORT:8099]/health` — the Supervisor restarts the add-on when
-  the process stops answering.
+- `watchdog: http://[HOST]:[PORT:8099]/health` supplies the probe URL, but it does not enable
+  the Supervisor watchdog by itself. The watchdog is a **per-app switch** and defaults to false
+  (off) for every new install; enable it on the add-on's **Info** page for automatic recovery.
 - `backup: cold` — the add-on is stopped for the snapshot because SQLite runs in WAL
   mode and a hot copy can capture a torn database.
 - `timeout: 30` — the process gets time to close SQLite on `SIGTERM`.

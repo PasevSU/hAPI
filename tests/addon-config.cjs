@@ -127,8 +127,20 @@ assert.match(cfg, /^backup: cold$/m, 'backup трябва да е cold (SQLite W
 assert.match(cfg, /^timeout: 30$/m, 'timeout трябва да дава време за затваряне на SQLite');
 assert.match(cfg, /^ingress_stream: true$/m, 'ingress_stream трябва да е true за големи качвания');
 
-// The Supervisor only restarts a hung process when a watchdog is declared.
+// The Supervisor only restarts a hung process when a watchdog is declared — but the declared
+// URL is not enough: the watchdog is a PER-APP switch that defaults to false for every new
+// install (`SCHEMA_APP_USER: vol.Optional(ATTR_WATCHDOG, default=False)` in Supervisor), and
+// with it off neither the /health probe nor the restart on a crashed container runs. That is
+// why 0.69.164 exists: the docs promised a restart that a fresh install never got.
 assert.match(cfg, /^watchdog: "http:\/\/\[HOST\]:\[PORT:8099\]\/health"$/m, 'watchdog трябва да сочи /health на 8099');
+{
+  const addonReadme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  assert.match(addonReadme, /per-app switch/i, 'README-то на add-on-а трябва да казва, че watchdog-ът е ключ за всяко приложение');
+  assert.match(addonReadme, /off for every new install|defaults?\s+to\s+(?:false|off)/i, 'README-то трябва да казва, че по подразбиране е изключен');
+  const manual = fs.readFileSync(path.join(__dirname, '..', 'documentation', '09_COMPLETE_MANUAL', '02-install.md'), 'utf8');
+  assert.match(manual, /2\.7\. Watchdog/, 'ръководството трябва да има раздел за включване на watchdog-а');
+  assert.match(manual, /по подразбиране е изключен/, 'ръководството трябва да казва, че е изключен по подразбиране');
+}
 
 // API достъп: notify.js праща съобщения през Supervisor проксито
 // `http://supervisor/core/api/services/...`. Без `homeassistant_api: true` проксито

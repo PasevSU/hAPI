@@ -2,14 +2,12 @@
 # The Home Assistant Supervisor can build this add-on without relying on the
 # variable Node version available in a generic BUILD_FROM base image.
 #
-# Multi-arch: this official tag publishes linux/amd64 and linux/arm64, so the same
-# Dockerfile builds on x86-64 servers and 64-bit Raspberry Pi OS (aarch64). No --platform
-# pin and no dependency install: every dependency is a Node built-in, which keeps the image
-# architecture independent.
-# 32-bit ARM (armv7/armhf, Pi Zero/1) is NOT built: Supervisor keeps it in ARCH_DEPRECATED
-# (ARCH_ALL = aarch64 + amd64) and HAOS no longer ships 32-bit images, so config.yaml does
-# not claim it. armv6 had no Node 22 build in the first place.
-FROM node:22.21.1-alpine3.23
+# Multi-arch: this official tag publishes linux/amd64, linux/arm64 and linux/arm/v7,
+# so the same Dockerfile builds on x86-64 servers, 64-bit Raspberry Pi OS (aarch64)
+# and 32-bit Raspberry Pi OS (armv7). No --platform pin and no dependency install: every
+# dependency is a Node built-in, which keeps the image architecture independent.
+# armhf/armv6 (Pi Zero/1) has no Node 22 build and is not claimed in config.yaml.
+FROM node:22.23.2-alpine3.24
 WORKDIR /app
 # Сигурност на слоя (0.69.87). Сканът на Docker DX показа, че findings идват от две места:
 # базовите пакети на Alpine (4 critical + 26 high в слоя `alpine`) и npm, който базовият

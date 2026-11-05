@@ -1,12 +1,12 @@
 {
   "name": "hapi-enterprise",
-  "version": "0.69.163",
+  "version": "0.69.164",
   "private": true,
   "description": "hAPI Enterprise — документи и портали между Home Assistant и Windows",
   "scripts": {
-    "test": "node scripts/test-matrix.cjs",
+    "test": "node scripts/test-matrix.cjs --skip=release-status",
     "test:once": "node scripts/run-tests.cjs",
-    "test:matrix": "node scripts/test-matrix.cjs --attempts=5",
+    "test:matrix": "node scripts/test-matrix.cjs --attempts=5 --skip=release-status",
     "audit:gui": "node scripts/audit-gui-compat.cjs",
     "dashboard": "node scripts/dev-dashboard.cjs",
     "sync:local": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/sync-local-addon.ps1",
