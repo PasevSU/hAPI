@@ -212,6 +212,17 @@ for (const area of AREAS) {
   assert.ok(byOwner.has('tests/' + area.owner), `област „${area.area}“: ${area.owner} липсва в каталога на правилата`);
 }
 
+// Човешкият регистър `reports/TEST-RULES.md` трябва да изброява СЪЩИТЕ правила: генерира се
+// от същия скрипт, но без тази проверка може да остарее незабелязано (каталогът е код,
+// регистърът е документ — а документ, който лъже, е по-лош от липсващ).
+const register = read('reports/TEST-RULES.md');
+const registered = [...register.matchAll(/^\| `([^`]+)` \|/gm)].map((m) => m[1]).sort();
+assert.deepEqual(
+  registered,
+  [...ruleIds].sort(),
+  'reports/TEST-RULES.md не изброява същите правила — пусни: node scripts/gen-test-rules.cjs',
+);
+
 console.log(
   `PASS scenario matrix: ${AREAS.length} курирани области, ${RULES.length} правила (= тестови файлове), ` +
   `${routes.size} маршрута, ${capabilities.length} RBAC способности, ${options.length} опции`,
