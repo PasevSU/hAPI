@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.159-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.160-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-informational" alt="Architectures">
@@ -257,23 +257,23 @@ this tab. Options apply on add-on restart.
 | Second copy of the files (folder or s3) | `storage_mirror` | — | Empty: no second copy of uploaded files. A folder is verified and repairable; `s3://bucket/prefix?endpoint=…&lock=дни` writes the same copy into S3-compatible storage with Object Lock. |
 | S3 access key (s3 mirror only) | `s3_access_key` | — | Only for the `s3` mirror target. Empty: an s3 target is refused instead of silently writing nowhere. |
 | S3 secret key (s3 mirror only) | `s3_secret_key` | — | Only for the `s3` mirror target. Never printed and never part of the mirror address. |
-| Node heap limit (MB) | `memory_limit_mb` | `0` | `0` keeps the Node.js default heap. `256`-`384` is the sane range on a Raspberry Pi. |
+| Node heap limit (MB) | `memory_limit_mb` | `1024` | `0` keeps the Node.js default heap. `256`-`384` is the sane range on a Raspberry Pi. |
 | Database id | `db_id` | `1` | `1` is the default namespace for composite keys. Change it only for a second, independent database. |
 | Configuration profiles | `profiles` | — | Empty: the built-in profile set is used. A path or JSON replaces it; invalid JSON is ignored. |
 | Public domain | `public_domain` | — | Empty: relative links only — portals and QR codes work on the local network, not from the internet. |
-| Public API gateway | `public_gateway` | `false` | `false`: port `8088` stays unpublished. `true` opens the add-on gateway for your own reverse proxy. |
-| Same-origin URLs | `public_same_origin` | `false` | `false`: absolute URLs are built from `public_domain`. `true` emits relative URLs on the HA host and port. |
-| User roles | `user_roles` | — | Empty: every Ingress user is `admin`. The map is for demotion, e.g. `{"guest": "viewer"}`. |
+| Public API gateway | `public_gateway` | `true` | `false`: port `8088` stays unpublished. `true` opens the add-on gateway for your own reverse proxy. |
+| Same-origin URLs | `public_same_origin` | `true` | `false`: absolute URLs are built from `public_domain`. `true` emits relative URLs on the HA host and port. |
+| User roles | `user_roles` | `{"pasev-admin":"admin"}` | Empty: every Ingress user is `admin`. The map is for demotion, e.g. `{"guest": "viewer"}`. |
 | Group roles | `group_roles` | — | Empty: no group mapping. Home Assistant does not send groups; a reverse proxy that adds them can. |
-| Storage location | `storage_location` | `share` | `share` (default): documents live in `/share/hapi/data`, visible over Samba and surviving an add-on reinstall. `addon_config` keeps them in the add-on folder, `media` in the other shared folder. |
-| Storage subdirectory | `storage_subdirectory` | `hapi/data` | `hapi/data`: one predictable subfolder inside the chosen location (up to three levels). If an older installation kept its data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |
+| Storage location | `storage_location` | `addon_config` | `share` (default): documents live in `/share/hapi/data`, visible over Samba and surviving an add-on reinstall. `addon_config` keeps them in the add-on folder, `media` in the other shared folder. |
+| Storage subdirectory | `storage_subdirectory` | `hapi_enterprise` | `hapi/data`: one predictable subfolder inside the chosen location (up to three levels). If an older installation kept its data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |
 | Storage mode | `storage_mode` | `local` | `local`: the mounted folder is used directly. `ha_network` refuses to start when the mount is inactive. |
 | Network storage name | `storage_mount_name` | — | Empty: only meaningful with `storage_mode: ha_network`, where the mount name is required. |
-| Minimum free space (MB) | `min_free_mb` | `100` | `100`: startup fails below 100 MB free. Raise it to `500`+ when you scan large folders. |
+| Minimum free space (MB) | `min_free_mb` | `1000` | `100`: startup fails below 100 MB free. Raise it to `500`+ when you scan large folders. |
 | Log level | `log_level` | `info` | `info`: no per-request lines. `debug` logs one line per HTTP request; `trace` is for deep diagnostics. |
 | Rules directory | `config_dir` | — | Empty: `/config/rules`, where the built-in rules are copied on first start and can be edited. |
 | Publish the QR evidence portal | `evidence_portal_deploy` | `true` | `true`: the Evidence View page is copied to `www/hapi/data` in the Home Assistant configuration (`/config/www/hapi/data` for HA, `/homeassistant/www/hapi/data` inside the add-on) and served at `/local/hapi/data/`. |
-| RFC 3161 timestamps | `tsa_enabled` | `false` | `false`: the RFC 3161 endpoints answer `409` and no tokens are created. Nothing is ever faked. |
+| RFC 3161 timestamps | `tsa_enabled` | `true` | `false`: the RFC 3161 endpoints answer `409` and no tokens are created. Nothing is ever faked. |
 | START TSA URL | `tsa_start_url` | `https://zeitstempel.dfn.de/` | DFN timestamp service for the START boundary (the manifest digest). |
 | STOP TSA URL | `tsa_stop_url` | `https://timestamp.digicert.com` | DigiCert timestamp service for the STOP boundary (the closing digest). |
 | Sign export packages | `sign_packages` | `false` | `false`: packages are not signed until a private key is attached in the console. |

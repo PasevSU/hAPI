@@ -55,11 +55,23 @@ for (const key of Object.keys(pkg.devDependencies || {})) {
 }
 
 // ── 4. memory_limit_mb: опция, schema, преводи, start.js ───────────────────
-assert.match(cfg, /^ {2}memory_limit_mb: 0$/m, 'опцията memory_limit_mb липсва или не е 0 по подразбиране');
+// Стойността по подразбиране НЕ е задължително 0: от 0.69.160 тя е 1024, за да съвпада с
+// работещото разпределение (изданието се доставя с изпитаните стойности). Важното за Pi е
+// стойността да е в разумен диапазон и документацията да казва кога да се смъкне до
+// 256-384 на малка машина — иначе heap-ът може да надхвърли паметта на контейнера.
+const memMatch = /^ {2}memory_limit_mb: (\d+)$/m.exec(cfg);
+assert.ok(memMatch, 'опцията memory_limit_mb липсва в config.yaml');
+const memDefault = Number(memMatch[1]);
+assert.ok(
+  memDefault === 0 || (memDefault >= 256 && memDefault <= 2048),
+  `memory_limit_mb по подразбиране е ${memDefault} MB — допустимо е 0 (auto) или 256..2048`,
+);
 assert.match(cfg, /^ {2}memory_limit_mb: int\(0,8192\)\?$/m, 'schema трябва да ограничава 0..8192');
 for (const lang of ['en', 'bg']) {
   const text = read(`hapi_enterprise/translations/${lang}.yaml`);
   assert.match(text, /^ {2}memory_limit_mb:$/m, `${lang}.yaml не покрива memory_limit_mb`);
+  // Описанието трябва да казва и безопасния диапазон за малка машина.
+  assert.match(text, /256-384/, `${lang}.yaml не споменава безопасния диапазон 256-384 за малки машини`);
 }
 // Entrypoint-ът е JS: опцията се чете от options.json и се превръща в NODE_OPTIONS.
 const startJs = read('hapi_enterprise/start.js');

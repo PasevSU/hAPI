@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-05T04:12:46.927Z",
-  "files": 194,
-  "lines": 51197,
+  "generatedAt": "2026-11-05T05:20:49.192Z",
+  "files": 195,
+  "lines": 51279,
   "bySeverity": {
     "high": 0,
     "medium": 0,
@@ -54,8 +54,8 @@
       "findings": 11
     },
     "скриптове": {
-      "files": 36,
-      "lines": 6609,
+      "files": 37,
+      "lines": 6691,
       "findings": 0
     }
   },
@@ -88,7 +88,7 @@
       "file": "custom_components/hapi_enterprise/const.py",
       "segment": "интеграция",
       "lines": 32,
-      "tests": 367,
+      "tests": 368,
       "findings": 0,
       "rules": {}
     },
@@ -120,7 +120,7 @@
       "file": "custom_components/hapi_enterprise/portal.js",
       "segment": "интеграция",
       "lines": 848,
-      "tests": 196,
+      "tests": 197,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -626,7 +626,7 @@
       "file": "hapi_enterprise/plugins/storage.js",
       "segment": "plugins",
       "lines": 30,
-      "tests": 64,
+      "tests": 65,
       "findings": 1,
       "rules": {
         "swallow-promise": 1
@@ -696,7 +696,7 @@
       "file": "hapi_enterprise/portal/portal.js",
       "segment": "portal",
       "lines": 1087,
-      "tests": 196,
+      "tests": 197,
       "findings": 2,
       "rules": {
         "swallow-promise": 2
@@ -1129,7 +1129,7 @@
       "file": "hapi_enterprise/start.js",
       "segment": "ядро",
       "lines": 277,
-      "tests": 75,
+      "tests": 76,
       "findings": 0,
       "rules": {}
     },
@@ -1225,7 +1225,7 @@
       "file": "hapi_enterprise/ui/data.js",
       "segment": "ui",
       "lines": 207,
-      "tests": 203,
+      "tests": 204,
       "findings": 0,
       "rules": {}
     },
@@ -1521,6 +1521,14 @@
       "segment": "скриптове",
       "lines": 64,
       "tests": 2,
+      "findings": 0,
+      "rules": {}
+    },
+    {
+      "file": "scripts/compare-live-options.cjs",
+      "segment": "скриптове",
+      "lines": 82,
+      "tests": 1,
       "findings": 0,
       "rules": {}
     },

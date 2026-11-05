@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.159**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.160**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **109** backend модула · **17** HTTP компонента · **23** UI модула · **8** Python модула · **36** инструмента · **356** теста.
+Общо: **109** backend модула · **17** HTTP компонента · **23** UI модула · **8** Python модула · **37** инструмента · **357** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -187,7 +187,7 @@
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (36)
+### Инструменти (`scripts/*.cjs`) (37)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -199,6 +199,7 @@
 | `scripts/build-haoss.cjs` | Builds a standalone, HACS-compatible integration repository in release/haoss. |
 | `scripts/build-release.cjs` | Строи изданието за Home Assistant в `dist/`: |
 | `scripts/check-tag-version.cjs` | Проверка „таг = версия“ — тагът, който се публикува, трябва да сочи точно тази |
+| `scripts/compare-live-options.cjs` | СРАВНЯВА ЖИВИТЕ ОПЦИИ НА ADD-ON-А С defaults В `config.yaml` — БЕЗ ДА ПЕЧАТА ТАЙНИ. |
 | `scripts/decrypt-package.cjs` | Разшифроване на криптиран експортен пакет БЕЗ add-on. |
 | `scripts/dev-dashboard.cjs` | команди (запаметявани в dashboard-commands.json) |
 | `scripts/docs-index.cjs` | ПЪЛНО СЪДЪРЖАНИЕ НА `documentation/` — ГЕНЕРИРАНО ОТ ДИСКА. |

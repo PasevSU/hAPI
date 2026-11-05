@@ -3,7 +3,7 @@
 Генериран от `node scripts/script-audit.cjs`. Редът е за ВСЕКИ файл, включително когато
 сигналите са нула: така „обходено“ може да се провери, вместо да се вярва.
 
-Обходени: **194 файла · 51197 реда**.
+Обходени: **195 файла · 51279 реда**.
 Намерени: **212** сигнала — високи **0** · средни 0 · ниски 212.
 
 По правило: `swallow-promise` 99 · `unused-export` 98 · `sync-fs-in-request` 15
@@ -14,7 +14,7 @@
 | --- | ---: | ---: | ---: |
 | ядро | 101 | 24885 | 170 |
 | ui | 23 | 12215 | 11 |
-| скриптове | 36 | 6609 | 0 |
+| скриптове | 37 | 6691 | 0 |
 | routes | 17 | 2798 | 25 |
 | интеграция | 9 | 2669 | 1 |
 | portal | 2 | 1573 | 2 |
@@ -31,11 +31,11 @@
 | `custom_components/hapi_enterprise/__init__.py` | 463 | 19 | — | чисто |
 | `custom_components/hapi_enterprise/binary_sensor.py` | 158 | 3 | — | чисто |
 | `custom_components/hapi_enterprise/config_flow.py` | 220 | 11 | — | чисто |
-| `custom_components/hapi_enterprise/const.py` | 32 | 367 | — | чисто |
+| `custom_components/hapi_enterprise/const.py` | 32 | 368 | — | чисто |
 | `custom_components/hapi_enterprise/coordinator.py` | 216 | 8 | — | чисто |
 | `custom_components/hapi_enterprise/diagnostics.py` | 84 | 15 | — | чисто |
 | `custom_components/hapi_enterprise/entity.py` | 57 | 4 | — | чисто |
-| `custom_components/hapi_enterprise/portal.js` | 848 | 196 | swallow-promise×1 | нисък |
+| `custom_components/hapi_enterprise/portal.js` | 848 | 197 | swallow-promise×1 | нисък |
 | `custom_components/hapi_enterprise/sensor.py` | 591 | 9 | — | чисто |
 | `hapi_enterprise/admin-api-spec.js` | 429 | 4 | — | чисто |
 | `hapi_enterprise/api-registry.js` | 140 | 2 | swallow-promise×3 | нисък |
@@ -91,14 +91,14 @@
 | `hapi_enterprise/plugins.js` | 24 | 6 | — | чисто |
 | `hapi_enterprise/plugins/ocr.js` | 32 | 3 | — | чисто |
 | `hapi_enterprise/plugins/renderer.js` | 28 | 3 | — | чисто |
-| `hapi_enterprise/plugins/storage.js` | 30 | 64 | swallow-promise×1 | нисък |
+| `hapi_enterprise/plugins/storage.js` | 30 | 65 | swallow-promise×1 | нисък |
 | `hapi_enterprise/portal-access.js` | 64 | 2 | unused-export×1 | нисък |
 | `hapi_enterprise/portal-folder.js` | 358 | 13 | unused-export×1, swallow-promise×4 | нисък |
 | `hapi_enterprise/portal-integrity.js` | 167 | 3 | unused-export×1, swallow-promise×2 | нисък |
 | `hapi_enterprise/portal-policy.js` | 176 | 1 | unused-export×4 | нисък |
 | `hapi_enterprise/portal-qr.js` | 234 | 4 | unused-export×3 | нисък |
 | `hapi_enterprise/portal/portal-i18n.js` | 486 | 13 | — | чисто |
-| `hapi_enterprise/portal/portal.js` | 1087 | 196 | swallow-promise×2 | нисък |
+| `hapi_enterprise/portal/portal.js` | 1087 | 197 | swallow-promise×2 | нисък |
 | `hapi_enterprise/preview.js` | 116 | 17 | unused-export×3 | нисък |
 | `hapi_enterprise/problem.js` | 41 | 5 | — | чисто |
 | `hapi_enterprise/process-guards.js` | 49 | 2 | — | чисто |
@@ -147,7 +147,7 @@
 | `hapi_enterprise/sqlite-repository.js` | 52 | 3 | — | чисто |
 | `hapi_enterprise/sqlite-store.js` | 353 | 12 | — | чисто |
 | `hapi_enterprise/standalone.js` | 126 | 8 | unused-export×4 | нисък |
-| `hapi_enterprise/start.js` | 277 | 75 | — | чисто |
+| `hapi_enterprise/start.js` | 277 | 76 | — | чисто |
 | `hapi_enterprise/storage-check.js` | 20 | 3 | — | чисто |
 | `hapi_enterprise/storage-migrate.js` | 23 | 4 | — | чисто |
 | `hapi_enterprise/storage-preflight.js` | 77 | 8 | unused-export×5 | нисък |
@@ -158,7 +158,7 @@
 | `hapi_enterprise/ui/app.js` | 372 | 44 | — | чисто |
 | `hapi_enterprise/ui/bootstrap.js` | 52 | 11 | — | чисто |
 | `hapi_enterprise/ui/dashboard-panel.js` | 398 | 9 | swallow-promise×1 | нисък |
-| `hapi_enterprise/ui/data.js` | 207 | 203 | — | чисто |
+| `hapi_enterprise/ui/data.js` | 207 | 204 | — | чисто |
 | `hapi_enterprise/ui/directory-panel.js` | 496 | 6 | — | чисто |
 | `hapi_enterprise/ui/export-center.js` | 624 | 6 | — | чисто |
 | `hapi_enterprise/ui/files-manager.js` | 4048 | 27 | swallow-promise×9 | нисък |
@@ -194,6 +194,7 @@
 | `scripts/build-haoss.cjs` | 416 | 3 | — | чисто |
 | `scripts/build-release.cjs` | 200 | 8 | — | чисто |
 | `scripts/check-tag-version.cjs` | 64 | 2 | — | чисто |
+| `scripts/compare-live-options.cjs` | 82 | 1 | — | чисто |
 | `scripts/decrypt-package.cjs` | 61 | 1 | — | чисто |
 | `scripts/dev-dashboard.cjs` | 284 | 0 | — | чисто |
 | `scripts/docs-index.cjs` | 104 | 3 | — | чисто |

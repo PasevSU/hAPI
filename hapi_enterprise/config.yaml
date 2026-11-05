@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.69.159"
+version: "0.69.160"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
@@ -67,25 +67,40 @@ options:
   # Не влизат в адреса и не се печатат; за локалния MinIO също се изискват.
   s3_access_key: ""
   s3_secret_key: ""
-  memory_limit_mb: 0
+  # ── СТОЙНОСТИ ОТ РЕАЛНОТО РАЗПРЕДЕЛЕНИЕ (0.69.160) ───────────────────────────
+  # Тези стойности са сверени с работещата инсталация (`scripts/compare-live-options.cjs`).
+  # Те са defaults, тоест при чиста инсталация конфигурацията се отваря точно с тях и
+  # add-on-ът стартира по изпитания начин. Ако ги променяш, пусни пак сравнението.
+  memory_limit_mb: 1024
   db_id: "1"
   profiles: ""
   public_domain: ""
-  public_gateway: false
-  public_same_origin: false
-  user_roles: ""
+  # Публичното API (порт 8088) е включено в разпределението; портът НЕ е публикуван
+  # (`ports: 8088/tcp: null`), тоест достъпът минава само през reverse proxy на същия хост.
+  public_gateway: true
+  # Същият origin като Home Assistant: печалбата е, че няма CORS и бисквитките работят
+  # еднакво, цената е че порталът и HA делят произхода. Изисква reverse proxy на същия порт.
+  public_same_origin: true
+  # Кой HA потребител каква роля има в hAPI (JSON: {"<ha-username>":"admin|editor|viewer"}).
+  # Празно значи „само defaultRole от конзолата“; тук е записан потребителят на инсталацията.
+  user_roles: '{"pasev-admin":"admin"}'
   group_roles: ""
-  storage_location: share
-  storage_subdirectory: hapi/data
+  # Данните на add-on-а живеят в неговата конфигурационна папка (app_config mount, вкл. в
+  # snapshot-ите на Supervisor), а не в /share — така надграждането не разчита на споделена папка.
+  storage_location: addon_config
+  storage_subdirectory: hapi_enterprise
   storage_mode: local
   storage_mount_name: ""
-  min_free_mb: 100
+  # 1000 MB: под този праг preflight-ът спира старта, за да не се напълни дискът с одит.
+  min_free_mb: 1000
   log_level: info
   config_dir: ""
   # QR порталът Evidence View се публикува в <HA config>/www/hapi/data, за да го
   # сервира Home Assistant на /local/hapi/data/portal.html. Изключено → нищо не се пише.
   evidence_portal_deploy: true
-  tsa_enabled: false
+  # RFC 3161 времеви печати: включени в разпределението. Без интернет заявката се проваля
+  # затворено (breaker) и НЕ блокира старта — затова е безопасно да е включено по подразбиране.
+  tsa_enabled: true
   # Двата адреса са https: времевият печат по открит канал (http) се подправя от всеки по
   # пътя — отговорът е валиден, но с чуждо време. При останал http сървърът предупреждава
   # (TSA_INSECURE_TRANSPORT) и не спира, за да не се чупят стари инсталации.
