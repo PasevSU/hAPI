@@ -59,3 +59,6 @@ create link/
 
 # Временен файл с текста на комита (създава се и се трие от протокола за издание).
 .commit-msg.txt
+
+# Local VS Code dev tooling (token router extension, not shipped)
+dev/
