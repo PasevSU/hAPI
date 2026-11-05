@@ -16,6 +16,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { pgpKey } = require('./lib/gui-fixtures.cjs');
 const { startServer, waitFor } = require('./lib/gui-harness.cjs');
 const { mountApp, pseudoFile } = require('./lib/gui-journey.cjs');
 
@@ -25,6 +26,7 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
 // е няколко пъти по-бавен: същата проверка минава, но за по-дълго. Затова бюджетът е щедър
 // и е един — вместо всяко изчакване да носи свое число, което да изтече само на CI.
 const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
+const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUpperCase();
 
 (async () => {
   // `startServer` дава и `api`, но той НЕ се използва никъде по-долу — единственият
@@ -230,15 +232,20 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
   };
 
   const journey = async (name, fn) => {
+    if (ONLY_JOURNEY && !name.startsWith(ONLY_JOURNEY)) return;
+    const started = Date.now();
+    process.stdout.write(`[gui-journey] START ${name}\n`);
     try {
       await fn();
       passed.push(name);
+      process.stdout.write(`[gui-journey] PASS ${name} (${Date.now() - started}ms)\n`);
     } catch (error) {
       // Последната заявка се добавя към провала: тя показва какво панелът е поискал,
       // когато твърдението е за отговор на сървъра.
       const last = app.requests[app.requests.length - 1];
       const tail = last ? ' | последна заявка: ' + last.method + ' ' + last.url + (last.body ? ' ' + last.body : '') : '';
       failed.push(name + ': ' + error.message + tail);
+      process.stdout.write(`[gui-journey] FAIL ${name} (${Date.now() - started}ms): ${error.message}\n`);
     }
   };
   try {
@@ -737,6 +744,18 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       }, { label: 'изходът с адреса на токена', timeout: BUDGET });
       assert.match(text(out), /Готово|адрес|Отказ|HTTP/i, 'панелът показва какво е станало с токена: ' + text(out));
       assert.ok(app.requests.some((r) => r.method === 'POST' && /\/tokens$/.test(r.url)), 'токенът се издава от сървъра');
+
+      app.clearToasts();
+      app.click('#pf-token-list', 'бутонът „Списък с токени“');
+      const revoke = await waitFor(() => app.$('[data-token-revoke]'), { label: 'бутонът „Отнеми“ на издадения токен' });
+      const tokenId = revoke.getAttribute('data-token-revoke');
+      app.clearToasts();
+      app.click(revoke, 'бутонът „Отнеми“');
+      await waitFor(() => /Токенът е отнет/.test(text(app.$('#pf-token-out'))), { label: 'потвърждението за отнет токен' });
+      assert.ok(app.requests.some((r) => r.method === 'DELETE' && r.url.endsWith('/tokens/' + tokenId)), 'отнемането минава през DELETE API');
+      app.click('#pf-token-list', 'повторно зареждане на списъка с токени');
+      await waitFor(() => /отнет/.test(text(app.$('#pf-token-out'))), { label: 'отнетото състояние в списъка' });
+      assert.equal(app.$('[data-token-revoke]'), null, 'отнетият токен вече няма активен бутон за отнемане');
     });
 
     // ── J35. Портал: обновяване на ключа за подпис ────────────────────────────
@@ -1766,6 +1785,20 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       const saved = app.requests.filter((r) => r.method === 'POST' && /config-profiles$/.test(r.url)).pop();
       assert.ok(saved, 'записът мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '));
       assert.ok((saved.body || '').includes(name), 'заявката носи ИМЕТО на профила: ' + saved.body);
+      const apply = await waitFor(() => app.$$('[data-profile-apply]').find((el) => el.getAttribute('data-profile-apply') === name), {
+        label: 'бутонът „Приложи“ на новия профил', timeout: BUDGET,
+      });
+      app.clearToasts();
+      apply.click();
+      const applied = await waitFor(() => {
+        const t = app.toast();
+        return t && /профил/i.test(t.message) ? t : null;
+      }, { label: 'съобщението за приложен профил', timeout: BUDGET });
+      assert.equal(applied.kind, 'ok', 'профилът е приложен: ' + applied.message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'POST' && r.url.endsWith('/config-profiles/' + name + '/apply')),
+        'прилагането минава през POST API',
+      );
       // Списъкът се пре-чита след записа — профилът се появява с бутоните си.
       const del = await waitFor(() => {
         for (const el of app.$$('[data-profile-delete]')) {
@@ -1890,27 +1923,183 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       assert.equal(app.$('[data-pf-files-tog]').getAttribute('aria-expanded'), 'true', 'след натискане блокът е разгънат');
     });
 
+    // ── J75. Настройки: PGP attach/settings/import/remove през истинския UI ───
+    await journey('J75 настройки: PGP lifecycle през интерфейса', async () => {
+      app.nav('dashboard');
+      await settle('таблото преди Settings');
+      app.nav('settings');
+      await waitFor(() => app.$('#set-pgp-label'), { label: 'полето за име на PGP ключ', timeout: BUDGET });
+      const attachedSecret = pgpKey('Attach');
+      const label = 'gui-attach-' + String(Date.now()).slice(-6);
+      app.fill('#set-pgp-label', label);
+      app.fill('#set-pgp-key', attachedSecret);
+      app.clearToasts();
+      app.click('#set-pgp-attach', 'бутонът „Прикачи ключа“');
+      const attached = await waitFor(() => {
+        const t = app.toast();
+        return t && /Прикачен ключ/.test(t.message) ? t : null;
+      }, { label: 'потвърждението за прикачен PGP ключ', timeout: BUDGET });
+      assert.equal(attached.kind, 'ok', 'ключът се прикача: ' + attached.message);
+      assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.endsWith('/admin/api/pgp/keys')), 'attach заявката е изпратена');
+
+      const autoSign = await waitFor(() => app.$('#set-pgp-autosign'), { label: 'настройката за автоподписване', timeout: BUDGET });
+      app.clearToasts();
+      app.select(autoSign, 'on');
+      const signed = await waitFor(() => {
+        const t = app.toast();
+        return t && /Автоподписването е включено/.test(t.message) ? t : null;
+      }, { label: 'потвърждението за автоподписване', timeout: BUDGET });
+      assert.equal(signed.kind, 'ok');
+      assert.ok(app.requests.some((r) => r.method === 'PATCH' && r.url.endsWith('/admin/api/packages/settings')), 'настройката минава през API');
+      app.clearToasts();
+      app.select(await waitFor(() => app.$('#set-pgp-autosign'), { label: 'контролът за изключване на автоподписването' }), 'off');
+      await waitFor(() => app.toast() && /Автоподписването е изключено/.test(app.toast().message), { label: 'изключено автоподписване', timeout: BUDGET });
+
+      const removeAttached = await waitFor(() => app.$$('[data-pgp-remove]')[0], { label: 'бутонът за премахване на прикачения ключ', timeout: BUDGET });
+      const attachedId = removeAttached.getAttribute('data-pgp-remove');
+      app.clearToasts();
+      removeAttached.click();
+      await waitFor(() => app.toast() && /Ключът е премахнат/.test(app.toast().message), { label: 'премахването на прикачения ключ', timeout: BUDGET });
+      assert.ok(app.requests.some((r) => r.method === 'DELETE' && r.url.endsWith('/admin/api/pgp/keys/' + attachedId)), 'remove на прикачен ключ минава през DELETE API');
+
+      const bundleSecret = pgpKey('Bundle');
+      const bundleDir = path.join(server.dir, 'keys', 'gui-bundle-' + String(Date.now()).slice(-6));
+      fs.mkdirSync(bundleDir, { recursive: true });
+      fs.writeFileSync(path.join(bundleDir, 'private.asc'), bundleSecret, 'utf8');
+      app.clearToasts();
+      app.click('#set-pgp-import', 'бутонът „Импорт от папка keys/“');
+      const imported = await waitFor(() => {
+        const t = app.toast();
+        return t && /Импортирани 1 ключ/.test(t.message) ? t : null;
+      }, { label: 'резултатът от PGP bundle import', timeout: BUDGET });
+      assert.equal(imported.kind, 'ok', 'bundle ключът се импортира: ' + imported.message);
+      assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.endsWith('/admin/api/pgp/keys/import')), 'import минава през API');
+      const removeImported = await waitFor(() => app.$$('[data-pgp-remove]')[0], { label: 'бутонът за премахване на bundle ключа', timeout: BUDGET });
+      const importedId = removeImported.getAttribute('data-pgp-remove');
+      app.clearToasts();
+      removeImported.click();
+      await waitFor(() => app.toast() && /Ключът е премахнат/.test(app.toast().message), { label: 'премахването на bundle ключа', timeout: BUDGET });
+      assert.ok(app.requests.some((r) => r.method === 'DELETE' && r.url.endsWith('/admin/api/pgp/keys/' + importedId)), 'remove на bundle ключ минава през DELETE API');
+    });
+
+    // ── J76. Задачи: pause/resume/cancel през бутони към жив job API ──────────
+    await journey('J76 задачи: pause/resume/cancel през интерфейса', async () => {
+      await ownPortalWithFile('gui-job-controls');
+      const startJob = await waitFor(() => app.$('#pf-integrity-job'), { label: 'бутонът за фоново сканиране на цялост', timeout: BUDGET });
+      const before = app.requests.filter((r) => r.method === 'POST' && /\/integrity-jobs$/.test(r.url)).length;
+      startJob.click();
+      await waitFor(
+        () => app.requests.filter((r) => r.method === 'POST' && /\/integrity-jobs$/.test(r.url)).length === before + 1,
+        { label: 'истинската заявка за фонов integrity job', timeout: BUDGET },
+      );
+      assert.ok(app.requests.some((r) => r.method === 'POST' && /\/integrity-jobs$/.test(r.url)), 'видимият integrity бутон създава реален backend job');
+
+      // The worker is intentionally fast and polling is every 3 s. Keep the real
+      // integrity creation above, but supply controlled live/queued states here so
+      // the visible pause/resume/cancel controls do not depend on disk timing.
+      const jobs = [
+        { id: 'gui-job-running', type: 'integrity-scan', status: 'running', progress: { done: 0, total: 1 } },
+        { id: 'gui-job-queued', type: 'integrity-scan', status: 'queued', progress: { done: 0, total: 1 } },
+      ];
+      let jobsReads = 0;
+      const jsonResponse = (data) => new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      app.setFetchInterceptor((url, init = {}) => {
+        const parsed = new URL(url);
+        const method = String(init.method || 'GET').toUpperCase();
+        if (parsed.pathname === '/admin/api/jobs' && method === 'GET') {
+          jobsReads++;
+          return jsonResponse({ jobs, running: 1, queued: 1, paused: 0, concurrency: 1 });
+        }
+        const action = parsed.pathname.match(/^\/admin\/api\/jobs\/([^/]+)\/(pause|resume|cancel)$/);
+        if (!action || method !== 'POST') return null;
+        const job = jobs.find((item) => item.id === action[1]);
+        if (!job) return new Response(JSON.stringify({ error: 'Job not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+        job.status = action[2] === 'pause' ? 'paused' : action[2] === 'resume' ? 'running' : 'cancelled';
+        return jsonResponse(job);
+      });
+      try {
+        await portalList();
+        const activeNav = () => app.$('#nav button.active') && app.$('#nav button.active').getAttribute('data-panel');
+        app.nav('dashboard');
+        await waitFor(() => activeNav() === 'dashboard' && /Dashboard/.test(text(view())), { label: 'таблото след изход от portal view', timeout: BUDGET });
+        app.nav('settings');
+        await waitFor(() => activeNav() === 'settings' && app.$('#set-profile-name'), { label: 'Settings след portal navigation', timeout: BUDGET });
+        app.section('jobs');
+        await waitFor(() => {
+          const body = app.$('#set-section-body');
+          return body && /Състоянието се обновява/.test(text(body)) && app.$$('[data-job-action]').length >= 4;
+        }, { label: 'tab „Задачи“ и неговия видим body', timeout: BUDGET }).catch((error) => {
+          throw new Error(error.message + ' · activeNav=' + activeNav() + ' · view=' + text(view()).slice(-400));
+        });
+        assert.doesNotMatch(text(app.$('#set-section-body')), /NaN%/, 'progress object {done,total} се форматира като процент, не NaN');
+        await waitFor(
+          () => app.$$('[data-action]').find((el) => el.getAttribute('data-action') === 'reload'),
+          { label: 'бутона „Обнови сега“ на задачите', timeout: BUDGET },
+        );
+        app.action('reload');
+        await waitFor(() => jobsReads > 0, { label: 'fixture GET /admin/api/jobs', timeout: BUDGET });
+        await waitFor(() => app.$$('[data-job-action]').length > 0, { label: 'секцията „Задачи“ с job controls', timeout: BUDGET }).catch((error) => {
+          throw new Error(error.message + ' · jobsReads=' + jobsReads + ' · view=' + text(view()).slice(-500));
+        });
+
+        const actionFor = (id, action) => app.$$('[data-job-action]').find(
+          (el) => el.getAttribute('data-job') === id && el.getAttribute('data-job-action') === action,
+        );
+        const pauseId = 'gui-job-running';
+        const pause = await waitFor(() => actionFor(pauseId, 'pause'), { label: 'running job с бутон „Пауза“', timeout: BUDGET });
+        app.clearToasts();
+        pause.click();
+        const paused = await waitFor(() => {
+          const current = app.toast();
+          return current && /Задачата е на пауза/.test(current.message) ? current : null;
+        }, { label: 'потвърждението за pause', timeout: BUDGET });
+        assert.equal(paused.kind, 'ok');
+        assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.endsWith('/admin/api/jobs/' + pauseId + '/pause')), 'pause заявката е изпратена');
+        await waitFor(() => actionFor(pauseId, 'resume'), { label: 'paused job с бутон „Продължи“', timeout: BUDGET });
+
+        app.clearToasts();
+        actionFor(pauseId, 'resume').click();
+        const resumed = await waitFor(() => {
+          const current = app.toast();
+          return current && /Задачата продължава/.test(current.message) ? current : null;
+        }, { label: 'потвърждението за resume', timeout: BUDGET });
+        assert.equal(resumed.kind, 'ok');
+        assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.endsWith('/admin/api/jobs/' + pauseId + '/resume')), 'resume заявката е изпратена');
+        await waitFor(() => actionFor(pauseId, 'pause'), { label: 'running state след resume', timeout: BUDGET });
+
+        const cancelId = 'gui-job-queued';
+        const cancel = await waitFor(() => actionFor(cancelId, 'cancel'), { label: 'queued job с бутон „Откажи“', timeout: BUDGET });
+        app.clearToasts();
+        cancel.click();
+        const cancelled = await waitFor(() => {
+          const current = app.toast();
+          return current && /Задачата е отказана/.test(current.message) ? current : null;
+        }, { label: 'потвърждението за cancel', timeout: BUDGET });
+        assert.equal(cancelled.kind, 'ok');
+        assert.ok(app.requests.some((r) => r.method === 'POST' && r.url.endsWith('/admin/api/jobs/' + cancelId + '/cancel')), 'cancel заявката е изпратена');
+        await waitFor(() => !actionFor(cancelId, 'cancel'), { label: 'cancelled job без бутони', timeout: BUDGET });
+      } finally {
+        app.setFetchInterceptor(null);
+      }
+    });
+
     // Какво остава ИЗВЪН обхвата на щракването и защо — за да не се „попълва“ някога със
     // сценарий, който минава, без да е минал през интерфейса:
-    //   • `data-token-revoke` — списъкът с токени се иска отделно и отговорът му на runner-а
-    //     не винаги носи издадения в J34 токен; сценарий, който го чака, би бил нестабилен.
     //   • `data-qr-revoke` — артефактите се създават само от `POST /admin/api/qr-artifacts`,
     //     а нито един бутон в интерфейса не го вика (панелът ги само чете и отменя).
     //   • `data-record-assoc` / `data-record-detach` — записи в картотеката се създават от
     //     миграцията или от API-то; интерфейсът няма бутон „нов запис“.
-    //   • `data-job` — бутоните „Пауза“/„Откажи“ се рисуват само за жива задача, а задачите
-    //     в този сценарий свършват, преди панелът да се отвори.
     //   • `data-register-file` — появява се за файл, сложен в папката на портала ИЗВЪН
     //     интерфейса (мрежов дял); в сценария няма такъв файл.
-    //   • `data-cms-download`, `data-pgp-remove`, `data-profile-apply/delete` — искат
-    //     предварително състояние на сървъра (подписан PDF, PGP ключ, профил на диска).
-    // Всички те са проверени в `tests/files-manager.cjs` и `tests/settings-panel.cjs` на
-    // ниво панел; тук остава само пътят, който човек наистина може да натисне.
+    //   • `data-cms-download` — изтеглянето изисква предварително подписан PDF; подписването
+    //     и проверката са в J32/J50, а file-download маршрутът е в package-api.cjs.
 
     // ── Отчет ─────────────────────────────────────────────────────────────────
     assert.deepEqual(failed, [], 'сценарии, които не минаха:\n  ' + failed.join('\n  '));
-    console.log('PASS gui-journeys: ' + passed.length + ' сценария САМО през интерфейса · навигация, форми, секции, панели, тема, език · ' + app.requests.length + ' заявки, поискани от панелите');
+    console.log('PASS gui-journeys: ' + passed.length + ' сценария САМО през интерфейса · навигация, форми, секции, панели, PGP, tokens, jobs, тема, език · ' + app.requests.length + ' заявки, поискани от панелите');
   } finally {
+    // Панелите държат интервали (Settings → Задачи); без освобождаване Node не излиза след PASS.
+    if (app.window.SettingsPanel && app.window.SettingsPanel.unmount) app.window.SettingsPanel.unmount();
     await server.stop();
   }
 })().catch((error) => {

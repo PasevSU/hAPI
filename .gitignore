@@ -38,6 +38,7 @@ release/*
 build/
 dist/
 *.zip
+*.vsix
 *.7z
 *.exe
 *.ico

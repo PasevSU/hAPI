@@ -215,6 +215,7 @@
         try { dashboard.unmount() } catch { /* освобождаването не бива да чупи навигацията */ }
       }
     }
+    if (window.SettingsPanel && typeof window.SettingsPanel.unmount === 'function') window.SettingsPanel.unmount();
     // Панелите от регистъра се монтират през него — едно място за „кой панел как се отваря“.
     // `available` се пита ПРЕДИ да се изчисти изгледът: иначе липсващ панел би оставил празен
     // екран без обяснение.

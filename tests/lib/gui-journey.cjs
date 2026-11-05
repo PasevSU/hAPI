@@ -65,6 +65,7 @@ function mountApp(addon, { lang = 'bg', token = addon.token, local = {} } = {}) 
   const opened = [];
   const requests = [];
   const navigations = [];
+  let fetchInterceptor = null;
   const location = {
     protocol: 'http:',
     origin: addon.base,
@@ -92,6 +93,10 @@ function mountApp(addon, { lang = 'bg', token = addon.token, local = {} } = {}) 
     // без него „Unknown contact“ от сървъра не се проследява до полето, което го е пратило.
     if (init && typeof init.body === 'string') entry.body = init.body.slice(0, 400);
     requests.push(entry);
+    if (fetchInterceptor) {
+      const intercepted = fetchInterceptor(full, init, entry);
+      if (intercepted) return Promise.resolve(intercepted);
+    }
     return fetch(full, init);
   };
   const sandbox = {
@@ -276,6 +281,10 @@ function mountApp(addon, { lang = 'bg', token = addon.token, local = {} } = {}) 
     },
     /** Последните заявки, които интерфейсът е отправил (за твърдения от типа „панелът попита“). */
     lastRequest: () => requests[requests.length - 1] || null,
+    setFetchInterceptor(fn) {
+      if (fn !== null && typeof fn !== 'function') throw new TypeError('fetch interceptor must be a function or null');
+      fetchInterceptor = fn;
+    },
   };
 }
 

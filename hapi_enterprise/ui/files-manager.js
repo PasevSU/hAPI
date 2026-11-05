@@ -207,6 +207,7 @@
   const flagOf = (id) => FLAGS.find((x) => x.id === id) || FLAGS[0];
 
   let host = null;
+  let mountEpoch = 0;
   const state = {
     portals: [],
     // Затворените портали (архив за съхранение): пазят се 6 месеца преди окончателно
@@ -1928,6 +1929,7 @@
 
   // ── Рендер ───────────────────────────────────────────────────────────────
   function render() {
+    if (!host) return;
     if (!state.portals.length) {
       // Празното състояние също ТРЯБВА да има бутона, за който говори: до 0.69.115 тук
       // се рисуваше само подсказката „Създай първия с «Нов портал»“ — без самия бутон.
@@ -3997,6 +3999,7 @@
 
   function mount(node) {
     host = node;
+    const epoch = ++mountEpoch;
     wireMenus();
     // Менюто ⚙ се затваря при щракване извън него — като контекстно меню.
     if (!mount.gearBound) {
@@ -4044,7 +4047,9 @@
         .catch(() => { })
         .then(loadTree)
         .catch(() => { })
-        .then(render);
+        .then(() => {
+          if (epoch === mountEpoch && host === node) render();
+        });
       return;
     }
     if (!state.portals.length) seed();
@@ -4055,12 +4060,18 @@
     render();
   }
 
+  function unmount() {
+    mountEpoch += 1;
+    host = null;
+  }
+
   const API = {
     ACTIONS,
     EXTRA_ACTIONS,
     ICON,
     FLAGS,
     mount,
+    unmount,
     state,
     normalizeFile,
     normalizeContact,

@@ -21,6 +21,7 @@ const readUi = (file) => fs.readFileSync(path.join(uiDir, file), 'utf8');
 const panel = readUi('settings-panel.js');
 const sectionsTest = read('tests/gui-sections.cjs');
 const panelsTest = read('tests/gui-panels.cjs');
+const journeysTest = read('tests/gui-journeys.cjs');
 const app = readUi('app.js');
 
 // ── 1. Секциите на „Настройки“ ──────────────────────────────────────────────────
@@ -53,6 +54,36 @@ const caseNames = [...caseBlock.matchAll(/\n\s{6}([a-zA-Z]+): \{/g)].map((m) => 
 const orphanCases = caseNames.filter((name) => !actionButtons.includes(name));
 assert.deepEqual(orphanCases, [], 'очаквания за несъществуващи бутони: ' + orphanCases.join(', '));
 
+// Контроли, които се рисуват динамично и не носят `data-action`, също имат GUI journey.
+// Това е guard-ът срещу тест, който продължава да е зелен след изтриване на PGP/job/token сценарий.
+const dynamicActions = [
+  {
+    scenario: 'J34. Портал: издаване на токен за достъп през картата',
+    controls: ['#pf-token-new', '#pf-token-list', '[data-token-revoke]'],
+    proof: "r.method === 'DELETE' && r.url.endsWith('/tokens/' + tokenId)",
+  },
+  {
+    scenario: 'J72. Настройки: профил на настройките — запис и изтриване',
+    controls: ['#set-profile-save', '[data-profile-apply]', '[data-profile-delete]'],
+    proof: "r.url.endsWith('/config-profiles/' + name + '/apply')",
+  },
+  {
+    scenario: 'J75. Настройки: PGP attach/settings/import/remove през истинския UI',
+    controls: ['#set-pgp-attach', '#set-pgp-autosign', '#set-pgp-import', '[data-pgp-remove]'],
+    proof: "r.url.endsWith('/admin/api/pgp/keys/import')",
+  },
+  {
+    scenario: 'J76. Задачи: pause/resume/cancel през бутони към жив job API',
+    controls: ['#pf-integrity-job', "actionFor(pauseId, 'pause')", "actionFor(pauseId, 'resume')", "actionFor(cancelId, 'cancel')"],
+    proof: "r.url.endsWith('/admin/api/jobs/' + cancelId + '/cancel')",
+  },
+];
+for (const action of dynamicActions) {
+  assert.ok(journeysTest.includes(action.scenario), 'липсва жив GUI сценарий: ' + action.scenario);
+  for (const selector of action.controls) assert.ok(journeysTest.includes(selector), action.scenario + ': липсва контрол ' + selector);
+  assert.ok(journeysTest.includes(action.proof), action.scenario + ': липсва проверка, че действието стига до API');
+}
+
 // ── 3. Всяка навигационна точка е монтирана ─────────────────────────────────────
 // Точките без своя секция се монтират директно (`gui-panels.cjs`), а тези със
 // `section:` отварят „Настройки“ на тази секция — покрити са от `gui-sections.cjs`.
@@ -74,6 +105,9 @@ const panelModules = fs
 assert.ok(panelModules.length >= 8, 'поне 8 панелни модула (сега ' + panelModules.length + ')');
 const missingModules = panelModules.filter((file) => !panelsTest.includes("'" + file + "'"));
 assert.deepEqual(missingModules, [], 'модули, които никой GUI тест не зарежда: ' + missingModules.join(', '));
+assert.match(readUi('files-manager.js'), /function unmount\(\)[\s\S]*?mountEpoch\s*\+=\s*1[\s\S]*?host\s*=\s*null/, 'Files Manager invalidates stale async mounts');
+assert.match(readUi('settings-panel.js'), /function unmount\(\)[\s\S]*?stopJobsTimer\(\)/, 'Settings unmount stops the jobs poller');
+assert.match(app, /window\.SettingsPanel\.unmount\(\)/, 'top-level navigation unmounts Settings');
 
 // ── 5. Няма измислени пътища (класът дефект, който тестовете хванаха) ──────────
 const invented = [

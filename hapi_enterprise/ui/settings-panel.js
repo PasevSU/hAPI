@@ -56,12 +56,14 @@
     }
   }
 
-  async function loadConnection() {
+  async function loadConnection(epoch = mountEpoch) {
     if (!connected()) {
       state.loaded = true;
-      return render();
+      if (epoch === mountEpoch && host) render();
+      return;
     }
     const r = await api('/admin/api/connection');
+    if (epoch !== mountEpoch || !host) return;
     if (r.ok && r.data) {
       state.role = r.data.role || '';
       state.ingress = r.data.ingress === true;
@@ -76,18 +78,20 @@
     // той вижда (напр. току-що издадения CMS подпис) и полетата се оказваха празни.
     // Затова се пре-рисува само екранът „Основни“, който показва връзката.
     if (!state.section || state.section === 'general') render();
-    void loadPgp();
+    void loadPgp(epoch);
   }
 
   // ── PGP ключ и автоподписване ───────────────────────────────────────────
   // Ключът се ПРИКАЧА (armored блок), не се генерира в add-on-а. След като има
   // прикачен ключ се показва падащото меню за автоподписване на пакетите.
-  async function loadPgp() {
+  async function loadPgp(epoch = mountEpoch) {
     if (!connected()) {
       state.pgp.loaded = true;
-      return render();
+      if (epoch === mountEpoch && host) render();
+      return;
     }
     const r = await api('/admin/api/pgp/keys');
+    if (epoch !== mountEpoch || !host) return;
     if (r.ok && r.data) {
       state.pgp.keys = r.data.keys || [];
       state.pgp.settings = Object.assign({}, state.pgp.settings, r.data.settings || {});
@@ -115,8 +119,10 @@
     }
     state.pgp.attached = r.data;
     state.pgp.error = '';
-    q('#set-pgp-key').value = '';
-    q('#set-pgp-label').value = '';
+    const keyInput = q('#set-pgp-key');
+    const labelInput = q('#set-pgp-label');
+    if (keyInput) keyInput.value = '';
+    if (labelInput) labelInput.value = '';
     toast(`Прикачен ключ ${r.data.keyId} (v${r.data.version || 4})`, 'ok');
     return loadPgp();
   }
@@ -278,6 +284,7 @@
   const sectionCache = {};
   // Живо обновяване на „Задачи“ (Фаза 5): таймерът съществува само докато секцията е отворена.
   let jobsTimer = null;
+  let mountEpoch = 0;
 
   function stopJobsTimer() {
     if (jobsTimer) {
@@ -476,7 +483,12 @@
       const CLS = { queued: 'demo', running: 'ok', paused: 'demo', succeeded: 'ok', failed: 'err', cancelled: 'demo' };
       const jobs = (d.jobs || []).map((j) => {
         const st = String(j.status || '').toLowerCase();
-        const pct = j.progress != null ? Math.max(0, Math.min(100, Number(j.progress))) : null;
+        const progress = j.progress;
+        const pct = Number.isFinite(Number(progress))
+          ? Math.max(0, Math.min(100, Number(progress)))
+          : progress && Number(progress.total) > 0
+            ? Math.max(0, Math.min(100, (Number(progress.done || 0) / Number(progress.total)) * 100))
+            : null;
         const live = st === 'running' || st === 'queued' || st === 'paused';
         return [
           esc(j.type || j.kind || '—'),
@@ -1243,6 +1255,8 @@
 
   async function renderSection() {
     const id = state.section;
+    const epoch = mountEpoch;
+    const targetHost = host;
     stopJobsTimer();
     const meta = SECTIONS.find((s) => s.id === id) || { label: 'app.title' };
     host.innerHTML =
@@ -1252,19 +1266,20 @@
       '<section class="panel u-mt"><div class="panel-head"><h2>' + esc(T(meta.label)) + '</h2><span class="badge">API</span></div>' +
       '<div class="panel-body" id="set-section-body"><p class="hint">Зареждам…</p></div></section>';
     bindTabs();
-    const body = host.querySelector('#set-section-body');
+    const body = targetHost && targetHost.querySelector('#set-section-body');
     const res = await loadSection(id);
-    if (!body) return;
+    if (epoch !== mountEpoch || host !== targetHost || !body) return;
     body.innerHTML = sectionBody(id, res);
     bindSectionActions(id);
     // Състоянията queued → running → done се виждат без ръчно обновяване.
     if (id === 'jobs' && connected()) {
       jobsTimer = setInterval(async () => {
-        if (state.section !== 'jobs') return stopJobsTimer();
+        if (epoch !== mountEpoch || host !== targetHost || state.section !== 'jobs') return stopJobsTimer();
         delete sectionCache.jobs;
         const fresh = await loadSection('jobs');
-        const box = host.querySelector('#set-section-body');
-        if (!box || state.section !== 'jobs') return;
+        if (epoch !== mountEpoch || host !== targetHost || state.section !== 'jobs') return stopJobsTimer();
+        const box = targetHost.querySelector('#set-section-body');
+        if (!box) return stopJobsTimer();
         box.innerHTML = sectionBody('jobs', fresh);
         bindSectionActions('jobs');
       }, 3000);
@@ -1273,6 +1288,7 @@
 
 
   function render() {
+    if (!host) return;
     stopJobsTimer();
     if (state.section && state.section !== 'general') return renderSection();
     const isAdmin = state.role === 'admin';
@@ -1372,7 +1388,9 @@
   }
 
   function wire() {
-    const q = (sel) => host.querySelector(sel);
+    const targetHost = host;
+    const epoch = mountEpoch;
+    const q = (sel) => targetHost && targetHost.querySelector(sel);
     // Миграция: анализът е GET, dry run и реалното пускане са POST с {dryRun}.
     const migrateOut = () => q('#set-migrate-out');
     const showMigration = (payload) => {
@@ -1462,6 +1480,7 @@
     });
     // Профили на настройките: списък · прилагане · изтриване · запис на текущото състояние.
     const renderProfiles = (list) => {
+      if (epoch !== mountEpoch || host !== targetHost) return;
       const box = q('#set-profiles');
       if (!box) return;
       if (!list.length) {
@@ -1495,9 +1514,9 @@
       });
     };
     const refreshProfiles = async () => {
-      if (!connected()) return;
+      if (!connected() || epoch !== mountEpoch || host !== targetHost) return;
       const r = await api('/admin/api/config-profiles');
-      if (!r.ok) return;
+      if (!r.ok || epoch !== mountEpoch || host !== targetHost) return;
       renderProfiles((r.data && r.data.profiles) || []);
     };
     if (q('#set-profiles') && connected()) void refreshProfiles();
@@ -1526,12 +1545,19 @@
   }
 
   function mount(node) {
+    mountEpoch += 1;
     host = node;
     state.base = storedBase();
     state.token = storedToken();
     render();
-    if (!state.loaded) void loadConnection();
+    if (!state.loaded) void loadConnection(mountEpoch);
   }
 
-  window.SettingsPanel = { mount, state };
+  function unmount() {
+    mountEpoch += 1;
+    stopJobsTimer();
+    host = null;
+  }
+
+  window.SettingsPanel = { mount, unmount, state };
 })();
