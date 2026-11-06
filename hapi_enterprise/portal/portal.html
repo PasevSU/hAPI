@@ -25,6 +25,8 @@
 
   <header class="hero">
     <div class="wrap">
+      <!-- Името на хранилището: едно и също на трите езика (марка, не описание). -->
+      <p class="brand" data-i18n="brand.name">ПАП БОКС</p>
       <p class="eyebrow">
         <span class="dot" aria-hidden="true"></span>
         <span id="visibility" data-i18n="visibility.public">Портал за документи</span>
@@ -32,6 +34,10 @@
       <h1 id="title" data-i18n="doc.loading">Зареждане…</h1>
       <p id="description" class="lead" hidden></p>
       <ul id="badges" class="badges" data-i18n-aria="header.categories" aria-label="Категории"></ul>
+      <!-- Криптографската защита се казва ЯВНО на всеки език: SHA-256 на всеки файл,
+           подписан достъп и AES-256-GCM при шифроване. -->
+      <p class="crypto" data-i18n="crypto.line">Криптографска защита: SHA-256 за всеки файл,
+        подписан достъп и AES-256-GCM при шифроване.</p>
       <p id="contact" class="contact" hidden></p>
       <!-- PP-01: идентификаторът на портала. Адресът се мени със slug-а, id-то не. -->
       <p class="ident">

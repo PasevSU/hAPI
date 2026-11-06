@@ -840,6 +840,18 @@ input[type="radio"] {
   color: var(--muted);
 }
 
+/* Марката и криптографската защита: един тих ред с катинар — не се бие с действията. */
+.pf-link-crypto {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.pf-link-crypto::before {
+  content: "\1F512";
+  font-size: var(--fs-11);
+}
+
 /* Тясна карта (телефон, тясна колона под Ingress): QR минава най-горе по средата, а
    действията остават в една лента — групата се запазва, вместо да се разпадне. */
 @media (max-width: 720px) {

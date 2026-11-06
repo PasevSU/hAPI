@@ -26,7 +26,11 @@ for (const lang of langs) {
   for (const key of keys) {
     const value = i18n.DICT[lang][key];
     assert.ok(typeof value === 'string' && value.trim(), `${lang}: липсва стойност за ${key}`);
-    if (lang !== 'bg') assert.equal(/[\u0400-\u04FF]/.test(value), false, `${lang}: „${key}“ съдържа кирилица: ${value}`);
+    // Марката (`portal.brand` = „ПАП БОКС“) е собствено име и не се превежда — както
+    // `header.api` на публичната страница. Всичко останало в DE/EN трябва да е без кирилица.
+    if (lang !== 'bg' && key !== 'portal.brand') {
+      assert.equal(/[\u0400-\u04FF]/.test(value), false, `${lang}: „${key}“ съдържа кирилица: ${value}`);
+    }
   }
   const extra = Object.keys(i18n.DICT[lang]).filter((k) => !keys.includes(k));
   assert.deepEqual(extra, [], `${lang}: излишни ключове — ${extra.join(', ')}`);
@@ -51,6 +55,21 @@ for (const literal of ['Връзка и QR код', 'Отвори портала
   assert.equal(control.includes(`'${literal}'`), false, `картата още държи твърд текст: ${literal}`);
 }
 assert.ok(i18n.DICT.de['portal.link.title'] && i18n.DICT.en['portal.link.title'], 'заглавието на картата има превод');
+
+// Марка и криптографска защита: името „ПАП БОКС“ и обещанието за защита стоят на трите
+// езика — картата е мястото, откъдето човекът раздава адреса, тоест трябва да казва с какво
+// е защитен порталът, а не само къде е.
+for (const lang of langs) {
+  assert.equal(i18n.DICT[lang]['portal.brand'], 'ПАП БОКС', `${lang}: марката е „ПАП БОКС“`);
+  const crypto = String(i18n.DICT[lang]['portal.crypto'] || '');
+  assert.ok(crypto.length > 40, `${lang}: редът за криптографската защита не е празен`);
+  for (const token of ['SHA-256', 'AES-256-GCM']) {
+    assert.ok(crypto.includes(token), `${lang}: криптографската защита споменава ${token}`);
+  }
+}
+assert.match(String(i18n.DICT.bg['portal.crypto']), /Криптографска защита/, 'на български редът е изписан с думи');
+assert.match(String(i18n.DICT.en['portal.crypto']), /Cryptographic protection/, 'на английски — „Cryptographic protection“');
+assert.match(String(i18n.DICT.de['portal.crypto']), /Kryptografischer Schutz/, 'на немски — „Kryptografischer Schutz“');
 // Секциите пазят ключ, а не текст: иначе смяната на езика не работи без презареждане.
 const sectionBlock = panel.slice(panel.indexOf('const SECTIONS = ['), panel.indexOf('];', panel.indexOf('const SECTIONS = [')));
 const sectionLabels = [...sectionBlock.matchAll(/label: '([^']+)'/g)].map((m) => m[1]);

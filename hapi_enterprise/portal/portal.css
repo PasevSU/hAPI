@@ -654,6 +654,32 @@ main {
 .hero {
   padding: 20px 0 14px;
 }
+/* ── Марка и криптографска защита ──────────────────────────────────────── */
+.brand {
+  margin: 0 0 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.crypto {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--muted);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 70ch;
+}
+
+.crypto::before {
+  content: "\1F512";
+  font-size: 0.85rem;
+}
+
 
 .hero-actions {
   gap: 6px;

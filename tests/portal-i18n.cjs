@@ -38,10 +38,13 @@ console.log('· английският и немският нямат кирил
   for (const lang of ['en', 'de']) {
     const dict = I.dictionary(lang);
     for (const [key, value] of Object.entries(dict)) {
+      // Марката е изключение: „ПАП БОКС“ е собствено име и не се превежда.
+      if (key.startsWith('brand.')) continue;
       assert.equal(CYRILLIC.test(value), false, lang + '/' + key + ' съдържа кирилица: ' + value);
     }
   }
-  // Българският, обратно, трябва да е кирилски — иначе „преводът“ е копие на английския.
+  // Българският, обратно, трябва да е кирилски — иначе „преводът“ е копие на английския.  // Изключение: МАРКАТА (`brand.*`) не се превежда — „ПАП БОКС“ е име на продукта и
+  // стои еднакво на трите езика, както и `header.api`/`header.manifest` са термини.
   const bgValues = Object.entries(I.dictionary('bg')).filter(([key]) => !/^(header\.api|header\.manifest)$/.test(key));
   assert.ok(
     bgValues.filter(([, value]) => CYRILLIC.test(value)).length >= bgValues.length - 3,
@@ -144,5 +147,24 @@ console.log('· apply() превежда DOM дървото и слага lang �
   assert.equal(nodes[2].attrs.title, 'Copy the identifier');
   assert.equal(root.documentElement.attrs.lang, 'en', '<html lang> следва езика');
 }
+
+// ── Марка и криптографска защита ──────────────────────────────────────────────
+// Изискването е текстово, не стилово: на ВСЕКИ език страницата трябва да казва с какво е
+// защитено съдържанието (SHA-256 на всеки файл, подписан достъп, AES-256-GCM при шифроване)
+// и да носи името на хранилището. Иначе „преводът“ може да е пълен, а да липсва точно
+// обещанието, което човекът със сканирания QR код трябва да види.
+console.log('· марка и криптографска защита на трите езика');
+for (const lang of ['bg', 'en', 'de']) {
+  const dict = I.dictionary(lang);
+  assert.equal(dict['brand.name'], 'ПАП БОКС', lang + ': марката е „ПАП БОКС“');
+  const crypto = String(dict['crypto.line'] || '');
+  assert.ok(crypto.length > 40, lang + ': редът за криптографската защита не е празен');
+  for (const token of ['SHA-256', 'AES-256-GCM']) {
+    assert.ok(crypto.includes(token), lang + ': криптографската защита споменава ' + token);
+  }
+}
+assert.match(String(I.dictionary('bg')['crypto.line']), /Криптографска защита/, 'на български редът е изписан с думи');
+assert.match(String(I.dictionary('en')['crypto.line']), /Cryptographic protection/, 'на английски — „Cryptographic protection“');
+assert.match(String(I.dictionary('de')['crypto.line']), /Kryptografischer Schutz/, 'на немски — „Kryptografischer Schutz“');
 
 console.log('PASS portal-i18n: BG/EN/DE с еднакъв набор ключове · без кирилица в EN/DE · всеки ключ от HTML/JS съществува · статичният HTML е преводим · t/count/pick/apply работят');

@@ -72,6 +72,7 @@
               <button type="button" class="btn btn-sm" id="pf-open-folder" data-open-folder="${esc(p.slug || '')}" title="${T('portal.tip.openFolder')}" aria-label="${T('portal.link.openFolder')}">${ICON.folder}<span class="btn-label">${T('portal.act.folder')}</span></button>
             </div>
             <p class="pf-link-note">${T('portal.link.hint1')}<br />${T('portal.link.hint2')}</p>
+            <p class="pf-link-note pf-link-crypto">${T('portal.brand')} · ${T('portal.crypto')}</p>
           </div>
         </div>
       </section>`;

@@ -179,6 +179,8 @@
       'portal.act.print': 'Печат',
       'portal.act.api': 'api.json',
       'portal.act.folder': 'Папка',
+      'portal.brand': 'ПАП БОКС',
+      'portal.crypto': 'Криптографска защита: SHA-256 за всеки файл, подписан достъп и AES-256-GCM при шифроване.',
     },
     en: {
       'app.title': 'Settings',
@@ -341,6 +343,8 @@
       'portal.act.print': 'Print',
       'portal.act.api': 'api.json',
       'portal.act.folder': 'Folder',
+      'portal.brand': 'ПАП БОКС',
+      'portal.crypto': 'Cryptographic protection: SHA-256 for every file, signed access, and AES-256-GCM when encrypted.',
     },
     de: {
       'app.title': 'Einstellungen',
@@ -503,6 +507,8 @@
       'portal.act.print': 'Drucken',
       'portal.act.api': 'api.json',
       'portal.act.folder': 'Ordner',
+      'portal.brand': 'ПАП БОКС',
+      'portal.crypto': 'Kryptografischer Schutz: SHA-256 für jede Datei, signierter Zugang und AES-256-GCM bei Verschlüsselung.',
     },
   };
 
