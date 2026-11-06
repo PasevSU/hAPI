@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "hAPI Enterprise — административно API 0.69.167",
+    "name": "hAPI Enterprise — административно API 0.69.174",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Генериран от `hapi_enterprise/admin-api-spec.js` (node scripts/openapi-admin.cjs). Не се редактира на ръка."
   },
@@ -2481,6 +2481,59 @@
               ]
             },
             "description": "Еднократна L2 миграция: файловете в работните папки стават контейнери (иска ?confirm=1)\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "Подпис на папка и/или на много файлове с готовия ключ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/sign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "sign"
+              ]
+            },
+            "description": "Подпис на папка и/или на много файлове с готовия ключ\n\nПраво (RBAC): `pgp`"
+          },
+          "response": []
+        },
+        {
+          "name": "ZIP с подписите и манифеста на папката",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/pgp/signatures/{signatureId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "pgp",
+                "signatures",
+                "{{signatureId}}"
+              ]
+            },
+            "description": "ZIP с подписите и манифеста на папката\n\nПраво (RBAC): `pgp`"
           },
           "response": []
         },

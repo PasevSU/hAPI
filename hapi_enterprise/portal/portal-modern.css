@@ -1,0 +1,428 @@
+/* MODERN-SKIN — ВТОРАТА кожа на публичната страница на портала.
+   ────────────────────────────────────────────────────────────────────────────
+   Как се включва: опция `portal_skin: modern` в add-on-а (env `PORTAL_SKIN=modern`).
+   Как се сервира: ЗАЛЕПЕНА след `portal.css` на СЪЩИЯ адрес `/portal.css`, затова важи за
+   всяка страница, която линква този стил (порталът, 410 „закрит“, страницата на токена,
+   файловете) — без втори `<link>` и без промяна в Content-Security-Policy.
+
+   Защо точно така, а не втори HTML: страницата има ЕДИН DOM и един тестван договор
+   (`tests/portal-page-contract.cjs`); кожaта е само оформление. Така превключването не
+   създава втори набор от маркъп, който да се разминава тихо с javascript-а.
+
+   Посока на дизайна (вдъхновена от модерните публични портали, но оригинална):
+   тъмна „дълбока“ основа с два цветни ореола, стъклени карти, едри заглавия с отрицателен
+   letter-spacing, люспести (pill) бутони, карти на файловете в мрежа с повдигане при hover.
+   Светлата тема е равностойна, не „инверсия на тъмната“. Всичко е чист CSS — без външни
+   шрифтове, без икони-шрифт, без JavaScript. */
+
+:root {
+  --bg: #070b16;
+  --panel: #111a2b;
+  --ink: #eef4ff;
+  --muted: #9fb0c7;
+  --line: rgba(148, 163, 184, 0.24);
+  --accent: #7cc4ff;
+  --accent-2: #a78bfa;
+  --accent-ink: #04121f;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --err: #fb7185;
+  --radius: 22px;
+  --shadow: 0 28px 60px -34px rgba(2, 6, 23, 0.95);
+  --glass: blur(16px) saturate(140%);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f8ff;
+    --panel: #ffffff;
+    --ink: #0b1224;
+    --muted: #55647a;
+    --line: rgba(15, 23, 42, 0.12);
+    --accent: #2563eb;
+    --accent-2: #7c3aed;
+    --accent-ink: #ffffff;
+    --ok: #047857;
+    --warn: #b45309;
+    --err: #be123c;
+    --shadow: 0 24px 50px -30px rgba(15, 23, 42, 0.45);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background:
+    radial-gradient(60rem 34rem at 8% -12%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%),
+    radial-gradient(52rem 30rem at 96% -8%, color-mix(in srgb, var(--accent-2) 20%, transparent), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+.wrap {
+  width: min(1040px, 100%);
+  padding: 0 clamp(16px, 4vw, 28px);
+}
+
+.skip {
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* ── Заглавна част: едра типография, стъклена лента с действия ───────────── */
+.hero {
+  padding: clamp(30px, 6vw, 58px) 0 clamp(22px, 3vw, 34px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 82%, transparent), transparent);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: var(--glass);
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+}
+
+.eyebrow .dot {
+  width: 9px;
+  height: 9px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 26%, transparent);
+}
+
+.hero h1 {
+  font-size: clamp(1.9rem, 5.2vw, 3rem);
+  font-weight: 720;
+  letter-spacing: -0.028em;
+  text-wrap: balance;
+  margin-bottom: 10px;
+}
+
+.lead {
+  font-size: 1.06rem;
+  line-height: 1.6;
+  max-width: 68ch;
+}
+
+.badges {
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chip {
+  min-height: 28px;
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+  backdrop-filter: var(--glass);
+}
+
+.ident {
+  font-size: 0.8rem;
+  gap: 10px;
+}
+
+.ident code {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+  font-size: 0.78rem;
+}
+
+.hero-actions {
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.lang-select {
+  border-radius: 999px;
+  min-height: 38px;
+}
+
+/* ── Панели: стъклени карти с мека сянка и леко издигане ─────────────────── */
+main {
+  padding: clamp(22px, 4vw, 34px) 0 12px;
+  gap: 20px;
+}
+
+.panel {
+  border-radius: var(--radius);
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(165deg, color-mix(in srgb, var(--panel) 92%, white 8%), var(--panel));
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--glass);
+  animation: skin-rise 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (prefers-color-scheme: light) {
+  .panel {
+    background: linear-gradient(165deg, #ffffff, color-mix(in srgb, var(--panel) 88%, #eef2ff 12%));
+  }
+}
+
+.panel h2 {
+  font-size: clamp(1.06rem, 2.4vw, 1.24rem);
+  font-weight: 680;
+  letter-spacing: -0.015em;
+}
+
+.panel-head {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.summary-text {
+  font-size: 0.98rem;
+  line-height: 1.62;
+}
+
+.package-bar {
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* ── Файлове: мрежа от карти с цветна лента и повдигане при hover ────────── */
+.files {
+  gap: 14px;
+}
+
+.file {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 14px 16px 16px;
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  border: 1px solid var(--line);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.file::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.file:hover,
+.file:focus-within {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow: 0 22px 44px -30px color-mix(in srgb, var(--accent) 65%, transparent);
+}
+
+.file:hover::before,
+.file:focus-within::before {
+  opacity: 1;
+}
+
+.file-name {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.file-glyph {
+  color: var(--accent);
+}
+
+.file-meta {
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+}
+
+.file-hash {
+  font-size: 0.76rem;
+}
+
+.mono {
+  letter-spacing: 0.01em;
+}
+
+/* ── Бутони: люспести, с мек „glow“ при основното действие ───────────────── */
+.btn {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-weight: 560;
+  font-size: 0.9rem;
+  transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent;
+  color: var(--accent-ink);
+  font-weight: 680;
+  box-shadow: 0 16px 34px -18px color-mix(in srgb, var(--accent) 75%, transparent);
+}
+
+.btn-primary:hover {
+  color: var(--accent-ink);
+  filter: brightness(1.04);
+}
+
+.btn-ghost {
+  background: color-mix(in srgb, var(--panel) 45%, transparent);
+  backdrop-filter: var(--glass);
+}
+
+.btn-sm {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 50%, transparent);
+}
+
+.search input,
+.key-input {
+  border-radius: 14px;
+  min-height: 46px;
+  background: color-mix(in srgb, var(--panel) 62%, transparent);
+  backdrop-filter: var(--glass);
+}
+
+.search input:focus-visible,
+.key-input:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
+}
+
+/* ── Информация и QR ────────────────────────────────────────────────────── */
+.info-list {
+  gap: 12px 22px;
+}
+
+.info-list dt {
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.qr-panel h2 {
+  margin-bottom: 16px;
+}
+
+.qr-box {
+  gap: 22px;
+}
+
+.qr-box img {
+  width: 172px;
+  height: 172px;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 40px -26px rgba(2, 6, 23, 0.8);
+}
+
+.qr-text p {
+  font-size: 0.88rem;
+}
+
+.hint {
+  font-size: 0.8rem;
+  letter-spacing: 0.005em;
+}
+
+/* ── Долен колонтитул ───────────────────────────────────────────────────── */
+.foot {
+  margin-top: 22px;
+  padding: 22px 0 34px;
+  border-top: 1px solid var(--line);
+}
+
+.foot p {
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+/* ── Отзивчивост и движение ─────────────────────────────────────────────── */
+@media (min-width: 760px) {
+  .files {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .hero {
+    padding-top: 26px;
+  }
+
+  .hero h1 {
+    letter-spacing: -0.02em;
+  }
+
+  .panel {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .qr-box img {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+@keyframes skin-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .panel {
+    animation: none;
+  }
+
+  .file,
+  .btn {
+    transition: none;
+  }
+
+  .file:hover,
+  .btn:hover {
+    transform: none;
+  }
+}

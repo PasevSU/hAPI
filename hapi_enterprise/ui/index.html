@@ -32,6 +32,8 @@
         <button type="button" data-lang="de">DE</button>
         <button type="button" data-lang="en">EN</button>
       </div>
+      <!-- Втора кожа: „модерен“ изглед на панела. Сменя само оформлението; изборът се помни. -->
+      <button type="button" id="skin-toggle" class="icon-btn" title="Модерен изглед" aria-pressed="false">✦</button>
       <button type="button" id="theme-toggle" class="icon-btn" title="Светла/тъмна тема">◐</button>
       <div class="status-pill" id="status-pill">
         <span class="dot" aria-hidden="true"></span>
@@ -79,6 +81,9 @@
   <script src="files-manager.js"></script>
   <script src="directory-panel.js"></script>
   <script src="dashboard-panel.js"></script>
+  <!-- Paptresor: печатният отчет за прилагане на QR кода (Настройки → Хранилище).
+       Чист строител на HTML — зарежда се преди панела, който го вика. -->
+  <script src="paptresor.js"></script>
   <script src="settings-panel.js"></script>
   <script src="export-center.js"></script>
   <script src="public-gateway.js"></script>

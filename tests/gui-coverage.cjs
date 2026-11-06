@@ -77,6 +77,11 @@ const dynamicActions = [
     controls: ['#pf-integrity-job', "actionFor(pauseId, 'pause')", "actionFor(pauseId, 'resume')", "actionFor(cancelId, 'cancel')"],
     proof: "r.url.endsWith('/admin/api/jobs/' + cancelId + '/cancel')",
   },
+  {
+    scenario: 'J77 портал: окончателно премахване',
+    controls: ['#pf-delete-confirm', '[data-delete-portal]'],
+    proof: "r.method === 'DELETE' && /\\/admin\\/api\\/portals\\/[^/?]+$/.test(r.url)",
+  },
 ];
 for (const action of dynamicActions) {
   assert.ok(journeysTest.includes(action.scenario), 'липсва жив GUI сценарий: ' + action.scenario);

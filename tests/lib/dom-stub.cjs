@@ -216,7 +216,13 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
     for (const form of forms) {
       for (const field of form.querySelectorAll('[name]')) {
         const name = field.getAttribute('name');
-        if (name && !(name in form)) form[name] = field;
+        // `[[OverrideBuiltins]]`: в браузъра поле с `name="title"` ПРЕКРИВА вграденото
+        // свойство `title` на формата — затова `form.title.value` е стойността на полето.
+        // Дотук стъбът отказваше да презапише съществуващо име и `savePortal` четеше
+        // `form.title.value` от ТЕКСТОВИЯ атрибут, тоест записът на настройките изпращаше
+        // празно заглавие и сървърът отговаряше „Invalid title“ (панелът изглеждаше счупен
+        // само в тестовете, а самият запис не можеше да се провери изобщо).
+        if (name) Object.defineProperty(form, name, { value: field, writable: true, configurable: true });
       }
     }
   }

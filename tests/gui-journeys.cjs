@@ -563,6 +563,23 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.equal(body.classList.contains('light'), false, 'темата се връща на тъмна');
     });
 
+    // ── J22б. Втора кожа („модерен“ изглед) ──────────────────────────────────
+    // Кожата е оформление: класът `skin-modern` на тялото, помнен в `localStorage`.
+    // Панелите и заявките остават същите — затова се проверява само превключването.
+    await journey('J22б втора кожа', async () => {
+      const body = app.document.body;
+      const toggle = await waitFor(() => app.$('#skin-toggle'), { label: 'бутонът за втора кожа' });
+      assert.equal(toggle.getAttribute('aria-pressed'), 'false', 'кожата тръгва класическа');
+      assert.equal(body.classList.contains('skin-modern'), false, 'няма клас преди натискането');
+      toggle.click();
+      assert.equal(body.classList.contains('skin-modern'), true, 'модерната кожа се включва');
+      assert.equal(toggle.getAttribute('aria-pressed'), 'true', 'състоянието е обявено за екранни четци');
+      assert.equal(app.window.localStorage.getItem('hapi.skin'), 'modern', 'изборът се помни');
+      toggle.click();
+      assert.equal(body.classList.contains('skin-modern'), false, 'кожата се изключва');
+      assert.equal(app.window.localStorage.getItem('hapi.skin'), 'classic', 'изборът се помни и при изключване');
+    });
+
     // ── J23. Табло → „Виж всички“ води към „Кой влиза“ ────────────────────────
     await journey('J23 таблото води към посетителите', async () => {
       app.nav('dashboard');
@@ -1987,6 +2004,60 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.ok(app.requests.some((r) => r.method === 'DELETE' && r.url.endsWith('/admin/api/pgp/keys/' + importedId)), 'remove на bundle ключ минава през DELETE API');
     });
 
+    // ── J78. Настройки: подпис на ПАПКА и на много файлове без ключ и парола ──
+    // Човекът не въвежда нито ключ, нито парола: ключът вече е зададен (тук — прикачен, в
+    // реалния add-on — от опциите). Панелът пита само КАКВО да се подпише.
+    await journey('J78 подпис на папка и файлове без ключ и парола', async () => {
+      app.nav('dashboard');
+      await settle('таблото преди Settings');
+      app.nav('settings');
+      await waitFor(() => app.$('#set-pgp-label'), { label: 'полето за име на PGP ключ', timeout: BUDGET });
+      app.fill('#set-pgp-label', 'gui-sign');
+      app.fill('#set-pgp-key', pgpKey('SignUi'));
+      app.clearToasts();
+      app.click('#set-pgp-attach', 'бутонът „Прикачи ключа“');
+      await waitFor(() => {
+        const t = app.toast();
+        return t && /Прикачен ключ/.test(t.message) ? t : null;
+      }, { label: 'ключът за подписване', timeout: BUDGET });
+
+      // `/share` се решава спрямо работната папка на СЪРВЪРА (тук — хранилището), затова
+      // папката се създава на същия диск, а не под DATA_DIR (той е в %TEMP%, друг диск).
+      const shareBase = path.resolve('/share');
+      const folderName = 'gui-sign-' + String(Date.now()).slice(-6);
+      const folderAbs = path.join(shareBase, folderName);
+      fs.mkdirSync(path.join(folderAbs, 'sub'), { recursive: true });
+      fs.writeFileSync(path.join(folderAbs, 'a.txt'), 'първи файл', 'utf8');
+      fs.writeFileSync(path.join(folderAbs, 'sub', 'b.txt'), 'втори файл', 'utf8');
+      try {
+        const folderInput = await waitFor(() => app.$('#set-pgp-sign-folder'), { label: 'полето за папка', timeout: BUDGET });
+        assert.equal(folderInput.value, '/share', 'по подразбиране папката е /share');
+        for (const id of ['#set-pgp-sign-folder', '#set-pgp-sign-paths', '#set-pgp-sign-go']) {
+          assert.ok(app.$(id), 'блокът за подпис има ' + id);
+        }
+        // Нито поле за ключ, нито поле за парола в блока — те идват от конфигурацията.
+        assert.equal(app.$('#set-pgp-sign-key'), null, 'няма поле за ключ');
+        assert.equal(app.$('#set-pgp-sign-pass'), null, 'няма поле за парола');
+
+        app.clearToasts();
+        app.fill('#set-pgp-sign-folder', '/share/' + folderName);
+        app.click('#set-pgp-sign-go', 'бутонът „Подпиши“');
+        const signed = await waitFor(() => {
+          const t = app.toast();
+          return t && /Подписани 2 файла/.test(t.message) ? t : null;
+        }, { label: 'резултатът от подписването на папката', timeout: BUDGET });
+        assert.equal(signed.kind, 'ok', 'папката се подписва: ' + signed.message);
+        const sent = app.requests.filter((r) => r.method === 'POST' && r.url.endsWith('/admin/api/pgp/sign')).pop();
+        assert.ok(sent, 'подписът минава през POST /admin/api/pgp/sign');
+        assert.deepEqual(Object.keys(JSON.parse(sent.body)).sort(), ['folder', 'paths', 'perFile', 'recursive'], 'заявката носи само какво да се подпише: ' + sent.body);
+        assert.equal(/PRIVATE KEY|passphrase/.test(sent.body), false, 'в заявката няма ключ и няма парола');
+        const download = await waitFor(() => app.$('[data-pgp-sign-download]'), { label: 'бутонът за изтегляне на подписите', timeout: BUDGET });
+        assert.ok(download.getAttribute('data-pgp-sign-download'), 'бутонът носи идентификатора на архива');
+      } finally {
+        fs.rmSync(folderAbs, { recursive: true, force: true });
+      }
+    });
+
     // ── J76. Задачи: pause/resume/cancel през бутони към жив job API ──────────
     await journey('J76 задачи: pause/resume/cancel през интерфейса', async () => {
       await ownPortalWithFile('gui-job-controls');
@@ -2086,6 +2157,63 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       } finally {
         app.setFetchInterceptor(null);
       }
+    });
+
+    // ── J77. Портал: окончателно премахване през контролния панел ──────────────
+    // DEF-24 остави интерфейса само със „Закрий портала“ (архив). Тук се проверява обратното
+    // действие — ИСТИНСКОТО триене — и то по трудния път: грешен slug не трие нищо, а правилният
+    // минава през същия `DELETE /admin/api/portals/<id>`, който сървърът вече пази с
+    // `EVIDENCE_NEVER_DELETED`.
+    await journey('J77 портал: окончателно премахване', async () => {
+      await ownPortalWithFile('gui-journey-remove');
+      const field = await waitFor(() => app.$('#pf-delete-confirm'), { label: 'полето за потвърждение на премахването', timeout: BUDGET });
+      const remove = await waitFor(() => app.$('[data-delete-portal]'), { label: 'бутонът „Премахни портала“', timeout: BUDGET });
+      // Окончателното триене е отделен, ЧЕРВЕН блок, а не съседен бутон до „Закрий портала“ —
+      // и в него няма „undefined“ вместо икона (класът дефект, който се вижда само с очи).
+      const danger = app.$('.pf-danger');
+      assert.ok(danger, 'секцията за премахване е отделен блок `.pf-danger`');
+      assert.doesNotMatch(text(danger), /undefined/, 'в блока няма „undefined“ вместо икона: ' + text(danger));
+      assert.match(String(remove.getAttribute('class') || ''), /btn-danger/, 'бутонът е с опасния стил, не като „Закрий“');
+      // Погрешно потвърждение НЕ трие: човекът вижда защо, а сървърът не получава заявка.
+      app.fill(field, 'greshen-slug');
+      app.clearToasts();
+      remove.click();
+      const refused = await waitFor(() => {
+        const current = app.toast();
+        return current && /slug-а/.test(current.message) ? current : null;
+      }, { label: 'известието за грешен slug', timeout: BUDGET });
+      assert.equal(refused.kind, 'err', 'грешният slug не трие: ' + refused.message);
+      assert.equal(
+        app.requests.some((r) => r.method === 'DELETE' && /\/admin\/api\/portals\/[^/?]+$/.test(r.url)),
+        false,
+        'без точно потвърждение не тръгва DELETE: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+      // С правилния slug минава през ИСТИНСКИЯ маршрут — без `?force=1`, защото порталът
+      // няма архивирани QR ревизии (силата е отделно решение, не част от „Премахни“).
+      app.fill(field, 'gui-journey-remove');
+      app.clearToasts();
+      remove.click();
+      const said = await waitFor(() => {
+        const current = app.toast();
+        return current && /е премахнат/.test(current.message) ? current : null;
+      }, { label: 'известието за премахнатия портал', timeout: BUDGET });
+      assert.equal(said.kind, 'ok', 'премахването минава: ' + said.message);
+      assert.ok(
+        app.requests.some((r) => r.method === 'DELETE' && /\/admin\/api\/portals\/[^/?]+$/.test(r.url)),
+        'DELETE заявката е изпратена: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
+      );
+      const sent = app.requests.filter((r) => r.method === 'DELETE' && /\/admin\/api\/portals\/[^/?]+$/.test(r.url)).pop();
+      assert.doesNotMatch(String(sent.url), /force=1/, 'без архивирани QR ревизии не се праща force');
+      await settle('списъка след премахване');
+      const found = app.$$('[data-open-portal]').some((el) => {
+        let node = el;
+        for (let i = 0; i < 6 && node; i++) {
+          if (text(node).includes('gui-journey-remove')) return true;
+          node = node.parentNode;
+        }
+        return false;
+      });
+      assert.equal(found, false, 'премахнатият портал изчезва от списъка — той не е в архив');
     });
 
     // Какво остава ИЗВЪН обхвата на щракването и защо — за да не се „попълва“ някога със

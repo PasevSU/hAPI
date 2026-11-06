@@ -60,7 +60,7 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
       ],
     });
 
-    const ui = mountUi(server, { modules: ['data.js', 'icons.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js'] });
+    const ui = mountUi(server, { modules: ['data.js', 'icons.js', 'paptresor.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js'] });
     const w = ui.window;
     assert.ok(w.SettingsPanel, 'панелът „Настройки“ е зареден');
 
@@ -192,6 +192,42 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
         },
       },
       storage: { expect: /Проверката приключи/, kind: 'ok' },
+      // Paptresor: отчетът за прилагане на QR кода се строи ОТ ПАНЕЛА (не се чака сървър)
+      // и остава на екрана — затова действието е „in place“ и се проверява съдържанието.
+      paptresorPreview: {
+        fill: (h) => {
+          setValue(h, '#set-paptresor-explain', 'Обяснение от GUI теста');
+          setValue(h, '#set-paptresor-ad1-title', 'Рекламка от GUI');
+          setValue(h, '#set-paptresor-layout', 'poster');
+        },
+        expect: /Отчетът е готов/,
+        kind: 'ok',
+        check: async () => {
+          const out = currentHost.querySelector('#set-paptresor-print');
+          const html = String(out && out.innerHTML);
+          assert.match(html, /pt-sheet pt-poster/, 'панелът показва листа на Paptresor');
+          assert.ok(html.includes('Paptresor'), 'марката е на листа');
+          assert.ok(html.includes('Обяснение от GUI теста'), 'обяснението от полето влиза в листа');
+          assert.ok(html.includes('Рекламка от GUI'), 'рекламката от полето влиза в листа');
+          assert.ok(html.includes('Портал на секциите'), 'порталът от списъка е на листа');
+          assert.ok(html.includes('/p/' + portal.data.id), 'QR адресът сочи точно към избрания портал');
+        },
+      },
+      paptresorPrint: {
+        fill: (h) => setValue(h, '#set-paptresor-layout', 'labels'),
+        expect: /печат/i,
+        kind: 'ok',
+        check: async () => {
+          const out = currentHost.querySelector('#set-paptresor-print');
+          const html = String(out && out.innerHTML);
+          assert.equal((html.match(/class="pt-label"/g) || []).length, 8, 'печатът строи листа с осем етикета');
+          assert.equal(
+            w.document.body.classList.contains('printing-paptresor'),
+            false,
+            'класът за печат е махнат след печата (иначе следващият печат е празен)',
+          );
+        },
+      },
       backup: { expect: /Копието е създадено/, kind: 'ok' },
       verify: { expect: /Проверени/, kind: 'ok' },
       schedule: { fill: (h) => { setValue(h, '#set-sched-interval', '120'); setValue(h, '#set-sched-max', '3') }, expect: /Графикът е записан/, kind: 'ok' },

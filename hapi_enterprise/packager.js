@@ -197,7 +197,7 @@ function create({ root }) {
       });
     }
 
-    const signature = sign && sign.secretArmored
+    const signature = sign && (sign.signer || sign.secretArmored)
       ? { status: 'signed', keyId: sign.keyId || '', label: sign.label || '', file: `${id}.zip.asc`, algorithm: 'OpenPGP' }
       : { status: 'unsigned', keyId: '', label: '', file: '', algorithm: '' };
 
@@ -307,10 +307,11 @@ function create({ root }) {
 
     let signed = null;
     let armored = '';
-    if (sign && sign.secretArmored) {
+    if (sign && (sign.signer || sign.secretArmored)) {
       // Подписът покрива ДОСТАВЯНИЯ файл (шифротекста, ако има криптиране) — иначе
-      // получателят не може да провери това, което държи в ръка.
-      const result = pgp.signDetached(payload, sign.secretArmored);
+      // получателят не може да провери това, което държи в ръка. `signer` е обратното
+      // извикване (ключът от опциите не се копира в този модул), `secretArmored` — старият път.
+      const result = sign.signer ? sign.signer(payload) : pgp.signDetached(payload, sign.secretArmored);
       armored = result.armored;
       signed = {
         keyId: result.keyId,

@@ -220,6 +220,9 @@
     // Сензорите за комуникацията (visitor-intel) — за мониторинга на порталите.
     monitor: null,
     monitorError: '',
+    // Кога са дошли сензорите: `mount()` и `reload()` ги искат едно след друго, а панелът
+    // не бива да тегли едно и също два пъти (виж `loadMonitor`).
+    monitorAt: 0,
     newPortal: false,
     api: {},
     selected: null,
@@ -917,19 +920,30 @@
    * колко пъти и откъде — общо за инсталацията и за всеки портал поотделно.
    * При отказ мониторингът казва ПРИЧИНАТА, вместо да рисува нули.
    */
-  async function loadMonitor() {
+  let monitorInFlight = null;
+  async function loadMonitor({ force = false } = {}) {
     if (!connected()) { state.monitor = null; state.monitorError = ''; return false; }
-    const r = await api('/admin/api/sensors');
-    if (!r.ok || !r.data) {
-      state.monitor = null;
-      state.monitorError = r.status === 403
-        ? 'Токенът няма право „sensors“ — мониторингът е достъпен за администратор.'
-        : r.error || ('HTTP ' + r.status);
-      return false;
-    }
-    state.monitor = r.data.visitorsIntel || null;
-    state.monitorError = '';
-    return true;
+    // Един товар за едно отваряне: `mount()` вика `loadMonitor()` и после `reload()`, който
+    // също го викаше — тоест панелът теглеше сензорите ДВА пъти при всяко отваряне и при
+    // всяко действие. Кешът е кратък (1.5 s) и се прескача с `force` (бутонът „Обнови“).
+    if (!force && state.monitor && state.monitorAt && Date.now() - state.monitorAt < 1500) return true;
+    if (monitorInFlight) return monitorInFlight;
+    monitorInFlight = (async () => {
+      const r = await api('/admin/api/sensors');
+      if (!r.ok || !r.data) {
+        state.monitor = null;
+        state.monitorError = r.status === 403
+          ? 'Токенът няма право „sensors“ — мониторингът е достъпен за администратор.'
+          : r.error || ('HTTP ' + r.status);
+        state.monitorAt = Date.now();
+        return false;
+      }
+      state.monitor = r.data.visitorsIntel || null;
+      state.monitorError = '';
+      state.monitorAt = Date.now();
+      return true;
+    })().finally(() => { monitorInFlight = null });
+    return monitorInFlight;
   }
 
   /** Една секция „Мониторинг“: общо за инсталацията + данните на отворения портал. */
@@ -1145,7 +1159,11 @@
       // Адресира се с ID на портала: връзката не издава името и не се чупи при преименуване.
       const landing = withAccess(refs.landingUrl || `${linkBase()}/p/${p.id || p.slug}`);
       const refsQ = Object.fromEntries(Object.entries(refs).map(([k, v]) => [k, k.endsWith('Url') ? withAccess(v) : v]));
-      state.api[p.id] = { record, openapi, refs: refsQ, qrUrl, landing, accessQuery: q, accessExpires: (access && access.expires) || null, at: new Date().toISOString() };
+      // `folderUrl` е същият адрес, но изрично обявен като „страницата с папката“: порталът
+      // със собствена папка се отваря в режим „папка“ (`{{FOLDERS}}` в portal.html). Ключът
+      // беше само коментиран в `portal-control.js` и липсваше тук, тоест QR кодът винаги
+      // падаше на `landing`. Сега има една стойност и двата пътя дават ЕДИН адрес.
+      state.api[p.id] = { record, openapi, refs: refsQ, qrUrl, landing, folderUrl: landing, accessQuery: q, accessExpires: (access && access.expires) || null, at: new Date().toISOString() };
       if (!quiet) toast('API и QR са генерирани за портала', 'ok');
       return state.api[p.id];
     } catch (e) {
@@ -1384,7 +1402,18 @@
     const r = await api(P(), { method: 'PATCH', json: payload });
     if (!r.ok) return toast(r.error, 'err');
     await reload();
-    toast('Порталът е обновен', 'ok');
+    // След промяна на slug/видимост старите адреси сочат към нищо: slug-ът участва в API
+    // адреса, а смяната public↔private сменя дали е нужен подписан достъп. Затова
+    // препратките се строят НАНОВО от обновения портал и от новия подпис от сървъра —
+    // иначе в картата остава адрес, който вече връща 404 (точно това изглежда като
+    // „порталът не работи“, след като човек е сменил името или видимостта).
+    const fresh = state.portals.find((x) => x.id === p.id) || p;
+    const info = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/api-info`);
+    const access = info.ok && info.data
+      ? { query: info.data.accessQuery || '', expires: info.data.accessExpires || null }
+      : accessOf(fresh);
+    generateApi(fresh, true, access);
+    toast('Порталът е обновен — адресът и QR кодът са преизчислени', 'ok');
     render();
   }
 
@@ -2143,6 +2172,58 @@
     await loadPortals();
     render();
     toast(`Порталът „${(r.data && r.data.title) || ''}“ е върнат от архива`, 'ok');
+  }
+
+  /**
+   * Премахва портала ОКОНЧАТЕЛНО — единственото действие в панела, което трие, а не архивира.
+   * Потвърждението е двойно: човекът въвежда slug-а на ръка (иначе едно погрешно щракване
+   * върху съседен бутон трие чужд портал) и `window.confirm` е последната дума.
+   * Сървърът пази `EVIDENCE_NEVER_DELETED`: портал с архивирани QR ревизии се отказва с 409 и
+   * тогава човекът решава ОТДЕЛНО дали да тръгне със `?force=1` — решението влиза в одита.
+   */
+  async function deletePortal(id) {
+    const target = state.portals.find((x) => x.id === id) || portal();
+    if (!target) return;
+    if (!connected()) return toast('Демо: премахването става от add-on-а (свързан режим)', 'err');
+    const field = host && host.querySelector('#pf-delete-confirm');
+    const typed = (field ? field.value : '').trim();
+    if (typed !== target.slug) {
+      toast(`За потвърждение напиши точно slug-а „${target.slug}“ в полето до бутона`, 'err');
+      if (field && typeof field.focus === 'function') field.focus();
+      return;
+    }
+    const files = Array.isArray(target.files) ? target.files.length : 0;
+    const ok = window.confirm(
+      `Да ПРЕМАХНА ли портала „${target.title}“ окончателно?\n\n`
+      + `Трият се ${files} файла, папката на портала в хранилището (${target.storage_root || '/share'}) `
+      + 'и API папката. Това НЕ е архив — порталът не се връща.',
+    );
+    if (!ok) return;
+    const url = `/admin/api/portals/${encodeURIComponent(target.id)}`;
+    let r = await api(url, { method: 'DELETE' });
+    // 409 = има архивирани QR ревизии. Второто решение е изрично: доказателствата се трият
+    // само когато човекът го каже, а не защото е натиснал „Премахни“.
+    let forced = false;
+    if (!r.ok && r.status === 409) {
+      const again = window.confirm(`${r.error}\n\nДа изтрия ли и архивите (EVIDENCE_NEVER_DELETED)? Това е необратимо.`);
+      if (!again) return toast('Отказано: порталът остава, архивите са запазени', 'err');
+      forced = true;
+      r = await api(`${url}?force=1`, { method: 'DELETE' });
+    }
+    if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
+    state.openPortal = null;
+    state.portalIndex = 0;
+    state.selected = null;
+    state.selectedIds.clear();
+    state.versions = null;
+    state.newFolder = false;
+    await loadPortals();
+    render();
+    const purged = (r.data && Number(r.data.purgedArchives)) || 0;
+    toast(
+      `Порталът „${target.title}“ е премахнат${forced ? ` заедно с ${purged} архивирани QR ревизии` : ''}`,
+      'ok',
+    );
   }
 
   /**
@@ -3332,7 +3413,7 @@
     if (q('#pf-test')) q('#pf-test').addEventListener('click', testConnection);
     if (q('#pf-monitor-refresh')) {
       q('#pf-monitor-refresh').addEventListener('click', () => {
-        void loadMonitor().catch(() => { }).then(render);
+        void loadMonitor({ force: true }).catch(() => { }).then(render);
       });
     }
     if (q('#pf-create')) {
@@ -3373,6 +3454,10 @@
     // позицията си в списъка и не бива да я гадае. Отваря се в СЪЩИЯ раздел — под HA
     // Ingress нов таб губи сесията и адреса на add-on-а.
     host.querySelectorAll('[data-open-portal], [data-open-portal-id]').forEach((el) => {
+      // „Отвори портала“ в блока „Връзка и QR код“ има СВОЙ слушател по-долу: той отваря
+      // истинския адрес. Ако и този слушател се закачи, бутонът само пре-рисува същата
+      // карта — точно това изглеждаше като „бутонът не прави нищо“.
+      if (el.id === 'pf-open-portal') return;
       el.addEventListener('click', () => {
         const byId = el.dataset.openPortalId;
         const i = byId ? state.portals.findIndex((x) => x.id === byId) : Number(el.dataset.openPortal);
@@ -3402,13 +3487,17 @@
         render();
       });
     });
-    // Закриване и връщане на портал: единствените две действия, които местят портала
-    // между активния списък и архива за съхранение.
+    // Закриване, връщане и окончателно премахване на портал: действията, които местят
+    // портала между активния списък и архива за съхранение — или го трият за постоянно.
     host.querySelectorAll('[data-close-portal-submit]').forEach((el) => {
       el.addEventListener('click', () => void closePortal(el.dataset.closePortalSubmit || ''));
     });
     host.querySelectorAll('[data-archive-restore]').forEach((el) => {
       el.addEventListener('click', () => void restorePortal(el.dataset.archiveRestore || ''));
+    });
+    // Окончателното премахване: единственият път в панела, който трие вместо да архивира.
+    host.querySelectorAll('[data-delete-portal]').forEach((el) => {
+      el.addEventListener('click', () => void deletePortal(el.dataset.deletePortal || ''));
     });
     host.querySelectorAll('[data-pkg-portal]').forEach((el) => {
       el.addEventListener('click', () => {
@@ -3448,13 +3537,99 @@
     // API/QR се създават заедно с портала — няма бутон „Генерирай“. Панелът НЕ изрежда
     // техническите адреси: те са информация, която порталът извежда сам, а тук остава
     // единственият адрес — този на портала (копира се) и машинното описание (сваля се).
-    if (q('#pf-dl-api') && state.api[portal().id]) {
-      q('#pf-dl-api').addEventListener('click', () => downloadJson(`api-${portal().slug}.json`, state.api[portal().id].record));
+    // ── Връзка и QR: едно място за адреса, кода и действията по тях ────────────
+    // Адресът, който носи QR кодът. Една функция за всички действия, за да не се разминават
+    // копираното, сваленото и отпечатаното (преди `folderUrl` липсваше и QR падаше на landing).
+    const qrPageOf = (target) => {
+      const a = target ? state.api[target.id] : null;
+      return a ? a.folderUrl || a.landing || '' : '';
+    };
+    // Полетата с адреса: щракването го маркира цялия — иначе „копирай“ е единственият път.
+    host.querySelectorAll('#pf-link-url').forEach((el) => {
+      el.addEventListener('focus', () => el.select());
+      el.addEventListener('click', () => el.select());
+    });
+    if (q('#pf-open-portal')) {
+      q('#pf-open-portal').addEventListener('click', () => {
+        const url = qrPageOf(portal());
+        if (!url) return toast('Адресът още не е създаден — порталът се създава с API и QR', 'err');
+        // СЪЩИЯТ таб, не нов: под Home Assistant Ingress нов таб губи сесията и показва
+        // празен екран (същото правило пази и `#pf-open-folder`). Адресът е на същия
+        // origin, така че бисквитката на Home Assistant остава валидна.
+        window.location.href = url;
+      });
     }
-    if (q('#pf-copy-portal') && state.api[portal().id]) {
-      q('#pf-copy-portal').addEventListener('click', () =>
-        copyText(state.api[portal().id].landing, 'Адресът на портала е копиран'),
-      );
+    if (q('#pf-copy-portal')) {
+      q('#pf-copy-portal').addEventListener('click', () => {
+        if (!portal() || !state.api[portal().id]) return toast('Адресът още не е създаден', 'err');
+        copyText(state.api[portal().id].landing, 'Адресът на портала е копиран');
+      });
+    }
+    // Подписаният достъп изтича (portal-access.js). Дотук единственият начин за нов беше
+    // „Създай и генерирай API + QR“ във формата за създаване — тоест недостъпен за вече
+    // създаден портал. Сега тук се взема нов подпис и адресът/QR се обновяват на място.
+    if (q('#pf-refresh-access')) {
+      q('#pf-refresh-access').addEventListener('click', async () => {
+        const p = portal();
+        if (!p) return;
+        const btn = q('#pf-refresh-access');
+        if (btn) btn.disabled = true;
+        try {
+          if (!connected()) {
+            generateApi(p, true, accessOf(p));
+            render();
+            return toast('Демо: подписаният достъп се издава от add-on-а', 'ok');
+          }
+          const info = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/api-info`);
+          if (!info.ok || !info.data) return toast(info.error || 'Достъпът не е обновен', 'err');
+          if (!info.data.accessQuery) {
+            generateApi(p, true, null);
+            render();
+            return toast('Порталът е публичен — подписан достъп не е нужен', 'ok');
+          }
+          generateApi(p, true, { query: info.data.accessQuery, expires: info.data.accessExpires });
+          render();
+          toast('Издаден е нов подписан достъп — адресът и QR кодът са обновени', 'ok');
+        } finally {
+          const again = q('#pf-refresh-access');
+          if (again) again.disabled = false;
+        }
+      });
+    }
+    if (q('#pf-qr-download')) {
+      q('#pf-qr-download').addEventListener('click', () => {
+        const svg = qrSvg(qrPageOf(portal()));
+        if (!svg) return toast('QR кодът не е наличен в тази среда', 'err');
+        downloadText(`qr-${portal().slug || 'portal'}.svg`, svg, 'image/svg+xml');
+        toast('QR кодът е свален като SVG', 'ok');
+      });
+    }
+    // Печатът е В СЪЩИЯ таб (нов таб под Ingress губи сесията); `body.printing-qr` скрива
+    // всичко освен кода и се маха в `finally`, за да не остане следващият печат празен.
+    if (q('#pf-qr-print')) {
+      q('#pf-qr-print').addEventListener('click', () => {
+        if (!qrSvg(qrPageOf(portal()))) return toast('QR кодът не е наличен в тази среда', 'err');
+        document.body.classList.add('printing-qr');
+        try {
+          if (typeof window.print === 'function') window.print();
+        } finally {
+          document.body.classList.remove('printing-qr');
+        }
+        toast('QR кодът е изпратен към печат', 'ok');
+      });
+    }
+    // Бутонът е винаги в блока „Връзка и QR код“, затова проверката е при ЩРАКВАНЕ, а не
+    // при закачането: иначе при портал без изчислен API бутонът остава мъртъв и мълчи.
+    if (q('#pf-dl-api')) {
+      q('#pf-dl-api').addEventListener('click', () => {
+        const apiObj = portal() ? state.api[portal().id] : null;
+        if (!apiObj) return toast('Машинното описание се създава заедно с портала', 'err');
+        const name = `api-${portal().slug}.json`;
+        downloadJson(name, apiObj.record);
+        // Без съобщение свалянето изглежда като нищо: файлът пада в „Изтеглени“ и човекът
+        // натиска пак и пак. Освен това се казва, че това НЕ е порталът (честа грешка).
+        toast(`Свален ${name} — това е машинното описание, не страницата на портала`, 'ok');
+      });
     }
     // Връзката с ПАПКАТА (0.69.147): страницата, която изрежда истинските файлове на диска.
     // Относителен адрес `../portal.html?folder=` работи и на самия add-on (`/ui/`), и под
@@ -3948,8 +4123,8 @@
   }
 
   /** Изтегля произволен текстов файл (напр. checksums.txt) без сървър. */
-  function downloadText(name, text) {
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  function downloadText(name, text, mime) {
+    const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

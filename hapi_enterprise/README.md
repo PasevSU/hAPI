@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.167-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.174-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-informational" alt="Architectures">
@@ -246,7 +246,7 @@ this tab. Options apply on add-on restart.
 | PGP secret key path (optional) | `pgp_path_secret` | — | Empty: no encryption/layer-2 keys are loaded. Read-only; the add-on never writes into this file. |
 | PGP passphrase file path (optional) | `pgp_path_pass` | — | Empty: no passphrase file, so the `pgp_key_pass` option (or none) is used. The file is read, never written. |
 | PGP passphrase (optional) | `pgp_key_pass` | — | Empty: the secret key is treated as unprotected. Prefer `!secret hapi_pgp_path_pass` pointing at a file over putting the passphrase here. |
-| Encrypt internal file paths | `pgp_encrypt_paths` | `false` | `false`: storage paths stay in plaintext in the database; `true` requires a loaded secret key or the start fails with `PGP_SECRET_KEY_REQUIRED`. |
+| Encrypt internal file paths | `pgp_encrypt_paths` | `false` | `false`: storage paths stay in plaintext in the database; `true` requires a loaded secret key — without one the add-on still starts (and logs `pgp.encryption.without-key`), but the first encryption fails with `PGP_SECRET_KEY_REQUIRED` (503), so nothing is silently left unencrypted. |
 | Encrypt the portal work folder | `pgp_encrypt_workdir` | `false` | `false`: work files are encrypted with the internal key only; `true` wraps them with the PGP key (layer 2) and needs a loaded secret key. |
 | Console user name (not used — leave empty) | `username` | — | Empty: a standalone console user `api` is created on first start. Under Ingress the Home Assistant account is used. |
 | Console password (not used — leave empty) | `password` | — | Empty: a random password is generated on first start and written to `api-credentials.txt` (mode 0600). |
@@ -279,6 +279,7 @@ this tab. Options apply on add-on restart.
 | Signing key | `signing_key` | — | Empty: signing uses the key selected in the console (Settings → PGP keys). |
 | Encrypt stored files | `encrypt_files` | `false` | `false`: uploads are stored as they are; `X-File-Encrypt` still wins per request. |
 | Copy attached files into the portal folder | `portal_folder_copy` | `false` | `false`: a file attached to a portal stays in the add-on data — no folder is created in /share. `true` also writes a copy with the original name into the portal folder (storage_root). |
+| Public portal skin | `portal_skin` | `classic` | `classic`: the proven public portal style. `modern` serves a second skin (glassy cards, larger type, card grid for files) on the same `/portal.css`; the HTML and the QR address stay the same. |
 | TLS certificate | `tls_cert` | — | Empty: HTTPS is off. Certificate and private key must be set together, otherwise startup fails. |
 | TLS private key | `tls_key` | — | Empty: HTTPS is off. Both `tls_cert` and `tls_key` or neither. |
 | Sensors · IP mode | `visitor_ip_mode` | `hashed` | `hashed`: visitor addresses are stored as SHA-256 hashes. `masked` keeps the subnet, `full` the raw address. |

@@ -97,8 +97,8 @@ const MEANING = {
     bg: 'Празно: секретният ключ се приема за незащитен. По-добре `!secret hapi_pgp_path_pass` към файл, отколкото паролата да стои тук.',
   },
   pgp_encrypt_paths: {
-    en: '`false`: storage paths stay in plaintext in the database; `true` requires a loaded secret key or the start fails with `PGP_SECRET_KEY_REQUIRED`.',
-    bg: '`false`: пътищата в базата остават в открит вид; `true` изисква зареден секретен ключ, иначе стартът пада с `PGP_SECRET_KEY_REQUIRED`.',
+    en: '`false`: storage paths stay in plaintext in the database; `true` requires a loaded secret key — without one the add-on still starts (and logs `pgp.encryption.without-key`), but the first encryption fails with `PGP_SECRET_KEY_REQUIRED` (503), so nothing is silently left unencrypted.',
+    bg: '`false`: пътищата в базата остават в открит вид; `true` изисква зареден секретен ключ — без ключ add-on-ът пак стартира (и пише `pgp.encryption.without-key` в лога), но първото криптиране пада с `PGP_SECRET_KEY_REQUIRED` (503), тоест нищо не остава „уж криптирано“.',
   },
   pgp_encrypt_workdir: {
     en: '`false`: work files are encrypted with the internal key only; `true` wraps them with the PGP key (layer 2) and needs a loaded secret key.',
@@ -219,6 +219,10 @@ const MEANING = {
   portal_folder_copy: {
     en: '`false`: a file attached to a portal stays in the add-on data — no folder is created in /share. `true` also writes a copy with the original name into the portal folder (storage_root).',
     bg: '`false`: прикаченият към портал файл остава в данните на add-on-а — в /share не се създава папка. `true` слага и копие с истинското име в папката на портала (storage_root).',
+  },
+  portal_skin: {
+    en: '`classic`: the proven public portal style. `modern` serves a second skin (glassy cards, larger type, card grid for files) on the same `/portal.css`; the HTML and the QR address stay the same.',
+    bg: '`classic`: изпитаният стил на публичния портал. `modern` сервира втора кожа (стъклени карти, по-едър шрифт, мрежа от карти за файловете) на същия `/portal.css`; HTML-ът и адресът на QR кода не се менят.',
   },
   tls_cert: {
     en: 'Empty: HTTPS is off. Certificate and private key must be set together, otherwise startup fails.',

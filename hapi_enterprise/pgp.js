@@ -918,11 +918,11 @@ function buildSignatureBody({ key, sigType, signedPrefix, extraHashed, created, 
   return Buffer.concat([header, hashed, tail, signatureMpis]);
 }
 
-/** Деташиран подпис (binary document) в ASCII armor. */
+/** Деташиран подпис (binary document) в ASCII armor. `options.passphrase` отключва защитен ключ. */
 function signDetached(data, armoredSecretKey, options) {
   const opts = options && typeof options === 'object' ? options : {};
   if (!Buffer.isBuffer(data)) throw fail('INVALID_DATA', 'Очаква се Buffer за подпис');
-  const parsed = parseKeyBlock(armoredSecretKey);
+  const parsed = parseKeyBlock(armoredSecretKey, { passphrase: typeof opts.passphrase === 'string' ? opts.passphrase : '' });
   const key = signingKey(parsed);
   const created = Number.isFinite(opts.createdAt) ? Number(opts.createdAt) : Math.floor(Date.now() / 1000);
   const hashAlgo = opts.hashAlgo || (key.kind === 'eddsa' ? HASH_FOR_EDDSA : HASH_SHA256);

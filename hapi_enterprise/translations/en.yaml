@@ -40,8 +40,10 @@ configuration:
   pgp_encrypt_paths:
     name: Encrypt internal file paths
     description: >-
-      Stores storagePathEnc (PGP-encrypted) instead of the plaintext path in db.json. Requires a
-      loaded key — enabling it without a key refuses to start (PGP_SECRET_KEY_REQUIRED).
+      Stores storagePathEnc (PGP-encrypted) instead of the plaintext path in db.json. Requires
+      a loaded key: without one the add-on still starts and logs pgp.encryption.without-key, but
+      the first encryption fails with PGP_SECRET_KEY_REQUIRED (503) — nothing is left looking
+      encrypted when it is not. State is visible at GET /admin/api/pgp/keyring.
   pgp_encrypt_workdir:
     name: Encrypt the portal work folder
     description: >-
@@ -207,6 +209,12 @@ configuration:
       NOT create a folder in /share. Turn on to also place a copy with the original name
       in the portal folder (storage_root). Files in /share are uploaded from the portal
       folders panel, where you choose the folder yourself.
+  portal_skin:
+    name: Public portal skin
+    description: >-
+      classic — the proven style (default, nothing changes). modern — the second skin:
+      glassy cards, large typography, pill buttons and a card grid for files. Both use the
+      same HTML — only the stylesheet behind the QR code changes.
   tls_cert:
     name: TLS certificate
     description: >-

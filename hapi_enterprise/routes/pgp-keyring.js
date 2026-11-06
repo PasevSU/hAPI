@@ -3,6 +3,8 @@
 //
 //   GET  /admin/api/pgp/keyring          → { ok, keyring: { available, canDecrypt, reason, keys, … } }
 //   POST /admin/api/pgp/keyring/reload   → същото, след препрочитане от диска
+//   POST /admin/api/pgp/sign             → подпис на папка и/или на много файлове (ключът е от опциите)
+//   GET  /admin/api/pgp/signatures/<id>  → ZIP с подписите и манифеста
 //
 // Защо съществува: дотогава липсващ или грешен ключ се виждаше само като „не се криптира“
 // някъде надолу из кода. Тук състоянието се казва с точна причина (`NO_PATHS`,
@@ -14,7 +16,7 @@
 // Договор: `handle()` връща `true`, когато заявката е за този компонент (и е приключена),
 // и `false`, когато трябва да я поеме следващият компонент.
 function create(deps) {
-  const { json, fail, adminGate, audit, keyring, sealStoragePaths, sealWorkdir } = deps;
+  const { json, fail, adminGate, audit, keyring, sealStoragePaths, sealWorkdir, parse, pgpSign, streamDownload } = deps;
 
   /** Препрочита и одитира — общо за `reload`. */
   async function reloadAndReport(req, res) {
@@ -80,6 +82,45 @@ function create(deps) {
       }
       await audit('pgp.workdir.seal', result);
       json(res, 200, { ok: true, ...result });
+      return true;
+    }
+    // ПОДПИС НА ПАПКА И/ИЛИ НА МНОЖЕСТВО ФАЙЛОВЕ. Ключът и паролата НЕ се искат в заявката:
+    // `pgpTools.signer()` ползва прикачения ключ, а ако няма — ключа от опциите (с паролата от
+    // `pgp_key_pass`/`pgp_path_pass`). Заявката носи само КАКВО да се подпише.
+    if (url.pathname === '/admin/api/pgp/sign' && method === 'POST') {
+      if (!adminGate(req, res, 'pgp', method)) return true;
+      let body;
+      try {
+        body = await parse(req);
+      } catch (err) {
+        fail(res, err.status || 400, err.message);
+        return true;
+      }
+      let result;
+      try {
+        result = await pgpSign.sign(body || {});
+      } catch (err) {
+        fail(res, err.status || 500, (err.code ? err.code + ': ' : '') + err.message);
+        return true;
+      }
+      json(res, 201, { ok: true, ...result });
+      return true;
+    }
+    // Изтегляне на ZIP-а с подписите. Идентификаторът се проверява в `pgpSign.artifact`.
+    const sigMatch = /^\/admin\/api\/pgp\/signatures\/([a-z0-9]{8,32})$/.exec(url.pathname);
+    if (sigMatch && method === 'GET') {
+      if (!adminGate(req, res, 'pgp', method)) return true;
+      const id = sigMatch[1];
+      let artifact;
+      try {
+        artifact = await pgpSign.artifact(id);
+      } catch (err) {
+        fail(res, err.status || 400, (err.code ? err.code + ': ' : '') + err.message);
+        return true;
+      }
+      if (!artifact) { fail(res, 404, 'Not found'); return true; }
+      await audit('pgp.signatures.download', { id, bytes: artifact.stat.size });
+      void streamDownload(req, res, artifact.file, artifact.stat, 'signatures-' + id + '.zip', () => { });
       return true;
     }
     return false;

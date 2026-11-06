@@ -126,6 +126,10 @@ const ROUTES = [
   ['POST', '/admin/api/pgp/keyring/reload', 'Препрочитане на ключовете от диска (одитира се)', 'export', 'pgp'],
   ['POST', '/admin/api/pgp/seal-paths', 'Еднократна L1 миграция: откритите вътрешни пътища стават шифротекст (с копие на базата)', 'export', 'pgp'],
   ['POST', '/admin/api/pgp/seal-workdir', 'Еднократна L2 миграция: файловете в работните папки стават контейнери (иска ?confirm=1)', 'export', 'pgp'],
+  // Подписване на ПАПКА (каноничен манифест) и на МНОЖЕСТВО ФАЙЛОВЕ поотделно. Ключът и
+  // паролата идват от опциите/прикачения ключ — заявката носи само КАКВО да се подпише.
+  ['POST', '/admin/api/pgp/sign', 'Подпис на папка и/или на много файлове с готовия ключ', 'export', 'pgp'],
+  ['GET', '/admin/api/pgp/signatures/{signatureId}', 'ZIP с подписите и манифеста на папката', 'export', 'pgp'],
   ['GET', '/admin/api/pgp/keys', 'PGP ключове и настройки на пакетите', 'export', 'pgp'],
   ['POST', '/admin/api/pgp/keys', 'Прикачване на PGP ключ', 'export', 'pgp'],
   ['POST', '/admin/api/pgp/keys/import', 'Внасяне на ключове от пакет', 'export', 'pgp'],

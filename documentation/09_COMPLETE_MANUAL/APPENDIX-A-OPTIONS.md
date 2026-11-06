@@ -1,9 +1,9 @@
 # Приложение А — всички опции на add-on-а
 
 > Генерирано от `scripts/docs-manual.cjs`; **не се редактира на ръка**.
-> Стойността в колоната „по подразбиране“ е точно това, което издание 0.69.167 доставя.
+> Стойността в колоната „по подразбиране“ е точно това, което издание 0.69.174 доставя.
 
-Общо: **43** опции.
+Общо: **44** опции.
 
 | Опция | По подразбиране | Име в интерфейса | Какво прави |
 | --- | --- | --- | --- |
@@ -12,7 +12,7 @@
 | `pgp_path_secret` | `(празно)` | PGP secret key path (optional) | Full path to the passphrase-protected secret key, e.g. /homeassistant/_openpgpV6/secret.asc (private.asc works too). Needed for reading encrypted paths and for work-folder decryption. |
 | `pgp_path_pass` | `(празно)` | PGP passphrase file path (optional) | Full path to the file that holds HAPI_PGP_KEY_PASS=..., e.g. /homeassistant/_openpgpV6/.env. Point it at .env, never at .env.example (the template has an empty value). |
 | `pgp_key_pass` | `(празно)` | PGP passphrase (optional) | The passphrase itself, kept in /data/options.json. Takes precedence over pgp_path_pass. Never printed in logs and never returned by the API. |
-| `pgp_encrypt_paths` | `false` | Encrypt internal file paths | Stores storagePathEnc (PGP-encrypted) instead of the plaintext path in db.json. Requires a loaded key — enabling it without a key refuses to start (PGP_SECRET_KEY_REQUIRED). |
+| `pgp_encrypt_paths` | `false` | Encrypt internal file paths | Stores storagePathEnc (PGP-encrypted) instead of the plaintext path in db.json. Requires a loaded key: without one the add-on still starts and logs pgp.encryption.without-key, but the first encryption fails with PGP_SECRET_KEY_REQUIRED (503) — nothing is left looking encrypted when it is not. State is visible at GET /admin/api/pgp/keyring. |
 | `pgp_encrypt_workdir` | `false` | Encrypt the portal work folder | Encrypts the file contents in the portal work folder (AES-256-GCM with a per-file key wrapped by PGP). Requires a loaded key. Without the key and passphrase the files cannot be read. |
 | `username` | `(празно)` | Console user name (not used — leave empty) | Kept for old configurations only. No code reads it; sign-in goes through Home Assistant identity (user_roles / group_roles). |
 | `password` | `(празно)` | Console password (not used — leave empty) | Kept for old configurations only. No code reads it. Do not store a real password here. |
@@ -45,6 +45,7 @@
 | `signing_key` | `(празно)` | Signing key | Fingerprint or key ID of the OpenPGP key used for signing packages and receipts. Leave empty to use the key selected in the console. |
 | `encrypt_files` | `false` | Encrypt stored files | Encrypt new uploads at rest (AES-256-GCM with the admin key) by default. An explicit X-File-Encrypt header still wins per upload. |
 | `portal_folder_copy` | `false` | Copy attached files into the portal folder | Off by default: attaching a file to a portal keeps it in the add-on data and does NOT create a folder in /share. Turn on to also place a copy with the original name in the portal folder (storage_root). Files in /share are uploaded from the portal folders panel, where you choose the folder yourself. |
+| `portal_skin` | `classic` | Public portal skin | classic — the proven style (default, nothing changes). modern — the second skin: glassy cards, large typography, pill buttons and a card grid for files. Both use the same HTML — only the stylesheet behind the QR code changes. |
 | `tls_cert` | `(празно)` | TLS certificate | Path to a PEM certificate (inside /config, /ssl or /share). Together with the key it makes the add-on serve its own listeners over HTTPS. |
 | `tls_key` | `(празно)` | TLS private key | Path to the PEM private key that matches the certificate. Both options must point to readable files, otherwise the add-on refuses to start. |
 | `visitor_ip_mode` | `hashed` | Sensors · IP mode | What is kept of a visitor address: hashed (irreversible hash, default), masked (network/16) or full (the full address — personal data). Empty means the default. The same value can be set from the console: Settings → Sensors. |

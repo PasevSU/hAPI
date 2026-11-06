@@ -767,6 +767,10 @@ const portalPage = require('./routes/portal-page').create({ fail, resolvePortal,
 // PGP ключохранилище (B2): ключовете идват само от изрични пътища; тук се държи една
 // инстанция, за да е еднакъв отговорът „има ли ключ“ за целия сървър.
 const keyring = require('./path-crypto').create({ env: process.env });
+const portalSkin = require('./portal-skin').create({ keyring, log }); // кожа на портала + предупреждение
+// PGP инструментите и подписването на папки/файлове: ключът идва от опциите, без да се пита.
+const pgpTools = require('./pgp-tools').create({ keyring, listKeys: () => db.pgpKeys || [], decryptSecret: key => { if (!key || !key.secretEnc) return ''; return fileCrypto.decrypt(Buffer.from(key.secretEnc, 'base64'), adminToken).toString('utf8') }, pgp });
+const pgpSign = require('./pgp-sign').create({ tools: pgpTools, root: path.join(root, 'pgp-signatures'), roots: { '/share': portalRoot('/share'), '/media': portalRoot('/media') }, audit, log });
 /**
  * L1 миграция (0.69.67): откритите `storagePath` стават `storagePathEnc`. Прави копие на
  * базата ПРЕДИ промяната (с проверка за цялост) и е идемпотентна — втори пуск не намира
@@ -797,7 +801,7 @@ const sealWorkdir = async () => {
     })
     .sealPortals(db.portals);
 };
-const pgpKeyring = require('./routes/pgp-keyring').create({ json, fail, adminGate, audit, keyring, sealStoragePaths, sealWorkdir });
+const pgpKeyring = require('./routes/pgp-keyring').create({ json, fail, adminGate, audit, keyring, sealStoragePaths, sealWorkdir, parse, pgpSign, streamDownload });
 const linkCheck = require('./routes/link-check').create({
   json, fail, parse, audit, adminGate, baseUrl,
   publicBaseUrl: () => runtime.effective().publicBaseUrl || '',
@@ -1429,7 +1433,7 @@ async function handler(req, res) {
     const UI_FILES = (() => {
       const files = { '/ui': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/index.html': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/manifest.example.json': ['ui/manifest.example.json', 'application/json; charset=utf-8'] };
       for (const f of ['tokens.css', 'layout.css', 'components.css', 'themes.css']) files['/ui/' + f] = ['ui/' + f, 'text/css; charset=utf-8']; // дизайн системата: токени · оформление · компоненти · тема
-      for (const f of ['links.js', 'api-base.js', 'bootstrap.js', 'panel-registry.js', 'app.js', 'icons.js', 'data.js', 'i18n.js', 'report-objects.js', 'report-scope.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'dashboard-panel.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js', 'export-center.js', 'public-gateway.js', 'visitors-panel.js']) files['/ui/' + f] = [f === 'links.js' ? f : 'ui/' + f, 'text/javascript; charset=utf-8'];
+      for (const f of ['links.js', 'api-base.js', 'bootstrap.js', 'panel-registry.js', 'app.js', 'icons.js', 'data.js', 'i18n.js', 'report-objects.js', 'report-scope.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js', 'dashboard-panel.js', 'paptresor.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js', 'export-center.js', 'public-gateway.js', 'visitors-panel.js']) files['/ui/' + f] = [f === 'links.js' ? f : 'ui/' + f, 'text/javascript; charset=utf-8'];
       for (const f of ['report-manifest.js', 'api-spec.js', 'virtual-storage.js', 'storage-tree.js', 'export-rules.js', 'export-manager.js', 'download-access.js', 'public-gateway.js', 'qrcode.js']) files['/hapi_enterprise/' + f] = ['hapi_enterprise/' + f, 'text/javascript; charset=utf-8'];
       // PasevSU Document Generator — самостоятелно приложение под `/generator/`.
       files['/generator'] = ['generator/index.html', 'text/html; charset=utf-8'];
@@ -1515,7 +1519,7 @@ async function handler(req, res) {
     }
     if (url.pathname === '/portal.css' && method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
-      return res.end(fs.readFileSync(path.join(__dirname, 'portal', 'portal.css')));
+      return res.end(portalSkin.stylesheet());
     }
     if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'portals' && parts.length === 3 && method === 'GET') return requirePortalToken ? fail(res, 404, 'Not found') : json(res, 200, { portals: db.portals.filter(p => p.visibility === 'public').map(publicPortal) });
     // Public API Gateway (PG-6): отделен канал, отделна токен схема и централни правила за достъп.
@@ -1803,8 +1807,6 @@ async function handler(req, res) {
     const packageSettings = () => { const s = db.packageSettings || {}; return { autoSign: s.autoSign === true, signKeyId: String(s.signKeyId || ''), ttlHours: Number.isFinite(s.ttlHours) ? s.ttlHours : 72, maxKept: Number.isFinite(s.maxKept) ? s.maxKept : 50, rateKbps: Number.isFinite(s.rateKbps) && s.rateKbps > 0 ? s.rateKbps : 0, parallelChunks: Number.isInteger(s.parallelChunks) && s.parallelChunks >= 1 ? s.parallelChunks : 4 } };
     const pgpKeyView = k => ({ id: k.id, label: k.label, userId: k.userId, algorithm: k.algorithm, bits: k.bits, version: Number(k.version) || 4, keyId: k.keyId, fingerprint: k.fingerprint, createdAt: k.createdAt, addedAt: k.addedAt, hasSecret: Boolean(k.secretEnc), source: k.source || 'console', roles: Array.isArray(k.roles) ? k.roles : [] });
     const pgpKeyById = id => (db.pgpKeys || []).find(k => k.id === id) || null;
-    const signerFor = (keyId) => { const list = db.pgpKeys || []; const wanted = String(keyId || '').trim().toLowerCase(); const key = wanted ? list.find(k => k.id === keyId || k.keyId === keyId || String(k.fingerprint || '').toLowerCase() === wanted) : list[0]; return key || null };
-    const decryptSecret = key => { if (!key || !key.secretEnc) return ''; return fileCrypto.decrypt(Buffer.from(key.secretEnc, 'base64'), adminToken).toString('utf8') };
     /**
      * Всички файлове от папката на портала (storage_root), с относителен път.
      * Само реални файлове: без символни връзки и без скрити имена. Има твърди лимити.
@@ -1887,7 +1889,7 @@ async function handler(req, res) {
     }
     if (parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'pgp' && parts[3] === 'keys') {
       if (!adminGate(req, res, 'pgp', method)) return;
-      if (parts.length === 4 && method === 'GET') return json(res, 200, { keys: (db.pgpKeys || []).map(pgpKeyView), settings: packageSettings() });
+      if (parts.length === 4 && method === 'GET') return json(res, 200, { keys: pgpTools.keys(), settings: packageSettings() });
       if (parts.length === 4 && method === 'POST') {
         // Само ПРИКАЧАНЕ на готов ключ — сървърът не генерира ключове.
         const b = await parse(req); const label = clean(b.label).slice(0, 80) || 'PGP ключ';
@@ -1906,7 +1908,7 @@ async function handler(req, res) {
         return json(res, 201, await update(() => { db.pgpKeys = [...(db.pgpKeys || []), record]; if (!packageSettings().signKeyId) db.packageSettings = { ...packageSettings(), signKeyId: record.id }; void audit('pgp.key.add', { id: record.id, keyId: record.keyId, algorithm: record.algorithm }); return pgpKeyView(record) }));
       }
       if (parts.length === 5 && parts[4] === 'import' && method === 'POST') { const result = await importKeyBundles(); void audit('pgp.bundle.import', { imported: result.imported.length, skipped: result.skipped.length }); return json(res, 200, result) }
-      if (parts.length === 6 && parts[5] === 'public' && method === 'GET') { const key = pgpKeyById(parts[4]); if (!key) return fail(res, 404, 'Not found'); return json(res, 200, { id: key.id, keyId: key.keyId, fingerprint: key.fingerprint, publicArmored: key.publicArmored }) }
+      if (parts.length === 6 && parts[5] === 'public' && method === 'GET') { const key = pgpTools.find(parts[4]); if (!key) return fail(res, 404, 'Not found'); if (key.source === 'options') return json(res, 200, { id: key.id, keyId: key.keyId, fingerprint: key.fingerprint, publicArmored: keyring.publicText() }); const record = pgpKeyById(parts[4]); if (!record) return fail(res, 404, 'Not found'); return json(res, 200, { id: record.id, keyId: record.keyId, fingerprint: record.fingerprint, publicArmored: record.publicArmored }) }
       if (parts.length === 5 && method === 'DELETE') return json(res, 200, await update(() => { const key = pgpKeyById(parts[4]); if (!key) throw Object.assign(new Error('Not found'), { status: 404 }); db.pgpKeys = (db.pgpKeys || []).filter(k => k.id !== key.id); const s = packageSettings(); const rest = db.pgpKeys; const signKeyId = s.signKeyId === key.id ? ((rest[0] || {}).id || '') : (rest.some(k => k.id === s.signKeyId) ? s.signKeyId : ((rest[0] || {}).id || '')); db.packageSettings = { ...s, signKeyId, autoSign: rest.length ? s.autoSign : false }; void audit('pgp.key.remove', { id: key.id, keyId: key.keyId }); return { removed: key.id, autoSign: db.packageSettings.autoSign, keys: rest.length } }));
       return fail(res, 404, 'Not found');
     }
@@ -1937,22 +1939,17 @@ async function handler(req, res) {
         let sign = null; const keyId = clean(b.keyId) || cryptoOptions.signingKey || settings.signKeyId;
         let signFallback = null;
         if (wantSign) {
-          let key = signerFor(keyId);
-          // Ако конфигурираният ключ е изтрит или сменен, пакетът не спира: взимаме друг
-          // ключ със секретна част и го отбелязваме изрично (fallback) в метаданните.
-          if (!key && keyId) {
-            const alternate = (db.pgpKeys || []).find(k => k.secretEnc);
-            if (alternate) {
-              key = alternate;
-              signFallback = { requested: keyId, used: alternate.keyId, reason: 'configured signing key not found' };
-              log.warn('package.signing.fallback', { ns: 'packages', requested: keyId, used: alternate.keyId });
-              void audit('package.signing.fallback', { requested: keyId, used: alternate.keyId });
-            }
+          const chosen = pgpTools.signer(keyId);
+          // Липсващ (или само публичен) поискан ключ не спира пакета: подписва се с наличния,
+          // а изборът се отбелязва в метаданните и одита. Сравнява се с НАМЕРЕНИЯ ключ.
+          const wantedKey = keyId ? pgpTools.find(keyId) : null;
+          if (chosen && keyId && (!wantedKey || String(chosen.keyId).toLowerCase() !== String(wantedKey.keyId).toLowerCase())) {
+            signFallback = { requested: keyId, used: chosen.keyId, reason: wantedKey ? 'configured signing key has no secret part' : 'configured signing key not found', source: chosen.source };
+            log.warn('package.signing.fallback', { ns: 'packages', requested: keyId, used: chosen.keyId, source: chosen.source });
+            void audit('package.signing.fallback', { requested: keyId, used: chosen.keyId, source: chosen.source });
           }
-          if (!key) return fail(res, 400, 'Няма PGP ключ за автоподписване — прикачи ключ в „Настройки“');
-          const secretArmored = decryptSecret(key);
-          if (!secretArmored) return fail(res, 400, 'Ключът няма секретна част');
-          sign = { secretArmored, keyId: key.keyId, label: key.label };
+          if (!chosen) return fail(res, 400, 'Няма PGP ключ за автоподписване — прикачи ключ в „Настройки“ или задай pgp_path_secret в опциите на add-on-а');
+          sign = { signer: chosen.sign, keyId: chosen.keyId, label: chosen.label };
         }
         let meta;
         try { meta = await packager.build({ portal: p, files, sign, ttlHours: settings.ttlHours, compression: b.compression, encryption: b.encryption, password: b.password, split: b.split }) } catch (e) { return fail(res, e.status || 500, e.message) }
@@ -1965,11 +1962,12 @@ async function handler(req, res) {
         const b = await parse(req);
         const next = { ...packageSettings() };
         if (b.autoSign !== undefined) {
-          // Автоподписване има смисъл само след прикачен ключ.
-          if (b.autoSign === true && !(db.pgpKeys || []).length) return fail(res, 400, 'Няма прикачен PGP ключ — прикачи ключ в „Настройки“');
+          // Автоподписване има смисъл само когато ИМА с какво да се подпише — прикачен ключ
+          // или зададен в опциите (`pgp_path_secret`).
+          if (b.autoSign === true && !pgpTools.canSign()) return fail(res, 400, 'Няма прикачен PGP ключ — прикачи ключ в „Настройки“ (или задай pgp_path_secret в опциите на add-on-а)');
           next.autoSign = b.autoSign === true;
         }
-        if (b.signKeyId !== undefined) { const keyId = clean(b.signKeyId); if (keyId && !pgpKeyById(keyId)) return fail(res, 400, 'Unknown PGP key'); next.signKeyId = keyId }
+        if (b.signKeyId !== undefined) { const keyId = clean(b.signKeyId); if (keyId && !pgpTools.find(keyId)) return fail(res, 400, 'Unknown PGP key'); next.signKeyId = keyId }
         if (b.ttlHours !== undefined) { const ttl = Number(b.ttlHours); if (!Number.isFinite(ttl) || ttl < 1 || ttl > 24 * 365) return fail(res, 400, 'Invalid TTL'); next.ttlHours = ttl }
         if (b.maxKept !== undefined) { const max = Number(b.maxKept); if (!Number.isInteger(max) || max < 1 || max > 1000) return fail(res, 400, 'Invalid maxKept'); next.maxKept = max }
         // 0 = без ограничение; стойността е в KB/s и се прилага към самия поток при сваляне.
@@ -1998,13 +1996,13 @@ async function handler(req, res) {
         const a = await packager.artifact(parts[3], 'zip', 0, { allowSplit: true }); if (!a) return fail(res, 404, 'Not found');
         const sigArtifact = await packager.artifact(parts[3], 'signature');
         const b = await parse(req);
-        let publicArmored = clean(b.publicArmored);
-        if (!publicArmored) { const key = (db.pgpKeys || []).find(k => k.keyId === a.meta.signature.keyId) || null; publicArmored = key ? key.publicArmored : '' }
         if (!sigArtifact) return json(res, 200, { valid: false, reason: 'NO_SIGNATURE' });
-        if (!publicArmored) return fail(res, 400, 'Липсва публичен ключ за проверка');
         const zipBuf = await packager.payload(parts[3]);
         const armored = await fsp.readFile(sigArtifact.file, 'utf8');
-        const out = pgp.verifyDetached(zipBuf, armored, publicArmored);
+        // Ключът за проверка е ПО ИЗБОР: подаден изрично (стар ключ), иначе прикаченият със
+        // същия keyId, иначе този от опциите. Без нито един от трите — ясна причина.
+        const out = pgpTools.verify(zipBuf, armored, a.meta.signature.keyId, b && b.publicArmored);
+        if (out.reason === 'NO_PUBLIC_KEY') return fail(res, 400, 'Липсва публичен ключ за проверка — подай publicArmored (стар ключ) или задай pgp_path_public в опциите');
         void audit('package.verify', { packageId: a.meta.id, valid: out.valid, reason: out.reason || '' });
         return json(res, 200, { ...out, packageId: a.meta.id, sha256: a.meta.sha256 });
       }

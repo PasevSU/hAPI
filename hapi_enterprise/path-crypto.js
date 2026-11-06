@@ -374,6 +374,49 @@ function create(options = {}) {
     return status().encryptPaths ? { storagePathEnc: sealPath(plain) } : { storagePath: plain };
   }
 
+  /**
+   * Кой ключ от опциите може да ПОДПИСВА. Различно от „криптира“: подписът иска секретната
+   * част и подключ с флаг за подпис, а криптирането — само публичната. Понеже ключът вече е
+   * зареден от `pgp_path_secret`, PGP инструментите не бива да искат нищо от човека.
+   * `null` значи „няма с какво да се подпише“ (само публичен ключ, грешна парола и т.н.).
+   */
+  function signing() {
+    const state = status();
+    if (!state.available || !material || !material.secretText) return null;
+    try {
+      const parsed = pgp.parseKeyBlock(material.secretText, { passphrase: material.passphrase || undefined });
+      const key = pgp.signingKey(parsed);
+      return {
+        keyId: key.keyId,
+        fingerprint: key.fingerprint,
+        algorithm: key.algorithm,
+        version: Number(key.version) || 4,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /** Деташиран подпис с ключа от опциите; без частен ключ — точният код, не празен подпис. */
+  function signDetached(data) {
+    const identity = signing();
+    if (!identity) {
+      throw Object.assign(new Error('Няма зареден частен PGP ключ за подпис'), {
+        code: 'PGP_SECRET_KEY_REQUIRED',
+        status: 503,
+        detail: status().reason || 'NO_SECRET_KEY',
+      });
+    }
+    return pgp.signDetached(data, material.secretText, { passphrase: material.passphrase || '' });
+  }
+
+  /** Публичният текст на ключа от опциите — за ПРОВЕРКА на подпис; не е тайна. */
+  function publicText() {
+    const state = status();
+    if (!state.available || !material) return '';
+    return material.publicText || '';
+  }
+
   return {
     status,
     reload,
@@ -385,6 +428,9 @@ function create(options = {}) {
     sealAll,
     pathOf,
     pathField,
+    signing,
+    signDetached,
+    publicText,
     passphraseSource: () => resolvePassphrase().source,
   };
 }

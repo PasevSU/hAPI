@@ -25,7 +25,7 @@
     // Активна секция на „Настройки“: 'general' или id от SECTIONS.
     section: 'general',
     // PGP: прикачени ключове + настройки на автоподписването на пакетите.
-    pgp: { loaded: false, keys: [], settings: { autoSign: false, signKeyId: '' }, error: '', attached: null },
+    pgp: { loaded: false, keys: [], settings: { autoSign: false, signKeyId: '' }, error: '', attached: null, lastSign: null },
   };
 
   const storedBase = () => localStorage.getItem('hapi.apiBase') || '';
@@ -171,12 +171,71 @@
     return loadPgp();
   }
 
+  // Подпис на папка и/или на много файлове. Ключът и паролата НЕ се искат: те идват от
+  // опциите на add-on-а (`pgp_path_secret` + `pgp_key_pass`). Затова тук няма нито поле за
+  // ключ, нито поле за парола — само КАКВО да се подпише.
+  async function signPgp() {
+    const q = (sel) => host.querySelector(sel);
+    const folder = (q('#set-pgp-sign-folder')?.value || '').trim();
+    const paths = (q('#set-pgp-sign-paths')?.value || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (!folder && !paths.length) return toast(`Посочи папка или поне един файл`, 'err');
+    state.busy = true;
+    const r = await api('/admin/api/pgp/sign', {
+      method: 'POST',
+      json: {
+        folder: folder || undefined,
+        paths,
+        recursive: q('#set-pgp-sign-recursive')?.checked !== false,
+        perFile: q('#set-pgp-sign-perfile')?.checked !== false,
+      },
+    });
+    state.busy = false;
+    if (!r.ok) {
+      state.pgp.error = r.error || `HTTP ${r.status}`;
+      return toast(state.pgp.error, 'err');
+    }
+    state.pgp.error = '';
+    state.pgp.lastSign = r.data;
+    toast(`Подписани ${(r.data.files || []).length} файла · ключ ${r.data.keyId}`, 'ok');
+    return render();
+  }
+
+  // Изтегляне на ZIP-а с подписите. Админ токенът се слага в заявката, защото обикновен
+  // `<a href>` не носи заглавки и щеше да получи 401.
+  async function downloadPgpSignatures(id) {
+    if (!id) return undefined;
+    const token = storedToken();
+    try {
+      const res = await fetch(`${effectiveBase()}/admin/api/pgp/signatures/${encodeURIComponent(id)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) return toast(`Подписите не са достъпни · HTTP ${res.status}`, 'err');
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `signatures-${id}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return toast(`Подписите са изтеглени`, 'ok');
+    } catch (e) {
+      return toast(`Подписите не са изтеглени: ${e.message}`, 'err');
+    }
+  }
+
   function pgpSection() {
     const p = state.pgp;
     const keys = p.keys || [];
+    // Ключ от опциите (`pgp_path_secret`) идва готов и НЕ се прикачва: той е файл, който
+    // човекът пази сам, затова няма бутон „Премахни“ — сменя се в опциите на add-on-а.
+    const signable = keys.filter((k) => k.canSign || k.hasSecret);
     const on = connected() && state.role === 'admin';
     const autoSign = p.settings.autoSign === true;
-    const badge = !keys.length ? '<span class="badge demo">няма ключ</span>' : `<span class="badge ok">${keys.length} ключ${keys.length === 1 ? '' : 'а'}</span>`;
+    const badge = !keys.length
+      ? '<span class="badge demo">няма ключ</span>'
+      : `<span class="badge ok">${keys.length} ключ${keys.length === 1 ? '' : 'а'}${keys.some((k) => k.source === 'options') ? ' · от опциите' : ''}</span>`;
     const keyList = !keys.length
       ? ''
       : `<div class="set-keys">
@@ -188,16 +247,21 @@
               <span class="state-chip ${Number(k.version) === 6 ? 'ok' : 'warn'}">OpenPGP v${Number(k.version) || 4}</span>
               <span class="badge">${esc(k.algorithm || '')}${k.bits ? ` ${k.bits}` : ''}</span>
               ${k.source === 'bundle' ? '<span class="badge">от папка keys/</span>' : ''}
+              ${k.source === 'options' ? `<span class="badge">от опциите · само за четене</span>` : ''}
+              ${k.canSign ? `<span class="state-chip ok">подписва</span>` : `<span class="state-chip warn">само публичен</span>`}
               ${(k.roles || []).map((role) => `<span class="badge">${esc(role)}</span>`).join('')}
               <code>${esc(k.keyId || '')}</code>
             </div>
             <p class="hint">${esc(k.fingerprint || '')}</p>
-            <div class="u-row u-row-1"><button type="button" class="btn" data-pgp-remove="${esc(k.id)}" ${on ? '' : 'disabled'}>Премахни</button></div>
+            ${k.removable === false
+              ? `<p class="hint">Този ключ идва от опциите на add-on-а (<code>pgp_path_public</code>/<code>pgp_path_secret</code>) и се сменя там, не тук.</p>`
+              : `<div class="u-row u-row-1"><button type="button" class="btn" data-pgp-remove="${esc(k.id)}" ${on ? '' : 'disabled'}>Премахни</button></div>`
+            }
           </div>`,
         )
         .join('')}
         </div>`;
-    const autosignControls = !keys.length
+    const autosignControls = !signable.length
       ? ''
       : `<div class="u-grid u-grid-fields">
             <div class="field">
@@ -208,10 +272,10 @@
               </select>
               <small class="hint">Всеки създаден пакет се подписва автоматично (ZIP + .asc).</small>
             </div>
-            ${keys.length > 1
+            ${signable.length > 1
         ? `<div class="field"><label>Ключ за подписване</label>
               <select id="set-pgp-keyid" ${on ? '' : 'disabled'}>
-                ${keys
+                ${signable
           .map(
             (k) =>
               `<option value="${esc(k.id)}" ${p.settings.signKeyId === k.id ? 'selected' : ''}>${esc(k.label)} · ${esc(k.keyId)}</option>`,
@@ -221,11 +285,61 @@
         : ''
       }
           </div>`;
+    // Подпис на папка / много файлове. Няма поле за ключ и за парола — те идват от опциите
+    // (`pgp_path_secret` + `pgp_key_pass`), затова човекът не ги въвежда втори път.
+    const last = p.lastSign;
+    const signResult = !last
+      ? ''
+      : `<div class="set-keys u-mt"><div class="set-key">
+          <div class="set-key-line">
+            <span class="chip">${esc(last.fileName || `подписи`)}</span>
+            <span class="badge">${(last.files || []).length} файла</span>
+            <span class="badge">${Math.max(1, Math.round((Number(last.size) || 0) / 1024))} KB</span>
+            <span class="badge">${esc(last.keySource === 'options' ? `ключ от опциите` : `прикачен ключ`)}</span>
+            <code>${esc(last.keyId || '')}</code>
+          </div>
+          ${last.folder ? `<p class="hint">Папка <code>${esc(last.folder.path)}</code> · ${last.folder.files} файла · ${last.folder.bytes} байта · манифест <code>${esc(String(last.folder.manifestSha256 || '').slice(0, 16))}…</code></p>` : ''}
+          <p class="hint">SHA-256 на архива: <code>${esc(String(last.sha256 || '').slice(0, 32))}…</code></p>
+          <div class="u-row u-row-1"><button type="button" class="btn btn-primary" data-pgp-sign-download="${esc(last.id)}">Изтегли подписите (.zip)</button></div>
+        </div></div>`;
+    const signControls = !signable.length
+      ? ''
+      : `<div class="u-mt">
+          <p class="hint">Подписът тук ползва <strong>готовия ключ</strong> — нищо не се въвежда.
+            За папка се подписва <strong>манифест</strong> с път, размер и SHA-256 на всеки файл
+            (доказателство за „точно тези файлове, точно тези байтове“), а с „поотделно за всеки файл“
+            всеки файл получава и свой detached подпис. Пътищата са само в <code>/share</code> и <code>/media</code>.</p>
+          <div class="u-grid u-grid-fields">
+            <div class="field">
+              <label>Папка</label>
+              <input id="set-pgp-sign-folder" value="/share" placeholder="/share/документи" ${on ? '' : 'disabled'} />
+              <small class="hint">Празно поле = подписват се само файловете по-долу.</small>
+            </div>
+            <div class="field">
+              <label>Рекурсивно / поотделно за всеки файл</label>
+              <label class="hint"><input type="checkbox" id="set-pgp-sign-recursive" ${on ? '' : 'disabled'} checked /> подпапките също</label>
+              <label class="hint"><input type="checkbox" id="set-pgp-sign-perfile" ${on ? '' : 'disabled'} checked /> detached подпис на всеки файл</label>
+            </div>
+          </div>
+          <div class="field u-mt">
+            <label>Файлове (по един на ред) — по избор</label>
+            <textarea id="set-pgp-sign-paths" rows="3" spellcheck="false" placeholder="/share/документи/договор.pdf" ${on ? '' : 'disabled'}></textarea>
+            <small class="hint">До 500 файла и 128 MB наведнъж; скритите имена и символните връзки се пропускат.</small>
+          </div>
+          <div class="u-row u-row-1 u-mt">
+            <button type="button" class="btn btn-primary" id="set-pgp-sign-go" ${on ? '' : 'disabled'}>Подпиши</button>
+          </div>
+          ${signResult}
+        </div>`;
     return `
       <section class="panel u-mt">
         <div class="panel-head"><h2>PGP ключ и автоподписване</h2>${badge}</div>
         <div class="panel-body">
-          <p class="hint">Ключът се прикача като armored блок (PRIVATE KEY BLOCK) и се пази шифрован в базата. Поддържат се OpenPGP v4 и v6 (RFC 9580); ключът трябва да е без парола.</p>
+          <p class="hint">Ако в опциите на add-on-а е зададен ключ (<code>pgp_path_public</code> / <code>pgp_path_secret</code>),
+            той се ползва <strong>автоматично</strong> — подписът и проверката работят без нищо да се прикачва.
+            Прикачването по-долу е <strong>по избор</strong>: когато искаш друг ключ или проверка на подпис,
+            направен със <strong>стар ключ</strong>. Прикаченият ключ има предимство пред този от опциите.</p>
+          <p class="hint">Прикаченият ключ се пази шифрован в базата. Поддържат се OpenPGP v4 и v6 (RFC 9580); ключът трябва да е без парола.</p>
           <div class="u-grid u-grid-fields">
             <div class="field">
               <label>Име на ключа</label>
@@ -233,16 +347,17 @@
             </div>
           </div>
           <div class="field u-mt">
-            <label>PGP ключ (armored)</label>
+            <label>PGP ключ (armored) — по избор</label>
             <textarea id="set-pgp-key" rows="6" spellcheck="false" placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----" ${on ? '' : 'disabled'
       }></textarea>
-            <small class="hint">Публичната част се извлича автоматично от секретния блок.</small>
+            <small class="hint">Публичната част се извлича автоматично от секретния блок. Празно поле не значи „без ключ“, ако ключът е зададен в опциите.</small>
           </div>
           <div class="u-row u-row-1 u-mt">
             <button type="button" class="btn btn-primary" id="set-pgp-attach" ${on ? '' : 'disabled'}>Прикачи ключа</button>
             <button type="button" class="btn" id="set-pgp-import" ${on ? '' : 'disabled'}>Импорт от папка keys/</button>
           </div>
           ${autosignControls}
+          ${signControls}
           ${keyList}
           ${p.error ? `<p class="hint" id="set-pgp-error"><span class="state-chip err">грешка</span> ${esc(p.error)}</p>` : ''}
         </div>
@@ -393,8 +508,13 @@
       const who = await grab('/admin/api/whoami');
       out.data = { role: (who && who.role) || '' };
     } else if (id === 'storage') {
-      const [status, retention] = await Promise.all([grab('/admin/api/storage/status'), grab('/admin/api/retention')]);
-      out.data = { status, retention };
+      // Порталите са нужни на Paptresor отчета: кодът в листа води до избрания портал.
+      const [status, retention, portals] = await Promise.all([
+        grab('/admin/api/storage/status'),
+        grab('/admin/api/retention'),
+        grab('/admin/api/portals'),
+      ]);
+      out.data = { status, retention, portals: (portals && portals.portals) || [] };
     } else if (id === 'backups') {
       const [list, schedule] = await Promise.all([grab('/admin/api/database/backups'), grab('/admin/api/database/backup-schedule')]);
       out.data = { backups: (list && list.backups) || [], mirror: list && list.mirror, schedule };
@@ -420,6 +540,125 @@
     '<input id="set-' + id + '-input" placeholder="' + esc(placeholder) + '" />' +
     '<button type="button" class="btn btn-primary" data-action="' + id + '">' + esc(button) + '</button>' +
     '</div>';
+
+  // ── Paptresor: отчет за прилагане на QR кода ───────────────────────────────
+  // Самият лист се строи от `ui/paptresor.js` (чиста функция: вход → HTML), а тук са
+  // само полетата и двата бутона. Стиловете са в `components.css` (`.pt-*`).
+  //
+  // Защо печатът е В СЪЩИЯ таб, а не в нов: под Home Assistant Ingress нов таб губи
+  // сесията и показва празен екран (вж. `tests/gui-journeys.cjs`). `window.print()`
+  // печата само листа, защото `body.printing-paptresor` скрива останалото.
+  const paptresorDefaults = () => (window.HapiPaptresor && window.HapiPaptresor.DEFAULTS) || { ads: [], explanation: '' };
+
+  function paptresorAdFields(ad, n) {
+    return `<div class="field"><label>Рекламка ${n} — заглавие</label>` +
+      `<input id="set-paptresor-ad${n}-title" value="${esc((ad && ad.title) || '')}" /></div>` +
+      `<div class="field"><label>Рекламка ${n} — текст</label>` +
+      `<input id="set-paptresor-ad${n}-text" value="${esc((ad && ad.text) || '')}" /></div>`;
+  }
+
+  function paptresorBlock(portals) {
+    const brand = (window.HapiPaptresor && window.HapiPaptresor.BRAND) || 'Paptresor';
+    const defaults = paptresorDefaults();
+    const list = Array.isArray(portals) ? portals : [];
+    const options = list.length
+      ? list.map((p) => `<option value="${esc(p.id)}">${esc(p.title || p.slug || p.id)}</option>`).join('')
+      : `<option value="">Няма портал — създай портал в „Портали“</option>`;
+    // Трите рекламни блока идват попълнени с текста по подразбиране (може да се смени).
+    const ads = [0, 1, 2].map((i) => (defaults.ads || [])[i] || {});
+    return `<h3 class="u-mt">${esc(brand)} — отчет за прилагане на QR кода</h3>` +
+      `<p class="hint">Листът се разпечатва на A4, прилага се към документа, а QR кодът води до портала ` +
+      `с актуалните файлове и версии. Полетата долу сменят текста върху листа — нищо не се записва на сървъра.</p>` +
+      `<div class="u-row u-row-inline u-mt">` +
+      `<div class="field"><label>Портал</label><select id="set-paptresor-portal">${options}</select></div>` +
+      `<div class="field"><label>Лист</label><select id="set-paptresor-layout">` +
+      `<option value="poster">A4 плакат — един голям код</option>` +
+      `<option value="labels">Лист с 8 етикета</option></select></div>` +
+      `<div class="field"><label>Марка</label><input id="set-paptresor-brand" value="${esc(brand)}" /></div>` +
+      `</div>` +
+      `<div class="field u-mt"><label>Обяснение върху листа (празен ред дели абзаци)</label>` +
+      `<textarea id="set-paptresor-explain" rows="3">${esc(defaults.explanation || '')}</textarea></div>` +
+      `<div class="u-grid u-grid-fields u-mt">${ads.map((ad, i) => paptresorAdFields(ad, i + 1)).join('')}</div>` +
+      `<div class="u-row u-mt">` +
+      `<button type="button" class="btn btn-primary" data-action="paptresorPreview">Покажи отчета</button>` +
+      `<button type="button" class="btn" data-action="paptresorPrint">Печат / PDF</button></div>` +
+      `<div id="set-paptresor-print" class="u-mt"></div>`;
+  }
+
+  /** Адресът, който носи QR кодът: публичният, а без него — адресът на панела.
+   *
+   *  Пътят НЕ се строи тук: `/p/<id>` идва от `links.js` (`HapiLinks`), защото
+   *  `tests/links-contract.cjs` пази адресите на едно място. Затова и `withBase` се
+   *  ползва за базовия адрес — иначе два builder-а биха дали два различни адреса.
+   */
+  function portalLink(p) {
+    if (!p) return '';
+    const lib = window.HapiLinks;
+    const base = String(state.publicBaseUrl || effectiveBase() || '');
+    const path = lib && typeof lib.portalLandingPath === 'function'
+      ? lib.portalLandingPath(p)
+      : `/p/${encodeURIComponent(String(p.id || p.slug || ''))}`;
+    const full = lib && typeof lib.withBase === 'function'
+      ? lib.withBase(base, path)
+      : base.replace(/\/+$/, '') + path;
+    const raw = String(p.accessQuery || '');
+    const query = raw ? (raw.charAt(0) === '?' ? raw : '?' + raw) : '';
+    return full + query;
+  }
+
+  function paptresorQr(textValue) {
+    if (typeof window.qrcode !== 'function' || !textValue) return '';
+    try {
+      const q = window.qrcode(0, 'M');
+      q.addData(textValue);
+      q.make();
+      return q.createSvgTag({ cellSize: 4, margin: 1, scalable: true });
+    } catch {
+      return '';
+    }
+  }
+
+  function paptresorFields() {
+    const val = (sel) => {
+      const el = host.querySelector(sel);
+      return el ? String(el.value == null ? '' : el.value) : '';
+    };
+    const ads = [1, 2, 3].map((n) => ({
+      title: val('#set-paptresor-ad' + n + '-title'),
+      text: val('#set-paptresor-ad' + n + '-text'),
+    }));
+    return {
+      layout: val('#set-paptresor-layout') || 'poster',
+      brand: val('#set-paptresor-brand'),
+      explanation: val('#set-paptresor-explain'),
+      ads,
+      portalId: val('#set-paptresor-portal'),
+    };
+  }
+
+  /** Показва отчета в панела. Връща контейнера или null, ако липсва модулът. */
+  function renderPaptresor() {
+    const out = host.querySelector('#set-paptresor-print');
+    const builder = window.HapiPaptresor;
+    if (!out) return null;
+    if (!builder || typeof builder.build !== 'function') {
+      out.innerHTML = `<p class="hint">Липсва <code>paptresor.js</code> — отчетът не може да се строи.</p>`;
+      return null;
+    }
+    const f = paptresorFields();
+    const portals = (sectionCache.storage && sectionCache.storage.data && sectionCache.storage.data.portals) || [];
+    const portal = portals.find((p) => String(p.id) === f.portalId) || portals[0] || null;
+    const link = portalLink(portal);
+    out.innerHTML = builder.build({
+      layout: f.layout,
+      brand: f.brand,
+      explanation: f.explanation,
+      ads: f.ads,
+      portal: portal ? Object.assign({}, portal, { link }) : { title: `Няма избран портал`, link },
+      qrSvg: paptresorQr(link),
+    });
+    return out;
+  }
 
   function sectionBody(id, res) {
     if (res.error) return '<p><span class="badge err">грешка</span> <span class="hint">' + esc(res.error) + '</span></p>';
@@ -766,7 +1005,8 @@
         '<div class="u-row u-mt"><button type="button" class="btn btn-primary" data-action="storage">' + T('action.checkNow') + '</button>' +
         '<button type="button" class="btn" data-action="retention">Приложи задържането</button>' +
         '<button type="button" class="btn" data-action="mirror">Провери огледалото</button>' +
-        '<button type="button" class="btn" data-action="mirrorRepair">Поправи от огледалото</button></div>';
+        '<button type="button" class="btn" data-action="mirrorRepair">Поправи от огледалото</button></div>' +
+        paptresorBlock(d.portals);
     }
     if (id === 'backups') {
       const list = (d.backups || []).map((b) => [
@@ -873,6 +1113,18 @@
       const r = await post('/admin/api/storage/check', {});
       if (!r.ok) return toast(r.error || 'Проверката не мина', 'err');
       toast('Проверката приключи', 'ok');
+    } else if (action === 'paptresorPreview') {
+      if (!renderPaptresor()) return toast(`Липсва paptresor.js — отчетът не е построен`, 'err');
+      toast(`Отчетът е готов долу — „Печат / PDF“ го разпечатва`, 'ok');
+    } else if (action === 'paptresorPrint') {
+      if (!renderPaptresor()) return toast(`Липсва paptresor.js — отчетът не е построен`, 'err');
+      document.body.classList.add('printing-paptresor');
+      try {
+        if (typeof window.print === 'function') window.print();
+      } finally {
+        document.body.classList.remove('printing-paptresor');
+      }
+      toast(`Отчетът е изпратен към печат (или „Запази като PDF“)`, 'ok');
     } else if (action === 'backup') {
       const r = await post('/admin/api/database/backup', {});
       if (!r.ok) return toast(r.error || 'Копието не е създадено', 'err');
@@ -1174,7 +1426,7 @@
     const IN_PLACE = new Set([
       'interpolate', 'secretCreate', 'cmsSign', 'cmsVerify', 'audit', 'metricsProm',
       'apiInfo', 'htmlProjects', 'htmlProject', 'sends', 'search', 'organization', 'ingest',
-      'merge', 'conflict', 'notify', 'portalDeploy',
+      'merge', 'conflict', 'notify', 'portalDeploy', 'paptresorPreview', 'paptresorPrint',
     ]);
     if (IN_PLACE.has(action)) return;
     delete sectionCache[state.section];
@@ -1477,6 +1729,11 @@
     }
     host.querySelectorAll('[data-pgp-remove]').forEach((btn) => {
       btn.addEventListener('click', () => void removePgpKey(btn.getAttribute('data-pgp-remove')));
+    });
+    // Подпис на папка / много файлове: бутонът и изтеглянето на готовия архив.
+    if (q('#set-pgp-sign-go')) q('#set-pgp-sign-go').addEventListener('click', () => void signPgp());
+    host.querySelectorAll('[data-pgp-sign-download]').forEach((btn) => {
+      btn.addEventListener('click', () => void downloadPgpSignatures(btn.getAttribute('data-pgp-sign-download')));
     });
     // Профили на настройките: списък · прилагане · изтриване · запис на текущото състояние.
     const renderProfiles = (list) => {

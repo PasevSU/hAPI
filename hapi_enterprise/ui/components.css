@@ -738,6 +738,117 @@ input[type="radio"] {
   gap: 10px;
 }
 
+/* ── Връзка и QR код (първи блок на портала, винаги отворен) ──────────────────
+   Дотук QR стоеше в дясната колона на сгънатия контролен панел, а адресът се виждаше
+   само като бутон. Тук кодът е ЕДЪР, адресът е истинско поле (маркира се с едно
+   щракване), а действията са на един ред — без отваряне на други блокове. */
+.pf-link-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.pf-link-qr {
+  flex: 0 0 auto;
+}
+
+.pf-link-qr .qf-svg svg {
+  width: 190px;
+  max-width: 190px;
+  height: auto;
+  background: #fff;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.pf-link-side {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pf-link-label {
+  font-size: var(--fs-11);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pf-link-url {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--fs-11-5);
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  /* Адресът се маркира с едно щракване — иначе „копирай“ е единственият път до него. */
+  user-select: all;
+}
+
+.pf-link-state {
+  flex: 0 0 auto;
+  font-size: var(--fs-10-5);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pf-link-state.ok {
+  color: var(--green);
+  border-color: var(--green);
+}
+
+.pf-link-state.warn {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.pf-link-state.err {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+/* Печат: остава САМО QR кодът (за залепване на документ). Класът се слага от
+   файловия мениджър точно преди `window.print()` и се маха след него. */
+@media print {
+
+  body.printing-qr .topbar,
+  body.printing-qr .nav,
+  body.printing-qr .statusbar,
+  body.printing-qr .toasts,
+  body.printing-qr .pf-link-side,
+  body.printing-qr .pf-block-head,
+  body.printing-qr .pf-panels>.pf-block:not(.pf-link) {
+    display: none !important;
+  }
+
+  body.printing-qr .pf-link-body,
+  body.printing-qr #view,
+  body.printing-qr .panel,
+  body.printing-qr #set-section-body {
+    display: block !important;
+    border: 0 !important;
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body.printing-qr .pf-link-qr .qf-svg svg {
+    width: 120mm;
+    max-width: 120mm;
+    padding: 0;
+    background: #fff;
+  }
+}
+
 .qf-svg svg {
   width: 24%;
   max-width: 160px;
@@ -876,6 +987,21 @@ input[type="radio"] {
   font-size: var(--fs-11-5);
   font-weight: 600;
   color: var(--text);
+}
+
+/* Окончателното премахване е отделен, ЧЕРВЕН блок: то е единственото действие в панела,
+   което трие вместо да архивира, и не бива да прилича на „Закрий портала“ до него. */
+.pf-danger {
+  gap: calc(var(--grid-gap) / 2);
+  border-top-color: rgba(239, 68, 68, 0.45);
+}
+
+.pf-danger h6 {
+  color: #fca5a5;
+}
+
+.pf-danger input {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 
 .pf-security-out {
@@ -2742,4 +2868,391 @@ input[type="radio"] {
 .set-tab:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ── Paptresor: печатен отчет за прилагане на QR код ──────────────────────────
+   Екранът и печатът ползват ЕДНИ И СЪЩИ правила (стиловете са тук, а не в низа на
+   `ui/paptresor.js`) — така CSP-то не се разширява, а листът изглежда еднакво,
+   когато се прегледа и когато се разпечата. */
+.pt-sheet {
+  background: #fff;
+  color: #10151f;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 8mm;
+  margin-top: 12px;
+  width: 100%;
+  max-width: 200mm;
+  font-size: var(--fs-12);
+  line-height: 1.5;
+}
+
+.pt-sheet h2,
+.pt-sheet h3 {
+  margin: 0;
+  color: inherit;
+}
+
+.pt-sheet h2 {
+  font-size: var(--fs-19);
+  letter-spacing: 0.01em;
+}
+
+.pt-sheet h3 {
+  font-size: var(--fs-13);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4b5a72;
+  margin-bottom: 2mm;
+}
+
+.pt-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6mm;
+  border-bottom: 2px solid #10151f;
+  padding-bottom: 3mm;
+}
+
+.pt-brand {
+  font-weight: 700;
+  font-size: var(--fs-17);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pt-head-title {
+  flex: 1 1 auto;
+}
+
+.pt-head-sub {
+  margin: 1mm 0 0;
+  color: #4b5a72;
+}
+
+.pt-head-date {
+  text-align: right;
+  font-size: var(--fs-11);
+  color: #4b5a72;
+  white-space: nowrap;
+}
+
+.pt-head-sm {
+  border-bottom-width: 1px;
+}
+
+.pt-main {
+  display: flex;
+  gap: 6mm;
+  align-items: flex-start;
+  margin-top: 5mm;
+}
+
+.pt-qr-box {
+  position: relative;
+  flex: 0 0 66mm;
+  max-width: 66mm;
+  border: 1px solid #10151f;
+  border-radius: 4px;
+  padding: 5mm 4mm 3mm;
+  text-align: center;
+}
+
+.pt-corner {
+  position: absolute;
+  width: 6mm;
+  height: 6mm;
+  border: 2px solid #10151f;
+}
+
+.pt-corner.tl {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.pt-corner.tr {
+  top: -1px;
+  right: -1px;
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.pt-corner.bl {
+  bottom: -1px;
+  left: -1px;
+  border-right: 0;
+  border-top: 0;
+}
+
+.pt-corner.br {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+}
+
+.pt-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pt-qr-empty {
+  padding: 10mm 2mm;
+  border: 1px dashed #b0392f;
+  color: #b0392f;
+  font-size: var(--fs-11);
+}
+
+.pt-qr-hint {
+  margin: 2mm 0 0;
+  font-size: var(--fs-10);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4b5a72;
+}
+
+.pt-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-12);
+}
+
+.pt-table th,
+.pt-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 1.2mm 1mm;
+  border-bottom: 1px solid #d7dee9;
+}
+
+.pt-table th {
+  width: 34%;
+  font-weight: 600;
+  color: #4b5a72;
+}
+
+.pt-table code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--fs-11);
+  word-break: break-all;
+}
+
+.pt-note,
+.pt-steps,
+.pt-fill {
+  margin-top: 5mm;
+}
+
+.pt-note p {
+  margin: 0 0 1.5mm;
+}
+
+.pt-steps ol {
+  margin: 0;
+  padding-left: 5mm;
+}
+
+.pt-steps li {
+  margin-bottom: 1mm;
+}
+
+.pt-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3mm 6mm;
+}
+
+.pt-line {
+  flex: 1 1 40%;
+  min-width: 40mm;
+  border-bottom: 1px solid #10151f;
+  padding-bottom: 5mm;
+  font-size: var(--fs-11);
+  color: #4b5a72;
+}
+
+.pt-ads {
+  display: flex;
+  gap: 3mm;
+  margin-top: 6mm;
+}
+
+.pt-ad {
+  flex: 1 1 0;
+  border: 1px solid #10151f;
+  border-radius: 4px;
+  padding: 3mm;
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+}
+
+.pt-ad strong {
+  font-size: var(--fs-12);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pt-ad span {
+  font-size: var(--fs-10);
+  color: #4b5a72;
+}
+
+.pt-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 3mm;
+  margin-top: 5mm;
+  padding-top: 2mm;
+  border-top: 1px solid #d7dee9;
+  font-size: var(--fs-10);
+  color: #4b5a72;
+}
+
+.pt-labels .pt-head {
+  align-items: center;
+}
+
+.pt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3mm;
+  margin-top: 4mm;
+}
+
+.pt-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2.5mm;
+  border: 1px dashed #8a97ab;
+  border-radius: 3px;
+  padding: 2.5mm;
+  min-height: 26mm;
+}
+
+.pt-label-qr {
+  flex: 0 0 22mm;
+  max-width: 22mm;
+}
+
+.pt-label-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pt-label-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8mm;
+}
+
+.pt-label-text strong {
+  font-size: var(--fs-11);
+}
+
+.pt-label-portal {
+  font-size: var(--fs-10);
+  color: #4b5a72;
+}
+
+.pt-label-text code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--fs-9-5);
+  word-break: break-all;
+}
+
+.pt-label-line {
+  font-size: var(--fs-10);
+  color: #4b5a72;
+}
+
+.pt-label-brand {
+  position: absolute;
+  right: 2mm;
+  bottom: 1mm;
+  font-size: var(--fs-8);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a97ab;
+}
+
+.pt-labels-note,
+.pt-labels-ad {
+  margin: 3mm 0 0;
+  font-size: var(--fs-10);
+  color: #4b5a72;
+}
+
+.pt-labels-ad {
+  font-weight: 600;
+  color: #10151f;
+}
+
+/* Печат: остава САМО листът на Paptresor. Класът `printing-paptresor` се слага от
+   панела точно преди `window.print()` и се маха след него — така обикновеното
+   разпечатване на панела не се променя. */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  body.printing-paptresor {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  body.printing-paptresor .topbar,
+  body.printing-paptresor .nav,
+  body.printing-paptresor .statusbar,
+  body.printing-paptresor .page-title,
+  body.printing-paptresor .set-tabs,
+  body.printing-paptresor .panel-head,
+  body.printing-paptresor .toasts {
+    display: none !important;
+  }
+
+  body.printing-paptresor .shell,
+  body.printing-paptresor #view,
+  body.printing-paptresor .panel,
+  body.printing-paptresor .panel-body {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  body.printing-paptresor #set-section-body > *:not(#set-paptresor-print) {
+    display: none !important;
+  }
+
+  body.printing-paptresor .pt-sheet {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    max-width: none;
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body.printing-paptresor .pt-ad,
+  body.printing-paptresor .pt-label {
+    border-color: #000;
+  }
 }

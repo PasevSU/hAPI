@@ -3,17 +3,17 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 361 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 367 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 166 |
-| портал | 32 |
-| GUI | 20 |
+| общо | 167 |
+| портал | 34 |
+| GUI | 21 |
 | Home Assistant | 16 |
 | отчети | 16 |
+| PGP | 13 |
 | ядро | 12 |
-| PGP | 11 |
 | съхранение | 7 |
 | издаване | 6 |
 | оракул | 6 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (166)
+## общо (167)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -147,6 +147,7 @@
 | `pagination` | Pagination | `tests/pagination.cjs` |
 | `panel-framing` | Panel framing | `tests/panel-framing.cjs` |
 | `panel-registry` | Panel registry | `tests/panel-registry.cjs` |
+| `paptresor` | Paptresor | `tests/paptresor.cjs` |
 | `parallel-transfers` | Parallel transfers | `tests/parallel-transfers.cjs` |
 | `pdf-signature` | Pdf signature | `tests/pdf-signature.cjs` |
 | `pgp` | Pgp | `tests/pgp.cjs` |
@@ -212,13 +213,14 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (32)
+## портал (34)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
 | `portal-api-map` | Portal api map | `tests/portal-api-map.cjs` |
 | `portal-api-qr` | Portal api qr | `tests/portal-api-qr.cjs` |
 | `portal-archive` | Portal archive | `tests/portal-archive.cjs` |
+| `portal-card-link` | Portal card link | `tests/portal-card-link.cjs` |
 | `portal-chain` | Portal chain | `tests/portal-chain.cjs` |
 | `portal-file-page` | Portal file page | `tests/portal-file-page.cjs` |
 | `portal-folder` | Portal folder | `tests/portal-folder.cjs` |
@@ -246,10 +248,11 @@
 | `portal-qr-restore` | Portal qr restore | `tests/portal-qr-restore.cjs` |
 | `portal-root-page` | Portal root page | `tests/portal-root-page.cjs` |
 | `portal-rules-applied` | Portal rules applied | `tests/portal-rules-applied.cjs` |
+| `portal-skin` | Portal skin | `tests/portal-skin.cjs` |
 | `portal-tokens` | Portal tokens | `tests/portal-tokens.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (20)
+## GUI (21)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -272,6 +275,7 @@
 | `ui-navigation` | Ui navigation | `tests/ui-navigation.cjs` |
 | `ui-settings-sections` | Ui settings sections | `tests/ui-settings-sections.cjs` |
 | `ui-shell-nav` | Ui shell nav | `tests/ui-shell-nav.cjs` |
+| `ui-skin` | Ui skin | `tests/ui-skin.cjs` |
 | `ui-version` | Ui version | `tests/ui-version.cjs` |
 
 ## Home Assistant (16)
@@ -316,6 +320,24 @@
 | `report-table-widths` | Report table widths | `tests/report-table-widths.cjs` |
 | `report-tsa-e2e` | Report tsa e2e | `tests/report-tsa-e2e.cjs` |
 
+## PGP (13)
+
+| Правило | Заглавие | Файл |
+| --- | --- | --- |
+| `pgp-aead` | Pgp aead | `tests/pgp-aead.cjs` |
+| `pgp-aead-interop` | Pgp aead interop | `tests/pgp-aead-interop.cjs` |
+| `pgp-bundle` | Pgp bundle | `tests/pgp-bundle.cjs` |
+| `pgp-engine` | Pgp engine | `tests/pgp-engine.cjs` |
+| `pgp-gpg-interop` | Pgp gpg interop | `tests/pgp-gpg-interop.cjs` |
+| `pgp-keyflags` | Pgp keyflags | `tests/pgp-keyflags.cjs` |
+| `pgp-keyring` | Pgp keyring | `tests/pgp-keyring.cjs` |
+| `pgp-mpi` | Pgp mpi | `tests/pgp-mpi.cjs` |
+| `pgp-path-encryption` | Pgp path encryption | `tests/pgp-path-encryption.cjs` |
+| `pgp-sign` | Pgp sign | `tests/pgp-sign.cjs` |
+| `pgp-tools` | Pgp tools | `tests/pgp-tools.cjs` |
+| `pgp-v6` | Pgp v6 | `tests/pgp-v6.cjs` |
+| `pgp-workdir-encryption` | Pgp workdir encryption | `tests/pgp-workdir-encryption.cjs` |
+
 ## ядро (12)
 
 | Правило | Заглавие | Файл |
@@ -332,22 +354,6 @@
 | `core-signer` | Core signer | `tests/core-signer.cjs` |
 | `core-store` | Core store | `tests/core-store.cjs` |
 | `core-variables` | Core variables | `tests/core-variables.cjs` |
-
-## PGP (11)
-
-| Правило | Заглавие | Файл |
-| --- | --- | --- |
-| `pgp-aead` | Pgp aead | `tests/pgp-aead.cjs` |
-| `pgp-aead-interop` | Pgp aead interop | `tests/pgp-aead-interop.cjs` |
-| `pgp-bundle` | Pgp bundle | `tests/pgp-bundle.cjs` |
-| `pgp-engine` | Pgp engine | `tests/pgp-engine.cjs` |
-| `pgp-gpg-interop` | Pgp gpg interop | `tests/pgp-gpg-interop.cjs` |
-| `pgp-keyflags` | Pgp keyflags | `tests/pgp-keyflags.cjs` |
-| `pgp-keyring` | Pgp keyring | `tests/pgp-keyring.cjs` |
-| `pgp-mpi` | Pgp mpi | `tests/pgp-mpi.cjs` |
-| `pgp-path-encryption` | Pgp path encryption | `tests/pgp-path-encryption.cjs` |
-| `pgp-v6` | Pgp v6 | `tests/pgp-v6.cjs` |
-| `pgp-workdir-encryption` | Pgp workdir encryption | `tests/pgp-workdir-encryption.cjs` |
 
 ## съхранение (7)
 

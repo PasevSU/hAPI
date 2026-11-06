@@ -326,6 +326,34 @@
       document.body.classList.toggle('light');
     });
 
+    // ВТОРА КОЖА („модерен“ изглед). Сменя само оформлението — същите панели, същите
+    // бутони, същите заявки. Изборът се помни в `localStorage`, защото е предпочитание на
+    // човека, а не състояние на сесията; при забранен storage просто не се помни.
+    const skinToggle = $('#skin-toggle');
+    const applySkin = (modern, persist = true) => {
+      document.body.classList.toggle('skin-modern', modern);
+      if (skinToggle) {
+        skinToggle.setAttribute('aria-pressed', String(modern));
+        skinToggle.title = modern ? 'Класически изглед' : 'Модерен изглед';
+      }
+      if (!persist) return;
+      try {
+        localStorage.setItem('hapi.skin', modern ? 'modern' : 'classic');
+      } catch {
+        // забранен storage (личен режим) — кожата работи, но не се помни
+      }
+    };
+    let savedSkin = false;
+    try {
+      savedSkin = localStorage.getItem('hapi.skin') === 'modern';
+    } catch {
+      // забранен storage (личен режим) — остава класическата кожа
+    }
+    applySkin(savedSkin, false);
+    if (skinToggle) {
+      skinToggle.addEventListener('click', () => applySkin(!document.body.classList.contains('skin-modern')));
+    }
+
     // Скриване на менюто. Под Home Assistant Ingress панелът се отваря в страничната
     // лента, където лявото меню яде ширината на картите. Състоянието се помни, за да
     // не се цъка при всяко отваряне, и се обявява с `aria-expanded` за екранни четци.

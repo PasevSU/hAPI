@@ -1,11 +1,11 @@
 # Одитни събития — каталог
 
-> **Генериран документ.** Версия на кода: **0.69.167**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.174**. Пише се от
 > `node scripts/audit-events.cjs`, проверява се от `tests/audit-events.cjs`.
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **186** събития, излъчвани от **18** файла.
+Общо: **188** събития, излъчвани от **19** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -122,6 +122,8 @@
 | `pgp.key.remove` | `hapi_enterprise/server.js` |
 | `pgp.keyring.reload` | `hapi_enterprise/routes/pgp-keyring.js` |
 | `pgp.paths.seal` | `hapi_enterprise/routes/pgp-keyring.js` |
+| `pgp.sign` | `hapi_enterprise/pgp-sign.js` |
+| `pgp.signatures.download` | `hapi_enterprise/routes/pgp-keyring.js` |
 | `pgp.workdir.seal` | `hapi_enterprise/routes/pgp-keyring.js` |
 | `portal.access.denied` | `hapi_enterprise/server.js` |
 | `portal.acl.update` | `hapi_enterprise/routes/portal-tokens.js` |

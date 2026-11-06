@@ -1,16 +1,16 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.167**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.174**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **110** backend модула · **17** HTTP компонента · **23** UI модула · **9** Python модула · **39** инструмента · **361** теста.
+Общо: **113** backend модула · **17** HTTP компонента · **24** UI модула · **9** Python модула · **39** инструмента · **367** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (110)
+### Backend модули (`hapi_enterprise/*.js`) (113)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -65,6 +65,8 @@
 | `hapi_enterprise/packager.js` | Пакетиране на портал (или избрани файлове) в ZIP с манифест, хешове и |
 | `hapi_enterprise/path-crypto.js` | Ключохранилище на PGP (бач B2 от `PLAN-0.69.67-LINKS-AND-FILES.md`). |
 | `hapi_enterprise/pdf-writer.js` | Dependency-free PDF writer with embedded TrueType fonts (Unicode incl. Cyrillic). |
+| `hapi_enterprise/pgp-sign.js` | ПОДПИСВАНЕ НА ПАПКА И НА МНОЖЕСТВО ФАЙЛОВЕ (PGP) — с ключа, който ВЕЧЕ е зададен. |
+| `hapi_enterprise/pgp-tools.js` | PGP ИНСТРУМЕНТИ — един списък с ключове и трите действия: подпис, проверка, публична част. |
 | `hapi_enterprise/pgp.js` | OpenPGP (RFC 9580 / RFC 4880) — деташиран подпис без външни зависимости. |
 | `hapi_enterprise/plugins.js` | Плъгин регистър (Фаза 2.4, P2/P4). Именувани плъгини по вид (storage, renderer, |
 | `hapi_enterprise/plugins/ocr.js` | OCR плъгин (Фаза 2.4). Интерфейс за извличане на текст; конфигурационно |
@@ -75,6 +77,7 @@
 | `hapi_enterprise/portal-integrity.js` | Целостта на ФИЗИЧЕСКИТЕ архиви (правило `ARCHIVE_NOT_TAMPERED`). |
 | `hapi_enterprise/portal-policy.js` | ЕДНА политика за достъп до портал (Stage D): идентичност → портал → ресурс → действие. |
 | `hapi_enterprise/portal-qr.js` | QR ревизии, манифести и ФИЗИЧЕСКИ архиви за един портал. |
+| `hapi_enterprise/portal-skin.js` | КОЖА НА ПУБЛИЧНАТА СТРАНИЦА НА ПОРТАЛА (`portal_skin`, env `PORTAL_SKIN`) — отделен модул, |
 | `hapi_enterprise/portal/portal-i18n.js` | Речник на ПУБЛИЧНАТА страница на портала (BG / EN / DE). |
 | `hapi_enterprise/portal/portal.js` | Публична страница на портала — това, което се отваря при сканиране на QR кода. |
 | `hapi_enterprise/preview.js` | Document preview & thumbnails (Phase 4.3). Dependency-free: renders text, |
@@ -147,7 +150,7 @@
 | `hapi_enterprise/routes/reports.js` | Report Studio + RFC 3161 — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/webhooks.js` | Webhooks с HMAC — административен компонент на HTTP слоя (F4-7). |
 
-### Интерфейс (`hapi_enterprise/ui/*.js`) (23)
+### Интерфейс (`hapi_enterprise/ui/*.js`) (24)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -162,6 +165,7 @@
 | `hapi_enterprise/ui/i18n.js` | Речник за СЪДЪРЖАНИЕТО на панелите (не само навигацията) — BG/EN/DE. |
 | `hapi_enterprise/ui/icons.js` | Един набор от ИКОНИ за целия интерфейс — вградени SVG (без шрифт-икони, без CDN). |
 | `hapi_enterprise/ui/panel-registry.js` | Регистър на панелите (план 18 §7: „панел като модул“ — `render/mount/unmount/permissions/capabilities` |
+| `hapi_enterprise/ui/paptresor.js` | Paptresor — печатен отчет за ПРИЛАГАНЕ на QR кода на портал (A4 плакат или лист с етикети). |
 | `hapi_enterprise/ui/portal-control.js` | Контейнер „Контролен панел на портала“ — настройки на портала и API/QR. |
 | `hapi_enterprise/ui/portal-files.js` | Контейнер „Файлове в портала (N) · /път“ — филтри, карти на файловете и качване. |
 | `hapi_enterprise/ui/portal-folders.js` | Контейнер „Папки на портала“ — експлорер на storage_root: скриващи се менюта. |

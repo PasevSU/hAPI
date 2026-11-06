@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "hAPI Enterprise — административно API",
-    "version": "0.69.167",
+    "version": "0.69.174",
     "description": "Договорът за административното API. Токенът се подава като `Authorization: Bearer <token>`, а зад Home Assistant Ingress самоличността идва от Supervisor (`X-Remote-User-*`). Правата се решават по роля (RBAC) за всеки маршрут — виж `x-hapi-capability`. Маршрут без RBAC (например входът през Ingress) носи `x-hapi-access` с причината."
   },
   "servers": [
@@ -2567,6 +2567,87 @@
             }
           }
         }
+      }
+    },
+    "/admin/api/pgp/sign": {
+      "post": {
+        "summary": "Подпис на папка и/или на много файлове с готовия ключ",
+        "operationId": "post_pgp_sign",
+        "tags": [
+          "export"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "pgp",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/api/pgp/signatures/{signatureId}": {
+      "get": {
+        "summary": "ZIP с подписите и манифеста на папката",
+        "operationId": "get_pgp_signatures_signatureId",
+        "tags": [
+          "export"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "pgp",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "signatureId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: signatureId"
+          }
+        ]
       }
     },
     "/admin/api/pgp/keys": {
