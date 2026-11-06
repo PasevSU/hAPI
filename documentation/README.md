@@ -142,7 +142,7 @@ _Генериран списък: **128** документа. Пише се от
 | `07_RELEASE/RELEASE_CRITERIA.md` | Release Criteria — hAPI Enterprise |
 | `07_RELEASE/RELEASE_DECISION.md` | Release Decision — hAPI Enterprise |
 | `08_USER_GUIDES/admin-token.md` | Администраторски токен — какъв да бъде и защо |
-| `08_USER_GUIDES/install-hacs.md` | Инсталиране през HACS |
+| `08_USER_GUIDES/install-hacs.md` | Инсталиране на интеграцията |
 | `08_USER_GUIDES/installation-layout.md` | Инсталация: коя папка къде отива |
 | `08_USER_GUIDES/oidc-login.md` | Вход през външен доставчик (Pocket ID / Keycloak) — ръководство |
 | `08_USER_GUIDES/operations.md` | Ежедневни операции — обновяване, образ, секрети |

@@ -167,8 +167,10 @@ history and detailed annexes.
 
 ## Install
 
-**Integration (HACS).** HACS → ⋮ → Custom repositories → `https://github.com/PasevSU/hAPI`,
-category **Integration** → install **hAPI Enterprise** → restart Home Assistant. Then either
+**Integration (Marketplace).** From Home Assistant 2026.11 the Marketplace replaces HACS.
+**Settings → Marketplace → Add from link** → `https://github.com/PasevSU/hapi-enterprise-integration`
+(not `PasevSU/hAPI`: that repository holds the app, and the Marketplace refuses repositories
+that contain apps) → install **hAPI Enterprise** → restart Home Assistant. Then either
 add it from **Settings → Devices & Services** (admin API URL + token → 29 telemetry sensors
 and 3 binary sensors, one device per hAPI instance)
 or keep using YAML for the portal proxy. Details: [`documentation/08_USER_GUIDES/install-hacs.md`](documentation/08_USER_GUIDES/install-hacs.md).

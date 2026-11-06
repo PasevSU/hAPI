@@ -16,7 +16,7 @@ param(
     [switch]$Execute,
     [string]$HaHost = '',
     [string]$HaUser = 'root',
-    [string]$Repo = 'PasevSU/hAPI'
+    [string]$Repo = 'PasevSU/hapi-enterprise-integration'
 )
 
 $ErrorActionPreference = 'Stop'

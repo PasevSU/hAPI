@@ -10,6 +10,20 @@
 (`ghcr.io/pasevsu/<arch>-addon-hapi_enterprise`) — измерено 14 s вместо 129 s за build на
 Raspberry Pi 4. Ако тегленето се провали, виж [диагностиката](06-troubleshooting.md).
 
+## 2.1б. Интеграцията (Marketplace от Home Assistant 2026.11)
+
+Интеграцията се разпространява **отделно** от app-а и живее в
+`https://github.com/PasevSU/hapi-enterprise-integration`.
+
+1. **Настройки → Marketplace → ⋮ → Add from link** (при по-стар HA: **HACS → Custom repositories**).
+2. URL: `https://github.com/PasevSU/hapi-enterprise-integration`, тип **Integration**.
+3. **hAPI Enterprise → Install** → рестарт на Home Assistant.
+
+Хранилището на app-а (`https://github.com/PasevSU/hAPI`) **не се добавя** в Marketplace:
+то съдържа app и Marketplace отказва обновяване от смесено хранилище. Ако обновяването
+отказва, виж таблицата в
+[`install-hacs.md`](../08_USER_GUIDES/install-hacs.md#2б-ако-обновяването-отказва).
+
 ## 2.2. Единственото задължително нещо: токенът
 
 Отвори **Конфигурация** на add-on-а и попълни `token`:

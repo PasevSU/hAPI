@@ -1,25 +1,51 @@
-# Инсталиране през HACS
+# Инсталиране на интеграцията
 
-Интеграцията `hapi_enterprise` се разпространява като **custom repository** в HACS.
-Add-on-ът е отделен продукт и се инсталира като add-on repository (виж
-[`public-gateway-setup.md`](public-gateway-setup.md)).
+От Home Assistant **2026.11** HACS е заменен от вградения **Marketplace**
+(`Настройки → Marketplace`). Съществуващото HACS съдържание се прехвърля автоматично при
+първия старт след обновяването, но **само хранилища с един вид съдържание продължават да
+получават обновявания**. Add-on-ът е отделен продукт и се инсталира като app repository
+(виж [`public-gateway-setup.md`](public-gateway-setup.md)).
 
 ## 1. Какво е нужно
 
-- Home Assistant **2024.6** или по-нов.
-- [HACS](https://hacs.xyz/) вече инсталиран.
-- Публично GitHub хранилище: `https://github.com/PasevSU/hAPI`.
+- Home Assistant **2024.6** или по-нов (Marketplace — 2026.11+; при по-стар HA остава HACS).
+- Публично GitHub хранилище **само с интеграцията**:
+  `https://github.com/PasevSU/hapi-enterprise-integration`.
+
+> **Какво НЕ се добавя.** `https://github.com/PasevSU/hAPI` съдържа и app-а
+> (`hapi_enterprise/` + `repository.yaml`). Marketplace отказва да инсталира и обновява от
+> хранилище, което съдържа apps — заради това оттам идва „няма налична актуализация“, а
+> понякога и директна грешка при опит за обновяване.
 
 ## 2. Добавяне на хранилището
 
-1. **HACS → ⋮ (три точки) → Custom repositories**.
-2. В полето за URL: `https://github.com/PasevSU/hAPI`.
-3. Категория: **Integration** → **Add**.
-4. Намери **hAPI Enterprise** в HACS → **Download**.
-5. Рестартирай Home Assistant.
+1. **Настройки → Marketplace → ⋮ → Add from link**.
+2. `https://github.com/PasevSU/hapi-enterprise-integration`.
+3. Ако типът не се разпознае: **Type → Integration**, после **Add**.
+4. Отвори **hAPI Enterprise** → **Install** → рестартирай Home Assistant.
 
 След инсталация файловете са в `/config/custom_components/hapi_enterprise/`
 (`manifest.json`, `__init__.py`, `brand/icon.png`, `brand/logo.png`).
+
+При стария HACS пътят е същият, но URL-то пак е интеграционното хранилище:
+**HACS → ⋮ → Custom repositories** → `https://github.com/PasevSU/hapi-enterprise-integration`
+→ категория **Integration**.
+
+## 2б. Ако обновяването отказва
+
+Провери по ред:
+
+| Симптом                                                    | Причина                                                                                              | Решение                                                                                     |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| „Няма налична актуализация“, а има ново издание            | следено е `PasevSU/hAPI` (смесено хранилище с app)                                                    | премахни го от Marketplace, добави `PasevSU/hapi-enterprise-integration`                    |
+| Показва по-стара версия от инсталираната                   | кешът на custom repository се обновява на **48 часа** (6 часа за каталожните) без GitHub връзка       | свържи GitHub в Marketplace (по-висок лимит) или премахни и добави хранилището наново        |
+| Обновяването е „пропуснато“                                | `skipped_version` на update ентитета                                                                  | отвори ентитета → **Clear skipped version**, после **Install**                              |
+| Инсталирано е 0.69.165, а е обявено 0.69.166               | интеграцията се обновява отделно от app-а                                                            | Marketplace → hAPI Enterprise → **Update**, после рестарт на Home Assistant                  |
+| Няколко записа „hAPI Enterprise“ в Marketplace             | стар HACS запис + нов custom repository                                                               | остави само интеграционното хранилище, другото го премахни                                  |
+
+Ако Marketplace не е опция (по-стар HA или изключен), същото обновяване се прави с
+`pwsh -File scripts/update-integration.ps1 -Execute -HaHost <адрес>` — той тегли
+`hapi_enterprise-integration-<версия>.zip` от интеграционното хранилище.
 
 ## 3. Настройка
 
