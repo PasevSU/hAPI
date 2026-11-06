@@ -659,4 +659,23 @@ assert.match(src, /state\[flag\] = state\[flag\] !== true;/);
 assert.match(css, /\.pf-block-tog \{/);
 assert.match(css, /\.pf-collapsed \.pf-block-head \{ border-bottom: 0;/);
 
+// 6. Панелът „Сподели“ (0.69.185): адресът се издава при ОТВАРЯНЕ на панела и се помни до
+// изтичането си, а не като страничен ефект на рисуването — иначе всяко прерисуване пускаше
+// нова заявка, модалът не се опресняваше и полето оставаше „издава се…“ ( „винаги иска нов“ ).
+assert.match(src, /async function ensureSigned\(f, force\)/);
+assert.match(src, /state\.signed\[f\.id\] = \{ url: linkBase\(\) \+ r\.data\.path, expires: Number\(r\.data\.expires\) \|\| 0 \}/);
+assert.match(src, /if \(state\.selected === f\.id && state\.panel === 'share'\) refreshPanel\(\);/);
+assert.equal(/if \(isFree && !link\) void ensureSigned\(f\);/.test(src), false, 'рисуването не издава адрес');
+assert.match(src, /if \(id === 'share' && \(f\.accessMode \|\| 'FREE'\) === 'FREE'\) void ensureSigned\(f\);/);
+// Изтекъл адрес не се показва — иначе човек го копира и получателят вижда 403.
+assert.match(src, /if \(expires && expires \* 1000 <= Date\.now\(\) \+ 5000\) return '';/);
+// Ключът се подава като X-File-Key; „Нов адрес“ е отделен бутон, а ключ се предлага само
+// на защитен файл. Изтеглянето в панела е истинско — през администраторския път.
+assert.equal(/X-Portal-Key/.test(src), false, 'панелът не подвежда с X-Portal-Key');
+assert.match(src, /Подава се като <code>X-File-Key<\/code>/);
+assert.match(src, /id="fm-new-link">Нов адрес</);
+assert.match(src, /id="fm-share-download"/);
+assert.match(src, /if \(q\('#fm-share-download'\)\) \{/);
+assert.match(src, /const url = await ensureSigned\(f, true\);/);
+
 console.log('files-manager OK');

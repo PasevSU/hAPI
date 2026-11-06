@@ -110,6 +110,7 @@ const RULES = [
   { id: "gui-coverage", area: "GUI", title: "Gui coverage", owner: "tests/gui-coverage.cjs" },
   { id: "gui-csp-guard", area: "GUI", title: "Gui csp guard", owner: "tests/gui-csp-guard.cjs" },
   { id: "gui-csp-same-origin", area: "GUI", title: "Gui csp same origin", owner: "tests/gui-csp-same-origin.cjs" },
+  { id: "gui-file-share", area: "GUI", title: "Gui file share", owner: "tests/gui-file-share.cjs" },
   { id: "gui-journeys", area: "GUI", title: "Gui journeys", owner: "tests/gui-journeys.cjs" },
   { id: "gui-only-guard", area: "GUI", title: "Gui only guard", owner: "tests/gui-only-guard.cjs" },
   { id: "gui-open-portal-link", area: "GUI", title: "Gui open portal link", owner: "tests/gui-open-portal-link.cjs" },

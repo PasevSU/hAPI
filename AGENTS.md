@@ -22,7 +22,7 @@
 - `server.js` ≤ **2722** реда → нов код отива в `hapi_enterprise/routes/*.js`.
 - Всички текстови файлове са **LF**; един CRLF чупи S08/S22.
 - `dist/` съдържа точно 6 файла; `verify-release` трябва да е **22/22**.
-- `release-status` иска зелен матрикс и **367** теста в дървото.
+- `release-status` иска зелен матрикс и **368** теста в дървото.
 - `tests/known-defects.cjs`: затворен ред сочи съществуващ `.js`/`.cjs`, заглавието носи текущата версия.
 - `ui-version`, `addon-changelog`, `docs-index`, `scenario-matrix`, `ui-css-split` — виж `tests/`.
 

@@ -85,7 +85,8 @@ assert.match(filesManager, /buildApiRecord\(portalObj, \{ baseUrl: linkBase\(\) 
 assert.ok(!filesManager.includes('https://portal.example.com'), 'панелът не измисля публичен адрес');
 // Подписаният URL се строи на `linkBase()`, не на `location.origin` — под Ingress
 // `location.origin` е адресът на Home Assistant и получателят получава 401/404.
-assert.match(filesManager, /state\.signed\[f\.id\] = linkBase\(\) \+ r\.data\.path/);
+// От 0.69.185 адресът се пази заедно с края на валидността си (`{ url, expires }`).
+assert.match(filesManager, /state\.signed\[f\.id\] = \{ url: linkBase\(\) \+ r\.data\.path/);
 assert.ok(!filesManager.includes('${location.origin}${r.data.path}'), 'подписаният URL не се строи от location.origin');
 // Адресът за изтегляне вече е ПОДПИСАН (за FREE) или администраторски — старият gateway
 // път искаше ключ и в браузър даваше 403 (вж. tests/file-link-works.cjs).

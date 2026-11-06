@@ -267,7 +267,11 @@
     // Публичен адрес за API/QR (сървърна настройка limits.publicBaseUrl).
     publicBaseUrl: '',
     // Издадени подписани адреси за изтегляне (по id на файл) — важат 1 час.
+    // Стойността е { url, expires }: адресът се помни до изтичането, за да не се
+    // издава нов при всяко отваряне на панела „Сподели“.
     signed: {},
+    // Файл, за който в момента се издава подписан адрес (за да не се пускат две заявки).
+    signedInFlight: '',
     connectionLoaded: false,
   };
 
@@ -1442,7 +1446,11 @@
       state.issuedKey = '';
       state.hashes = null;
       render();
-      return openPanelModal();
+      openPanelModal();
+      // Подписаният адрес се издава ТУК, а не при рисуването на панела: иначе всяко
+      // прерисуване пуска нова заявка и адресът в полето изглежда че не се зарежда.
+      if (id === 'share' && (f.accessMode || 'FREE') === 'FREE') void ensureSigned(f);
+      return undefined;
     }
     if (id === 'signedUrl' || id === 'receipt' || id === 'verifyReceipt') {
       state.panel = id;
@@ -1928,26 +1936,66 @@
   //   • защитен файл → администраторски адрес (изисква вход в панела).
   // Пътят на публичния gateway (`/api/public/…`) иска ключ и в браузър дава 403 — затова
   // вече не се показва като „публичен адрес“.
-  const signedLink = (f) => state.signed[f.id] || '';
+  const signedLink = (f) => {
+    // Защитен файл не ползва подписан адрес: сървърът издава такъв само за FREE и стар
+    // кеширан адрес след смяна на политиката щеше да води до 404.
+    if ((f.accessMode || 'FREE') !== 'FREE') return '';
+    const issued = state.signed[f.id];
+    if (!issued) return '';
+    const url = typeof issued === 'string' ? issued : issued.url || '';
+    const expires = typeof issued === 'string' ? 0 : Number(issued.expires) || 0;
+    // Изтекъл адрес не се показва: иначе човек го копира и получателят вижда 403.
+    if (expires && expires * 1000 <= Date.now() + 5000) return '';
+    return url;
+  };
   function webLink(f) {
     const signed = signedLink(f);
     if (signed) return signed;
     if ((f.accessMode || 'FREE') === 'FREE') return '';
     return `${base()}/admin/api/portals/${encodeURIComponent(portal().id)}/files/${encodeURIComponent(f.id)}/download`;
   }
-  /** Издава (веднъж) подписан адрес за FREE файл и прерисува панела. */
-  async function ensureSigned(f) {
-    if (!connected() || signedLink(f) || (f.accessMode || 'FREE') !== 'FREE') return;
-    const r = await api(`${P()}/files/${f.id}/signed-url`, { method: 'POST', json: { ttlSeconds: 3600 } });
-    if (!r.ok || !r.data || !r.data.path) return;
-    // Адресът се строи на ПУБЛИЧНИЯ базов адрес, не на адреса на панела: под Ingress
-    // адресът на панела иска вход в Home Assistant и получателят няма да го отвори.
-    state.signed[f.id] = linkBase() + r.data.path;
-    render();
+  /**
+   * Издава подписан адрес за FREE файл и връща адреса.
+   *
+   * Издаденият адрес се помни до изтичането му (`state.signed[id].expires`), за да не се
+   * издава нов при всяко отваряне на панела „Сподели“: дотук панелът викаше тази функция
+   * при самото рисуване, а тя не опресняваше отворения модал — адресът изглеждаше че не се
+   * зарежда и човек издаваше нов ключ. `force` издава нов адрес нарочно.
+   */
+  async function ensureSigned(f, force) {
+    if (!connected() || (f.accessMode || 'FREE') !== 'FREE') return '';
+    const cached = signedLink(f);
+    if (cached && !force) return cached;
+    if (state.signedInFlight === f.id) return cached;
+    state.signedInFlight = f.id;
+    try {
+      const r = await api(`${P()}/files/${f.id}/signed-url`, { method: 'POST', json: { ttlSeconds: 3600 } });
+      if (!r.ok || !r.data || !r.data.path) {
+        // Досега грешката се губеше и панелът оставаше на „издава се…“ завинаги.
+        toast(r.error || `HTTP ${r.status}`, 'err');
+        return '';
+      }
+      // Адресът се строи на ПУБЛИЧНИЯ базов адрес, не на адреса на панела: под Ingress
+      // адресът на панела иска вход в Home Assistant и получателят няма да го отвори.
+      state.signed[f.id] = { url: linkBase() + r.data.path, expires: Number(r.data.expires) || 0 };
+      render();
+      // Панелът е модал над страницата: без това той остава с първоначалния текст.
+      if (state.selected === f.id && state.panel === 'share') refreshPanel();
+      return state.signed[f.id].url;
+    } finally {
+      state.signedInFlight = '';
+    }
   }
   // QR кодът в панела е ЕДИН — този на портала в блока „Връзка и QR код“ (portal-control.js).
   // Дотук всеки файл рисуваше свой код: той носеше подписан адрес с живот един час или, за
   // защитен файл, администраторски адрес, който иска вход в панела — тоест разпечатан беше мъртъв.
+  const signedUntil = (f) => {
+    const issued = state.signed[f.id];
+    const expires = issued && typeof issued === 'object' ? Number(issued.expires) || 0 : 0;
+    if (!expires) return '';
+    return new Date(expires * 1000).toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' });
+  };
+
   const QR_ONE_HINT = 'QR кодът е един — в блока „Връзка и QR код“ на портала; той отваря портала заедно с папката му.';
 
   // ── Рендер ───────────────────────────────────────────────────────────────
@@ -2859,6 +2907,23 @@
       q('#fm-copy-link').addEventListener('click', () => copyText(webLink(current()), 'Адресът е копиран'));
     }
     if (q('#fm-create-key')) q('#fm-create-key').addEventListener('click', createKey);
+    // „Нов адрес“ издава друг подписан адрес нарочно (изтекъл или изпратен до грешен човек).
+    if (q('#fm-new-link')) {
+      q('#fm-new-link').addEventListener('click', async () => {
+        const f = current();
+        if (!f) return;
+        const url = await ensureSigned(f, true);
+        toast(url ? 'Издаден е нов подписан адрес' : 'Адресът не е издаден', url ? 'ok' : 'err');
+      });
+    }
+    // „Изтегли файла“ в панела ползва администраторския път — същинско изтегляне, не
+    // празният бутон в ъгъла на прозореца, който чака прегледано съдържание.
+    if (q('#fm-share-download')) {
+      q('#fm-share-download').addEventListener('click', () => {
+        const f = current();
+        if (f) void download(f);
+      });
+    }
     // Подписан URL, разписка и проверка — трите реални маршрута под файла.
     if (q('[data-signed-url]')) {
       q('[data-signed-url]').addEventListener('submit', async (event) => {
@@ -3346,24 +3411,34 @@
   }
 
   function sharePane(f) {
-    const link = webLink(f);
     const isFree = (f.accessMode || 'FREE') === 'FREE';
-    // За FREE файл адресът се издава при отваряне на панела (един път) и важи 1 час.
-    if (isFree && !link) void ensureSigned(f);
+    const link = webLink(f);
+    const until = signedUntil(f);
+    const label = isFree ? 'Подписан адрес за изтегляне' : 'Администраторски адрес за изтегляне';
+    // Издаването НЕ е страничен ефект на рисуването: то се пуска от `runAction('share')`,
+    // за да не тръгва нова заявка при всяко прерисуване на панела.
     const hint = !isFree
-      ? 'Файлът е защитен: адресът е администраторски и иска вход в панела. За външен получател издай ключ или подписан адрес (файлът трябва да е FREE).'
-      : 'Адресът е подписан (валиден 1 час) и се отваря в браузър без вход. Издай нов от това меню, когато изтече.';
+      ? 'Файлът е защитен: адресът е администраторски и иска вход в панела. За външен получател издай ключ и го подай в заглавка X-File-Key — браузърът сам не я праща, затова копиран адрес не стига.'
+      : `Адресът е подписан${until ? ` и важи до ${until}` : ''} и се отваря в браузър без вход. „Нов адрес“ издава друг, когато този изтече.${
+        publicBase() ? '' : ' Публичният адрес не е зададен (Настройки → Връзка), затова адресът сочи панела и иска вход в Home Assistant.'
+      }`;
     return `
-      <div class="field"><label>${isFree ? 'Подписан адрес за изтегляне' : 'Администраторски адрес за изтегляне'}</label><input readonly value="${esc(link || 'издава се…')}" /></div>
+      <div class="field"><label>${label}</label><input readonly value="${esc(link || (isFree ? 'издава се…' : '—'))}" /></div>
       <div class="u-row u-row-2">
         <button type="button" class="btn btn-sm" id="fm-copy-link" ${link ? '' : 'disabled'}>${ICON.copy} Копирай адреса</button>
-        <button type="button" class="btn btn-sm" id="fm-create-key">Нов ключ</button>
+        ${isFree
+        ? '<button type="button" class="btn btn-sm" id="fm-new-link">Нов адрес</button>'
+        : '<button type="button" class="btn btn-sm" id="fm-create-key">Нов ключ</button>'
+      }
+      </div>
+      <div class="u-row u-row-2 u-mt">
+        <button type="button" class="btn btn-sm" id="fm-share-download">${ICON.download} Изтегли файла</button>
       </div>
       <p class="hint">${QR_ONE_HINT}</p>
       ${state.issuedKey
         ? `<div class="field"><label>Ключ (показва се само веднъж)</label><input readonly value="${esc(
           state.issuedKey,
-        )}" /></div><p class="hint">Подава се като <code>X-Portal-Key</code>.</p>`
+        )}" /></div><p class="hint">Подава се като <code>X-File-Key</code> в заглавката на заявката към адреса на файла.</p>`
         : ''
       }
       <p class="hint">${hint}</p>`;
