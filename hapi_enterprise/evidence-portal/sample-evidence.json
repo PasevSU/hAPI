@@ -1,1 +1,218 @@
-{"title":"Доказателства (демонстрация)","items":[{"id":"communications","type":"folder","name":"1. Комуникации","children":[{"id":"eml1","type":"file","name":"chat_log_2026-03-14.eml","extension":"eml","bytes":1258291,"created":"2026-03-14T10:12:00Z","modified":"2026-03-14T10:24:00Z","sha256":"d3b07384d113edec49eaa6238ad5f00d9c1a8b7e6f3d2a9b4e8c7d12","access":"free","protection":"high","software":{"name":"Thunderbird","license":"MPL-2.0"}},{"id":"img1","type":"file","name":"screenshot_001.png","extension":"png","bytes":870400,"created":"2026-03-14T10:18:00Z","modified":"2026-03-14T10:26:00Z","sha256":"a8f5e9c7b2d4f1a930edb7c2f7b1a9e6d84c2b19e3f5076a1d2c3b4e5f607182","access":"password","protection":"medium","software":{"name":"Image Viewer","license":"Зависи от инсталацията"}}]},{"id":"contracts","type":"folder","name":"2. Договори","children":[{"id":"pdf1","type":"file","name":"document_contract.pdf","extension":"pdf","bytes":2516582,"created":"2026-03-14T09:41:00Z","modified":"2026-03-14T10:28:00Z","sha256":"9c1185a5c5e9fc54c2b0f412d34567aabbccddeeff00112233445566778899aa","access":"free","protection":"high","software":{"name":"PDF Reader","license":"Не е посочен"}},{"id":"pdf2","type":"file","name":"contract_password.pdf","extension":"pdf","bytes":1887436,"created":"2026-03-13T16:05:00Z","modified":"2026-03-13T16:05:00Z","sha256":"a19dce2211ee33445566778899aabbccddeeff00112233445566778899aabbcc","access":"password","protection":"high"}]},{"id":"systems","type":"folder","name":"3. Системни записи","children":[{"id":"zip1","type":"file","name":"system_log.zip","extension":"zip","bytes":16567501,"created":"2026-03-13T22:11:00Z","modified":"2026-03-14T08:37:00Z","sha256":"6f3d2a9b4e8c7d12aabbccddeeff00112233445566778899aabbccddeeff00","access":"locked","protection":"critical","software":{"name":"7-Zip","license":"LGPL / BSD"}},{"id":"json1","type":"file","name":"config_backup.json","extension":"json","bytes":430080,"created":"2026-03-12T08:24:00Z","modified":"2026-03-12T08:24:00Z","sha256":"aaccdd00112233445566778899aabbccddeeff00112233445566778899aabbccdd","access":"free","protection":"medium"},{"id":"mp41","type":"file","name":"video_recording.mp4","extension":"mp4","bytes":50960793,"created":"2026-03-11T14:17:00Z","modified":"2026-03-11T14:17:00Z","sha256":"abcdeeff00112233445566778899aabbccddeeff0011223344556677889900aabb","access":"locked","protection":"critical"}]}]}
+{
+  "schema": "hapi-evidence/2",
+  "title": "Доказателства (демонстрация)",
+  "package": {
+    "id": "demo-evidence",
+    "created": "2026-11-06T08:00:00Z",
+    "createdBy": "hAPI Enterprise (демонстрация)",
+    "case": "ДЕМО-2026-0001",
+    "description": "Плоската подредба на същите демо данни — за съвместимост със стари връзки и документи.",
+    "protection": "Високо",
+    "publicUrl": ""
+  },
+  "totals": {
+    "files": 7,
+    "folders": 3,
+    "bytes": 74491083
+  },
+  "items": [
+    {
+      "id": "communications",
+      "type": "folder",
+      "name": "1. Комуникации",
+      "children": [
+        {
+          "id": "eml1",
+          "type": "file",
+          "name": "chat_log_2026-03-14.eml",
+          "extension": "eml",
+          "mime": "message/rfc822",
+          "bytes": 1258291,
+          "created": "2026-03-14T10:12:00Z",
+          "modified": "2026-03-14T10:24:00Z",
+          "collectedAt": "2026-03-14T10:30:00Z",
+          "sha256": "d3b07384d113edec49eaa6238ad5f00d9c1a8b7e6f3d2a9b4e8c7d12d3b07384",
+          "sha512": "",
+          "access": "free",
+          "protection": "high",
+          "tags": [
+            "комуникация",
+            "поща"
+          ],
+          "description": "Експорт на разговори за периода.",
+          "source": "Пощенски клиент (демо)",
+          "software": {
+            "name": "Thunderbird",
+            "license": "MPL-2.0"
+          }
+        },
+        {
+          "id": "img1",
+          "type": "file",
+          "name": "screenshot_001.png",
+          "extension": "png",
+          "mime": "image/png",
+          "bytes": 870400,
+          "created": "2026-03-14T10:18:00Z",
+          "modified": "2026-03-14T10:26:00Z",
+          "collectedAt": "2026-03-14T10:31:00Z",
+          "sha256": "a8f5e9c7b2d4f1a930edb7c2f7b1a9e6d84c2b19e3f5076a1d2c3b4e5f607182",
+          "sha512": "",
+          "access": "password",
+          "protection": "medium",
+          "tags": [
+            "екран",
+            "доказателство"
+          ],
+          "description": "Екранна снимка към разговора.",
+          "source": "Работна станция (демо)",
+          "software": {
+            "name": "Image Viewer",
+            "license": "Зависи от инсталацията"
+          }
+        }
+      ]
+    },
+    {
+      "id": "contracts",
+      "type": "folder",
+      "name": "2. Договори",
+      "children": [
+        {
+          "id": "pdf1",
+          "type": "file",
+          "name": "document_contract.pdf",
+          "extension": "pdf",
+          "mime": "application/pdf",
+          "bytes": 2516582,
+          "created": "2026-03-14T09:41:00Z",
+          "modified": "2026-03-14T10:28:00Z",
+          "collectedAt": "2026-03-14T10:32:00Z",
+          "sha256": "9c1185a5c5e9fc54c2b0f412d34567aabbccddeeff00112233445566778899aa",
+          "sha512": "",
+          "verified": {
+            "sha256": true,
+            "checkedAt": "2026-03-14T10:33:00Z"
+          },
+          "access": "free",
+          "protection": "high",
+          "tags": [
+            "договор",
+            "pdf"
+          ],
+          "description": "Основен договор с приложения.",
+          "source": "Документооборот (демо)",
+          "software": {
+            "name": "PDF Reader",
+            "license": "Не е посочен"
+          }
+        },
+        {
+          "id": "pdf2",
+          "type": "file",
+          "name": "contract_password.pdf",
+          "extension": "pdf",
+          "mime": "application/pdf",
+          "bytes": 1887436,
+          "created": "2026-03-13T16:05:00Z",
+          "modified": "2026-03-13T16:05:00Z",
+          "collectedAt": "2026-03-13T16:10:00Z",
+          "sha256": "a19dce2211ee33445566778899aabbccddeeff00112233445566778899aabbcc",
+          "sha512": "",
+          "access": "password",
+          "protection": "high",
+          "tags": [
+            "договор",
+            "парола"
+          ],
+          "source": "Документооборот (демо)",
+          "software": {
+            "name": "PDF Reader",
+            "license": "Не е посочен"
+          }
+        }
+      ]
+    },
+    {
+      "id": "systems",
+      "type": "folder",
+      "name": "3. Системни записи",
+      "children": [
+        {
+          "id": "zip1",
+          "type": "file",
+          "name": "system_log.zip",
+          "extension": "zip",
+          "mime": "application/zip",
+          "bytes": 16567501,
+          "created": "2026-03-13T22:11:00Z",
+          "modified": "2026-03-14T08:37:00Z",
+          "collectedAt": "2026-03-14T08:40:00Z",
+          "sha256": "6f3d2a9b4e8c7d12aabbccddeeff00112233445566778899aabbccddeeff006f",
+          "sha512": "",
+          "access": "locked",
+          "protection": "critical",
+          "tags": [
+            "лог",
+            "архив"
+          ],
+          "description": "Архив на системните записи.",
+          "source": "Сървър (демо)",
+          "software": {
+            "name": "7-Zip",
+            "license": "LGPL / BSD"
+          }
+        },
+        {
+          "id": "json1",
+          "type": "file",
+          "name": "config_backup.json",
+          "extension": "json",
+          "mime": "application/json",
+          "bytes": 430080,
+          "created": "2026-03-12T08:24:00Z",
+          "modified": "2026-03-12T08:24:00Z",
+          "collectedAt": "2026-03-12T08:30:00Z",
+          "sha256": "0b1c2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "sha512": "",
+          "access": "free",
+          "protection": "medium",
+          "tags": [
+            "конфигурация",
+            "резервно копие"
+          ],
+          "source": "hAPI Enterprise (демо)",
+          "software": {
+            "name": "hAPI Enterprise",
+            "license": "Собствен"
+          }
+        },
+        {
+          "id": "mp41",
+          "type": "file",
+          "name": "video_recording.mp4",
+          "extension": "mp4",
+          "mime": "video/mp4",
+          "bytes": 50960793,
+          "created": "2026-03-11T18:02:00Z",
+          "modified": "2026-03-11T19:44:00Z",
+          "collectedAt": "2026-03-11T19:50:00Z",
+          "sha256": "3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b",
+          "sha512": "",
+          "access": "locked",
+          "protection": "critical",
+          "tags": [
+            "видео",
+            "запис"
+          ],
+          "description": "Видеозапис към случая.",
+          "source": "Камера (демо)",
+          "software": {
+            "name": "ffmpeg",
+            "license": "LGPL"
+          }
+        }
+      ]
+    }
+  ]
+}

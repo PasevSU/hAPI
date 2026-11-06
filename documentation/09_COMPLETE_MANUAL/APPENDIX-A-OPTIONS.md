@@ -1,7 +1,7 @@
 # Приложение А — всички опции на add-on-а
 
 > Генерирано от `scripts/docs-manual.cjs`; **не се редактира на ръка**.
-> Стойността в колоната „по подразбиране“ е точно това, което издание 0.69.165 доставя.
+> Стойността в колоната „по подразбиране“ е точно това, което издание 0.69.166 доставя.
 
 Общо: **43** опции.
 
@@ -30,8 +30,8 @@
 | `public_same_origin` | `true` | Same-origin URLs | Enabled by default: emit relative URLs because the API answers on the Home Assistant host and port. Off means absolute URLs with CORS. |
 | `user_roles` | `{"pasev-admin":"admin"}` | User roles | Optional JSON map from Home Assistant identity to role. The key is matched against the ingress headers `X-Remote-User-Name`, then `X-Remote-User-Id`, then `X-Remote-User-Display-Name`. Admin is the default for every Ingress user, so use this only to demote, e.g. {"guest": "viewer"}. Roles: `admin`, `operator`, `viewer`, and the court roles `judge`, `prosecutor`, `clerk`, `expert`. Court roles only READ evidence and the chain of custody; the exception is `expert`, who may submit an opinion. An unknown role is rejected so a typo cannot grant access. In this distribution the map is pre-filled (the installation user → `admin`) — that is the value the add-on is tested with. |
 | `group_roles` | `(празно)` | Group roles | Optional JSON map of group name to role for a reverse proxy that adds `X-Remote-Groups`. Home Assistant itself does not send group information, so this stays empty in a plain add-on installation. |
-| `storage_location` | `addon_config` | Storage location | Where documents and the database live. `addon_config` (default) is the add-on's own folder (/config inside the container) and is included in Supervisor snapshots; `share` is the shared Home Assistant folder (visible over Samba); `media` is the other shared folder. |
-| `storage_subdirectory` | `hapi_enterprise` | Storage subdirectory | Subfolder inside the chosen location; `hapi_enterprise` by default, i.e. `/config/hapi_enterprise` for the default `addon_config` location. Up to three levels are allowed (e.g. `documents/hapi/data`). If the data lived in the old folder before the update, the add-on keeps using it and logs STORAGE_LEGACY_LOCATION instead of starting with an empty database. |
+| `storage_location` | `share` | Storage location | Where documents and the database live. `addon_config` (default) is the add-on's own folder (/config inside the container) and is included in Supervisor snapshots; `share` is the shared Home Assistant folder (visible over Samba); `media` is the other shared folder. |
+| `storage_subdirectory` | `hAPI/data` | Storage subdirectory | Subfolder inside the chosen location; `hapi_enterprise` by default, i.e. `/config/hapi_enterprise` for the default `addon_config` location. Up to three levels are allowed (e.g. `documents/hapi/data`). If the data lived in the old folder before the update, the add-on keeps using it and logs STORAGE_LEGACY_LOCATION instead of starting with an empty database. |
 | `storage_mode` | `local` | Storage mode | local uses the mounted folder directly; ha_network requires an active Home Assistant network storage mount. |
 | `storage_mount_name` | `(празно)` | Network storage name | Name of the Home Assistant network storage mount (only for ha_network). |
 | `min_free_mb` | `1000` | Minimum free space (MB) | 1000 by default. Startup fails when less free space is available at the storage location, so a full disk cannot silently corrupt the audit trail. |

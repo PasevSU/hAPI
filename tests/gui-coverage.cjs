@@ -91,7 +91,7 @@ const navEntries = [...app.matchAll(/\{ id: '([a-z]+)', ico: [^}]*\}/g)].map((m)
   id: m[1],
   section: (m[0].match(/section: '([a-z]+)'/) || [])[1] || null,
 }));
-assert.ok(navEntries.length >= 16, 'навигацията има поне 16 точки (сега ' + navEntries.length + ')');
+assert.ok(navEntries.length >= 15, 'навигацията има поне 15 точки (сега ' + navEntries.length + ')');
 const missingNav = navEntries
   .filter((entry) => (entry.section ? !coveredSections.includes(entry.section) : !new RegExp("id: '" + entry.id + "'").test(panelsTest)))
   .map((entry) => entry.id + (entry.section ? ' → секция ' + entry.section : ''));

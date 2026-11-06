@@ -252,9 +252,14 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     // ── J01. Страницата се вдига като в браузър ────────────────────────────────
     await journey('J01 стартиране на index.html', async () => {
       const navIds = app.navIds();
-      assert.equal(navIds.length, 17, 'навигацията има 17 точки, нарисувани от app.js: ' + navIds.join(', '));
-      for (const id of ['dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export', 'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'backups', 'qr', 'report', 'settings', 'about']) {
+      // Менюто рисува само видимите точки: „Резервни копия“ и „QR архиви“ са скрити
+      // по заявка, но панелите им остават достъпни по id (виж J17 и J18).
+      assert.equal(navIds.length, 15, 'навигацията рисува 15 видими точки от app.js: ' + navIds.join(', '));
+      for (const id of ['dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export', 'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'report', 'settings', 'about']) {
         assert.ok(navIds.includes(id), 'липсва навигационна точка „' + id + '“');
+      }
+      for (const hidden of ['backups', 'qr']) {
+        assert.equal(navIds.includes(hidden), false, '„' + hidden + '“ не се рисува в менюто');
       }
       assert.equal(text(app.$('#bar-center')), 'свързан · токен в сесията', 'лентата казва истината за връзката');
       assert.match(text(app.$('#app-version')), /^v\d+\.\d+\.\d+$/, 'версията идва от data.js');

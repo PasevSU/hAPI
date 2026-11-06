@@ -78,9 +78,9 @@ const journeyCalls = [...journeys.matchAll(/await journey\('/g)].length;
 // самите бутони се пазят от `tests/files-manager.cjs`.
 assert.ok(journeyCalls >= 70, 'сценариите са поне 70 (сега ' + journeyCalls + ')');
 
-// Всяка навигационна точка трябва да е достижима: сценарият проверява, че и 17-те са там.
+// Всяка навигационна точка трябва да е достижима: сценарият проверява, че и 15-те са там.
 const navIds = [...app.matchAll(/\{ id: '([a-z]+)', ico: [^}]*\}/g)].map((m) => m[1]);
-assert.equal(navIds.length, 17, 'app.js изброява 17 навигационни точки');
+assert.equal(navIds.length, 17, 'app.js изброява 17 навигационни точки (две от тях скрити от менюто)');
 for (const id of navIds) {
   assert.ok(journeys.includes("'" + id + "'"), 'сценариите не споменават навигационната точка „' + id + '“');
 }

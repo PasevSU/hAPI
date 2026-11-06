@@ -76,5 +76,13 @@ export default [
     files: ['hapi_enterprise/evidence-portal/assets/**/*.js'],
     languageOptions: { sourceType: 'module', ecmaVersion: 2022, globals: { ...globals.browser } }
   },
+  // Копието на вендорвания QR енкодер в самостоятелния портал е същият генериран код като
+  // `hapi_enterprise/qrcode.js` — правилата за стил и повторни декларации не важат за него.
+  // Блокът е СЛЕД порталните модули, защото иначе те го презаписват.
+  {
+    files: ['hapi_enterprise/evidence-portal/assets/qrcode.js'],
+    languageOptions: { globals: { ...globals.browser, ...globals.amd, ...globals.node, ...globals.commonjs } },
+    rules: { 'no-redeclare': 'off', 'no-control-regex': 'off', 'no-unused-vars': 'off', 'no-useless-assignment': 'off' }
+  },
   prettier
 ];

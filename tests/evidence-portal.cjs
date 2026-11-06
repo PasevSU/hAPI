@@ -38,6 +38,12 @@ assert.equal(portal.detectRoot([emptyRoot]), null, 'празна папка не
 
 // 3. Целевият път е точно <root>/www/hapi/data.
 assert.equal(portal.targetDir({ env: {}, roots: [root] }).dir, path.join(root, 'www', 'hapi', 'data'));
+// 3б. Когато има папка с данни (/share в add-on), порталът живее В НЕЯ —
+// /share/hAPI/data/portal — за да са документите и порталът на едно място.
+const fakeShare = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-share-'));
+const shareTarget = portal.targetDir({ env: { EVIDENCE_PORTAL_SHARE: fakeShare }, roots: [root] });
+assert.equal(shareTarget.mode, 'share', 'папката с данни има приоритет пред www');
+assert.equal(shareTarget.dir, path.join(fakeShare, 'hAPI', 'data', 'portal'), 'порталът е в папката с данните');
 // Без HA конфигурация — ясна причина, не гадаене.
 const noRoot = portal.targetDir({ env: {}, roots: [emptyRoot] });
 assert.ok(noRoot.error && noRoot.error.includes('конфигурацията'), 'без HA конфигурация връща причина');

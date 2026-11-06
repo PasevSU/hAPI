@@ -1,5 +1,5 @@
 name: "hAPI Enterprise"
-version: "0.69.165"
+version: "0.69.166"
 slug: "hapi_enterprise"
 description: "Multi-portal enterprise build: diagnostics, load control, group ops, config profiles, backup restore, storage checks, RBAC, centralized error log"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_enterprise"
@@ -85,18 +85,20 @@ options:
   # Празно значи „само defaultRole от конзолата“; тук е записан потребителят на инсталацията.
   user_roles: '{"pasev-admin":"admin"}'
   group_roles: ""
-  # Данните на add-on-а живеят в неговата конфигурационна папка (app_config mount, вкл. в
-  # snapshot-ите на Supervisor), а не в /share — така надграждането не разчита на споделена папка.
-  storage_location: addon_config
-  storage_subdirectory: hapi_enterprise
+  # Документите и папките живеят в /share/hAPI/data — видими през Samba/File editor и
+  # извън папката на add-on-а, така че обновяване или преинсталиране да не ги мести.
+  storage_location: share
+  storage_subdirectory: hAPI/data
   storage_mode: local
   storage_mount_name: ""
   # 1000 MB: под този праг preflight-ът спира старта, за да не се напълни дискът с одит.
   min_free_mb: 1000
   log_level: info
   config_dir: ""
-  # QR порталът Evidence View се публикува в <HA config>/www/hapi/data, за да го
-  # сервира Home Assistant на /local/hapi/data/portal.html. Изключено → нищо не се пише.
+  # QR порталът Evidence View се публикува В САМАТА папка с данните
+  # (/share/hAPI/data/portal), за да е на едно място с документите; копие се слага и в
+  # <HA config>/www/hapi/data, за да го сервира Home Assistant на /local/hapi/data/portal.html.
+  # Изключено → нищо не се пише.
   evidence_portal_deploy: true
   # RFC 3161 времеви печати: включени в разпределението. Без интернет заявката се проваля
   # затворено (breaker) и НЕ блокира старта — затова е безопасно да е включено по подразбиране.

@@ -1,16 +1,16 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.165**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.166**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **109** backend модула · **17** HTTP компонента · **23** UI модула · **8** Python модула · **38** инструмента · **358** теста.
+Общо: **110** backend модула · **17** HTTP компонента · **23** UI модула · **8** Python модула · **39** инструмента · **361** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (109)
+### Backend модули (`hapi_enterprise/*.js`) (110)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -36,8 +36,9 @@
 | `hapi_enterprise/event-bus.js` | In-process Event Bus (Фаза 2.2, P5). Излъчва наблюдаеми domain събития; |
 | `hapi_enterprise/event-stream.js` | SSE ПОТОК ЗА ЖИВИ СЪБИТИЯ — `GET /admin/api/events/stream` (F4-7, втората половина). |
 | `hapi_enterprise/evidence-portal.js` | Публикуване на Evidence View портала в папката, която Home Assistant сервира статично. |
-| `hapi_enterprise/evidence-portal/assets/app.js` | (без заглавен коментар) |
+| `hapi_enterprise/evidence-portal/assets/app.js` | Evidence View портал — дърво, информация за файловете и QR. |
 | `hapi_enterprise/evidence-portal/assets/consent.js` | hAPI consent gate. Never treat browser state as server authorization. |
+| `hapi_enterprise/evidence-portal/assets/qrcode.js` | QR Code Generator for JavaScript |
 | `hapi_enterprise/exif.js` | EXIF / МЕТАДАННИ — извличане и СРАВНЕНИЕ (план 18, панел 08). |
 | `hapi_enterprise/export-manager.js` | Export Manager (FD-1) — трансферно ядро с проверка на целостта. |
 | `hapi_enterprise/export-rules.js` | File Delivery & Export Manager — правила за експорт (FD-0). |
@@ -187,7 +188,7 @@
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (38)
+### Инструменти (`scripts/*.cjs`) (39)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -198,6 +199,7 @@
 | `scripts/bad-code-scan.cjs` | Сегментен скан за лош код. |
 | `scripts/build-haoss.cjs` | Builds a standalone, HACS-compatible integration repository in release/haoss. |
 | `scripts/build-release.cjs` | Строи изданието за Home Assistant в `dist/`: |
+| `scripts/check-ha-live.cjs` | Жива проверка на Home Assistant след поправка на токен/връзка. |
 | `scripts/check-tag-version.cjs` | Проверка „таг = версия“ — тагът, който се публикува, трябва да сочи точно тази |
 | `scripts/compare-live-options.cjs` | СРАВНЯВА ЖИВИТЕ ОПЦИИ НА ADD-ON-А С defaults В `config.yaml` — БЕЗ ДА ПЕЧАТА ТАЙНИ. |
 | `scripts/decrypt-package.cjs` | Разшифроване на криптиран експортен пакет БЕЗ add-on. |

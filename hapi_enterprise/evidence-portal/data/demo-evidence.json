@@ -1,23 +1,36 @@
 {
+  "schema": "hapi-evidence/2",
   "title": "Доказателства (демонстрация)",
+  "package": {
+    "id": "demo-evidence",
+    "created": "2026-11-06T08:00:00Z",
+    "createdBy": "hAPI Enterprise (демонстрация)",
+    "case": "ДЕМО-2026-0001",
+    "description": "Синтетичен пакет за преглед на портала: метаданните и хешовете са илюстративни и НЕ са доказателство.",
+    "protection": "Високо",
+    "publicUrl": ""
+  },
+  "totals": { "files": 3, "folders": 1, "bytes": 1202688 },
   "items": [
     {
       "id": "f1",
       "type": "file",
       "name": "Договор_17.pdf",
       "extension": "pdf",
+      "mime": "application/pdf",
       "bytes": 248320,
       "created": "2026-09-02T09:12:00Z",
       "modified": "2026-09-14T16:40:00Z",
+      "collectedAt": "2026-09-14T16:41:00Z",
       "sha256": "9f2c1d0e7a4b6c8d1e3f5a7b9c0d2e4f6a8b0c1d3e5f7a9b0c2d4e6f8a0b1c3d",
-      "sha512": "",
+      "sha512": "b1c3d5e7f90a2b4c6d8e0f1a3b5c7d9e1f2a4b6c8d0e1f3a5b7c9d1e2f4a6b8c0d2e4f6a8b0c1d3e5f7a9b0c2d4e6f8a0b1c3d5e7f90a2b4c6d8e0f1a3b",
       "protection": "Парола + одит",
       "access": "password",
-      "software": {
-        "name": "ChronoSeal",
-        "license": "Комерсиен",
-        "version": "4.2"
-      }
+      "tags": ["договор", "подпис", "pdf"],
+      "description": "Подписан договор със страници и метаданни на подписа.",
+      "source": "Работна станция (демо)",
+      "verified": { "sha256": true, "checkedAt": "2026-09-14T16:42:00Z" },
+      "software": { "name": "ChronoSeal", "license": "Комерсиен", "version": "4.2" }
     },
     {
       "id": "d1",
@@ -29,18 +42,19 @@
           "type": "file",
           "name": "Приложение_1.docx",
           "extension": "other",
+          "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
           "bytes": 51200,
           "created": "2026-09-03T10:00:00Z",
           "modified": "2026-09-03T10:00:00Z",
+          "collectedAt": "2026-09-03T10:05:00Z",
           "sha256": "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
-          "sha512": "",
+          "sha512": "2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3",
           "protection": "Само одит",
           "access": "free",
-          "software": {
-            "name": "hAPI Enterprise",
-            "license": "Собствен",
-            "version": "0.69.67"
-          }
+          "tags": ["приложение", "docx"],
+          "description": "Приложение към договора с описателен списък.",
+          "source": "hAPI Enterprise 0.69.165 (демо)",
+          "software": { "name": "hAPI Enterprise", "license": "Собствен", "version": "0.69.165" }
         }
       ]
     },
@@ -49,18 +63,19 @@
       "type": "file",
       "name": "Снимка_екран.png",
       "extension": "png",
+      "mime": "image/png",
       "bytes": 903168,
       "created": "2026-09-10T12:30:00Z",
       "modified": "2026-09-10T12:30:00Z",
+      "collectedAt": "2026-09-10T12:31:00Z",
       "sha256": "5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c",
-      "sha512": "",
+      "sha512": "6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a",
       "protection": "Заключен",
       "access": "locked",
-      "software": {
-        "name": "—",
-        "license": "—",
-        "version": "—"
-      }
+      "tags": ["екран", "изображение"],
+      "description": "Екранна снимка, приложена като илюстрация.",
+      "source": "Неизвестен (демо)",
+      "software": { "name": "—", "license": "—", "version": "—" }
     }
   ]
 }

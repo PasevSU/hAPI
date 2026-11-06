@@ -54,8 +54,8 @@ const EXPECTED = {
   min_free_mb: 1000,
   public_gateway: true,
   public_same_origin: true,
-  storage_location: 'addon_config',
-  storage_subdirectory: 'hapi_enterprise',
+  storage_location: 'share',
+  storage_subdirectory: 'hAPI/data',
   tsa_enabled: true,
   evidence_portal_deploy: true,
   log_level: 'info',
@@ -77,7 +77,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-defaults-'));
 const dataDir = path.join(tmp, 'data');
 const storageRoot = path.join(tmp, 'storage');
 fs.mkdirSync(dataDir, { recursive: true });
-fs.mkdirSync(path.join(storageRoot, 'addon_config'), { recursive: true });
+fs.mkdirSync(path.join(storageRoot, 'share'), { recursive: true });
 
 const writeOptions = (extra) =>
   fs.writeFileSync(path.join(dataDir, 'options.json'), JSON.stringify({ ...DEFAULTS, ...extra }));
@@ -144,7 +144,7 @@ const reapServer = async (storageBase) => {
 };
 
 (async () => {
-  const storageBase = path.join(storageRoot, 'addon_config', 'hapi_enterprise');
+  const storageBase = path.join(storageRoot, 'share', 'hAPI', 'data');
   try {
     // 3а. С токен: сървърът, публичният шлюз и хранилището работят; SIGTERM е чист.
     global.__port = await freePort();
@@ -156,7 +156,7 @@ const reapServer = async (storageBase) => {
     assert.ok(health, 'със shipped defaults add-on-ът не вдигна /health. stderr: ' + stderr.slice(0, 400));
     assert.ok(
       fs.existsSync(path.join(storageBase, '.portal-enterprise-storage')),
-      'при storage_location=addon_config + hapi_enterprise preflight не е създал хранилището',
+      'при storage_location=share + hAPI/data preflight не е създал хранилището',
     );
     // public_gateway: true по подразбиране — портът трябва наистина да слуша. Шлюзът
     // обслужва само публичните адреси (/p/...), затова се проверява TCP връзката, а не /health.
@@ -198,7 +198,7 @@ const reapServer = async (storageBase) => {
 
     console.log(
       `PASS addon-defaults-startup: ${Object.keys(DEFAULTS).length} shipped опции · ` +
-      'addon_config/hapi_enterprise · public_gateway + TSA включени · тайни празни · старт и чист SIGTERM',
+      'share/hAPI/data · public_gateway + TSA включени · тайни празни · старт и чист SIGTERM',
     );
   } catch (e) {
     if (child) child.kill('SIGKILL');

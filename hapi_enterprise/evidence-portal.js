@@ -27,6 +27,7 @@ const FILES = [
   'README.md',
   'assets/app.js',
   'assets/consent.js',
+  'assets/qrcode.js',
   'assets/style.css',
   'sample-evidence.json',
   'data/demo-evidence.json',
@@ -34,6 +35,18 @@ const FILES = [
 const SUBPATH = path.join('www', 'hapi', 'data');
 // За съобщения: винаги с прави наклонени черти, за да е еднакво на Windows и в контейнера.
 const SUBPATH_TEXT = 'www/hapi/data';
+// Основното място за портала е В папката с данните (/share/hAPI/data/portal), за да са
+// документите и порталът на едно място. Копие в www се прави само когато има HA конфигурация,
+// защото само тя се сервира на /local/.
+const SHARE_SUBPATH = path.join('hAPI', 'data', 'portal');
+const SHARE_SUBPATH_TEXT = 'hAPI/data/portal';
+// `/share` е път на Home Assistant (Linux). На Windows `path.resolve('/share')` сочи към
+// диск `D:\share` и тестовете/локалните пускания случайно биха пипали чужд диск, затова
+// там папката се приема само при изрично зададен `EVIDENCE_PORTAL_SHARE`.
+const shareRoot = (env = process.env) => {
+  if (env.EVIDENCE_PORTAL_SHARE) return path.resolve(env.EVIDENCE_PORTAL_SHARE);
+  return process.platform === 'win32' ? '' : '/share';
+};
 
 const sourceDir = () => path.join(__dirname, 'evidence-portal');
 const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
@@ -119,10 +132,20 @@ function targetDir({ env = process.env, roots } = {}) {
   }
   if (env.EVIDENCE_PORTAL_DIR) {
     const dir = path.resolve(env.EVIDENCE_PORTAL_DIR);
-    if (!dir.endsWith(path.join('www', 'hapi', 'data')) && !env.EVIDENCE_PORTAL_ALLOW_ANY_DIR) {
-      return { error: `EVIDENCE_PORTAL_DIR трябва да завършва на ${SUBPATH_TEXT} (получено: ${dir})` };
+    const okEnding = dir.endsWith(path.join('www', 'hapi', 'data')) || dir.endsWith(SHARE_SUBPATH);
+    if (!okEnding && !env.EVIDENCE_PORTAL_ALLOW_ANY_DIR) {
+      return { error: `EVIDENCE_PORTAL_DIR трябва да завършва на ${SUBPATH_TEXT} или ${SHARE_SUBPATH_TEXT} (получено: ${dir})` };
     }
     return { dir, root: null };
+  }
+  // Първо папката с данните: там живеят документите, там е и порталът.
+  const share = shareRoot(env);
+  if (share) {
+    try {
+      if (fs.statSync(share).isDirectory()) {
+        return { dir: path.join(share, SHARE_SUBPATH), root: share, mode: 'share' };
+      }
+    } catch { /* няма /share — пада се към www */ }
   }
   const list = roots || candidateRoots(env);
   const root = detectRoot(list);
@@ -153,30 +176,47 @@ function deploy({ env = process.env, roots } = {}) {
   const target = targetDir({ env, roots });
   if (target.error) return { ok: false, error: target.error };
 
-  const base = sourceDir();
-  const dir = target.dir;
-  try {
-    fs.mkdirSync(dir, { recursive: true });
-    if (fs.lstatSync(dir).isSymbolicLink()) return { ok: false, error: `целта е симлинк: ${dir}` };
-  } catch (e) {
-    return { ok: false, error: `${dir}: ${e.message}` };
+  const copyInto = (dir) => {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      if (fs.lstatSync(dir).isSymbolicLink()) return { ok: false, error: `целта е симлинк: ${dir}` };
+    } catch (e) {
+      return { ok: false, error: `${dir}: ${e.message}` };
+    }
+    const copied = [];
+    const unchanged = [];
+    const base = sourceDir();
+    for (const rel of FILES) {
+      const from = path.join(base, rel);
+      const to = path.join(dir, rel);
+      fs.mkdirSync(path.dirname(to), { recursive: true });
+      if (fs.existsSync(to) && !fs.lstatSync(to).isSymbolicLink() && hash(from) === hash(to)) {
+        unchanged.push(rel);
+        continue;
+      }
+      fs.copyFileSync(from, to);
+      fs.chmodSync(to, 0o644);
+      copied.push(rel);
+    }
+    return { ok: true, copied, unchanged, total: FILES.length };
+  };
+
+  const main = copyInto(target.dir);
+  if (!main.ok) return { ok: false, error: main.error };
+
+  // Когато основното място е папката с данните, се прави и копие в www — единствено там
+  // Home Assistant сервира статика на /local/. Без HA конфигурация копие не се прави.
+  let mirror = null;
+  if (target.mode === 'share') {
+    const haRoot = detectRoot(roots || candidateRoots(env));
+    if (haRoot) {
+      const wwwDir = path.join(haRoot, SUBPATH);
+      const second = copyInto(wwwDir);
+      if (second.ok) mirror = { dir: wwwDir, copied: second.copied.length, unchanged: second.unchanged.length };
+    }
   }
 
-  const copied = [];
-  const unchanged = [];
-  for (const rel of FILES) {
-    const from = path.join(base, rel);
-    const to = path.join(dir, rel);
-    fs.mkdirSync(path.dirname(to), { recursive: true });
-    if (fs.existsSync(to) && !fs.lstatSync(to).isSymbolicLink() && hash(from) === hash(to)) {
-      unchanged.push(rel);
-      continue;
-    }
-    fs.copyFileSync(from, to);
-    fs.chmodSync(to, 0o644);
-    copied.push(rel);
-  }
-  return { ok: true, dir, root: target.root || null, copied, unchanged, total: FILES.length };
+  return { ok: true, dir: target.dir, root: target.root || null, mirror, copied: main.copied, unchanged: main.unchanged, total: FILES.length };
 }
 
 /** Състояние без писане: има ли пакетът, къде е целта и изостава ли нещо. */

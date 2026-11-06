@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.165-ff00d8.svg" alt="Version"></a>
+  <a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.166-ff00d8.svg" alt="Version"></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-informational" alt="Architectures">
@@ -264,8 +264,8 @@ this tab. Options apply on add-on restart.
 | Same-origin URLs | `public_same_origin` | `true` | `false`: absolute URLs are built from `public_domain`. `true` emits relative URLs on the HA host and port. |
 | User roles | `user_roles` | `{"pasev-admin":"admin"}` | Empty: every Ingress user is `admin`. The map is for demotion, e.g. `{"guest": "viewer"}`. |
 | Group roles | `group_roles` | — | Empty: no group mapping. Home Assistant does not send groups; a reverse proxy that adds them can. |
-| Storage location | `storage_location` | `addon_config` | `addon_config` (default): data lives in the add-on folder and is included in Supervisor snapshots. `share` uses `/share/hapi/data` and is visible over Samba; `media` uses the other shared folder. |
-| Storage subdirectory | `storage_subdirectory` | `hapi_enterprise` | `hapi_enterprise` is the default subfolder (up to three levels are allowed). If an older installation kept data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |
+| Storage location | `storage_location` | `share` | `addon_config` (default): data lives in the add-on folder and is included in Supervisor snapshots. `share` uses `/share/hapi/data` and is visible over Samba; `media` uses the other shared folder. |
+| Storage subdirectory | `storage_subdirectory` | `hAPI/data` | `hapi_enterprise` is the default subfolder (up to three levels are allowed). If an older installation kept data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |
 | Storage mode | `storage_mode` | `local` | `local`: the mounted folder is used directly. `ha_network` refuses to start when the mount is inactive. |
 | Network storage name | `storage_mount_name` | — | Empty: only meaningful with `storage_mode: ha_network`, where the mount name is required. |
 | Minimum free space (MB) | `min_free_mb` | `1000` | `1000`: startup fails below 1000 MB free. Lower it only if the host has less space available. |

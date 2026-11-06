@@ -1,6 +1,6 @@
 {
   "name": "hapi-enterprise",
-  "version": "0.69.165",
+  "version": "0.69.166",
   "private": true,
   "description": "hAPI Enterprise — документи и портали между Home Assistant и Windows",
   "scripts": {
@@ -22,6 +22,7 @@
     "settings:check": "node scripts/settings-defaults.cjs --check",
     "publish:haoss": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/publish-haoss.ps1",
     "audit": "node scripts/pre-push-audit.cjs",
+    "audit:ha": "node scripts/check-ha-live.cjs",
     "lint": "eslint hapi_enterprise tests custom_components scripts --max-warnings=0",
     "lint:baseline": "eslint hapi_enterprise tests custom_components scripts --suppress-all",
     "lint:prune": "eslint hapi_enterprise tests custom_components scripts --prune-suppressions",

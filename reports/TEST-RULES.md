@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 358 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 361 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 164 |
+| общо | 166 |
 | портал | 32 |
 | GUI | 20 |
 | Home Assistant | 16 |
@@ -17,9 +17,9 @@
 | съхранение | 7 |
 | издаване | 6 |
 | оракул | 6 |
+| тайни връзки | 6 |
 | пакети | 5 |
 | споделени данни | 5 |
-| тайни връзки | 5 |
 | SQLite | 4 |
 | TSA | 4 |
 | backup | 4 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (164)
+## общо (166)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -91,7 +91,9 @@
 | `eslint-baseline` | Eslint baseline | `tests/eslint-baseline.cjs` |
 | `event-stream` | Event stream | `tests/event-stream.cjs` |
 | `evidence-portal` | Evidence portal | `tests/evidence-portal.cjs` |
+| `evidence-portal-info-qr` | Evidence portal info qr | `tests/evidence-portal-info-qr.cjs` |
 | `evidence-portal-publish` | Evidence portal publish | `tests/evidence-portal-publish.cjs` |
+| `evidence-portal-render` | Evidence portal render | `tests/evidence-portal-render.cjs` |
 | `evidence-portal-root` | Evidence portal root | `tests/evidence-portal-root.cjs` |
 | `export-config` | Export config | `tests/export-config.cjs` |
 | `export-manager` | Export manager | `tests/export-manager.cjs` |
@@ -381,6 +383,17 @@
 | `oracle-rbac-matrix` | Oracle rbac matrix | `tests/oracle-rbac-matrix.cjs` |
 | `oracle-slug-and-paths` | Oracle slug and paths | `tests/oracle-slug-and-paths.cjs` |
 
+## тайни връзки (6)
+
+| Правило | Заглавие | Файл |
+| --- | --- | --- |
+| `secret-exposure` | Secret exposure | `tests/secret-exposure.cjs` |
+| `secret-links` | Secret links | `tests/secret-links.cjs` |
+| `secret-lock` | Secret lock | `tests/secret-lock.cjs` |
+| `secret-panel` | Secret panel | `tests/secret-panel.cjs` |
+| `secret-patterns` | Secret patterns | `tests/secret-patterns.cjs` |
+| `secret-sweep` | Secret sweep | `tests/secret-sweep.cjs` |
+
 ## пакети (5)
 
 | Правило | Заглавие | Файл |
@@ -400,16 +413,6 @@
 | `shared-data-burst` | Shared data burst | `tests/shared-data-burst.cjs` |
 | `shared-data-lock` | Shared data lock | `tests/shared-data-lock.cjs` |
 | `shared-data-processes` | Shared data processes | `tests/shared-data-processes.cjs` |
-
-## тайни връзки (5)
-
-| Правило | Заглавие | Файл |
-| --- | --- | --- |
-| `secret-links` | Secret links | `tests/secret-links.cjs` |
-| `secret-lock` | Secret lock | `tests/secret-lock.cjs` |
-| `secret-panel` | Secret panel | `tests/secret-panel.cjs` |
-| `secret-patterns` | Secret patterns | `tests/secret-patterns.cjs` |
-| `secret-sweep` | Secret sweep | `tests/secret-sweep.cjs` |
 
 ## SQLite (4)
 

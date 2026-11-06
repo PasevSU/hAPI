@@ -2,6 +2,18 @@
 
 A dependency-free HTML/CSS/ES-module front end. Open `portal.html?folder=demo-evidence` from a static web server for the demo. The demo displays **synthetic metadata and illustrative hashes, not verified evidence**. No original files are included.
 
+## Where the package lives
+
+By default the portal is published **into the data folder itself**:
+
+- `/share/hAPI/data/` — documents and folders (add-on `storage_location: share`, `storage_subdirectory: hAPI/data`)
+- `/share/hAPI/data/portal/` — this package (page, assets, demo data)
+
+A copy is also written to `<HA config>/www/hapi/data` when a Home Assistant configuration is present,
+because only `www/` is served by Home Assistant at `/local/`. Without HA, the share copy is the only one
+and the add-on serves it. On Windows the share root is only used when `EVIDENCE_PORTAL_SHARE` is set —
+`/share` there would resolve to a different drive.
+
 ## Requested URL format
 
 `/portal.html:ime_na_papka` is **not** an HTML parameter. Your reverse proxy must internally rewrite that exact path to `/portal.html` while preserving the original request path visible to JavaScript. Example Nginx location:
@@ -26,12 +38,41 @@ This is a routing example, **not** a complete secure deployment configuration. C
 
 Created/modified timestamps in the UI are claims from the manifest and must not be treated as cryptographically proven creation dates. Hashes are metadata until computed and compared with the actual bytes. Licensed software fields are descriptive metadata and do not imply that the viewer possesses a software license.
 
+## File information and QR
+
+Besides the tree, the portal shows **information about each file**: a package summary (files,
+folders, total size, protection, package date), search across name/tags/description, filters by
+access and protection, a MIME column, and a details panel with sections *Основни*, *Време*,
+*Цялост*, *Достъп и произход*, the QR block and the file's raw JSON.
+
+Two QR codes are produced **locally** by `assets/qrcode.js` (vendored MIT encoder, the same file the
+admin panel uses) — no network call, no CDN:
+
+| QR | Contents | Notes |
+| --- | --- | --- |
+| Package | portal URL + `folder=<slug>` | opens the package |
+| File | portal URL + `#file=<fileId>` | opens that file's details directly |
+
+Rules that must not be broken:
+
+- A QR code carries **navigation only**. Never a password, an access token, a session or a hash
+  presented as proof.
+- The base URL is `package.publicUrl` when the manifest provides it, otherwise `location`. That way the
+  printed code points at the address a person actually uses (reverse proxy, Home Assistant ingress),
+  not at whatever the server happens to see.
+- SVG is built as DOM nodes (no `innerHTML`), PNG is drawn to a canvas; both are downloadable.
+- A QR code does **not** replace authorization: every file view/download still goes through
+  `POST /api/evidence/{folder}/access`.
+
 ## Contents
 
-- `portal.html` — entry page
-- `assets/app.js` — tree, metadata, access states, modal, API calls
-- `assets/style.css` — responsive enterprise UI
-- `sample-evidence.json` — synthetic sample package (в корена, не в `data/`: тази папка се пропуска от експорта)
+- `portal.html` — entry page (loads `assets/qrcode.js`, then `assets/app.js` as an ES module)
+- `assets/app.js` — tree, filters, file information panel, QR block, access states, API calls
+- `assets/qrcode.js` — vendored QR encoder (MIT, Kazuhiko Arase), browser build
+- `assets/consent.js` — first-visit consent gate
+- `assets/style.css` — responsive enterprise UI, including the details panel and QR block
+- `data/demo-evidence.json` — the demo manifest the page actually fetches (`./data/demo-evidence.json`)
+- `sample-evidence.json` — the flat layout of the same demo data (compatibility with old links)
 
 ## Smoke test
 

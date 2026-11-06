@@ -15,6 +15,8 @@ testing for HA add-on + Windows + evidence portal.
 | L3 | Crypto vectors | `CRYPTO_TEST_VECTORS.md` | release gate |
 | L4 | Interop (HA+Win) | `INTEROPERABILITY.md` | release gate |
 | L5 | GUI E2E | `GUI_E2E.md` | release gate |
+| L6 | Full series (auto-restart) | `npm test` (`scripts/test-matrix.cjs`) | release gate |
+| L7 | Live add-on (read-only) | `npm run audit:ha` | after any token/HA change |
 
 ## Existing suite (v0.50.0)
 
@@ -25,7 +27,8 @@ ha-bridge, ingress-isolation, runtime-limits, rollback guards, and more.
 ## Entry/exit criteria
 
 - **Entry:** code frozen for the phase, specs approved.
-- **Exit:** all L0–L5 pass; defects ≤ Low; release criteria met.
+- **Exit:** all L0–L7 pass; defects ≤ Low; release criteria met. L7 exits 2 when Home
+  Assistant is unreachable, which counts as *not verified*, never as a pass.
 
 ## Environments
 

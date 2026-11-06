@@ -117,8 +117,10 @@
     { id: 'analytics', ico: 'chart', section: 'analytics' },
     { id: 'visitors', ico: 'person' },
     { id: 'security', ico: 'shield', section: 'security' },
-    { id: 'backups', ico: 'archive', section: 'backups' },
-    { id: 'qr', ico: 'qr', section: 'qr' },
+    // Скрити от менюто (по заявка): блоковете остават достъпни по id за сценариите,
+    // но не се рисуват в навигацията.
+    { id: 'backups', ico: 'archive', section: 'backups', hidden: true },
+    { id: 'qr', ico: 'qr', section: 'qr', hidden: true },
     { id: 'report', ico: 'note' },
     { id: 'settings', ico: 'gear', section: 'general' },
     { id: 'about', ico: 'info' },
@@ -180,6 +182,7 @@
     const nav = $('#nav');
     nav.innerHTML = '';
     for (const item of NAV) {
+      if (item.hidden) continue;
       // Панел, който иска способност, която ролята няма, не се показва. Проверява се само за
       // регистрираните панели: останалите входове водят към секция на „Настройки“ и се
       // решават от сървъра при самата заявка.
