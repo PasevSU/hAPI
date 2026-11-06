@@ -399,6 +399,15 @@ assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\s*\|\|\s*'\
 // 0.69.63: папката на портала се създава от модула `portal-folder` (там отиват и файловете).
 assert.match(serverSrc, /await portalFolder\.ensure\(p\)/);
 assert.match(serverSrc, /if \(p\.storage_root === '\/share' \|\| p\.storage_root === '\/media'\)/);
+// 0.69.180: подписът за портал се издава ВЕДНЪЖ. Дотук `adminPortal` викаше
+// `portalAccess.issue()` два пъти в един и същ обектен литерал — при смяна на секундата
+// адресът и обявеният час на изтичане се разминаваха, а списъкът плащаше двойно HMAC.
+const adminPortalSrc = serverSrc.slice(
+  serverSrc.indexOf('const adminPortal = p =>'),
+  serverSrc.indexOf('const qrSummary'),
+);
+assert.ok(adminPortalSrc.length > 100, 'adminPortal е намерен в server.js');
+assert.equal((adminPortalSrc.match(/portalAccess\.issue\(/g) || []).length, 1, 'подписът за портал се издава веднъж');
 // 0.69.105: при смяна на папката порталът напуска старата и тя не бива да остава с неговата
 // карта (`portal.html`/`api.json`), затова старата стойност се пази и се изчиства.
 assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*\{[^}]*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\);\s*if\s*\(portalFolderCopy\)\s*await portalFolder\.ensure\(p\)/);

@@ -16,6 +16,22 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
     // `?expires=&sig=` и той се отваря без акаунт — иначе панелът показваше адреси с 404.
     const info = await json(`/admin/api/portals/${p.id}/api-info`, 'GET');
     assert.match(info.accessQuery, /^\?expires=\d+&sig=[a-f0-9]{64}$/, 'api-info дава подписан достъп');
+    // Адресът важи ТОЧНО до обявения час: сървърът издава подписа веднъж (`accessQuery` и
+    // `accessExpires` са от едно и също извикване), а не по веднъж на поле.
+    assert.equal(
+      Number(new URLSearchParams(info.accessQuery.slice(1)).get('expires')),
+      info.accessExpires,
+      'адресът от api-info важи точно до обявения час',
+    );
+    // Същото важи и за СПИСЪКА на порталите (`adminPortal`) — той е пътят, по който панелът
+    // взима адреса при зареждане; две извиквания на `issue()` могат да попаднат в различни секунди.
+    const listed = (await json('/admin/api/portals', 'GET')).portals.find((x) => x.id === p.id);
+    assert.match(listed.accessQuery, /^\?expires=\d+&sig=[a-f0-9]{64}$/, 'списъкът също носи подписан достъп');
+    assert.equal(
+      Number(new URLSearchParams(listed.accessQuery.slice(1)).get('expires')),
+      listed.accessExpires,
+      'адресът от списъка важи точно до обявения час',
+    );
     for (const addr of ['/p/example', '/api/v1/p/example', '/api/v1/p/example/qr.svg', '/api/v1/p/example/manifest', '/api/v1/p/example/openapi.json']) {
       const signed = await call(addr + info.accessQuery);
       await signed.text();
