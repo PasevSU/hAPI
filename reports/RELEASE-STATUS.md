@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.166
+# Състояние на изданието — hAPI Enterprise 0.69.167
 
-Версия: **0.69.166** · клон `main`
+Версия: **0.69.167** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **361/361** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.166 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 581 файла · 102192 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 576 файла · 101254 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.167 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 582 файла · 102418 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 577 файла · 101480 реда · critical: 0 · high: 0 · medium: 0 · low: 200 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,36 +27,21 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.166.tar.gz` | add-on архив (195 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.166.zip` | интеграция за HACS (25 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.166.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.167.tar.gz` | add-on архив (195 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.167.zip` | интеграция за HACS (26 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.167.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.166
+## 3. Какво влезе във 0.69.167
 
-- **Документите живеят в `/share/hAPI/data` по подразбиране.** `storage_location: share` +
-  `storage_subdirectory: hAPI/data` е доставяната стойност, защото това място е видимо през
-  Samba и остава извън папката на add-on-а при обновяване. Стойностите в 0.69.164 бяха
-  `addon_config/hapi_enterprise`; тестът `tests/addon-defaults-startup.cjs` пази договора.
-
-- **Порталът на доказателствата показва информация за файла и QR код.** Подробностите на
-  всеки файл вече излизат с размер, вид, дата, отпечатък и QR, който води до същия адрес с
-  `#file=`; QR кодът е вграден (`evidence-portal/assets/qrcode.js`, MIT), без външен CDN.
-- **Облачен изглед на портала.** Файловете се показват като карти в раздели по папки, с
-  тагове и плочки, вместо таблица — същите данни, но четими и на телефон.
-- **Порталът се публикува първо в `/share/hAPI/data/portal`.** Споделената папка е първият
-  избор, а `<HA config>/www/hapi/data` остава огледало, за да работят старите връзки. На
-  Windows `/share` не се разрешава до `D:\\share`, освен ако `EVIDENCE_PORTAL_SHARE` не е зададен.
-- **Главното меню е по-късо.** Блоковете „QR архиви“ и „Резервни копия“ не се рисуват в
-  навигацията; панелите им остават достъпни по `id`, за да не се чупят сценариите и старите
-  връзки. Съдържанието на панелите е с една стъпка по-едър шрифт (`#view`), защото менюто
-  вече не заема ширината на картите.
-- **Проверка срещу живия Home Assistant.** `npm run audit:ha` (`scripts/check-ha-live.cjs`)
-  сверява версията, опциите и токена на работещия add-on през Supervisor, вместо да се
-  разчита на „изглежда добре“.
-- **Тест за изтичане на тайни.** `tests/secret-exposure.cjs` минава през всички
-  административни повърхности и твърди, че admin токен, парола, PGP ключ и S3 тайна не
-  се показват никъде; тестът е проверен с умишлена мутация.
+- **Интеграцията се настройва сама.** Формата за добавяне вече идва попълнена: адресът и
+  токенът на приложението се откриват през Supervisor (`addons.list` → `addon_info`),
+  адресът се проверява с истинска заявка към `/health`, а когато всичко е намерено, записът
+  се създава без ръчно въвеждане. Ръчното попълване остава резервният път — HA без
+  Supervisor, приложение на друг хост или отказан достъп до опциите не чупят настройката.
+- **Нов модул `discovery.py`.** Откриването е отделено от `config_flow.py`, за да не се
+  смесват мрежова проверка и валидация на формата; `tests/ha-integration-flow.cjs` пази
+  договора (Supervisor API, `/health`, порт 8099 преди 8098, defaults без триене).
 
 ## 4. Как се проверява наново
 

@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.166**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.167**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **110** backend модула · **17** HTTP компонента · **23** UI модула · **8** Python модула · **39** инструмента · **361** теста.
+Общо: **110** backend модула · **17** HTTP компонента · **23** UI модула · **9** Python модула · **39** инструмента · **361** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -175,7 +175,7 @@
 | `hapi_enterprise/ui/settings-panel.js` | Настройки на връзката: админ токен, API адрес и публичен адрес за API/QR. |
 | `hapi_enterprise/ui/visitors-panel.js` | Панел „Кой влиза“ — чете сензорите за комуникацията (visitor-intel.js) през |
 
-### Home Assistant интеграция (`custom_components/**/*.py`) (8)
+### Home Assistant интеграция (`custom_components/**/*.py`) (9)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -185,6 +185,7 @@
 | `custom_components/hapi_enterprise/const.py` | Constants for the hAPI Enterprise Home Assistant integration. |
 | `custom_components/hapi_enterprise/coordinator.py` | DataUpdateCoordinator for hAPI Enterprise telemetry. |
 | `custom_components/hapi_enterprise/diagnostics.py` | Diagnostics for the hAPI Enterprise integration. |
+| `custom_components/hapi_enterprise/discovery.py` | Auto-detection of the hAPI app for the integration's config flow. |
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 

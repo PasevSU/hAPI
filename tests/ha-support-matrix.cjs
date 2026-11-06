@@ -134,6 +134,9 @@ const HA_API_MIN = {
   'DeviceInfo': '2021.1',
   'async_forward_entry_setups': '2023.7',
   'async_config_entry_first_refresh': '2022.12',
+  // Supervisor клиентът съществува от години; в discovery.py се вика само след проверка
+  // (`try/except` + `getattr`), за да работи и HA без Supervisor.
+  'get_supervisor_client': '2020.12',
 };
 const pyFiles = fs.readdirSync(path.join(ROOT, 'custom_components', 'hapi_enterprise')).filter((f) => f.endsWith('.py'));
 const imported = new Set();

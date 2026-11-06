@@ -107,6 +107,28 @@ assert.match(flow, /async_set_unique_id/, 'config_flow.py: уникален id �
 assert.match(flow, /_abort_if_unique_id_configured/, 'config_flow.py: без дублирани записи');
 assert.match(flow, /MIN_TOKEN_LENGTH|token_too_short/, 'config_flow.py: проверка за дължината на токена');
 
+// 5б. Адаптивна настройка: стойностите се откриват сами, а формата само ги потвърждава.
+//
+// Договорът е важен, защото „празна форма“ и „сгрешен адрес“ изглеждат еднакво за човека:
+//   - откриването минава през Supervisor (`addons.list` → `addon_info`), значи иска
+//     инсталирано приложение, а не предположение за hostname;
+//   - адресът се проверява с истинска заявка към `/health`, преди да се попълни;
+//   - токенът идва от опциите на приложението, а не е измислена стойност;
+//   - когато всичко е намерено, записът се създава без ръчно въвеждане.
+const discovery = read('discovery.py');
+assert.match(discovery, /from homeassistant\.components\.hassio\.handler import get_supervisor_client/, 'discovery.py: Supervisor клиентът идва от hassio, не е преписан');
+assert.match(discovery, /await client\.addons\.list\(\)/, 'discovery.py: списъкът с приложения идва от Supervisor');
+assert.match(discovery, /await client\.addons\.addon_info\(slug\)/, 'discovery.py: опциите и hostname идват от addon_info');
+assert.match(discovery, /\/health/, 'discovery.py: адресът се проверява с /health, преди да се попълни');
+assert.match(discovery, /ADMIN_PORT = 8099/, 'discovery.py: административният порт е първият опит');
+assert.match(discovery, /INGRESS_PORT = 8098/, 'discovery.py: ingress портът е последният опит (той отказва на HA)');
+assert.match(discovery, /except ImportError/, 'discovery.py: без Supervisor откриването не чупи настройката');
+assert.match(discovery, /def as_defaults/, 'discovery.py: намереното се превръща в defaults за формата');
+assert.match(flow, /from \.discovery import async_detect/, 'config_flow.py: ползва откриването');
+assert.match(flow, /if user_input is None and detected\.complete/, 'config_flow.py: пълно откриване → запис без ръчно въвеждане');
+assert.match(flow, /detected\.as_defaults\(\)/, 'config_flow.py: полетата идват попълнени');
+assert.match(flow, /if not current\.get\(key\)/, 'config_flow.py: опциите допълват само липсващото, без да трият запазено');
+
 // 6. Преводи: еднаква структура + всички грешки и имена на сензори.
 const strings = json('strings.json');
 for (const lang of ['en', 'bg']) {
