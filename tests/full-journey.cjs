@@ -161,7 +161,10 @@ const stage = async (name, fn) => {
       const page = await fetch(landing);
       assert.equal(page.status, 200);
       const html = await page.text();
-      for (const id of ['portal-id', 'summary', 'summary-list', 'qr', 'files']) assert.ok(html.includes(`id="${id}"`), 'липсва #' + id);
+      for (const id of ['portal-id', 'summary', 'summary-list', 'files']) assert.ok(html.includes(`id="${id}"`), 'липсва #' + id);
+      // 0.69.184: страницата не показва QR код на себе си — той води до нея, а посетителят
+      // вече е тук. Затова няма #qr, qr-panel, qr-hint и изписан адрес.
+      for (const gone of ['qr-panel', 'id="qr"', 'id="qr-hint"', 'id="portal-url"']) assert.equal(html.includes(gone), false, 'страницата не бива да съдържа ' + gone);
       // 0.69.141: страницата не е „сайт с линкове“ — API/Манифест разгъват информация
       // В страницата, а свалянето е бутон, не линк с `download`.
       for (const id of ['api-open', 'manifest-open', 'doc-info', 'doc-info-body']) assert.ok(html.includes(`id="${id}"`), 'липсва #' + id);

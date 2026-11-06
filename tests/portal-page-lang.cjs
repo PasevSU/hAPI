@@ -103,7 +103,6 @@ const pageText = (doc) =>
       assert.match(summary, /total size of/, 'обемът е назован: ' + summary);
       assert.match(text(doc.getElementById('files-title')), /Documents/, 'заглавието на списъка е английско');
       assert.match(text(doc.getElementById('summary-title')), /What this portal contains/);
-      assert.match(text(doc.getElementById('qr-title')), /QR code/);
       assert.match(text(doc.getElementById('copy-link')), /Copy address/);
       assert.match(text(doc.getElementById('visibility')), /Portal for/, 'порталът се назовава по вид');
       const body = pageText(doc);

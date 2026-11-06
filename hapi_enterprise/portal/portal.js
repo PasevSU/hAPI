@@ -228,17 +228,8 @@ function applyWording(p) {
       : T("files.search.placeholder.plain");
   $("q-label").textContent = $("q").placeholder;
 
-  // Бележки под QR кода — само за неща, които са налични в портала.
-  const notes = [];
-  if (p.allHash) notes.push(T("qr.note.allHash"));
-  else if (p.hasHash) notes.push(T("qr.note.someHash"));
-  if (p.hasKey) notes.push(T("qr.note.hasKey"));
-  if (p.allDisabled) notes.push(T("qr.note.allDisabled"));
-  const note = $("qr-note");
-  note.textContent = notes.join(" ");
-  note.hidden = notes.length === 0;
-
-  $("qr-hint").textContent = p.isPublic && !token ? T("qr.hint.public") : T("qr.hint.private");
+  // QR кодът НЕ се показва на самата страница: посетителят вече е тук, а кодът води точно
+  // до тази страница. За споделяне има бутон „Копирай адреса“, който дава същия адрес.
 
   const details = [];
   if (hasFiles) details.push(p.total + " " + nounFor(p.total, noun));
@@ -900,11 +891,9 @@ function paintPortal(data) {
     if (manifestBtn) manifestBtn.addEventListener("click", () => void openInfo("manifest"));
     if (closeBtn) closeBtn.addEventListener("click", closeInfo);
   }
-  $("qr").src = (urls.qr || apiBase + "/qr.svg") + (token ? "?portal_token=" + encodeURIComponent(token) : "");
   // Адресът на страницата идва от сървъра (`urls.landing`, по id) — той е този, който се
-  // копира и споделя, затова е абсолютен.
+  // копира и споделя, затова е абсолютен. На страницата НЕ се изписва: споделя се с бутон.
   const landingUrl = urls.landing ? absolute(urls.landing) : String(location.href).split(/[?#]/)[0];
-  $("portal-url").textContent = landingUrl;
   $("copy-link").addEventListener("click", () => copy(landingUrl, T("header.copyLink.ok")));
 
   // Копчето към ПАПКАТА: порталът е QR кодът, който води до файловете — затова страницата

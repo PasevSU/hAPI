@@ -54,15 +54,20 @@ const { spawn } = require('node:child_process'), fs = require('node:fs'), os = r
     assert.equal((await call('/portal.js', {}, true)).status, 404);
     assert.equal((await call('/admin', {}, false)).status, 404);
     // Публичната страница е мястото, където води QR кодът: работи и с „/“ накрая,
-    // носи своите локални ресурси и QR изображението (CSP позволява img-src 'self').
+    // носи своите локални ресурси. На самата страница НЕ стои QR код — посетителят вече
+    // е тук, а за споделяне има бутон „Копирай адреса“.
     const page = await call('/p/example/?portal_token=' + encodeURIComponent(key.token));
     assert.equal(page.status, 200);
     const pageHtml = await page.text();
-    for (const needle of ['/portal.css', '/portal.js', '/portal-i18n.js', 'id="files"', 'id="qr"', 'id="q"', 'id="status"',
+    for (const needle of ['/portal.css', '/portal.js', '/portal-i18n.js', 'id="files"', 'id="q"', 'id="status"',
       // Текстовете се сменят според артефактите — елементите трябва да имат адресируеми ids.
-      'id="toolbar"', 'id="qr-note"', 'id="qr-hint"', 'id="foot-note"', 'id="skip"', 'id="q-label"', 'id="lang"']) assert.ok(pageHtml.includes(needle), `страницата съдържа ${needle}`);
+      'id="toolbar"', 'id="foot-note"', 'id="skip"', 'id="q-label"', 'id="lang"']) assert.ok(pageHtml.includes(needle), `страницата съдържа ${needle}`);
+    // 0.69.184: QR кодът е махнат от самата страница — той води до нея, а не обратно.
+    for (const gone of ['qr-panel', 'id="qr"', 'id="qr-note"', 'id="qr-hint"', 'id="portal-url"']) {
+      assert.equal(pageHtml.includes(gone), false, `страницата НЕ съдържа ${gone}`);
+    }
     const pageCsp = page.headers.get('content-security-policy') || '';
-    assert.ok(pageCsp.includes("img-src 'self' data:"), 'CSP позволява QR изображението');
+    assert.ok(pageCsp.includes("'self'"), 'CSP ограничава ресурсите до собствения произход');
     const script = await (await call('/portal.js')).text();
     for (const needle of ['X-File-Key', '/files/', 'textContent', 'portal_token',
       // Адаптивни текстове: профил на съдържанието → вид артефакт → съществителни.

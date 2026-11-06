@@ -392,8 +392,13 @@ check('S12', 'Портал: адаптивни текстове и сигурн�
   const html = readText(path.join(addonDir, 'portal/portal.html'));
   const js = readText(path.join(addonDir, 'portal/portal.js'));
   const server = readText(path.join(addonDir, 'server.js'));
-  for (const id of ['title', 'files', 'qr', 'status', 'empty', 'count', 'toolbar', 'qr-note', 'foot-note', 'portal-url']) {
+  for (const id of ['title', 'files', 'status', 'empty', 'count', 'toolbar', 'foot-note']) {
     assert(html.includes(`id="${id}"`), 'portal.html липсва id="' + id + '"');
+  }
+  // 0.69.184: страницата не показва QR код на себе си (той води до нея) и не изписва
+  // адреса — споделя се с бутон „Копирай адреса“.
+  for (const gone of ['qr-panel', 'id="qr"', 'id="qr-note"', 'id="qr-hint"', 'id="portal-url"']) {
+    assert(!html.includes(gone), 'portal.html не бива да съдържа ' + gone);
   }
   // 0.69.24: съществителните и текстовете живеят в речника (portal-i18n.js); в portal.js
   // остава само изборът им по вид (`nounOf`). Изискваме и двата файла — иначе страницата
@@ -408,10 +413,10 @@ check('S12', 'Портал: адаптивни текстове и сигурн�
   assert(html.includes('/portal-i18n.js'), 'portal.html трябва да зарежда речника преди portal.js');
   assert(!/innerHTML\s*=\s*[^'"`]*(file\.|data\.|listing)/.test(js), 'данните не бива да влизат през innerHTML');
   assert(js.includes('textContent'), 'рендирането трябва да е през textContent');
-  assert(server.includes('img-src \'self\' data:'), 'CSP на портала трябва да позволява QR изображението');
+  assert(server.includes("default-src 'none'"), 'CSP на портала трябва да е строга (default-src none)');
   assert(/resolvePortal/.test(server), 'сървърът трябва да приема и id, и slug за /p/<key>');
   assert(/portalLandingUrl/.test(server), 'липсва portalLandingUrl (адрес на публичната страница)');
-  return 'адаптивни текстове, CSP и id/slug маршрути';
+  return 'адаптивни текстове, CSP и id/slug маршрути; без QR и без изписан адрес на страницата';
 });
 
 // ── S13. Entrypoint (JavaScript) ───────────────────────────────────────────

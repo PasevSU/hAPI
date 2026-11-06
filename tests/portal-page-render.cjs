@@ -123,10 +123,11 @@ const { createDocument } = require('./lib/dom-stub.cjs');
     );
     withCopy[0].querySelectorAll('button').find((b) => b.textContent.includes('Копирай адреса')).click();
     await waitFor(() => copied.some((v) => /\/api\/v1\/p\/(render-demo|[0-9a-f]+)\/files\/[^/]+\/download$/.test(v)), { label: 'копиране на адреса за изтегляне' });
-    const shownUrl = doc.getElementById('portal-url').textContent;
-    assert.equal(shownUrl, `${base}/p/${portalId}`, 'изписаният адрес на портала е абсолютен и е по id');
+    // 0.69.184: адресът не се изписва на страницата — проверява се какво дава бутонът.
     doc.getElementById('copy-link').click();
-    await waitFor(() => copied.includes(shownUrl), { label: 'копиране на адреса на портала' });
+    await waitFor(() => copied.some((v) => new RegExp('/p/' + portalId + '$').test(v)), { label: 'копиране на адреса на портала' });
+    const shownUrl = copied[copied.length - 1];
+    assert.equal(shownUrl, `${base}/p/${portalId}`, 'копираният адрес на портала е абсолютен и е по id');
 
     // ── PP-04: „API“ и „Манифест“ разгъват информацията В страницата ────────────────
     assert.equal(doc.getElementById('doc-info').hidden, true, 'панелът е скрит до поискване');

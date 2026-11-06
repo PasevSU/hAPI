@@ -2,9 +2,10 @@
 // ДОГОВОР: публичната страница на портала (documentation/04_FUNCTION_SPECIFICATIONS/PORTAL_PAGE_CONTRACT.md).
 //
 // Проверява се всяко REQ от договора на живо, а не „страницата се отваря“:
-//   PP-01 id на портала · PP-02 QR към страницата · PP-03/PP-06 резюме и „цялостен набор“
-//   PP-04 изписан адрес за изтегляне · PP-05 „Изтегли“ сваля · PP-07 съобщение само за админ
-//   PP-08 сигурност · PP-10 портален токен в линковете
+//   PP-01 id на портала · PP-02 QR кодът води до страницата (страницата НЕ показва QR) ·
+//   PP-03/PP-06 резюме и „цялостен набор“ · PP-04 адресът е бутон, не изписан текст ·
+//   PP-05 „Изтегли“ сваля · PP-07 съобщение само за админ · PP-08 сигурност ·
+//   PP-10 портален токен в линковете
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -51,16 +52,21 @@ const svgFor = (text) => {
     assert.equal((await api(`/admin/api/portals/${portalId}/files/${keyed.data.id}/access`, 'PATCH', { mode: 'KEY_REQUIRED', listed: true, reason: 'тест: ключ' })).status, 200);
     assert.equal((await api(`/admin/api/portals/${portalId}/files/${blocked.data.id}/access`, 'PATCH', { mode: 'DISABLED', listed: true, reason: 'тест: недостъпен' })).status, 200);
 
-    // ── PP-01/PP-02/PP-03: страницата има елементите за id, QR и резюме ──────────────
+    // ── PP-01/PP-02/PP-03: страницата има елементите за id и резюме, но НЕ за QR ───
     const page = await fetch(`${base}/p/${portalId}`);
     assert.equal(page.status, 200);
     const html = await page.text();
-    for (const id of ['portal-id', 'copy-id', 'summary', 'summary-list', 'qr', 'files']) {
+    for (const id of ['portal-id', 'copy-id', 'summary', 'summary-list', 'files']) {
       assert.ok(html.includes(`id="${id}"`), `страницата съдържа #${id} (договорът го изисква)`);
+    }
+    // 0.69.184: PP-02 е „QR кодът води до страницата“, а не „страницата показва QR“ —
+    // посетителят вече е на нея. Затова картинката е махната, а адресът се дава с бутон.
+    for (const gone of ['qr-panel', 'id="qr"', 'id="qr-note"', 'id="qr-hint"', 'id="portal-url"']) {
+      assert.equal(html.includes(gone), false, `страницата НЕ съдържа ${gone} (QR е излишен на себе си)`);
     }
     assert.ok(html.includes('Какво съдържа този портал'), 'заглавието на резюмето е по договора');
     assert.ok(html.includes('Идентификатор на портала'), 'етикетът на идентификатора е по договора');
-    assert.match(page.headers.get('content-security-policy') || '', /img-src 'self' data:/, 'CSP позволява QR изображението');
+    assert.match(page.headers.get('content-security-policy') || '', /default-src 'none'/, 'CSP е строга: default-src none, само собствени скриптове и стилове');
 
     // ── PP-01…PP-05, PP-10: кодът на страницата изпълнява договора ──────────────────
     const script = await (await fetch(`${base}/portal.js`)).text();
@@ -86,7 +92,6 @@ const svgFor = (text) => {
       'Копирай адреса', // PP-04 — действието е бутон, не изписан адрес
       'Този портал е цялостен набор от ', // PP-06
       'още не съдържа файлове', // PP-03 при празен портал
-      'Сканирай кода', // PP-02 — подсказката при QR кода
     ]) {
       assert.ok(i18nScript.includes(needle), `речникът съдържа ${needle}`);
     }
@@ -137,8 +142,8 @@ const svgFor = (text) => {
     assert.equal(emptyView.fileCount, 0);
 
     console.log(
-      'PASS portal-page-contract: id + QR + резюме · без изписан адрес (бутон за копиране) · FREE 200/KEY 403→200/DISABLED 403 · ' +
-      'QR = SVG(/p/<id>) · съобщение само за админ (401/503)'
+      'PASS portal-page-contract: id + резюме · без QR и без изписан адрес (бутон за копиране) · FREE 200/KEY 403→200/DISABLED 403 · ' +
+      'qr.svg = SVG(/p/<id>) · съобщение само за админ (401/503)'
     );
   } finally {
     await server.stop({ keep: true }).catch(() => { });

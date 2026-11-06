@@ -318,7 +318,7 @@ main {
   border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
 }
 
-/* ── Информация и QR ────────────────────────────────────────────────────── */
+/* ── Информация ────────────────────────────────────────────────────────── */
 .info-list {
   gap: 12px 22px;
 }
@@ -328,27 +328,6 @@ main {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-weight: 600;
-}
-
-.qr-panel h2 {
-  margin-bottom: 16px;
-}
-
-.qr-box {
-  gap: 22px;
-}
-
-.qr-box img {
-  width: 172px;
-  height: 172px;
-  padding: 10px;
-  border-radius: 20px;
-  border: 1px solid var(--line);
-  box-shadow: 0 18px 40px -26px rgba(2, 6, 23, 0.8);
-}
-
-.qr-text p {
-  font-size: 0.88rem;
 }
 
 .hint {
@@ -387,11 +366,6 @@ main {
   .panel {
     padding: 16px;
     border-radius: 18px;
-  }
-
-  .qr-box img {
-    width: 150px;
-    height: 150px;
   }
 }
 

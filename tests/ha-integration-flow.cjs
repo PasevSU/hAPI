@@ -235,7 +235,7 @@ assert.ok(fs.statSync(path.join(dir, 'portal.css')).size > 3000, 'portal.css е 
 for (const asset of ['/api/hapi_enterprise/assets/portal.css', '/api/hapi_enterprise/assets/portal.js']) {
   assert.ok(portalPage.includes(asset), 'portal.html: липсва ' + asset);
 }
-for (const id of ['title', 'files', 'qr', 'status', 'toolbar', 'qr-note', 'foot-note']) {
+for (const id of ['title', 'files', 'status', 'toolbar', 'foot-note']) {
   assert.ok(portalPage.includes(`id="${id}"`), 'portal.html: липсва id="' + id + '"');
 }
 for (const marker of ['buildProfile', 'applyWording', 'KIND_BY_EXT', 'NOUNS', 'X-Portal-Key', 'X-File-Key']) {
