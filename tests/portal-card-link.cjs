@@ -8,6 +8,7 @@
 //
 // Тестът пада, ако:
 //   • блокът „Достъп и QR код“ не е ПЪРВИ и не е извън сгъваемия контролен панел;
+//   • контролният панел (настройки + сигурност) пак рисува QR код под бутоните си;
 //   • картата пак показва адрес, „Копирай“ или сваля api.json;
 //   • QR кодът не е ЕДИН, не е последен в блока (най-вдясно) и не носи адреса на портала;
 //   • двойното щракване върху кода не отваря портала, а единичното — изкарва човека от панела;
@@ -44,6 +45,14 @@ assert.equal(/id="pf-copy-portal"/.test(panel + manager), false, 'няма „К
 assert.equal(/id="pf-dl-api"/.test(panel + manager), false, 'няма сваляне на api.json');
 assert.equal(/\bdownloadJson\b/.test(manager), false, 'мъртвият JSON помощник е махнат');
 assert.equal(/\bcopyText\(state\.api/.test(manager), false, 'картата не копира адреси');
+
+// ── 1г. QR кодът НЕ живее в контролния панел ────────────────────────────────
+// Панелът за настройки е място за текстове и ключове, не за картинката. До 0.69.174 QR
+// стоеше точно там — под редицата бутони и над „Сигурност на портала“, което караше
+// човек да мисли, че кодът е част от настройките. Сега кодът е само в ПЪРВИЯ блок.
+const controlBlock = panel.slice(panel.indexOf('data-block="control"'));
+assert.ok(controlBlock.length > 500, 'контролният панел е наличен');
+assert.equal(/qf-svg|qrSvg\(/.test(controlBlock), false, 'контролният панел не рисува QR код');
 
 // ── 1в. QR кодът в панела е ЕДИН — този на портала ────────────────────────
 // Дотук всеки файл и всяка папка рисуваха свой код с друг адрес (подписан за един час или
@@ -208,6 +217,7 @@ assert.match(
     for (const name of ['title', 'slug', 'subject', 'category', 'flag', 'storage_root', 'description', 'notes', 'visibility']) {
       assert.ok(settings.querySelector(`[name="${name}"]`), `полето ${name} е в същата форма`);
     }
+    assert.equal(host.querySelector('[data-block="control"] .qf-svg'), null, 'в отворения контролен панел няма QR код');
     settings.querySelector('[name="title"]').value = 'Портал с код (обновен)';
     ui.clearToasts();
     settings.querySelector('button[type="submit"]').click();
