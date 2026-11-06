@@ -4,6 +4,14 @@
    tokens → layout → components → themes. Пази го `tests/ui-css-split.cjs`. */
 
 /* ---------- Generic ---------- */
+/* Атрибутът `hidden` трябва да СКРИВА и когато елементът има собствен `display` в
+   стиловете (напр. `.btn { display: inline-flex }`). Без това браузърът дава приоритет
+   на авторския стил и скрит бутон остава видим — а невидим бутон с `onclick = null`
+   изглежда като „бутонът не работи“. */
+[hidden] {
+  display: none !important;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);

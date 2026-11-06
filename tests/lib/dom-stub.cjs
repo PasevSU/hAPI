@@ -412,6 +412,11 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
       while (node && !event._stopped) {
         event.currentTarget = node;
         for (const fn of ((node.listeners && node.listeners.get(type)) || []).slice()) fn(event);
+        // Браузърът вика и свойството `on<type>` (`el.onclick = …`), не само слушателите.
+        // Панелите слагат обработчика на заглавния бутон на модала точно така, а без това
+        // тестът виждаше бутон, който „не прави нищо“ — същият дефект, но само в теста.
+        const inline = node['on' + type];
+        if (!event._stopped && typeof inline === 'function') inline.call(node, event);
         node = node.parentNode;
       }
       if (!event._stopped) {

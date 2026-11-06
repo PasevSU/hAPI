@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "hAPI Enterprise — административно API 0.69.185",
+    "name": "hAPI Enterprise — административно API 0.69.186",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Генериран от `hapi_enterprise/admin-api-spec.js` (node scripts/openapi-admin.cjs). Не се редактира на ръка."
   },

@@ -2846,6 +2846,18 @@
       html: `<div class="fm-detail">${filePane(f)}</div>`,
     });
     m.dataset.kind = 'panel';
+    // „Изтегли“ в заглавната лента тегли ТЕКУЩИЯ файл. Досега бутонът се показваше в
+    // панелите (стилът на `.btn` надвишава `hidden`), но `onclick` беше `null` — тоест
+    // видим и мъртъв. За преглед той ползва `modalBlob`, за панел — администраторския път.
+    const dl = m.querySelector('#fm-modal-dl');
+    if (dl) {
+      dl.hidden = false;
+      dl.title = `Изтегли ${f.name}`;
+      dl.dataset.name = f.name;
+      dl.onclick = () => {
+        void download(f);
+      };
+    }
     wirePanelHandlers(m.querySelector('#fm-modal-body'));
     // Хешовете са част от стандартния изглед — зареждат се веднага.
     ensureHashes(f);

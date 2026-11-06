@@ -129,7 +129,39 @@ const CONTENT = 'podpisan-adees-ot-panela';
     const after = calls.filter((c) => /\/download$/.test(c)).length;
     assert.equal(after, before + 1, 'натискането пуска точно една заявка за изтегляне');
 
-    console.log('PASS gui-file-share: адресът се зарежда при отваряне · ползва се повторно · „Нов адрес“ издава друг · „Изтегли файла“ тегли');
+    // ── 5. „Изтегли“ в заглавната лента на ПАНЕЛ тегли същия файл ────────
+    // Докладвано: бутонът се вижда в панела („Действия · файл.pdf“), но не прави нищо —
+    // в панел няма прегледано съдържание (`modalBlob`) и `onclick` беше `null`.
+    second.modal.querySelector('#fm-modal-close').click();
+    host.querySelector('[data-file-gear]').click();
+    const accessItem = await waitFor(() => host.querySelector('[data-file-act="access"]'), { label: 'действието „Достъп“' });
+    accessItem.click();
+    const panel = await waitFor(
+      () => {
+        const m = ui.document.getElementById('fm-modal');
+        return m && !m.hidden && /Достъп/.test(m.textContent || '') ? m : null;
+      },
+      { label: 'панелът „Достъп“' },
+    );
+    const headerDownload = await waitFor(
+      () => {
+        const b = panel.querySelector('#fm-modal-dl');
+        return b && b.getAttribute('hidden') === null ? b : null;
+      },
+      { label: 'бутонът „Изтегли“ в заглавната лента' },
+    );
+    const beforeHeader = calls.filter((c) => /\/download$/.test(c)).length;
+    ui.clearToasts();
+    headerDownload.click();
+    await waitFor(() => (ui.lastToast() && ui.lastToast().kind === 'ok') || null, { label: 'съобщението от заглавния бутон' });
+    assert.match(ui.lastToast().message, /Изтеглянето започна/, 'заглавният бутон тегли: ' + ui.lastToast().message);
+    assert.equal(
+      calls.filter((c) => /\/download$/.test(c)).length,
+      beforeHeader + 1,
+      'заглавният бутон пуска точно една заявка за изтегляне',
+    );
+
+    console.log('PASS gui-file-share: адресът се зарежда при отваряне · ползва се повторно · „Нов адрес“ издава друг · „Изтегли файла“ тегли · „Изтегли“ в заглавната лента на панел тегли');
   } finally {
     await stopChild(server.child);
     await server.stop();

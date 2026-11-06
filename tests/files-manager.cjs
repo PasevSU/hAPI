@@ -678,4 +678,11 @@ assert.match(src, /id="fm-share-download"/);
 assert.match(src, /if \(q\('#fm-share-download'\)\) \{/);
 assert.match(src, /const url = await ensureSigned\(f, true\);/);
 
+// 7. Заглавната лента на модала: „Изтегли“ трябва да тегли ТЕКУЩИЯ файл и в панел (там
+// няма прегледано съдържание, тоест бутонът беше видим и мъртъв — „изтеглянето не работи“).
+// `hidden` трябва да крие и когато елементът има собствен `display` в стиловете.
+assert.match(src, /dl\.onclick = \(\) => \{\s*void download\(f\);\s*\};/);
+assert.match(src, /dl\.hidden = false;/);
+assert.match(css, /\[hidden\] \{ display: none !important; \}/);
+
 console.log('files-manager OK');
