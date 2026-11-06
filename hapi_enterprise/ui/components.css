@@ -2426,34 +2426,33 @@ input[type="radio"] {
   opacity: 1;
 }
 
-/* Заглавният ред на файла: иконата е в тясна колона, останалите са с равен дял. */
+/* Заглавният ред на файла: чекбоксът за избор е в началото, иконите — вдясно. */
 .fm-file-head>input[type='checkbox'] {
-  width: 88%;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
-/* Икона на файла вместо чекбокс: показва, че това е файлов блок, и избира файла. */
-.fm-pick {
+/* Чекбокс за избор на файла (групови действия) — на мястото на старата икона-бутон. */
+.fm-file-check {
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0.25em 0 0;
+  flex: 0 0 auto;
+  justify-self: start;
+}
+
+/* Икона на файла: знак за ТИПА, не бутон — стои при останалите икони вдясно. */
+.fm-file-ico {
   display: inline-grid;
   place-items: center;
-  width: 2em;
-  height: 2em;
+  width: 1.9em;
+  height: 1.9em;
   padding: 0;
   border-radius: 6px;
   border: 1px solid var(--line-strong);
   background: rgba(148, 178, 220, 0.1);
   color: var(--accent);
-  cursor: pointer;
   font-size: var(--fs-12);
-}
-
-.fm-pick:hover {
-  border-color: var(--accent);
-}
-
-.fm-pick.on {
-  background: rgba(34, 211, 238, 0.2);
-  border-color: var(--accent);
-  color: #a5f3fc;
 }
 
 .fm-file-name {

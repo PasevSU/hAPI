@@ -6,7 +6,9 @@
 (function () {
   /** Карта на регистриран в портала файл (изобразяването не се променя). */
   function card(x, ctx) {
-    const { esc, state, ICON, ico, chip, metaChips, fmtSize, fileGlyph, stateOf, actionsPane } = ctx;
+    // `chip` и `fmtSize` се ползват само от картата на файл в хранилището — тук плочките
+    // с метаданни са махнати (живеят в „Пълни данни“), затова не се дърпат в този обхват.
+    const { esc, state, ICON, ico, fileGlyph, stateOf, actionsPane } = ctx;
     const st = stateOf(x);
     const open = state.selected === x.id;
     // ⚙ е изскачащо контекстно меню (като при папките) — отворено е най-много едно.
@@ -40,13 +42,14 @@
           <hr class="fm-gear-sep" />
           ${all.filter((a) => a.id === 'delete').map(row).join('')}
         </div>`;
+    // Плочките с метаданни (размер, версия, дати, хеш, ID, достъп) са махнати от реда:
+    // същото стои в „Пълни данни“ на отворения файл, а тук повтаряше целия ред и избутваше
+    // името. Иконата на типа е преместена вдясно, при останалите икони; изборът за групови
+    // действия е обикновен чекбокс в началото на реда.
     return `<article class="fm-file ${open ? 'fm-selected' : ''}" data-id="${esc(x.id)}">
                          <div class="fm-file-head">
-                           <button type="button" class="fm-pick ${state.selectedIds.has(x.id) ? 'on' : ''}" data-pick="${esc(
-      x.id,
-    )}" aria-pressed="${state.selectedIds.has(x.id)}" title="Избор на файл: ${esc(x.name)}" aria-label="Избор на ${esc(
-      x.name,
-    )}">${fileGlyph(x)}</button>
+                           <input type="checkbox" class="fm-file-check" data-pick="${esc(x.id)}" ${state.selectedIds.has(x.id) ? 'checked' : ''
+      } aria-label="Избор на ${esc(x.name)}" title="Избор на файл: ${esc(x.name)}" />
                            <div class="fm-file-title">
                              <button type="button" class="link-btn fm-file-name" data-open-file="${esc(x.id)}">${ico(
       open ? 'chevronDown' : 'chevronRight',
@@ -54,6 +57,9 @@
                              <span class="fm-file-badges">${badges}</span>
                            </div>
                            <span class="fm-file-icons">
+                             <span class="fm-file-ico" aria-hidden="true" title="Тип на файла: ${esc(
+      x.name,
+    )}">${fileGlyph(x)}</span>
                              <button type="button" class="fm-ico-btn ${x.listed ? 'on' : 'off'}" data-file-listed="${esc(
       x.id,
     )}" aria-pressed="${x.listed}" title="${x.listed
@@ -76,11 +82,6 @@
                          ${menu}
                          <p class="fm-file-sub">${taxonomy.length ? `${esc(taxonomy.join(' / '))} · ` : ''
       }<span title="Уникален идентификатор на файла">${ICON.id} id: <code>${esc(x.id)}</code></span></p>
-                         <div class="fm-ico-row u-grid u-grid-chips">
-                           ${chip(ICON.size, 'Размер', `${fmtSize(x.size)} (${x.size} B)`, fmtSize(x.size))}
-                           ${chip(ICON.version, 'Версия', `${x.version}`, `v${x.version}`)}
-                           ${metaChips(x)}
-                         </div>
                          ${
       // Празна бележка не се изписва — редът се показва само когато има текст.
       x.notes ? `<hr class="u-divider" /><p class="fm-file-notes">${ICON.modified} ${esc(x.notes)}</p>` : ''

@@ -262,10 +262,13 @@ assert.match(css, /\.fm-action \{[\s\S]*?min-height: calc\(var\(--tile-h\) \/ 2\
 assert.match(css, /\.chip,\s*\.flag-badge,\s*\.state-chip,\s*\.badge,\s*\.fm-ico \{/);
 assert.match(css, /\.u-divider \{ border: 0; border-top: 1px solid var\(--line\)/);
 assert.match(src, /<hr class="u-divider" \/>/);
-// Икона на файла вместо чекбокс + пълен стек с хешове.
+// Чекбокс за избор в началото на реда, иконата на типа — вдясно при останалите икони;
+// плочките с метаданни са махнати от реда, защото стоят в „Пълни данни“.
 assert.match(src, /function fileGlyph/);
-assert.match(src, /class="fm-pick /);
-assert.equal(/<input type="checkbox" data-pick/.test(src), false, 'няма чекбокс пред файла');
+assert.match(src, /class="fm-file-check" data-pick=/);
+assert.match(src, /class="fm-file-ico" aria-hidden="true"/);
+assert.equal(/class="fm-pick /.test(src), false, 'иконата вече не е бутон за избор');
+assert.equal(/\$\{metaChips\(x\)\}/.test(src), false, 'плочките с метаданни не се повтарят в реда на файла');
 assert.match(src, /function hashStack/);
 assert.match(src, /\/hashes`/);
 assert.match(src, /data-pkg-portal/);

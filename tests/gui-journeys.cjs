@@ -1282,11 +1282,11 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
           return art && /fayl-za-scenariy/.test(text(art));
         }) || nodes[0];
       }, { label: 'бутонът за избор на файла', timeout: BUDGET });
-      const wasOn = String(pick.getAttribute('class') || '').includes('on');
+      const wasOn = pick.getAttribute('checked') !== null;
       pick.click();
       await waitFor(() => {
         const again = app.$('[data-pick="' + pick.getAttribute('data-pick') + '"]');
-        return again && String(again.getAttribute('class') || '').includes('on') !== wasOn ? again : null;
+        return again && (again.getAttribute('checked') !== null) !== wasOn ? again : null;
       }, { label: 'смяната на избора', timeout: BUDGET });
       // Плочка за действие в картата на файла — същият път като с мишка.
       const tile = await waitFor(() => app.$('[data-act="lock"]') || app.$('[data-act]'), { label: 'плочка за действие', timeout: BUDGET });
