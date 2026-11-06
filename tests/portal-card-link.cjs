@@ -13,6 +13,7 @@
 //   • двойното щракване върху кода не отваря портала, а единичното — изкарва човека от панела;
 //   • „Обнови достъпа“ не иска нов подпис от сървъра и не обновява кода на място;
 //   • „Свали QR“ / „Печат на QR“ не работят (или печатният клас остава след печата);
+//   • настройките на портала са пак в ЕДИН стълб, вместо в мрежа, която пада колона по колона;
 //   • „Отвори портала“ не води до адреса на портала (същият таб — под Ingress нов таб губи сесията).
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -82,6 +83,23 @@ assert.match(css, /\.pf-link-actions \{[\s\S]{0,160}flex-wrap: wrap/, 'лент�
 assert.match(css, /\.pf-link-actions \.btn \{[\s\S]{0,120}flex: 0 0 auto/, 'бутоните не се разтягат до пълна ширина');
 assert.match(css, /@media \(max-width: 560px\) \{[\s\S]{0,160}\.pf-link-actions \.btn-label \{\s*display: none/, 'под 560px остават само иконите (текстът е в title/aria-label)');
 assert.match(css, /@media \(max-width: 720px\) \{[\s\S]{0,200}\.pf-link-qr \{\s*order: -1/, 'на тясна карта QR минава над групата, вместо да я разкъса');
+
+// ── 1в. Настройките на портала са в ТРИ колони, докато екранът е широк ────
+// Дотук формата беше един стълб дори при 1300px карта (полетата в цялата ширина), тоест
+// половината екран стоеше празен. Сега мрежата е auto-fit с минимум ~телефонен екран:
+// на широка карта — три полета на ред, при намаляване — две и едно, едно по едно.
+assert.match(css, /#pf-settings \{[\s\S]{0,200}display: grid;/, 'настройките са в мрежа, не в един стълб');
+assert.match(
+  css,
+  /#pf-settings \{[\s\S]{0,300}grid-template-columns: repeat\(auto-fit, minmax\(min\(360px, 100%\), 1fr\)\)/,
+  'колоните са auto-fit с минимум ~стандартен телефонен екран (360px), но не повече от картата',
+);
+assert.match(css, /#pf-settings > \.field \{[\s\S]{0,140}margin-bottom: 0/, 'отстоянието идва от мрежата, не се удвоява');
+assert.match(
+  css,
+  /#pf-settings > button\[type='submit'\] \{[\s\S]{0,120}grid-column: 1 \/ -1/,
+  '„Запази настройките“ заема реда под колоните',
+);
 
 // ── 2б. Едно зареждане на сензорите ────────────────────────────────────────
 // `mount()` вика `loadMonitor()` и после `reload()`, който също го викаше — тоест панелът
@@ -186,6 +204,10 @@ assert.match(
     const toggle = host.querySelector('[data-pf-control-tog]');
     if (toggle && toggle.getAttribute('aria-expanded') === 'false') toggle.click();
     const settings = await waitFor(() => host.querySelector('#pf-settings'), { label: 'формата с настройките' });
+    // Всички полета са в ЕДНА форма — мрежата ги подрежда в три колони, а не ги разкъсва.
+    for (const name of ['title', 'slug', 'subject', 'category', 'flag', 'storage_root', 'description', 'notes', 'visibility']) {
+      assert.ok(settings.querySelector(`[name="${name}"]`), `полето ${name} е в същата форма`);
+    }
     settings.querySelector('[name="title"]').value = 'Портал с код (обновен)';
     ui.clearToasts();
     settings.querySelector('button[type="submit"]').click();
