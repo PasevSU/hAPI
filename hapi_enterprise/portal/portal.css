@@ -641,3 +641,133 @@ main {
     animation: none !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ПРОФЕСИОНАЛНО ХРАНИЛИЩЕ (0.69.177)
+   Страницата на портала беше „заглавна част с бутони + карти с бутони“. За
+   хранилище това е грешният акцент: важното е СПИСЪКЪТ с документи, а действията
+   са второстепенни. Затова: действията в хедъра стават малки плочки (chips) в един
+   ред, а файловете — гъсти редове с колони (икона · име · метаданни · действия),
+   разграничени с линия, вместо отделни карти с рамка.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.hero {
+  padding: 20px 0 14px;
+}
+
+.hero-actions {
+  gap: 6px;
+  align-items: center;
+}
+
+/* Действията в хедъра: малки, тихи, в един ред — не големи бутони. */
+.hero-actions .btn {
+  min-height: 32px;
+  padding: 0 10px;
+  gap: 6px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+}
+
+.hero-actions .btn .ico,
+.hero-actions .btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.panel {
+  padding: 14px;
+}
+
+/* ── Списък с документи като в хранилище ─────────────────────────────────── */
+.files {
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.file {
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  padding: 10px 12px;
+  background: transparent;
+  gap: 6px;
+}
+
+.file:first-child {
+  border-top: 0;
+}
+
+.file:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+/* Колони: икона · име (разтяга се) · действия (вдясно). Имената подравняват. */
+.file-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-name {
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.file-meta {
+  gap: 2px 12px;
+  padding-left: 32px;
+  font-size: 0.8rem;
+}
+
+.file-hash {
+  padding-left: 32px;
+  font-size: 0.76rem;
+}
+
+/* Действията по файл: малки плочки, които не избутват името. */
+.file-actions {
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.file-actions .btn {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 0.84rem;
+}
+
+.file-actions .key-input {
+  min-height: 32px;
+  padding: 4px 10px;
+}
+
+.file-folder {
+  font-size: 0.95rem;
+}
+
+/* Резюмето и QR панелът са спомагателни — по-тихи от списъка. */
+.summary-panel .summary-text {
+  font-size: 0.92rem;
+}
+
+.package-bar .btn {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 620px) {
+  .file-meta,
+  .file-hash {
+    padding-left: 0;
+  }
+
+  .file-actions .btn {
+    padding: 0 8px;
+  }
+}
