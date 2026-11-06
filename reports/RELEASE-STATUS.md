@@ -14,7 +14,7 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **365/367** — последното пускане НЕ е зелено, виж `reports/test-matrix.json` |
+| Тестове | `node scripts/test-matrix.cjs` | **367/367** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.176 — отпечатъците се сверяват от `verify-release.cjs` |
 | Логически одит | `node scripts/logic-audit.cjs --gate` | 592 файла · 104936 реда · **0** отворени · 1 с обосновка |
 | Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 587 файла · 103998 реда · critical: 0 · high: 0 · medium: 0 · low: 201 — чисто · изключения: 23/23 (0 мъртви) |
