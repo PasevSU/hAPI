@@ -114,11 +114,11 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       const host = ui.container();
       w.FilesManagerPanel.mount(host);
       await waitFor(() => host.textContent.includes('gui-portal'), { label: 'картата на портала' });
-      // От 0.69.152 адресът е бутон (линк + меню), а не табелка до бутон „API ▾“ — затова се
-      // чете текстът му, а не `title` на плочка.
-      const address = host.querySelector('[data-api-menu]');
-      assert.ok(address, 'картата показва адрес на портала');
-      const signed = String(address.textContent || '').trim();
+      // От 0.69.181 адресът не е нито табелка, нито поле — носи го QR кодът (`data-portal-url`).
+      const openCard = await waitFor(() => host.querySelector('[data-open-portal]'), { label: 'картата за отваряне' });
+      openCard.click();
+      const qrBox = await waitFor(() => host.querySelector('#pf-portal-qr'), { label: 'QR кодът на портала' });
+      const signed = String(qrBox.getAttribute('data-portal-url') || '');
       assert.match(signed, /\?expires=\d+&sig=[a-f0-9]{64}$/, 'адресът на частен портал носи подпис: ' + signed);
       const ok = await fetch(signed);
       await ok.text();

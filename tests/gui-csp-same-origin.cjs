@@ -14,7 +14,7 @@
 // Тук се проверява РЕЗУЛТАТЪТ: менюто ПОКАЗВА публичния адрес, а заявката, която панелът
 // прави при натискане, отива на СЪЩИЯ път на произхода на панела.
 const assert = require('node:assert/strict');
-const { startServer, mountUi, waitFor } = require('./lib/gui-harness.cjs');
+const { startServer, mountUi, waitFor, expandPortalBlocks } = require('./lib/gui-harness.cjs');
 const { stopChild } = require('./helpers.cjs');
 
 const PANEL_MODULES = [
@@ -35,6 +35,8 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
       visibility: 'public',
     });
     assert.equal(made.status, 201, JSON.stringify(made.data));
+    const folder = await server.api(`/admin/api/portals/${made.data.id}/tree/folder`, 'POST', { parent: '', name: 'документи-' + Date.now().toString(36) });
+    assert.equal(folder.status, 201, 'папката за менюто се създава: ' + JSON.stringify(folder.data));
 
     const ui = mountUi(server, { modules: PANEL_MODULES });
     ui.window.isSecureContext = true;
@@ -43,7 +45,19 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
     const host = ui.container();
     ui.window.FilesManagerPanel.mount(host);
 
-    const openItem = await waitFor(() => host.querySelector('[data-api-open]'), { label: 'менюто на API-то' });
+    const openCard = await waitFor(() => host.querySelector('[data-open-portal]'), { label: 'картата на портала' });
+    openCard.click();
+    const qrBox = await waitFor(() => host.querySelector('#pf-portal-qr'), { label: 'QR кодът на портала' });
+    assert.ok(
+      String(qrBox.getAttribute('data-portal-url') || '').startsWith(PUBLIC_BASE),
+      'QR кодът ПОКАЗВА публичния адрес (той се сканира и се дава на получателя)',
+    );
+    // Менюто на ПАПКАТА (единственото останало меню с адрес) носи същия публичен адрес.
+    await expandPortalBlocks(host);
+    await waitFor(() => host.querySelector('[data-folder-gear]'), { label: 'папката в дървото' });
+    const folderToggle = await waitFor(() => host.querySelector('[data-folder]'), { label: 'папката за отваряне' });
+    folderToggle.click();
+    const openItem = await waitFor(() => host.querySelector('[data-api-open]'), { label: 'менюто на папката' });
     const shownUrl = openItem.dataset.apiOpen;
     assert.ok(
       shownUrl.startsWith(PUBLIC_BASE),
@@ -70,17 +84,17 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
     // Относителен път: браузърът го праща към произхода на ДОКУМЕНТА — точно това иска
     // `connect-src 'self'`. Затова тук няма никакъв произход.
     assert.ok(
-      target === '/api/v1/p/csp-same-origin' || target.startsWith(server.base + '/api/v1/p/csp-same-origin'),
+      target === '/api/v1/p/csp-same-origin/tree/api.json?path=%2F' || target.startsWith(server.base + '/api/v1/p/csp-same-origin/tree/api.json'),
       'заявката е относителна към произхода на панела: ' + target,
     );
-    assert.match(target, /\/api\/v1\/p\/csp-same-origin$/, 'и отива на СЪЩИЯ път на API-то: ' + target);
+    assert.match(target, /\/api\/v1\/p\/csp-same-origin\/tree\/api\.json/, 'и отива на СЪЩИЯ път на папката: ' + target);
 
     // Заявката наистина връща данните — тоест „Отвори“ показва нещо, а не грешка.
     const shown = await waitFor(
       () => {
         const modal = ui.window.document.getElementById('fm-modal');
         const text = modal ? modal.textContent : '';
-        return text.includes('csp-same-origin') ? text : null;
+        return text.includes('документи') ? text : null;
       },
       { label: 'съдържанието в изскачащия прозорец' },
     );

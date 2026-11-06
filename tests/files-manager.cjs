@@ -351,16 +351,16 @@ assert.match(src, /function apiMenu/);
 assert.match(src, /data-api-copy/);
 assert.match(src, /data-api-open/);
 assert.match(src, /data-api-dl/);
-// 0.69.152: в заглавния ред на портала НЯМА отделен бутон „API ▾“ — адресът е и линкът, и
-// менюто към него (копирай / отвори / изтегли api.json). Иначе две имена сочеха едно място.
-assert.match(src, /pf-address-btn/);
-assert.match(src, /pf-address-label/);
+// 0.69.181: в картата НЯМА адрес и меню към него — линкът е махнат изцяло, защото
+// „Копирай“ даваше адреса на API-то (JSON), а „Изтегли api.json“ не сваляше файл.
+// Входът към портала е QR кодът в блока (двойно щракване) или „Отвори портала“.
+assert.equal(/pf-address-\w+/.test(src), false, 'в картата няма табелка/меню с адреса');
+assert.equal(/pf-address-\w+/.test(css), false, 'стиловете на махнатата табелка са премахнати');
 assert.equal(
   /qrBadge\(x\)\}\s*\$\{apiMenu\(/.test(src),
   false,
-  'в заглавния ред на картата не стои отделно меню „API ▾“',
+  'в заглавния ред на картата не стои меню „API ▾“',
 );
-assert.match(css, /\.pf-address-btn \{/);
 assert.match(src, /function showModal/);
 assert.match(src, /function ensureModal/);
 assert.match(src, /m\.id = 'fm-modal'/);
@@ -371,8 +371,11 @@ assert.match(src, /function wireMenus/);
 assert.match(src, /id="pf-open-portal"[^>]*data-open-portal-id=/, 'контролният панел има „Отвори портала“');
 // Надписът вече е в речника (BG/EN/DE) — затова се проверява ключът И българската стойност.
 const dict = require(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'i18n.js')).DICT;
-assert.match(src, /portal\.link\.dlApi/, 'изтеглянето на описанието е надписано като изтегляне');
-assert.match(dict.bg['portal.link.dlApi'], /Свали api\.json/, 'надписът е „Свали api.json“, не голо „api.json“');
+// 0.69.181: картата вече НЕ показва адрес и НЕ сваля api.json — входът е QR кодът
+// (двойно щракване) или „Отвори портала“. Затова ключът за сваляне е махнат от речника.
+assert.equal(/portal\.link\.dlApi/.test(src), false, 'картата не сваля описанието като файл');
+assert.equal(dict.bg['portal.link.dlApi'], undefined, 'ключът за „Свали api.json“ е махнат от речника');
+assert.match(dict.bg['portal.tip.qrOpen'], /два пъти/i, 'подсказката на кода казва „два пъти“');
 assert.match(src, /\[data-open-portal\], \[data-open-portal-id\]/, 'щракването по ИД отваря портала');
 assert.match(src, /findIndex\(\(x\) => x\.id === byId\)/, 'ИД-то се превежда до индекс, а не се гадае');
 assert.equal(/window\.open/.test(src), false, 'прегледът не отваря нов таб');

@@ -596,12 +596,12 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       const open = await waitFor(() => app.$$('[data-open-portal]')[0], { label: 'бутонът „Отвори портала“' });
       open.click();
       await settle('картата на портала');
-      // От 0.69.152 адресът на портала е БУТОН (линк + меню), а не табелка до бутон „API ▾“:
-      // показва го текстът на самия бутон.
-      const trigger = await waitFor(() => app.$('[data-api-menu]'), { label: 'адресът на портала', timeout: BUDGET });
-      const url = text(trigger).trim();
+      // 0.69.181: адресът не се показва като текст — носи го QR кодът (`data-portal-url`).
+      // Проверява се, че ТОЗИ адрес се отваря и е човешката страница, а не JSON.
+      const qrBox = await waitFor(() => app.$('#pf-portal-qr'), { label: 'QR кодът на портала', timeout: BUDGET });
+      const url = String(qrBox.getAttribute('data-portal-url') || '');
       assert.match(url, /\/p\/[0-9a-zA-Z-]+/, 'адресът е човешката страница на портала: ' + url);
-      // Едно отваряне на вече показания линк — каквото прави човек, като го натисне.
+      // Едно отваряне на вече показания адрес — каквото прави човек, като го натисне.
       const opened = await app.openLink(url);
       assert.equal(opened.status, 200, 'показаният от панела адрес се отваря: ' + url);
       assert.ok(opened.body.length > 0, 'страницата връща съдържание');
@@ -1567,63 +1567,54 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.equal(app.copied[app.copied.length - 1], link, 'копиран е ИМЕННО линкът на тайната');
     });
 
-    // ── J66. Портал: адресът отваря менюто — копирай, отвори, изтегли ──────────
-    await journey('J66 портал: адресът отваря менюто', async () => {
+    // ── J66. Папка: менюто на адреса — копирай, отвори, изтегли ────────────────
+    await journey('J66 папка: менюто на адреса', async () => {
       const slug = 'gui-journey-api-menu';
       await ownPortalWithFile(slug);
-      await portalList();
-      // Щракване върху заглавието: затваря евентуално отворено меню ⚙ от предишен
-      // сценарий, точно както човек би щракнал настрана, преди да отвори друго меню.
-      const title = app.$('#view h1');
-      if (title) title.click();
-      await settle('списъкът с портали');
-      // Менюто се отваря с щракване, както при човек — проверява се, че е ВИДИМО.
-      // Картата се търси НАНОВО при всяка стъпка: щракването върху „API ▾“ може да
-      // прерисува панела (затваря отворено меню ⚙ от предишен сценарий), а държан
-      // елемент от предишния изглед вече не е този, който човекът вижда.
+      // 0.69.181: картата на портала НЯМА меню с адрес — линкът е махнат, защото „Копирай“
+      // даваше адреса на API-то, а „Изтегли api.json“ не сваляше файл. Същите три действия
+      // остават при ПАПКАТА (менюто на адреса ѝ в дървото), където адресът е машинен.
+      // Затова сценарият първо създава папка — през бутона, както го прави човек.
+      app.click('#fm-new-folder', 'бутонът „Нова папка“');
+      await waitFor(() => app.$('#fm-new-folder-name'), { label: 'полето за име на папка', timeout: BUDGET });
+      app.fill('#fm-new-folder-name', 'доказателства');
+      app.clearToasts();
+      app.$('#fm-new-folder-form').dispatch('submit');
+      await waitFor(() => text(view()).includes('доказателства'), { label: 'новата папка в дървото', timeout: BUDGET });
+      await settle('дървото на папките');
+      await waitFor(() => app.$('[data-folder-gear]'), { label: 'папката в дървото', timeout: BUDGET });
       const openMenu = async (step) => {
-        const fresh = await portalCard(slug);
-        const button = await waitFor(() => fresh.querySelector('[data-api-menu]'), {
-          label: 'бутонът с адреса (' + step + ')',
+        // Менюто живее в разгънатия ред на папката. При пречертаване (напр. след създаването)
+        // редът може да е нов и сгънат — затова липсващото меню се отваря с второ щракване.
+        let button = app.$$('[data-api-menu]')[0];
+        if (!button) {
+          const toggle = app.$('[data-folder]');
+          if (toggle) toggle.click();
+        }
+        button = await waitFor(() => app.$$('[data-api-menu]')[0] || null, {
+          label: 'менюто с адреса (' + step + ')',
           timeout: BUDGET,
         });
         button.click();
         return waitFor(() => {
           const menu = button.parentNode ? button.parentNode.querySelector('.fm-menu') : null;
           return menu && menu.hidden === false ? menu : null;
-        }, { label: 'менюто на адреса да се отвори (' + step + ')', timeout: BUDGET });
+        }, { label: 'менюто да се отвори (' + step + ')', timeout: BUDGET });
       };
       const menu = await openMenu('копирай');
-      // 0.69.152: в заглавния ред на картата НЯМА отделен бутон „API ▾“ — натиска се САМИЯТ
-      // адрес и дава същите три действия. Проверява се точно това: едно меню в картата, а
-      // текстът му е адресът, не „API“.
-      const card = await portalCard(slug);
-      const triggers = card.querySelectorAll('[data-api-menu]');
-      assert.equal(triggers.length, 1, 'в картата има точно едно меню за адреса, а е ' + triggers.length);
-      assert.equal(/API/.test(text(triggers[0])), false, 'бутонът не се казва „API“, а е адресът: ' + text(triggers[0]));
-      assert.match(text(triggers[0]), /p\/|https?:\/\/|^\//, 'бутонът показва адреса на портала: ' + text(triggers[0]));
       const copyButton = menu.querySelector('[data-api-copy]');
       assert.ok(copyButton, 'менюто има „Копирай адреса“');
       const apiUrl = String(copyButton.getAttribute('data-api-copy') || '');
-      assert.match(apiUrl, /^https?:\/\/|^\//, 'менюто носи адреса на API-то: ' + apiUrl);
+      assert.match(apiUrl, /^https?:\/\/|^\//, 'менюто носи адреса на папката: ' + apiUrl);
       app.clearToasts();
       copyButton.click();
       await waitFor(() => {
         const t = app.toast();
         return t && /Копирано/.test(t.message) ? t : null;
       }, { label: 'съобщението за копирания адрес', timeout: BUDGET });
-      assert.equal(app.copied[app.copied.length - 1], apiUrl, 'копиран е адресът на API-то');
-      // „Отвори“ чете адреса от сървъра и го показва в изскачащия прозорец на панела.
-      const beforeOpen = app.requests.length;
-      const menuOpen = await openMenu('отвори');
-      menuOpen.querySelector('[data-api-open]').click();
-      await waitFor(() => app.requests.length > beforeOpen, { label: 'заявката при „Отвори“', timeout: BUDGET });
-      assert.ok(
-        app.requests.slice(beforeOpen).some((r) => r.url.endsWith(apiUrl)),
-        '„Отвори“ поиска ИМЕННО адреса на API-то: ' + app.requests.slice(beforeOpen).map((r) => r.url).join(' · '),
-      );
-      // „Изтегли“ също иска файла от сървъра; самият запис на диска е работа на браузъра,
-      // затова тук се проверява искането и съобщението, което човекът вижда.
+      assert.equal(app.copied[app.copied.length - 1], apiUrl, 'копиран е адресът на папката');
+      // „Изтегли“ е ПРЕДИ „Отвори“: отварянето сменя съдържанието на прозореца с JSON и
+      // панелът на файла изчезва, тоест менюто вече няма откъде да се отвори.
       const beforeDl = app.requests.length;
       const menuDl = await openMenu('изтегли');
       app.clearToasts();
@@ -1632,6 +1623,15 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.ok(
         app.requests.slice(beforeDl).some((r) => r.url.endsWith(apiUrl)),
         '„Изтегли“ поиска файла от сървъра: ' + app.requests.slice(beforeDl).map((r) => r.url).join(' · '),
+      );
+      // „Отвори“ чете адреса от сървъра и го показва в изскачащия прозорец на панела.
+      const beforeOpen = app.requests.length;
+      const menuOpen = await openMenu('отвори');
+      menuOpen.querySelector('[data-api-open]').click();
+      await waitFor(() => app.requests.length > beforeOpen, { label: 'заявката при „Отвори“', timeout: BUDGET });
+      assert.ok(
+        app.requests.slice(beforeOpen).some((r) => r.url.endsWith(apiUrl)),
+        '„Отвори“ поиска ИМЕННО адреса на папката: ' + app.requests.slice(beforeOpen).map((r) => r.url).join(' · '),
       );
     });
 

@@ -7,8 +7,8 @@
 // Човек не можеше да разбере кое се отваря, а адресът на издадения токен се показваше така,
 // че приличаше на връзка. Този тест пази следното:
 //   • в панела НЯМА списък с технически адреси и няма бутон „Копирай препратките“;
-//   • има точно един адрес — порталът: „Отвори портала“ + „Копирай адреса“;
-//   • машинното описание остава достъпно с бутон (файл), а не като адрес в текста;
+//   • има точно един вход — порталът: „Отвори портала“ + QR кодът, който носи същия адрес;
+//   • адресът НЕ се показва и НЕ се копира като текст, а „Свали api.json“ не е в картата;
 //   • адресът на токена е в `.pf-token-value` — информация, не връзка (без подчертаване);
 //   • договорът `refs` в `api-spec.js` НЕ се маха — маха се само показването му в UI.
 const assert = require('node:assert/strict');
@@ -37,16 +37,13 @@ assert.equal(/pf-copy-refs/.test(panel + manager), false, 'бутонът „К�
 assert.equal(/pf-dl-openapi/.test(panel + manager), false, 'OpenAPI адресът не се предлага като втори файл в панела');
 assert.equal(/Препратките са копирани/.test(manager), false, 'няма съобщение за копирани препратки');
 
-// ── 2. Остава един адрес: порталът ──────────────────────────────────────────
+// ── 2. Остава ЕДИН вход: порталът (код + бутон) ────────────────────────────
 assert.match(panel, /id="pf-open-portal"[^>]*data-open-portal-id=/, 'панелът има „Отвори портала“');
-assert.match(panel, /id="pf-copy-portal"/, 'и „Копирай адреса“ — единственият адрес');
-assert.match(manager, /q\('#pf-copy-portal'\)/, 'бутонът „Копирай адреса“ е свързан');
-assert.match(
-  manager,
-  /copyText\(state\.api\[portal\(\)\.id\]\.landing/,
-  'копира се адресът на портала (`landing`), а не списък с препратки',
-);
-assert.match(panel, /id="pf-dl-api"/, 'машинното описание се сваля като файл (бутон, не адрес в текста)');
+assert.match(panel, /id="pf-portal-qr"[^>]*data-portal-url=/, 'и QR кодът, който носи същия адрес');
+assert.match(manager, /q\('#pf-portal-qr'\)\.addEventListener\('dblclick'/, 'двойно щракване върху кода отваря портала');
+assert.match(manager, /window\.location\.href = url/, 'отваря се в СЪЩИЯ раздел');
+assert.equal(/id="pf-copy-portal"/.test(panel + manager), false, 'адресът не се копира — не се показва като текст');
+assert.equal(/id="pf-dl-api"/.test(panel + manager), false, 'картата не сваля api.json');
 const panelText = panel.replace(/<[^>]*>/g, ' ');
 assert.equal(
   /https?:\/\/\S+/.test(panelText),
@@ -73,6 +70,6 @@ for (const ref of ['apiUrl', 'manifestUrl', 'filesUrl', 'storageUrl', 'openapiUr
 }
 
 console.log(
-  'PASS portal-refs: панелът показва един адрес (Отвори/Копирай) · нула технически препратки · ' +
+  'PASS portal-refs: панелът дава един вход (Отвори/QR) · нула технически препратки · ' +
   'токенът е `.pf-token-value` без подчертаване · договорът refs остава в api-spec.js',
 );

@@ -1,16 +1,15 @@
 'use strict';
 // ЛИНКЪТ КЪМ ПОРТАЛА — ИЗГРАДЕН ОТ ГУИ-ТО И ПРОВЕРЕН, ЧЕ НАИСТИНА ОТВАРЯ ПОРТАЛА.
 //
-// Изискването: човек не бива да сглобява адреси на ръка. Панелът има бутон
-// „Копирай адреса“, който слага в клипборда ЕДИНСТВЕНИЯ адрес на портала; тук се взема
-// точно това, което бутонът е копирал, и то се отваря през HTTP.
+// Изискването: човек не бива да сглобява адреси на ръка. Панелът дава входа с бутон
+// „Отвори портала“ и с QR кода (двойно щракване); тук се взема адресът, който кодът носи,
+// и той се отваря през HTTP.
 //
 // Тестът пада, ако:
-//   • в панела няма бутон „Копирай адреса“ (или не копира нищо);
-//   • копираното не е адрес на портала (`/p/<id>` или `/portal.html?...`);
+//   • в картата няма QR код с адрес (или адресът не е на портала);
 //   • адресът не отваря портал (не 200, не HTML, не съдържа портала);
 //   • адресът води към техническа страница (JSON) вместо към портала;
-//   • бутонът „Отвори портала“ не отваря портала в панела (същият origin).
+//   • бутонът „Отвори портала“ не отваря СЪЩИЯ адрес (същият origin).
 const assert = require('node:assert/strict');
 const { startServer, mountUi, waitFor, expandPortalBlocks } = require('./lib/gui-harness.cjs');
 const { stopChild } = require('./helpers.cjs');
@@ -35,8 +34,7 @@ const PANEL_MODULES = [
 
     // ── 1. Панелът: порталът е отворен, бутоните са налице ──────────────────
     const ui = mountUi(server, { modules: PANEL_MODULES });
-    // Клипбордът се ползва само в защитен контекст; в браузъра пред портала това е винаги
-    // така (HTTPS/Inpress), а в тестовата среда трябва да се заяви изрично.
+    // В браузъра пред портала (HTTPS/Ingress) контекстът винаги е защитен — заявява се и тук.
     ui.window.isSecureContext = true;
     const host = ui.container();
     ui.window.FilesManagerPanel.state.openPortal = portalId;
@@ -46,15 +44,13 @@ const PANEL_MODULES = [
     // Блоковете са сгънати по подразбиране — разгъваме ги с истинските им заглавия.
     await expandPortalBlocks(host);
 
-    const copy = await waitFor(() => host.querySelector('#pf-copy-portal'), { label: 'бутонът „Копирай адреса“' });
+    const qrBox = await waitFor(() => host.querySelector('#pf-portal-qr'), { label: 'QR кодът на портала' });
     const open = await waitFor(() => host.querySelector('#pf-open-portal'), { label: 'бутонът „Отвори портала“' });
 
-    // ── 2. Копираният адрес идва от ГУИ-ТО ──────────────────────────────────
-    copy.click();
-    await waitFor(() => ui.copied.length > 0, { label: 'копиран адрес' });
-    const link = String(ui.copied[ui.copied.length - 1] || '').trim();
-    assert.ok(link, 'бутонът „Копирай адреса“ копира адрес');
-    assert.match(link, /\/p\/[0-9a-f]{16,}$|\/portal\.html/, 'копираният адрес е на портала: ' + link);
+    // ── 2. Адресът идва от ГУИ-ТО — от самия QR код ────────────────────────
+    const link = String(qrBox.getAttribute('data-portal-url') || '').trim();
+    assert.ok(link, 'QR кодът носи адрес');
+    assert.match(link, /\/p\/[0-9a-f]{16,}/, 'адресът е на портала: ' + link);
     assert.equal(/:8099|:18099/.test(link), false, 'адресът не носи служебен порт: ' + link);
 
     // ── 3. Адресът РЕАЛНО отваря портала ────────────────────────────────────
@@ -65,12 +61,10 @@ const PANEL_MODULES = [
     assert.ok(html.includes('/portal.js'), 'това е истинската страница на портала (зарежда portal.js)');
     assert.ok(html.includes('Портал от панела') || html.includes('link-from-gui'), 'страницата е за ТОЗИ портал');
 
-    // ── 4. „Отвори портала“ отваря портала В ПАНЕЛА (същият origin) ────────
+    // ── 4. „Отвори портала“ отваря СЪЩИЯ адрес в СЪЩИЯ раздел ──────────────
     open.click();
-    await waitFor(
-      () => ui.window.FilesManagerPanel.state.portalView || host.textContent.includes('← Списък с портали'),
-      { label: 'порталът, отворен в панела' },
-    );
+    await waitFor(() => /\/p\/[0-9a-f]{16,}/.test(String(ui.window.location.href)), { label: 'адресът след „Отвори портала“' });
+    assert.equal(String(ui.window.location.href), link, 'бутонът отваря адреса от кода');
 
     // ── 5. „Отвори папката“ — ГУИ-то води до СТРАНИЦАТА С ФАЙЛОВЕТЕ ────────────
     // Порталът е QR кодът, който води до файловете. Затова панелът има и бутон към
@@ -92,8 +86,8 @@ const PANEL_MODULES = [
     assert.equal(/\/admin\//.test(absolute), false, 'адресът не води до административния API');
 
     console.log(
-      'PASS gui-open-portal-link: панелът копира ' + link.replace(/^https?:\/\/[^/]+/, '') +
-      ' · адресът отваря портала (200 · HTML · portal.js) · „Отвори портала“ го отваря в панела' +
+      'PASS gui-open-portal-link: QR кодът носи ' + link.replace(/^https?:\/\/[^/]+/, '') +
+      ' · адресът отваря портала (200 · HTML · portal.js) · „Отвори портала“ го отваря в същия раздел' +
       ' · „Отвори папката“ води до страницата на папката (' + absolute.replace(/^https?:\/\/[^/]+/, '') + ')',
     );
   } finally {

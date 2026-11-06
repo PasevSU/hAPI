@@ -2057,8 +2057,6 @@
   /** Една карта на портал: в списъка се разгъва, а в самостоятелен изглед е „страница“. */
   function portalCard(x, i, single) {
     const api = state.api[x.id];
-    const apiUrl = (api && api.refs && api.refs.apiUrl) || '';
-    const land = (api && api.landing) || `${linkBase()}/p/${x.id || x.slug}`;
     const ctc = contactOf(x.contactId);
     const kase = caseOf(x.caseId);
     return `<article class="pf-portal ${single ? 'pf-open pf-single' : ''}" data-portal="${i}">
@@ -2113,14 +2111,6 @@
                   <div class="fm-ico-row u-grid u-grid-chips">
                     ${chip(ICON.created, 'Дата на създаване', x.createdAt || '—', fmtDate(x.createdAt))}
                     ${x.notes ? chip(ICON.modified, 'Бележки', x.notes, 'има бележка') : ''}
-                    ${apiUrl
-        ? apiMenu(
-          apiUrl, 'api.json', 'api.json',
-          `<span aria-hidden="true">${ico('share')}</span> <span class="pf-address-label">${esc(land)}</span>`,
-          'pf-address-btn',
-        )
-        : chip(ico('share'), 'Адрес на портала', land, land)
-      }
                   </div>
                   ${x.notes ? `<p class="fm-file-notes">${ICON.modified} ${esc(x.notes)}</p>` : ''}
                   <hr class="u-divider" />
@@ -3529,34 +3519,35 @@
       });
     }
     // API/QR се създават заедно с портала — няма бутон „Генерирай“. Панелът НЕ изрежда
-    // техническите адреси: те са информация, която порталът извежда сам, а тук остава
-    // единственият адрес — този на портала (копира се) и машинното описание (сваля се).
-    // ── Връзка и QR: едно място за адреса, кода и действията по тях ────────────
+    // техническите адреси: остава само QR кодът, който отваря портала, и действията по него.
+    // ── Достъп и QR: кодът и действията по него ────────────────────────────────
     // Адресът, който носи QR кодът. Една функция за всички действия, за да не се разминават
-    // копираното, сваленото и отпечатаното (преди `folderUrl` липсваше и QR падаше на landing).
+    // отвореното, сваленото и отпечатаното (преди `folderUrl` липсваше и QR падаше на landing).
     const qrPageOf = (target) => {
       const a = target ? state.api[target.id] : null;
       return a ? a.folderUrl || a.landing || '' : '';
     };
-    // Полетата с адреса: щракването го маркира цялия — иначе „копирай“ е единственият път.
-    host.querySelectorAll('#pf-link-url').forEach((el) => {
-      el.addEventListener('focus', () => el.select());
-      el.addEventListener('click', () => el.select());
-    });
-    if (q('#pf-open-portal')) {
-      q('#pf-open-portal').addEventListener('click', () => {
-        const url = qrPageOf(portal());
-        if (!url) return toast('Адресът още не е създаден — порталът се създава с API и QR', 'err');
-        // СЪЩИЯТ таб, не нов: под Home Assistant Ingress нов таб губи сесията и показва
-        // празен екран (същото правило пази и `#pf-open-folder`). Адресът е на същия
-        // origin, така че бисквитката на Home Assistant остава валидна.
-        window.location.href = url;
-      });
-    }
-    if (q('#pf-copy-portal')) {
-      q('#pf-copy-portal').addEventListener('click', () => {
-        if (!portal() || !state.api[portal().id]) return toast('Адресът още не е създаден', 'err');
-        copyText(state.api[portal().id].landing, 'Адресът на портала е копиран');
+    // Една функция за ДВЕТЕ входни точки — „Отвори портала“ и двойното щракване върху QR
+    // кода: иначе двете места биха се разминали по адрес и по съобщение.
+    const openPortalPage = () => {
+      const el = q('#pf-portal-qr');
+      const url = qrPageOf(portal()) || (el && el.dataset.portalUrl) || '';
+      if (!url) return toast('Адресът още не е създаден — порталът се създава с API и QR', 'err');
+      // СЪЩИЯТ таб, не нов: под Home Assistant Ingress нов таб губи сесията и показва
+      // празен екран (същото правило пази и `#pf-open-folder`). Адресът е на същия
+      // origin, така че бисквитката на Home Assistant остава валидна.
+      window.location.href = url;
+    };
+    if (q('#pf-open-portal')) q('#pf-open-portal').addEventListener('click', openPortalPage);
+    // QR кодът е и вход към портала: ДВОЙНО щракване отваря страницата. Единичното щракване
+    // не прави нищо — иначе човек, който само разглежда кода, излиза от панела. Enter/Space
+    // са същото действие за клавиатура (роля „button“, `tabindex=0`).
+    if (q('#pf-portal-qr')) {
+      q('#pf-portal-qr').addEventListener('dblclick', openPortalPage);
+      q('#pf-portal-qr').addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        openPortalPage();
       });
     }
     // Подписаният достъп изтича (portal-access.js). Дотук единственият начин за нов беше
@@ -3610,19 +3601,6 @@
           document.body.classList.remove('printing-qr');
         }
         toast('QR кодът е изпратен към печат', 'ok');
-      });
-    }
-    // Бутонът е винаги в блока „Връзка и QR код“, затова проверката е при ЩРАКВАНЕ, а не
-    // при закачането: иначе при портал без изчислен API бутонът остава мъртъв и мълчи.
-    if (q('#pf-dl-api')) {
-      q('#pf-dl-api').addEventListener('click', () => {
-        const apiObj = portal() ? state.api[portal().id] : null;
-        if (!apiObj) return toast('Машинното описание се създава заедно с портала', 'err');
-        const name = `api-${portal().slug}.json`;
-        downloadJson(name, apiObj.record);
-        // Без съобщение свалянето изглежда като нищо: файлът пада в „Изтеглени“ и човекът
-        // натиска пак и пак. Освен това се казва, че това НЕ е порталът (честа грешка).
-        toast(`Свален ${name} — това е машинното описание, не страницата на портала`, 'ok');
       });
     }
     // Връзката с ПАПКАТА (0.69.147): страницата, която изрежда истинските файлове на диска.
@@ -4088,19 +4066,6 @@
         uploadFile(e.target);
       });
     }
-  }
-
-  function downloadJson(name, obj) {
-    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    // Връзката се закача за документа — иначе някои браузъри игнорират клика.
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
   }
 
   /** Изтегля произволен текстов файл (напр. checksums.txt) без сървър. */

@@ -22,12 +22,11 @@
     const isPublic = String(p.visibility || '') === 'public';
     // Текстът „API и QR се създават заедно с портала“ живее в речника — `portal.link.noApi`.
     const noApiHint = `<p class="hint">${T('portal.link.noApi')}</p>`;
-    // ── Връзка и QR: ЕДИН адрес, показан като текст, и кодът до него ─────────────
-    // Дотук адресът се виждаше само като бутон „Копирай адреса“, а QR стоеше най-долу в
-    // дясната колона на СГЪНАТ блок — тоест до кода се стигаше с три действия, а адресът
-    // не можеше нито да се прочете, нито да се провери. Затова този блок е ПЪРВИ и винаги
-    // отворен: кодът, адресът и действията по него са на едно място.
-    const link = api ? api.landing : '';
+    // ── Достъп и QR код: кодът е НАЙ-ВДЯСНО, действията — до него ───────────────
+    // Дотук тук стоеше и адресът като поле с „Копирай“. Адресът обаче водеше към API-то
+    // (JSON), а не към портала, и човек копираше нещо, което не отваря страницата. Затова
+    // адресът, копирането и „Свали api.json“ са махнати: остава QR кодът — входът към
+    // портала — и действията по него. Блокът е ПЪРВИ и винаги отворен.
     const expiresMs = api && api.accessExpires ? Number(api.accessExpires) * 1000 : 0;
     const minutesLeft = expiresMs ? Math.round((expiresMs - Date.now()) / 60000) : 0;
     const expired = Boolean(expiresMs && minutesLeft <= 0);
@@ -53,13 +52,7 @@
           <span class="pf-link-state ${linkState.cls}" id="pf-link-state">${esc(linkState.text)}</span>
         </div>
         <div class="pf-block-body pf-link-body">
-          <div class="pf-link-qr">${qr ? `<div class="qf-svg" id="pf-portal-qr">${qr}</div>` : `<p class="hint">${T('portal.link.qrMissing')}</p>`}</div>
           <div class="pf-link-side">
-            <label class="pf-link-label" for="pf-link-url">${T('portal.link.label')}</label>
-            <div class="pf-link-field">
-              <input id="pf-link-url" class="pf-link-url" readonly value="${esc(link)}" placeholder="${T('portal.link.placeholder')}" />
-              <button type="button" class="btn btn-sm" id="pf-copy-portal" title="${T('portal.tip.copy')}">${ICON.copy} ${T('portal.link.copy')}</button>
-            </div>
             ${api ? '' : noApiHint}
             <div class="pf-link-actions" role="toolbar" aria-label="${T('portal.link.title')}">
               <button type="button" class="btn btn-primary btn-sm" id="pf-open-portal" data-open-portal-id="${esc(p.id)}" title="${T('portal.tip.open')}" aria-label="${T('portal.link.open')}">${ico('openWindow')}<span class="btn-label">${T('portal.act.open')}</span></button>
@@ -68,12 +61,15 @@
         : T('portal.tip.refreshPublic')}" aria-label="${T('portal.link.refresh')}">${ico('refresh')}<span class="btn-label">${T('portal.act.refresh')}</span></button>
               <button type="button" class="btn btn-sm" id="pf-qr-download" title="${T('portal.tip.qrDownload')}" aria-label="${T('portal.link.qrDownload')}">${ICON.download}<span class="btn-label">${T('portal.act.qr')}</span></button>
               <button type="button" class="btn btn-sm" id="pf-qr-print" title="${T('portal.tip.qrPrint')}" aria-label="${T('portal.link.qrPrint')}">${ico('qr')}<span class="btn-label">${T('portal.act.print')}</span></button>
-              <button type="button" class="btn btn-sm" id="pf-dl-api" title="${T('portal.tip.dlApi')}" aria-label="${T('portal.link.dlApi')}">${ICON.download}<span class="btn-label">${T('portal.act.api')}</span></button>
               <button type="button" class="btn btn-sm" id="pf-open-folder" data-open-folder="${esc(p.slug || '')}" title="${T('portal.tip.openFolder')}" aria-label="${T('portal.link.openFolder')}">${ICON.folder}<span class="btn-label">${T('portal.act.folder')}</span></button>
             </div>
             <p class="pf-link-note">${T('portal.link.hint1')}<br />${T('portal.link.hint2')}</p>
             <p class="pf-link-note pf-link-single">${T('portal.link.single')}</p>
             <p class="pf-link-note pf-link-crypto">${T('portal.brand')} · ${T('portal.crypto')}</p>
+          </div>
+          <div class="pf-link-qr" id="pf-portal-qr" role="button" tabindex="0" data-portal-url="${esc(qrPage)}" title="${T('portal.tip.qrOpen')}" aria-label="${T('portal.tip.qrOpen')}">
+            ${qr ? `<div class="qf-svg">${qr}</div>` : `<p class="hint">${T('portal.link.qrMissing')}</p>`}
+            <p class="pf-link-note pf-link-qr-hint">${T('portal.link.dblclick')}</p>
           </div>
         </div>
       </section>`;

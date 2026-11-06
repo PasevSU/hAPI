@@ -51,7 +51,7 @@ for (const key of usedCard) {
   assert.match(key, /^portal\./, `ключовете на картата са групирани в portal.*: ${key}`);
 }
 // Заглавието и бутоните не са твърд български текст (иначе смяната на езика не работи).
-for (const literal of ['Връзка и QR код', 'Отвори портала', 'Копирай адреса', 'Свали QR', 'Печат на QR']) {
+for (const literal of ['Достъп и QR код', 'Отвори портала', 'Обнови достъпа', 'Свали QR', 'Печат на QR', 'Свали api.json']) {
   assert.equal(control.includes(`'${literal}'`), false, `картата още държи твърд текст: ${literal}`);
 }
 assert.ok(i18n.DICT.de['portal.link.title'] && i18n.DICT.en['portal.link.title'], 'заглавието на картата има превод');

@@ -14,7 +14,7 @@
 //   3. панелът минава под политиката: менюто на API-то показва ПУБЛИЧНИЯ адрес, а заявката
 //      отива на произхода на панела — нула нарушения.
 const assert = require('node:assert/strict');
-const { startServer, mountUi, waitFor } = require('./lib/gui-harness.cjs');
+const { startServer, mountUi, waitFor, expandPortalBlocks } = require('./lib/gui-harness.cjs');
 const { connectSrcOf, isSameOrigin, createCspGuard } = require('./lib/csp.cjs');
 const { stopChild } = require('./helpers.cjs');
 
@@ -58,19 +58,34 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
       slug: 'csp-guard', title: 'Портал зад домейн', visibility: 'public',
     });
     assert.equal(made.status, 201, JSON.stringify(made.data));
+    const folder = await server.api(`/admin/api/portals/${made.data.id}/tree/folder`, 'POST', { parent: '', name: 'документи-' + Date.now().toString(36) });
+    assert.equal(folder.status, 201, 'папката за менюто се създава: ' + JSON.stringify(folder.data));
     const ui = mountUi(server, { modules: PANEL_MODULES }); // csp: true по подразбиране
     ui.window.isSecureContext = true;
     ui.window.FilesManagerPanel.state.publicBaseUrl = PUBLIC_BASE;
     const host = ui.container();
     ui.window.FilesManagerPanel.mount(host);
-    const openItem = await waitFor(() => host.querySelector('[data-api-open]'), { label: 'менюто на API-то' });
+    // 0.69.181: адресът вече не се показва като табелка/поле — носи го QR кодът, който трябва
+    // да е строен върху ПУБЛИЧНИЯ адрес (не върху Ingress адреса на панела).
+    const openCard = await waitFor(() => host.querySelector('[data-open-portal]'), { label: 'картата на портала' });
+    openCard.click();
+    const qrBox = await waitFor(() => host.querySelector('#pf-portal-qr'), { label: 'QR кодът на портала' });
+    const qrUrl = String(qrBox.getAttribute('data-portal-url') || '');
+    assert.ok(qrUrl.startsWith(PUBLIC_BASE), 'QR кодът носи публичния адрес: ' + qrUrl);
+    // Менюто на ПАПКАТА показва същия публичен адрес, а заявката отива на произхода на
+    // панела — точно това пази `sameOrigin()`.
+    await expandPortalBlocks(host);
+    await waitFor(() => host.querySelector('[data-folder-gear]'), { label: 'папката в дървото' });
+    const folderToggle = await waitFor(() => host.querySelector('[data-folder]'), { label: 'папката за отваряне' });
+    folderToggle.click();
+    const openItem = await waitFor(() => host.querySelector('[data-api-open]'), { label: 'менюто на папката' });
     assert.ok(openItem.dataset.apiOpen.startsWith(PUBLIC_BASE), 'менюто показва публичния адрес');
 
     openItem.click();
     const shown = await waitFor(
       () => {
         const modal = ui.window.document.getElementById('fm-modal');
-        return modal && modal.textContent.includes('csp-guard') ? modal.textContent : null;
+        return modal && modal.textContent.includes('документи') ? modal.textContent : null;
       },
       { label: 'съдържанието в прозореца' },
     );

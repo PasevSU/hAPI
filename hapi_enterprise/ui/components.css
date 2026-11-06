@@ -738,10 +738,10 @@ input[type="radio"] {
   gap: 10px;
 }
 
-/* ── Връзка и QR код (първи блок на портала, винаги отворен) ──────────────────
-   Дотук QR стоеше в дясната колона на сгънатия контролен панел, а адресът се виждаше
-   само като бутон. Тук кодът е ЕДЪР, адресът е истинско поле (маркира се с едно
-   щракване), а действията са на един ред — без отваряне на други блокове. */
+/* ── Достъп и QR код (първи блок на портала, винаги отворен) ──────────────────
+   Дотук QR стоеше в дясната колона на сгънатия контролен панел, а адресът се копираше
+   като текст и водеше към API-то. Тук кодът е ЕДИН, стои НАЙ-ВДЯСНО, а действията са в
+   една лента до него — двойно щракване върху кода отваря портала. */
 .pf-link-body {
   display: flex;
   flex-wrap: wrap;
@@ -749,8 +749,27 @@ input[type="radio"] {
   gap: 14px;
 }
 
+/* QR кодът е НАЙ-ВДЯСНО в блока (`margin-inline-start: auto` го притиска), защото е
+   входът към портала: двойно щракване върху него отваря страницата в същия раздел. */
 .pf-link-qr {
   flex: 0 0 auto;
+  margin-inline-start: auto;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+}
+
+.pf-link-qr:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.pf-link-qr-hint {
+  max-width: 176px;
+  text-align: center;
 }
 
 .pf-link-qr .qf-svg svg {
@@ -772,25 +791,6 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-/* Адресът и действието по него са ЕДНА група: полето и „Копирай“ стоят на един ред,
-   а на тесен екран бутонът минава под полето, без да го смачква. */
-.pf-link-field {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: stretch;
-}
-
-.pf-link-field .pf-link-url {
-  flex: 1 1 220px;
-  min-width: 0;
-}
-
-.pf-link-field .btn {
-  flex: 0 0 auto;
-  white-space: nowrap;
 }
 
 /* ВСИЧКИ действия са в ЕДНА лента (flex), а не в решетки с фиксирани колони: така
@@ -860,6 +860,8 @@ input[type="radio"] {
   }
 
   .pf-link-qr {
+    order: -1;
+    margin-inline-start: 0;
     align-self: center;
   }
 
@@ -867,26 +869,6 @@ input[type="radio"] {
     flex: 0 0 auto;
     width: var(--w-100);
   }
-}
-
-.pf-link-label {
-  font-size: var(--fs-11);
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.pf-link-url {
-  width: 100%;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: var(--fs-11-5);
-  padding: 8px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--text);
-  /* Адресът се маркира с едно щракване — иначе „копирай“ е единственият път до него. */
-  user-select: all;
 }
 
 .pf-link-state {
@@ -923,6 +905,7 @@ input[type="radio"] {
   body.printing-qr .statusbar,
   body.printing-qr .toasts,
   body.printing-qr .pf-link-side,
+  body.printing-qr .pf-link-qr .pf-link-note,
   body.printing-qr .pf-block-head,
   body.printing-qr .pf-panels>.pf-block:not(.pf-link) {
     display: none !important;
@@ -1659,43 +1642,10 @@ input[type="radio"] {
   gap: 8px;
 }
 
-/* Адресът на портала е ЕДНОВРЕМЕННО линкът и менюто към него (0.69.152): натискането му
-   дава копирай / отвори / изтегли api.json. Дотогава до него стоеше отделен бутон
-   „API ▾“ — две имена за едно място. Изглежда като табелка, за да не расте заглавният ред. */
-.pf-address-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: var(--w-100);
-  padding: 2px 10px;
-  height: 2em;
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
-  background: rgba(148, 178, 220, 0.1);
-  color: var(--text);
-  font: inherit;
-  font-size: var(--fs-12);
-  cursor: pointer;
-}
-
-.pf-address-btn:hover,
-.pf-address-btn[aria-expanded="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.pf-address-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pf-address-btn svg {
-  flex: 0 0 auto;
-  color: var(--accent);
-}
-
+/* Адресът на портала НЕ стои в картата (0.69.181): табелката изглеждаше като линка към
+   портала, но менюто ѝ работеше върху адреса на API-то — „Копирай“ даваше JSON, а
+   „Изтегли api.json“ не сваляше файл. Входът е QR кодът в блока „Достъп и QR код“
+   (двойно щракване) или бутонът „Отвори портала“ — без адрес в текста. */
 .pf-portal.pf-open {
   border-color: rgba(34, 211, 238, 0.55);
   border-left-color: var(--accent);
