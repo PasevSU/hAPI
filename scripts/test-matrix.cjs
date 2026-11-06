@@ -12,7 +12,8 @@
 //
 // Резултат: `reports/test-matrix.json` (опити, времена, нестабилни тестове) + код 0
 // само при 100% успех. Никога не "закръгля" успех — при остатъчни грешки връща 1.
-const { readdirSync, mkdirSync, writeFileSync } = require('node:fs');
+const { readdirSync, mkdirSync, writeFileSync, statSync, rmSync } = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
@@ -167,6 +168,42 @@ function writeReport(payload) {
   }
 }
 
+/**
+ * Изчиства временните папки, които тестовете създават в `os.tmpdir()`.
+ * На тази машина бяха останали 8201 такива папки (2.8 GB) за няколко дни: тест, който
+ * прави `mkdtempSync('hapi-…')`/`mkdtempSync('portal-…')` и не стигне до `rmSync`
+ * (най-често при провал или при `process.exit`), оставя цяла папка след себе си.
+ * Чистим САМО папки, създадени след началото на тази серия — чужди и от други сесии
+ * не се пипат. `birthtime` е 0 на някои файлови системи, затова има резервен вариант.
+ */
+function sweepTemp(startedAt) {
+  const tmp = os.tmpdir();
+  const out = { removed: 0, skipped: 0, failed: 0 };
+  let entries;
+  try {
+    entries = readdirSync(tmp, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const ent of entries) {
+    if (!ent.isDirectory() || !/^(hapi|portal)/.test(ent.name)) continue;
+    const full = path.join(tmp, ent.name);
+    try {
+      const st = statSync(full);
+      const born = st.birthtimeMs || st.mtimeMs || 0;
+      if (born && born < startedAt - 2000) {
+        out.skipped += 1;
+        continue;
+      }
+      rmSync(full, { recursive: true, force: true });
+      out.removed += 1;
+    } catch {
+      out.failed += 1;
+    }
+  }
+  return out;
+}
+
 function main() {
   const files = testFiles();
   // Пропуснатите се записват в отчета: при `--skip` те не са „минали“, а не са пускани.
@@ -204,6 +241,14 @@ function main() {
   const failed = summary.filter((s) => !s.ok);
   const flaky = summary.filter((s) => s.flaky);
   const totalMs = Date.now() - startedAll;
+  // При --only отчетът НЕ се пише: това е частична серия, а `reports/test-matrix.json`
+  // трябва да продължи да описва ПЪЛНИЯ набор — иначе `tests/release-status.cjs` пада,
+  // защото броят на тестовете в отчета не е броят на тестовете в дървото.
+  if (only) {
+    const sweptOnly = sweepTemp(startedAll);
+    process.stdout.write(`    временни папки: изчистени ${sweptOnly.removed}\n`);
+    return failed.length ? 1 : 0;
+  }
   writeReport({
     generatedAt: new Date().toISOString(),
     attemptsUsed: history.length,
@@ -218,6 +263,13 @@ function main() {
   });
 
   process.stdout.write('\n═══ Обобщение ═══\n');
+  // Хигиена след серията: временните папки на тестовете не бива да остават на диска.
+  const swept = sweepTemp(startedAll);
+  process.stdout.write(
+    `    🧹 временни папки: изчистени ${swept.removed}` +
+    `${swept.failed ? ` · неуспешни ${swept.failed}` : ''}` +
+    `${swept.skipped ? ` · пропуснати (по-стари) ${swept.skipped}` : ''}\n`,
+  );
   if (flaky.length) {
     process.stdout.write(`    нестабилни (минали след рестарт): ${flaky.map((f) => f.file).join(', ')}\n`);
   }

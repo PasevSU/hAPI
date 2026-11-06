@@ -48,6 +48,12 @@ dist/
 .vscode/
 .idea/
 
+# Работни файлове от анализ и от сериите (не са част от изданието).
+# 2026-11-06: 257 такива бяха останали в reports/ и замърсяваха git status.
+reports/*.txt
+reports/*.py
+reports/*.log
+
 # Dev dashboard (local)
 dashboard-commands.json
 
