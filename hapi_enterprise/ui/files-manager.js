@@ -25,7 +25,7 @@
     { id: 'move', label: 'Премести', icon: 'move' },
     { id: 'copy', label: 'Копирай', icon: 'copy' },
     { id: 'access', label: 'Достъп', icon: 'access' },
-    { id: 'share', label: 'Сподели / QR', icon: 'share' },
+    { id: 'share', label: 'Сподели', icon: 'share' },
     { id: 'signedUrl', label: 'Подписан URL', icon: 'access' },
     { id: 'receipt', label: 'Разписка', icon: 'package' },
     { id: 'verifyReceipt', label: 'Провери разписка', icon: 'lock' },
@@ -1945,16 +1945,10 @@
     state.signed[f.id] = linkBase() + r.data.path;
     render();
   }
-  // QR кодът НЕ е отделен адрес: той СЪДЪРЖА адреса за изтегляне и се рисува тук, в панела.
-  // Старото `/api/v1/p/<slug>/files/<id>/qr.svg` искаше токен за частен портал — т.е. и то
-  // не се отваряше в браузър, точно както стария „публичен“ адрес.
-  function qrMarkup(f, link) {
-    if (!link) return '<p class="hint">QR кодът се строи от адреса — издава се…</p>';
-    const svg = qrSvg(link);
-    return svg
-      ? `<div class="qf-svg" data-file-qr="${esc(f.id)}">${svg}</div>`
-      : '<p class="hint">QR SVG не е наличен в тази среда.</p>';
-  }
+  // QR кодът в панела е ЕДИН — този на портала в блока „Връзка и QR код“ (portal-control.js).
+  // Дотук всеки файл рисуваше свой код: той носеше подписан адрес с живот един час или, за
+  // защитен файл, администраторски адрес, който иска вход в панела — тоест разпечатан беше мъртъв.
+  const QR_ONE_HINT = 'QR кодът е един — в блока „Връзка и QR код“ на портала; той отваря портала заедно с папката му.';
 
   // ── Рендер ───────────────────────────────────────────────────────────────
   function render() {
@@ -2804,7 +2798,7 @@
     metadata: 'Метаданни',
     rename: 'Преименувай',
     access: 'Достъп',
-    share: 'Сподели / QR',
+    share: 'Сподели',
     note: 'Бележка',
   };
   function openPanelModal() {
@@ -3371,11 +3365,11 @@
       : 'Адресът е подписан (валиден 1 час) и се отваря в браузър без вход. Издай нов от това меню, когато изтече.';
     return `
       <div class="field"><label>${isFree ? 'Подписан адрес за изтегляне' : 'Администраторски адрес за изтегляне'}</label><input readonly value="${esc(link || 'издава се…')}" /></div>
-      <div class="field"><label>QR код на този адрес</label>${qrMarkup(f, link)}</div>
       <div class="u-row u-row-2">
         <button type="button" class="btn btn-sm" id="fm-copy-link" ${link ? '' : 'disabled'}>${ICON.copy} Копирай адреса</button>
         <button type="button" class="btn btn-sm" id="fm-create-key">Нов ключ</button>
       </div>
+      <p class="hint">${QR_ONE_HINT}</p>
       ${state.issuedKey
         ? `<div class="field"><label>Ключ (показва се само веднъж)</label><input readonly value="${esc(
           state.issuedKey,
@@ -3946,19 +3940,6 @@
         toast(state.tree.error || 'Папките са прочетени наново', state.tree.error ? 'err' : 'ok');
       });
     }
-    host.querySelectorAll('[data-folder-qr]').forEach((el) => {
-      el.addEventListener('click', () => {
-        const rel = el.dataset.folderQr || '';
-        const url = folderApiUrl(rel);
-        const svg = qrSvg(url);
-        showModal(`QR · ${treePath(rel)}`, {
-          html: `${svg ? `<div class="qf-svg">${svg}</div>` : '<p class="hint">QR SVG не е наличен в тази среда.</p>'}<p class="hint"><code>${esc(
-            url,
-          )}</code></p>`,
-        });
-      });
-    });
-    // Иконите на папка: ⚙ меню (коментар/видима/медийна/заключване), добави файл, пакет.
     host.querySelectorAll('[data-folder-gear]').forEach((el) => {
       el.addEventListener('click', () => {
         const rel = el.dataset.folderGear || '';

@@ -1158,8 +1158,8 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       );
     });
 
-    // ── J53. Папка: бележка и QR от менюто ⚙ ─────────────────────────────────
-    await journey('J53 папка: бележка и QR от менюто', async () => {
+    // ── J53. Папка: бележка и флагове от менюто ⚙ ─────────────────────────────
+    await journey('J53 папка: бележка и флагове от менюто', async () => {
       await ownPortalWithFile('gui-journey-folder-gear');
       // Името е уникално за пускането: хранилището живее между пусканията и папка със
       // същото име вече съществува от предишно — add-on-ът правилно отказва дубликат.
@@ -1212,13 +1212,11 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       await waitFor(() => app.toast(), { label: 'отговорът при изчистване на бележката', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'бележката е изчистена: ' + app.toast().message);
       await waitFor(() => !/Бележка от сценария/.test(text(view())), { label: 'бележката да изчезне от дървото', timeout: BUDGET });
-      // QR на папката: същото меню, друг бутон — панелът показва адреса в прозорец.
+      // QR кодът НЕ е в менюто на папката: в панела има ЕДИН код — този на портала.
       const again = await waitFor(ownGear, { label: 'менюто ⚙ на папката отново', timeout: BUDGET });
       again.click();
       await settle('менюто на папката');
-      const qr = await waitFor(() => app.$('[data-folder-qr="' + rel + '"]'), { label: '„QR“ на папката', timeout: BUDGET });
-      qr.click();
-      await waitFor(() => text(app.document.body).includes('QR ·'), { label: 'прозорецът с QR на папката', timeout: BUDGET });
+      assert.equal(app.$('[data-folder-qr="' + rel + '"]'), null, 'менюто на папката няма собствен QR код');
     });
 
     // ── J54. Портал: контакт с поле по желание (добави, махни, запази) ────────

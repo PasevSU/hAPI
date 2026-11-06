@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.178
+# Състояние на изданието — hAPI Enterprise 0.69.179
 
-Версия: **0.69.178** · клон `main`
+Версия: **0.69.179** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **367/367** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.178 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 592 файла · 104990 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 587 файла · 104052 реда · critical: 0 · high: 0 · medium: 0 · low: 201 — чисто · изключения: 23/23 (0 мъртви) |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.179 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 592 файла · 104993 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 587 файла · 104055 реда · critical: 0 · high: 0 · medium: 0 · low: 201 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,27 +27,34 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.178.tar.gz` | add-on архив (200 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.178.zip` | интеграция за HACS (26 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.178.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.179.tar.gz` | add-on архив (200 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.179.zip` | интеграция за HACS (26 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.179.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.178
+## 3. Какво влезе във 0.69.179
 
-- **Хранилището има име: „ПАП БОКС“.** То стои на публичната страница на портала (там,
-  където води QR кодът) и в картата на портала в панела — на трите езика, защото е
-  собствено име и не се превежда.
-- **Криптографската защита е изписана ЯВНО на български, английски и немски:**
-  „Криптографска защита: SHA-256 за всеки файл, подписан достъп и AES-256-GCM при
-  шифроване“ / „Cryptographic protection: SHA-256 for every file, signed access, and
-  AES-256-GCM when encrypted“ / „Kryptografischer Schutz: SHA-256 für jede Datei,
-  signierter Zugang und AES-256-GCM bei Verschlüsselung“. Дотук това се виждаше само
-  косвено — като отпечатъци в списъка и като бележка за подписания достъп.
-- **Тестът го пази:** `portal-i18n.cjs` и `ui-i18n.cjs` искат и трите езика да съдържат
-  SHA-256 и AES-256-GCM в този ред, а марката да е „ПАП БОКС“; изключението за кирилица
-  в DE/EN е само за марката (собствено име), не за текстовете.
-- Оформление: марката е тих надпис над заглавието, а редът за защита — под резюмето, с
-  катинар; в картата е един ред под адреса, за да не се бие с действията.
+- **QR кодът в панела е ЕДИН — този на портала.** Дотук кодът се рисуваше на три места:
+  в картата на портала, в „Сподели / QR“ на **всеки файл** и в менюто на **всяка папка**.
+  Трите кодираха различни адреси, а двата странични не бяха годни за получател:
+  - файловият код носеше подписан адрес с живот **1 час** (`ensureSigned`, `ttlSeconds: 3600`)
+    или, за защитен файл, администраторски адрес, който иска вход в панела — тоест
+    разпечатан, той е мъртъв или иска парола;
+  - папковият код носеше JSON адреса `/api/v1/p/<slug>/tree/api.json?path=…` — точно
+    адресът, който `tests/portal-chain.cjs` забранява за QR още от 0.69.106 (сървърът
+    кодира `/p/<id>?folder=…`).
+  Затова QR остава само в първия, винаги отворен блок „Връзка и QR код“, който носи и
+  адреса, и кода, и действията по тях. Файловете и папките пазят адреса си (и `api.json`),
+  но не и собствен код.
+- **Панелът „Сподели / QR“ е „Сподели“.** Той дава адреса и ключа за ТОЗИ файл, а ред под
+  тях казва къде е QR кодът — един, на портала. Това е и честното име.
+- **Картата го казва с думи** (`portal.link.single`, BG/EN/DE): това е единственият QR
+  в панела и той отваря портала заедно с папката му (`api.folderUrl`).
+- Тестове: `portal-card-link.cjs` иска ТОЧНО един `.qf-svg` в картата (`#pf-portal-qr`)
+  и че `qrSvg(` се среща само в `portal-control.js` (рисуване) и `files-manager.js`
+  (сваляне/печат); `files-manager.cjs`, `folder-delete.cjs` и `gui-journeys.cjs` пазят
+  обратното — няма `data-file-qr`/`data-folder-qr` и няма прозорец „QR · папка“.
+- Дефектът е записан като **DEF-31** в `documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md`.
 
 ## 4. Как се проверява наново
 

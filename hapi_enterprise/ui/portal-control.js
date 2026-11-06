@@ -53,7 +53,7 @@
           <span class="pf-link-state ${linkState.cls}" id="pf-link-state">${esc(linkState.text)}</span>
         </div>
         <div class="pf-block-body pf-link-body">
-          <div class="pf-link-qr">${qr ? `<div class="qf-svg">${qr}</div>` : `<p class="hint">${T('portal.link.qrMissing')}</p>`}</div>
+          <div class="pf-link-qr">${qr ? `<div class="qf-svg" id="pf-portal-qr">${qr}</div>` : `<p class="hint">${T('portal.link.qrMissing')}</p>`}</div>
           <div class="pf-link-side">
             <label class="pf-link-label" for="pf-link-url">${T('portal.link.label')}</label>
             <div class="pf-link-field">
@@ -72,6 +72,7 @@
               <button type="button" class="btn btn-sm" id="pf-open-folder" data-open-folder="${esc(p.slug || '')}" title="${T('portal.tip.openFolder')}" aria-label="${T('portal.link.openFolder')}">${ICON.folder}<span class="btn-label">${T('portal.act.folder')}</span></button>
             </div>
             <p class="pf-link-note">${T('portal.link.hint1')}<br />${T('portal.link.hint2')}</p>
+            <p class="pf-link-note pf-link-single">${T('portal.link.single')}</p>
             <p class="pf-link-note pf-link-crypto">${T('portal.brand')} · ${T('portal.crypto')}</p>
           </div>
         </div>

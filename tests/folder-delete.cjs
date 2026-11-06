@@ -1,5 +1,5 @@
 'use strict';
-// 0.69.62: (1) адресите в „Сподели / QR“ се отварят, (2) „добави файл“ качва ЕДИН файл,
+// 0.69.62: (1) адресите в „Сподели“ се отварят, (2) „добави файл“ качва ЕДИН файл,
 // (3) папките вече могат да се трият — с реално изтриване в хранилището на портала.
 //
 // Какво се мери на живия сървър:
@@ -112,17 +112,20 @@ const root = path.join(__dirname, '..');
       'заключената папка си стои',
     );
 
-    // ── 5. Панелът: QR от работещия адрес, един файл на прикачване, изтриване ──
+    // ── 5. Панелът: един QR (на портала), един файл на прикачване, изтриване ──
     const ui = (name) => fs.readFileSync(path.join(root, 'hapi_enterprise', 'ui', name), 'utf8');
     const filesUi = ui('files-manager.js');
     const foldersUi = ui('portal-folders.js');
     const filesBlock = ui('portal-files.js');
 
     assert.equal(filesUi.includes('/api/public/v1/files/'), false, 'панелът не строи адрес, който иска ключ');
-    // Файлът няма собствен QR адрес: QR-ът се рисува от адреса за изтегляне.
+    // Файлът няма собствен QR код: в панела има ЕДИН код — този на портала (portal-control.js).
     assert.equal(/files\/\$\{encodeURIComponent\(f\.id\)\}\/qr\.svg/.test(filesUi), false, 'няма отделен QR адрес за файл');
-    assert.match(filesUi, /function qrMarkup\(f, link\)/, 'QR кодът се строи от адреса за изтегляне');
-    assert.match(filesUi, /qrSvg\(link\)/, 'рисува се от СЪЩИЯ адрес, който се копира');
+    assert.equal(/function qrMarkup\(f, link\)/.test(filesUi), false, 'файлът няма собствен QR код');
+    assert.equal(/data-folder-qr/.test(foldersUi), false, 'папката няма собствен QR код');
+    assert.match(filesUi, /const QR_ONE_HINT = 'QR кодът е един/, 'панелът „Сподели“ казва къде е кодът');
+    // Самата рисунка е в картата на портала и строи адреса на СТРАНИЦАТА, не на SVG-то.
+    assert.match(ui('portal-control.js'), /qrSvg\(qrPage\)/, 'кодът на портала се строи от адреса на страницата');
     assert.match(filesUi, /data-folder-delete/, 'изтриването на папка е вързано към бутон');
     assert.match(filesUi, /async function deleteFolder\(rel\)/);
     assert.match(filesUi, /r\.status === 409/, 'непразна папка пита втори път (409)');
@@ -133,7 +136,7 @@ const root = path.join(__dirname, '..');
     assert.match(filesBlock, /id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple/, 'папката остава multiple');
 
     console.log(
-      'PASS folder-delete: непразна → 409 (2 файла, 1 папка) · recursive → 200 (2 файла, 1 подпапка, 1 регистриран) · празна → 200 · корен → 400 · липсваща → 404 · „..“ → 400 · заключена → 409 · панелът строи QR от работещия адрес',
+      'PASS folder-delete: непразна → 409 (2 файла, 1 папка) · recursive → 200 (2 файла, 1 подпапка, 1 регистриран) · празна → 200 · корен → 400 · липсваща → 404 · „..“ → 400 · заключена → 409 · панелът има ЕДИН QR — на портала',
     );
 
     // Чистене: собствената папка на тестовия портал (празна е — съдържанието е изтрито

@@ -123,7 +123,6 @@
         </div>
         <div class="fm-folder-actions">
           ${apiMenu(folderApiUrl(key), 'api.json', 'api.json')}
-          <button type="button" class="btn btn-sm" data-folder-qr="${esc(key)}" title="QR код на API-то на папката">QR</button>
         </div>
       </div>
     </div>`;

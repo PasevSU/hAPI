@@ -37,6 +37,20 @@ assert.match(panel, /id="pf-qr-download"/, 'QR кодът може да се с�
 assert.match(panel, /id="pf-qr-print"/, 'QR кодът може да се отпечата');
 assert.match(panel, /class="pf-link-state/, 'състоянието на достъпа се вижда (важи/изтекъл)');
 
+// ── 1в. QR кодът в панела е ЕДИН — този на портала ────────────────────────
+// Дотук всеки файл и всяка папка рисуваха свой код с друг адрес (подписан за един час или
+// администраторски, който иска вход) — при 30 файла това бяха 30 кода, повечето мъртви за
+// получателя. Затова кодът е един: в блока „Връзка и QR код“, с адреса и действията до него.
+assert.equal((panel.match(/class="qf-svg"/g) || []).length, 1, 'картата рисува ТОЧНО един QR код');
+assert.match(panel, /class="qf-svg" id="pf-portal-qr"/, 'кодът на портала има стабилен идентификатор');
+assert.match(panel, /portal\.link\.single/, 'картата казва с думи, че кодът е един');
+for (const f of fs.readdirSync(path.join(root, 'hapi_enterprise', 'ui'))) {
+  if (!f.endsWith('.js') || !/qrSvg\s*\(/.test(uiSrc(f))) continue;
+  assert.ok(['portal-control.js', 'files-manager.js'].includes(f), 'qrSvg се вика само за един код, а се среща и в ' + f);
+}
+assert.equal(/data-file-qr/.test(manager), false, 'файлът няма собствен QR код');
+assert.equal(/data-folder-qr/.test(manager + uiSrc('portal-folders.js')), false, 'папката няма собствен QR код');
+
 // ── 1б. ВСИЧКО е в ЕДНА група: адресът с копирането си и действията в една лента ──
 // Дотук действията стояха в три отделни реда (`u-row`), после в решетка с фиксирани колони —
 // и двете разтягат бутоните до пълна ширина и на тясна карта се получава стена от бутони.

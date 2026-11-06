@@ -85,6 +85,10 @@ assert.equal(/qrSvg\(api\.qrUrl\)/.test(src), false, 'QR кодът не бив�
 // 0.69.146: панелът НЕ изрежда технически адреси — QR се ПОКАЗВА като изображение, а адресът
 // му не се печата. Един адрес в панела е порталът („Отвори портала“ / „Копирай адреса“).
 assert.match(src, /class="qf-svg"/, 'QR кодът се показва като изображение');
+// 0.69.179: кодът е ЕДИН — на портала. Файлът и папката нямат собствен код (иначе при 30
+// файла човек вижда 30 кода, а файловият носи подписан адрес с живот един час).
+assert.equal(/data-file-qr/.test(src), false, 'файлът няма собствен QR код');
+assert.equal(/qrMarkup/.test(src), false, 'няма отделно рисуване на код за файл');
 assert.equal(/<dt>QR изображение<\/dt>/.test(src), false, 'адресът на SVG-то не е ред в панела');
 // Частен портал: адресите носят ПОДПИСАН достъп — без него връщат 404 (portal-access.js).
 const portalControlSrc = uiSrc('portal-control.js');
@@ -242,7 +246,7 @@ assert.match(css, /\.fm-url \.fm-copy-btn \{ margin-left: auto; flex: 0 0 auto; 
 // Иконите са един набор вградени SVG (ui/icons.js) — без шрифт-икони и без CDN.
 assert.match(src, /get copy\(\) \{\s*return ico\('copy'\);/);
 assert.match(src, /\{ id: 'preview', label: 'Преглед', icon: 'preview' \}/);
-assert.match(src, /\{ id: 'share', label: 'Сподели \/ QR', icon: 'share' \}/);
+assert.match(src, /\{ id: 'share', label: 'Сподели', icon: 'share' \}/);
 assert.match(src, /\{ id: 'delete', label: 'Изтрий', icon: 'delete' \}/);
 assert.equal(/\{ id: '[a-z]+', label: '[^']+', icon: '(⧉|⧈|≡|ⓘ|⚿|⇱|✕|⤓|⤢|↔|🗜|⚑)'/.test(src), false, 'няма символни икони в действията');
 assert.equal(/[\u{1F300}-\u{1FAFF}]/u.test(src), false, 'няма емоджи-икони в интерфейса на портала');
@@ -497,7 +501,7 @@ assert.match(src, /const treePath = \(rel\) => `\/\$\{String\(rel \|\| ''\)/);
 assert.match(src, /state\.tree\.open = state\.tree\.open === rel \? null : rel;/);
 assert.equal(/state\.tree\.open\.(add|delete|has)\(/.test(src), false, 'няма много отворени папки (Set)');
 assert.equal(/allFolderPaths|data-tree-toggle|fm-tree-expand|fm-tree-filter/.test(src), false, 'няма мъртви манипулатори');
-assert.match(src, /data-folder-qr="\$\{esc\(key\)\}"/);
+assert.equal(/data-folder-qr/.test(src), false, 'менюто на папките няма собствен QR код — кодът е един, на портала');
 assert.match(src, /#fm-tree-refresh/);
 // CSS за папките: редове, отстъп по дълбочина и табелки с еднакъв размер.
 assert.match(css, /\.fm-folders \{ display: flex; flex-direction: column/);
