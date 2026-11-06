@@ -37,6 +37,24 @@ assert.match(panel, /id="pf-qr-download"/, 'QR кодът може да се с�
 assert.match(panel, /id="pf-qr-print"/, 'QR кодът може да се отпечата');
 assert.match(panel, /class="pf-link-state/, 'състоянието на достъпа се вижда (важи/изтекъл)');
 
+// ── 1б. ВСИЧКО е в ЕДНА група: адресът с копирането си и действията в една лента ──
+// Дотук действията стояха в три отделни реда (`u-row`), после в решетка с фиксирани колони —
+// и двете разтягат бутоните до пълна ширина и на тясна карта се получава стена от бутони.
+assert.match(panel, /class="pf-link-field"/, 'адресът и „Копирай“ са една група (поле + бутон)');
+const actions = panel.slice(panel.indexOf('class="pf-link-actions"'), panel.indexOf('portal.link.hint1'));
+assert.ok(actions.length > 200, 'блокът с действията е наличен');
+for (const id of ['pf-open-portal', 'pf-refresh-access', 'pf-qr-download', 'pf-qr-print', 'pf-dl-api', 'pf-open-folder']) {
+  assert.ok(actions.includes(`id="${id}"`), `действието ${id} е в ОБЩАТА лента, не в отделен ред`);
+}
+assert.equal(/class="u-row/.test(actions), false, 'в групата на действията няма отделни редове (u-row)');
+// Лента, не решетка: бутоните са с ширината на съдържанието си (`flex: 0 0 auto`), а на
+// тесен екран остават само иконите — иначе „един подбор“ пак става стена от бутони.
+assert.match(css, /\.pf-link-actions \{[\s\S]{0,120}display: flex;/, 'действията са в една лента (flex)');
+assert.match(css, /\.pf-link-actions \{[\s\S]{0,160}flex-wrap: wrap/, 'лентата се пренася, вместо да се разтяга');
+assert.match(css, /\.pf-link-actions \.btn \{[\s\S]{0,120}flex: 0 0 auto/, 'бутоните не се разтягат до пълна ширина');
+assert.match(css, /@media \(max-width: 560px\) \{[\s\S]{0,160}\.pf-link-actions \.btn-label \{\s*display: none/, 'под 560px остават само иконите (текстът е в title/aria-label)');
+assert.match(css, /@media \(max-width: 720px\) \{[\s\S]{0,160}\.pf-link-body \{\s*flex-direction: column/, 'на тясна карта QR минава над групата, вместо да я разкъса');
+
 // ── 2б. Едно зареждане на сензорите + видим отговор при сваляне на api.json ─
 // `mount()` вика `loadMonitor()` и после `reload()`, който също го викаше — тоест панелът
 // теглеше сензорите ДВА ПЪТИ при всяко отваряне (и след всяко действие).

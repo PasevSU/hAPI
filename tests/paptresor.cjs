@@ -130,7 +130,13 @@ assert.ok(panel.includes("data-action=\"paptresorPreview\"") && panel.includes("
 assert.ok(/paptresorPrint[\s\S]{0,600}classList\.add\('printing-paptresor'\)/.test(panel), 'печатът слага класа, който скрива останалото');
 assert.ok(/finally[\s\S]{0,200}classList\.remove\('printing-paptresor'\)/.test(panel), 'класът се маха и при отказ — иначе следващият печат е празен');
 assert.ok(indexHtml.indexOf('paptresor.js') > -1 && indexHtml.indexOf('paptresor.js') < indexHtml.indexOf('settings-panel.js'), 'модулът се зарежда преди панела');
-assert.ok(css.includes('body.printing-paptresor #set-section-body > *:not(#set-paptresor-print)'), 'при печат остава само отчетът');
+// Правилото се проверява СЕМАНТИЧНО: разстоянията около `>` не са договор (редакторът ги
+// нормализира при запис), а фактът, че при печат остава само листът — е.
+assert.match(
+  css,
+  /body\.printing-paptresor #set-section-body\s*>\s*\*:not\(#set-paptresor-print\)/,
+  'при печат остава само отчетът',
+);
 assert.ok(css.includes('@page'), 'има правила за страницата (A4)');
 
 console.log('PASS paptresor: плакат + ' + paptresor.LABELS_PER_SHEET + ' етикета · екраниране · самостоятелен лист · печат само на отчета');

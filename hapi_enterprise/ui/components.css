@@ -754,8 +754,10 @@ input[type="radio"] {
 }
 
 .pf-link-qr .qf-svg svg {
-  width: 190px;
-  max-width: 190px;
+  /* Малко по-малък код (176 вместо 190), за да се побира РАДОМ с групата от действия
+     и в тясна колона на панела — при 190 + 320 той минаваше НАД бутоните. */
+  width: 176px;
+  max-width: 176px;
   height: auto;
   background: #fff;
   padding: 8px;
@@ -763,11 +765,96 @@ input[type="radio"] {
 }
 
 .pf-link-side {
-  flex: 1 1 320px;
+  /* 240, не 320: прагът за „един ред“ става ~430px, колкото е реалната ширина на картата
+     под Ingress. Иначе flex-wrap слага кода над действията и групата се разкъсва. */
+  flex: 1 1 240px;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Адресът и действието по него са ЕДНА група: полето и „Копирай“ стоят на един ред,
+   а на тесен екран бутонът минава под полето, без да го смачква. */
+.pf-link-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.pf-link-field .pf-link-url {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.pf-link-field .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ВСИЧКИ действия са в ЕДНА лента (flex), а не в решетки с фиксирани колони: така
+   бутоните са с ширината на съдържанието си и групата изглежда като подбор, а не като
+   стена от бутони. На тясна карта лентата се пренася, без да разтяга бутоните. */
+.pf-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: var(--w-100);
+}
+
+.pf-link-actions .btn {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  gap: 6px;
+  font-size: var(--fs-11-5);
+  white-space: nowrap;
+}
+
+.pf-link-actions .btn svg,
+.pf-link-actions .btn .ico {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+/* Под 560px остават САМО иконите (пълният текст е в `title`/`aria-label`) — така и на
+   телефон действията са един ред, вместо три реда бутони. */
+@media (max-width: 560px) {
+  .pf-link-actions .btn-label {
+    display: none;
+  }
+
+  .pf-link-actions .btn {
+    padding: 0 8px;
+  }
+}
+
+/* Бележката под адреса е дребна и не се бие за внимание с действията. */
+.pf-link-note {
+  margin: 0;
+  font-size: var(--fs-11);
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* Тясна карта (телефон, тясна колона под Ingress): QR минава най-горе по средата, а
+   действията остават в една лента — групата се запазва, вместо да се разпадне. */
+@media (max-width: 720px) {
+  .pf-link-body {
+    flex-direction: column;
+  }
+
+  .pf-link-qr {
+    align-self: center;
+  }
+
+  .pf-link-side {
+    flex: 0 0 auto;
+    width: var(--w-100);
+  }
 }
 
 .pf-link-label {
@@ -3236,7 +3323,7 @@ input[type="radio"] {
     box-shadow: none !important;
   }
 
-  body.printing-paptresor #set-section-body > *:not(#set-paptresor-print) {
+  body.printing-paptresor #set-section-body>*:not(#set-paptresor-print) {
     display: none !important;
   }
 

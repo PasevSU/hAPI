@@ -56,24 +56,22 @@
           <div class="pf-link-qr">${qr ? `<div class="qf-svg">${qr}</div>` : `<p class="hint">${T('portal.link.qrMissing')}</p>`}</div>
           <div class="pf-link-side">
             <label class="pf-link-label" for="pf-link-url">${T('portal.link.label')}</label>
-            <input id="pf-link-url" class="pf-link-url" readonly value="${esc(link)}" placeholder="${T('portal.link.placeholder')}" />
-            ${api ? '' : noApiHint}
-            <div class="u-row u-row-3">
-              <button type="button" class="btn btn-primary btn-sm" id="pf-open-portal" data-open-portal-id="${esc(p.id)}" title="${T('portal.tip.open')}">${ico('openWindow')} ${T('portal.link.open')}</button>
+            <div class="pf-link-field">
+              <input id="pf-link-url" class="pf-link-url" readonly value="${esc(link)}" placeholder="${T('portal.link.placeholder')}" />
               <button type="button" class="btn btn-sm" id="pf-copy-portal" title="${T('portal.tip.copy')}">${ICON.copy} ${T('portal.link.copy')}</button>
+            </div>
+            ${api ? '' : noApiHint}
+            <div class="pf-link-actions" role="toolbar" aria-label="${T('portal.link.title')}">
+              <button type="button" class="btn btn-primary btn-sm" id="pf-open-portal" data-open-portal-id="${esc(p.id)}" title="${T('portal.tip.open')}" aria-label="${T('portal.link.open')}">${ico('openWindow')}<span class="btn-label">${T('portal.act.open')}</span></button>
               <button type="button" class="btn btn-sm" id="pf-refresh-access" ${accessable ? '' : 'disabled'} title="${accessable
         ? T('portal.tip.refresh')
-        : T('portal.tip.refreshPublic')}">${ico('refresh')} ${T('portal.link.refresh')}</button>
+        : T('portal.tip.refreshPublic')}" aria-label="${T('portal.link.refresh')}">${ico('refresh')}<span class="btn-label">${T('portal.act.refresh')}</span></button>
+              <button type="button" class="btn btn-sm" id="pf-qr-download" title="${T('portal.tip.qrDownload')}" aria-label="${T('portal.link.qrDownload')}">${ICON.download}<span class="btn-label">${T('portal.act.qr')}</span></button>
+              <button type="button" class="btn btn-sm" id="pf-qr-print" title="${T('portal.tip.qrPrint')}" aria-label="${T('portal.link.qrPrint')}">${ico('qr')}<span class="btn-label">${T('portal.act.print')}</span></button>
+              <button type="button" class="btn btn-sm" id="pf-dl-api" title="${T('portal.tip.dlApi')}" aria-label="${T('portal.link.dlApi')}">${ICON.download}<span class="btn-label">${T('portal.act.api')}</span></button>
+              <button type="button" class="btn btn-sm" id="pf-open-folder" data-open-folder="${esc(p.slug || '')}" title="${T('portal.tip.openFolder')}" aria-label="${T('portal.link.openFolder')}">${ICON.folder}<span class="btn-label">${T('portal.act.folder')}</span></button>
             </div>
-            <div class="u-row u-row-3">
-              <button type="button" class="btn btn-sm" id="pf-qr-download" title="${T('portal.tip.qrDownload')}">${ICON.download} ${T('portal.link.qrDownload')}</button>
-              <button type="button" class="btn btn-sm" id="pf-qr-print" title="${T('portal.tip.qrPrint')}">${ico('qr')} ${T('portal.link.qrPrint')}</button>
-              <button type="button" class="btn btn-sm" id="pf-dl-api" title="${T('portal.tip.dlApi')}">${ICON.download} ${T('portal.link.dlApi')}</button>
-            </div>
-            <div class="u-row u-row-1 u-mt">
-              <button type="button" class="btn btn-sm" id="pf-open-folder" data-open-folder="${esc(p.slug || '')}" title="${T('portal.tip.openFolder')}">${ICON.folder} ${T('portal.link.openFolder')}</button>
-            </div>
-            <p class="hint">${T('portal.link.hint1')}<br />${T('portal.link.hint2')}</p>
+            <p class="pf-link-note">${T('portal.link.hint1')}<br />${T('portal.link.hint2')}</p>
           </div>
         </div>
       </section>`;

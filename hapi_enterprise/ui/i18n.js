@@ -171,6 +171,14 @@
       'portal.tip.qrPrint': 'Печата само QR кода — за залепване на документ',
       'portal.tip.dlApi': 'Сваля машинното описание като файл — това НЕ е порталът',
       'portal.tip.openFolder': 'Отваря страницата на папката на портала — истинските файлове на диска',
+      // Кратки надписи за лентата с действия: пълният текст остава в `title`/`aria-label`,
+      // за да е един ред, а не стена от бутони.
+      'portal.act.open': 'Отвори',
+      'portal.act.refresh': 'Обнови',
+      'portal.act.qr': 'QR код',
+      'portal.act.print': 'Печат',
+      'portal.act.api': 'api.json',
+      'portal.act.folder': 'Папка',
     },
     en: {
       'app.title': 'Settings',
@@ -327,6 +335,12 @@
       'portal.tip.qrPrint': 'Prints only the QR code — to stick on a document',
       'portal.tip.dlApi': 'Downloads the machine description — this is NOT the portal',
       'portal.tip.openFolder': 'Opens the portal folder page — the real files on disk',
+      'portal.act.open': 'Open',
+      'portal.act.refresh': 'Refresh',
+      'portal.act.qr': 'QR code',
+      'portal.act.print': 'Print',
+      'portal.act.api': 'api.json',
+      'portal.act.folder': 'Folder',
     },
     de: {
       'app.title': 'Einstellungen',
@@ -483,6 +497,12 @@
       'portal.tip.qrPrint': 'Druckt nur den QR-Code — zum Aufkleben auf ein Dokument',
       'portal.tip.dlApi': 'Lädt die maschinelle Beschreibung — das ist NICHT das Portal',
       'portal.tip.openFolder': 'Öffnet die Ordnerseite des Portals — die echten Dateien auf der Platte',
+      'portal.act.open': 'Öffnen',
+      'portal.act.refresh': 'Erneuern',
+      'portal.act.qr': 'QR-Code',
+      'portal.act.print': 'Drucken',
+      'portal.act.api': 'api.json',
+      'portal.act.folder': 'Ordner',
     },
   };
 
