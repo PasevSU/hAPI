@@ -252,8 +252,8 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     // ── J01. Страницата се вдига като в браузър ────────────────────────────────
     await journey('J01 стартиране на index.html', async () => {
       const navIds = app.navIds();
-      assert.equal(navIds.length, 17, 'навигацията има 17 точки, нарисувани от app.js: ' + navIds.join(', '));
-      for (const id of ['dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export', 'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'backups', 'qr', 'report', 'settings', 'about']) {
+      assert.equal(navIds.length, 18, 'навигацията има 18 точки, нарисувани от app.js: ' + navIds.join(', '));
+      for (const id of ['dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export', 'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'backups', 'qr', 'report', 'pgp', 'settings', 'about']) {
         assert.ok(navIds.includes(id), 'липсва навигационна точка „' + id + '“');
       }
       assert.equal(text(app.$('#bar-center')), 'свързан · токен в сесията', 'лентата казва истината за връзката');
@@ -1932,7 +1932,10 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       const attachedSecret = pgpKey('Attach');
       const label = 'gui-attach-' + String(Date.now()).slice(-6);
       app.fill('#set-pgp-label', label);
-      app.fill('#set-pgp-key', attachedSecret);
+      // Ключът се прикача като ФАЙЛ: изборът на файл вдига `change`, както в браузър.
+      const pgpFile = await waitFor(() => app.$('#set-pgp-file'), { label: 'полето за PGP ключ (файл)', timeout: BUDGET });
+      pgpFile.files = [pseudoFile('gui-attach.asc', attachedSecret, 'application/pgp-keys')];
+      pgpFile.dispatch('change');
       app.clearToasts();
       app.click('#set-pgp-attach', 'бутонът „Прикачи ключа“');
       const attached = await waitFor(() => {
@@ -2081,6 +2084,121 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       } finally {
         app.setFetchInterceptor(null);
       }
+    });
+
+    // ── J77. PGP инструменти: генериране, шифроване, разшифроване, преглед и ключарница ──
+    // Панелът работи изцяло в браузъра: нито една заявка към add-on-а. Единственото
+    // излизане навън е „Ключарница“ — то се проверява с прихванат отговор, за да не
+    // зависи сценарият от интернет в CI. Всички входове са ФАЙЛОВЕ, не поставен текст.
+    await journey('J77 PGP инструменти: ключове, шифроване и ключарница през интерфейса', async () => {
+      app.nav('pgp');
+      await waitFor(() => app.$('[data-tab="generate"]'), { label: 'табовете на „PGP инструменти“', timeout: BUDGET });
+      assert.match(text(view()), /PGP инструменти/, 'панелът се отваря от навигацията');
+      const requestsBefore = app.requests.length;
+
+      // 1. Генериране на двойка ключове с парола — през формата на панела.
+      app.$('[data-tab="generate"]').click();
+      await waitFor(() => app.$('#pg-gen-name'), { label: 'формата за генериране на ключ', timeout: BUDGET });
+      app.fill('#pg-gen-name', 'GUI тест PGP');
+      app.fill('#pg-gen-email', 'gui-pgp@example.com');
+      app.fill('#pg-pw-gen-pass', 'gui-pgp-parola');
+      app.clearToasts();
+      app.$('[data-run="generate"]').click();
+      const generated = await waitFor(() => {
+        const t = app.toast();
+        return t && /Ключовете са генерирани локално/.test(t.message) ? t : null;
+      }, { label: 'съобщението за генерирани ключове', timeout: BUDGET });
+      assert.equal(generated.kind, 'ok', 'ключовете се генерират: ' + generated.message);
+      const publicKey = app.$('#pg-out-gen-public').value;
+      const privateKey = app.$('#pg-out-gen-private').value;
+      assert.match(publicKey, /-----BEGIN PGP PUBLIC KEY BLOCK-----/, 'публичният ключ е в полето за резултат');
+      assert.match(privateKey, /-----BEGIN PGP PRIVATE KEY BLOCK-----/, 'частният ключ е в полето за резултат');
+      // Текстът в `<textarea>` не е част от `textContent`, затова „вижда се на екрана“ се
+      // проверява по блоковете: резултатните полета са разгърнати и ползваеми, а отпечатъкът
+      // (той е истински HTML) стига до екрана.
+      const pubBlock = app.$('#pg-out-gen-public').closest('.pg-out');
+      const privBlock = app.$('#pg-out-gen-private').closest('.pg-out');
+      assert.ok(pubBlock && pubBlock.hidden !== true, 'блокът с публичния ключ е разгърнат на екрана');
+      assert.ok(privBlock && privBlock.hidden !== true, 'блокът с частния ключ е разгърнат на екрана');
+      assert.match(text(view()), /Отпечатък: [0-9A-F]{4} /, 'панелът показва отпечатъка на новия ключ');
+
+      // 2. Шифроване към ПРИКАЧЕН публичен ключ и ПРИКАЧЕН файл със съобщение.
+      app.$('[data-tab="encrypt"]').click();
+      const encKeys = await waitFor(() => app.$('#pg-file-enc-keys'), { label: 'полето за публични ключове', timeout: BUDGET });
+      encKeys.files = [pseudoFile('public.asc', publicKey, 'application/pgp-keys')];
+      app.$('#pg-file-enc-msg').files = [pseudoFile('taino.txt', 'тайно съобщение от GUI теста')];
+      app.clearToasts();
+      app.$('[data-run="encrypt"]').click();
+      const encrypted = await waitFor(() => {
+        const t = app.toast();
+        return t && /Шифровано локално/.test(t.message) ? t : null;
+      }, { label: 'съобщението за шифроване', timeout: BUDGET });
+      assert.equal(encrypted.kind, 'ok', 'съобщението се шифрова: ' + encrypted.message);
+      const cipher = app.$('#pg-out-enc').value;
+      assert.match(cipher, /-----BEGIN PGP MESSAGE-----/, 'шифрованият блок е в полето за резултат');
+
+      // 3. Разшифроване с прикачени шифрован блок и частен ключ + парола.
+      app.$('[data-tab="decrypt"]').click();
+      const decMsg = await waitFor(() => app.$('#pg-file-dec-msg'), { label: 'полето за шифровано съобщение', timeout: BUDGET });
+      decMsg.files = [pseudoFile('message.asc', cipher, 'application/pgp-encrypted')];
+      app.$('#pg-file-dec-key').files = [pseudoFile('private.asc', privateKey, 'application/pgp-keys')];
+      app.fill('#pg-pw-dec-keypass', 'gui-pgp-parola');
+      app.clearToasts();
+      app.$('[data-run="decrypt"]').click();
+      const decrypted = await waitFor(() => {
+        const t = app.toast();
+        return t && /Разшифровано локално/.test(t.message) ? t : null;
+      }, { label: 'съобщението за разшифроване', timeout: BUDGET });
+      assert.equal(decrypted.kind, 'ok', 'съобщението се разшифрова: ' + decrypted.message);
+      assert.match(app.$('#pg-out-dec').value, /тайно съобщение от GUI теста/, 'разшифрованият текст е точно изпратеният');
+
+      // 4. Преглед на ключ: прикачен публичен ключ дава отчет с отпечатък и алгоритъм.
+      app.$('[data-tab="inspect"]').click();
+      const insKey = await waitFor(() => app.$('#pg-file-ins-key'), { label: 'полето за ключ за преглед', timeout: BUDGET });
+      insKey.files = [pseudoFile('public.asc', publicKey, 'application/pgp-keys')];
+      app.$('[data-run="inspect"]').click();
+      await waitFor(() => /Отпечатък/.test(text(app.$('[data-out="ins"]'))), { label: 'отчетът за ключа', timeout: BUDGET });
+      assert.match(text(app.$('[data-out="ins"]')), /публичен ключ/, 'отчетът казва, че ключът е публичен');
+
+      // 5. Ключарница: търсене по отпечатък с прихванат отговор на keys.pgpony.app.
+      app.$('[data-tab="keyserver"]').click();
+      await waitFor(() => app.$('#pg-ks-q'), { label: 'полето за търсене в ключарницата', timeout: BUDGET });
+      const fingerprint = '158471AA4E7FACCEFA2A9A740F8F2EA63AFFAC723F0D9D863CF43BDA142F9DE6';
+      // Ключарницата връща ПУБЛИЧЕН ключ — фикстурата дава частен, затова се свежда до
+      // публичния му вид през същия OpenPGP.js, който ползва панелът.
+      const served = await app.window.openpgp
+        .readPrivateKey({ armoredKey: pgpKey('Keyserver') })
+        .then((key) => key.toPublic().armor());
+      app.setFetchInterceptor((url) => {
+        const parsed = new URL(url);
+        if (parsed.host !== 'keys.pgpony.app') return null;
+        if (parsed.pathname !== '/vks/v1/by-fingerprint/' + fingerprint) {
+          return new Response('not found', { status: 404 });
+        }
+        return new Response(served, { status: 200, headers: { 'Content-Type': 'application/pgp-keys' } });
+      });
+      try {
+        app.fill('#pg-ks-q', fingerprint);
+        app.clearToasts();
+        app.$('[data-run="keyserver"]').click();
+        const fetched = await waitFor(() => {
+          const t = app.toast();
+          return t && /Ключът е изтеглен от keys\.pgpony\.app/.test(t.message) ? t : null;
+        }, { label: 'съобщението от ключарницата', timeout: BUDGET });
+        assert.equal(fetched.kind, 'ok', 'ключът се изтегля: ' + fetched.message);
+        assert.ok(
+          app.requests.some((r) => r.url === 'https://keys.pgpony.app/vks/v1/by-fingerprint/' + fingerprint),
+          'търсенето минава през VKS маршрута по отпечатък',
+        );
+        assert.match(app.$('#pg-out-ks').value, /-----BEGIN PGP PUBLIC KEY BLOCK-----/, 'ключът от ключарницата е прикачваем armored блок');
+        assert.match(text(app.$('[data-out="ks-report"]')), /Отпечатък/, 'ключарницата показва отчета за намерения ключ');
+      } finally {
+        app.setFetchInterceptor(null);
+      }
+
+      // Панелът не бива да е поискал нищо от add-on-а — цялата работа е в браузъра.
+      const addonCalls = app.requests.slice(requestsBefore).filter((r) => !/^https:\/\/keys\.pgpony\.app\//.test(r.url));
+      assert.deepEqual(addonCalls.map((r) => r.method + ' ' + r.url), [], 'PGP панелът не говори с add-on-а');
     });
 
     // Какво остава ИЗВЪН обхвата на щракването и защо — за да не се „попълва“ някога със

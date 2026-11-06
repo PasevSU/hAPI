@@ -126,12 +126,16 @@ function parseHtml(html, ownerDocument) {
 }
 
 // ── Селектори ───────────────────────────────────────────────────────────────────
+// Псевдокласовете, които стаб-ът разбира. `:checked` е нужен на панел, който пита
+// „кой режим е избран“ през `input[name="…"]:checked`, както прави браузърът.
+const PSEUDO_SUPPORTED = new Set(['checked', 'disabled', 'enabled']);
+
 function parseCompound(text) {
-  const out = { tag: null, id: null, classes: [], attrs: [] };
+  const out = { tag: null, id: null, classes: [], attrs: [], pseudos: [] };
   // Стойност в кавички може да е екранирана (`CSS.escape` дава `a\/b` за път с наклонена
   // черта). Браузърът разчита екранирането до истинската стойност, затова и тук се маха.
   const unescape = (value) => (value === undefined ? undefined : String(value).replace(/\\([\s\S])/g, '$1'));
-  const re = /(^[a-zA-Z][-a-zA-Z0-9]*)|#([-a-zA-Z0-9_]+)|\.([-a-zA-Z0-9_]+)|\[\s*([-a-zA-Z0-9_:.]+)\s*(?:=\s*("([^"]*)"|'([^']*)'|([^\]\s]+)))?\s*\]/g;
+  const re = /(^[a-zA-Z][-a-zA-Z0-9]*)|#([-a-zA-Z0-9_]+)|\.([-a-zA-Z0-9_]+)|\[\s*([-a-zA-Z0-9_:.]+)\s*(?:=\s*("([^"]*)"|'([^']*)'|([^\]\s]+)))?\s*\]|:([-a-zA-Z]+)/g;
   let m, consumed = 0;
   while ((m = re.exec(text))) {
     consumed += m[0].length;
@@ -143,6 +147,12 @@ function parseCompound(text) {
         name: m[4].toLowerCase(),
         value: m[5] === undefined ? undefined : unescape(m[6] !== undefined ? m[6] : m[7] !== undefined ? m[7] : m[8]),
       });
+    } else if (m[9]) {
+      const pseudo = m[9].toLowerCase();
+      if (!PSEUDO_SUPPORTED.has(pseudo)) {
+        throw new Error('dom-stub: неподдържан псевдоклас «:' + pseudo + '» — разшири PSEUDO_SUPPORTED');
+      }
+      out.pseudos.push(pseudo);
     }
   }
   if (consumed !== text.replace(/\s+/g, ' ').trim().length) {
@@ -167,7 +177,18 @@ function matchesCompound(el, compound) {
     if (!el.hasAttribute(attr.name)) return false;
     if (attr.value !== undefined && el.getAttribute(attr.name) !== attr.value) return false;
   }
+  for (const pseudo of compound.pseudos) {
+    if (!matchPseudo(el, pseudo)) return false;
+  }
   return true;
+}
+
+function matchPseudo(el, pseudo) {
+  if (pseudo === 'checked') return el.checked === true || el.hasAttribute('checked');
+  const disabled = el.hasAttribute('disabled') || el.getAttribute('aria-disabled') === 'true';
+  if (pseudo === 'disabled') return disabled;
+  if (pseudo === 'enabled') return !disabled;
+  return false;
 }
 
 function matchesSelector(el, parts) {
@@ -424,7 +445,23 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
       }
       return event;
     }
-    click() { return this.dispatch('click') }
+    click() {
+      // Браузърът сменя състоянието ПРЕДИ да пусне `click`: отметка се обръща, а Radio
+      // групата пуска само една отметка. Без това `input[name="…"]:checked` е винаги празен.
+      const type = String(this.getAttribute('type') || '').toLowerCase();
+      if (this.tagName === 'input' && (type === 'checkbox' || type === 'radio')) {
+        if (type === 'radio' && this.getAttribute('name')) {
+          const scope = this.closest('form') || doc;
+          for (const other of scope.querySelectorAll('input[type="radio"]')) {
+            if (other !== this && other.getAttribute('name') === this.getAttribute('name')) other.checked = false;
+          }
+          this.checked = true;
+        } else {
+          this.checked = !this.checked;
+        }
+      }
+      return this.dispatch('click');
+    }
     focus() { doc.activeElement = this }
     blur() { if (doc.activeElement === this) doc.activeElement = null }
     select() { }

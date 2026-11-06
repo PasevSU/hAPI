@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.165**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.166**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **109** backend модула · **17** HTTP компонента · **23** UI модула · **8** Python модула · **38** инструмента · **358** теста.
+Общо: **109** backend модула · **17** HTTP компонента · **25** UI модула · **8** Python модула · **38** инструмента · **358** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -146,7 +146,7 @@
 | `hapi_enterprise/routes/reports.js` | Report Studio + RFC 3161 — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/webhooks.js` | Webhooks с HMAC — административен компонент на HTTP слоя (F4-7). |
 
-### Интерфейс (`hapi_enterprise/ui/*.js`) (23)
+### Интерфейс (`hapi_enterprise/ui/*.js`) (25)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -161,6 +161,7 @@
 | `hapi_enterprise/ui/i18n.js` | Речник за СЪДЪРЖАНИЕТО на панелите (не само навигацията) — BG/EN/DE. |
 | `hapi_enterprise/ui/icons.js` | Един набор от ИКОНИ за целия интерфейс — вградени SVG (без шрифт-икони, без CDN). |
 | `hapi_enterprise/ui/panel-registry.js` | Регистър на панелите (план 18 §7: „панел като модул“ — `render/mount/unmount/permissions/capabilities` |
+| `hapi_enterprise/ui/pgp-tools.js` | PGP инструменти — всички функции на PGPony playground, портирани в панела на add-on-а. |
 | `hapi_enterprise/ui/portal-control.js` | Контейнер „Контролен панел на портала“ — настройки на портала и API/QR. |
 | `hapi_enterprise/ui/portal-files.js` | Контейнер „Файлове в портала (N) · /път“ — филтри, карти на файловете и качване. |
 | `hapi_enterprise/ui/portal-folders.js` | Контейнер „Папки на портала“ — експлорер на storage_root: скриващи се менюта. |
@@ -172,6 +173,7 @@
 | `hapi_enterprise/ui/report-studio.js` | Report Studio (Фаза 11 / RS-02): библиотека → документ → свойства → A4 preview. |
 | `hapi_enterprise/ui/secret-share.js` | Генериране на тайни връзки в БРАУЗЪРА — моделът на scrt.link v2 (MIT), собствен код. |
 | `hapi_enterprise/ui/settings-panel.js` | Настройки на връзката: админ токен, API адрес и публичен адрес за API/QR. |
+| `hapi_enterprise/ui/vendor/openpgp.min.js` | ! OpenPGP.js v6.3.1 - 2026-06-04 - this is LGPL licensed code, see LICENSE/our website https://openpgpjs.org/… |
 | `hapi_enterprise/ui/visitors-panel.js` | Панел „Кой влиза“ — чете сензорите за комуникацията (visitor-intel.js) през |
 
 ### Home Assistant интеграция (`custom_components/**/*.py`) (8)

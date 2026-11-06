@@ -28,14 +28,16 @@ const POSITIVE = [
   ['JWT с подпис', ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9', 'eyJzdWIiOiIxMjM0NTY3ODkwIn0', B64(43)].join('.')],
   ['частен ключ', ['-----BEGIN', 'RSA', 'PRIVATE', 'KEY-----'].join(' ')],
   ['PGP частен ключ', ['-----BEGIN PGP PRIVATE KEY BLOCK-----', '', B64(200), '-----END PGP PRIVATE KEY BLOCK-----'].join('\n')],
+  // Реалните armored блокове са с пренесени редове по 64 знака — правилото трябва да ги хване.
+  ['PGP частен ключ', ['-----BEGIN PGP PRIVATE KEY BLOCK-----', '', 'Comment: test', '', B64(64), B64(64), B64(64), '=abcd', '-----END PGP PRIVATE KEY BLOCK-----'].join('\n')],
   ['Supervisor токен', ['SUPERVISOR', '_TOKEN=eyJhbGciOiJIUzI1NiJ9'].join('')],
   ['GitHub токен', ['gh', 'p_', B64(24)].join('')],
   ['AWS ключ', ['AKIA', 'Z7QW3RTY6UIOP2LK'].join('')],
 ];
 for (const [label, sample] of POSITIVE) {
-  const rule = SECRETS.find(([, name]) => name === label);
-  assert.ok(rule, `правилото „${label}“ съществува`);
-  assert.ok(rule[0].test(sample), `правилото „${label}“ трябва да хване своя пример`);
+  const rules = SECRETS.filter(([, name]) => name === label);
+  assert.ok(rules.length, `правилото „${label}“ съществува`);
+  assert.ok(rules.some(([pattern]) => pattern.test(sample)), `правилото „${label}“ трябва да хване своя пример`);
 }
 
 // ── 2. Никое правило не хваща позната безопасна стойност ────────────────────

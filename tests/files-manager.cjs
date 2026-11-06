@@ -305,7 +305,10 @@ assert.ok(m.ACTIONS.some((a) => a.id === 'package' && /Пакет/.test(a.label)
 const settingsSrc = fs.readFileSync(require('node:path').join(__dirname, '..', 'hapi_enterprise', 'ui', 'settings-panel.js'), 'utf8');
 assert.match(settingsSrc, /\/admin\/api\/pgp\/keys/);
 assert.match(settingsSrc, /id="set-pgp-attach"/);
-assert.match(settingsSrc, /id="set-pgp-key"/);
+// Ключът се ПРИКАЧА като файл — полето за поставяне на armored текст вече го няма, за да не
+// се налага тайна да минава през клипборда.
+assert.match(settingsSrc, /<input type="file" id="set-pgp-file"/);
+assert.doesNotMatch(settingsSrc, /id="set-pgp-key"/);
 assert.match(settingsSrc, /id="set-pgp-autosign"/);
 assert.match(settingsSrc, /<select id="set-pgp-autosign"/);
 assert.match(settingsSrc, /Изключено/);

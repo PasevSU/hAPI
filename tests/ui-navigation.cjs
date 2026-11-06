@@ -20,7 +20,9 @@ const ids = [...navBlock.matchAll(/id: '([a-z]+)'/g)].map((m) => m[1]);
 const PLANNED = [
   'dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export',
   'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'backups', 'qr',
-  'report', 'settings', 'about',
+  // От 0.69.166: „PGP инструменти“ — седем таба (шифроване, разшифроване, подпис,
+  // проверка, преглед, ключарница, генериране), всички входове като прикачен файл.
+  'report', 'pgp', 'settings', 'about',
 ];
 assert.deepEqual(ids, PLANNED, 'навигацията следва плана: ' + PLANNED.length + ' панела');
 

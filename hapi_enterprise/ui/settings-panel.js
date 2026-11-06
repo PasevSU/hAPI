@@ -107,9 +107,15 @@
 
   async function attachPgpKey() {
     const q = (sel) => host.querySelector(sel);
-    const armored = q('#set-pgp-key').value.trim();
+    const input = q('#set-pgp-file');
+    const file = input && input.files ? input.files[0] : null;
     const label = q('#set-pgp-label').value.trim();
-    if (!armored) return toast('Постави armored PGP ключ (PRIVATE KEY BLOCK)', 'err');
+    // Ключът се прикача като ФАЙЛ, не се поставя в поле: така не се налага да се копира
+    // тайна през клипборда, а и се вижда името на файла, от който идва.
+    if (!file) return toast(T('pgp.needFile'), 'err');
+    if (file.size > 1024 * 1024) return toast(T('pgp.tooBig'), 'err');
+    const armored = String(await file.text()).trim();
+    if (!armored) return toast('Файлът „' + file.name + '“ е празен', 'err');
     state.busy = true;
     const r = await api('/admin/api/pgp/keys', { method: 'POST', json: { label, secretArmored: armored } });
     state.busy = false;
@@ -119,10 +125,13 @@
     }
     state.pgp.attached = r.data;
     state.pgp.error = '';
-    const keyInput = q('#set-pgp-key');
-    const labelInput = q('#set-pgp-label');
-    if (keyInput) keyInput.value = '';
-    if (labelInput) labelInput.value = '';
+    input.value = '';
+    const meta = q('#set-pgp-file-meta');
+    if (meta) {
+      meta.textContent = T('pgp.noFile');
+      meta.classList.remove('pg-file-set');
+    }
+    q('#set-pgp-label').value = '';
     toast(`Прикачен ключ ${r.data.keyId} (v${r.data.version || 4})`, 'ok');
     return loadPgp();
   }
@@ -233,10 +242,10 @@
             </div>
           </div>
           <div class="field u-mt">
-            <label>PGP ключ (armored)</label>
-            <textarea id="set-pgp-key" rows="6" spellcheck="false" placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----" ${on ? '' : 'disabled'
-      }></textarea>
-            <small class="hint">Публичната част се извлича автоматично от секретния блок.</small>
+            <label for="set-pgp-file">PGP ключ (armored файл)</label>
+            <input type="file" id="set-pgp-file" class="pg-file" accept=".asc,.key,.gpg,.txt,application/pgp-keys,text/plain" ${on ? '' : 'disabled'} />
+            <div class="pg-file-meta" id="set-pgp-file-meta">няма избран файл</div>
+            <small class="hint">' + esc(T('pgp.attachHint')) + '</small>
           </div>
           <div class="u-row u-row-1 u-mt">
             <button type="button" class="btn btn-primary" id="set-pgp-attach" ${on ? '' : 'disabled'}>Прикачи ключа</button>
@@ -1468,6 +1477,15 @@
     });
     // PGP: прикачване на ключ, автоподписване (падащо меню) и избор на ключ.
     if (q('#set-pgp-attach')) q('#set-pgp-attach').addEventListener('click', () => void attachPgpKey());
+    if (q('#set-pgp-file')) {
+      q('#set-pgp-file').addEventListener('change', (e) => {
+        const meta = q('#set-pgp-file-meta');
+        if (!meta) return;
+        const file = e.target.files && e.target.files[0];
+        meta.textContent = file ? file.name : T('pgp.noFile');
+        meta.classList.toggle('pg-file-set', Boolean(file));
+      });
+    }
     if (q('#set-pgp-import')) q('#set-pgp-import').addEventListener('click', () => void importPgpBundle());
     if (q('#set-pgp-autosign')) {
       q('#set-pgp-autosign').addEventListener('change', (e) => void savePgpSettings({ autoSign: e.target.value === 'on' }));

@@ -168,6 +168,22 @@ function mountApp(addon, { lang = 'bg', token = addon.token, local = {} } = {}) 
   win.Blob = sandbox.Blob;
   win.crypto = sandbox.crypto;
   vm.createContext(sandbox);
+  // `TextEncoder` от Node връща `Uint8Array` от чужд realm и OpenPGP.js го отхвърля
+  // в `instanceof` проверка. Байтовете се пре-копират в самия контекст.
+  {
+    const nodeEncoder = new TextEncoder();
+    const toContextBytes = vm.runInContext('(bytes) => new Uint8Array(bytes)', sandbox);
+    sandbox.TextEncoder = class TextEncoder {
+      get encoding() { return 'utf-8' }
+      encode(input) { return toContextBytes(nodeEncoder.encode(String(input))) }
+      encodeInto(input, dest) {
+        const bytes = nodeEncoder.encode(String(input));
+        const written = Math.min(bytes.length, dest.length);
+        for (let i = 0; i < written; i++) dest[i] = bytes[i];
+        return { read: String(input).length, written };
+      }
+    };
+  }
 
   const run = (file, dir) => {
     vm.runInContext(fs.readFileSync(path.join(dir, file), 'utf8'), sandbox, { filename: file });
@@ -297,6 +313,8 @@ function pseudoFile(name, text, type = 'text/plain') {
     type,
     lastModified: Date.now(),
     webkitRelativePath: name,
+    // Браузърният `File` дава и двата начина: `text()` чете UTF-8, `arrayBuffer()` — байтовете.
+    text: async () => text,
     arrayBuffer: async () => buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.length),
   };
 }

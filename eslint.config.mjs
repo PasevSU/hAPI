@@ -9,6 +9,9 @@ export default [
       '.dev/**', '.github/**', 'img/**', 'hapi_enterprise/fonts/**',
       'hapi_enterprise/*.html', 'custom_components/**/portal.html',
       'documentation/**', 'docs/**',
+      // Внесен чужд код (OpenPGP.js и подобни): минифициран, не е наш и не се поправя
+      // от нас — 173 грешки от един ред на `openpgp.min.js` не значат нищо за проекта.
+      'hapi_enterprise/ui/vendor/**',
       // Локални среди (Python venv за инструменти, TimescaleDB и т.н.): не са код на
       // проекта и не бива да чупят `eslint .` — venv-ът съдържа чужди JS файлове.
       '.venv/**', '**/.venv/**', 'venv/**', '**/site-packages/**'

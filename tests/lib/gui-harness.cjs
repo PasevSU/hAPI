@@ -209,6 +209,22 @@ function mountUi(server, { lang = 'bg', modules = [], csp = true } = {}) {
     go: (id) => { navigations.push(String(id)); return true },
   };
   vm.createContext(sandbox);
+  // `TextEncoder` от Node връща `Uint8Array` от чужд realm и OpenPGP.js го отхвърля
+  // в `instanceof` проверка. Байтовете се пре-копират в самия контекст.
+  {
+    const nodeEncoder = new TextEncoder();
+    const toContextBytes = vm.runInContext('(bytes) => new Uint8Array(bytes)', sandbox);
+    sandbox.TextEncoder = class TextEncoder {
+      get encoding() { return 'utf-8' }
+      encode(input) { return toContextBytes(nodeEncoder.encode(String(input))) }
+      encodeInto(input, dest) {
+        const bytes = nodeEncoder.encode(String(input));
+        const written = Math.min(bytes.length, dest.length);
+        for (let i = 0; i < written; i++) dest[i] = bytes[i];
+        return { read: String(input).length, written };
+      }
+    };
+  }
   const run = (file, dir) => {
     const full = path.join(dir, file);
     vm.runInContext(fs.readFileSync(full, 'utf8'), sandbox, { filename: file });

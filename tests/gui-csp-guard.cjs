@@ -15,7 +15,7 @@
 //      отива на произхода на панела — нула нарушения.
 const assert = require('node:assert/strict');
 const { startServer, mountUi, waitFor } = require('./lib/gui-harness.cjs');
-const { connectSrcOf, isSameOrigin, createCspGuard } = require('./lib/csp.cjs');
+const { connectSrcOf, isSameOrigin, createCspGuard, KEYSERVER_ORIGIN } = require('./lib/csp.cjs');
 const { stopChild } = require('./helpers.cjs');
 
 const PANEL_MODULES = [
@@ -35,9 +35,16 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
     const header = page.headers.get('content-security-policy') || '';
     assert.ok(header, 'панелът има Content-Security-Policy');
     const connectSrc = connectSrcOf(header);
-    assert.deepEqual(connectSrc, ["'self'"], 'connect-src е точно \'self\': ' + JSON.stringify(connectSrc));
+    // Политиката е затворен списък: `'self'` плюс изрично изброените произходи. Всяко
+    // разширяване минава през този тест, тоест не може да се промъкне незабелязано.
+    assert.equal(connectSrc[0], "'self'", "connect-src започва със 'self': " + JSON.stringify(connectSrc));
+    assert.deepEqual(
+      connectSrc.slice(1),
+      [KEYSERVER_ORIGIN],
+      'единственото изключение извън произхода е ключарницата: ' + JSON.stringify(connectSrc),
+    );
     // Харнесът налага същата стойност по подразбиране.
-    assert.deepEqual(createCspGuard({ origin: server.base }).allowed, ["'self'"], 'тестерът налага същата политика');
+    assert.deepEqual(createCspGuard({ origin: server.base }).allowed, connectSrc, 'тестерът налага същата политика');
 
     // ── 2. Тестерът ХВАЩА нарушение (контрола на самия тестер) ──────────────────
     assert.equal(isSameOrigin(server.base + '/admin/api/portals', server.base), true, 'същият произход е разрешен');
@@ -47,7 +54,7 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
     const blocked = control.wrapFetch(() => Promise.resolve('ok'));
     await assert.rejects(
       () => blocked(PUBLIC_BASE + '/api/v1/p/x'),
-      (e) => e.csp === true && /connect-src 'self'/.test(e.message),
+      (e) => e.csp === true && /connect-src/.test(e.message),
       'нарочната заявка към чужд произход се отказва като в браузър',
     );
     assert.equal(control.violations.length, 1, 'нарушението се записва');

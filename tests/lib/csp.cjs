@@ -13,7 +13,12 @@
 //
 // Политиката не се измисля: `tests/gui-csp-guard.cjs` сравнява стойността по подразбиране
 // с ИСТИНСКИЯ заглавка, която add-on-ът изпраща за `/ui/index.html`.
-const DEFAULT_CONNECT_SRC = ["'self'"];
+//
+// Едно изключение е нарочно и е само за ЧЕТЕНЕ: „Ключарница“ в панела „PGP инструменти“
+// тегли публичен ключ по отпечатък от `keys.pgpony.app` (VKS, CORS `*`). Без него ключът
+// трябва да минава през add-on-а, тоест тази част нямаше да е изцяло в браузъра.
+const KEYSERVER_ORIGIN = 'https://keys.pgpony.app';
+const DEFAULT_CONNECT_SRC = ["'self'", KEYSERVER_ORIGIN];
 
 /** Стойността на дадена директива от заглавка `Content-Security-Policy`. */
 function directive(header, name) {
@@ -51,13 +56,18 @@ function isSameOrigin(url, origin) {
 function createCspGuard({ origin, connectSrc = DEFAULT_CONNECT_SRC, label = "connect-src" } = {}) {
   const violations = [];
   const allowed = Array.isArray(connectSrc) ? connectSrc : DEFAULT_CONNECT_SRC;
+  // Освен `'self'` политиката може да изброява конкретни произходи (`https://host`).
+  const extraOrigins = allowed
+    .filter((entry) => /^https?:\/\//i.test(entry))
+    .map((entry) => { try { return new URL(entry).origin } catch { return entry } });
   const wrapFetch = (inner) => (url, init) => {
-    if (allowed.includes("'self'") && !isSameOrigin(url, origin)) {
-      const href = (() => { try { return new URL(String(url)).href } catch { return String(url) } })();
-      violations.push({ url: href, origin, directive: label + " 'self'", at: new Date().toISOString() });
+    const hrefOf = () => { try { return new URL(String(url), origin).href } catch { return String(url) } };
+    if (!isSameOrigin(url, origin) && !extraOrigins.includes(new URL(hrefOf()).origin)) {
+      const href = hrefOf();
+      violations.push({ url: href, origin, directive: label + ' ' + allowed.join(' '), at: new Date().toISOString() });
       const error = new TypeError(
         "Refused to connect to '" + href + "' because it violates the following Content " +
-        'Security Policy directive: "' + label + " 'self'\".",
+        'Security Policy directive: "' + label + ' ' + allowed.join(' ') + '".',
       );
       error.csp = true;
       return Promise.reject(error);
@@ -67,4 +77,4 @@ function createCspGuard({ origin, connectSrc = DEFAULT_CONNECT_SRC, label = "con
   return { wrapFetch, violations, allowed };
 }
 
-module.exports = { createCspGuard, connectSrcOf, directive, isSameOrigin, DEFAULT_CONNECT_SRC };
+module.exports = { createCspGuard, connectSrcOf, directive, isSameOrigin, DEFAULT_CONNECT_SRC, KEYSERVER_ORIGIN };

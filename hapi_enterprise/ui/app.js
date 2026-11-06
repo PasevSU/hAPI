@@ -23,6 +23,7 @@
       backups: 'Резервни копия',
       qr: 'QR архиви',
       report: 'Report Studio',
+      pgp: 'PGP инструменти',
       settings: 'Настройки',
       about: 'Относно',
       ready: 'Готов',
@@ -54,6 +55,7 @@
       backups: 'Backups',
       qr: 'QR archive',
       report: 'Report Studio',
+      pgp: 'PGP tools',
       settings: 'Settings',
       about: 'About',
       ready: 'Ready',
@@ -85,6 +87,7 @@
       backups: 'Sicherungen',
       qr: 'QR-Archiv',
       report: 'Report Studio',
+      pgp: 'PGP-Werkzeuge',
       settings: 'Einstellungen',
       about: 'Über',
       ready: 'Bereit',
@@ -120,6 +123,7 @@
     { id: 'backups', ico: 'archive', section: 'backups' },
     { id: 'qr', ico: 'qr', section: 'qr' },
     { id: 'report', ico: 'note' },
+    { id: 'pgp', ico: 'lock' },
     { id: 'settings', ico: 'gear', section: 'general' },
     { id: 'about', ico: 'info' },
   ];
@@ -149,6 +153,9 @@
       { id: 'gateway', title: 'Публичен достъп', global: 'PublicGatewayPanel', capabilities: ['portals'] },
       { id: 'contacts', title: 'Контакти', global: 'ContactsPanel', capabilities: ['directory'] },
       { id: 'cases', title: 'Дела', global: 'CasesPanel', capabilities: ['cases'] },
+      // PGP инструментите работят изцяло в браузъра и не викат административни маршрути,
+      // затова не искат способност: иначе панелът би изчезнал за роля без pgp без причина.
+      { id: 'pgp', title: 'PGP инструменти', global: 'HapiPgpToolsPanel' },
     ]);
   }
 
@@ -303,7 +310,12 @@
       if (!Array.isArray(data && data.capabilities)) return;
       capabilities = data.capabilities;
       renderNav();
-      renderView();
+      // Повторно рисуване е нужно само за панел, който зависи от правата. Иначе отговорът на
+      // `whoami`, дошъл след като човекът вече работи, би изчистил попълненото в полетата и
+      // би върнал панела в началото (виждано при „PGP инструменти“: табът се връщаше на
+      // „Шифроване“ по средата на генериране).
+      const entry = panels && typeof panels.get === 'function' ? panels.get(current) : null;
+      if (entry && entry.capabilities.length) renderView();
     } catch {
       // Без роля интерфейсът остава както досега; това не е отстъпка по сигурност —
       // всяка заявка пак минава през `adminGate`.

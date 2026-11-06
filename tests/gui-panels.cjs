@@ -30,6 +30,8 @@ const PANEL_MODULES = [
   'visitors-panel.js',
   'secret-share.js',
   'report-sign.js',
+  'vendor/openpgp.min.js',
+  'pgp-tools.js',
 ];
 
 const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
@@ -55,7 +57,7 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
     const w = ui.window;
 
     // ── 1. Модулите са заредени ─────────────────────────────────────────────────
-    for (const name of ['HapiDashboardPanel', 'ReportStudio', 'FilesManagerPanel', 'PortalsPanel', 'ExportCenterPanel', 'PublicGatewayPanel', 'ContactsPanel', 'CasesPanel', 'SettingsPanel', 'HapiVisitorsPanel', 'HapiSecretShare', 'HapiReportSign']) {
+    for (const name of ['HapiDashboardPanel', 'ReportStudio', 'FilesManagerPanel', 'PortalsPanel', 'ExportCenterPanel', 'PublicGatewayPanel', 'ContactsPanel', 'CasesPanel', 'SettingsPanel', 'HapiVisitorsPanel', 'HapiSecretShare', 'HapiReportSign', 'HapiPgpToolsPanel']) {
       assert.ok(w[name], 'липсва ' + name + ' — app.js щеше да покаже „не е зареден“');
     }
 
@@ -71,6 +73,7 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       { id: 'report', mount: (h) => w.ReportStudio.mount(h), expect: ['Report Studio', 'Документ структура'] },
       { id: 'visitors', mount: (h) => w.HapiVisitorsPanel.mount(h), expect: ['Кой влиза', 'Уникални посетители', 'Посетители'] },
       { id: 'settings', mount: (h) => { w.SettingsPanel.state.section = 'general'; w.SettingsPanel.mount(h) }, expect: ['Връзка с add-on-а', 'Публичен адрес'] },
+      { id: 'pgp', mount: (h) => w.HapiPgpToolsPanel.mount(h), expect: ['PGP инструменти', 'Шифроване', 'Разшифроване', 'Подпис', 'Ключарница'] },
     ];
 
     const missing = [];
@@ -195,7 +198,7 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
 
     // ── 7. Сървърът сервира всички файлове, които панелите искат ────────────────
     const serverSrc = fs.readFileSync(path.join(root, 'hapi_enterprise', 'server.js'), 'utf8');
-    for (const file of PANEL_MODULES) assert.ok(serverSrc.includes("'" + file + "'"), 'server.js не сервира ' + file);
+    for (const file of PANEL_MODULES) assert.ok(serverSrc.includes("'" + file + "'") || serverSrc.includes("'/ui/" + file + "'"), 'server.js не сервира ' + file);
 
     console.log('PASS gui-panels: ' + NAV.length + ' панела на жив add-on · контакт и дело СЪЗДАДЕНИ през формата · търсене филтрира · валидаторът отговаря');
   } finally {
