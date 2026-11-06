@@ -365,7 +365,10 @@ assert.match(src, /function wireMenus/);
 // изтеглянето на описанието е второстепенно и го казва с думите си. Дотук бутонът беше
 // само „api.json“ и човек, който искаше портала, получаваше файл.
 assert.match(src, /id="pf-open-portal"[^>]*data-open-portal-id=/, 'контролният панел има „Отвори портала“');
-assert.match(src, /Свали api\.json/, 'изтеглянето на описанието е надписано като изтегляне');
+// Надписът вече е в речника (BG/EN/DE) — затова се проверява ключът И българската стойност.
+const dict = require(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'i18n.js')).DICT;
+assert.match(src, /portal\.link\.dlApi/, 'изтеглянето на описанието е надписано като изтегляне');
+assert.match(dict.bg['portal.link.dlApi'], /Свали api\.json/, 'надписът е „Свали api.json“, не голо „api.json“');
 assert.match(src, /\[data-open-portal\], \[data-open-portal-id\]/, 'щракването по ИД отваря портала');
 assert.match(src, /findIndex\(\(x\) => x\.id === byId\)/, 'ИД-то се превежда до индекс, а не се гадае');
 assert.equal(/window\.open/.test(src), false, 'прегледът не отваря нов таб');

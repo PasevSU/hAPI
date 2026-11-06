@@ -4,6 +4,9 @@
 // Отделен модул: рисува САМО този блок. Всичко, което му трябва, идва в `ctx`
 // (състояние и помощни функции), за да не зависи от вътрешностите на files-manager.js.
 (function () {
+  // Текст по ключ: КАРТАТА също минава през речника (BG/EN/DE), както Настройки — иначе
+  // немският потребител вижда български бутони в преведен интерфейс (стария BUG-11).
+  const T = (key) => (typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key) : String(key));
   /** HTML на блока „Контролен панел на портала: <заглавие>“ + API/QR. */
   function render(ctx) {
     const { esc, state, p, api, FLAGS, ICON, ico, fmtDate, qrSvg, contactSelect, caseSelect, newContactFields, newCaseFields } = ctx;
@@ -17,7 +20,8 @@
     // Адресите се показват ВИНАГИ: за частен портал носят подписан достъп (`?expires=&sig=`),
     // който сървърът издава (portal-access.js) — иначе `/p/<id>`, API-то и QR кодът връщат 404.
     const isPublic = String(p.visibility || '') === 'public';
-    const noApiHint = '<p class="hint">API и QR се създават заедно с портала — тук се появяват автоматично.</p>';
+    // Текстът „API и QR се създават заедно с портала“ живее в речника — `portal.link.noApi`.
+    const noApiHint = `<p class="hint">${T('portal.link.noApi')}</p>`;
     // ── Връзка и QR: ЕДИН адрес, показан като текст, и кодът до него ─────────────
     // Дотук адресът се виждаше само като бутон „Копирай адреса“, а QR стоеше най-долу в
     // дясната колона на СГЪНАТ блок — тоест до кода се стигаше с три действия, а адресът
@@ -29,43 +33,47 @@
     const expired = Boolean(expiresMs && minutesLeft <= 0);
     const accessable = Boolean(api && (api.accessQuery || api.tokenRequired || state.portalTokenRequired));
     const linkState = !api
-      ? { text: 'адресът се създава с портала', cls: '' }
+      ? { text: T('portal.state.creating'), cls: '' }
       : expired
-        ? { text: 'подписан достъп: ИЗТЕКЪЛ — обнови', cls: 'err' }
+        ? { text: T('portal.state.expired'), cls: 'err' }
         : api.accessQuery
-          ? { text: expiresMs ? `подписан достъп: още ${minutesLeft} мин` : 'подписан достъп', cls: minutesLeft <= 10 ? 'warn' : 'ok' }
+          ? {
+            text: expiresMs
+              ? `${T('portal.state.signed')}: ${minutesLeft} ${T('portal.state.minutesLeft')}`
+              : T('portal.state.signed'),
+            cls: minutesLeft <= 10 ? 'warn' : 'ok',
+          }
           : (api.tokenRequired || state.portalTokenRequired)
-            ? { text: 'иска токен за портал', cls: 'warn' }
-            : { text: isPublic ? 'публичен — отваря се без ключ' : 'частен', cls: 'ok' };
+            ? { text: T('portal.state.token'), cls: 'warn' }
+            : { text: isPublic ? T('portal.state.public') : T('portal.state.private'), cls: 'ok' };
     const linkBlock = `
       <section class="pf-block pf-link" data-block="link">
         <div class="pf-block-head">
-          <h5>${ico('qr')} Връзка и QR код</h5>
+          <h5>${ico('qr')} ${T('portal.link.title')}</h5>
           <span class="pf-link-state ${linkState.cls}" id="pf-link-state">${esc(linkState.text)}</span>
         </div>
         <div class="pf-block-body pf-link-body">
-          <div class="pf-link-qr">${qr ? `<div class="qf-svg">${qr}</div>` : '<p class="hint">QR SVG не е наличен в тази среда.</p>'}</div>
+          <div class="pf-link-qr">${qr ? `<div class="qf-svg">${qr}</div>` : `<p class="hint">${T('portal.link.qrMissing')}</p>`}</div>
           <div class="pf-link-side">
-            <label class="pf-link-label" for="pf-link-url">Адрес на портала — копира се цялият</label>
-            <input id="pf-link-url" class="pf-link-url" readonly value="${esc(link)}" placeholder="създава се заедно с портала" />
+            <label class="pf-link-label" for="pf-link-url">${T('portal.link.label')}</label>
+            <input id="pf-link-url" class="pf-link-url" readonly value="${esc(link)}" placeholder="${T('portal.link.placeholder')}" />
             ${api ? '' : noApiHint}
             <div class="u-row u-row-3">
-              <button type="button" class="btn btn-primary btn-sm" id="pf-open-portal" data-open-portal-id="${esc(p.id)}" title="Отваря портала в същия раздел — под Ingress нов таб губи сесията и показва празен екран">${ico('openWindow')} Отвори портала</button>
-              <button type="button" class="btn btn-sm" id="pf-copy-portal" title="Копира ЕДИНСТВЕНИЯ адрес на портала">${ICON.copy} Копирай адреса</button>
+              <button type="button" class="btn btn-primary btn-sm" id="pf-open-portal" data-open-portal-id="${esc(p.id)}" title="${T('portal.tip.open')}">${ico('openWindow')} ${T('portal.link.open')}</button>
+              <button type="button" class="btn btn-sm" id="pf-copy-portal" title="${T('portal.tip.copy')}">${ICON.copy} ${T('portal.link.copy')}</button>
               <button type="button" class="btn btn-sm" id="pf-refresh-access" ${accessable ? '' : 'disabled'} title="${accessable
-        ? 'Издава нов подписан достъп, ако старият е изтекъл'
-        : 'Публичният портал се отваря без подпис — няма какво да се обновява'}">${ico('refresh')} Обнови достъпа</button>
+        ? T('portal.tip.refresh')
+        : T('portal.tip.refreshPublic')}">${ico('refresh')} ${T('portal.link.refresh')}</button>
             </div>
             <div class="u-row u-row-3">
-              <button type="button" class="btn btn-sm" id="pf-qr-download" title="Сваля QR кода като SVG — за печат или в документ">${ICON.download} Свали QR</button>
-              <button type="button" class="btn btn-sm" id="pf-qr-print" title="Печата само QR кода — за залепване на документ">${ico('qr')} Печат на QR</button>
-              <button type="button" class="btn btn-sm" id="pf-dl-api" title="Сваля машинното описание като файл — това НЕ е порталът">${ICON.download} Свали api.json</button>
+              <button type="button" class="btn btn-sm" id="pf-qr-download" title="${T('portal.tip.qrDownload')}">${ICON.download} ${T('portal.link.qrDownload')}</button>
+              <button type="button" class="btn btn-sm" id="pf-qr-print" title="${T('portal.tip.qrPrint')}">${ico('qr')} ${T('portal.link.qrPrint')}</button>
+              <button type="button" class="btn btn-sm" id="pf-dl-api" title="${T('portal.tip.dlApi')}">${ICON.download} ${T('portal.link.dlApi')}</button>
             </div>
             <div class="u-row u-row-1 u-mt">
-              <button type="button" class="btn btn-sm" id="pf-open-folder" data-open-folder="${esc(p.slug || '')}" title="Отваря страницата на папката на портала — истинските файлове на диска">${ICON.folder} Отвори папката</button>
+              <button type="button" class="btn btn-sm" id="pf-open-folder" data-open-folder="${esc(p.slug || '')}" title="${T('portal.tip.openFolder')}">${ICON.folder} ${T('portal.link.openFolder')}</button>
             </div>
-            <p class="hint">Сканиран, кодът отваря <strong>същия</strong> адрес, който се копира. За частен портал
-              адресът носи подписан достъп и се сменя с „Обнови достъпа“ — иначе след изтичане кодът води до 404.</p>
+            <p class="hint">${T('portal.link.hint1')}<br />${T('portal.link.hint2')}</p>
           </div>
         </div>
       </section>`;

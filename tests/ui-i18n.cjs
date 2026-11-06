@@ -34,10 +34,23 @@ for (const lang of langs) {
 
 // ── 2. Всеки T('...') в панелите съществува в речника ───────────────────────────
 const panel = read('settings-panel.js');
-const used = new Set([...panel.matchAll(/\bT\('([a-z]+\.[A-Za-z]+)'\)/g)].map((m) => m[1]));
+const used = new Set([...panel.matchAll(/\bT\('([a-z]+(?:\.[A-Za-z]+){1,2})'\)/g)].map((m) => m[1]));
 assert.ok(used.size >= 40, `панелът ползва поне 40 ключа (сега ${used.size})`);
 for (const key of used) assert.ok(i18n.has(key), `кодът ползва липсващ ключ: ${key}`);
-
+// Същото и за КАРТАТА НА ПОРТАЛА: тя беше единствената част от интерфейса без речник, тоест
+// немският и английският потребител виждаха български бутони в преведения панел.
+const control = read('portal-control.js');
+const usedCard = new Set([...control.matchAll(/\bT\('([a-z]+(?:\.[A-Za-z]+){1,2})'\)/g)].map((m) => m[1]));
+assert.ok(usedCard.size >= 20, `картата на портала ползва поне 20 ключа (сега ${usedCard.size})`);
+for (const key of usedCard) {
+  assert.ok(i18n.has(key), `картата ползва липсващ ключ: ${key}`);
+  assert.match(key, /^portal\./, `ключовете на картата са групирани в portal.*: ${key}`);
+}
+// Заглавието и бутоните не са твърд български текст (иначе смяната на езика не работи).
+for (const literal of ['Връзка и QR код', 'Отвори портала', 'Копирай адреса', 'Свали QR', 'Печат на QR']) {
+  assert.equal(control.includes(`'${literal}'`), false, `картата още държи твърд текст: ${literal}`);
+}
+assert.ok(i18n.DICT.de['portal.link.title'] && i18n.DICT.en['portal.link.title'], 'заглавието на картата има превод');
 // Секциите пазят ключ, а не текст: иначе смяната на езика не работи без презареждане.
 const sectionBlock = panel.slice(panel.indexOf('const SECTIONS = ['), panel.indexOf('];', panel.indexOf('const SECTIONS = [')));
 const sectionLabels = [...sectionBlock.matchAll(/label: '([^']+)'/g)].map((m) => m[1]);
