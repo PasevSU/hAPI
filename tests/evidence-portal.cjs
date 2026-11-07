@@ -37,6 +37,16 @@ const emptyRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-empty-'));
 assert.equal(portal.detectRoot([emptyRoot]), null, 'празна папка не се приема за HA конфигурация');
 
 // 3. Целевият път е точно <root>/www/hapi/data.
+// 3а. Изрично подаденият `env` е думата на викащия: щом в него няма папка с данни И няма
+// такава по подразбиране, значи няма. Без това на Linux (където `/share` съществува)
+// изборът се подменяше с платформения и пътят излизаше `/share/hAPI/data/portal` — хванато
+// от CI в S20, невидимо на Windows.
+assert.equal(portal.shareRoot({}), '', 'без EVIDENCE_PORTAL_SHARE в подадения env няма папка с данни');
+assert.equal(
+  portal.shareRoot({ EVIDENCE_PORTAL_SHARE: path.join(os.tmpdir(), 'hapi-share-explicit') }),
+  path.join(os.tmpdir(), 'hapi-share-explicit'),
+  'изричната папка с данни се спазва',
+);
 assert.equal(portal.targetDir({ env: {}, roots: [root] }).dir, path.join(root, 'www', 'hapi', 'data'));
 // 3б. Когато има папка с данни (/share в add-on), порталът живее В НЕЯ —
 // /share/hAPI/data/portal — за да са документите и порталът на едно място.

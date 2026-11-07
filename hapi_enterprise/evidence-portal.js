@@ -45,6 +45,11 @@ const SHARE_SUBPATH_TEXT = 'hAPI/data/portal';
 // там папката се приема само при изрично зададен `EVIDENCE_PORTAL_SHARE`.
 const shareRoot = (env = process.env) => {
   if (env.EVIDENCE_PORTAL_SHARE) return path.resolve(env.EVIDENCE_PORTAL_SHARE);
+  // Изрично подаденият `env` е думата на викащия: щом в него няма папка с данни, значи няма
+  // такава. Иначе на Linux проверката падаше до `/share` дори когато тестът е подал `env: {}`
+  // и очаква пътя в HA конфигурацията — тоест изборът на оператора се подменяше с платформения
+  // (хванато от CI в S20, невидимо на Windows, където `/share` не се ползва).
+  if (env && env !== process.env) return '';
   return process.platform === 'win32' ? '' : '/share';
 };
 
@@ -242,4 +247,6 @@ function status({ env = process.env, roots } = {}) {
   };
 }
 
-module.exports = { FILES, SUBPATH, sourceDir, candidateRoots, detectRoot, targetDir, missingSourceFiles, deploy, status };
+// `shareRoot` е изнесен, за да може тестът да провери, че изрично подаденият `env` се спазва
+// (на Linux без поправката връщаше `/share` и подменяше избора на викащия).
+module.exports = { FILES, SUBPATH, sourceDir, candidateRoots, detectRoot, shareRoot, targetDir, missingSourceFiles, deploy, status };
