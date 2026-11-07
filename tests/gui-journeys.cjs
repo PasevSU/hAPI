@@ -1126,31 +1126,40 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       );
     });
 
-    // ── J51. Файл: „в списъка“ и „заключен“ през иконите на реда ─────────────
-    await journey('J51 файл: в списъка и заключване', async () => {
+    // ── J51. Файл: „обяви“ (чекбокс) и „заключен“ (икона) на реда ────────────
+    await journey('J51 файл: обяви и заключване', async () => {
       await ownPortalWithFile('gui-journey-file-flags');
-      const rowButton = (attr) => waitFor(() => {
+      const rowControl = (attr) => waitFor(() => {
         const nodes = app.$$('[' + attr + ']');
         return nodes.find((el) => {
           const art = el.closest ? el.closest('.fm-file') : null;
           return !art || /fayl-za-scenariy/.test(text(art));
         }) || nodes[0];
-      }, { label: 'иконата „' + attr + '“ на файла', timeout: BUDGET });
+      }, { label: 'контролата „' + attr + '“ на файла', timeout: BUDGET });
+      // Състоянието се чете РАЗЛИЧНО за чекбокс и за икона: чекбоксът казва дали е сложен,
+      // иконата — дали носи класа `on`. Затова състоянието се снема по вид на контролата.
+      const stateOfControl = (el) => (el.getAttribute('type') === 'checkbox'
+        ? 'checked=' + (el.getAttribute('checked') !== null)
+        : String(el.getAttribute('class') || ''));
       const flag = async (attr, what) => {
-        const button = await rowButton(attr);
-        const id = button.getAttribute(attr);
-        const before = String(button.getAttribute('class') || '');
+        const control = await rowControl(attr);
+        const id = control.getAttribute(attr);
+        const before = stateOfControl(control);
         app.clearToasts();
-        button.click();
+        control.click();
         await waitFor(() => app.toast(), { label: 'отговорът за „' + what + '“', timeout: BUDGET });
         assert.ok(['ok', 'err'].includes(app.toast().kind), 'панелът отговаря за „' + what + '“: ' + app.toast().message);
         await settle('редът след „' + what + '“');
-        const again = await waitFor(() => app.$('[' + attr + '="' + id + '"]'), { label: 'иконата след „' + what + '“', timeout: BUDGET });
-        const after = String(again.getAttribute('class') || '');
-        assert.notEqual(after, before, 'иконата сменя състоянието си: ' + before + ' → ' + after);
+        const again = await waitFor(() => app.$('[' + attr + '="' + id + '"]'), { label: 'контролата след „' + what + '“', timeout: BUDGET });
+        const after = stateOfControl(again);
+        assert.notEqual(after, before, 'контролата сменя състоянието си: ' + before + ' → ' + after);
         return app.toast();
       };
-      await flag('data-file-listed', 'видимост в списъка');
+      // „обяви“ е ЧЕКБОКС с надпис — същото, което вижда човекът в реда.
+      const publish = await rowControl('data-file-listed');
+      assert.equal(publish.getAttribute('type'), 'checkbox', 'видимостта е чекбокс, не икона');
+      assert.match(text(publish.closest ? publish.closest('.fm-publish') || publish : publish) || 'обяви', /обяви/);
+      await flag('data-file-listed', 'обяви в портала');
       await flag('data-file-lock', 'заключване');
       assert.ok(
         app.requests.filter((r) => r.method === 'PATCH' && /\/files\//.test(r.url)).length >= 2,

@@ -2422,6 +2422,28 @@ input[type="radio"] {
   opacity: 0.55;
 }
 
+/* „обяви“ — чекбокс с надпис, който обявява файла в портала (флаг `listed`). Стои при
+   иконите вдясно: иконата на типа е само знак, а това е действието. */
+.fm-publish {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-10-5);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fm-publish input {
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.fm-publish input:checked+span {
+  color: var(--accent);
+}
+
 .fm-ico-btn.off:hover {
   opacity: 1;
 }

@@ -228,11 +228,16 @@ assert.match(src, /target\.closest\('\[data-file-gear\]'\)/);
 assert.match(css, /\.fm-file \{[\s\S]*?position: relative;/);
 assert.match(css, /\.fm-file-gear \{ top: calc\(1\.9em \+ 14px\); right: 1\.2%;/);
 assert.match(css, /\.fm-gear-item\.danger:hover/);
-// Икони-пряк път: 👁/🚫 видимост и 🔒/🔓 заключване — за файлове и за папки.
-assert.match(src, /class="fm-file-icons"/);
-assert.match(src, /data-file-listed="\$\{esc\(\s*x\.id,/);
-assert.match(src, /data-file-lock="\$\{esc\(\s*x\.id,/);
-assert.match(src, /ICON\.eye : ICON\.eyeOff/);
+// Чекбокси в реда: избор (data-pick) и „обяви“ (data-file-listed, флаг `listed`).
+// Папките още ползват иконите 👁/🚫 — затова проверката е върху файловата карта.
+const fileCards = uiSrc('portal-files.js');
+assert.match(fileCards, /class="fm-file-icons"/);
+assert.match(fileCards, /data-file-listed="\$\{esc\(x\.id\)\}"/);
+assert.match(fileCards, /data-file-lock="\$\{esc\(\s*x\.id,/);
+assert.equal(/ICON\.eye : ICON\.eyeOff/.test(fileCards), false, 'видимостта на файла е чекбокс „обяви“, не икона 👁');
+assert.match(fileCards, /class="fm-publish"/);
+assert.match(fileCards, /<span aria-hidden="true">обяви<\/span>/);
+assert.match(css, /\.fm-publish input \{[\s\S]*?accent-color: var\(--accent\)/);
 assert.match(src, /async function toggleListed\(fileId\)/);
 assert.match(src, /json: \{ listed \}/);
 assert.match(src, /data-folder-flag-btn="visible" data-folder-flag-path=/);

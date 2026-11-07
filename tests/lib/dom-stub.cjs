@@ -425,8 +425,14 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
       }
       // Браузърът пуска `submit` на формата, когато се натисне бутон type=submit
       // (освен ако click не е отменен). Без това формите на панелите не правят нищо.
+      // Същото важи и за чекбокс: щракването МЕНЯ състоянието и атрибута `checked`.
       if (type === 'click' && !event.defaultPrevented) {
         const kind = String(this.getAttribute('type') || 'submit').toLowerCase();
+        if (this.tagName === 'input' && kind === 'checkbox' && !this.hasAttribute('disabled')) {
+          this.checked = !this.checked;
+          if (this.checked) this.setAttribute('checked', '');
+          else this.removeAttribute('checked');
+        }
         const isSubmit = (this.tagName === 'button' && kind === 'submit') || (this.tagName === 'input' && kind === 'submit');
         if (isSubmit) {
           const form = this.closest('form');
