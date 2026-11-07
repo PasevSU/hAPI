@@ -60,7 +60,9 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
       ],
     });
 
-    const ui = mountUi(server, { modules: ['data.js', 'icons.js', 'paptresor.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js'] });
+    // `debug-objects.js` е в списъка, защото бутонът „Прегледай обектите“ вика точно него —
+    // без модула сценарият проверяваше съобщението „липсва модул“, не разпознаването.
+    const ui = mountUi(server, { modules: ['data.js', 'icons.js', 'paptresor.js', 'settings-panel.js', 'debug-objects.js', 'secret-share.js', 'report-sign.js'] });
     const w = ui.window;
     assert.ok(w.SettingsPanel, 'панелът „Настройки“ е зареден');
 
@@ -192,6 +194,18 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
         },
       },
       storage: { expect: /Проверката приключи/, kind: 'ok' },
+      // Дебъгинг през интерфейса: бутонът пуска `debug-objects.js` върху ЖИВИЯ екран и
+      // показва разпознатите обекти и нарушенията по законите. Видът на известието зависи
+      // от намереното (err при нарушения) — затова се проверява броят, не видът.
+      objectScan: {
+        expect: /Обекти: \d+ · нарушения: \d+/,
+        check: async () => {
+          const out = currentHost.querySelector('#set-objects-out');
+          const shown = String((out && out.textContent) || '');
+          assert.match(shown, /Разпознати обекти: [1-9]\d*/, 'на екрана има разпознати обекти: ' + shown.slice(0, 120));
+          assert.match(shown, /Закони: \d+ · нарушения: \d+/, 'отчетът брои законите и нарушенията');
+        },
+      },
       // Paptresor: отчетът за прилагане на QR кода се строи ОТ ПАНЕЛА (не се чака сървър)
       // и остава на екрана — затова действието е „in place“ и се проверява съдържанието.
       paptresorPreview: {

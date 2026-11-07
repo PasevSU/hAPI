@@ -869,7 +869,9 @@
         '<div class="u-row u-mt">' +
         '<button type="button" class="btn" data-action="portalDeploy">' + T('action.deployPortal') + '</button>' +
         '<button type="button" class="btn" data-action="metricsProm">' + T('action.metrics') + '</button>' +
-        '</div>';
+        '<button type="button" class="btn" data-action="objectScan">' + T('diag.objects') + '</button>' +
+        '</div>' +
+        '<pre class="tree u-mt" id="set-objects-out" aria-live="polite">—</pre>';
     }
     if (id === 'analytics') {
       const s = d.sensors || {};
@@ -1066,6 +1068,22 @@
   // Действията в секциите. Патент: секция → какво прави бутонът.
   async function runAction(action) {
     const post = (path, json) => api(path, { method: 'POST', json });
+    if (action === 'objectScan') {
+      // Дебъгинг през интерфейса: разпознава обектите на ЕКРАНА и прилага законите.
+      // Инструментът живее в `ui/debug-objects.js` — тук само се натиска бутонът, за да
+      // няма функция, до която човек стига само от конзолата.
+      // Текстът на отчета се строи в самия инструмент (`reportText`/`summaryText`), за да
+      // не се разминават конзолният и екранният отчет и за да няма втори списък с текстове.
+      const tools = window.HapiDebugObjects;
+      const out = host.querySelector('#set-objects-out');
+      if (!tools) {
+        if (out) out.textContent = T('diag.objectsMissing');
+        return toast(T('diag.objectsMissing'), 'err');
+      }
+      const result = tools.scan(document.body);
+      if (out) out.textContent = tools.reportText(result);
+      return toast(tools.summaryText(result), result.violations.length ? 'err' : 'ok');
+    }
     if (action === 'group') {
       const name = host.querySelector('#set-group-input').value.trim();
       if (!name) return toast('Въведи име на група', 'err');

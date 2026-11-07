@@ -17,7 +17,7 @@
 # hAPI Enterprise — Home Assistant add-on
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.190-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.191-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22.13-blue?logo=nodedotjs)](https://nodejs.org)
 [![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-informational)](hapi_enterprise/README.md#raspberry-pi-and-small-boards)
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -146,7 +146,7 @@ history and detailed annexes.
 | `hapi_enterprise/`                   | The Home Assistant add-on (source, ready to build and run)                                                       |
 | `custom_components/hapi_enterprise/` | HA custom integration: public API bridge + portal page, UI setup (config/options flow) and telemetry sensors     |
 | `hacs.json`                          | HACS manifest — add this repository as a custom repository (Integration)                                         |
-| `tests/`                             | Automated test suite: one file = one named rule (358 rules, register in `reports/TEST-RULES.md`), `npm test`, 100% gate |
+| `tests/`                             | Automated test suite: one file = one named rule (370 rules, register in `reports/TEST-RULES.md`), `npm test`, 100% gate |
 | `scripts/`                           | Test runner (`test-matrix.cjs`), dev dashboard and the release tools (`build-release.cjs`, `verify-release.cjs`) |
 | `docs/`                              | Documentation, plans (`docs/plan/15` is canonical) and ADR links                                                 |
 | `documentation/`                     | Governance, ADR registry, migration, testing, release, user guides — **start with `documentation/09_COMPLETE_MANUAL/`** |

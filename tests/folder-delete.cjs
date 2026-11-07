@@ -132,8 +132,8 @@ const root = path.join(__dirname, '..');
     assert.match(foldersUi, /data-folder-delete="\$\{esc\(key\)\}"/, 'менюто на папката има „изтрий папката“');
     assert.equal(/data-folder-delete[\s\S]{0,80}key\s*\?/.test(foldersUi), false, 'коренът няма бутон за триене');
     assert.match(foldersUi, /\$\{key\s*\n?\s*\?/, 'бутонът за триене е само при истинска папка');
-    assert.match(filesBlock, /id="fm-file-input" class="u-hidden" \/>/, 'прикачването на файл е единично');
-    assert.match(filesBlock, /id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple/, 'папката остава multiple');
+    assert.match(filesBlock, /id="fm-file-input" class="u-hidden" aria-label="[^"]+" \/>/, 'прикачването на файл е единично и с име за екранния четец');
+    assert.match(filesBlock, /id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple aria-label="[^"]+"/, 'папката остава multiple');
 
     console.log(
       'PASS folder-delete: непразна → 409 (2 файла, 1 папка) · recursive → 200 (2 файла, 1 подпапка, 1 регистриран) · празна → 200 · корен → 400 · липсваща → 404 · „..“ → 400 · заключена → 409 · панелът има ЕДИН QR — на портала',

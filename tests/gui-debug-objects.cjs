@@ -113,10 +113,41 @@ const PANEL_MODULES = [
     assert.match(said[0], /HapiDebugObjects: \d+ обекта · \d+ нарушения/, 'заглавният ред казва брой обекти и нарушения: ' + said[0]);
     assert.ok(said.some((line) => /закон spacing-grid/.test(line)), 'отчетът групира по закон: ' + said.slice(0, 4).join(' | '));
 
+    // ── 5. През интерфейса: Настройки → Диагностика → „Прегледай обектите“ ────
+    // Правилото на проекта: функция, до която се стига само от конзолата, е недовършена.
+    // Затова инструментът има бутон в панела и отчетът се вижда НА ЕКРАНА, не само в конзолата.
+    const settingsHost = ui.container();
+    ui.window.SettingsPanel.mount(settingsHost);
+    const diagTab = await waitFor(
+      () => settingsHost.querySelector('[data-section="diagnostics"]'),
+      { label: 'табът „Диагностика“', timeout: 20000 },
+    );
+    diagTab.click();
+    const scanButton = await waitFor(
+      () => settingsHost.querySelector('[data-action="objectScan"]'),
+      { label: 'бутонът „Прегледай обектите“', timeout: 20000 },
+    );
+    ui.clearToasts();
+    scanButton.click();
+    const said2 = await waitFor(() => {
+      const t = ui.lastToast();
+      return t && /Обекти: \d+/.test(t.message) ? t : null;
+    }, { label: 'отговорът от прегледа на обектите', timeout: 20000 });
+    const report = String(settingsHost.querySelector('#set-objects-out').textContent || '');
+    assert.match(report, /Разпознати обекти: \d+/, 'отчетът е на екрана: ' + report.slice(0, 120));
+    assert.match(report, /Закони: 6 · нарушения: \d+/, 'отчетът казва колко закона е приложил: ' + report.slice(0, 200));
+    assert.match(said2.message, /Обекти: \d+ · нарушения: \d+/, 'известието брои обектите и нарушенията: ' + said2.message);
+    // Инструментът НЕ лъже: щом има нарушения, известието е с вид „err“, а отчетът ги изброява.
+    const counted = Number((said2.message.match(/нарушения: (\d+)/) || [0, 0])[1]);
+    assert.equal(said2.kind, counted ? 'err' : 'ok', 'видът на известието следва броя нарушения: ' + said2.message);
+    if (counted) assert.match(report, /✘ /, 'при нарушения отчетът ги изброява с причина: ' + report.slice(0, 200));
+    const byLaw = ui.window.HapiDebugObjects.scan(ui.document.body).summary.byLaw;
+
     console.log(
       'PASS gui-debug-objects: ' + live.objects.length + ' обекта в живия панел (' + kinds.sort().join(', ') + ') · ' +
       ui.window.HapiDebugObjects.LAWS.length + ' закона · ' + laws.length + ' хванати нарушения на нарочно поставените · ' +
-      'без флаг инструментът мълчи',
+      'без флаг инструментът мълчи · през интерфейса: ' + said2.message + ' (' +
+      Object.keys(byLaw).sort().map((law) => law + '×' + byLaw[law]).join(', ') + ')',
     );
   } finally {
     await stopChild(server.child);

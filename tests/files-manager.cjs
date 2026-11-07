@@ -547,8 +547,11 @@ assert.match(src, /data-attach-file title="Прикачи файл в/);
 assert.match(src, /data-toggle-filters aria-expanded="\$\{\s*state\.filters\s*\}"/);
 // „Добави файл“ качва ТОЧНО един файл: многофайловият избор е отделното копче за папка,
 // за да не качва „добави файл“ цяла директория (0.69.62).
-assert.match(src, /id="fm-file-input" class="u-hidden" \/>/);
-assert.match(src, /id="fm-file-input" class="u-hidden" \/>[\s\S]*?id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple/);
+// Полетата са СКРИТИ, но не без име: до 0.69.191 имаха само `id` и екранният четец
+// обявяваше „бутон без име“ (DEF-38). Затова `aria-label` е част от договора.
+assert.match(src, /id="fm-file-input" class="u-hidden" aria-label="[^"]+" \/>/);
+assert.equal(/id="fm-file-input" class="u-hidden"[^>]*\bmultiple\b/.test(src), false, '„добави файл“ не е multiple');
+assert.match(src, /id="fm-file-input" class="u-hidden" aria-label="[^"]+" \/>[\s\S]*?id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple aria-label="[^"]+"/);
 assert.match(src, /Array\.from\(e\.target\.files \|\| \[\]\)\.slice\(0, 1\)/);
 assert.match(src, /Ще се качат \$\{files\.length\}/);
 assert.match(src, /async function uploadToStorage\(folderRel, fileList\)/);

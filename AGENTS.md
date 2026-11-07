@@ -19,10 +19,11 @@
 
 ## Твърди порти (чупят изданието)
 
-- `server.js` ≤ **2722** реда → нов код отива в `hapi_enterprise/routes/*.js`.
+- `server.js` ≤ **2722** реда (днес **2719** — 3 реда до портата) → нов код отива в
+  `hapi_enterprise/routes/*.js`.
 - Всички текстови файлове са **LF**; един CRLF чупи S08/S22.
-- `dist/` съдържа точно 6 файла; `verify-release` трябва да е **22/22**.
-- `release-status` иска зелен матрикс и **368** теста в дървото.
+- `dist/` съдържа точно 6 файла; `verify-release` трябва да е **22/22** (S20 е само с `--with-tests`).
+- `release-status` иска зелен матрикс и **370** теста в дървото.
 - `tests/known-defects.cjs`: затворен ред сочи съществуващ `.js`/`.cjs`, заглавието носи текущата версия.
 - `ui-version`, `addon-changelog`, `docs-index`, `scenario-matrix`, `ui-css-split` — виж `tests/`.
 
@@ -35,6 +36,23 @@
   (карта „Достъп и QR код“), `portal-folders.js` (дърво), `portal-files.js` (списък), `i18n.js` (BG/EN/DE).
 - `hapi_enterprise/portal/` — публичната страница: `portal.html`, `portal.js`, `portal-i18n.js`, `portal.css`.
 - `tests/` — един файл = едно правило; `tests/lib/gui-harness.cjs` пуска реален сървър + DOM.
+
+## Локална среда (тази машина, проверено 2026-11-07)
+
+- Node е **v26.13.0**, а изданието/CI са на **Node 22.23.2**. Тестовете минават и на двете, но
+  преди издание пусни поне `tests/smoke.cjs` и `verify-release` на Node 22 (`npx -y node@22 …`).
+- `verify-release` S06 търси `python3`/`python` в PATH. Тук Python е в `.venv`, затова:
+  `$env:PATH = "$PWD\.venv\Scripts;$env:PATH"` преди verify.
+- Ограниченият файлов сандбокс не пуска дъщерни процеси с piped stdio (`spawnSync` с
+  `encoding`) → `test-matrix`, `verify-release` (S05/S19) и build падат с EPERM. За тях искай
+  еднократно `sandbox_permissions: danger-full-access` с обосновка. `write`/`edit` работят и в
+  ограничен режим.
+- След поправка на правата (2026-11-07) ограничените команди пишат в `reports/`, `dist/`, `.git`.
+  Изключение: ~2 047 файла със собственик `BUILTIN\Administrators` не приемат Low integrity
+  етикет — тях ги пиши с `write`/`edit`, не през shell. Възстановяване на правата:
+  `D:\hAPI-acl-recovery\` (DACL) и `icacls D:\hAPI /setintegritylevel M /t` (етикети).
+- `origin/main` изостава от локалния `main`; виж `dev/PROJECT-ANALYSIS-2026-11-07.md` (R1)
+  преди `git push` — историята е разклонена.
 
 ## Капани
 

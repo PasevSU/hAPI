@@ -88,6 +88,21 @@
     return label && String(label).trim() ? String(label).trim() : '';
   }
 
+  /**
+   * Името, което САМИЯТ БРАУЗЪР дава на полето: `labels` (етикет с `for` или обвиващ
+   * `<label>`). Ако етикетът стои до полето, без да е свързан, той се ВИЖДА, но екранният
+   * четец не го обявява — затова се връща с маркер `#unlinked:`, а законът го казва точно.
+   */
+  function labelNameOf(el) {
+    if (el.labels && el.labels.length) return String(el.labels[0].textContent || '').replace(/\s+/g, ' ').trim();
+    var wrapped = el.closest ? el.closest('label') : null;
+    if (wrapped) return String(wrapped.textContent || '').replace(/\s+/g, ' ').trim();
+    var field = el.closest ? el.closest('.field') : null;
+    var neighbour = field && field.querySelector ? field.querySelector('label') : null;
+    if (neighbour) return '#unlinked:' + String(neighbour.textContent || '').replace(/\s+/g, ' ').trim();
+    return '';
+  }
+
   function describe(el) {
     if (el.id) return '#' + el.id;
     var attrs = ['data-file-listed', 'data-file-lock', 'data-pick', 'data-act', 'data-section', 'data-panel'];
@@ -137,6 +152,12 @@
       check: function (o) {
         if (nameOf(o.el)) return null;
         if (o.el.getAttribute && o.el.getAttribute('aria-hidden') === 'true') return null;
+        var label = labelNameOf(o.el);
+        if (label.indexOf('#unlinked:') === 0) {
+          var text = label.slice('#unlinked:'.length);
+          return 'етикетът „' + text + '“ не е свързан с полето (липсва for/id) — екранният четец не го обявява';
+        }
+        if (label) return null;
         return 'без текст, aria-label, title или placeholder';
       },
     },
@@ -167,12 +188,15 @@
     {
       id: 'one-qr',
       title: 'QR кодът е един — този на портала (без собствени кодове по файлове)',
-      kinds: ['panel', 'block', 'card'],
-      check: function (o) {
-        var svg = o.el.querySelectorAll ? o.el.querySelectorAll('svg.qf-svg, .qf-svg') : [];
-        var insidePortal = o.el.closest ? o.el.closest('[data-block="access"]') : null;
-        if (svg.length && !insidePortal) return svg.length + ' QR кода извън блока „Достъп и QR код“';
-        return null;
+      // Законът е за ЦЕЛИЯ екран, не за всеки контейнер: иначе един код се брои три пъти
+      // (панел → карта → блок) и отчетът плаши с число, което не съществува.
+      kinds: ['scope'],
+      check: function (scope) {
+        var nodes = scope.el && scope.el.querySelectorAll ? scope.el.querySelectorAll('.qf-svg') : [];
+        var outside = Array.prototype.filter.call(nodes, function (node) {
+          return !(node.closest && node.closest('[data-block="link"]'));
+        });
+        return outside.length ? outside.length + ' QR кода извън блока „Достъп и QR код“' : null;
       },
     },
   ];
@@ -228,24 +252,64 @@
 
     var byKind = {};
     objects.forEach(function (o) { byKind[o.kind] = (byKind[o.kind] || 0) + 1; });
+    // Законите за ЦЕЛИЯ екран (`kinds: ['scope']`) се прилагат веднъж, а не за всеки обект.
+    LAWS.forEach(function (law) {
+      if (law.kinds.indexOf('scope') === -1) return;
+      var detail;
+      try {
+        detail = law.check({ kind: 'scope', id: 'екран', el: scope, spacing: {}, box: null });
+      } catch (e) {
+        detail = 'законът не може да се приложи: ' + (e && e.message ? e.message : e);
+      }
+      if (detail) violations.push({ law: law.id, title: law.title, kind: 'scope', object: 'екран', detail: detail });
+    });
     var byLaw = {};
     violations.forEach(function (v) { byLaw[v.law] = (byLaw[v.law] || 0) + 1; });
     return { at: new Date().toISOString(), objects: objects, violations: violations, summary: { byKind: byKind, byLaw: byLaw } };
   }
 
-  /** Отчет в конзолата — редовете са готови за копиране в доклад за дефект. */
-  function report(result) {
+  /**
+   * Редовете на отчета като масив — ЕДИН източник за конзолата и за екрана.
+   * Панелът („Настройки → Диагностика“) показва точно тези редове, затова текстът не се
+   * дублира в `settings-panel.js`.
+   */
+  function reportLines(result) {
     var r = result || scan();
-    var lines = ['HapiDebugObjects: ' + r.objects.length + ' обекта · ' + r.violations.length + ' нарушения'];
+    var lines = [];
     Object.keys(r.summary.byKind).sort().forEach(function (kind) {
-      lines.push('  обект ' + kind + ': ' + r.summary.byKind[kind]);
+      lines.push('  ' + kind + ': ' + r.summary.byKind[kind]);
     });
-    Object.keys(r.summary.byLaw).sort().forEach(function (law) {
-      lines.push('  закон ' + law + ': ' + r.summary.byLaw[law]);
-    });
+    lines.push('Закони: ' + LAWS.length + ' · нарушения: ' + r.violations.length);
     r.violations.forEach(function (v) {
       lines.push('  ✘ ' + v.law + ' · ' + v.kind + ' ' + v.object + ' — ' + v.detail);
     });
+    if (!r.violations.length) {
+      lines.push('Няма нарушения по измереното — липсващите стойности се прескачат, не се броят за наред.');
+    }
+    return ['Разпознати обекти: ' + r.objects.length].concat(lines);
+  }
+
+  /** Екранният отчет: редовете от `reportLines`, слепени за `<pre>`. */
+  function reportText(result) {
+    return reportLines(result).join('\n');
+  }
+
+  /** Едноредовото резюме за известие: „Обекти: N · нарушения: M“. */
+  function summaryText(result) {
+    var r = result || scan();
+    return 'Обекти: ' + r.objects.length + ' · нарушения: ' + r.violations.length;
+  }
+
+  /** Отчет в конзолата — редовете са готови за копиране в доклад за дефект. */
+  function report(result) {
+    var r = result || scan();
+    // Конзолата показва същото като екрана плюс разбивката по закон — текстът се строи
+    // веднъж (`reportLines`), за да не се разминават двата отчета.
+    var lines = ['HapiDebugObjects: ' + r.objects.length + ' обекта · ' + r.violations.length + ' нарушения'];
+    Object.keys(r.summary.byLaw).sort().forEach(function (law) {
+      lines.push('  закон ' + law + ': ' + r.summary.byLaw[law]);
+    });
+    lines = lines.concat(reportLines(r));
     if (window.console && window.console.log) lines.forEach(function (line) { window.console.log(line); });
     return r;
   }
@@ -255,7 +319,17 @@
     return report();
   }
 
-  var api = { isDebug: isDebug, scan: scan, report: report, enable: enable, OBJECTS: OBJECTS, LAWS: LAWS };
+  var api = {
+    isDebug: isDebug,
+    scan: scan,
+    report: report,
+    reportLines: reportLines,
+    reportText: reportText,
+    summaryText: summaryText,
+    enable: enable,
+    OBJECTS: OBJECTS,
+    LAWS: LAWS,
+  };
   window.HapiDebugObjects = api;
 
   // Автоматично при включен дебъгинг: след като панелът е нарисуван, но без да чака

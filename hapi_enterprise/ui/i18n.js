@@ -78,6 +78,10 @@
       'action.deployPortal': 'Разположи портала',
       'action.metrics': 'Метрики за мониторинг',
       'action.createLink': 'Създай линк',
+      // Дебъгинг през интерфейса: разпознаване на обектите и прилагане на законите
+      // (`ui/debug-objects.js`). Текстът на самия отчет идва от инструмента.
+      'diag.objects': 'Прегледай обектите',
+      'diag.objectsMissing': 'Модулът debug-objects.js не е зареден — няма какво да разпознае',
       'cms.hint': 'Отчетът се подписва отделно: PDF-ът остава непроменен, а подписът се пази като файл .p7s до него. Проверката показва дали подписът пасва на точно този файл — не дали документът е удостоверен: това зависи от издателя на сертификата.',
       'cms.pdf': 'PDF файл на отчета',
       'cms.cert': 'Сертификат (PEM)',
@@ -244,6 +248,8 @@
       'action.deployPortal': 'Deploy portal',
       'action.metrics': 'Monitoring metrics',
       'action.createLink': 'Create link',
+      'diag.objects': 'Inspect objects',
+      'diag.objectsMissing': 'The debug-objects.js module is not loaded — nothing to recognise',
       'cms.hint': 'The report is signed detached: the PDF stays unchanged and the signature is kept next to it as a .p7s file. Verification shows whether the signature matches exactly this file — not whether the document is certified: that depends on the certificate issuer.',
       'cms.pdf': 'Report PDF file',
       'cms.cert': 'Certificate (PEM)',
@@ -403,6 +409,8 @@
       'action.exportAudit': 'Audit exportieren',
       'action.deployPortal': 'Portal bereitstellen',
       'action.metrics': 'Messwerte für Monitoring',
+      'diag.objects': 'Objekte prüfen',
+      'diag.objectsMissing': 'Das Modul debug-objects.js ist nicht geladen — nichts zu erkennen',
       'action.createLink': 'Link erstellen',
       'cms.hint': 'Der Bericht wird getrennt signiert: die PDF bleibt unverändert, die Signatur liegt daneben als .p7s-Datei. Die Prüfung zeigt, ob die Signatur genau zu dieser Datei passt — nicht, ob das Dokument beglaubigt ist: das hängt vom Aussteller des Zertifikats ab.',
       'cms.pdf': 'PDF-Datei des Berichts',

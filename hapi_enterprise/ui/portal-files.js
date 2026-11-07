@@ -171,8 +171,8 @@
           </span>` : ''}
         </div>
         ${open ? `<div class="pf-block-body">
-          <input type="file" id="fm-file-input" class="u-hidden" />
-          <input type="file" id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple />
+          <input type="file" id="fm-file-input" class="u-hidden" aria-label="Избор на един файл за качване" />
+          <input type="file" id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple aria-label="Избор на папка за внасяне" />
           ${state.filters
           ? `<div class="fm-toolbar">
             <input id="fm-search" placeholder="Търси по име или тема" value="${esc(state.query)}" />
