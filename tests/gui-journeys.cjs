@@ -1197,8 +1197,15 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       app.fill(box, 'Бележка от сценария');
       app.clearToasts();
       app.click('[data-folder-comment-save="' + rel + '"]', 'бутонът „Запази бележката“');
-      await waitFor(() => app.toast(), { label: 'отговорът за бележката на папката', timeout: BUDGET });
-      assert.equal(app.toast().kind, 'ok', 'бележката е запазена: ' + app.toast().message);
+      // Чакаме РЕЗУЛТАТА, а не само известието: под натоварване съобщението живее кратко и
+      // може да изчезне преди да го прочетем (измерен флейк в матрицата: J53 изтече по 30 s).
+      // Дървото с бележката е същото доказателство и не изчезва.
+      await waitFor(
+        () => app.toast() || /Бележка от сценария/.test(text(view())),
+        { label: 'резултатът от бележката (известие или дървото)', timeout: BUDGET },
+      );
+      const commentToast = app.toast();
+      if (commentToast) assert.equal(commentToast.kind, 'ok', 'бележката е запазена: ' + commentToast.message);
       assert.ok(
         app.requests.some((r) => r.method === 'POST' && /\/tree\/comment$/.test(r.url)),
         'бележката мина през сървъра: ' + app.requests.slice(-3).map((r) => r.method + ' ' + r.url).join(' · '),

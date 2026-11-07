@@ -35,11 +35,27 @@ const LEAK = [/(^|[^a-zA-Z])\/(data|config|share|media|ssl)\//, /[A-Z]:\\/, /nod
   const server = await startServer();
   const fiveHundred = [];
   const leaks = [];
+  const open = [];
   let calls = 0;
+  let anonymous = 0;
   try {
     for (const [method, rawPath] of spec.ROUTES) {
       if (SKIP.some((s) => rawPath.startsWith(s))) continue;
       const path = rawPath.replace(/\{[^}]+\}/g, DUMMY);
+
+      // Без токен маршрутът НЕ бива да отговаря 2xx. Така успешните административни
+      // отговори, които законно показват папки (`/rules`, `/diagnostics`, `/logs`,
+      // `/generator/templates`, `/v2/rfc3161/verify`), не са изложени на никого.
+      anonymous += 1;
+      const anon = await fetch(server.base + path, {
+        method: method === 'GET' || method === 'DELETE' ? method : 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: method === 'GET' || method === 'DELETE' ? undefined : '{}',
+        signal: AbortSignal.timeout(8000),
+      });
+      await anon.text();
+      if (anon.status < 400 && anon.status !== 503) open.push(method + ' ' + path + ' → ' + anon.status);
+
       const bodies = method === 'GET' || method === 'DELETE' ? [undefined] : BODIES;
       for (const body of bodies) {
         calls += 1;
@@ -58,9 +74,10 @@ const LEAK = [/(^|[^a-zA-Z])\/(data|config|share|media|ssl)\//, /[A-Z]:\\/, /nod
     await server.stop();
   }
   assert.deepEqual(fiveHundred, [], 'грешен вход не бива да дава 5xx:\n  ' + fiveHundred.slice(0, 12).join('\n  '));
+  assert.deepEqual(open, [], 'маршрут без токен не бива да отговаря 2xx:\n  ' + open.slice(0, 12).join('\n  '));
   assert.deepEqual(leaks, [], 'грешката не бива да изтича вътрешен път или стек:\n  ' + leaks.slice(0, 8).join('\n  '));
   console.log(
-    'PASS api-robustness: ' + calls + ' заявки през ' + spec.ROUTES.length + ' маршрута · 0 отговора 5xx · 0 изтекли пътища и стекове',
+    'PASS api-robustness: ' + calls + ' заявки с тяло през ' + spec.ROUTES.length + ' маршрута · ' + anonymous + ' анонимни заявки без 2xx · 0 отговора 5xx · 0 изтекли пътища и стекове',
   );
 })().catch((e) => {
   console.error('FAIL api-robustness:', e && e.message ? e.message : e);

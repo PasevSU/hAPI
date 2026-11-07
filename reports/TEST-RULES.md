@@ -3,12 +3,12 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 372 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 379 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 169 |
-| портал | 34 |
+| общо | 175 |
+| портал | 35 |
 | GUI | 24 |
 | Home Assistant | 16 |
 | отчети | 16 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (169)
+## общо (175)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -78,6 +78,7 @@
 | `data-settings` | Data settings | `tests/data-settings.cjs` |
 | `decision-sensors` | Decision sensors | `tests/decision-sensors.cjs` |
 | `diagnostics` | Diagnostics | `tests/diagnostics.cjs` |
+| `directory-contract` | Directory contract | `tests/directory-contract.cjs` |
 | `directory-organizations` | Directory organizations | `tests/directory-organizations.cjs` |
 | `directory-variables` | Directory variables | `tests/directory-variables.cjs` |
 | `dist-folder` | Dist folder | `tests/dist-folder.cjs` |
@@ -111,11 +112,15 @@
 | `full-journey` | Full journey | `tests/full-journey.cjs` |
 | `full-journey-office` | Full journey office | `tests/full-journey-office.cjs` |
 | `full-journey-sensors` | Full journey sensors | `tests/full-journey-sensors.cjs` |
+| `function-catalog` | Function catalog | `tests/function-catalog.cjs` |
 | `gateway-api` | Gateway api | `tests/gateway-api.cjs` |
 | `gateway-server` | Gateway server | `tests/gateway-server.cjs` |
 | `generator-app` | Generator app | `tests/generator-app.cjs` |
 | `hacs-structure` | Hacs structure | `tests/hacs-structure.cjs` |
 | `hassfest-local` | Hassfest local | `tests/hassfest-local.cjs` |
+| `helper-contracts` | Helper contracts | `tests/helper-contracts.cjs` |
+| `helper-contracts-2` | Helper contracts 2 | `tests/helper-contracts-2.cjs` |
+| `helper-contracts-3` | Helper contracts 3 | `tests/helper-contracts-3.cjs` |
 | `idempotency` | Idempotency | `tests/idempotency.cjs` |
 | `ingress-api-base` | Ingress api base | `tests/ingress-api-base.cjs` |
 | `ingress-auth` | Ingress auth | `tests/ingress-auth.cjs` |
@@ -203,6 +208,7 @@
 | `start-portal-open` | Start portal open | `tests/start-portal-open.cjs` |
 | `start-token-required` | Start token required | `tests/start-token-required.cjs` |
 | `storage` | Storage | `tests/storage.cjs` |
+| `store-accessors` | Store accessors | `tests/store-accessors.cjs` |
 | `store-migration` | Store migration | `tests/store-migration.cjs` |
 | `tag-version` | Tag version | `tests/tag-version.cjs` |
 | `taxonomy` | Taxonomy | `tests/taxonomy.cjs` |
@@ -215,7 +221,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (34)
+## портал (35)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -245,6 +251,7 @@
 | `portal-page-contract` | Portal page contract | `tests/portal-page-contract.cjs` |
 | `portal-page-lang` | Portal page lang | `tests/portal-page-lang.cjs` |
 | `portal-page-render` | Portal page render | `tests/portal-page-render.cjs` |
+| `portal-policy-secret-links` | Portal policy secret links | `tests/portal-policy-secret-links.cjs` |
 | `portal-qr-archive` | Portal qr archive | `tests/portal-qr-archive.cjs` |
 | `portal-qr-badge` | Portal qr badge | `tests/portal-qr-badge.cjs` |
 | `portal-qr-restore` | Portal qr restore | `tests/portal-qr-restore.cjs` |

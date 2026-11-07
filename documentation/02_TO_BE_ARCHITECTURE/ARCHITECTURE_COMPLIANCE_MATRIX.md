@@ -122,7 +122,8 @@
 
 | Показател | Стойност |
 | --- | --- |
-| Тестови файлове | 371 (`tests/lib/test-rules.cjs` се генерира; числото се повтаря в `reports/RELEASE-STATUS.md`) |
+| Тестови файлове | 379 (`tests/lib/test-rules.cjs` се генерира; числото се повтаря в `reports/RELEASE-STATUS.md`). Матрицата пуска 378 с `--skip=release-status` — тя се отчита отделно |
+| Покритие на функциите | `node scripts/function-catalog.cjs` — **358** изнасяни функции в 50 модула, **358** срещани в тест, **0** непокрити; портата `tests/function-catalog.cjs` пада при нова функция без тест или остарял `reports/FUNCTION-CATALOG.md` |
 | Матрица | `node scripts/test-matrix.cjs` — 100 % при 1 опит е целта; флейки при паралелни портове се отчитат изрично |
 | Проверки на изданието | `verify-release` 22/22 · `audit-gui-compat` 33/33 + 28/28 · `logic-audit --gate` · `bad-code-scan --gate` · `eslint` 0 |
 | Твърд бюджет | `server.js` ≤ 2722 реда, 17 компонента в `routes/` |

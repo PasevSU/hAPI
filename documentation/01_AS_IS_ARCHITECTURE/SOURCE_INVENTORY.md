@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.195**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.197**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **113** backend модула · **17** HTTP компонента · **25** UI модула · **9** Python модула · **39** инструмента · **372** теста.
+Общо: **113** backend модула · **17** HTTP компонента · **25** UI модула · **9** Python модула · **40** инструмента · **379** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -194,7 +194,7 @@
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (39)
+### Инструменти (`scripts/*.cjs`) (40)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -217,6 +217,7 @@
 | `scripts/export-release.cjs` | Изнася готовото издание в папка за качване (по подразбиране Downloads). |
 | `scripts/export-tracked.cjs` | Експорт на „точно това, което би влязло в git“ — без robocopy /MIR по цялото дърво. |
 | `scripts/fetch-package.cjs` | Паралелно теглене на експортен пакет (или който и да е файл с Range поддръжка). |
+| `scripts/function-catalog.cjs` | Каталог на функциите: какво ВСЕКИ модул изнася и кой тест го покрива. |
 | `scripts/gen-test-rules.cjs` | ГЕНЕРАТОР НА КАТАЛОГА С ПРАВИЛАТА (0.69.158). |
 | `scripts/join-package.cjs` | Слепване на разделен експортен пакет БЕЗ add-on. |
 | `scripts/logic-audit.cjs` | Логически одит — търси подозрителна ЛОГИКА, не синтаксис. |

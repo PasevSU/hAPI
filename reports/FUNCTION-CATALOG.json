@@ -1,0 +1,2265 @@
+{
+  "generatedFor": "hapi_enterprise",
+  "total": 401,
+  "tested": 379,
+  "untested": 22,
+  "fnTotal": 358,
+  "fnTested": 358,
+  "modules": [
+    {
+      "module": "hapi_enterprise/api-registry.js",
+      "functions": [
+        {
+          "name": "ensure",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "paths",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "read",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "remove",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/config-profiles.js",
+      "functions": [
+        {
+          "name": "get",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "list",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "remove",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "save",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/container.js",
+      "functions": [
+        {
+          "name": "clear",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "get",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "has",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "list",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "register",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "registerValue",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/decision-sensors.js",
+      "functions": [
+        {
+          "name": "evaluate",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/directory.js",
+      "functions": [
+        {
+          "name": "addContact",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "addOrganization",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "addRule",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "addVariable",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "ingest",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "ORG_KINDS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "patchContact",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "patchOrganization",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "patchVariable",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "removeContact",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "removeOrganization",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "removeRule",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "removeVariable",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "resolveConflict",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sanitizeAddresses",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sanitizeExtras",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "state",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "TYPES",
+          "kind": "константа",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/download-access.js",
+      "functions": [
+        {
+          "name": "behaviour",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "ok",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/download-stream.js",
+      "functions": [
+        {
+          "name": "acquire",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "release",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "stream",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/error-log.js",
+      "functions": [
+        {
+          "name": "append",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "list",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/event-bus.js",
+      "functions": [
+        {
+          "name": "emit",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "events",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "listenerCount",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "off",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "on",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "once",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/event-stream.js",
+      "functions": [
+        {
+          "name": "broadcast",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "closeAll",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "open",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "stats",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/export-manager.js",
+      "functions": [
+        {
+          "name": "preflight",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "resume",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/export-rules.js",
+      "functions": [
+        {
+          "name": "format",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "packageId",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/gateway-api.js",
+      "functions": [
+        {
+          "name": "BUNDLED_DIR",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "config",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "CONFIG_DIR",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "decideFile",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "defaultSeedDir",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "downloadUrlFor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "exportPreflight",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "exportRulesPayload",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "fileModeFor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "fileView",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "overrideFor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "portalMode",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "portalView",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "readJson",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "reload",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "RULE_FILES",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "ruleDirs",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "seedRules",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "setLogger",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "status",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "urlsFor",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/generator.js",
+      "functions": [
+        {
+          "name": "index",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "list",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "read",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "remove",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "save",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "seed",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/idempotency.js",
+      "functions": [
+        {
+          "name": "handle",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/instance-lock.js",
+      "functions": [
+        {
+          "name": "acquire",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "DEFAULT_STALE_MS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "FILE",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "heartbeat",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "heartbeatShared",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "inspect",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "joinShared",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "leaveShared",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "listShared",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "lockPath",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "PEERS_DIR",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "peersDir",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "pruneShared",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "release",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/layout.js",
+      "functions": [
+        {
+          "name": "entries",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/load-control.js",
+      "functions": [
+        {
+          "name": "effective",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "heapRatio",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/logger.js",
+      "functions": [
+        {
+          "name": "at",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/migration-bridge.js",
+      "functions": [
+        {
+          "name": "analyze",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "contacts",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "migrate",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/mirror-target.js",
+      "functions": [
+        {
+          "name": "endpoint",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "region",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/observer.js",
+      "functions": [
+        {
+          "name": "close",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "download",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "fileDelete",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "fileUpload",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "flush",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "mirrorFailed",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "normalizePath",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "observe",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "prometheus",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "snapshot",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "visit",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/oidc.js",
+      "functions": [
+        {
+          "name": "b64url",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "CODE",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "config",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "cookie",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "createDiscovery",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "createFlows",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "createJwks",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "FLOW_TTL_MS",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "groupsOf",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "permitted",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "roleFor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sessionCookie",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sha256",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "verifyIdToken",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/package-crypto.js",
+      "functions": [
+        {
+          "name": "decrypt",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "describe",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "encrypt",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "generatePassword",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "info",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "isContainer",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "MAGIC",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "MAX_PASSWORD",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "MIN_PASSWORD",
+          "kind": "константа",
+          "tested": false
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/path-crypto.js",
+      "functions": [
+        {
+          "name": "openPath",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "pathField",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "pathOf",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "publicText",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "reload",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "requireEncryptionKey",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sealAll",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sealPath",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "signDetached",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "signing",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "status",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "unwrapSecret",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "wrapSecret",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/pdf-writer.js",
+      "functions": [
+        {
+          "name": "glyph",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/pgp-sign.js",
+      "functions": [
+        {
+          "name": "artifact",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "listFolder",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "manifestFor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "resolveInput",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sign",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/pgp-tools.js",
+      "functions": [
+        {
+          "name": "canSign",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "find",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "keyId",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "keys",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "optionsKey",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "publicKeyFor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "signer",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "verify",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "view",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/pgp.js",
+      "functions": [
+        {
+          "name": "AEAD_MODES",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "ALGO",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "armor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "bits",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "crc24",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "dearmor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "decryptMessage",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "describe",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "encryptToKey",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "generate",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "keys",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "packet",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "parseKeyBlock",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "publicKeyOf",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "readPackets",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "rolesOfKeyFlags",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "signDetached",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "signingKey",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "storageKeyOf",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "verifyDetached",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/plugins.js",
+      "functions": [
+        {
+          "name": "all",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "get",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "has",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "list",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "register",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/portal-integrity.js",
+      "functions": [
+        {
+          "name": "intervalMs",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sha256",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/portal-policy.js",
+      "functions": [
+        {
+          "name": "clearCookie",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "decide",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "digest",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "isSecureRequest",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "readSessionToken",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sessionCookie",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "snapshot",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "userMayPortal",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/portal-qr.js",
+      "functions": [
+        {
+          "name": "activeRevision",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "buildArchive",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "DEPTH_CODE",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "depthOf",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "ensureFirst",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "files",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "manifestFor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "MAX_DEPTH",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "policy",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "qrIdOf",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "registry",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sha256",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "stats",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "tooDeep",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "unpack",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "walk",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/portal-skin.js",
+      "functions": [
+        {
+          "name": "skin",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "SKINS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "stylesheet",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "warnEncryptionWithoutKey",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/public-gateway.js",
+      "functions": [
+        {
+          "name": "visibility",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/public-package.js",
+      "functions": [
+        {
+          "name": "issue",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "prune",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "redeem",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/rbac.js",
+      "functions": [
+        {
+          "name": "allowed",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "capabilitiesOf",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "resolve",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/registry.js",
+      "functions": [
+        {
+          "name": "fieldsFor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getProfile",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "label",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "listProfiles",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "validateField",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "validateRecord",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/report-stamp.js",
+      "functions": [
+        {
+          "name": "BINDING",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "closingDigest",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "NOT_REQUESTED",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "stampReport",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "startFields",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "stopFields",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "TOKEN_FORMAT",
+          "kind": "константа",
+          "tested": false
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/retention.js",
+      "functions": [
+        {
+          "name": "apply",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "evidenceIndex",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "preview",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/secret-links.js",
+      "functions": [
+        {
+          "name": "adminView",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "ALPHABET",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "createRecord",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "DEFAULT_TTL_SECONDS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "DEFAULT_VIEWS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "FRAGMENT_LENGTH",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "HASH_LENGTH",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "ID_LENGTH",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "idHashOf",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "inspectRecord",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "isValidHash",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "isValidId",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "isValidIv",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "isValidKey",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "IV_BYTES",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "KEY_BYTES",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "KEY_LENGTH",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "list",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "MAX_CIPHERTEXT_BYTES",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "MAX_HINT_LENGTH",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "MAX_PBKDF2_ITERATIONS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "MAX_TTL_SECONDS",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "MAX_VIEWS",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "MIN_PBKDF2_ITERATIONS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "newFragment",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "newId",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "newReceipt",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "normalizeEnvelope",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "normalizeHint",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "parseFragment",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "read",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "readRecord",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "RECEIPT_LENGTH",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "recordPath",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "remove",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "SALT_BYTES",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "save",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "secretsDir",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sweep",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/send.js",
+      "functions": [
+        {
+          "name": "adminView",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "ALPHABET",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "canAccess",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "createRecord",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "hashPassphrase",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "ID_LENGTH",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "isExhausted",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "isExpired",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "isProtected",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "mintTicket",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "newId",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "TICKET_TTL_MS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "verifyPassphrase",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "verifyTicket",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/server.js",
+      "functions": [
+        {
+          "name": "id",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "revisions",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/shared-data.js",
+      "functions": [
+        {
+          "name": "acquire",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "clone",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "data",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "keys",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "onChange",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "peek",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "reconcile",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "refresh",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "release",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "state",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sync",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "transaction",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/sqlite-store.js",
+      "functions": [
+        {
+          "name": "backup",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "completeIdempotency",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "completeWebhookDelivery",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "countPendingWebhookDeliveries",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "createPortalSession",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "createPortalToken",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "createSession",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "createUser",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "createWebhook",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "deletePortalSession",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "deleteSession",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "deleteUser",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "deleteUserSessions",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "deleteWebhook",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "dueWebhookDeliveries",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "enqueueWebhookDelivery",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "failWebhookDelivery",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "forgetIdempotency",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getIdempotency",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getPortalSession",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getPortalTokenByHash",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getPortalUsers",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getSession",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getUser",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getUserCases",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getUserPortals",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "getWebhook",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "listPortalTokens",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "listUsers",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "listWebhooks",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "load",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "purgeExpiredPortalAccess",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "purgeExpiredSessions",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "purgeIdempotency",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "purgeWebhookDeliveries",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "quickCheck",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "reserveIdempotency",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "restoreFrom",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "revision",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "revokePortalToken",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "save",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "setPortalUsers",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "setUserCases",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "setUserPortals",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "setWebhookDisabled",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "snapshot",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "stats",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "touchWebhook",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "updateUser",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "usePortalToken",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/tsa-client.js",
+      "functions": [
+        {
+          "name": "ALGORITHMS",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "breakerSnapshot",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "buildRequest",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "normalizeAlgorithm",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "normalizeDigest",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "normalizeUrl",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "parseResponse",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "parseTstInfo",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "resetBreaker",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "stamp",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "stampOne",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "STATUS_TEXT",
+          "kind": "константа",
+          "tested": false
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/webhooks.js",
+      "functions": [
+        {
+          "name": "drain",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "enabled",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "forget",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "publish",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "remember",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "remove",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "setDisabled",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sign",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "start",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "status",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "stop",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "subscribe",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "test",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/workdir-io.js",
+      "functions": [
+        {
+          "name": "on",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "pack",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "read",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "size",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/workdir-migrate.js",
+      "functions": [
+        {
+          "name": "sealPortals",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/worm.js",
+      "functions": [
+        {
+          "name": "isSealed",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "seal",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "sealManifest",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "unseal",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "vaultCheck",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "vaultPut",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "vaultRestore",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "vaultStats",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "verify",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    }
+  ]
+}
