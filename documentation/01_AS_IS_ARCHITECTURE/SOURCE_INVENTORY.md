@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.189**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.190**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **113** backend модула · **17** HTTP компонента · **24** UI модула · **9** Python модула · **39** инструмента · **369** теста.
+Общо: **113** backend модула · **17** HTTP компонента · **25** UI модула · **9** Python модула · **39** инструмента · **370** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -150,7 +150,7 @@
 | `hapi_enterprise/routes/reports.js` | Report Studio + RFC 3161 — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/webhooks.js` | Webhooks с HMAC — административен компонент на HTTP слоя (F4-7). |
 
-### Интерфейс (`hapi_enterprise/ui/*.js`) (24)
+### Интерфейс (`hapi_enterprise/ui/*.js`) (25)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -159,6 +159,7 @@
 | `hapi_enterprise/ui/bootstrap.js` | Зарежда споделените ядра (същите файлове, които ползва backend-ът) с правилния |
 | `hapi_enterprise/ui/dashboard-panel.js` | Табло и „Относно“ — с РЕАЛНИ данни от add-on-а. |
 | `hapi_enterprise/ui/data.js` | ДЕМО данни за GUI-я. Живеят в JS, за да работи интерфейсът и през file:// |
+| `hapi_enterprise/ui/debug-objects.js` | ДЕБЪГ ИНСТРУМЕНТ: автоматично разпознаване на обектите в панела и прилагане на |
 | `hapi_enterprise/ui/directory-panel.js` | Контакти и дела (самостоятелни панели). Ползват същите административни API-та |
 | `hapi_enterprise/ui/export-center.js` | Export & Download Center (FD-2). |
 | `hapi_enterprise/ui/files-manager.js` | Портали & файлове (единен модул, план 17 + API-01/02). |

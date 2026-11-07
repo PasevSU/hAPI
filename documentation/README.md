@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **129** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **130** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -105,6 +105,7 @@ _Генериран списък: **129** документа. Пише се от
 | `03_ADR/ADR-0026-public-gateway-and-digital-delivery.md` | ADR-0026 — Public API Gateway, файлово предоставяне и контрол на достъпа |
 | `03_ADR/README.md` | ADR — Architecture Decision Records |
 | `04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md` | Одитни събития — каталог |
+| `04_FUNCTION_SPECIFICATIONS/DEBUG_OBJECTS.md` | Дебъгинг: разпознаване на обектите и прилагане на законите |
 | `04_FUNCTION_SPECIFICATIONS/DOCUMENT_GENERATOR.md` | Document Generator — договор |
 | `04_FUNCTION_SPECIFICATIONS/ERROR_CODES.md` | Кодове за грешка — каталог |
 | `04_FUNCTION_SPECIFICATIONS/EVIDENCE_VIEW_PORTAL.md` | Порталът, който показва файловете и данните (Evidence View) |

@@ -632,6 +632,7 @@ PGP ключовете и подписването се управляват **�
 | `report-studio.js` | Report Studio |
 | `export-center.js` | Export & Download Center — правила и дърво на пакета |
 | `public-gateway.js` | Public Gateway & Access — портали, политики, Public Access Test |
+| `debug-objects.js` | **Дебъгинг**: разпознава обектите в живия DOM (карта, контрола, поле, табелка, контейнер) и прилага законите на дизайн системата — отстояния на 2px решетката, симетрия, име за екранен четец, размер на контролата, без инлайн оформление, един QR код. Включва се само при `HAPI_DEBUG` / `?debug=1` / `hapi.debug=1`; виж `documentation/04_FUNCTION_SPECIFICATIONS/DEBUG_OBJECTS.md` |
 | `manifest.example.json` | Каноничен примерен манифест (за тестове) |
 
 Споделени ядра (UMD, един код за Node и браузър):
