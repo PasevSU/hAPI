@@ -388,6 +388,7 @@
     { id: 'diagnostics', label: 'section.diagnostics' },
     { id: 'analytics', label: 'section.analytics' },
     { id: 'sensors', label: 'section.sensors' },
+    { id: 'policies', label: 'section.policies' },
     { id: 'security', label: 'section.security' },
     { id: 'qr', label: 'section.qr' },
     { id: 'cms', label: 'section.cms' },
@@ -497,6 +498,11 @@
       // наследените от средата стойности, без да ги записва.
       const [settings, sensors] = await Promise.all([grab('/admin/api/settings'), grab('/admin/api/sensors')]);
       out.data = { settings, effective: (settings && settings.effective) || {}, sensors: (sensors && sensors.sensorSettings) || {} };
+    } else if (id === 'policies') {
+      // Политиките се четат от същия източник като секцията „Сензори“: записаното + ефективното.
+      // Така поле, оставено празно, показва с каква стойност сървърът РЕАЛНО работи.
+      const settings = await grab('/admin/api/settings');
+      out.data = { settings, effective: (settings && settings.effective) || {} };
     } else if (id === 'security') {
       const [audit, who] = await Promise.all([grab('/admin/api/audit/verify'), grab('/admin/api/whoami')]);
       out.data = { audit, who };
@@ -940,6 +946,81 @@
         '<div class="u-row u-row-inline u-mt"><button type="button" class="btn btn-primary" data-action="sensors">' + esc(T('sensors.save')) + '</button></div>' +
         '<h3 class="u-mt">' + esc(T('sensors.status')) + '</h3>' + table([T('th.metric'), T('th.value')], status.map(([a, b]) => [esc(a), b]));
     }
+    if (id === 'policies') {
+      // Политиките на сървъра: лимити, поведение на данните, задържане и преглед. Всяко
+      // поле пише ключ, който `runtime.effective()` наистина чете — иначе нямаше да е тук.
+      // Празно числово поле значи „наследи средата“; затова до него стои ефективната стойност.
+      const cfg = d.settings || {};
+      const lim = cfg.limits || {};
+      const dat = cfg.data || {};
+      const ret = cfg.retention || {};
+      const pre = cfg.preview || {};
+      const eff = d.effective || {};
+      const yes = T('policies.yes');
+      const no = T('policies.no');
+      const txt = (v) => (v === null || v === undefined ? '' : String(v));
+      const opted = (v) => v === null || v === undefined;
+      const opt = (value, text, on) => '<option value="' + value + '"' + (on ? ' selected' : '') + '>' + esc(text) + '</option>';
+      const field = (slug, label, hint, input) =>
+        '<div class="field u-mt"><label for="set-pol-' + slug + '">' + esc(label) + '</label>' + input +
+        (hint ? '<span class="hint">' + esc(hint) + '</span>' : '') + '</div>';
+      const numberField = (slug, label, value, min, max, effective) =>
+        field(slug, label, T('policies.rangeHint') + ' ' + min + '–' + max + ' · ' + T('policies.effectiveNow') + ' ' + (effective || '—'),
+          '<input id="set-pol-' + slug + '" type="number" min="' + min + '" max="' + max + '" value="' + esc(txt(value)) + '" />');
+      const selectField = (slug, label, hint, options) =>
+        field(slug, label, hint, '<select id="set-pol-' + slug + '">' + options + '</select>');
+      const boolSelect = (value, effText) =>
+        opt('', T('policies.inherit') + (effText ? ' (' + effText + ')' : ''), opted(value)) +
+        opt('true', yes, value === true) + opt('false', no, value === false);
+      const effMb = Math.round((Number(eff.maxUploadBytes) || 0) / 1048576);
+      const effMin = Math.round((Number(eff.storageCheckIntervalMs) || 0) / 60000);
+      const effective = [
+        [T('policies.upload'), fmtBytes(eff.maxUploadBytes)],
+        [T('policies.streams'), String(eff.maxDownloadStreams != null ? eff.maxDownloadStreams : '—')],
+        [T('policies.jobs'), String(eff.maxJobs != null ? eff.maxJobs : '—')],
+        [T('policies.check'), String(effMin) + ' ' + T('policies.minutes')],
+        [T('policies.cors'), esc(eff.corsOrigin || T('policies.none'))],
+        [T('policies.token'), eff.requirePortalToken ? yes : no],
+        [T('policies.rawIp'), eff.storeRawIp ? yes : no],
+      ];
+      return '<p class="hint">' + esc(T('policies.hint')) + '</p>' +
+        '<h3>' + esc(T('policies.limits')) + '</h3>' +
+        numberField('upload', T('policies.upload'), lim.maxUploadMb, 1, 2048, String(effMb)) +
+        numberField('streams', T('policies.streams'), lim.maxDownloadStreams, 1, 1024, txt(eff.maxDownloadStreams)) +
+        numberField('jobs', T('policies.jobs'), lim.maxJobs, 1, 4, txt(eff.maxJobs)) +
+        numberField('check', T('policies.check'), lim.storageCheckMinutes, 0, 10080, String(effMin)) +
+        field('cors', T('policies.cors'), T('policies.corsHint'),
+          '<input id="set-pol-cors" value="' + esc(txt(lim.corsOrigin)) + '" placeholder="' + esc(txt(eff.corsOrigin)) + '" />') +
+        selectField('token', T('policies.token'), T('policies.tokenHint'), boolSelect(lim.requirePortalToken, eff.requirePortalToken ? yes : no)) +
+        selectField('rawip', T('policies.rawIp'), T('policies.rawIpHint'), boolSelect(lim.storeRawIp, eff.storeRawIp ? yes : no)) +
+        '<h3 class="u-mt">' + esc(T('policies.data')) + '</h3>' +
+        selectField('conflict', T('policies.conflict'), T('policies.conflictHint'),
+          opt('queue', T('policies.conflictQueue'), dat.conflictPolicy === 'queue') +
+          opt('first', T('policies.conflictFirst'), dat.conflictPolicy === 'first') +
+          opt('skip', T('policies.conflictSkip'), dat.conflictPolicy === 'skip')) +
+        selectField('strict', T('policies.strict'), T('policies.strictHint'),
+          opt('true', yes, dat.strictTaxonomy === true) + opt('false', no, dat.strictTaxonomy !== true)) +
+        field('category', T('policies.category'), T('policies.categoryHint'),
+          '<input id="set-pol-category" value="' + esc(txt(dat.defaultCategory)) + '" />') +
+        field('group', T('policies.group'), T('policies.groupHint'),
+          '<input id="set-pol-group" value="' + esc(txt(dat.defaultGroup)) + '" />') +
+        numberField('tags', T('policies.tags'), dat.maxTags, 1, 100, txt(dat.maxTags)) +
+        '<h3 class="u-mt">' + esc(T('policies.retention')) + '</h3>' +
+        selectField('ret-enabled', T('policies.retEnabled'), T('policies.retEnabledHint'),
+          opt('true', yes, ret.enabled === true) + opt('false', no, ret.enabled !== true)) +
+        numberField('file-days', T('policies.fileDays'), ret.fileDays, 1, 36500, '') +
+        numberField('audit-days', T('policies.auditDays'), ret.auditDays, 1, 36500, '') +
+        selectField('action', T('policies.fileAction'), T('policies.fileActionHint'),
+          opt('disable', T('policies.actionDisable'), ret.fileAction !== 'delete') +
+          opt('delete', T('policies.actionDelete'), ret.fileAction === 'delete')) +
+        '<h3 class="u-mt">' + esc(T('policies.preview')) + '</h3>' +
+        selectField('preview', T('policies.previewEnabled'), T('policies.previewHint'),
+          opt('true', yes, pre.enabled !== false) + opt('false', no, pre.enabled === false)) +
+        selectField('thumbs', T('policies.thumbs'), T('policies.thumbsHint'),
+          opt('true', yes, pre.thumbnails !== false) + opt('false', no, pre.thumbnails === false)) +
+        '<div class="u-row u-row-inline u-mt"><button type="button" class="btn btn-primary" data-action="policies">' + esc(T('policies.save')) + '</button></div>' +
+        '<h3 class="u-mt">' + esc(T('policies.effective')) + '</h3>' + table([T('th.metric'), T('th.value')], effective.map(([a, b]) => [esc(a), b]));
+    }
     if (id === 'security') {
       const a = d.audit || {};
       const who = d.who || {};
@@ -1127,6 +1208,56 @@
       if (!r.ok) return toast(r.error || T('sensors.errSave'), 'err');
       const now = (r.data && r.data.effective && r.data.effective.sensors) || {};
       toast(T('sensors.saved') + ' ' + String(now.ipMode || '—') + ' · ' + String(now.retentionDays || '—') + ' ' + T('sensors.days'), 'ok');
+    } else if (action === 'policies') {
+      // Проверката тук е само за да не стигне очевидно грешно число до 400 без обяснение;
+      // истинската валидация е в `runtime-config` и тя решава какво влиза в сила.
+      const val = (sel) => String(host.querySelector('#set-pol-' + sel).value || '').trim();
+      const pick = (sel, min, max) => {
+        const raw = val(sel);
+        if (raw === '') return null;
+        const n = Number(raw);
+        return Number.isInteger(n) && n >= min && n <= max ? n : NaN;
+      };
+      const upload = pick('upload', 1, 2048);
+      const streams = pick('streams', 1, 1024);
+      const jobs = pick('jobs', 1, 4);
+      const check = pick('check', 0, 10080);
+      const tags = pick('tags', 1, 100);
+      const fileDays = pick('file-days', 1, 36500);
+      const auditDays = pick('audit-days', 1, 36500);
+      for (const v of [upload, streams, jobs, check, tags, fileDays, auditDays]) {
+        if (Number.isNaN(v)) return toast(T('policies.errRange'), 'err');
+      }
+      if (val('cors') && !/^https?:\/\/[A-Za-z0-9.:[\]]+(\/[A-Za-z0-9._~/-]*)?$/.test(val('cors'))) {
+        return toast(T('policies.errCors'), 'err');
+      }
+      const tri = (sel) => (val(sel) === '' ? null : val(sel) === 'true');
+      const limits = {
+        maxUploadMb: upload,
+        maxDownloadStreams: streams,
+        maxJobs: jobs,
+        storageCheckMinutes: check,
+        corsOrigin: val('cors'),
+        requirePortalToken: tri('token'),
+        storeRawIp: tri('rawip'),
+      };
+      const data = {
+        conflictPolicy: val('conflict'),
+        strictTaxonomy: val('strict') === 'true',
+        defaultCategory: val('category'),
+        defaultGroup: val('group'),
+        maxTags: tags,
+      };
+      const retention = { enabled: val('ret-enabled') === 'true', fileDays, auditDays, fileAction: val('action') };
+      const preview = { enabled: val('preview') === 'true', thumbnails: val('thumbs') === 'true' };
+      const r = await api('/admin/api/settings', { method: 'PATCH', json: { limits, data, retention, preview } });
+      if (!r.ok) return toast(r.error || T('policies.errSave'), 'err');
+      const now = (r.data && r.data.effective) || {};
+      toast(
+        T('policies.saved') + ' ' + fmtBytes(now.maxUploadBytes) + ' · ' + String(now.maxJobs != null ? now.maxJobs : '—') +
+        (r.data && r.data.restartRequired ? ' · ' + T('policies.restart') : ''),
+        'ok',
+      );
     } else if (action === 'storage') {
       const r = await post('/admin/api/storage/check', {});
       if (!r.ok) return toast(r.error || 'Проверката не мина', 'err');

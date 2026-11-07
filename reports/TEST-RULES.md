@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 370 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 371 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 167 |
+| общо | 168 |
 | портал | 34 |
 | GUI | 24 |
 | Home Assistant | 16 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (167)
+## общо (168)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -189,6 +189,7 @@
 | `sensors-telemetry` | Sensors telemetry | `tests/sensors-telemetry.cjs` |
 | `server-structure` | Server structure | `tests/server-structure.cjs` |
 | `settings-defaults` | Settings defaults | `tests/settings-defaults.cjs` |
+| `settings-policies` | Settings policies | `tests/settings-policies.cjs` |
 | `share-links` | Share links | `tests/share-links.cjs` |
 | `shared-mode-shutdown` | Shared mode shutdown | `tests/shared-mode-shutdown.cjs` |
 | `signed-url-restart` | Signed url restart | `tests/signed-url-restart.cjs` |

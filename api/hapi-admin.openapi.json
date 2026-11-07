@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "hAPI Enterprise — административно API",
-    "version": "0.69.193",
+    "version": "0.69.194",
     "description": "Договорът за административното API. Токенът се подава като `Authorization: Bearer <token>`, а зад Home Assistant Ingress самоличността идва от Supervisor (`X-Remote-User-*`). Правата се решават по роля (RBAC) за всеки маршрут — виж `x-hapi-capability`. Маршрут без RBAC (например входът през Ingress) носи `x-hapi-access` с причината."
   },
   "servers": [

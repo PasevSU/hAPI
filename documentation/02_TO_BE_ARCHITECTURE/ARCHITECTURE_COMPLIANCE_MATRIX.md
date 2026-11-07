@@ -19,7 +19,7 @@
 | 5 | Архивирането не променя публичния адрес | `/p/<id>` не се пипа при архив | `portal-qr-archive` (верига QR-001→003) | ✅ |
 | 6 | Архивирането създава физически файл | `routes/portal-qr.js` → `ooxml.zip()` в `<данни>/archives/` | `portal-qr-archive` (файл на диска, хешът съвпада) | ✅ |
 | 7 | Старите QR остават проследими | `previousQrId`, `previousManifestHash`, `GET …/qr/{qrId}` | `portal-qr-archive` | ✅ |
-| 8 | Публикуван файл не може да изчезне незабелязано | `listed:false` → 404; режими + основание | `portal-order`, `portal-rules-applied` | 🟡 (виж §5, ред 1) |
+| 8 | Публикуван файл не може да изчезна незабелязано | `listed:false` → 404; режими + основание; `portal-integrity.js` (`file_missing`, `file_hash_mismatch`), `POST …/qr/verify` | `portal-order`, `portal-rules-applied`, `portal-integrity` (изтрит архивен файл → собствен код) | ✅ |
 | 9 | Заключен публикуван файл остава видим с основание | `folderFilesOf` + `lockReasonOf`, `403` при изтегляне | `portal-order` | ✅ |
 | 10 | Номер в комбинирания отчет ↔ едно съдържание | `content-id.js` (`CT-…`), `f.contentId`, `content_id` в манифеста + `manifest_id` | `content-id` (две версии под едно име → два идентификатора) | ✅ |
 | 11 | Порталът е източникът на събитията и сензорите | `observer.js`, `decision-sensors.js`, `portal-qr.stats()` | `visitor-sensors`, `decision-sensors`, `ha-integration-flow` | ✅ |
@@ -30,8 +30,8 @@
 | Договор | Вход | Код | Тест | Статус |
 | --- | --- | --- | --- | --- |
 | `order` | `/portal.html?order=…`, `/p/<id>`, `/t/<token>` | `routes/portal-storage.js : serveOrder`, `routes/portal-tokens.js` | `portal-order`, `portal-page*`, `portal-tokens` | ✅ |
-| `file` | `/api/v1/p/<slug>/files/<id>/qr.svg`, изтегляне по id | `server.js` (файлов маршрут), `routes/portal-storage.js` | `core-qr-file`, `portal-page-contract` | 🟡 самостоятелна страница със собствен списък липсва |
-| `html` | `/site/<slug>/<project>/…` | `server.js` (HTML проекти, CSP) | `html-publish` | 🟡 без отделен sandbox |
+| `file` | `/api/v1/p/<slug>/files/<id>/qr.svg`, изтегляне по id | `routes/portal-storage.js : serveFile` (самостоятелна страница за един файл), `public-route-allowlist.js` | `core-qr-file`, `portal-page-contract`, `portal-file-page` (виж §5.1 `FILE_CONTRACT_PAGE`) | ✅ |
+| `html` | `/site/<slug>/<project>/…` | `site-csp.js` (`forFile`: `sandbox` без `allow-same-origin`), `server.js` (подава политиката) | `html-publish`, `portal-html-sandbox` (виж §5.1 `HTML_IN_SANDBOX`) | ✅ |
 | `blok` | `?qr=<прекратен>` | `serveBlocked()` (**410**) | `portal-qr-archive` | ✅ |
 
 ## 3. Достъп и прозрачност (§11–§14)
@@ -122,10 +122,10 @@
 
 | Показател | Стойност |
 | --- | --- |
-| Тестови файлове | 291 — числото се генерира в `reports/RELEASE-STATUS.md`, не се поддържа на ръка |
+| Тестови файлове | 371 (`tests/lib/test-rules.cjs` се генерира; числото се повтаря в `reports/RELEASE-STATUS.md`) |
 | Матрица | `node scripts/test-matrix.cjs` — 100 % при 1 опит е целта; флейки при паралелни портове се отчитат изрично |
-| Проверки на изданието | `verify-release` 21/21 · `audit-gui-compat` 33/33 · `logic-audit --gate` · `bad-code-scan --gate` · `eslint` 0 |
-| Твърд бюджет | `server.js` ≤ 2722 реда, 13 компонента в `routes/` |
+| Проверки на изданието | `verify-release` 22/22 · `audit-gui-compat` 33/33 + 28/28 · `logic-audit --gate` · `bad-code-scan --gate` · `eslint` 0 |
+| Твърд бюджет | `server.js` ≤ 2722 реда, 17 компонента в `routes/` |
 
 > Когато ред от §5 се затвори, тук се сменя статусът и се добавя тестът, който го пази. Матрицата не е „документ за четене“, а списък на това, което още не е направено.
 
@@ -145,6 +145,6 @@
 | 10 | Препращане към нов QR без видима история | `portal-qr-archive` (`nextQrId`, `previousQrId`, `previousManifestHash`) | ✅ |
 | 11 | Невалиден или прекратен QR | `portal-qr-archive` (404 / 410 с основание, без съдържание) | ✅ |
 | 12 | Разкриване на абсолютен файлов път през API | `portal-order` (`..` и `%2e%2e` → 400/404), `public-route-allowlist` | ✅ |
-| 13 | Изпълнение на опасен HTML | `html-publish` (CSP), `portal-page-contract`, `panel-framing` | 🟡 CSP има, изолиран контекст (sandbox) — не (вж. §5, ред 4) |
+| 13 | Изпълнение на опасен HTML | `portal-html-sandbox` (`site-csp.forFile`: `sandbox` без `allow-same-origin`, `connect-src 'none'` · изход от папката → 4xx), `html-publish` (CSP), `panel-framing` | ✅ |
 | 14 | Несъответствие между комбинирания отчет и манифеста | `content-id` (`content_id` в отчета и в манифеста; две версии → два идентификатора) | ✅ |
 | 15 | Администраторски токен, който е и HA long-lived token (едно изтичане = цял Home Assistant) | `admin-token-shape` (`haLongLived` от формата; жив старт: маркерът е в лога), `runtime-config.tokenShape` | ✅ предупреждение `ADMIN_TOKEN_LOOKS_LIKE_HA_LLAT` |

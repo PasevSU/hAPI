@@ -73,7 +73,7 @@ assert.match(String(i18n.DICT.de['portal.crypto']), /Kryptografischer Schutz/, '
 // Секциите пазят ключ, а не текст: иначе смяната на езика не работи без презареждане.
 const sectionBlock = panel.slice(panel.indexOf('const SECTIONS = ['), panel.indexOf('];', panel.indexOf('const SECTIONS = [')));
 const sectionLabels = [...sectionBlock.matchAll(/label: '([^']+)'/g)].map((m) => m[1]);
-assert.equal(sectionLabels.length, 16, 'шестнайсет секции');
+assert.equal(sectionLabels.length, 17, 'седемнайсет секции');
 for (const label of sectionLabels) {
   assert.match(label, /^section\./, `секцията пази ключ, а не текст: ${label}`);
   assert.ok(i18n.has(label), `липсва ключ за секция: ${label}`);

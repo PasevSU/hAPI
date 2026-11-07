@@ -322,6 +322,7 @@ const RULES = [
   { id: "sensors-telemetry", area: "общо", title: "Sensors telemetry", owner: "tests/sensors-telemetry.cjs" },
   { id: "server-structure", area: "общо", title: "Server structure", owner: "tests/server-structure.cjs" },
   { id: "settings-defaults", area: "общо", title: "Settings defaults", owner: "tests/settings-defaults.cjs" },
+  { id: "settings-policies", area: "общо", title: "Settings policies", owner: "tests/settings-policies.cjs" },
   { id: "share-links", area: "общо", title: "Share links", owner: "tests/share-links.cjs" },
   { id: "shared-data", area: "споделени данни", title: "Shared data", owner: "tests/shared-data.cjs" },
   { id: "shared-data-access", area: "споделени данни", title: "Shared data access", owner: "tests/shared-data-access.cjs" },

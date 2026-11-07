@@ -18,7 +18,7 @@ const reportRender = require('../hapi_enterprise/report-render.js');
 
 const SECTIONS = [
   'hierarchy', 'cabinet', 'taxonomy', 'jobs', 'users', 'variables', 'data', 'diagnostics',
-  'analytics', 'sensors', 'security', 'qr', 'cms', 'storage', 'backups', 'logs',
+  'analytics', 'sensors', 'policies', 'security', 'qr', 'cms', 'storage', 'backups', 'logs',
 ];
 
 const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
@@ -251,6 +251,40 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
       level: { fill: (h) => setValue(h, '#set-log-level', 'debug'), expect: /Ниво на журнала: debug/, kind: 'ok' },
       rules: { expect: /Правилата са презаредени/, kind: 'ok' },
       auditVerify: { expect: /Одитният ланец/, kind: 'ok' },
+      policies: {
+        // Политиките се пишат през същия бутон, който вижда потребителят; очакването е
+        // СТОЙНОСТТА да стигне до сървъра, а не „има ли toast“.
+        fill: (h) => {
+          setValue(h, '#set-pol-upload', '64');
+          setValue(h, '#set-pol-streams', '8');
+          setValue(h, '#set-pol-jobs', '2');
+          setValue(h, '#set-pol-check', '15');
+          setValue(h, '#set-pol-conflict', 'first');
+          setValue(h, '#set-pol-tags', '12');
+          setValue(h, '#set-pol-ret-enabled', 'true');
+          setValue(h, '#set-pol-file-days', '30');
+          setValue(h, '#set-pol-audit-days', '400');
+          setValue(h, '#set-pol-action', 'disable');
+          setValue(h, '#set-pol-thumbs', 'false');
+        },
+        expect: /Политики записани/,
+        kind: 'ok',
+        check: async () => {
+          const after = (await server.api('/admin/api/settings')).data;
+          assert.equal(after.settings.limits.maxUploadMb, 64, 'лимитът на файла е записан');
+          assert.equal(after.settings.limits.maxDownloadStreams, 8, 'потоците са записани');
+          assert.equal(after.settings.limits.maxJobs, 2, 'задачите са записани');
+          assert.equal(after.settings.limits.storageCheckMinutes, 15, 'проверката на хранилището е записана');
+          assert.equal(after.settings.data.conflictPolicy, 'first', 'политиката при конфликт е записана');
+          assert.equal(after.settings.data.maxTags, 12, 'таванът на етикетите е записан');
+          assert.equal(after.settings.retention.enabled, true, 'задържането е включено');
+          assert.equal(after.settings.retention.fileDays, 30, 'срокът за файловете е записан');
+          assert.equal(after.settings.retention.auditDays, 400, 'срокът за одита е записан');
+          assert.equal(after.settings.preview.thumbnails, false, 'миниатюрите са изключени');
+          assert.equal(after.effective.maxUploadBytes, 64 * 1048576, 'ефективният лимит е 64 MB');
+          assert.equal(after.effective.maxJobs, 2, 'ефективният брой задачи е 2');
+        },
+      },
       audit: { expect: /изтеглен|не е достъпен|не е изтеглен/i },
       metricsProm: { expect: /[Мм]етрик|снимка/i },
       portalDeploy: { expect: /няма достъп|не е разположен|разположен/i },
@@ -347,7 +381,7 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
 
     // ── Присъда ────────────────────────────────────────────────────────────────
     assert.deepEqual(failures, [], 'GUI сценариите не минаха:\n  ' + failures.join('\n  '));
-    assert.deepEqual([...visited].sort(), [...SECTIONS].sort(), 'всички 16 секции са отворени');
+    assert.deepEqual([...visited].sort(), [...SECTIONS].sort(), 'всички ' + SECTIONS.length + ' секции са отворени');
     assert.deepEqual(consoleErrors, [], 'панелът писа в console.error:\n  ' + consoleErrors.slice(0, 5).join('\n  '));
 
     console.log(

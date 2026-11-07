@@ -138,10 +138,14 @@ function tokenShape(token) {
   const databaseRelative = path.join(settings.databaseDirectory, settings.databaseFile), databasePath = path.join(root, databaseRelative);
   async function atomic(file, data) { const tmp = file + '.' + crypto.randomBytes(6).toString('hex') + '.tmp'; await fsp.mkdir(path.dirname(file), { recursive: true }); try { const h = await fsp.open(tmp, 'wx', 0o600); try { await h.writeFile(JSON.stringify(data, null, 2)); await h.sync() } finally { await h.close() } await fsp.rename(tmp, file) } catch (e) { await fsp.rm(tmp, { force: true }).catch(() => { }); throw e } }
   async function save(patch) {
-    // Частичен запис на сензорите (само едно поле) се слива със записаното — иначе
-    // `{sensors:{ipMode}}` би изтрил прокси/срока/пътя. Изрично `null` изчиства поле.
+    // Частичен запис на ВЛОЖЕНИТЕ обекти се слива със записаното — иначе `{sensors:{ipMode}}`
+    // би изтрил прокси/срока/пътя, а `{limits:{publicBaseUrl}}` би върнал лимитите към
+    // подразбирането. Изрично `null` изчиства поле: то е стойност, а не липса.
     const merged = { ...settings, ...patch };
-    if (patch && patch.sensors && typeof patch.sensors === 'object' && !Array.isArray(patch.sensors)) merged.sensors = { ...settings.sensors, ...patch.sensors };
+    for (const key of ['backupSchedule', 'limits', 'data', 'retention', 'preview', 'sensors']) {
+      const next = patch && patch[key];
+      if (next && typeof next === 'object' && !Array.isArray(next)) merged[key] = { ...settings[key], ...next };
+    }
     const next = validate(merged); for (const key of ['artifactDirectory', 'databaseDirectory']) { const candidate = path.join(root, next[key]); const st = await fsp.lstat(candidate).catch(e => { if (e.code === 'ENOENT') return null; throw e }); if (st && (!st.isDirectory() || st.isSymbolicLink())) throw Error('Storage directory must be a real directory: ' + key) } await atomic(configPath, next); settings = next; return next
   }
   async function removeArtifacts(artifact) { if (!artifact || !validSegment(artifact.qrId) || artifact.relativeDirectory !== path.join(settings.artifactDirectory, artifact.qrId)) throw Error('Invalid rollback target'); const target = path.join(root, artifact.relativeDirectory); const stat = await fsp.lstat(target).catch(e => { if (e.code === 'ENOENT') return null; throw e }); if (stat && stat.isDirectory() && !stat.isSymbolicLink()) await fsp.rm(target, { recursive: true, force: true }); }
