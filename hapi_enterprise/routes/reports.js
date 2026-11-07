@@ -33,6 +33,21 @@ function create(deps) {
   const fsp = require('node:fs/promises');
   const path = require('node:path');
 
+  // Тялото тук се разчита на място, защото границите са различни (PDF/CMS стигат до 8 MB).
+  // Затова една обща защита: `null`, число или низ са ВАЛИДЕН JSON, но не са тяло на
+  // заявка — `body.pdfBase64` тогава е TypeError и клиентът получаваше 500 за своя грешка.
+  async function readJson(req, limit) {
+    let value;
+    try {
+      value = JSON.parse((await body(req, limit)).toString('utf8'));
+    } catch (e) {
+      return { error: e.status ? e.message : 'Invalid JSON', status: e.status || 400 };
+    }
+    if (value === null) return { value: {} };
+    if (typeof value !== 'object' || Array.isArray(value)) return { error: 'Invalid JSON body', status: 400 };
+    return { value };
+  }
+
   // Сертификатите за блок „Сертификат (X.509)“ идват от тялото (`certificates`), а при
   // пакет с доказателства — и CMS сертификатът, с който се подписва PDF-ът. Така в
   // отчета попада ИСТИНСКИЯТ сертификат, а не описание на такъв.
@@ -64,7 +79,7 @@ function create(deps) {
     // Report Studio (Фаза 11 / RS-03): манифест → PDF. Без фалшиви TSA токени:
     // манифест, съдържащ tsaToken/подпис/сертификат, се отхвърля от валидатора.
     if (parts[3] === 'reports' && parts[4] === 'render' && parts.length === 5 && method === 'POST') {
-      let payload; try { payload = JSON.parse((await body(req, 1024 * 1024)).toString('utf8')) } catch (e) { return fail(res, e.status || 400, e.status ? e.message : 'Invalid JSON') }
+      const rd = await readJson(req, 1024 * 1024); if (rd.error) return fail(res, rd.status, rd.error); const payload = rd.value;
       try {
         const manifest = (payload && payload.manifest) || payload;
         const reportRender = require('../report-render');
@@ -113,7 +128,7 @@ function create(deps) {
     // READY само когато START и STOP токените са налични (и подписът, ако е поискан),
     // DRAFT за чернова, INCOMPLETE за диагностичен пакет с изброени липси.
     if (parts[3] === 'reports' && parts[4] === 'package' && parts.length === 5 && method === 'POST') {
-      let payload; try { payload = JSON.parse((await body(req, 8 * 1024 * 1024)).toString('utf8')) } catch (e) { return fail(res, e.status || 400, e.status ? e.message : 'Invalid JSON') }
+      const rd8 = await readJson(req, 8 * 1024 * 1024); if (rd8.error) return fail(res, rd8.status, rd8.error); const payload = rd8.value;
       try {
         const manifest = (payload && payload.manifest) || payload;
         const draft = Boolean(payload && payload.draft === true);
@@ -191,7 +206,7 @@ function create(deps) {
     // пази: без тях отговорът е 400, а не „подпис по подразбиране“. Така никой не може
     // да подпише нещо, без да даде ключ, и няма фалшив сертификат в изданието.
     if (parts[3] === 'reports' && parts[4] === 'sign' && parts.length === 5 && method === 'POST') {
-      let b; try { b = JSON.parse((await body(req, 8 * 1024 * 1024)).toString('utf8')) } catch (e) { return fail(res, e.status || 400, e.status ? e.message : 'Invalid JSON') }
+      const parsed = await readJson(req, 8 * 1024 * 1024); if (parsed.error) return fail(res, parsed.status, parsed.error); const b = parsed.value;
       const pdfBytes = typeof b.pdfBase64 === 'string' ? Buffer.from(b.pdfBase64, 'base64') : null;
       if (!pdfBytes || !pdfBytes.length) return fail(res, 400, 'pdfBase64 is required');
       if (pdfBytes.subarray(0, 5).toString('latin1') !== '%PDF-') return fail(res, 400, 'pdfBase64 is not a PDF (missing %PDF- header)');
@@ -212,7 +227,7 @@ function create(deps) {
     }
     // Проверка на detached CMS подпис срещу данни — със същия код, който го прави.
     if (parts[3] === 'cms' && parts[4] === 'verify' && parts.length === 5 && method === 'POST') {
-      let b; try { b = JSON.parse((await body(req, 8 * 1024 * 1024)).toString('utf8')) } catch (e) { return fail(res, e.status || 400, e.status ? e.message : 'Invalid JSON') }
+      const parsed = await readJson(req, 8 * 1024 * 1024); if (parsed.error) return fail(res, parsed.status, parsed.error); const b = parsed.value;
       const data = typeof b.dataBase64 === 'string' ? Buffer.from(b.dataBase64, 'base64') : null;
       const cmsBytes = typeof b.cmsBase64 === 'string' ? Buffer.from(b.cmsBase64, 'base64') : null;
       if (!data || !cmsBytes) return fail(res, 400, 'dataBase64 and cmsBase64 are required');

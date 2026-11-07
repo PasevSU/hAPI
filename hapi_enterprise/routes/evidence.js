@@ -34,8 +34,9 @@ function create(deps) {
     if (parts[3] === 'assign' || parts[3] === 'assignments') {
       if (!adminGate(req, res, 'settings', method)) return true;
       if (parts[3] === 'assignments' && method === 'GET') {
-        const users = Array.isArray(getCases && getCases().users) ? [] : [];
-        void users;
+        // Тук стоеше мъртъв ред `getCases().users`, който при липсващ `db.cases` хвърляше
+        // TypeError и целият маршрут отговаряше 500 за валидна заявка. Резултатът не се
+        // ползваше никъде — затова редът е премахнат, а не обвит в try.
         const out = {};
         for (const user of store.listUsers().map((u) => u.username)) out[user] = store.getUserCases(user);
         return json(res, 200, { assignments: out }), true;

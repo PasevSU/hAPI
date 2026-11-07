@@ -22,6 +22,7 @@ const RULES = [
   { id: "api-input-errors", area: "общо", title: "Api input errors", owner: "tests/api-input-errors.cjs" },
   { id: "api-json-links", area: "общо", title: "Api json links", owner: "tests/api-json-links.cjs" },
   { id: "api-reference", area: "общо", title: "Api reference", owner: "tests/api-reference.cjs" },
+  { id: "api-robustness", area: "общо", title: "Api robustness", owner: "tests/api-robustness.cjs" },
   { id: "api-rules-connection", area: "общо", title: "Api rules connection", owner: "tests/api-rules-connection.cjs" },
   { id: "api-spec-coverage", area: "общо", title: "Api spec coverage", owner: "tests/api-spec-coverage.cjs" },
   { id: "audit", area: "общо", title: "Audit", owner: "tests/audit.cjs" },

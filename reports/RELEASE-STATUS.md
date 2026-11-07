@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.194
+# Състояние на изданието — hAPI Enterprise 0.69.195
 
-Версия: **0.69.194** · клон `main`
+Версия: **0.69.195** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,51 +14,47 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **371/371** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.194 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 597 файла · 106647 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 592 файла · 105723 реда · critical: 0 · high: 0 · medium: 0 · low: 201 — чисто · изключения: 23/23 (0 мъртви) |
+| Тестове | `node scripts/test-matrix.cjs` | **372/372** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.195 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 598 файла · 106736 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 593 файла · 105812 реда · critical: 0 · high: 0 · medium: 0 · low: 201 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 371 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 372 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.194.tar.gz` | add-on архив (201 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.194.zip` | интеграция за HACS (26 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.194.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.195.tar.gz` | add-on архив (201 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.195.zip` | интеграция за HACS (26 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.195.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.194
+## 3. Какво влезе във 0.69.195
 
-- **Нова секция „Политики“ в панела — 18 настройки, които дотук се задаваха само с `PATCH`
-  по API.** Измерено преди промяната: панелът пишеше настройки само по два пътя
-  (`{sensors}` и `{limits:{publicBaseUrl}}`), а `limits.maxUploadMb`, `maxDownloadStreams`,
-  `maxJobs`, `storageCheckMinutes`, `corsOrigin`, `requirePortalToken`, `storeRawIp`,
-  `data.conflictPolicy`, `strictTaxonomy`, `defaultCategory`, `defaultGroup`, `maxTags`,
-  `retention.enabled`, `fileDays`, `auditDays`, `fileAction`, `preview.enabled`, `thumbnails`
-  се четат от кода (`runtime-config.effective()`, `directory.js`, `retention.js`, `preview`
-  маршрутите) и нямаха поле в интерфейса — тоест функцията я има, но човекът не може да я
-  настрои. Сега са в четири групи с ефективната стойност до всяко поле.
-- **Поправен дефект в частичния запис на настройки (DEF-39).** `runtime.save()` сливаше само
-  `sensors`; останалите вложени обекти се ЗАМЕНЯХА и валидаторът ги пълнеше от `DEFAULT`. Затова
-  `PATCH {limits:{publicBaseUrl}}` — пътят, който секция „Основни“ ползва — изтриваше зададените
-  `maxUploadMb`, `maxJobs` и `storageCheckIntervalMs`, а `PATCH {data:{maxTags}}` изтриваше
-  политиката при конфликт. Сега шестте вложени обекта се сливат със записаното; изрично `null`
-  пак изчиства поле.
-- **Матрицата на съответствието вече не си противоречи.** Редове 8 (§1) и 13 (§7) стояха 🟡 с
-  препратка към „§5, ред 1/4“, а §5 казва „Няма отворени редове“, а §5.1 изрежда
-  `ARCHIVE_NOT_TAMPERED`, `HTML_IN_SANDBOX` и `FILE_CONTRACT_PAGE` като реализирани с тест.
-  Затворени са с името на теста, който ги пази; регресионната база §6 е сверена с измереното
-  (371 теста, 17 компонента в `routes/`).
-- Проверява се от `tests/settings-policies.cjs` (валидация на четирите групи · 400 без промяна ·
-  частичен запис не трие съседните полета през `save` и през HTTP · ефективните стойности ·
-  `retention.preview` чете същата политика · оцеляване след рестарт) и от
-  `tests/gui-sections.cjs` (сценарият „policies“ натиска бутона в живия DOM и проверява
-  стойностите на сървъра). Без поправката пада B04 на `settings-policies`.
+- **Систематичен одит на цялата административна повърхност: 581 заявки през всички 213
+  маршрута от договора с пет вида счупено тяло.** Намерени и поправени два истински дефекта.
+- **DEF-40: тяло `null` връщаше 500 на 29 маршрута.** `null` е валиден JSON, затова
+  `parse()` го подаваше нататък и `null.field` ставаше TypeError — клиентът получаваше
+  „Internal error“ и ред `unhandled` в журнала за своя грешка. Сега `parse()` връща `{}`
+  за `null`, а за число/низ дава **400** (масивът остава позволен — има маршрути със
+  списък). Същото важи и за четирите места в `routes/reports.js`, които разчитат тялото
+  на място заради по-голямата граница (PDF/CMS до 8 MB): те минават през един защитен
+  `readJson()`.
+- **DEF-41: `GET /admin/api/evidence/assignments` отговаряше 500 винаги, когато няма
+  колекция `db.cases`.** Причината беше мъртъв ред `Array.isArray(getCases && getCases().users)`,
+  чийто резултат се изхвърляше с `void` — но самият достъп до `.users` на `undefined`
+  хвърляше. Редът е премахнат, а не обвит в `try`: нямаше никакъв ефект.
+- Нов тест `tests/api-robustness.cjs` обхожда **всеки** маршрут от `admin-api-spec` с
+  тела `{}`, `[]`, `null`, `not-json`, `{"x":1}` и пази две неща: нито един отговор не е
+  5xx (503 е умислен отказ) и в отговор с грешка не изтича абсолютен път или стек.
+  Измерено преди поправките: **45 проблема** (29 от тях 5xx); след тях: **0**.
+- Успешните административни отговори законно показват папки (`/admin/api/rules`,
+  `/diagnostics`, `/logs`, `/v1/rfc3161/verify`, `/generator/templates`) — панелът ги
+  рисува, а маршрутите са зад токен. Инвариантът „без физически пътища“ важи за ПУБЛИЧНИЯ
+  клиент и остава в сила (проверява се от `portal-order`, `public-route-allowlist`).
 
 ## 4. Как се проверява наново
 

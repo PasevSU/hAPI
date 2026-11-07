@@ -563,7 +563,10 @@ const clean = x => typeof x === 'string' ? x.trim() : '';
 const htmlEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const validSlug = x => /^[a-z0-9][a-z0-9-]{0,62}$/.test(x);
 const body = async (req, limit = 65536) => { let parts = [], size = 0; for await (const chunk of req) { size += chunk.length; if (size > limit) throw Object.assign(new Error('Payload too large'), { status: 413 }); parts.push(chunk) } return Buffer.concat(parts) };
-const parse = async req => { try { return JSON.parse((await body(req)).toString('utf8')) } catch (e) { if (e.status) throw e; throw Object.assign(new Error('Invalid JSON'), { status: 400 }) } };
+// `null`, число и низ СА валиден JSON, но не са тяло на заявка: маршрутите четат полета от
+// обект, а `null.field` е TypeError и клиентът получаваше 500 за своя грешка (измерено на
+// 29 маршрута). Масивът остава позволен — има маршрути, които приемат списък.
+const parse = async req => { let v; try { v = JSON.parse((await body(req)).toString('utf8')) } catch (e) { if (e.status) throw e; throw Object.assign(new Error('Invalid JSON'), { status: 400 }) } if (v === null) return {}; if (typeof v !== 'object') throw Object.assign(new Error('Invalid JSON body'), { status: 400 }); return v };
 const update = (fn, onFailure) => {
   // Всяка промяна минава през shared-data: прясна снимка → работно копие → запис само ако
   // ревизията не е мръднала. Конфликт с друг процес се повтаря, вместо да се презапише.
