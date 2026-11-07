@@ -3,13 +3,13 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 368 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 369 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 167 |
 | портал | 34 |
-| GUI | 22 |
+| GUI | 23 |
 | Home Assistant | 16 |
 | отчети | 16 |
 | PGP | 13 |
@@ -252,7 +252,7 @@
 | `portal-tokens` | Portal tokens | `tests/portal-tokens.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (22)
+## GUI (23)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -277,6 +277,7 @@
 | `ui-settings-sections` | Ui settings sections | `tests/ui-settings-sections.cjs` |
 | `ui-shell-nav` | Ui shell nav | `tests/ui-shell-nav.cjs` |
 | `ui-skin` | Ui skin | `tests/ui-skin.cjs` |
+| `ui-spacing` | Ui spacing | `tests/ui-spacing.cjs` |
 | `ui-version` | Ui version | `tests/ui-version.cjs` |
 
 ## Home Assistant (16)

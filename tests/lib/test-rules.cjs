@@ -365,6 +365,7 @@ const RULES = [
   { id: "ui-settings-sections", area: "GUI", title: "Ui settings sections", owner: "tests/ui-settings-sections.cjs" },
   { id: "ui-shell-nav", area: "GUI", title: "Ui shell nav", owner: "tests/ui-shell-nav.cjs" },
   { id: "ui-skin", area: "GUI", title: "Ui skin", owner: "tests/ui-skin.cjs" },
+  { id: "ui-spacing", area: "GUI", title: "Ui spacing", owner: "tests/ui-spacing.cjs" },
   { id: "ui-version", area: "GUI", title: "Ui version", owner: "tests/ui-version.cjs" },
   { id: "update-repo", area: "общо", title: "Update repo", owner: "tests/update-repo.cjs" },
   { id: "upload-rollback-guard", area: "общо", title: "Upload rollback guard", owner: "tests/upload-rollback-guard.cjs" },

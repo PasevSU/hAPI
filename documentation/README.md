@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **128** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **129** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -49,6 +49,7 @@ _Генериран списък: **128** документа. Пише се от
 | `01_AS_IS_ARCHITECTURE/DEPENDENCY_GRAPH.md` | Dependency Graph — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/FUNCTION_CALL_GRAPH.md` | Function Call Graph — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/GUI_INVENTORY.md` | GUI Inventory — hAPI Enterprise (As-Is) |
+| `01_AS_IS_ARCHITECTURE/GUI_LAYOUT_AUDIT.md` | GUI: отстояния, подредба и симетрия — одит и договор |
 | `01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md` | Known Defects — hAPI Enterprise |
 | `01_AS_IS_ARCHITECTURE/MODULE_CATALOG.md` | Module Catalog — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md` | Source Inventory — hAPI Enterprise (As-Is) |

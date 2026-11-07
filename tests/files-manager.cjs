@@ -242,7 +242,7 @@ assert.match(src, /async function toggleListed\(fileId\)/);
 assert.match(src, /json: \{ listed \}/);
 assert.match(src, /data-folder-flag-btn="visible" data-folder-flag-path=/);
 assert.match(src, /data-folder-flag-btn="locked" data-folder-flag-path=/);
-assert.match(css, /\.fm-file-icons \{ display: flex; align-items: center; gap: 2px;/);
+assert.match(css, /\.fm-file-icons \{ display: flex; align-items: center; gap: var\(--sp-1\);/);
 assert.match(css, /\.fm-ico-btn\.off \{ opacity: 0\.55; \}/);
 // Копирай е ИКОНА в края на реда — без текстов бутон в адресните редове.
 assert.match(src, /class="fm-ico-btn fm-copy-btn" data-copy=/);
