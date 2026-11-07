@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 379 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 380 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 175 |
+| общо | 176 |
 | портал | 35 |
 | GUI | 24 |
 | Home Assistant | 16 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (175)
+## общо (176)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -58,6 +58,7 @@
 | `api-robustness` | Api robustness | `tests/api-robustness.cjs` |
 | `api-rules-connection` | Api rules connection | `tests/api-rules-connection.cjs` |
 | `api-spec-coverage` | Api spec coverage | `tests/api-spec-coverage.cjs` |
+| `apply-update-script` | Apply update script | `tests/apply-update-script.cjs` |
 | `audit` | Audit | `tests/audit.cjs` |
 | `auth` | Auth | `tests/auth.cjs` |
 | `bad-code` | Bad code | `tests/bad-code.cjs` |
