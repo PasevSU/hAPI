@@ -709,8 +709,14 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       const button = await waitFor(() => app.$$('[data-user="journey-user"]')[0], { label: 'бутонът „Изтрий“ за journey-user' });
       app.clearToasts();
       button.click();
-      await waitFor(() => app.toast(), { label: 'отговорът от изтриването', timeout: BUDGET });
-      assert.equal(app.toast().kind, 'ok', 'потребителят е изтрит: ' + app.toast().message);
+      // Чака се ТОЧНО съобщението за изтриването, а не „първото след щракването“: при
+      // натоварена машина закъсняло известие от предишна стъпка пристига първо и тестът
+      // пада с чужд текст (наблюдавано: „Папката вече съществува“).
+      const answer = await waitFor(() => {
+        const t = app.toast();
+        return t && /изтрит/i.test(t.message) ? t : null;
+      }, { label: 'отговорът от изтриването', timeout: BUDGET });
+      assert.equal(answer.kind, 'ok', 'потребителят е изтрит: ' + answer.message);
       await settle('таблицата след изтриване');
       assert.equal(text(view()).includes('journey-user'), false, 'изтритият потребител изчезва от таблицата');
       assert.ok(app.requests.some((r) => r.method === 'DELETE' && r.url.includes('/admin/api/users/')), 'изтриването мина през сървъра');
@@ -1615,29 +1621,43 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.ok(copyButton, 'менюто има „Копирай адреса“');
       const apiUrl = String(copyButton.getAttribute('data-api-copy') || '');
       assert.match(apiUrl, /^https?:\/\/|^\//, 'менюто носи адреса на папката: ' + apiUrl);
-      app.clearToasts();
-      copyButton.click();
-      await waitFor(() => {
+      // Пречертаването след заявка откача възела, хванат преди него — щракването върху
+      // откачен възел не прави нищо и тестът чака съобщение, което никога не идва. Човекът
+      // натиска ЖИВИЯ бутон, затова той се търси наново при всяко натискане.
+      const clickLive = async (selector, ok, label) => {
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+          const live = app.$$(selector)[0];
+          if (live) {
+            app.clearToasts();
+            live.click();
+            const hit = await waitFor(() => ok(), { label, timeout: 2000 }).catch(() => null);
+            if (hit) return hit;
+          }
+          await settle('менюто да се прерисува');
+          if (!app.$$('[data-api-menu]')[0]) await openMenu('повторно');
+        }
+        throw new Error('не се получи: ' + label);
+      };
+      await clickLive('[data-api-copy]', () => {
         const t = app.toast();
         return t && /Копирано/.test(t.message) ? t : null;
-      }, { label: 'съобщението за копирания адрес', timeout: BUDGET });
+      }, 'съобщението за копирания адрес');
       assert.equal(app.copied[app.copied.length - 1], apiUrl, 'копиран е адресът на папката');
       // „Изтегли“ е ПРЕДИ „Отвори“: отварянето сменя съдържанието на прозореца с JSON и
       // панелът на файла изчезва, тоест менюто вече няма откъде да се отвори.
       const beforeDl = app.requests.length;
-      const menuDl = await openMenu('изтегли');
-      app.clearToasts();
-      menuDl.querySelector('[data-api-dl]').click();
-      await waitFor(() => app.toast(), { label: 'съобщението при „Изтегли“', timeout: BUDGET });
+      await clickLive('[data-api-dl]', () => {
+        const t = app.toast();
+        return t && t.message ? t : null;
+      }, 'съобщението при „Изтегли“');
       assert.ok(
         app.requests.slice(beforeDl).some((r) => r.url.endsWith(apiUrl)),
         '„Изтегли“ поиска файла от сървъра: ' + app.requests.slice(beforeDl).map((r) => r.url).join(' · '),
       );
       // „Отвори“ чете адреса от сървъра и го показва в изскачащия прозорец на панела.
       const beforeOpen = app.requests.length;
-      const menuOpen = await openMenu('отвори');
-      menuOpen.querySelector('[data-api-open]').click();
-      await waitFor(() => app.requests.length > beforeOpen, { label: 'заявката при „Отвори“', timeout: BUDGET });
+      await openMenu('отвори');
+      await clickLive('[data-api-open]', () => app.requests.length > beforeOpen, 'заявката при „Отвори“');
       assert.ok(
         app.requests.slice(beforeOpen).some((r) => r.url.endsWith(apiUrl)),
         '„Отвори“ поиска ИМЕННО адреса на папката: ' + app.requests.slice(beforeOpen).map((r) => r.url).join(' · '),

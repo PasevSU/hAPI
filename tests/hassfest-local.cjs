@@ -202,8 +202,35 @@ assert.deepEqual(
   'внос на пакет, който не е в requirements (HA ще падне с ImportError)',
 );
 
+// ── 5б. Компонент на HA, който кодът ползва, е обявен в манифеста ───────────
+// Официалният hassfest връща `[DEPENDENCIES] Using component X but it's not in
+// 'dependencies' or 'after_dependencies'`. Точно това се случи с `hassio` в 0.69.192: кодът
+// внасяше `homeassistant.components.hassio`, а манифестът обявяваше празен
+// `after_dependencies` — и HACS валидаторът върна изданието след публикуване.
+const declaredComponents = new Set([...(manifest.dependencies || []), ...(manifest.after_dependencies || [])]);
+const usedComponents = new Map();
+for (const name of fs.readdirSync(CC).filter((file) => file.endsWith('.py'))) {
+  const source = read(path.join(CC, name));
+  for (const match of source.matchAll(/homeassistant\.components\.([a-z_][\w]*)/g)) {
+    if (!usedComponents.has(match[1])) usedComponents.set(match[1], []);
+    usedComponents.get(match[1]).push(name);
+  }
+}
+const undeclared = [...usedComponents]
+  .filter(([component]) => component !== 'http' && !declaredComponents.has(component))
+  // Платформените файлове на самата интеграция (`sensor.py` → `homeassistant.components.sensor`)
+  // не се обявяват като зависимост — те са собствени платформи, не чужд компонент.
+  .filter(([component]) => !fs.existsSync(path.join(CC, component + '.py')))
+  .map(([component, files]) => component + ' (' + [...new Set(files)].join(', ') + ')');
+assert.deepEqual(
+  undeclared,
+  [],
+  'компонент на HA се ползва, но липсва в dependencies/after_dependencies на манифеста',
+);
+
 console.log(
   'PASS hassfest-local: манифест с ' + Object.keys(manifest).length + ' ключа (всички позволени) · ' +
+  usedComponents.size + ' ползвани HA компонента, всички обявени · ' +
   stringsOf(dictionaries.en).length + ' низа × 2 езика без URL и без празни · ' +
   keysOf(sensorSource).length + ' сензора + ' + keysOf(binarySource).length + ' binary с преводи · ' +
   raised.size + ' грешки на flow-а съвпадат с речника · икона ' + path.basename(brandIcon) + ' · ' +

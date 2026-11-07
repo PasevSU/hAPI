@@ -1,16 +1,15 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.192**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.193**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.192
+## 0.69.193
 
-- **Поправен платформен дефект в избора къде живее порталът на доказателствата.** На Linux
-  `shareRoot()` подминаваше изрично подадения `env` и връщаше `/share` дори когато викащият
-  е казал „няма папка с данни“ — тоест изборът на оператора се подменяше с платформения, а
-  порталът се местеше в `/share/hAPI/data/portal` вместо в HA конфигурацията. Хванато от CI
-  (S20 в `verify-release --with-tests`), невидимо на Windows, където `/share` не се ползва.
-  Сега изрично подаденият `env` е думата на викащия: платформеният път се ползва само когато
-  `env` не е подаден (тоест при истинския `process.env`).
-- Проверява се от `tests/evidence-portal.cjs`: `shareRoot({})` е празен, изричната
-  `EVIDENCE_PORTAL_SHARE` се спазва, а `targetDir({ env: {}, roots })` дава `<root>/www/hapi/data`.
-  Без поправката първото твърдение пада на Linux.
+- **Интеграцията обявява `hassio` като `after_dependencies`.** `discovery.py` внася
+  `homeassistant.components.hassio.handler`, а манифестът държеше празен списък — официалният
+  hassfest връща `[DEPENDENCIES] Using component hassio but it's not in 'dependencies' or
+  'after_dependencies'` и HACS валидаторът маркира изданието след публикуване (хванато на
+  v0.69.192; HACS action мина, hassfest — не).
+- Проверява се ЛОКАЛНО от `tests/hassfest-local.cjs`: всеки `homeassistant.components.<домейн>`,
+  който кодът на интеграцията ползва, трябва да е в `dependencies` или `after_dependencies`.
+  Платформените файлове на самата интеграция (`sensor.py`, `binary_sensor.py`) не се броят.
+  Без поправката правилото връща `hassio (discovery.py)`.
