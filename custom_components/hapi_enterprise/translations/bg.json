@@ -158,7 +158,15 @@
         "name": "Провалени проверки на целостта"
       },
       "guardian_state": {
-        "name": "Състояние на Guardian"
+        "name": "Състояние на Guardian",
+        "state": {
+          "disabled": "Изключен",
+          "healthy": "Работи нормално",
+          "unready": "Не е готов",
+          "unreachable": "Няма връзка",
+          "malformed": "Невалиден отговор",
+          "unknown": "Неизвестно"
+        }
       },
       "guardian_failures": {
         "name": "Последователни грешки на Guardian"
