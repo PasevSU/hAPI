@@ -106,6 +106,7 @@ def _normalize(payload: dict) -> dict:
     out.update(_normalize_guidance(payload.get("guidance")))
     out.update(_normalize_security(payload.get("security")))
     out.update(_normalize_qr(payload.get("qr")))
+    out.update(_normalize_guardian(payload.get("guardian")))
     return out
 
 
@@ -212,4 +213,27 @@ def _normalize_guidance(guidance: object) -> dict:
         "http_error_rate": checks.get("http_error_rate"),
         "latency_p95": checks.get("latency_p95"),
         "download_denial_rate": checks.get("download_denial_rate"),
+    }
+
+
+def _normalize_guardian(value: object) -> dict:
+    """Normalize Guardian data without inferring health from missing telemetry."""
+    if not isinstance(value, dict):
+        return {"guardian_state": "unknown", "guardian_failures": None,
+                "guardian_cache_candidates": None, "guardian_success_percent": None,
+                "guardian_mode": "disabled", "guardian_issue": None}
+    enabled = value.get("enabled") is True
+    available = value.get("available") is True
+    state = value.get("state")
+    if not enabled:
+        state = "disabled"
+    elif not available or state not in ("healthy", "unready", "unreachable", "malformed"):
+        state = "unknown"
+    return {
+        "guardian_state": state,
+        "guardian_failures": value.get("failureCount") if enabled and available else None,
+        "guardian_cache_candidates": value.get("cacheCandidates") if enabled and available else None,
+        "guardian_success_percent": value.get("successPercent") if enabled and available else None,
+        "guardian_mode": value.get("remediationMode", "disabled"),
+        "guardian_issue": state in ("unready", "unreachable", "malformed") if enabled and available else None,
     }
