@@ -76,25 +76,26 @@ assert.match(src, /fm-detail/); assert.match(src, /Контролен панел
 assert.match(src, /createPortal/);
 assert.match(src, /generateApi/);
 assert.match(src, /qrSvg/);
-// QR кодът в панела кодира СТРАНИЦАТА на портала (`api.folderUrl` — тя отваря папката му,
+// QR кодът в картата кодира СТРАНИЦАТА на портала (`api.folderUrl` — тя отваря папката му,
 // иначе `api.landing`, по id), а не адреса на SVG изображението: сканиран, той трябва да
 // отвори портала с файловете му, а не `/api/v1/p/<slug>/qr.svg`.
-assert.match(src, /const qrPage = api \? api\.folderUrl \|\| api\.landing/);
-assert.match(src, /qrSvg\(qrPage\)/);
+assert.match(src, /const qrUrl = api \? api\.folderUrl \|\| api\.landing/);
+assert.match(src, /qrSvg\(qrUrl\)/);
 assert.equal(/qrSvg\(api\.qrUrl\)/.test(src), false, 'QR кодът не бива да кодира адреса на SVG-то');
-// 0.69.146: панелът НЕ изрежда технически адреси — QR се ПОКАЗВА като изображение, а адресът
-// му не се печата. Един адрес в панела е порталът („Отвори портала“ / „Копирай адреса“).
-assert.match(src, /class="qf-svg"/, 'QR кодът се показва като изображение');
+// 0.69.199: панелът НЕ изрежда технически адреси и НЕ рисува кода в контролния панел —
+// кодът е в главата на картата и е връзка към портала.
+assert.match(src, /class="pf-qr-pop-link"/, 'QR кодът се показва като връзка с изображение');
 // 0.69.179: кодът е ЕДИН — на портала. Файлът и папката нямат собствен код (иначе при 30
 // файла човек вижда 30 кода, а файловият носи подписан адрес с живот един час).
 assert.equal(/data-file-qr/.test(src), false, 'файлът няма собствен QR код');
 assert.equal(/qrMarkup/.test(src), false, 'няма отделно рисуване на код за файл');
 assert.equal(/<dt>QR изображение<\/dt>/.test(src), false, 'адресът на SVG-то не е ред в панела');
 // Частен портал: адресите носят ПОДПИСАН достъп — без него връщат 404 (portal-access.js).
-const portalControlSrc = uiSrc('portal-control.js');
+// 0.69.199: състоянието „до кога важи подписът“ вече не се рисува в контролния панел (блокът
+// „Достъп и QR код“ е махнат), затова подписът се проверява там, където се ИЗПОЛЗВА — в картата.
 assert.match(src, /const accessOf = \(p\) => \(\{ query:/, 'подписът идва от сървъра (accessQuery)');
 assert.match(src, /accessQuery: p\.accessQuery \|\| ''/, 'нормализаторът пази подписа');
-assert.match(portalControlSrc, /accessQuery/, 'контролният панел казва до кога важи подписът');
+assert.equal(/accessQuery/.test(fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'portal-control.js'), 'utf8')), false, 'контролният панел повече не рисува състоянието на достъпа');
 assert.match(src, /Създай и генерирай API \+ QR/);
 assert.match(src, /openapi\.json/);
 assert.match(src, /fm-bulk/);
@@ -373,18 +374,20 @@ assert.match(src, /function showModal/);
 assert.match(src, /function ensureModal/);
 assert.match(src, /m\.id = 'fm-modal'/);
 assert.match(src, /function wireMenus/);
-// „Отвори портала“ в контролния панел (0.69.95): основното действие отваря ПОРТАЛА, а
-// изтеглянето на описанието е второстепенно и го казва с думите си. Дотук бутонът беше
-// само „api.json“ и човек, който искаше портала, получаваше файл.
-assert.match(src, /id="pf-open-portal"[^>]*data-open-portal-id=/, 'контролният панел има „Отвори портала“');
+// Входът към портала (0.69.199): в главата на картата има ЕДИН бутон — QR кодът — а самият
+// код е връзка (`<a href>`) към публичния портал. Дотук тук стоеше отделен блок „Достъп и
+// QR код“ с пет бутона и двойно щракване върху кода; блокът е махнат заедно с тях.
+assert.match(src, /data-qr-portal="\$\{i\}"/, 'главата на картата има QR бутон');
+assert.match(src, /class="pf-qr-pop-link" href="\$\{esc\(qrUrl\)\}"/, 'кодът е връзка към публичния портал');
+assert.equal(/id="pf-open-portal"/.test(src), false, 'отделният бутон „Отвори портала“ е махнат');
 // Надписът вече е в речника (BG/EN/DE) — затова се проверява ключът И българската стойност.
 const dict = require(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'i18n.js')).DICT;
 // 0.69.181: картата вече НЕ показва адрес и НЕ сваля api.json — входът е QR кодът
 // (двойно щракване) или „Отвори портала“. Затова ключът за сваляне е махнат от речника.
 assert.equal(/portal\.link\.dlApi/.test(src), false, 'картата не сваля описанието като файл');
 assert.equal(dict.bg['portal.link.dlApi'], undefined, 'ключът за „Свали api.json“ е махнат от речника');
-assert.match(dict.bg['portal.tip.qrOpen'], /два пъти/i, 'подсказката на кода казва „два пъти“');
-assert.match(src, /\[data-open-portal\], \[data-open-portal-id\]/, 'щракването по ИД отваря портала');
+assert.match(dict.bg['portal.tip.qrOpen'], /портал/i, 'подсказката за кода говори за портала');
+assert.match(src, /\[data-open-portal\], \[data-open-portal-id\]/, 'щракването по картата отваря портала');
 assert.match(src, /findIndex\(\(x\) => x\.id === byId\)/, 'ИД-то се превежда до индекс, а не се гадае');
 assert.equal(/window\.open/.test(src), false, 'прегледът не отваря нов таб');
 assert.equal(/target="_blank"/.test(src), false);
@@ -653,9 +656,11 @@ assert.match(src, /x\.notes \? `<hr class="u-divider" \/><p class="fm-file-notes
 // 3. Табелките на файла показват само ВКЛЮЧЕНИТЕ опции (публичен = без табелка).
 assert.match(src, /st\.id === 'public' \? '' :/);
 assert.match(src, /state-chip enc" title="Шифрован/);
-// 4. Няма бутон „Генерирай API + QR“ — API/QR се създават с портала.
+// 4. Няма бутон „Генерирай API + QR“ — API/QR се създават с портала. Подсказката за това
+// живее в картата: „няма API/QR“ е табелка; текстът „API и QR се създават заедно с портала“
+// стоеше в махнатия блок „Достъп и QR код“ и вече не се рисува.
 assert.equal(/pf-generate/.test(src), false, 'бутонът „Генерирай API + QR“ е премахнат');
-assert.match(src, /API и QR се създават заедно с портала/);
+assert.match(src, /<span class="state-chip warn">няма API\/QR<\/span>/);
 // 5. Блоковете на портала се сгъват/разгъват и са СГЪНАТИ по подразбиране (0.69.151):
 // порталът се отваря като списък от заглавия, а не като стена от текст, в която файловете
 // са някъде надолу.

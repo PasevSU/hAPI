@@ -65,12 +65,14 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
     ui.window.FilesManagerPanel.state.publicBaseUrl = PUBLIC_BASE;
     const host = ui.container();
     ui.window.FilesManagerPanel.mount(host);
-    // 0.69.181: адресът вече не се показва като табелка/поле — носи го QR кодът, който трябва
-    // да е строен върху ПУБЛИЧНИЯ адрес (не върху Ingress адреса на панела).
+    // 0.69.199: адресът вече не се показва като табелка/поле — носи го QR кодът (връзка в
+    // главата на картата), който трябва да е строен върху ПУБЛИЧНИЯ адрес (не върху Ingress).
     const openCard = await waitFor(() => host.querySelector('[data-open-portal]'), { label: 'картата на портала' });
     openCard.click();
-    const qrBox = await waitFor(() => host.querySelector('#pf-portal-qr'), { label: 'QR кодът на портала' });
-    const qrUrl = String(qrBox.getAttribute('data-portal-url') || '');
+    const qrBtn = await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът на портала' });
+    qrBtn.click();
+    const qrLink = await waitFor(() => host.querySelector('.pf-qr-pop-link'), { label: 'връзката върху QR кода' });
+    const qrUrl = String(qrLink.getAttribute('href') || '');
     assert.ok(qrUrl.startsWith(PUBLIC_BASE), 'QR кодът носи публичния адрес: ' + qrUrl);
     // Менюто на ПАПКАТА показва същия публичен адрес, а заявката отива на произхода на
     // панела — точно това пази `sameOrigin()`.

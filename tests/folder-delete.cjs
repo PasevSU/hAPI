@@ -125,7 +125,7 @@ const root = path.join(__dirname, '..');
     assert.equal(/data-folder-qr/.test(foldersUi), false, 'папката няма собствен QR код');
     assert.match(filesUi, /const QR_ONE_HINT = 'QR кодът е един/, 'панелът „Сподели“ казва къде е кодът');
     // Самата рисунка е в картата на портала и строи адреса на СТРАНИЦАТА, не на SVG-то.
-    assert.match(ui('portal-control.js'), /qrSvg\(qrPage\)/, 'кодът на портала се строи от адреса на страницата');
+    assert.match(ui('files-manager.js'), /qrSvg\(qrUrl\)/, 'кодът на портала се строи от адреса на страницата');
     assert.match(filesUi, /data-folder-delete/, 'изтриването на папка е вързано към бутон');
     assert.match(filesUi, /async function deleteFolder\(rel\)/);
     assert.match(filesUi, /r\.status === 409/, 'непразна папка пита втори път (409)');

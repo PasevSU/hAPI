@@ -219,6 +219,7 @@ const RULES = [
   { id: "pgp-path-encryption", area: "PGP", title: "Pgp path encryption", owner: "tests/pgp-path-encryption.cjs" },
   { id: "pgp-sign", area: "PGP", title: "Pgp sign", owner: "tests/pgp-sign.cjs" },
   { id: "pgp-tools", area: "PGP", title: "Pgp tools", owner: "tests/pgp-tools.cjs" },
+  { id: "pgp-unknown-subkey", area: "PGP", title: "Pgp unknown subkey", owner: "tests/pgp-unknown-subkey.cjs" },
   { id: "pgp-v6", area: "PGP", title: "Pgp v6", owner: "tests/pgp-v6.cjs" },
   { id: "pgp-workdir-encryption", area: "PGP", title: "Pgp workdir encryption", owner: "tests/pgp-workdir-encryption.cjs" },
   { id: "policy-gui", area: "общо", title: "Policy gui", owner: "tests/policy-gui.cjs" },

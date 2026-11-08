@@ -47,9 +47,11 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
 
     const openCard = await waitFor(() => host.querySelector('[data-open-portal]'), { label: 'картата на портала' });
     openCard.click();
-    const qrBox = await waitFor(() => host.querySelector('#pf-portal-qr'), { label: 'QR кодът на портала' });
+    const qrBtn = await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът на портала' });
+    qrBtn.click();
+    const qrLink = await waitFor(() => host.querySelector('.pf-qr-pop-link'), { label: 'връзката върху QR кода' });
     assert.ok(
-      String(qrBox.getAttribute('data-portal-url') || '').startsWith(PUBLIC_BASE),
+      String(qrLink.getAttribute('href') || '').startsWith(PUBLIC_BASE),
       'QR кодът ПОКАЗВА публичния адрес (той се сканира и се дава на получателя)',
     );
     // Менюто на ПАПКАТА (единственото останало меню с адрес) носи същия публичен адрес.

@@ -43,15 +43,22 @@ assert.ok(used.size >= 40, `панелът ползва поне 40 ключа (
 for (const key of used) assert.ok(i18n.has(key), `кодът ползва липсващ ключ: ${key}`);
 // Същото и за КАРТАТА НА ПОРТАЛА: тя беше единствената част от интерфейса без речник, тоест
 // немският и английският потребител виждаха български бутони в преведения панел.
+// 0.69.199: блокът „Достъп и QR код“ е махнат, а QR кодът стана бутон в главата на картата,
+// тоест текстовете му се рисуват от `files-manager.js`. Затова ключовете се търсят там — и
+// трябва да са в речника, а не твърд български текст.
 const control = read('portal-control.js');
-const usedCard = new Set([...control.matchAll(/\bT\('([a-z]+(?:\.[A-Za-z]+){1,2})'\)/g)].map((m) => m[1]));
-assert.ok(usedCard.size >= 20, `картата на портала ползва поне 20 ключа (сега ${usedCard.size})`);
+const manager = read('files-manager.js');
+const usedCard = new Set([...manager.matchAll(/\bT\('(portal\.[A-Za-z.]+)'\)/g)].map((m) => m[1]));
+assert.ok(usedCard.size >= 3, `картата на портала ползва поне 3 ключа (сега ${usedCard.size})`);
 for (const key of usedCard) {
   assert.ok(i18n.has(key), `картата ползва липсващ ключ: ${key}`);
   assert.match(key, /^portal\./, `ключовете на картата са групирани в portal.*: ${key}`);
 }
 // Заглавието и бутоните не са твърд български текст (иначе смяната на езика не работи).
-for (const literal of ['Достъп и QR код', 'Отвори портала', 'Обнови достъпа', 'Свали QR', 'Печат на QR', 'Свали api.json']) {
+// Блокът „Достъп и QR код“ вече не съществува като markup — споменава се само в коментари,
+// които обясняват защо е махнат.
+assert.equal(/data-block="link"/.test(control + manager), false, 'махнатият блок не е останал като markup');
+for (const literal of ['Отвори портала', 'Обнови достъпа', 'Свали QR', 'Печат на QR', 'Свали api.json']) {
   assert.equal(control.includes(`'${literal}'`), false, `картата още държи твърд текст: ${literal}`);
 }
 assert.ok(i18n.DICT.de['portal.link.title'] && i18n.DICT.en['portal.link.title'], 'заглавието на картата има превод');

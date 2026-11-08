@@ -3,7 +3,7 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 381 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 382 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
@@ -12,7 +12,7 @@
 | GUI | 24 |
 | Home Assistant | 17 |
 | отчети | 16 |
-| PGP | 13 |
+| PGP | 14 |
 | ядро | 12 |
 | съхранение | 7 |
 | издаване | 6 |
@@ -334,7 +334,7 @@
 | `report-table-widths` | Report table widths | `tests/report-table-widths.cjs` |
 | `report-tsa-e2e` | Report tsa e2e | `tests/report-tsa-e2e.cjs` |
 
-## PGP (13)
+## PGP (14)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -349,6 +349,7 @@
 | `pgp-path-encryption` | Pgp path encryption | `tests/pgp-path-encryption.cjs` |
 | `pgp-sign` | Pgp sign | `tests/pgp-sign.cjs` |
 | `pgp-tools` | Pgp tools | `tests/pgp-tools.cjs` |
+| `pgp-unknown-subkey` | Pgp unknown subkey | `tests/pgp-unknown-subkey.cjs` |
 | `pgp-v6` | Pgp v6 | `tests/pgp-v6.cjs` |
 | `pgp-workdir-encryption` | Pgp workdir encryption | `tests/pgp-workdir-encryption.cjs` |
 

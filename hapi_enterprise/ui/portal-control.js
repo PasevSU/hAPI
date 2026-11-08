@@ -4,77 +4,17 @@
 // Отделен модул: рисува САМО този блок. Всичко, което му трябва, идва в `ctx`
 // (състояние и помощни функции), за да не зависи от вътрешностите на files-manager.js.
 (function () {
-  // Текст по ключ: КАРТАТА също минава през речника (BG/EN/DE), както Настройки — иначе
-  // немският потребител вижда български бутони в преведен интерфейс (стария BUG-11).
-  const T = (key) => (typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key) : String(key));
   /** HTML на блока „Контролен панел на портала: <заглавие>“ + API/QR. */
   function render(ctx) {
-    const { esc, state, p, api, FLAGS, ICON, ico, fmtDate, qrSvg, contactSelect, caseSelect, newContactFields, newCaseFields } = ctx;
+    const { esc, state, p, FLAGS, ICON, ico, fmtDate, contactSelect, caseSelect, newContactFields, newCaseFields } = ctx;
     // Блокът се сгъва/разгъва — по подразбиране е СГЪНАТ (`controlOpen === true` го разгъва),
     // както всички блокове на портала: отвореният портал показва заглавия, не стена от текст.
     const open = state.controlOpen === true;
-    // QR кодът кодира СТРАНИЦАТА на портала заедно с ПАПКАТА (`?folder=`), а НЕ адреса
-    // на SVG изображението: сканиран, той трябва да отвори портала с неговите файлове.
-    const qrPage = api ? api.folderUrl || api.landing || (api.refs && api.refs.landingUrl) || '' : '';
-    const qr = qrSvg(qrPage);
-    // Адресите се показват ВИНАГИ: за частен портал носят подписан достъп (`?expires=&sig=`),
-    // който сървърът издава (portal-access.js) — иначе `/p/<id>`, API-то и QR кодът връщат 404.
-    const isPublic = String(p.visibility || '') === 'public';
-    // Текстът „API и QR се създават заедно с портала“ живее в речника — `portal.link.noApi`.
-    const noApiHint = `<p class="hint">${T('portal.link.noApi')}</p>`;
-    // ── Достъп и QR код: кодът е НАЙ-ВДЯСНО, действията — до него ───────────────
-    // Дотук тук стоеше и адресът като поле с „Копирай“. Адресът обаче водеше към API-то
-    // (JSON), а не към портала, и човек копираше нещо, което не отваря страницата. Затова
-    // адресът, копирането и „Свали api.json“ са махнати: остава QR кодът — входът към
-    // портала — и действията по него. Блокът е ПЪРВИ и винаги отворен.
-    const expiresMs = api && api.accessExpires ? Number(api.accessExpires) * 1000 : 0;
-    const minutesLeft = expiresMs ? Math.round((expiresMs - Date.now()) / 60000) : 0;
-    const expired = Boolean(expiresMs && minutesLeft <= 0);
-    const accessable = Boolean(api && (api.accessQuery || api.tokenRequired || state.portalTokenRequired));
-    const linkState = !api
-      ? { text: T('portal.state.creating'), cls: '' }
-      : expired
-        ? { text: T('portal.state.expired'), cls: 'err' }
-        : api.accessQuery
-          ? {
-            text: expiresMs
-              ? `${T('portal.state.signed')}: ${minutesLeft} ${T('portal.state.minutesLeft')}`
-              : T('portal.state.signed'),
-            cls: minutesLeft <= 10 ? 'warn' : 'ok',
-          }
-          : (api.tokenRequired || state.portalTokenRequired)
-            ? { text: T('portal.state.token'), cls: 'warn' }
-            : { text: isPublic ? T('portal.state.public') : T('portal.state.private'), cls: 'ok' };
-    const linkBlock = `
-      <section class="pf-block pf-link" data-block="link">
-        <div class="pf-block-head">
-          <h5>${ico('qr')} ${T('portal.link.title')}</h5>
-          <span class="pf-link-state ${linkState.cls}" id="pf-link-state">${esc(linkState.text)}</span>
-        </div>
-        <div class="pf-block-body pf-link-body">
-          <div class="pf-link-side">
-            ${api ? '' : noApiHint}
-            <div class="pf-link-actions" role="toolbar" aria-label="${T('portal.link.title')}">
-              <button type="button" class="btn btn-primary btn-sm" id="pf-open-portal" data-open-portal-id="${esc(p.id)}" title="${T('portal.tip.open')}" aria-label="${T('portal.link.open')}">${ico('openWindow')}<span class="btn-label">${T('portal.act.open')}</span></button>
-              <button type="button" class="btn btn-sm" id="pf-refresh-access" ${accessable ? '' : 'disabled'} title="${accessable
-        ? T('portal.tip.refresh')
-        : T('portal.tip.refreshPublic')}" aria-label="${T('portal.link.refresh')}">${ico('refresh')}<span class="btn-label">${T('portal.act.refresh')}</span></button>
-              <button type="button" class="btn btn-sm" id="pf-qr-download" title="${T('portal.tip.qrDownload')}" aria-label="${T('portal.link.qrDownload')}">${ICON.download}<span class="btn-label">${T('portal.act.qr')}</span></button>
-              <button type="button" class="btn btn-sm" id="pf-qr-print" title="${T('portal.tip.qrPrint')}" aria-label="${T('portal.link.qrPrint')}">${ico('qr')}<span class="btn-label">${T('portal.act.print')}</span></button>
-              <button type="button" class="btn btn-sm" id="pf-open-folder" data-open-folder="${esc(p.slug || '')}" title="${T('portal.tip.openFolder')}" aria-label="${T('portal.link.openFolder')}">${ICON.folder}<span class="btn-label">${T('portal.act.folder')}</span></button>
-            </div>
-            <p class="pf-link-note">${T('portal.link.hint1')}<br />${T('portal.link.hint2')}</p>
-            <p class="pf-link-note pf-link-single">${T('portal.link.single')}</p>
-            <p class="pf-link-note pf-link-crypto">${T('portal.brand')} · ${T('portal.crypto')}</p>
-          </div>
-          <div class="pf-link-qr" id="pf-portal-qr" role="button" tabindex="0" data-portal-url="${esc(qrPage)}" title="${T('portal.tip.qrOpen')}" aria-label="${T('portal.tip.qrOpen')}">
-            ${qr ? `<div class="qf-svg">${qr}</div>` : `<p class="hint">${T('portal.link.qrMissing')}</p>`}
-            <p class="pf-link-note pf-link-qr-hint">${T('portal.link.dblclick')}</p>
-          </div>
-        </div>
-      </section>`;
+    // QR кодът вече е БУТОН в главата на картата (горе вдясно) — виж `portalCard` в
+    // files-manager.js. Затова тук не се рисува блок „Достъп и QR код“: остана само
+    // контролният панел. Причината: блокът дублираше входа към портала и изяждаше
+    // половината екран с текст, който не се променя.
     return `
-      ${linkBlock}
       <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="control">
         <div class="pf-block-head">
           <h5><button type="button" class="link-btn pf-block-tog" data-pf-control-tog aria-expanded="${open}" title="${open ? 'Сгъни' : 'Разгъни'
@@ -130,8 +70,8 @@
               <button type="submit" class="btn">Запази настройките</button>
             </form>
             <div>
-              <p class="hint">Адресът и QR кодът са в блока <strong>„Връзка и QR код“</strong> най-горе на портала —
-                там се копират, свалят и печатат, без да се отваря този панел.</p>
+              <p class="hint">QR кодът към публичния портал е <strong>бутонът горе вдясно</strong> в заглавния ред
+                на портала — отваря се на едно натискане, без да се разгъва този панел.</p>
               <div class="pf-security">
                 <h6>${ico('lock')} Сигурност на портала</h6>
                 <p class="hint">Ключът за подпис важи за подписаните URL адреси; проверката за цялост сравнява

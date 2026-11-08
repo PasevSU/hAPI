@@ -37,11 +37,16 @@ assert.equal(/pf-copy-refs/.test(panel + manager), false, 'бутонът „К�
 assert.equal(/pf-dl-openapi/.test(panel + manager), false, 'OpenAPI адресът не се предлага като втори файл в панела');
 assert.equal(/Препратките са копирани/.test(manager), false, 'няма съобщение за копирани препратки');
 
-// ── 2. Остава ЕДИН вход: порталът (код + бутон) ────────────────────────────
-assert.match(panel, /id="pf-open-portal"[^>]*data-open-portal-id=/, 'панелът има „Отвори портала“');
-assert.match(panel, /id="pf-portal-qr"[^>]*data-portal-url=/, 'и QR кодът, който носи същия адрес');
-assert.match(manager, /q\('#pf-portal-qr'\)\.addEventListener\('dblclick'/, 'двойно щракване върху кода отваря портала');
-assert.match(manager, /window\.location\.href = url/, 'отваря се в СЪЩИЯ раздел');
+// ── 2. Остава ЕДИН вход: порталът — връзката върху QR кода ─────────────────
+// До 0.69.199 входът беше в отделен блок с бутон „Отвори портала“ и QR код с двойно
+// щракване. Блокът е махнат: кодът е бутон в главата на картата, а самият код е връзка
+// (`<a href>`) към същия адрес — тоест входът е един и работи и с клавиатура.
+assert.match(manager, /data-qr-portal="\$\{i\}"/, 'картата има бутон за QR кода');
+assert.match(manager, /class="pf-qr-pop-link" href="\$\{esc\(qrUrl\)\}"/, 'кодът е връзка към портала');
+assert.match(manager, /const qrUrl = api \? api\.folderUrl \|\| api\.landing \|\| '' : ''/, 'връзката носи адреса на портала');
+assert.equal(/id="pf-open-portal"/.test(panel + manager), false, 'отделният бутон „Отвори портала“ е махнат (входът е един)');
+assert.equal(/id="pf-portal-qr"/.test(panel + manager), false, 'старият QR блок е махнат');
+assert.equal(/window\.location\.href = url/.test(manager), false, 'няма ръчно пренасочване — връзката върши това');
 assert.equal(/id="pf-copy-portal"/.test(panel + manager), false, 'адресът не се копира — не се показва като текст');
 assert.equal(/id="pf-dl-api"/.test(panel + manager), false, 'картата не сваля api.json');
 const panelText = panel.replace(/<[^>]*>/g, ' ');

@@ -596,10 +596,12 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       const open = await waitFor(() => app.$$('[data-open-portal]')[0], { label: 'бутонът „Отвори портала“' });
       open.click();
       await settle('картата на портала');
-      // 0.69.181: адресът не се показва като текст — носи го QR кодът (`data-portal-url`).
+      // 0.69.199: адресът не се показва като текст — носи го връзката върху QR кода.
       // Проверява се, че ТОЗИ адрес се отваря и е човешката страница, а не JSON.
-      const qrBox = await waitFor(() => app.$('#pf-portal-qr'), { label: 'QR кодът на портала', timeout: BUDGET });
-      const url = String(qrBox.getAttribute('data-portal-url') || '');
+      const qrBtn = await waitFor(() => app.$('[data-qr-portal]'), { label: 'QR бутонът на портала', timeout: BUDGET });
+      qrBtn.click();
+      const qrLink = await waitFor(() => app.$('.pf-qr-pop-link'), { label: 'връзката върху QR кода', timeout: BUDGET });
+      const url = String(qrLink.getAttribute('href') || '');
       assert.match(url, /\/p\/[0-9a-zA-Z-]+/, 'адресът е човешката страница на портала: ' + url);
       // Едно отваряне на вече показания адрес — каквото прави човек, като го натисне.
       const opened = await app.openLink(url);
@@ -1701,31 +1703,34 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.ok(Number((text(count).match(/\d+/) || [0])[0]) > 0, 'отчетът има блокове: ' + text(count));
     });
 
-    // ── J68. Портал: „Отвори портала“ от контролния панел (по идентификатор) ────
-    await journey('J68 портал: отваряне по идентификатор', async () => {
+    // ── J68. Портал: QR кодът се показва и скрива БЕЗ промяна на сървъра ──────
+    await journey('J68 портал: показване на QR кода', async () => {
       const slug = 'gui-journey-open-by-id';
       await ownPortalWithFile(slug);
-      const open = await waitFor(() => app.$('#pf-open-portal'), { label: 'бутонът „Отвори портала“', timeout: BUDGET });
-      const id = open.getAttribute('data-open-portal-id');
-      assert.ok(id, 'бутонът носи идентификатора на портала');
+      const qrBtn = await waitFor(() => app.$('[data-qr-portal]'), { label: 'QR бутонът', timeout: BUDGET });
+      const openedId = qrBtn.getAttribute('data-qr-portal');
+      assert.ok(openedId !== null, 'бутонът носи номера на портала');
       const before = app.requests.length;
       app.clearToasts();
-      open.click();
-      const again = await waitFor(() => app.$('#pf-open-portal'), { label: 'бутонът след отварянето', timeout: BUDGET });
-      await settle('картата на портала');
-      // Отварянето на вече отворения портал е САМО четене: не бива да има нито една
-      // промяна на сървъра (POST/PATCH/DELETE). Заявките за четене са позволени — панелът
-      // може да презареди дървото на папките, ако е било за друг портал.
+      qrBtn.click();
+      const pop = await waitFor(() => {
+        const node = app.$('.pf-qr-pop');
+        return node && node.hidden === false ? node : null;
+      }, { label: 'показания QR код', timeout: BUDGET });
+      await settle('кодът на екрана');
+      // Показването на кода е САМО четене: не бива да има нито една
+      // промяна на сървъра (POST/PATCH/DELETE). Заявките за четене са позволени.
       const fresh = app.requests.slice(before);
       assert.deepEqual(
         fresh.filter((r) => r.method !== 'GET').map((r) => r.method + ' ' + r.url),
         [],
-        'отварянето не променя нищо на сървъра: ' + fresh.map((r) => r.method + ' ' + r.url).join(' · '),
+        'показването на кода не променя нищо на сървъра: ' + fresh.map((r) => r.method + ' ' + r.url).join(' · '),
       );
-      assert.equal(again.getAttribute('data-open-portal-id'), id, 'панелът остава на СЪЩИЯ портал');
+      assert.ok(pop.querySelector('.pf-qr-pop-link'), 'кодът е връзка към портала');
+      assert.equal(app.$('[data-qr-portal]').getAttribute('data-qr-portal'), openedId, 'панелът остава на СЪЩИЯ портал');
       assert.ok(app.$('[data-close-portal]'), 'порталът е отворен в същия раздел (има „← Списък с портали“)');
-      assert.ok(!app.toast() || app.toast().kind !== 'err', 'отварянето мина без грешка: ' + (app.toast() ? app.toast().message : '—'));
-      assert.match(text(view()), /fayl-za-scenariy\.txt/, 'файловете на портала са на екрана след отварянето');
+      assert.ok(!app.toast() || app.toast().kind !== 'err', 'показването мина без грешка: ' + (app.toast() ? app.toast().message : '—'));
+      assert.match(text(view()), /fayl-za-scenariy\.txt/, 'файловете на портала са на екрана');
     });
 
     // ── J69. Файл: пълният пакет хешове и преизчисляването му ──────────────────

@@ -158,9 +158,11 @@ const cleaned = [];
     assert.match(portalJs, /\/tree\/file\?path=/, 'страницата тегли през контролирания маршрут');
     assert.match(portalJs, /createObjectURL/, 'файлът се сваля като blob, без адрес в историята');
     assert.match(portalJs, /boot\.folders === "1"/, 'портал със собствена папка се отваря в нея');
-    const panel = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'portal-control.js'), 'utf8');
-    assert.match(panel, /api\.folderUrl/, 'QR кодът в панела кодира адреса, който отваря папката');
-    assert.match(panel, /api\.folder/, 'панелът показва коя папка се сервира');
+    // 0.69.199: QR кодът се рисува в картата (`files-manager.js`) — контролният панел вече не
+    // носи блока „Достъп и QR код“. Кодът трябва да кодира адреса, който отваря ПАПКАТА.
+    const manager = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'files-manager.js'), 'utf8');
+    assert.match(manager, /api\.folderUrl/, 'QR кодът в картата кодира адреса, който отваря папката');
+    assert.match(manager, /api\.folder/, 'картата показва коя папка се сервира');
 
     console.log(
       `PASS portal-folder-portal: един вход /p/<id> → папка ${portal.storage_root} · ${names.length} файла по път · скрита/заключена папка 404 · .. → 400 · частен портал 404 · общ корен 403`,

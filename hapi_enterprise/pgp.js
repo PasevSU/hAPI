@@ -680,17 +680,41 @@ function parseKeyBlock(text, options) {
   if (data.length > MAX_KEY_BYTES) throw fail('KEY_TOO_LARGE', 'Ключът е твърде голям');
   const packets = readPackets(data);
   const keys = [];
+  // Пропуснати подключове: алгоритъм, който този двигател не познава (например опитен
+  // алгоритъм от чернова на RFC 9580, който PGPony записва като подключ). До 0.69.200 такъв
+  // подключ събаряше ЦЕЛИЯ блок → ключохранилището ставаше недостъпно и PGP панелът изглеждаше
+  // празен, макар основният ключ и останалите подключове да са напълно използваеми.
+  // Затова непознат подключ се ПРОПУСКА и се записва в `skipped` — не се гадае какво е.
+  const skipped = [];
   let userId = '';
   let current = null;
   for (const p of packets) {
     if (p.tag === 6 || p.tag === 14) {
-      const key = parseKeyBody(p.body);
+      let key;
+      try {
+        key = parseKeyBody(p.body);
+      } catch (e) {
+        if (e && e.code === 'UNSUPPORTED_ALGORITHM' && p.tag === 14) {
+          skipped.push({ tag: p.tag, code: e.code, message: e.message });
+          continue;
+        }
+        throw e;
+      }
       key.secret = null;
       key.isSubkey = p.tag === 14;
       keys.push(key);
       current = key;
     } else if (p.tag === 5 || p.tag === 7) {
-      const key = parseKeyBody(p.body);
+      let key;
+      try {
+        key = parseKeyBody(p.body);
+      } catch (e) {
+        if (e && e.code === 'UNSUPPORTED_ALGORITHM' && p.tag === 7) {
+          skipped.push({ tag: p.tag, code: e.code, message: e.message });
+          continue;
+        }
+        throw e;
+      }
       key.isSubkey = p.tag === 7;
       key.secret = parseSecretMpis(key, p.body, passphrase);
       keys.push(key);
@@ -722,7 +746,7 @@ function parseKeyBlock(text, options) {
   if (!keys.length) throw fail('NO_KEY', 'В блока няма ключов пакет');
   const primary = keys.find((k) => !k.isSubkey);
   if (!primary) throw fail('NO_KEY', 'Липсва основен ключ');
-  return { keys, primary, userId, kind, armored: kind };
+  return { keys, primary, userId, kind, armored: kind, skipped };
 }
 
 /** Кой ключ реално подписва: основният, ако може, иначе първият подходящ подключ. */

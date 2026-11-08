@@ -16,6 +16,11 @@
   // директно в шаблоните (${ICON.size}); действията пазят ИМЕ и се рисуват с ico().
   const ico = (name, extra) =>
     typeof window !== 'undefined' && window.HapiIcons ? window.HapiIcons.ico(name, extra) : '';
+  // Текст по ключ: картите на портала минават през речника (BG/EN/DE), както Настройки —
+  // иначе немският и английският потребител виждат български надписи в преведения панел.
+  // Липсващ ключ връща самото име, за да се види веднага при разработка.
+  const T = (key) =>
+    typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key) : String(key);
   const ACTIONS = [
     { id: 'preview', label: 'Преглед', icon: 'preview' },
     { id: 'download', label: 'Изтегли', icon: 'download' },
@@ -2107,30 +2112,46 @@
     const api = state.api[x.id];
     const ctc = contactOf(x.contactId);
     const kase = caseOf(x.caseId);
+    // Адресът, който носи QR кодът: страницата на портала с папката (`?folder=`), а не
+    // SVG-то. Същият адрес стои и като `href` на кода, за да води към ПУБЛИЧНИЯ портал.
+    const qrUrl = api ? api.folderUrl || api.landing || '' : '';
+    const qrSvgMarkup = qrUrl ? qrSvg(qrUrl) : '';
     return `<article class="pf-portal ${single ? 'pf-open pf-single' : ''}" data-portal="${i}">
                   <div class="pf-portal-head">
-                    ${single
+                    <div class="pf-portal-head-main">
+                      ${single
         ? `<h3 class="pf-portal-title">${esc(x.title)}</h3>`
         : `<button type="button" class="link-btn pf-portal-name" data-open-portal="${i}">▸ ${esc(
           x.title,
         )}</button>`
       }
-                    <span class="flag-badge ${flagOf(x.flag).cls}" title="Флаг: ${esc(flagOf(x.flag).label)}">${flagOf(x.flag).icon
+                      <span class="flag-badge ${flagOf(x.flag).cls}" title="Флаг: ${esc(flagOf(x.flag).label)}">${flagOf(x.flag).icon
       } ${esc(flagOf(x.flag).label)}</span>
-                    <span class="chip ${x.visibility === 'public' ? 'ok' : ''}" title="Видимост">${esc(x.visibility)}</span>
-                    <code class="fm-code" title="Политика за достъп">${esc(x.access)}</code>
-                    ${api
+                      <span class="chip ${x.visibility === 'public' ? 'ok' : ''}" title="Видимост">${esc(x.visibility)}</span>
+                      <code class="fm-code" title="Политика за достъп">${esc(x.access)}</code>
+                      ${api
         ? `<span class="state-chip ok">API/QR</span><span class="chip">${esc(
           (api.at || '').slice(0, 16).replace('T', ' '),
         )}</span>`
         : '<span class="state-chip warn">няма API/QR</span>'
       }
-                    ${qrBadge(x)}
-                    <button type="button" class="fm-ico-btn pf-pkg-btn" data-pkg-portal="${i}" title="Изтегли пакета (ZIP с всички файлове от хранилището: ${esc(
+                      ${qrBadge(x)}
+                    </div>
+                    <div class="pf-portal-head-actions">
+                      <button type="button" class="fm-ico-btn pf-pkg-btn" data-pkg-portal="${i}" title="Изтегли пакета (ZIP с всички файлове от хранилището: ${esc(
         x.storage_root || '/share',
       )})" aria-label="Изтегли пакета">${ICON.download}</button>
-                    <button type="button" class="fm-ico-btn pf-report-btn" data-report-portal="${i}" title="Отчет за портала (с всички регистрирани файлове)" aria-label="Отчет за портала">${ico('note')}</button>
-                    <button type="button" class="fm-ico-btn pf-report-btn" data-report-recursive="${i}" title="Рекурсивен отчет за портала (с папките от хранилището)" aria-label="Рекурсивен отчет за портала">${ICON.folder}</button>
+                      <button type="button" class="fm-ico-btn pf-report-btn" data-report-portal="${i}" title="Отчет за портала (с всички регистрирани файлове)" aria-label="Отчет за портала">${ico('note')}</button>
+                      <button type="button" class="fm-ico-btn pf-report-btn" data-report-recursive="${i}" title="Рекурсивен отчет за портала (с папките от хранилището)" aria-label="Рекурсивен отчет за портала">${ICON.folder}</button>
+                      <button type="button" class="fm-ico-btn pf-qr-btn" data-qr-portal="${i}" aria-expanded="false" aria-controls="pf-qr-pop-${i}" title="${esc(T('portal.qr.button'))}" aria-label="${esc(T('portal.qr.button'))}">${ico('qr')}</button>
+                    </div>
+                  </div>
+                  <div class="pf-qr-pop" id="pf-qr-pop-${i}" data-qr-pop="${i}" hidden>
+                    ${qrSvgMarkup
+        ? `<a class="pf-qr-pop-link" href="${esc(qrUrl)}" target="_self" rel="noopener" title="${esc(T('portal.qr.button'))}">${qrSvgMarkup}</a>`
+        : `<p class="hint">${esc(T('portal.qr.missing'))}</p>`
+      }
+                    <p class="pf-qr-pop-note">${esc(T('portal.qr.note'))}</p>
                   </div>
                   <hr class="u-divider" />
                   <p class="fm-file-sub">${ICON.topic} категория: <code>${esc(
@@ -3525,10 +3546,6 @@
     // позицията си в списъка и не бива да я гадае. Отваря се в СЪЩИЯ раздел — под HA
     // Ingress нов таб губи сесията и адреса на add-on-а.
     host.querySelectorAll('[data-open-portal], [data-open-portal-id]').forEach((el) => {
-      // „Отвори портала“ в блока „Връзка и QR код“ има СВОЙ слушател по-долу: той отваря
-      // истинския адрес. Ако и този слушател се закачи, бутонът само пре-рисува същата
-      // карта — точно това изглеждаше като „бутонът не прави нищо“.
-      if (el.id === 'pf-open-portal') return;
       el.addEventListener('click', () => {
         const byId = el.dataset.openPortalId;
         const i = byId ? state.portals.findIndex((x) => x.id === byId) : Number(el.dataset.openPortal);
@@ -3599,6 +3616,17 @@
         });
       });
     });
+    // QR кодът е БУТОН в главата на картата (горе вдясно) и се показва/скрива с него.
+    // Самият код е връзка към ПУБЛИЧНИЯ портал (`href`), тоест входът е един и води там,
+    // където трябва — в портала, а не към API-то.
+    host.querySelectorAll('[data-qr-portal]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const pop = host.querySelector(`[data-qr-pop="${btn.dataset.qrPortal}"]`);
+        if (!pop) return;
+        pop.hidden = !pop.hidden;
+        btn.setAttribute('aria-expanded', String(!pop.hidden));
+      });
+    });
     if (q('#pf-settings')) {
       q('#pf-settings').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -3607,99 +3635,13 @@
     }
     // API/QR се създават заедно с портала — няма бутон „Генерирай“. Панелът НЕ изрежда
     // техническите адреси: остава само QR кодът, който отваря портала, и действията по него.
-    // ── Достъп и QR: кодът и действията по него ────────────────────────────────
-    // Адресът, който носи QR кодът. Една функция за всички действия, за да не се разминават
-    // отвореното, сваленото и отпечатаното (преди `folderUrl` липсваше и QR падаше на landing).
-    const qrPageOf = (target) => {
-      const a = target ? state.api[target.id] : null;
-      return a ? a.folderUrl || a.landing || '' : '';
-    };
-    // Една функция за ДВЕТЕ входни точки — „Отвори портала“ и двойното щракване върху QR
-    // кода: иначе двете места биха се разминали по адрес и по съобщение.
-    const openPortalPage = () => {
-      const el = q('#pf-portal-qr');
-      const url = qrPageOf(portal()) || (el && el.dataset.portalUrl) || '';
-      if (!url) return toast('Адресът още не е създаден — порталът се създава с API и QR', 'err');
-      // СЪЩИЯТ таб, не нов: под Home Assistant Ingress нов таб губи сесията и показва
-      // празен екран (същото правило пази и `#pf-open-folder`). Адресът е на същия
-      // origin, така че бисквитката на Home Assistant остава валидна.
-      window.location.href = url;
-    };
-    if (q('#pf-open-portal')) q('#pf-open-portal').addEventListener('click', openPortalPage);
-    // QR кодът е и вход към портала: ДВОЙНО щракване отваря страницата. Единичното щракване
-    // не прави нищо — иначе човек, който само разглежда кода, излиза от панела. Enter/Space
-    // са същото действие за клавиатура (роля „button“, `tabindex=0`).
-    if (q('#pf-portal-qr')) {
-      q('#pf-portal-qr').addEventListener('dblclick', openPortalPage);
-      q('#pf-portal-qr').addEventListener('keydown', (e) => {
-        if (e.key !== 'Enter' && e.key !== ' ') return;
-        e.preventDefault();
-        openPortalPage();
-      });
-    }
-    // Подписаният достъп изтича (portal-access.js). Дотук единственият начин за нов беше
-    // „Създай и генерирай API + QR“ във формата за създаване — тоест недостъпен за вече
-    // създаден портал. Сега тук се взема нов подпис и адресът/QR се обновяват на място.
-    if (q('#pf-refresh-access')) {
-      q('#pf-refresh-access').addEventListener('click', async () => {
-        const p = portal();
-        if (!p) return;
-        const btn = q('#pf-refresh-access');
-        if (btn) btn.disabled = true;
-        try {
-          if (!connected()) {
-            generateApi(p, true, accessOf(p));
-            render();
-            return toast('Демо: подписаният достъп се издава от add-on-а', 'ok');
-          }
-          const info = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/api-info`);
-          if (!info.ok || !info.data) return toast(info.error || 'Достъпът не е обновен', 'err');
-          if (!info.data.accessQuery) {
-            generateApi(p, true, null);
-            render();
-            return toast('Порталът е публичен — подписан достъп не е нужен', 'ok');
-          }
-          generateApi(p, true, { query: info.data.accessQuery, expires: info.data.accessExpires });
-          render();
-          toast('Издаден е нов подписан достъп — адресът и QR кодът са обновени', 'ok');
-        } finally {
-          const again = q('#pf-refresh-access');
-          if (again) again.disabled = false;
-        }
-      });
-    }
-    if (q('#pf-qr-download')) {
-      q('#pf-qr-download').addEventListener('click', () => {
-        const svg = qrSvg(qrPageOf(portal()));
-        if (!svg) return toast('QR кодът не е наличен в тази среда', 'err');
-        downloadText(`qr-${portal().slug || 'portal'}.svg`, svg, 'image/svg+xml');
-        toast('QR кодът е свален като SVG', 'ok');
-      });
-    }
-    // Печатът е В СЪЩИЯ таб (нов таб под Ingress губи сесията); `body.printing-qr` скрива
-    // всичко освен кода и се маха в `finally`, за да не остане следващият печат празен.
-    if (q('#pf-qr-print')) {
-      q('#pf-qr-print').addEventListener('click', () => {
-        if (!qrSvg(qrPageOf(portal()))) return toast('QR кодът не е наличен в тази среда', 'err');
-        document.body.classList.add('printing-qr');
-        try {
-          if (typeof window.print === 'function') window.print();
-        } finally {
-          document.body.classList.remove('printing-qr');
-        }
-        toast('QR кодът е изпратен към печат', 'ok');
-      });
-    }
-    // Връзката с ПАПКАТА (0.69.147): страницата, която изрежда истинските файлове на диска.
-    // Относителен адрес `../portal.html?folder=` работи и на самия add-on (`/ui/`), и под
-    // Ingress (`/api/hassio_ingress/<токен>/ui/`), защото води до корена на същия origin.
-    if (q('#pf-open-folder')) {
-      q('#pf-open-folder').addEventListener('click', () => {
-        const slug = q('#pf-open-folder').dataset.openFolder || (portal() && portal().slug) || '';
-        if (!slug) return toast('Порталът няма папка — задай „Папка с файлове“ и запази', 'err');
-        window.location.href = '../portal.html?folder=' + encodeURIComponent(slug);
-      });
-    }
+    // ── Вход към портала ────────────────────────────────────────────────────
+    // Входът е ЕДИН: връзката върху QR кода в главата на картата (горе вдясно). Тя е
+    // истински `<a href>` към ПУБЛИЧНИЯ адрес на портала — работи с десен бутон, „Отвори
+    // в нов раздел“ и клавиатура, без слушател, който да води към API-то.
+    // Дотук тук стояха „Отвори портала“, „Обнови достъпа“, „Свали QR“, „Печат на QR“ и
+    // „Отвори папката“ в отделния блок „Достъп и QR код“. Блокът отпадна, а с него и
+    // действията: мъртви бутони не се оставят — иначе панелът пак расте с текстове.
     // Сигурност на портала: ротация на ключа и проверка за цялост (реални административни
     // маршрути; без тях функциите съществуваха само в API).
     const securityOut = q('#pf-security-out');

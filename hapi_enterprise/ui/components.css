@@ -1427,8 +1427,15 @@ input[type="radio"] {
   padding: 0;
 }
 
-.pf-portal-head .pf-pkg-btn {
-  margin-left: auto;
+/* QR бутонът е НАЙ-ВДЯСНО в реда (горе вдясно) и е входът към портала — затова е с акцент. */
+.pf-portal-head .pf-qr-btn {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.pf-portal-head .pf-qr-btn[aria-expanded='true'] {
+  background: rgba(34, 211, 238, 0.18);
+  color: var(--text);
 }
 
 /* Падащо меню ⚙ на папка — изскачащо контекстно меню (коментар, видима, медийна, заключване). */
@@ -1623,6 +1630,7 @@ input[type="radio"] {
 }
 
 .pf-portal {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1682,13 +1690,76 @@ input[type="radio"] {
   background: linear-gradient(180deg, #16304d, #0f2138);
 }
 
-/* Заглавен ред: име на собствен ред, отдолу компактни табелки (не разпънати пил). */
+/* Заглавен ред: име и табелки отляво, действията — НА ЕДНА ЛИНИЯ с тях, вдясно.
+   Изискване: трите бутона да са на равно с името, затова те са в отделен контейнер
+   (`margin-left:auto`), а не се пренасят под табелките. */
 .pf-portal-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: var(--sp-4);
   width: var(--w-100);
+}
+
+.pf-portal-head-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pf-portal-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* QR кодът се пуска с бутона горе вдясно и излиза ВДЯСНО, като панелче над съдържанието
+   (изискване: кодът е от дясно на информацията). Самият код е връзка към публичния портал. */
+.pf-qr-pop {
+  position: absolute;
+  top: 38px;
+  right: var(--sp-4);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  max-width: min(240px, calc(100% - 16px));
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.pf-qr-pop[hidden] {
+  display: none;
+}
+
+.pf-qr-pop-link {
+  display: block;
+  width: 180px;
+  max-width: 100%;
+}
+
+.pf-qr-pop-link svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pf-qr-pop-note {
+  margin: 0;
+  font-size: var(--fs-12-5);
+  line-height: 1.35;
+  text-align: center;
+  color: #22303f;
 }
 
 .pf-portal-head>* {
