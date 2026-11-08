@@ -387,6 +387,29 @@
       ],
       "policy": "Future module only: disabled until quarantine feature exists. Do not claim live support",
       "planned": true
+    },
+    {
+      "id": "all-source-modules",
+      "domain": "cross-cutting",
+      "priority": "medium",
+      "files": [
+        "hapi_enterprise/",
+        "custom_components/hapi_enterprise/"
+      ],
+      "signals": [
+        "source module hash drift",
+        "new named function inventory",
+        "test matrix health",
+        "generic route errors"
+      ],
+      "regression": [
+        "function-catalog.cjs",
+        "scenario-matrix.cjs",
+        "ha-compatibility.cjs"
+      ],
+      "historical": [],
+      "policy": "Every new module is inventoried with safe defaults and receives an explicit watch profile before release; read-only telemetry and existing tests until classified",
+      "fallback": true
     }
   ]
 }
