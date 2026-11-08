@@ -24,11 +24,11 @@ function optionNames() {
   const source = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'config.yaml'), 'utf8');
   const match = /^schema:[^\n]*\n([\s\S]*?)(?=^map:|^environment:|(?![\s\S]))/m.exec(source);
   if (!match) throw Error('Home Assistant schema section missing');
-  return sortedUnique([...match[1].matchAll(/^  ([a-z][a-z0-9_]+):/gm)].map(m => m[1]));
+  return sortedUnique([...match[1].matchAll(/^ {2}([a-z][a-z0-9_]+):/gm)].map(m => m[1]));
 }
 function addonTranslatedOptions(lang) {
   const source = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'translations', lang + '.yaml'), 'utf8');
-  return sortedUnique([...source.matchAll(/^  ([a-z][a-z0-9_]+):\s*\n    name:/gm)].map(m => m[1]));
+  return sortedUnique([...source.matchAll(/^ {2}([a-z][a-z0-9_]+):\s*\n    name:/gm)].map(m => m[1]));
 }
 function walkSource(dir, result = []) {
   for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
