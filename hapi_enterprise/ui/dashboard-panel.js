@@ -1,9 +1,18 @@
 'use strict';
-// Табло и „Относно“ — с РЕАЛНИ данни от add-on-а.
+// ТАБЛОТО (и „Относно“) — вход към разделите, без мониторинг.
 //
-// Преди тук имаше обект с измислени бройки за документи и свободно място, който се
-// показваше като състояние на системата. Сега всяка стойност идва от административния API,
-// а при липса на връзка панелът казва точно това — без числа.
+// Защо е толкова малко (0.69.205): дотук таблото носеше седем карти със състояние, панел
+// „Ресурси и хранилище“, „Кой влиза“, „Живи събития“ и отчетите — тоест беше натоварена
+// страница, на която човек трябваше да търси къде да цъкне. Мониторингът се премести на
+// едно място (`monitoring-panel.js`), а тук остават ДВЕ неща: списъкът с раздели (същият
+// като в менюто) и отчетите по всички портали — защото това е вход към работа, не мониторинг.
+//
+// Правила, които модулът пази:
+//   • без измислени числа и без декоративни табелки „свързан“: липсата на връзка се казва
+//     с изречение;
+//   • списъкът с раздели НЕ се дублира — идва от NAV през `HapiUI.nav()`;
+//   • бутоните са равни по ширина (`.quick-grid`, `.row-actions` в components.css), за да не
+//     изглежда редът като стълбичка.
 (function () {
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -24,119 +33,31 @@
     }
   }
 
-  const card = (label, value, note) => `
-    <div class="dash-card">
-      <span class="dash-label">${esc(label)}</span>
-      <strong class="dash-value">${esc(value)}</strong>
-      ${note ? `<small class="hint">${esc(note)}</small>` : ''}
-    </div>`;
-
-  // ── Жив поток от събития (SSE) ────────────────────────────────────────────
-  // Таблото е мястото, което човекът гледа, затова тук се вижда „стана нещо“ веднага.
-  // `EventSource` не може да носи `Authorization`, затова токенът пътува като `?token=`
-  // САМО за този маршрут — и само по HTTPS/Ingress, както останалите заявки на панела.
-  // Потокът НЕ е задължителен: ако не се отвори, таблото работи както преди и казва защо.
-  let liveSource = null;
-  // Състоянието се държи извън `startLive`, за да може лентата да го покаже, когато потокът
-  // умре СЛЕД отварянето (сървърът затваря след 30 минути с `bye`, а мрежата може да падне).
-  let liveState = 'off';
-  let liveBadgeEl = null;
-  function paintLive() {
-    if (!liveBadgeEl) return;
-    const label = liveState === 'on' ? 'на живо' : liveState === 'ended' ? 'приключи' : liveState === 'error' ? 'няма връзка' : 'изключено';
-    liveBadgeEl.className = 'badge ' + (liveState === 'on' ? 'ok' : liveState === 'error' ? 'err' : '');
-    liveBadgeEl.textContent = label;
-  }
-  function stopLive() {
-    if (liveSource) { try { liveSource.close() } catch { /* вече е затворен */ } liveSource = null }
-    liveState = 'off';
-    paintLive();
-    // Референцията към DOM се пуска при напускане: иначе панелът държи откачен възел от
-    // изтрития изглед, а следващото `open`/`bye` би рисувало в него, вместо в новия.
-    liveBadgeEl = null;
-  }
-  function startLive(onEvent) {
-    stopLive();
-    const url = base();
-    const adminToken = token();
-    if (!url || !adminToken || typeof window.EventSource !== 'function') return false;
-    try {
-      // `lastEventId` не се подава: при всяко отваряне на таблото ни трябва САМО новото,
-      // а историята за възстановяване е одитът, не потокът.
-      liveSource = new window.EventSource(url + '/admin/api/events/stream?token=' + encodeURIComponent(adminToken));
-    } catch {
-      liveSource = null;
-      return false;
-    }
-    const forward = (name) => liveSource.addEventListener(name, (e) => {
-      let payload;
-      try { payload = JSON.parse(e.data) } catch { payload = { event: name } }
-      onEvent(name, payload);
-    });
-    for (const name of ['document.finalized', 'job.completed', 'access.created', 'report.packaged', 'resync']) forward(name);
-    // `bye` е СЪОБЩЕНИЕ, че сървърът затваря (таванът от 30 минути). Без него лентата
-    // оставаше „на живо“ върху мъртва връзка — тоест твърдение, което не е вярно.
-    liveSource.addEventListener('bye', () => { liveState = 'ended'; paintLive(); try { liveSource.close() } catch { /* вече е затворен */ } liveSource = null });
-    // `EventSource` се пресвързва сам; тук само се казва, че в момента няма връзка.
-    liveSource.addEventListener('error', () => { if (liveSource) { liveState = 'error'; paintLive() } });
-    liveSource.addEventListener('open', () => { liveState = 'on'; paintLive() });
-    liveState = 'on';
-    paintLive();
-    return true;
-  }
-
   async function mount(view) {
     view.innerHTML = `
       <div class="page-title">
         <h1>Dashboard</h1>
-        <span class="badge demo" id="dash-badge">зареждане…</span>
       </div>
       <section class="panel">
-        <div class="panel-head"><h2>Състояние на add-on-а</h2></div>
-        <div class="panel-body">
-          <div class="dash-grid" id="dash-cards"></div>
-          <p class="hint" id="dash-hint"></p>
-        </div>
-      </section>
-      <section class="panel">
-        <div class="panel-head"><h2>Всички раздели</h2><span class="badge" id="dash-quick-count">—</span></div>
+        <div class="panel-head"><h2>Всички раздели</h2></div>
         <div class="panel-body">
           <div class="quick-grid" id="dash-quick"></div>
-          <p class="hint">Същите раздели като в менюто — таблото е и вход към тях. Броят идва от навигацията, не от отделен списък.</p>
+          <p class="hint" id="dash-quick-note">Същите раздели като в менюто — таблото е и вход към тях.</p>
         </div>
       </section>
       <section class="panel">
-        <div class="panel-head"><h2>Ресурси и хранилище</h2><span class="badge" id="dash-res-badge">—</span></div>
-        <div class="panel-body" id="dash-res"></div>
-      </section>
-      <section class="panel">
-        <div class="panel-head"><h2>Кой влиза</h2></div>
-        <div class="panel-body" id="dash-visitors"></div>
-      </section>
-      <section class="panel">
-        <div class="panel-head"><h2>Живи събития</h2><span class="badge" id="dash-live-badge">—</span></div>
-        <div class="panel-body" id="dash-live"></div>
-      </section>
-      <section class="panel">
-        <div class="panel-head"><h2>Отчети</h2><span class="badge" id="dash-report-state">—</span></div>
+        <div class="panel-head"><h2>Отчети</h2></div>
         <div class="panel-body" id="dash-reports"></div>
       </section>`;
 
-    const cards = view.querySelector('#dash-cards');
-    const badge = view.querySelector('#dash-badge');
-    const hint = view.querySelector('#dash-hint');
-    const visitBox = view.querySelector('#dash-visitors');
-    const reportBox = view.querySelector('#dash-reports');
-    const reportState = view.querySelector('#dash-report-state');
     const quickBox = view.querySelector('#dash-quick');
-    const quickCount = view.querySelector('#dash-quick-count');
-    const resBox = view.querySelector('#dash-res');
-    const resBadge = view.querySelector('#dash-res-badge');
+    const quickNote = view.querySelector('#dash-quick-note');
+    const reportBox = view.querySelector('#dash-reports');
 
     // ── Всички раздели: един бутон за всяка точка от менюто ──────────────────
     // Списъкът НЕ се дублира тук: идва от NAV в app.js през `HapiUI.nav()`. Така нова
     // секция в менюто се появява на таблото без втори списък, който да изостане.
-    const nav = (window.HapiUI && typeof window.HapiUI.nav === 'function') ? window.HapiUI.nav() : [];
+    const nav = window.HapiUI && typeof window.HapiUI.nav === 'function' ? window.HapiUI.nav() : [];
     const targets = nav.filter((item) => item.id !== 'dashboard');
     if (quickBox) {
       quickBox.innerHTML = targets
@@ -147,229 +68,76 @@
           if (window.HapiUI && typeof window.HapiUI.go === 'function') window.HapiUI.go(button.dataset.goto);
         });
       }
-      if (quickCount) {
-        quickCount.className = 'badge';
-        quickCount.textContent = targets.length + ' раздела';
+      // Броят е ИЗРЕЧЕНИЕ, не табелка: табелката „16 РАЗДЕЛА“ дублираше съдържанието и
+      // изглеждаше като статус, който не носи информация.
+      if (quickNote) {
+        quickNote.textContent = targets.length + ' раздела · същите като в менюто — таблото е и вход към тях.';
       }
     }
 
-    const [portals, sensors, jobs, audit, diagnostics] = await Promise.all([
-      api('/admin/api/portals'),
-      api('/admin/api/sensors'),
-      api('/admin/api/jobs'),
-      api('/admin/api/audit/verify'),
-      api('/admin/api/diagnostics'),
-    ]);
-
+    const portals = await api('/admin/api/portals');
     if (portals.offline) {
-      badge.textContent = 'няма връзка';
-      hint.textContent = 'Свържи add-on-а от „Настройки“ (адрес и токен), за да видиш реалните числа.';
-      cards.replaceChildren();
-      if (reportBox) reportBox.innerHTML = '<p class="hint">Отчетите се сглобяват от данните на add-on-а — без връзка няма какво да влезе в тях.</p>';
+      reportBox.innerHTML = '<p class="hint">Няма връзка с add-on-а. Свържи го от „Настройки“ (адрес и токен), за да видиш отчетите.</p>';
       return;
     }
 
     const list = portals.ok && portals.data ? (Array.isArray(portals.data) ? portals.data : portals.data.portals || []) : [];
     const files = list.reduce((sum, p) => sum + (Array.isArray(p.files) ? p.files.length : 0), 0);
-    const publicPortals = list.filter((p) => p.visibility === 'public').length;
-    const observer = (sensors.ok && sensors.data && sensors.data.observer) || null;
-    // `guidance` е решението на add-on-а (decision-sensors.js): статус, измерени стойности
-    // и ЕДНА препоръчана проверка. Панелът не смята прагове — иначе би показал друго от HA.
-    const guidance = (sensors.ok && sensors.data && sensors.data.guidance) || null;
-    const jobState = (jobs.ok && jobs.data) || null;
-    const chain = (audit.ok && audit.data) || null;
-
-    const healthLabel = guidance
-      ? ({ ok: 'здраво', warning: 'внимание', critical: 'критично', unknown: 'още не е измерено' }[guidance.status] || guidance.status)
-      : '—';
-    const healthHint = guidance && guidance.recommended
-      ? guidance.recommended.reason || guidance.recommended.action
-      : (guidance ? 'няма препоръчана проверка' : 'сензорите не отговарят');
-
-    badge.textContent = portals.ok ? 'свързан' : `HTTP ${portals.status}`;
-    badge.className = 'badge ' + (portals.ok ? 'ok' : 'err');
-
-    cards.innerHTML = [
-      card('Състояние', healthLabel, healthHint),
-      card('Портали', list.length ? String(list.length) : '0', publicPortals ? `${publicPortals} публични` : 'няма публични'),
-      card('Файлове в порталите', String(files), 'общо във всички портали'),
-      card('Задачи', jobState ? `${jobState.running || 0} активни` : '—', jobState ? `${jobState.queued || 0} в опашка` : 'няма данни'),
-      card('Заявки', observer ? String(observer.http ? observer.http.total : 0) : '—', observer ? 'от старта на add-on-а' : 'няма данни'),
-      card('Одитна верига', chain ? (chain.valid ? 'валидна' : 'нарушена') : '—', chain ? `${chain.records || 0} записа` : 'няма данни'),
-      card('Версия', String(window.HAPI_VERSION || '—'), 'hAPI Enterprise'),
-    ].join('');
-
-    const problems = [];
-    if (!sensors.ok) problems.push('сензорите не отговарят');
-    if (!jobs.ok) problems.push('опашката не отговаря');
-    if (!audit.ok) problems.push('одитната проверка не отговаря');
-    if (chain && chain.valid === false) problems.push('одитната верига е нарушена');
-    // Препоръката на сензорите вече е с причина и действие — показва се така, че човекът
-    // да знае какво да провери, а не само че „има проблем“.
-    if (guidance && guidance.recommended) problems.push(guidance.recommended.action || guidance.recommended.id);
-    hint.textContent = problems.length ? 'Внимание: ' + problems.join(' · ') : '';
-
-    // ── Живи събития: какво става В МОМЕНТА, без да се пита на интервал ──────
-    // Потокът е по избор: без токен или без `EventSource` таблото просто не показва
-    // живата лента. Когато работи, всяко събитие се записва в нея с часа си.
-    const liveBox = view.querySelector('#dash-live');
-    const liveBadge = view.querySelector('#dash-live-badge');
-    const liveList = [];
-    const renderLive = () => {
-      if (!liveBox) return;
-      liveBox.innerHTML = liveList.length
-        ? liveList.map((item) => `<div class="fm-row"><span class="badge">${esc(item.event)}</span> <small class="hint">${esc(item.at)}</small></div>`).join('')
-        : '<p class="hint">Още нищо не е станало от отварянето на таблото.</p>';
-    };
-    if (liveBox) renderLive();
-    // Лентата се рисува от `paintLive`, за да е вярна и когато потокът умре СЛЕД отварянето
-    // (сървърът затваря след 30 минути с `bye`, а мрежата може да падне).
-    liveBadgeEl = liveBadge;
-    const liveOn = startLive((name, payload) => {
-      liveList.unshift({ event: name, at: (payload && payload.at) ? String(payload.at).replace('T', ' ').slice(0, 19) : new Date().toISOString().replace('T', ' ').slice(0, 19) });
-      if (liveList.length > 10) liveList.length = 10;
-      renderLive();
-    });
-    if (!liveOn) { liveState = 'off'; paintLive() }
-
-    // ── Ресурси и хранилище: какво още може да се поиска от add-on-а ─────────
-    // Всичко идва от `/admin/api/diagnostics` — същият маршрут, който ползва
-    // „Настройки → Диагностика“. Тук няма изчислени „на око“ стойности.
-    if (resBox) {
-      const diag = diagnostics.ok && diagnostics.data ? diagnostics.data : null;
-      if (!diag) {
-        resBadge.className = 'badge err';
-        resBadge.textContent = diagnostics.offline ? 'няма връзка' : 'HTTP ' + diagnostics.status;
-        resBox.innerHTML = '<p class="hint">Диагностиката не е достъпна с този токен — ресурсите се виждат в „Настройки → Диагностика“.</p>';
-      } else {
-        const mb = (bytes) => (Number(bytes) / 1048576).toFixed(1) + ' MB';
-        const storage = Array.isArray(diag.storage) ? diag.storage : [];
-        const okRoots = storage.filter((s) => s.available && s.writable).length;
-        const badRoots = storage.filter((s) => !s.available || !s.writable).map((s) => s.name + (s.error ? ' (' + s.error + ')' : ''));
-        const traffic = diag.traffic || {};
-        const load = traffic.load || {};
-        // Структурата на файловете идва от същия отговор (`layout`), за да не се гадае къде
-        // е portal.html или папката на портала: всяко място е с път и състояние.
-        const layout = diag.layout && Array.isArray(diag.layout.entries) ? diag.layout.entries : [];
-        const layoutRows = layout
-          .map(
-            (e) =>
-              `<tr><th>${esc(e.label)}</th><td><code>${esc(e.path)}</code>${e.checked ? (e.exists ? ' <span class="state-chip ok">има</span>' : ' <span class="state-chip err">липсва</span>') : ' <span class="hint">за всеки портал</span>'
-              }<br/><small class="hint">${esc(e.note || '')}</small></td></tr>`,
-          )
-          .join('');
-        const layoutRoutes = diag.layout && Array.isArray(diag.layout.routes) ? diag.layout.routes : [];
-        resBadge.className = 'badge ' + (badRoots.length ? 'err' : 'ok');
-        resBadge.textContent = badRoots.length ? 'хранилище: проблем' : 'хранилище: готово';
-        resBox.innerHTML = `
-          <div class="dash-grid">
-            ${card('Heap', mb(diag.runtime ? diag.runtime.heapUsedBytes : 0), 'от ' + mb(diag.runtime ? diag.runtime.heapTotalBytes : 0))}
-            ${card('Памет (RSS)', mb(diag.runtime ? diag.runtime.rssBytes : 0), diag.runtime ? 'Node ' + diag.runtime.node : '')}
-            ${card('Работи от', Math.floor((diag.uptimeSeconds || 0) / 60) + ' мин', diag.generatedAt ? 'към ' + String(diag.generatedAt).replace('T', ' ').slice(0, 16) : '')}
-            ${card('Изтегляния', String(traffic.activeDownloadStreams || 0) + ' / ' + String(traffic.effectiveDownloadStreams || 0), 'активни / ефективен лимит')}
-            ${card('Хранилища', okRoots + ' / ' + storage.length, badRoots.length ? 'липсва: ' + badRoots.join(', ') : 'всички достъпни и записваеми')}
-            ${card('Натоварване', load.level != null ? String(load.level) : '—', load.effective != null ? 'ефективен паралелизъм ' + load.effective : 'без данни')}
-          </div>
-          ${layoutRows
-            ? `<details class="u-mt"><summary>Къде какво стои (структура на файловете)</summary>
-                  <table class="grid"><tbody>${layoutRows}</tbody></table>
-                  ${layoutRoutes.length
-              ? `<p class="hint">Адреси: ${layoutRoutes.map((r) => `<code>${esc(r.url)}</code> — ${esc(r.serves)}`).join(' · ')}</p>`
-              : ''
-            }
-                </details>`
-            : ''
-          }
-          <div class="row-actions">
-            <button type="button" class="btn" data-goto="storage">Хранилища</button>
-            <button type="button" class="btn" data-goto="security">Сигурност</button>
-            <button type="button" class="btn" data-goto="backups">Резервни копия</button>
-          </div>`;
-        for (const button of resBox.querySelectorAll('button[data-goto]')) {
-          button.addEventListener('click', () => {
-            if (window.HapiUI && typeof window.HapiUI.go === 'function') window.HapiUI.go(button.dataset.goto);
-          });
-        }
-      }
-    }
-
-    // Комуникация: кратко резюме на сензорите с врата към панела „Кой влиза“.
-    const intel = sensors.ok && sensors.data ? sensors.data.visitorsIntel : null;
-    if (intel) {
-      visitBox.innerHTML = `
-        <div class="dash-grid">
-          ${card('Уникални посетители', String(intel.unique_visitors || 0), 'по хеш от IP + клиент')}
-          ${card('Отказани достъпи', String(intel.denied_total || 0), 'провери причините в панела')}
-          ${card('Държава (топ)', intel.country_top || '—', intel.countries_known ? intel.countries_known + ' държави' : 'няма офлайн база')}
-          ${card('Админ. влизания', String(intel.admin_logins || 0), 'успешни')}
-        </div>
-        <div class="row-actions">
-          <button type="button" class="btn" data-nav="visitors">Виж всички</button>
-        </div>`;
-      const go = visitBox.querySelector('button[data-nav="visitors"]');
-      if (go) go.addEventListener('click', () => {
-        if (window.HapiUI && typeof window.HapiUI.go === 'function') window.HapiUI.go('visitors');
-      });
-    } else {
-      visitBox.innerHTML = '<p class="hint">Сензорите за посетители не са достъпни с този токен.</p>';
-    }
 
     // ── Отчети: комбо и рекурсивен комбо — тук, на главното табло ────────────
     // Отчетът за един портал или за един файл стои там, където е самият обект
     // (опциите на файла; картата на портала). На таблото стоят само обхватите
     // „всичко“, защото тук се вижда цялата система.
-    if (reportBox) {
-      if (!list.length) {
-        reportBox.innerHTML = '<p class="hint">Няма портали — комбо отчетът би бил празен. Създай портал от „Портали“.</p>';
-        if (reportState) reportState.textContent = 'няма данни';
-      } else {
-        if (reportState) {
-          reportState.className = 'badge ok';
-          reportState.textContent = list.length + (list.length === 1 ? ' портал' : ' портала') + ' · ' + files + ' файла';
-        }
-        reportBox.innerHTML = `
-          <p class="hint">Отчетът се сглобява от данните на порталите и се отваря в „Отчети“ — там се
-            проверява, подпечатва (RFC 3161) и сваля като PDF.</p>
-          <div class="row-actions">
-            <button type="button" class="btn btn-primary" data-report="combo">Комбо отчет (всички портали)</button>
-            <button type="button" class="btn" data-report="combo-recursive">Рекурсивен комбо отчет (с папките)</button>
-          </div>
-          <p class="hint" id="dash-report-note"></p>`;
-        const note = reportBox.querySelector('#dash-report-note');
-        const buttons = [...reportBox.querySelectorAll('button[data-report]')];
-        const toast = (message, kind) => {
-          if (window.HapiUI && typeof window.HapiUI.toast === 'function') window.HapiUI.toast(message, kind);
-        };
-        const runReport = async (recursive, button) => {
-          const S = window.HapiReportScope;
-          if (!S) return toast('Модулът за отчети (report-scope.js) не е зареден', 'err');
-          const restore = button.textContent;
-          button.disabled = true;
-          button.textContent = 'Сглобявам отчета…';
-          try {
-            // Рекурсивният обхват включва и папките от хранилището на всеки портал.
-            let trees = null;
-            if (recursive) {
-              trees = {};
-              await Promise.all(list.map(async (p) => {
-                const res = await api('/admin/api/portals/' + encodeURIComponent(p.id) + '/tree');
-                if (res.ok && res.data) trees[p.id] = res.data;
-              }));
-            }
-            const result = S.buildCombo({ portals: list, trees, recursive });
-            S.open(result);
-            if (note) note.textContent = result.label + ' · ' + (result.summary.files || 0) + ' файла';
-          } catch (e) {
-            toast('Отчетът не може да се сглоби: ' + (e && e.message ? e.message : e), 'err');
-          } finally {
-            button.disabled = false;
-            button.textContent = restore;
+    if (!list.length) {
+      reportBox.innerHTML = '<p class="hint">Няма портали — комбо отчетът би бил празен. Създай портал от „Портали“.</p>';
+      return;
+    }
+    reportBox.innerHTML = `
+      <p class="hint">Отчетът се сглобява от данните на порталите и се отваря в „Отчети“ — там се
+        проверява, подпечатва (RFC 3161) и сваля като PDF. Обхват: ${list.length}
+        ${list.length === 1 ? 'портал' : 'портала'} · ${files} файла.</p>
+      <div class="row-actions">
+        <button type="button" class="btn btn-primary" data-report="combo">Комбо отчет (всички портали)</button>
+        <button type="button" class="btn" data-report="combo-recursive">Рекурсивен комбо отчет (с папките)</button>
+      </div>
+      <p class="hint" id="dash-report-note"></p>`;
+    const note = reportBox.querySelector('#dash-report-note');
+    const buttons = [...reportBox.querySelectorAll('button[data-report]')];
+    const toast = (message, kind) => {
+      if (window.HapiUI && typeof window.HapiUI.toast === 'function') window.HapiUI.toast(message, kind);
+    };
+    const runReport = async (recursive, button) => {
+      const S = window.HapiReportScope;
+      if (!S) return toast('Модулът за отчети (report-scope.js) не е зареден', 'err');
+      const restore = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Сглобявам отчета…';
+      try {
+        // Рекурсивният обхват включва и папките от хранилището на всеки портал. Чете се
+        // последователно (`for … of` с `await`): `map` с `async` връща обещания, които
+        // никой не чака, и грешка в средата остава необслужена (пази `logic-audit`).
+        let trees = null;
+        if (recursive) {
+          trees = {};
+          for (const p of list) {
+            const res = await api('/admin/api/portals/' + encodeURIComponent(p.id) + '/tree');
+            if (res.ok && res.data) trees[p.id] = res.data;
           }
-        };
-        for (const button of buttons) {
-          button.addEventListener('click', () => { void runReport(button.dataset.report === 'combo-recursive', button) });
         }
+        const result = S.buildCombo({ portals: list, trees, recursive });
+        S.open(result);
+        if (note) note.textContent = result.label + ' · ' + (result.summary.files || 0) + ' файла';
+      } catch (e) {
+        toast('Отчетът не може да се сглоби: ' + (e && e.message ? e.message : e), 'err');
+      } finally {
+        button.disabled = false;
+        button.textContent = restore;
       }
+    };
+    for (const button of buttons) {
+      button.addEventListener('click', () => {
+        void runReport(button.dataset.report === 'combo-recursive', button);
+      });
     }
   }
 
@@ -377,7 +145,7 @@
     view.innerHTML = `
       <div class="page-title"><h1>Относно</h1></div>
       <section class="panel">
-        <div class="panel-head"><h2>hAPI Enterprise</h2><span class="badge">${esc(String(window.HAPI_VERSION || ''))}</span></div>
+        <div class="panel-head"><h2>hAPI Enterprise</h2></div>
         <div class="panel-body">
           <dl class="fm-meta">
             <dt>Продукт</dt><dd>hAPI Enterprise — портали с проверима цялост на документите</dd>
@@ -387,11 +155,11 @@
             <dt>Единен план</dt><dd><code>docs/plan/15-unified-master-plan-v6.0.md</code></dd>
             <dt>Архитектурни решения</dt><dd><code>documentation/03_ADR/</code></dd>
           </dl>
-          <p class="hint">Всички стойности в таблото идват от административния API на add-on-а —
+          <p class="hint">Всички стойности в панелите идват от административния API на add-on-а —
             интерфейсът не показва измислени числа.</p>
         </div>
       </section>`;
   }
 
-  window.HapiDashboardPanel = { mount, mountAbout, unmount: stopLive };
+  window.HapiDashboardPanel = { mount, mountAbout, unmount: () => undefined };
 })();

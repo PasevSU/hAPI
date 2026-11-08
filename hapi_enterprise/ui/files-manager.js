@@ -47,6 +47,19 @@
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const toast = (m, k) => window.HapiUI && window.HapiUI.toast(m, k);
+  /**
+   * Освобождава blob адрес след `ms` — но таймерът НЕ държи процеса буден.
+   *
+   * В браузъра `setTimeout` връща число и `unref` няма (`t && t.unref?.()`), така че
+   * поведението е същото. В тестовете обаче интерфейсът се пуска в Node и таймер от 60 s
+   * задържаше процеса след последното твърдение: `gui-file-share` ставаше 62 s вместо 2 s,
+   * а при две изтегляния матрицата можеше да закъснее с минути.
+   */
+  const revokeLater = (url, ms) => {
+    const timer = setTimeout(() => URL.revokeObjectURL(url), ms);
+    if (timer && typeof timer.unref === 'function') timer.unref();
+    return timer;
+  };
   const fmtSize = (n) => {
     const v = Number(n) || 0;
     if (v < 1024) return `${v} B`;
@@ -222,12 +235,6 @@
     cases: [],
     portalIndex: 0,
     openPortal: null,
-    // Сензорите за комуникацията (visitor-intel) — за мониторинга на порталите.
-    monitor: null,
-    monitorError: '',
-    // Кога са дошли сензорите: `mount()` и `reload()` ги искат едно след друго, а панелът
-    // не бива да тегли едно и също два пъти (виж `loadMonitor`).
-    monitorAt: 0,
     newPortal: false,
     api: {},
     selected: null,
@@ -924,145 +931,6 @@
     };
   }
 
-  /**
-   * Сензорите за комуникацията (visitor-intel) за мониторинга: кой влиза, какво тегли,
-   * колко пъти и откъде — общо за инсталацията и за всеки портал поотделно.
-   * При отказ мониторингът казва ПРИЧИНАТА, вместо да рисува нули.
-   */
-  let monitorInFlight = null;
-  async function loadMonitor({ force = false } = {}) {
-    if (!connected()) { state.monitor = null; state.monitorError = ''; return false; }
-    // Един товар за едно отваряне: `mount()` вика `loadMonitor()` и после `reload()`, който
-    // също го викаше — тоест панелът теглеше сензорите ДВА пъти при всяко отваряне и при
-    // всяко действие. Кешът е кратък (1.5 s) и се прескача с `force` (бутонът „Обнови“).
-    if (!force && state.monitor && state.monitorAt && Date.now() - state.monitorAt < 1500) return true;
-    if (monitorInFlight) return monitorInFlight;
-    monitorInFlight = (async () => {
-      const r = await api('/admin/api/sensors');
-      if (!r.ok || !r.data) {
-        state.monitor = null;
-        state.monitorError = r.status === 403
-          ? 'Токенът няма право „sensors“ — мониторингът е достъпен за администратор.'
-          : r.error || ('HTTP ' + r.status);
-        state.monitorAt = Date.now();
-        return false;
-      }
-      state.monitor = r.data.visitorsIntel || null;
-      state.monitorError = '';
-      state.monitorAt = Date.now();
-      return true;
-    })().finally(() => { monitorInFlight = null });
-    return monitorInFlight;
-  }
-
-  /** Една секция „Мониторинг“: общо за инсталацията + данните на отворения портал. */
-  function monitorSection(openP) {
-    if (!connected()) return '';
-    if (state.monitorError) {
-      return `<section class="panel">
-        <div class="panel-head"><h2>Мониторинг</h2></div>
-        <div class="panel-body"><p class="hint">${esc(state.monitorError)}</p></div>
-      </section>`;
-    }
-    if (!state.monitor) {
-      return `<section class="panel">
-        <div class="panel-head"><h2>Мониторинг</h2></div>
-        <div class="panel-body"><p class="hint">Зареждане на сензорите…</p></div>
-      </section>`;
-    }
-
-    const m = state.monitor;
-    const card = (label, value, note) => `<div class="dash-card">
-      <span class="dash-label">${esc(label)}</span>
-      <strong class="dash-value">${esc(value)}</strong>
-      ${note ? `<small class="hint">${esc(note)}</small>` : ''}
-    </div>`;
-    const top = (bag, n = 6) => Object.entries(bag || {}).sort((a, b) => b[1] - a[1]).slice(0, n);
-    const chips = (bag, empty) => {
-      const items = top(bag);
-      return items.length
-        ? `<div class="fm-ico-row u-grid u-grid-chips">${items.map(([k, v]) => chip('•', k, String(v), `${k} · ${v}`)).join('')}</div>`
-        : `<p class="hint">${esc(empty)}</p>`;
-    };
-
-    const total = `
-      <div class="dash-grid">
-        ${card('Уникални посетители', String(m.unique_visitors || 0), 'по хеш от IP + клиент')}
-        ${card('Посещения', String((m.totals && m.totals.visits) || 0), 'отваряния на портали')}
-        ${card('Изтегляния', String((m.totals && m.totals.downloads) || 0), (m.download_visitors || 0) + ' души са теглили')}
-        ${card('Отказани достъпи', String(m.denied_total || 0), 'виж причините долу')}
-        ${card('Държави', String(m.countries_known || 0), m.country_top ? 'най-много: ' + m.country_top : 'няма офлайн база')}
-        ${card('Админ. влизания', String(m.admin_logins || 0))}
-      </div>
-      <p class="hint">Режим на IP: ${esc((m.privacy && m.privacy.ipMode) || 'hashed')} · срок на пазене: ${esc(
-      (m.privacy && m.privacy.retentionDays) || 0,
-    )} дни · външни заявки: не · офлайн база: ${(m.privacy && m.privacy.geoFile && m.privacy.geoFile.loaded) ? esc(m.privacy.geoFile.ranges + ' диапазона') : 'няма'
-      }</p>`;
-
-    const reasons = Object.entries((m.denied && m.denied.reasons) || {});
-    const reasonLine = reasons.length
-      ? `<p class="hint">Откази по причина: ${reasons.map(([k, v]) => esc(k) + ' — ' + esc(String(v))).join(' · ')}</p>`
-      : '';
-
-    const portalBlock = openP ? (() => {
-      const own = (m.portals || []).find((p) => p.id === openP.id);
-      const fileIds = new Set(openP.files.map((f) => f.id));
-      const files = (m.files || []).filter((f) => fileIds.has(f.id));
-      if (!own) return '<p class="hint">За този портал още няма наблюдение — никой не го е отварял.</p>';
-      return `
-        <h4>Този портал</h4>
-        <div class="dash-grid">
-          ${card('Посещения', String(own.visits || 0))}
-          ${card('Изтегляния', String(own.downloads || 0))}
-          ${card('Откази', String(own.denied || 0))}
-          ${card('Посетители', String(own.visitors || 0), 'уникални за портала')}
-        </div>
-        <p class="hint">Последно посещение: ${esc(own.lastAt ? fmtDate(own.lastAt) : 'още няма')}</p>
-        <h4>Откъде идват (този портал)</h4>
-        ${chips(own.geo && own.geo.countries, 'Няма локация — или няма офлайн база, или още няма посетители.')}
-        <h4>Клиенти и езици (този портал)</h4>
-        ${chips(own.browsers, 'Няма данни за клиента.')}
-        ${chips(own.languages, 'Няма данни за езика.')}
-        <h4>Файлове на този портал</h4>
-        <table class="table" id="pf-monitor-files">
-          <thead><tr><th>Файл</th><th>Изтегляния</th><th>Посетители</th><th>Последно</th></tr></thead>
-          <tbody>${files.length
-          ? files.map((f) => `<tr><td>${esc(f.name || f.id)}</td><td>${esc(String(f.downloads || 0))}</td><td>${esc(String(f.visitors || 0))}</td><td>${esc(f.lastAt ? fmtDate(f.lastAt) : '—')}</td></tr>`).join('')
-          : '<tr><td colspan="4" class="hint">Няма изтегляния на файлове от този портал.</td></tr>'
-        }</tbody>
-        </table>`;
-    })() : `
-      <h4>Най-активни портали</h4>
-      <table class="table" id="pf-monitor-portals">
-        <thead><tr><th>Портал</th><th>Посещения</th><th>Изтегляния</th><th>Откази</th><th>Посетители</th></tr></thead>
-        <tbody>${(m.portals || []).length
-      ? (m.portals || []).slice(0, 20).map((p) => `<tr><td>${esc(p.title || p.slug || p.id)}</td><td>${esc(String(p.visits || 0))}</td><td>${esc(String(p.downloads || 0))}</td><td>${esc(String(p.denied || 0))}</td><td>${esc(String(p.visitors || 0))}</td></tr>`).join('')
-      : '<tr><td colspan="5" class="hint">Още няма посетители.</td></tr>'
-    }</tbody>
-      </table>
-      <h4>Какво се тегли (всички портали)</h4>
-      <table class="table" id="pf-monitor-files">
-        <thead><tr><th>Файл</th><th>Изтегляния</th><th>Посетители</th><th>Последно</th></tr></thead>
-        <tbody>${(m.files || []).length
-      ? (m.files || []).slice(0, 20).map((f) => `<tr><td>${esc(f.name || f.id)}</td><td>${esc(String(f.downloads || 0))}</td><td>${esc(String(f.visitors || 0))}</td><td>${esc(f.lastAt ? fmtDate(f.lastAt) : '—')}</td></tr>`).join('')
-      : '<tr><td colspan="4" class="hint">Няма изтегляния.</td></tr>'
-    }</tbody>
-      </table>`;
-
-    return `<section class="panel" id="pf-monitor">
-      <div class="panel-head">
-        <h2>Мониторинг</h2>
-        <div class="u-row u-row-1">
-          <button type="button" class="btn btn-sm" id="pf-monitor-refresh">Обнови</button>
-        </div>
-      </div>
-      <div class="panel-body">
-        ${total}
-        ${reasonLine}
-        ${portalBlock}
-      </div>
-    </section>`;
-  }
 
   async function loadPortals() {
     if (!connected()) return false;
@@ -1088,7 +956,6 @@
 
   async function reload() {
     if (!connected() || !portal()) return;
-    await loadMonitor().catch(() => { });
     const r = await api(P()); if (r.ok && r.data) {
       // Обновяваме ТОЧНО отворения портал (по id), а не по индекс — иначе при
       // отворен друг портал промените (напр. бележка) остават невидими.
@@ -1675,7 +1542,7 @@
     a.download = f.name;
     a.rel = 'noopener';
     a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    revokeLater(url, 60000);
     state.lastAction = `Изтеглен ${f.name}`;
     toast('Изтеглянето започна', 'ok');
   }
@@ -2015,7 +1882,6 @@
         <div class="page-title">
           <h1>Портали &amp; файлове</h1>
           <p>Портал → API и QR → списък с файлове → контролен панел под избрания файл</p>
-          <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'свързан' : 'демо (без backend)'}</span>
         </div>
         <section class="panel">
           <div class="panel-head">
@@ -2047,10 +1913,7 @@
         ? 'Папки → файлове → контролен панел; в края на страницата се връщаш към списъка.'
         : 'Портал → API и QR → списък с файлове → контролен панел под избрания файл'
       }</p>
-        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'свързан' : 'демо (без backend)'}</span>
       </div>
-
-      ${monitorSection(openP)}
 
       <section class="panel">
         <div class="panel-head">
@@ -2633,6 +2496,11 @@
   function portalDetail(p) {
     const ctx = panelCtx(p);
     return `<div class="pf-panels">
+        ${/* Изборът на файл/папка стои ИЗВЪН сгъваемите блокове: при акордеон тялото на
+             блока се изтрива от документа и бутоните „един файл“/„цяла папка“ губеха
+             своя input (щракването не правеше нищо). Скрити са, но носят име за четеца. */ ''}
+        <input type="file" id="fm-file-input" class="u-hidden" aria-label="Избор на един файл за качване" />
+        <input type="file" id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple aria-label="Избор на папка за внасяне" />
         ${panel(window.HapiPortalControl, ctx)}
         ${panel(window.HapiPortalFolders, ctx)}
         ${panel(window.HapiPortalFiles, ctx)}
@@ -3112,7 +2980,7 @@
       a.download = name || 'download';
       a.rel = 'noopener';
       a.click();
-      setTimeout(() => URL.revokeObjectURL(u), 60000);
+      revokeLater(u, 60000);
       toast('Изтеглено', 'ok');
     } catch (e) {
       toast(`Няма връзка: ${e.message}`, 'err');
@@ -3503,11 +3371,6 @@
       });
     }
     if (q('#pf-test')) q('#pf-test').addEventListener('click', testConnection);
-    if (q('#pf-monitor-refresh')) {
-      q('#pf-monitor-refresh').addEventListener('click', () => {
-        void loadMonitor({ force: true }).catch(() => { }).then(render);
-      });
-    }
     if (q('#pf-create')) {
       q('#pf-create').addEventListener('click', () => {
         const form = q('.pf-form');
@@ -3602,20 +3465,24 @@
     host.querySelectorAll('[data-report-recursive]').forEach((el) => {
       el.addEventListener('click', () => { void openPortalReport(Number(el.dataset.reportRecursive), true) });
     });
-    // Всеки блок на портала се сгъва/разгъва от заглавието си. Една карта „кой бутон кой
-    // флаг отваря“ — иначе три еднакви слушателя се разминават при следваща промяна.
-    [
+    // Всеки блок на портала се сгъва/разгъва от заглавието си — и е АКОРДЕОН: отваря се
+    // САМО един, а затварянето не оставя нищо отворено (началното състояние). Дотук трите
+    // блока можеха да са отворени едновременно и страницата ставаше на дълга стена от текст.
+    const BLOCK_FLAGS = [
       ['[data-pf-control-tog]', 'controlOpen'],
       ['[data-pf-folders-tog]', 'foldersOpen'],
       ['[data-pf-files-tog]', 'filesOpen'],
-    ].forEach(([selector, flag]) => {
+    ];
+    for (const [selector, flag] of BLOCK_FLAGS) {
       host.querySelectorAll(selector).forEach((el) => {
         el.addEventListener('click', () => {
-          state[flag] = state[flag] !== true;
+          const willOpen = state[flag] !== true;
+          for (const [, other] of BLOCK_FLAGS) state[other] = false;
+          state[flag] = willOpen;
           render();
         });
       });
-    });
+    }
     // QR кодът е БУТОН в главата на картата (горе вдясно) и се показва/скрива с него.
     // Самият код е връзка към ПУБЛИЧНИЯ портал (`href`), тоест входът е един и води там,
     // където трябва — в портала, а не към API-то.
@@ -4137,7 +4004,7 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    revokeLater(url, 10000);
   }
 
   /** Копиране в клипборда (без препратки и без нови табове). */
@@ -4218,8 +4085,6 @@
         .then(loadCases)
         .catch(() => { })
         .then(loadPortals)
-        .catch(() => { })
-        .then(loadMonitor)
         .catch(() => { })
         .then(reload)
         .catch(() => { })

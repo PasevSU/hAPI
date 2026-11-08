@@ -82,19 +82,21 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
     assert.equal(liveA.geo.countries.DE, 1, 'и от DE');
     assert.equal(liveB.geo.unknown, 1, 'ботът в Б е от адрес извън базата');
 
-    // ── Панелът ────────────────────────────────────────────────────────────────
-    const ui = mountUi(server, { modules: ['data.js', 'icons.js', 'files-manager.js'] });
+    // ── Панелът „Мониторинг“ (единната страница от 0.69.205) ───────────────────
+    // Дотук тестът монтираше панела с порталите, защото мониторингът беше ВЪТРЕ в него.
+    // Сега числата се рисуват само на тази страница — и точно това се проверява.
+    const ui = mountUi(server, { modules: ['data.js', 'icons.js', 'monitoring-panel.js'] });
     const w = ui.window;
-    assert.ok(w.FilesManagerPanel, 'панелът се зарежда');
+    assert.ok(w.HapiMonitoringPanel, 'панелът „Мониторинг“ се зарежда');
     const host = ui.container();
-    w.FilesManagerPanel.mount(host);
+    void w.HapiMonitoringPanel.mount(host);
 
-    await waitFor(() => host.querySelector('#pf-monitor'), { label: 'секцията „Мониторинг“', timeout: 20000 });
-    await waitFor(() => text(host.querySelector('#pf-monitor')).includes('Уникални посетители'), { label: 'картите', timeout: 20000 });
-    await waitFor(() => host.querySelector('#pf-monitor-portals'), { label: 'таблицата с портали', timeout: 20000 });
+    await waitFor(() => host.querySelector('#mon-visitors'), { label: 'секцията „Посетители“', timeout: 20000 });
+    await waitFor(() => text(host.querySelector('#mon-visitors')).includes('Уникални посетители'), { label: 'картите', timeout: 20000 });
+    await waitFor(() => host.querySelector('#mon-portals'), { label: 'таблицата с портали', timeout: 20000 });
 
     // Общо: числата съвпадат с API-то.
-    const monitorText = () => text(host.querySelector('#pf-monitor'));
+    const monitorText = () => text(host.querySelector('#mon-visitors'));
     assert.match(monitorText(), new RegExp('Уникални посетители ' + live.unique_visitors + ' '));
     assert.match(monitorText(), new RegExp('Изтегляния ' + live.totals.downloads + ' '));
     assert.match(monitorText(), new RegExp('Отказани достъпи ' + live.denied_total + ' '));
@@ -102,26 +104,26 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
     assert.match(monitorText(), /външни заявки: не/);
     assert.match(monitorText(), /KEY_REQUIRED|DISABLED/, 'причините за отказ се виждат');
 
-    // Таблицата с портали нарежда по изтегляния и показва и двата.
-    const portalsTable = text(host.querySelector('#pf-monitor-portals'));
+    // Таблицата с портали показва и двата.
+    const portalsTable = text(host.querySelector('#mon-portals'));
     assert.match(portalsTable, /Портал А/);
     assert.match(portalsTable, /Портал Б/);
     const rowsOf = (table) => table.querySelectorAll('tbody tr').filter((tr) => tr.querySelectorAll('td').length > 1);
-    assert.equal(rowsOf(host.querySelector('#pf-monitor-portals')).length, 2);
+    assert.equal(rowsOf(host.querySelector('#mon-portals')).length, 2);
 
     // „Какво се тегли“ показва имената на файловете.
-    const filesTable = text(host.querySelector('#pf-monitor-files'));
+    const filesTable = text(host.querySelector('#mon-files'));
     assert.match(filesTable, /dogovor\.txt/);
     assert.match(filesTable, /otchet\.txt/);
 
-    // ── Отваряме портала: мониторингът става за НЕГО ──────────────────────────
-    const cardA = host.querySelectorAll('.pf-portal').find((card) => text(card).includes('Портал А'));
-    assert.ok(cardA, 'картата на портал А е налице');
-    const open = cardA.querySelector('button[data-open-portal]');
-    assert.ok(open, 'има бутон „Отвори портала“');
-    open.click();
-    await waitFor(() => text(host.querySelector('#pf-monitor')).includes('Този портал'), { label: 'данните на портала', timeout: 20000 });
-    const own = () => text(host.querySelector('#pf-monitor'));
+    // ── Изборът на портал: числата стават за НЕГО ─────────────────────────────
+    const select = host.querySelector('#mon-portal');
+    assert.ok(select, 'има избор на портал');
+    assert.match(text(select), /всички портали/);
+    select.value = portalA;
+    select.dispatch('change');
+    await waitFor(() => text(host.querySelector('#mon-visitors')).includes('Този портал'), { label: 'данните на портала', timeout: 20000 });
+    const own = () => text(host.querySelector('#mon-visitors'));
     assert.match(own(), new RegExp('Посещения ' + liveA.visits + ' '));
     assert.match(own(), new RegExp('Изтегляния ' + liveA.downloads + ' '));
     assert.match(own(), new RegExp('Откази ' + liveA.denied + ' '));
@@ -132,14 +134,14 @@ const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
     assert.match(own(), /bg-bg|de-de/, 'езикът на този портал е изписан');
 
     // Таблицата с файлове е само за този портал.
-    const ownFiles = text(host.querySelector('#pf-monitor-files'));
+    const ownFiles = text(host.querySelector('#mon-files'));
     assert.match(ownFiles, /dogovor\.txt/);
     assert.equal(ownFiles.includes('otchet.txt'), false, 'файлът на другия портал не бива да е тук');
 
     // ── Обновяване: нов трафик влиза без презареждане на страницата ────────────
     assert.equal((await go(`/p/${portalA}`, BG)).status, 200);
-    host.querySelector('#pf-monitor-refresh').click();
-    await waitFor(() => new RegExp('Посещения ' + (liveA.visits + 1) + ' ').test(text(host.querySelector('#pf-monitor'))), { label: 'обновените числа', timeout: 20000 });
+    host.querySelector('#mon-refresh').click();
+    await waitFor(() => new RegExp('Посещения ' + (liveA.visits + 1) + ' ').test(text(host.querySelector('#mon-visitors'))), { label: 'обновените числа', timeout: 20000 });
 
     console.log('PASS portal-monitoring: общо + за портал · локация · клиенти · езици · файлове · обновяване');
   } catch (e) {

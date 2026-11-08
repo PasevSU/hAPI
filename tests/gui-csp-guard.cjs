@@ -76,7 +76,7 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
     assert.ok(qrUrl.startsWith(PUBLIC_BASE), 'QR кодът носи публичния адрес: ' + qrUrl);
     // Менюто на ПАПКАТА показва същия публичен адрес, а заявката отива на произхода на
     // панела — точно това пази `sameOrigin()`.
-    await expandPortalBlocks(host);
+    await expandPortalBlocks(host, { block: 'folders' });
     await waitFor(() => host.querySelector('[data-folder-gear]'), { label: 'папката в дървото' });
     const folderToggle = await waitFor(() => host.querySelector('[data-folder]'), { label: 'папката за отваряне' });
     folderToggle.click();

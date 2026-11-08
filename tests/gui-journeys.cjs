@@ -74,33 +74,47 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
   };
 
   /** Отваря първия портал — със същия бутон „Отвори портала“, който вижда човекът. */
-  const openPortal = async () => {
+  const openPortal = async (block = 'files') => {
     await portalList();
     const open = await waitFor(() => app.$$('[data-open-portal]')[0], { label: 'бутонът „Отвори портала“' });
     open.click();
     await settle('картата на портала');
-    await expandBlocks();
+    await expandBlocks(block);
   };
 
   /**
-   * Разгъва трите блока на портала — със същите заглавия, които човек натиска.
-   * От 0.69.151 блоковете са СГЪНАТИ по подразбиране (така порталът се отваря като списък
-   * от заглавия, а не като стена от текст), затова сценарий, който работи с настройките,
-   * папките или файловете, първо ги разгъва. Елементите се вземат НАНОВО след всяко
-   * натискане: `render()` прерисува цялата карта.
+   * Разгъва ЕДИН блок на портала — със същото заглавие, което човек натиска.
+   *
+   * От 0.69.205 блоковете са АКОРДЕОН: отваря се само един, а затварянето не оставя нищо
+   * отворено. Затова „разгъни всичките“ вече не е възможно — сценарият иска ТОЧНО блока,
+   * с който работи, и следващото искане отваря другия (предишният се затваря).
    */
-  const expandBlocks = async () => {
-    for (const selector of ['[data-pf-control-tog]', '[data-pf-folders-tog]', '[data-pf-files-tog]']) {
-      const toggle = app.$(selector);
-      if (toggle && toggle.getAttribute('aria-expanded') === 'false') {
-        // `render()` се изпълнява СИНХРОННО в слушателя на бутона — затова няма нужда от
-        // изчакване след всяко натискане (то правеше сценариите забележимо по-бавни).
-        toggle.click();
-        const after = app.$(selector);
-        assert.equal(after.getAttribute('aria-expanded'), 'true', 'блокът „' + selector + '“ се разгъна');
-      }
-    }
+  const BLOCK_SELECTOR = {
+    control: '[data-pf-control-tog]',
+    folders: '[data-pf-folders-tog]',
+    files: '[data-pf-files-tog]',
   };
+  const openBlock = async (name) => {
+    const selector = BLOCK_SELECTOR[name];
+    assert.ok(selector, 'непознат блок: ' + name);
+    const toggle = await waitFor(() => app.$(selector), { label: 'заглавието на блока „' + name + '“' });
+    if (toggle.getAttribute('aria-expanded') !== 'true') {
+      // `render()` се изпълнява СИНХРОННО в слушателя на бутона — затова няма нужда от
+      // изчакване след натискането.
+      toggle.click();
+      const after = app.$(selector);
+      assert.equal(after.getAttribute('aria-expanded'), 'true', 'блокът „' + name + '“ се разгъна');
+    }
+    // Акордеонът: щом този е отворен, другите трябва да са затворени.
+    for (const [other, sel] of Object.entries(BLOCK_SELECTOR)) {
+      if (other === name) continue;
+      const el = app.$(sel);
+      if (el) assert.equal(el.getAttribute('aria-expanded'), 'false', 'при отворен „' + name + '“ блокът „' + other + '“ е затворен');
+    }
+    return app.$(selector);
+  };
+  /** Съвместимост: „разгъни блоковете“ вече значи „разгъни ТОЗИ блок“ (по подразбиране файловете). */
+  const expandBlocks = async (which = 'files') => openBlock(which);
 
   /**
    * Създава НОВ портал с файловете от папката — през формата, както го прави човек (J05).
@@ -108,7 +122,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
    * той си носи портала и файловете. Именно тази зависимост правеше три сценария нестабилни
    * в CI. По подразбиране файлът е един; сценариите за филтри подават няколко.
    */
-  const ownPortalWithFile = async (slug, files) => {
+  const ownPortalWithFile = async (slug, files, block = 'files') => {
     const picked = Array.isArray(files) && files.length
       ? files
       : [pseudoFile('fayl-za-scenariy.txt', 'съдържание за сценария')];
@@ -152,9 +166,9 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     }, { label: 'порталът „' + slug + '“ в списъка', timeout: BUDGET });
     row.click();
     await settle('картата на новия портал');
-    // Блоковете са сгънати по подразбиране — файловете се появяват след разгъване, точно
+    // Блокът е сгънат по подразбиране — файловете се появяват след разгъване, точно
     // както при човек, който търси файловете на портала.
-    await expandBlocks();
+    await expandBlocks(block);
     // Чакаме ИМЕННО файловете, а не „изгледът да утихне“: панелът прерисува след отговора и на
     // по-бавна машина списъкът още не е готов, когато текстът „Зареждам“ изчезне.
     await waitFor(() => new RegExp(first).test(text(view())), { label: 'файловете в новия портал', timeout: BUDGET });
@@ -254,8 +268,8 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       const navIds = app.navIds();
       // Менюто рисува само видимите точки: „Резервни копия“ и „QR архиви“ са скрити
       // по заявка, но панелите им остават достъпни по id (виж J17 и J18).
-      assert.equal(navIds.length, 15, 'навигацията рисува 15 видими точки от app.js: ' + navIds.join(', '));
-      for (const id of ['dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export', 'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'report', 'settings', 'about']) {
+      assert.equal(navIds.length, 16, 'навигацията рисува 16 видими точки от app.js: ' + navIds.join(', '));
+      for (const id of ['dashboard', 'monitoring', 'portals', 'contacts', 'cases', 'gateway', 'export', 'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'report', 'settings', 'about']) {
         assert.ok(navIds.includes(id), 'липсва навигационна точка „' + id + '“');
       }
       for (const hidden of ['backups', 'qr']) {
@@ -580,10 +594,15 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.equal(app.window.localStorage.getItem('hapi.skin'), 'classic', 'изборът се помни и при изключване');
     });
 
-    // ── J23. Табло → „Виж всички“ води към „Кой влиза“ ────────────────────────
-    await journey('J23 таблото води към посетителите', async () => {
+    // ── J23. Мониторинг → „Виж всички“ води към „Кой влиза“ ───────────────────
+    // От 0.69.205 мониторингът е собствена страница: таблото вече не носи сензори, затова
+    // пътят е табло → Мониторинг → „Виж всички“ (две навигации, една врата `HapiUI.go`).
+    await journey('J23 мониторингът води към посетителите', async () => {
       app.nav('dashboard');
       await settle('таблото');
+      app.nav('monitoring');
+      await settle('мониторингът');
+      assert.match(text(view()), /Състояние|Ресурси и хранилище/, 'мониторингът е отделна страница');
       const link = await waitFor(() => app.$('button[data-nav="visitors"]'), { label: 'бутонът „Виж всички“' });
       link.click();
       await settle('панелът „Кой влиза“');
@@ -636,6 +655,9 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
 
     // ── J26. Нова папка в портала през бутона на панела ───────────────────────
     await journey('J26 нова папка през панела', async () => {
+      // Акордеон от 0.69.205: папките са в СВОЙ блок — дотук всички блокове стояха
+      // отворени и „Нова папка“ се виждаше без нищо да се цъка.
+      await openBlock('folders');
       app.click('#fm-new-folder', 'бутонът „Нова папка“');
       await waitFor(() => app.$('#fm-new-folder-name'), { label: 'полето за име на папка' });
       app.fill('#fm-new-folder-name', 'Доказателства');
@@ -764,7 +786,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
 
     // ── J34. Портал: издаване на токен за достъп през картата ─────────────────
     await journey('J34 портал: издава токен', async () => {
-      await openPortal();
+      await openPortal('control');
       const button = await waitFor(() => app.$('#pf-token-new'), { label: 'бутонът „Издай токен за портал“' });
       app.clearToasts();
       button.click();
@@ -851,7 +873,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
 
     // ── J40. Портал: отказите на QR панела — основание и идентичност ──────────
     await journey('J40 портал: отказите на QR панела', async () => {
-      await openPortal();
+      await openPortal('control');
       const block = await waitFor(() => app.$('#pf-qr-block'), { label: 'бутонът за прекратяване на QR' });
       app.fill('#pf-qr-reason', '');
       const before = app.requests.length;
@@ -1178,6 +1200,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     // ── J53. Папка: бележка и флагове от менюто ⚙ ─────────────────────────────
     await journey('J53 папка: бележка и флагове от менюто', async () => {
       await ownPortalWithFile('gui-journey-folder-gear');
+      await openBlock('folders');
       // Името е уникално за пускането: хранилището живее между пусканията и папка със
       // същото име вече съществува от предишно — add-on-ът правилно отказва дубликат.
       const folder = 'Papka-za-scenariy-' + String(Date.now()).slice(-6);
@@ -1399,6 +1422,9 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     // ── J59. Портал: контролният панел се сгъва и разгъва ────────────────────
     await journey('J59 портал: контролният панел се сгъва', async () => {
       await ownPortalWithFile('gui-journey-control-tog');
+      // `ownPortalWithFile` отваря ФАЙЛОВЕТЕ (така проверява качването); контролният панел
+      // се отваря отделно — акордеонът държи само един блок отворен (0.69.205).
+      await openBlock('control');
       // `ownPortalWithFile` разгъва блоковете (те са сгънати по подразбиране — виж J74).
       const toggle = await waitFor(() => app.$('[data-pf-control-tog]'), { label: 'заглавието на контролния панел', timeout: BUDGET });
       const body = () => app.$('[data-pf-control-tog]') && app.$('#pf-settings');
@@ -1447,6 +1473,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     // ── J62. Хранилище: прикачи файл, качи в папка, пакет и изтриване ────────
     await journey('J62 хранилище: прикачи, качи, пакет, изтрий', async () => {
       await ownPortalWithFile('gui-journey-storage');
+      await openBlock('folders');
       const folder = 'Papka-hranilishte-' + String(Date.now()).slice(-6);
       const ownButton = (attr) => app.$$('[' + attr + ']').find((el) => (el.getAttribute(attr) || '').includes(folder));
       app.click('#fm-new-folder', 'бутонът „Нова папка“');
@@ -1458,6 +1485,8 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.equal(app.toast().kind, 'ok', 'папката се създава: ' + app.toast().message);
       // Прикачване на файл: бутонът отваря избора, човекът избира файл — тук файлът се дава
       // на самия input и се пуска `change`, както го прави браузърът след избор.
+      // Акордеон: „Прикачи файл“ е в блока на файловете, затова той се разгъва.
+      await openBlock('files');
       const attach = await waitFor(() => app.$('[data-attach-file]'), { label: 'бутонът „Прикачи файл“', timeout: BUDGET });
       app.clearToasts();
       attach.click();
@@ -1470,7 +1499,9 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
         app.requests.some((r) => r.method === 'POST' && /\/tree\//.test(r.url)),
         'качването мина през сървъра: ' + app.requests.slice(-4).map((r) => r.method + ' ' + r.url).join(' · '),
       );
-      // Качване В папката — бутонът на самата папка носи нейния път.
+      // Качване В папката — бутонът на самата папка носи нейния път. Пак акордеон:
+      // дървото на папките се разгъва отново, което затваря блока на файловете.
+      await openBlock('folders');
       const folderUpload = await waitFor(() => ownButton('data-folder-upload'), { label: 'бутонът за качване в папката', timeout: BUDGET });
       app.clearToasts();
       folderUpload.click();
@@ -1595,6 +1626,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     await journey('J66 папка: менюто на адреса', async () => {
       const slug = 'gui-journey-api-menu';
       await ownPortalWithFile(slug);
+      await openBlock('folders');
       // 0.69.181: картата на портала НЯМА меню с адрес — линкът е махнат, защото „Копирай“
       // даваше адреса на API-то, а „Изтегли api.json“ не сваляше файл. Същите три действия
       // остават при ПАПКАТА (менюто на адреса ѝ в дървото), където адресът е машинен.
@@ -1888,6 +1920,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     // ── J73. Портал: закриване в архив за съхранение и връщане ─────────────────
     await journey('J73 портал: закриване в архив и връщане', async () => {
       await ownPortalWithFile('gui-journey-archive');
+      await openBlock('control');
       const close = await waitFor(() => app.$('[data-close-portal-submit]'), {
         label: 'бутонът „Закрий портала“',
         timeout: BUDGET,
@@ -1937,29 +1970,49 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       }, { label: 'върнатият портал отново в списъка', timeout: BUDGET });
     });
 
-    // ── J74. Портал: сгънатите блокове ОСТАВАТ сгънати ──────────────────────────
-    // Самото „по подразбиране“ (чест монтаж на панела) се проверява в
-    // `tests/ui-shell-nav.cjs` §7 — там приложението се зарежда наново. Тук се проверява
-    // другото свойство: изборът на човека не се губи при излизане от портала и връщане.
-    await journey('J74 портал: сгънатите блокове остават сгънати', async () => {
+    // ── J74. Портал: акордеонът държи САМО ЕДИН блок отворен ────────────────────
+    // Трите блока на портала (контролен панел, папки, файлове) се държат като акордеон:
+    // отварянето на един затваря другите, а затварянето на отворения не оставя нищо
+    // отворено — страницата се връща в началния си вид. Дотук и трите стояха отворени
+    // и екранът се превръщаше в дълга стена от текст.
+    await journey('J74 портал: акордеонът държи само един блок отворен', async () => {
       await ownPortalWithFile('gui-journey-collapsed');
       const blocks = [
         ['[data-pf-control-tog]', '#pf-settings', 'контролния панел'],
         ['[data-pf-folders-tog]', '.fm-folders', 'папките'],
         ['[data-pf-files-tog]', '.fm-files-box', 'файловете'],
       ];
-      // Сгъваме и трите със същите заглавия, които човек натиска.
-      for (const [toggleSel, , what] of blocks) {
-        const toggle = await waitFor(() => app.$(toggleSel), { label: 'заглавието на ' + what, timeout: BUDGET });
-        assert.equal(toggle.getAttribute('aria-expanded'), 'true', 'преди сгъването „' + what + '“ е разгънат');
-        toggle.click();
-        await settle('„' + what + '“ да се сгъне');
-      }
-      for (const [toggleSel, bodySel, what] of blocks) {
-        assert.equal(app.$(toggleSel).getAttribute('aria-expanded'), 'false', '„' + what + '“ е сгънат');
-        assert.equal(app.$(bodySel), null, 'тялото на „' + what + '“ не се рисува, докато е сгънато');
-      }
-      // Излизаме от портала и се връщаме — състоянието не се губи.
+      const stateOf = async (openWhat) => {
+        for (const [toggleSel, bodySel, what] of blocks) {
+          const toggle = await waitFor(() => app.$(toggleSel), { label: 'заглавието на ' + what, timeout: BUDGET });
+          const wantOpen = what === openWhat;
+          assert.equal(
+            toggle.getAttribute('aria-expanded'),
+            wantOpen ? 'true' : 'false',
+            'при отворени „' + (openWhat || '—') + '“: „' + what + '“ е ' + (wantOpen ? 'разгънат' : 'сгънат'),
+          );
+          if (wantOpen) {
+            assert.ok(app.$(bodySel), 'тялото на „' + what + '“ се рисува, когато блокът е разгънат');
+          } else {
+            assert.equal(app.$(bodySel), null, 'тялото на „' + what + '“ не се рисува, докато е сгънато');
+          }
+        }
+      };
+      // Изходно: след отваряне на портала е разгънат само блокът, който сценарият е поискал.
+      await stateOf('файловете');
+      // Отваряме контролния панел — файловете се затварят сами.
+      app.$('[data-pf-control-tog]').click();
+      await settle('контролният панел да се разгъне');
+      await stateOf('контролния панел');
+      // Отваряме папките — контролният панел се затваря сам.
+      app.$('[data-pf-folders-tog]').click();
+      await settle('папките да се разгънат');
+      await stateOf('папките');
+      // Затваряме папките — не остава НИЩО отворено (връщане в началния вид).
+      app.$('[data-pf-folders-tog]').click();
+      await settle('папките да се сгънат');
+      await stateOf(null);
+      // Излизаме от портала и се връщаме — пак нищо не е отворено.
       await portalList();
       const row = await waitFor(() => {
         for (const el of app.$$('[data-open-portal]')) {
@@ -1973,15 +2026,11 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       }, { label: 'порталът „gui-journey-collapsed“ в списъка', timeout: BUDGET });
       row.click();
       await settle('картата на портала');
-      for (const [toggleSel, bodySel, what] of blocks) {
-        const toggle = await waitFor(() => app.$(toggleSel), { label: 'заглавието на ' + what, timeout: BUDGET });
-        assert.equal(toggle.getAttribute('aria-expanded'), 'false', '„' + what + '“ остава сгънат след връщане');
-        assert.equal(app.$(bodySel), null, 'и тялото му пак липсва: ' + what);
-      }
+      await stateOf(null);
       // И се разгъва с едно натискане — иначе „сгънато“ би значело „скрито завинаги“.
       app.$('[data-pf-files-tog]').click();
       await waitFor(() => app.$('.fm-files-box'), { label: 'файловете след разгъване', timeout: BUDGET });
-      assert.equal(app.$('[data-pf-files-tog]').getAttribute('aria-expanded'), 'true', 'след натискане блокът е разгънат');
+      await stateOf('файловете');
     });
 
     // ── J75. Настройки: PGP attach/settings/import/remove през истинския UI ───
@@ -2100,6 +2149,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     // ── J76. Задачи: pause/resume/cancel през бутони към жив job API ──────────
     await journey('J76 задачи: pause/resume/cancel през интерфейса', async () => {
       await ownPortalWithFile('gui-job-controls');
+      await openBlock('control');
       const startJob = await waitFor(() => app.$('#pf-integrity-job'), { label: 'бутонът за фоново сканиране на цялост', timeout: BUDGET });
       const before = app.requests.filter((r) => r.method === 'POST' && /\/integrity-jobs$/.test(r.url)).length;
       startJob.click();
@@ -2205,6 +2255,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     // `EVIDENCE_NEVER_DELETED`.
     await journey('J77 портал: окончателно премахване', async () => {
       await ownPortalWithFile('gui-journey-remove');
+      await openBlock('control');
       const field = await waitFor(() => app.$('#pf-delete-confirm'), { label: 'полето за потвърждение на премахването', timeout: BUDGET });
       const remove = await waitFor(() => app.$('[data-delete-portal]'), { label: 'бутонът „Премахни портала“', timeout: BUDGET });
       // Окончателното триене е отделен, ЧЕРВЕН блок, а не съседен бутон до „Закрий портала“ —

@@ -24,6 +24,7 @@ const PANEL_MODULES = [
   'files-manager.js',
   'directory-panel.js',
   'dashboard-panel.js',
+  'monitoring-panel.js',
   'settings-panel.js',
   'export-center.js',
   'public-gateway.js',
@@ -55,13 +56,16 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
     const w = ui.window;
 
     // ── 1. Модулите са заредени ─────────────────────────────────────────────────
-    for (const name of ['HapiDashboardPanel', 'ReportStudio', 'FilesManagerPanel', 'PortalsPanel', 'ExportCenterPanel', 'PublicGatewayPanel', 'ContactsPanel', 'CasesPanel', 'SettingsPanel', 'HapiVisitorsPanel', 'HapiSecretShare', 'HapiReportSign']) {
+    for (const name of ['HapiDashboardPanel', 'HapiMonitoringPanel', 'ReportStudio', 'FilesManagerPanel', 'PortalsPanel', 'ExportCenterPanel', 'PublicGatewayPanel', 'ContactsPanel', 'CasesPanel', 'SettingsPanel', 'HapiVisitorsPanel', 'HapiSecretShare', 'HapiReportSign']) {
       assert.ok(w[name], 'липсва ' + name + ' — app.js щеше да покаже „не е зареден“');
     }
 
     // ── 2. Всеки панел се монтира и рисува очакваното ───────────────────────────
     const NAV = [
-      { id: 'dashboard', mount: (h) => w.HapiDashboardPanel.mount(h), expect: ['Портали', 'Файлове в порталите', 'Одитна верига', 'Кой влиза', 'Уникални посетители'] },
+      { id: 'dashboard', mount: (h) => w.HapiDashboardPanel.mount(h), expect: ['Всички раздели', 'Отчети'] },
+      // Мониторингът е ЕДНА страница с всичко измервано (0.69.205) — дотук беше разпръснат
+      // из таблото и вътре в панела с порталите.
+      { id: 'monitoring', mount: (h) => w.HapiMonitoringPanel.mount(h), expect: ['Състояние', 'Ресурси и хранилище', 'Посетители', 'Уникални посетители', 'Живи събития'] },
       { id: 'about', mount: (h) => w.HapiDashboardPanel.mountAbout(h), expect: ['Относно hAPI Enterprise', 'Версия'] },
       { id: 'portals', mount: (h) => w.FilesManagerPanel.mount(h), expect: ['Портали', 'gui-portal', 'Портал от GUI теста'] },
       { id: 'contacts', mount: (h) => w.ContactsPanel.mount(h), expect: ['Контакти', 'Нов контакт'] },
@@ -97,13 +101,13 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       console.error = realError;
     }
 
-    // ── 2б. Таблото води към панела „Кой влиза“ (една врата: HapiUI.go) ─────────
+    // ── 2б. Мониторингът води към панела „Кой влиза“ (една врата: HapiUI.go) ───
     {
       const host = ui.container();
-      w.HapiDashboardPanel.mount(host);
+      w.HapiMonitoringPanel.mount(host);
       await waitFor(() => host.querySelector('button[data-nav="visitors"]'), { label: 'бутонът „Виж всички“' });
       host.querySelector('button[data-nav="visitors"]').click();
-      assert.deepEqual(ui.navigations, ['visitors'], 'таблото иска панела „Кой влиза“');
+      assert.deepEqual(ui.navigations, ['visitors'], 'мониторингът иска панела „Кой влиза“');
       host.remove();
     }
 

@@ -37,14 +37,17 @@ assert.match(app, /panels\.mount\(current, view/, 'монтирането мин
 assert.match(dashboard, /mountAbout/, 'панелът предоставя mountAbout');
 
 // 3. Данните идват от реалните административни маршрути.
-for (const endpoint of ['/admin/api/portals', '/admin/api/sensors', '/admin/api/jobs', '/admin/api/audit/verify']) {
-  assert.ok(dashboard.includes(endpoint), 'таблото пита ' + endpoint);
+// От 0.69.205 мониторингът (сензори, задачи, одит, диагностика) живее в отделен модул —
+// тук се проверява, че ВСИЧКИ измерими данни идват от API, а не от измислени обекти.
+const monitoring = read('hapi_enterprise/ui/monitoring-panel.js');
+for (const endpoint of ['/admin/api/portals', '/admin/api/sensors', '/admin/api/jobs', '/admin/api/audit/verify', '/admin/api/diagnostics']) {
+  assert.ok(dashboard.includes(endpoint) || monitoring.includes(endpoint), 'панелите питат ' + endpoint);
 }
-assert.match(dashboard, /Authorization: 'Bearer '/, 'ползва администраторския токен от сесията');
+assert.match(monitoring, /Authorization: 'Bearer '/, 'ползва администраторския токен от сесията');
 
 // 4. Без връзка не се показват числа — само обяснение къде се настройва.
-assert.match(dashboard, /offline: true/);
-assert.match(dashboard, /Свържи add-on-а от „Настройки“/);
+assert.match(monitoring, /offline: true/);
+assert.match(monitoring, /Свържи го от „Настройки“/);
 assert.doesNotMatch(dashboard, /card\('Портали', '4'/, 'няма твърдо зададени стойности');
 
 // 5. Статусната лента казва истината за връзката, а не „ДЕМО данни“.
@@ -71,12 +74,11 @@ assert.ok(navIds.length >= 15, 'навигацията трябва да има 
 assert.ok(dashboard.includes("item.id !== 'dashboard'"), 'таблото не слага бутон към себе си');
 
 // 8. Ресурсите са от РЕАЛЕН маршрут, не измислени.
-assert.match(dashboard, /\/admin\/api\/diagnostics/, 'ресурсите идват от /admin/api/diagnostics');
+assert.match(monitoring, /\/admin\/api\/diagnostics/, 'ресурсите идват от /admin/api/diagnostics');
 for (const field of ['heapUsedBytes', 'rssBytes', 'activeDownloadStreams', 'effectiveDownloadStreams', 'storage']) {
-  assert.ok(dashboard.includes(field), 'таблото показва ' + field + ' от диагностиката');
-  assert.ok(dashboard.includes(field) ? true : true);
+  assert.ok(monitoring.includes(field), 'мониторингът показва ' + field + ' от диагностиката');
 }
-assert.match(dashboard, /badge .*err|'badge ' \+/, 'липсващо хранилище се маркира като проблем');
+assert.equal(/badge .*err|'badge ' \+/.test(monitoring), false, 'състоянието се казва с дума, не с декоративна табелка');
 assert.match(require('./lib/ui-css.cjs').text(), /\.quick-grid \{/, 'бързият достъп има стил');
 
 console.log('PASS dashboard: реални данни от API-то · вход към ' + (navIds.length - 1) + ' раздела · ресурси от диагностиката');

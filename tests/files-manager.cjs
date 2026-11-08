@@ -335,6 +335,9 @@ const exportSrc = fs.readFileSync(require('node:path').join(__dirname, '..', 'ha
 assert.doesNotMatch(exportSrc, /ec-pkg-sign|ec-pkg-key|Автоподписване с PGP/);
 assert.match(exportSrc, /ec-pkg-build/);
 assert.match(exportSrc, /Настройки → PGP ключ и автоподписване/);
+// Таймерът за освобождаване на blob адрес и тук е `unref`-нат — иначе 60 s държи процеса
+// буден, когато панелът се пуска в тест (същият капан като в files-manager.js).
+assert.match(exportSrc, /if \(timer && typeof timer\.unref === 'function'\) timer\.unref\(\);/);
 for (const id of [
   'ec-pkg-portal', 'ec-pkg-compression', 'ec-pkg-encryption', 'ec-pkg-password',
   'ec-pkg-split', 'ec-pkg-rate', 'ec-pkg-parallel', 'ec-mode', 'ec-format', 'ec-location', 'ec-case',
@@ -562,9 +565,20 @@ assert.equal(/id="fm-file-input" class="u-hidden"[^>]*\bmultiple\b/.test(src), f
 assert.match(src, /id="fm-file-input" class="u-hidden" aria-label="[^"]+" \/>[\s\S]*?id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple aria-label="[^"]+"/);
 assert.match(src, /Array\.from\(e\.target\.files \|\| \[\]\)\.slice\(0, 1\)/);
 assert.match(src, /Ще се качат \$\{files\.length\}/);
-assert.match(src, /async function uploadToStorage\(folderRel, fileList\)/);
-assert.match(src, /\/tree\/upload\?path=/);
+assert.match(src, /async function uploadToStorage\(folderRel, fileList\)/);assert.match(src, /\/tree\/upload\?path=/);
 assert.match(src, /webkitRelativePath/);
+// Освобождаването на blob адрес минава през `revokeLater`, който `unref`-ва таймера.
+// Без това 60 s таймер държеше процеса след последното твърдение и `gui-file-share`
+// ставаше 62 s вместо 2 s (измерено 0.69.205).
+assert.match(src, /const revokeLater = \(url, ms\) => \{/);
+assert.match(src, /if \(timer && typeof timer\.unref === 'function'\) timer\.unref\(\);/);
+// Единственото място, което вдига такъв таймер, е `revokeLater` — всички изтегляния
+// минават през него, а „гол“ таймер на друго място пак щеше да държи процеса 60 s.
+assert.equal(
+  (src.match(/setTimeout\(\(\) => URL\.revokeObjectURL/g) || []).length,
+  1,
+  'таймер за освобождаване на blob адрес има само в revokeLater',
+);
 assert.match(src, /state\.filters = !state\.filters;/);
 assert.match(src, /<article class="fm-file /);
 
@@ -676,7 +690,10 @@ assert.match(src, /const open = state\.controlOpen === true;/);
 assert.match(src, /controlOpen: false,/);
 assert.match(src, /foldersOpen: false,/);
 assert.match(src, /filesOpen: false,/);
-assert.match(src, /state\[flag\] = state\[flag\] !== true;/);
+// Акордеон: отваря се САМО един блок, а затварянето не оставя нищо отворено.
+assert.match(src, /const BLOCK_FLAGS = \[/);
+assert.match(src, /const willOpen = state\[flag\] !== true;/);
+assert.match(src, /for \(const \[, other\] of BLOCK_FLAGS\) state\[other\] = false;/);
 assert.match(css, /\.pf-block-tog \{/);
 assert.match(css, /\.pf-collapsed \.pf-block-head \{ border-bottom: 0;/);
 

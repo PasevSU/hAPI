@@ -18,7 +18,7 @@ const css = require('./lib/ui-css.cjs').text();
 const navBlock = app.slice(app.indexOf('const NAV = ['), app.indexOf('];', app.indexOf('const NAV = [')));
 const ids = [...navBlock.matchAll(/id: '([a-z]+)'/g)].map((m) => m[1]);
 const PLANNED = [
-  'dashboard', 'portals', 'contacts', 'cases', 'gateway', 'export',
+  'dashboard', 'monitoring', 'portals', 'contacts', 'cases', 'gateway', 'export',
   'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'backups', 'qr',
   'report', 'settings', 'about',
 ];

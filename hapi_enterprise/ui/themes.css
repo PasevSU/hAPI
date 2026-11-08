@@ -115,11 +115,6 @@ body.skin-modern #skin-toggle[aria-pressed="true"] {
   border-color: transparent;
 }
 
-body.skin-modern .status-pill {
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--panel) 55%, transparent);
-}
-
 /* Навигация: люспести редове, активният носи градиентна лента. */
 body.skin-modern .nav {
   gap: 4px;

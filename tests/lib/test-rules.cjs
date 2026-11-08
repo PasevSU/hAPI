@@ -117,6 +117,7 @@ const RULES = [
   { id: "gui-debug-objects", area: "GUI", title: "Gui debug objects", owner: "tests/gui-debug-objects.cjs" },
   { id: "gui-file-share", area: "GUI", title: "Gui file share", owner: "tests/gui-file-share.cjs" },
   { id: "gui-journeys", area: "GUI", title: "Gui journeys", owner: "tests/gui-journeys.cjs" },
+  { id: "gui-monitoring", area: "GUI", title: "Gui monitoring", owner: "tests/gui-monitoring.cjs" },
   { id: "gui-only-guard", area: "GUI", title: "Gui only guard", owner: "tests/gui-only-guard.cjs" },
   { id: "gui-open-portal-link", area: "GUI", title: "Gui open portal link", owner: "tests/gui-open-portal-link.cjs" },
   { id: "gui-package", area: "GUI", title: "Gui package", owner: "tests/gui-package.cjs" },

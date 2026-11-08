@@ -1,22 +1,20 @@
 {
-  "generatedAt": "2026-11-08T10:00:22.590Z",
+  "generatedAt": "2026-11-08T13:24:09.499Z",
   "attemptsUsed": 1,
   "attemptsAllowed": 1,
-  "totalMs": 425659,
-  "files": 382,
-  "passed": 382,
+  "totalMs": 345515,
+  "files": 384,
+  "passed": 384,
   "failed": [],
   "flaky": [],
-  "skipped": [
-    "release-status.cjs"
-  ],
+  "skipped": [],
   "perTest": [
     {
       "file": "access-policy.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 689,
+      "lastMs": 780,
       "flaky": false
     },
     {
@@ -24,7 +22,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 108,
+      "lastMs": 116,
       "flaky": false
     },
     {
@@ -32,7 +30,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 62,
+      "lastMs": 69,
       "flaky": false
     },
     {
@@ -40,7 +38,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 3593,
+      "lastMs": 3653,
       "flaky": false
     },
     {
@@ -48,7 +46,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 63,
+      "lastMs": 67,
       "flaky": false
     },
     {
@@ -56,7 +54,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 7285,
+      "lastMs": 7348,
       "flaky": false
     },
     {
@@ -64,7 +62,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 50,
+      "lastMs": 51,
       "flaky": false
     },
     {
@@ -72,7 +70,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 428,
+      "lastMs": 469,
       "flaky": false
     },
     {
@@ -80,7 +78,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1121,
+      "lastMs": 1281,
       "flaky": false
     },
     {
@@ -88,7 +86,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 53,
+      "lastMs": 60,
       "flaky": false
     },
     {
@@ -96,7 +94,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 633,
+      "lastMs": 676,
       "flaky": false
     },
     {
@@ -104,7 +102,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 504,
+      "lastMs": 588,
       "flaky": false
     },
     {
@@ -112,7 +110,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 710,
+      "lastMs": 626,
       "flaky": false
     },
     {
@@ -120,7 +118,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 151,
+      "lastMs": 184,
       "flaky": false
     },
     {
@@ -128,7 +126,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1532,
+      "lastMs": 1530,
       "flaky": false
     },
     {
@@ -136,7 +134,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 420,
+      "lastMs": 479,
       "flaky": false
     },
     {
@@ -144,7 +142,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 50,
+      "lastMs": 51,
       "flaky": false
     },
     {
@@ -160,7 +158,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 445,
+      "lastMs": 582,
       "flaky": false
     },
     {
@@ -168,7 +166,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 283,
+      "lastMs": 523,
       "flaky": false
     },
     {
@@ -176,7 +174,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 538,
+      "lastMs": 549,
       "flaky": false
     },
     {
@@ -184,7 +182,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 750,
+      "lastMs": 518,
       "flaky": false
     },
     {
@@ -192,7 +190,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1420,
+      "lastMs": 1398,
       "flaky": false
     },
     {
@@ -200,7 +198,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 418,
+      "lastMs": 506,
       "flaky": false
     },
     {
@@ -208,7 +206,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 8466,
+      "lastMs": 8508,
       "flaky": false
     },
     {
@@ -216,7 +214,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 546,
+      "lastMs": 659,
       "flaky": false
     },
     {
@@ -224,7 +222,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 2428,
+      "lastMs": 2498,
       "flaky": false
     },
     {
@@ -232,7 +230,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 546,
+      "lastMs": 517,
       "flaky": false
     },
     {
@@ -240,7 +238,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 6724,
+      "lastMs": 6850,
       "flaky": false
     },
     {
@@ -248,7 +246,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 509,
+      "lastMs": 604,
       "flaky": false
     },
     {
@@ -256,7 +254,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 858,
+      "lastMs": 972,
       "flaky": false
     },
     {
@@ -264,7 +262,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 146,
+      "lastMs": 175,
       "flaky": false
     },
     {
@@ -272,7 +270,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 58,
+      "lastMs": 66,
       "flaky": false
     },
     {
@@ -280,7 +278,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 964,
+      "lastMs": 1149,
       "flaky": false
     },
     {
@@ -288,7 +286,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 678,
+      "lastMs": 649,
       "flaky": false
     },
     {
@@ -296,7 +294,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 588,
+      "lastMs": 626,
       "flaky": false
     },
     {
@@ -304,7 +302,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 615,
+      "lastMs": 547,
       "flaky": false
     },
     {
@@ -312,7 +310,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 572,
+      "lastMs": 587,
       "flaky": false
     },
     {
@@ -320,7 +318,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 380,
+      "lastMs": 441,
       "flaky": false
     },
     {
@@ -336,7 +334,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 485,
+      "lastMs": 475,
       "flaky": false
     },
     {
@@ -344,7 +342,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 483,
+      "lastMs": 564,
       "flaky": false
     },
     {
@@ -352,7 +350,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 485,
+      "lastMs": 511,
       "flaky": false
     },
     {
@@ -360,7 +358,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 123,
+      "lastMs": 121,
       "flaky": false
     },
     {
@@ -368,7 +366,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 494,
+      "lastMs": 484,
       "flaky": false
     },
     {
@@ -376,7 +374,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 514,
+      "lastMs": 561,
       "flaky": false
     },
     {
@@ -384,7 +382,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 146,
+      "lastMs": 176,
       "flaky": false
     },
     {
@@ -392,7 +390,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 493,
+      "lastMs": 610,
       "flaky": false
     },
     {
@@ -400,7 +398,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 282,
+      "lastMs": 291,
       "flaky": false
     },
     {
@@ -408,7 +406,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 498,
+      "lastMs": 505,
       "flaky": false
     },
     {
@@ -416,7 +414,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 241,
+      "lastMs": 250,
       "flaky": false
     },
     {
@@ -424,7 +422,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 54,
+      "lastMs": 55,
       "flaky": false
     },
     {
@@ -432,7 +430,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 437,
+      "lastMs": 546,
       "flaky": false
     },
     {
@@ -440,7 +438,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 900,
+      "lastMs": 1256,
       "flaky": false
     },
     {
@@ -448,7 +446,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 50,
+      "lastMs": 73,
       "flaky": false
     },
     {
@@ -456,7 +454,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 628,
+      "lastMs": 1075,
       "flaky": false
     },
     {
@@ -464,7 +462,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 437,
+      "lastMs": 578,
       "flaky": false
     },
     {
@@ -472,7 +470,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 434,
+      "lastMs": 514,
       "flaky": false
     },
     {
@@ -480,7 +478,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 62,
+      "lastMs": 77,
       "flaky": false
     },
     {
@@ -488,7 +486,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 633,
+      "lastMs": 667,
       "flaky": false
     },
     {
@@ -496,7 +494,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 688,
+      "lastMs": 633,
       "flaky": false
     },
     {
@@ -504,7 +502,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 115,
+      "lastMs": 72,
       "flaky": false
     },
     {
@@ -512,7 +510,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 205,
+      "lastMs": 161,
       "flaky": false
     },
     {
@@ -520,7 +518,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 68,
+      "lastMs": 131,
       "flaky": false
     },
     {
@@ -528,7 +526,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 69,
+      "lastMs": 138,
       "flaky": false
     },
     {
@@ -536,7 +534,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 298,
+      "lastMs": 723,
       "flaky": false
     },
     {
@@ -544,7 +542,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 116,
+      "lastMs": 147,
       "flaky": false
     },
     {
@@ -552,7 +550,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 151,
+      "lastMs": 172,
       "flaky": false
     },
     {
@@ -560,7 +558,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 51,
+      "lastMs": 50,
       "flaky": false
     },
     {
@@ -568,7 +566,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 52,
+      "lastMs": 59,
       "flaky": false
     },
     {
@@ -576,7 +574,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 139,
+      "lastMs": 134,
       "flaky": false
     },
     {
@@ -584,7 +582,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 912,
+      "lastMs": 1160,
       "flaky": false
     },
     {
@@ -592,7 +590,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 997,
+      "lastMs": 1181,
       "flaky": false
     },
     {
@@ -600,7 +598,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 589,
+      "lastMs": 656,
       "flaky": false
     },
     {
@@ -608,7 +606,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 304,
+      "lastMs": 365,
       "flaky": false
     },
     {
@@ -616,7 +614,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 443,
+      "lastMs": 500,
       "flaky": false
     },
     {
@@ -624,7 +622,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 847,
+      "lastMs": 920,
       "flaky": false
     },
     {
@@ -632,7 +630,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 6629,
+      "lastMs": 6205,
       "flaky": false
     },
     {
@@ -640,7 +638,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 2728,
+      "lastMs": 2759,
       "flaky": false
     },
     {
@@ -648,7 +646,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 68,
+      "lastMs": 94,
       "flaky": false
     },
     {
@@ -656,7 +654,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 95,
+      "lastMs": 126,
       "flaky": false
     },
     {
@@ -664,7 +662,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 809,
+      "lastMs": 747,
       "flaky": false
     },
     {
@@ -672,7 +670,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 87,
+      "lastMs": 97,
       "flaky": false
     },
     {
@@ -680,7 +678,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 423,
+      "lastMs": 516,
       "flaky": false
     },
     {
@@ -688,7 +686,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 66,
+      "lastMs": 83,
       "flaky": false
     },
     {
@@ -696,7 +694,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 91,
+      "lastMs": 111,
       "flaky": false
     },
     {
@@ -704,7 +702,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 61,
+      "lastMs": 53,
       "flaky": false
     },
     {
@@ -712,7 +710,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 265,
+      "lastMs": 242,
       "flaky": false
     },
     {
@@ -720,7 +718,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 531,
+      "lastMs": 591,
       "flaky": false
     },
     {
@@ -728,7 +726,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1750,
+      "lastMs": 2001,
       "flaky": false
     },
     {
@@ -736,7 +734,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 676,
+      "lastMs": 851,
       "flaky": false
     },
     {
@@ -744,7 +742,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 795,
+      "lastMs": 1009,
       "flaky": false
     },
     {
@@ -752,7 +750,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 81,
+      "lastMs": 96,
       "flaky": false
     },
     {
@@ -760,7 +758,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 588,
+      "lastMs": 665,
       "flaky": false
     },
     {
@@ -768,7 +766,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 60,
+      "lastMs": 85,
       "flaky": false
     },
     {
@@ -776,7 +774,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1383,
+      "lastMs": 1518,
       "flaky": false
     },
     {
@@ -784,7 +782,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 738,
+      "lastMs": 872,
       "flaky": false
     },
     {
@@ -792,7 +790,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1728,
+      "lastMs": 1835,
       "flaky": false
     },
     {
@@ -800,7 +798,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 830,
+      "lastMs": 1069,
       "flaky": false
     },
     {
@@ -808,7 +806,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1064,
+      "lastMs": 1521,
       "flaky": false
     },
     {
@@ -816,7 +814,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 61,
+      "lastMs": 88,
       "flaky": false
     },
     {
@@ -824,7 +822,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 662,
+      "lastMs": 869,
       "flaky": false
     },
     {
@@ -832,7 +830,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 440,
+      "lastMs": 494,
       "flaky": false
     },
     {
@@ -840,7 +838,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 54,
+      "lastMs": 77,
       "flaky": false
     },
     {
@@ -848,7 +846,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 650,
+      "lastMs": 673,
       "flaky": false
     },
     {
@@ -856,7 +854,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 701,
+      "lastMs": 763,
       "flaky": false
     },
     {
@@ -864,7 +862,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 634,
+      "lastMs": 781,
       "flaky": false
     },
     {
@@ -872,7 +870,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 61873,
+      "lastMs": 2042,
       "flaky": false
     },
     {
@@ -880,1227 +878,11 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 68174,
+      "lastMs": 24079,
       "flaky": false
     },
     {
-      "file": "gui-only-guard.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 53,
-      "flaky": false
-    },
-    {
-      "file": "gui-open-portal-link.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 624,
-      "flaky": false
-    },
-    {
-      "file": "gui-package.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 847,
-      "flaky": false
-    },
-    {
-      "file": "gui-panels.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 800,
-      "flaky": false
-    },
-    {
-      "file": "gui-portal-refs.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 46,
-      "flaky": false
-    },
-    {
-      "file": "gui-portal-token.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 658,
-      "flaky": false
-    },
-    {
-      "file": "gui-sections.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1869,
-      "flaky": false
-    },
-    {
-      "file": "gui-starter-pyw.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 655,
-      "flaky": false
-    },
-    {
-      "file": "ha-admin-api-port.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 422,
-      "flaky": false
-    },
-    {
-      "file": "ha-auth-contract.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 43,
-      "flaky": false
-    },
-    {
-      "file": "ha-bridge.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 43,
-      "flaky": false
-    },
-    {
-      "file": "ha-compat.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 46,
-      "flaky": false
-    },
-    {
-      "file": "ha-compatibility.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 316,
-      "flaky": false
-    },
-    {
-      "file": "ha-config-flow-errors.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 293,
-      "flaky": false
-    },
-    {
-      "file": "ha-diag-redaction.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 222,
-      "flaky": false
-    },
-    {
-      "file": "ha-integration-flow.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 50,
-      "flaky": false
-    },
-    {
-      "file": "ha-integration-import.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 203,
-      "flaky": false
-    },
-    {
-      "file": "ha-integration-proxy.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 5230,
-      "flaky": false
-    },
-    {
-      "file": "ha-integration-python.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 135,
-      "flaky": false
-    },
-    {
-      "file": "ha-path-prefix.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 476,
-      "flaky": false
-    },
-    {
-      "file": "ha-portal-folder-page.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 582,
-      "flaky": false
-    },
-    {
-      "file": "ha-range-bridge.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 57,
-      "flaky": false
-    },
-    {
-      "file": "ha-support-matrix.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 59,
-      "flaky": false
-    },
-    {
-      "file": "ha-translations.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 56,
-      "flaky": false
-    },
-    {
-      "file": "ha-version-sensor.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 46,
-      "flaky": false
-    },
-    {
-      "file": "hacs-structure.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 48,
-      "flaky": false
-    },
-    {
-      "file": "haoss-in-sync.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 115,
-      "flaky": false
-    },
-    {
-      "file": "haoss-release.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 208,
-      "flaky": false
-    },
-    {
-      "file": "hassfest-local.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 64,
-      "flaky": false
-    },
-    {
-      "file": "helper-contracts-2.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 98,
-      "flaky": false
-    },
-    {
-      "file": "helper-contracts-3.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 84,
-      "flaky": false
-    },
-    {
-      "file": "helper-contracts.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 67,
-      "flaky": false
-    },
-    {
-      "file": "html-assets.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 79,
-      "flaky": false
-    },
-    {
-      "file": "html-projects.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 563,
-      "flaky": false
-    },
-    {
-      "file": "html-publish.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 500,
-      "flaky": false
-    },
-    {
-      "file": "idempotency.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 583,
-      "flaky": false
-    },
-    {
-      "file": "ingress-api-base.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 443,
-      "flaky": false
-    },
-    {
-      "file": "ingress-auth.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 426,
-      "flaky": false
-    },
-    {
-      "file": "ingress-isolation.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 533,
-      "flaky": false
-    },
-    {
-      "file": "ingress-panel-load.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 480,
-      "flaky": false
-    },
-    {
-      "file": "instance-lock-retry.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 857,
-      "flaky": false
-    },
-    {
-      "file": "instance-lock.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 752,
-      "flaky": false
-    },
-    {
-      "file": "integration-runtime-data.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 46,
-      "flaky": false
-    },
-    {
-      "file": "integrity.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 469,
-      "flaky": false
-    },
-    {
-      "file": "internal.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 537,
-      "flaky": false
-    },
-    {
-      "file": "interpolate.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 534,
-      "flaky": false
-    },
-    {
-      "file": "job-manager.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 625,
-      "flaky": false
-    },
-    {
-      "file": "job-persistence.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 391,
-      "flaky": false
-    },
-    {
-      "file": "known-defects.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 90,
-      "flaky": false
-    },
-    {
-      "file": "layout.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 465,
-      "flaky": false
-    },
-    {
-      "file": "legacy-logic-residue.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 105,
-      "flaky": false
-    },
-    {
-      "file": "line-endings.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 493,
-      "flaky": false
-    },
-    {
-      "file": "link-check-home-assistant.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 142,
-      "flaky": false
-    },
-    {
-      "file": "link-check.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 15951,
-      "flaky": false
-    },
-    {
-      "file": "links-contract.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 992,
-      "flaky": false
-    },
-    {
-      "file": "lint-config.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 5327,
-      "flaky": false
-    },
-    {
-      "file": "live-stream-lifecycle.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 52,
-      "flaky": false
-    },
-    {
-      "file": "load-control.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 54,
-      "flaky": false
-    },
-    {
-      "file": "logger.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 126,
-      "flaky": false
-    },
-    {
-      "file": "logic-audit.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 450,
-      "flaky": false
-    },
-    {
-      "file": "logic-boundaries.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 116,
-      "flaky": false
-    },
-    {
-      "file": "logs-api.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 889,
-      "flaky": false
-    },
-    {
-      "file": "manifest-schema.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 201,
-      "flaky": false
-    },
-    {
-      "file": "mirror-s3-wiring.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1121,
-      "flaky": false
-    },
-    {
-      "file": "mirror-target-timeout.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1545,
-      "flaky": false
-    },
-    {
-      "file": "mirror-target.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 189,
-      "flaky": false
-    },
-    {
-      "file": "network-storage.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 60,
-      "flaky": false
-    },
-    {
-      "file": "no-stubs.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 70,
-      "flaky": false
-    },
-    {
-      "file": "node-runtime-gate.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 53,
-      "flaky": false
-    },
-    {
-      "file": "office-processing.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 134,
-      "flaky": false
-    },
-    {
-      "file": "oidc-login.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 915,
-      "flaky": false
-    },
-    {
-      "file": "openapi-admin.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 119,
-      "flaky": false
-    },
-    {
-      "file": "oracle-digest-chain.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1306,
-      "flaky": false
-    },
-    {
-      "file": "oracle-interpolate.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 49,
-      "flaky": false
-    },
-    {
-      "file": "oracle-lifecycle.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1500,
-      "flaky": false
-    },
-    {
-      "file": "oracle-manifest-rules.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 90,
-      "flaky": false
-    },
-    {
-      "file": "oracle-rbac-matrix.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1592,
-      "flaky": false
-    },
-    {
-      "file": "oracle-slug-and-paths.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1504,
-      "flaky": false
-    },
-    {
-      "file": "package-api.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 2006,
-      "flaky": false
-    },
-    {
-      "file": "package-compression.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 176,
-      "flaky": false
-    },
-    {
-      "file": "package-encryption.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 804,
-      "flaky": false
-    },
-    {
-      "file": "package-scripts.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 112,
-      "flaky": false
-    },
-    {
-      "file": "package-split.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 966,
-      "flaky": false
-    },
-    {
-      "file": "packaged-docs.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 63,
-      "flaky": false
-    },
-    {
-      "file": "packager.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 183,
-      "flaky": false
-    },
-    {
-      "file": "pagination.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1004,
-      "flaky": false
-    },
-    {
-      "file": "panel-framing.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1061,
-      "flaky": false
-    },
-    {
-      "file": "panel-registry.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 51,
-      "flaky": false
-    },
-    {
-      "file": "paptresor.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 47,
-      "flaky": false
-    },
-    {
-      "file": "parallel-transfers.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 9650,
-      "flaky": false
-    },
-    {
-      "file": "pdf-signature.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1238,
-      "flaky": false
-    },
-    {
-      "file": "pgp-aead-interop.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1447,
-      "flaky": false
-    },
-    {
-      "file": "pgp-aead.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 63,
-      "flaky": false
-    },
-    {
-      "file": "pgp-bundle.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1158,
-      "flaky": false
-    },
-    {
-      "file": "pgp-engine.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 285,
-      "flaky": false
-    },
-    {
-      "file": "pgp-gpg-interop.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 3659,
-      "flaky": false
-    },
-    {
-      "file": "pgp-keyflags.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 106,
-      "flaky": false
-    },
-    {
-      "file": "pgp-keyring.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 4436,
-      "flaky": false
-    },
-    {
-      "file": "pgp-mpi.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 69,
-      "flaky": false
-    },
-    {
-      "file": "pgp-path-encryption.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 7705,
-      "flaky": false
-    },
-    {
-      "file": "pgp-sign.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 4822,
-      "flaky": false
-    },
-    {
-      "file": "pgp-tools.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 3166,
-      "flaky": false
-    },
-    {
-      "file": "pgp-unknown-subkey.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 70,
-      "flaky": false
-    },
-    {
-      "file": "pgp-v6.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 108,
-      "flaky": false
-    },
-    {
-      "file": "pgp-workdir-encryption.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 5144,
-      "flaky": false
-    },
-    {
-      "file": "pgp.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 152,
-      "flaky": false
-    },
-    {
-      "file": "policy-gui.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 53,
-      "flaky": false
-    },
-    {
-      "file": "portal-api-map.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 587,
-      "flaky": false
-    },
-    {
-      "file": "portal-api-qr.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 463,
-      "flaky": false
-    },
-    {
-      "file": "portal-archive.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 938,
-      "flaky": false
-    },
-    {
-      "file": "portal-card-link.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 607,
-      "flaky": false
-    },
-    {
-      "file": "portal-chain.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 695,
-      "flaky": false
-    },
-    {
-      "file": "portal-file-page.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 642,
-      "flaky": false
-    },
-    {
-      "file": "portal-folder-artifacts.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 614,
-      "flaky": false
-    },
-    {
-      "file": "portal-folder-button.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 529,
-      "flaky": false
-    },
-    {
-      "file": "portal-folder-contract.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 620,
-      "flaky": false
-    },
-    {
-      "file": "portal-folder-copy.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 905,
-      "flaky": false
-    },
-    {
-      "file": "portal-folder-lock.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 649,
-      "flaky": false
-    },
-    {
-      "file": "portal-folder-portal.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 700,
-      "flaky": false
-    },
-    {
-      "file": "portal-folder-refs.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 583,
-      "flaky": false
-    },
-    {
-      "file": "portal-folder.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 735,
-      "flaky": false
-    },
-    {
-      "file": "portal-greeting.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 63,
-      "flaky": false
-    },
-    {
-      "file": "portal-hash-verify.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 60,
-      "flaky": false
-    },
-    {
-      "file": "portal-html-sandbox.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 558,
-      "flaky": false
-    },
-    {
-      "file": "portal-i18n.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 52,
-      "flaky": false
-    },
-    {
-      "file": "portal-integrity.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 673,
-      "flaky": false
-    },
-    {
-      "file": "portal-monitoring.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 903,
-      "flaky": false
-    },
-    {
-      "file": "portal-no-links.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 664,
-      "flaky": false
-    },
-    {
-      "file": "portal-order.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 678,
-      "flaky": false
-    },
-    {
-      "file": "portal-page-contract.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 638,
-      "flaky": false
-    },
-    {
-      "file": "portal-page-lang.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 699,
-      "flaky": false
-    },
-    {
-      "file": "portal-page-render.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 591,
-      "flaky": false
-    },
-    {
-      "file": "portal-page.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 696,
-      "flaky": false
-    },
-    {
-      "file": "portal-policy-secret-links.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 51,
-      "flaky": false
-    },
-    {
-      "file": "portal-qr-archive.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 613,
-      "flaky": false
-    },
-    {
-      "file": "portal-qr-badge.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 506,
-      "flaky": false
-    },
-    {
-      "file": "portal-qr-restore.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 721,
-      "flaky": false
-    },
-    {
-      "file": "portal-root-page.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 485,
-      "flaky": false
-    },
-    {
-      "file": "portal-rules-applied.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 627,
-      "flaky": false
-    },
-    {
-      "file": "portal-skin.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1326,
-      "flaky": false
-    },
-    {
-      "file": "portal-tokens.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1195,
-      "flaky": false
-    },
-    {
-      "file": "portal-variants.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 53,
-      "flaky": false
-    },
-    {
-      "file": "powershell-scripts.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 4295,
-      "flaky": false
-    },
-    {
-      "file": "preview.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 617,
-      "flaky": false
-    },
-    {
-      "file": "problem.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 54,
-      "flaky": false
-    },
-    {
-      "file": "process-guards.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 348,
-      "flaky": false
-    },
-    {
-      "file": "public-gateway.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 58,
-      "flaky": false
-    },
-    {
-      "file": "public-package.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 2922,
-      "flaky": false
-    },
-    {
-      "file": "public-rate-limit.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 2335,
-      "flaky": false
-    },
-    {
-      "file": "public-route-allowlist.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 469,
-      "flaky": false
-    },
-    {
-      "file": "publish-script.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1096,
-      "flaky": false
-    },
-    {
-      "file": "qr-dispatch.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 552,
-      "flaky": false
-    },
-    {
-      "file": "qr-leads-to-folder.cjs",
+      "file": "gui-monitoring.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
@@ -2108,15 +890,95 @@
       "flaky": false
     },
     {
-      "file": "qr-rollback.cjs",
+      "file": "gui-only-guard.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 60,
+      "lastMs": 63,
       "flaky": false
     },
     {
-      "file": "raspberrypi-compat.cjs",
+      "file": "gui-open-portal-link.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 659,
+      "flaky": false
+    },
+    {
+      "file": "gui-package.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 862,
+      "flaky": false
+    },
+    {
+      "file": "gui-panels.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1226,
+      "flaky": false
+    },
+    {
+      "file": "gui-portal-refs.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 83,
+      "flaky": false
+    },
+    {
+      "file": "gui-portal-token.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 743,
+      "flaky": false
+    },
+    {
+      "file": "gui-sections.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 2049,
+      "flaky": false
+    },
+    {
+      "file": "gui-starter-pyw.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 670,
+      "flaky": false
+    },
+    {
+      "file": "ha-admin-api-port.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 560,
+      "flaky": false
+    },
+    {
+      "file": "ha-auth-contract.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 49,
+      "flaky": false
+    },
+    {
+      "file": "ha-bridge.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 62,
+      "flaky": false
+    },
+    {
+      "file": "ha-compat.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
@@ -2124,271 +986,111 @@
       "flaky": false
     },
     {
-      "file": "rate-limit.cjs",
+      "file": "ha-compatibility.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 4891,
+      "lastMs": 627,
       "flaky": false
     },
     {
-      "file": "rbac-default-matrix.cjs",
+      "file": "ha-config-flow-errors.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 900,
+      "lastMs": 256,
       "flaky": false
     },
     {
-      "file": "rbac-sso.cjs",
+      "file": "ha-diag-redaction.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 443,
+      "lastMs": 291,
       "flaky": false
     },
     {
-      "file": "rbac.cjs",
+      "file": "ha-integration-flow.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 469,
+      "lastMs": 64,
       "flaky": false
     },
     {
-      "file": "readiness-integrity.cjs",
+      "file": "ha-integration-import.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 509,
+      "lastMs": 235,
       "flaky": false
     },
     {
-      "file": "readiness.cjs",
+      "file": "ha-integration-proxy.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 414,
+      "lastMs": 5469,
       "flaky": false
     },
     {
-      "file": "real-journey.cjs",
+      "file": "ha-integration-python.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1394,
+      "lastMs": 157,
       "flaky": false
     },
     {
-      "file": "release-acceptance.cjs",
+      "file": "ha-path-prefix.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 85,
+      "lastMs": 552,
       "flaky": false
     },
     {
-      "file": "release-archive-paths.cjs",
+      "file": "ha-portal-folder-page.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 54,
+      "lastMs": 574,
       "flaky": false
     },
     {
-      "file": "release-notes.cjs",
+      "file": "ha-range-bridge.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 152,
+      "lastMs": 47,
       "flaky": false
     },
     {
-      "file": "release-tooling.cjs",
+      "file": "ha-support-matrix.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 58,
+      "lastMs": 57,
       "flaky": false
     },
     {
-      "file": "release-workflow-assets.cjs",
+      "file": "ha-translations.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 46,
+      "lastMs": 51,
       "flaky": false
     },
     {
-      "file": "report-api.cjs",
+      "file": "ha-version-sensor.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 518,
+      "lastMs": 47,
       "flaky": false
     },
     {
-      "file": "report-entry-points.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 1079,
-      "flaky": false
-    },
-    {
-      "file": "report-manifest.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 54,
-      "flaky": false
-    },
-    {
-      "file": "report-manifests.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 50,
-      "flaky": false
-    },
-    {
-      "file": "report-objects-real.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 645,
-      "flaky": false
-    },
-    {
-      "file": "report-objects.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 46,
-      "flaky": false
-    },
-    {
-      "file": "report-package.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 563,
-      "flaky": false
-    },
-    {
-      "file": "report-qr.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 258,
-      "flaky": false
-    },
-    {
-      "file": "report-render.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 252,
-      "flaky": false
-    },
-    {
-      "file": "report-scope.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 70,
-      "flaky": false
-    },
-    {
-      "file": "report-stamp.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 317,
-      "flaky": false
-    },
-    {
-      "file": "report-studio-columns.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 503,
-      "flaky": false
-    },
-    {
-      "file": "report-studio-panel.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 68,
-      "flaky": false
-    },
-    {
-      "file": "report-table-header-repeat.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 204,
-      "flaky": false
-    },
-    {
-      "file": "report-table-widths.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 518,
-      "flaky": false
-    },
-    {
-      "file": "report-tsa-e2e.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 510,
-      "flaky": false
-    },
-    {
-      "file": "respond.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 46,
-      "flaky": false
-    },
-    {
-      "file": "resume-transfer.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 841,
-      "flaky": false
-    },
-    {
-      "file": "retention-audit-lines.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 66,
-      "flaky": false
-    },
-    {
-      "file": "retention-audit.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 600,
-      "flaky": false
-    },
-    {
-      "file": "retention-cost.cjs",
-      "ok": true,
-      "fails": 0,
-      "attempts": 1,
-      "lastMs": 264,
-      "flaky": false
-    },
-    {
-      "file": "retention-evidence.cjs",
+      "file": "hacs-structure.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
@@ -2396,39 +1098,1023 @@
       "flaky": false
     },
     {
-      "file": "retention.cjs",
+      "file": "haoss-in-sync.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 486,
+      "lastMs": 109,
       "flaky": false
     },
     {
-      "file": "rfc3161-api.cjs",
+      "file": "haoss-release.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 500,
+      "lastMs": 203,
       "flaky": false
     },
     {
-      "file": "rollback.cjs",
+      "file": "hassfest-local.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 505,
+      "lastMs": 59,
       "flaky": false
     },
     {
-      "file": "rules-config.cjs",
+      "file": "helper-contracts-2.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 97,
+      "lastMs": 123,
       "flaky": false
     },
     {
-      "file": "rules-declarations.cjs",
+      "file": "helper-contracts-3.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 94,
+      "flaky": false
+    },
+    {
+      "file": "helper-contracts.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 75,
+      "flaky": false
+    },
+    {
+      "file": "html-assets.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 83,
+      "flaky": false
+    },
+    {
+      "file": "html-projects.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 648,
+      "flaky": false
+    },
+    {
+      "file": "html-publish.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 598,
+      "flaky": false
+    },
+    {
+      "file": "idempotency.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 792,
+      "flaky": false
+    },
+    {
+      "file": "ingress-api-base.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 594,
+      "flaky": false
+    },
+    {
+      "file": "ingress-auth.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 591,
+      "flaky": false
+    },
+    {
+      "file": "ingress-isolation.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 650,
+      "flaky": false
+    },
+    {
+      "file": "ingress-panel-load.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 553,
+      "flaky": false
+    },
+    {
+      "file": "instance-lock-retry.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 871,
+      "flaky": false
+    },
+    {
+      "file": "instance-lock.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 931,
+      "flaky": false
+    },
+    {
+      "file": "integration-runtime-data.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 53,
+      "flaky": false
+    },
+    {
+      "file": "integrity.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 557,
+      "flaky": false
+    },
+    {
+      "file": "internal.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 602,
+      "flaky": false
+    },
+    {
+      "file": "interpolate.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 552,
+      "flaky": false
+    },
+    {
+      "file": "job-manager.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 673,
+      "flaky": false
+    },
+    {
+      "file": "job-persistence.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 370,
+      "flaky": false
+    },
+    {
+      "file": "known-defects.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 98,
+      "flaky": false
+    },
+    {
+      "file": "layout.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 529,
+      "flaky": false
+    },
+    {
+      "file": "legacy-logic-residue.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 245,
+      "flaky": false
+    },
+    {
+      "file": "line-endings.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 416,
+      "flaky": false
+    },
+    {
+      "file": "link-check-home-assistant.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 143,
+      "flaky": false
+    },
+    {
+      "file": "link-check.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 16166,
+      "flaky": false
+    },
+    {
+      "file": "links-contract.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 696,
+      "flaky": false
+    },
+    {
+      "file": "lint-config.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 8210,
+      "flaky": false
+    },
+    {
+      "file": "live-stream-lifecycle.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 90,
+      "flaky": false
+    },
+    {
+      "file": "load-control.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 66,
+      "flaky": false
+    },
+    {
+      "file": "logger.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 155,
+      "flaky": false
+    },
+    {
+      "file": "logic-audit.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 690,
+      "flaky": false
+    },
+    {
+      "file": "logic-boundaries.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 117,
+      "flaky": false
+    },
+    {
+      "file": "logs-api.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 601,
+      "flaky": false
+    },
+    {
+      "file": "manifest-schema.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 308,
+      "flaky": false
+    },
+    {
+      "file": "mirror-s3-wiring.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1118,
+      "flaky": false
+    },
+    {
+      "file": "mirror-target-timeout.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1581,
+      "flaky": false
+    },
+    {
+      "file": "mirror-target.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 200,
+      "flaky": false
+    },
+    {
+      "file": "network-storage.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 80,
+      "flaky": false
+    },
+    {
+      "file": "no-stubs.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 144,
+      "flaky": false
+    },
+    {
+      "file": "node-runtime-gate.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 48,
+      "flaky": false
+    },
+    {
+      "file": "office-processing.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 153,
+      "flaky": false
+    },
+    {
+      "file": "oidc-login.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 735,
+      "flaky": false
+    },
+    {
+      "file": "openapi-admin.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 239,
+      "flaky": false
+    },
+    {
+      "file": "oracle-digest-chain.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1270,
+      "flaky": false
+    },
+    {
+      "file": "oracle-interpolate.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 68,
+      "flaky": false
+    },
+    {
+      "file": "oracle-lifecycle.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1186,
+      "flaky": false
+    },
+    {
+      "file": "oracle-manifest-rules.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 106,
+      "flaky": false
+    },
+    {
+      "file": "oracle-rbac-matrix.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 841,
+      "flaky": false
+    },
+    {
+      "file": "oracle-slug-and-paths.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 889,
+      "flaky": false
+    },
+    {
+      "file": "package-api.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1305,
+      "flaky": false
+    },
+    {
+      "file": "package-compression.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 190,
+      "flaky": false
+    },
+    {
+      "file": "package-encryption.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1136,
+      "flaky": false
+    },
+    {
+      "file": "package-scripts.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 630,
+      "flaky": false
+    },
+    {
+      "file": "package-split.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1018,
+      "flaky": false
+    },
+    {
+      "file": "packaged-docs.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 103,
+      "flaky": false
+    },
+    {
+      "file": "packager.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 163,
+      "flaky": false
+    },
+    {
+      "file": "pagination.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 737,
+      "flaky": false
+    },
+    {
+      "file": "panel-framing.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 785,
+      "flaky": false
+    },
+    {
+      "file": "panel-registry.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 82,
+      "flaky": false
+    },
+    {
+      "file": "paptresor.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 76,
+      "flaky": false
+    },
+    {
+      "file": "parallel-transfers.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 9356,
+      "flaky": false
+    },
+    {
+      "file": "pdf-signature.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 873,
+      "flaky": false
+    },
+    {
+      "file": "pgp-aead-interop.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 513,
+      "flaky": false
+    },
+    {
+      "file": "pgp-aead.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 78,
+      "flaky": false
+    },
+    {
+      "file": "pgp-bundle.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 798,
+      "flaky": false
+    },
+    {
+      "file": "pgp-engine.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 290,
+      "flaky": false
+    },
+    {
+      "file": "pgp-gpg-interop.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 2714,
+      "flaky": false
+    },
+    {
+      "file": "pgp-keyflags.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 101,
+      "flaky": false
+    },
+    {
+      "file": "pgp-keyring.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 4029,
+      "flaky": false
+    },
+    {
+      "file": "pgp-mpi.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 78,
+      "flaky": false
+    },
+    {
+      "file": "pgp-path-encryption.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 6323,
+      "flaky": false
+    },
+    {
+      "file": "pgp-sign.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 4478,
+      "flaky": false
+    },
+    {
+      "file": "pgp-tools.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 3448,
+      "flaky": false
+    },
+    {
+      "file": "pgp-unknown-subkey.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 64,
+      "flaky": false
+    },
+    {
+      "file": "pgp-v6.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 98,
+      "flaky": false
+    },
+    {
+      "file": "pgp-workdir-encryption.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 5805,
+      "flaky": false
+    },
+    {
+      "file": "pgp.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 119,
+      "flaky": false
+    },
+    {
+      "file": "policy-gui.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 52,
+      "flaky": false
+    },
+    {
+      "file": "portal-api-map.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 632,
+      "flaky": false
+    },
+    {
+      "file": "portal-api-qr.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 647,
+      "flaky": false
+    },
+    {
+      "file": "portal-archive.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1182,
+      "flaky": false
+    },
+    {
+      "file": "portal-card-link.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 717,
+      "flaky": false
+    },
+    {
+      "file": "portal-chain.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 691,
+      "flaky": false
+    },
+    {
+      "file": "portal-file-page.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 620,
+      "flaky": false
+    },
+    {
+      "file": "portal-folder-artifacts.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 712,
+      "flaky": false
+    },
+    {
+      "file": "portal-folder-button.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 645,
+      "flaky": false
+    },
+    {
+      "file": "portal-folder-contract.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 644,
+      "flaky": false
+    },
+    {
+      "file": "portal-folder-copy.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1082,
+      "flaky": false
+    },
+    {
+      "file": "portal-folder-lock.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 602,
+      "flaky": false
+    },
+    {
+      "file": "portal-folder-portal.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 933,
+      "flaky": false
+    },
+    {
+      "file": "portal-folder-refs.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 621,
+      "flaky": false
+    },
+    {
+      "file": "portal-folder.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 866,
+      "flaky": false
+    },
+    {
+      "file": "portal-greeting.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 72,
+      "flaky": false
+    },
+    {
+      "file": "portal-hash-verify.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 64,
+      "flaky": false
+    },
+    {
+      "file": "portal-html-sandbox.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 603,
+      "flaky": false
+    },
+    {
+      "file": "portal-i18n.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 62,
+      "flaky": false
+    },
+    {
+      "file": "portal-integrity.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 650,
+      "flaky": false
+    },
+    {
+      "file": "portal-monitoring.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 891,
+      "flaky": false
+    },
+    {
+      "file": "portal-no-links.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 605,
+      "flaky": false
+    },
+    {
+      "file": "portal-order.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 684,
+      "flaky": false
+    },
+    {
+      "file": "portal-page-contract.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 730,
+      "flaky": false
+    },
+    {
+      "file": "portal-page-lang.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 774,
+      "flaky": false
+    },
+    {
+      "file": "portal-page-render.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 668,
+      "flaky": false
+    },
+    {
+      "file": "portal-page.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 732,
+      "flaky": false
+    },
+    {
+      "file": "portal-policy-secret-links.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 63,
+      "flaky": false
+    },
+    {
+      "file": "portal-qr-archive.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 683,
+      "flaky": false
+    },
+    {
+      "file": "portal-qr-badge.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 549,
+      "flaky": false
+    },
+    {
+      "file": "portal-qr-restore.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 613,
+      "flaky": false
+    },
+    {
+      "file": "portal-root-page.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 552,
+      "flaky": false
+    },
+    {
+      "file": "portal-rules-applied.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 731,
+      "flaky": false
+    },
+    {
+      "file": "portal-skin.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1310,
+      "flaky": false
+    },
+    {
+      "file": "portal-tokens.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1341,
+      "flaky": false
+    },
+    {
+      "file": "portal-variants.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 56,
+      "flaky": false
+    },
+    {
+      "file": "powershell-scripts.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 5118,
+      "flaky": false
+    },
+    {
+      "file": "preview.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 592,
+      "flaky": false
+    },
+    {
+      "file": "problem.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 55,
+      "flaky": false
+    },
+    {
+      "file": "process-guards.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 389,
+      "flaky": false
+    },
+    {
+      "file": "public-gateway.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 76,
+      "flaky": false
+    },
+    {
+      "file": "public-package.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 3244,
+      "flaky": false
+    },
+    {
+      "file": "public-rate-limit.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 2451,
+      "flaky": false
+    },
+    {
+      "file": "public-route-allowlist.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 511,
+      "flaky": false
+    },
+    {
+      "file": "publish-script.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1279,
+      "flaky": false
+    },
+    {
+      "file": "qr-dispatch.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 577,
+      "flaky": false
+    },
+    {
+      "file": "qr-leads-to-folder.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 563,
+      "flaky": false
+    },
+    {
+      "file": "qr-rollback.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
@@ -2436,11 +2122,339 @@
       "flaky": false
     },
     {
+      "file": "raspberrypi-compat.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 56,
+      "flaky": false
+    },
+    {
+      "file": "rate-limit.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 4773,
+      "flaky": false
+    },
+    {
+      "file": "rbac-default-matrix.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 918,
+      "flaky": false
+    },
+    {
+      "file": "rbac-sso.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 604,
+      "flaky": false
+    },
+    {
+      "file": "rbac.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 614,
+      "flaky": false
+    },
+    {
+      "file": "readiness-integrity.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 599,
+      "flaky": false
+    },
+    {
+      "file": "readiness.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 499,
+      "flaky": false
+    },
+    {
+      "file": "real-journey.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1558,
+      "flaky": false
+    },
+    {
+      "file": "release-acceptance.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 96,
+      "flaky": false
+    },
+    {
+      "file": "release-archive-paths.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 67,
+      "flaky": false
+    },
+    {
+      "file": "release-notes.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 239,
+      "flaky": false
+    },
+    {
+      "file": "release-status.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 7222,
+      "flaky": false
+    },
+    {
+      "file": "release-tooling.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 77,
+      "flaky": false
+    },
+    {
+      "file": "release-workflow-assets.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 76,
+      "flaky": false
+    },
+    {
+      "file": "report-api.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 815,
+      "flaky": false
+    },
+    {
+      "file": "report-entry-points.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 968,
+      "flaky": false
+    },
+    {
+      "file": "report-manifest.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 68,
+      "flaky": false
+    },
+    {
+      "file": "report-manifests.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 85,
+      "flaky": false
+    },
+    {
+      "file": "report-objects-real.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 810,
+      "flaky": false
+    },
+    {
+      "file": "report-objects.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 57,
+      "flaky": false
+    },
+    {
+      "file": "report-package.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 705,
+      "flaky": false
+    },
+    {
+      "file": "report-qr.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 246,
+      "flaky": false
+    },
+    {
+      "file": "report-render.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 229,
+      "flaky": false
+    },
+    {
+      "file": "report-scope.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 68,
+      "flaky": false
+    },
+    {
+      "file": "report-stamp.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 269,
+      "flaky": false
+    },
+    {
+      "file": "report-studio-columns.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 529,
+      "flaky": false
+    },
+    {
+      "file": "report-studio-panel.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 77,
+      "flaky": false
+    },
+    {
+      "file": "report-table-header-repeat.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 235,
+      "flaky": false
+    },
+    {
+      "file": "report-table-widths.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 629,
+      "flaky": false
+    },
+    {
+      "file": "report-tsa-e2e.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 645,
+      "flaky": false
+    },
+    {
+      "file": "respond.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 67,
+      "flaky": false
+    },
+    {
+      "file": "resume-transfer.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 1121,
+      "flaky": false
+    },
+    {
+      "file": "retention-audit-lines.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 62,
+      "flaky": false
+    },
+    {
+      "file": "retention-audit.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 587,
+      "flaky": false
+    },
+    {
+      "file": "retention-cost.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 248,
+      "flaky": false
+    },
+    {
+      "file": "retention-evidence.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 173,
+      "flaky": false
+    },
+    {
+      "file": "retention.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 529,
+      "flaky": false
+    },
+    {
+      "file": "rfc3161-api.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 604,
+      "flaky": false
+    },
+    {
+      "file": "rollback.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 563,
+      "flaky": false
+    },
+    {
+      "file": "rules-config.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 100,
+      "flaky": false
+    },
+    {
+      "file": "rules-declarations.cjs",
+      "ok": true,
+      "fails": 0,
+      "attempts": 1,
+      "lastMs": 65,
+      "flaky": false
+    },
+    {
       "file": "rules-invalid.cjs",
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 541,
+      "lastMs": 550,
       "flaky": false
     },
     {
@@ -2448,7 +2462,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 63,
+      "lastMs": 69,
       "flaky": false
     },
     {
@@ -2464,7 +2478,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 517,
+      "lastMs": 531,
       "flaky": false
     },
     {
@@ -2472,7 +2486,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 129,
+      "lastMs": 163,
       "flaky": false
     },
     {
@@ -2480,7 +2494,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 82,
+      "lastMs": 89,
       "flaky": false
     },
     {
@@ -2488,7 +2502,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 91,
+      "lastMs": 90,
       "flaky": false
     },
     {
@@ -2496,7 +2510,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 494,
+      "lastMs": 512,
       "flaky": false
     },
     {
@@ -2504,7 +2518,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 685,
+      "lastMs": 681,
       "flaky": false
     },
     {
@@ -2512,7 +2526,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1151,
+      "lastMs": 987,
       "flaky": false
     },
     {
@@ -2520,7 +2534,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 174,
+      "lastMs": 191,
       "flaky": false
     },
     {
@@ -2528,7 +2542,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1002,
+      "lastMs": 983,
       "flaky": false
     },
     {
@@ -2536,7 +2550,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 443,
+      "lastMs": 999,
       "flaky": false
     },
     {
@@ -2544,7 +2558,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 92,
+      "lastMs": 97,
       "flaky": false
     },
     {
@@ -2552,7 +2566,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 239,
+      "lastMs": 367,
       "flaky": false
     },
     {
@@ -2560,7 +2574,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 2390,
+      "lastMs": 2498,
       "flaky": false
     },
     {
@@ -2568,7 +2582,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1873,
+      "lastMs": 2049,
       "flaky": false
     },
     {
@@ -2576,7 +2590,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 5503,
+      "lastMs": 5606,
       "flaky": false
     },
     {
@@ -2584,7 +2598,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1041,
+      "lastMs": 973,
       "flaky": false
     },
     {
@@ -2592,7 +2606,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 85,
+      "lastMs": 77,
       "flaky": false
     },
     {
@@ -2600,7 +2614,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 381,
+      "lastMs": 362,
       "flaky": false
     },
     {
@@ -2608,7 +2622,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 884,
+      "lastMs": 859,
       "flaky": false
     },
     {
@@ -2616,7 +2630,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 652,
+      "lastMs": 544,
       "flaky": false
     },
     {
@@ -2624,7 +2638,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 810,
+      "lastMs": 632,
       "flaky": false
     },
     {
@@ -2632,7 +2646,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 2133,
+      "lastMs": 2862,
       "flaky": false
     },
     {
@@ -2640,7 +2654,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 398,
+      "lastMs": 444,
       "flaky": false
     },
     {
@@ -2648,7 +2662,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1544,
+      "lastMs": 1297,
       "flaky": false
     },
     {
@@ -2656,7 +2670,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 285,
+      "lastMs": 262,
       "flaky": false
     },
     {
@@ -2664,7 +2678,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 495,
+      "lastMs": 459,
       "flaky": false
     },
     {
@@ -2672,7 +2686,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 2167,
+      "lastMs": 2379,
       "flaky": false
     },
     {
@@ -2680,7 +2694,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 615,
+      "lastMs": 681,
       "flaky": false
     },
     {
@@ -2688,7 +2702,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 538,
+      "lastMs": 578,
       "flaky": false
     },
     {
@@ -2696,7 +2710,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 67,
+      "lastMs": 56,
       "flaky": false
     },
     {
@@ -2704,7 +2718,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 990,
+      "lastMs": 1039,
       "flaky": false
     },
     {
@@ -2712,7 +2726,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 441,
+      "lastMs": 721,
       "flaky": false
     },
     {
@@ -2720,7 +2734,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 163,
+      "lastMs": 172,
       "flaky": false
     },
     {
@@ -2728,7 +2742,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 122,
+      "lastMs": 127,
       "flaky": false
     },
     {
@@ -2736,7 +2750,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 128,
+      "lastMs": 136,
       "flaky": false
     },
     {
@@ -2744,7 +2758,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 177,
+      "lastMs": 172,
       "flaky": false
     },
     {
@@ -2752,7 +2766,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 696,
+      "lastMs": 889,
       "flaky": false
     },
     {
@@ -2760,7 +2774,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1281,
+      "lastMs": 1396,
       "flaky": false
     },
     {
@@ -2768,7 +2782,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 2818,
+      "lastMs": 2787,
       "flaky": false
     },
     {
@@ -2776,7 +2790,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 518,
+      "lastMs": 600,
       "flaky": false
     },
     {
@@ -2792,7 +2806,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 577,
+      "lastMs": 97,
       "flaky": false
     },
     {
@@ -2800,7 +2814,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1073,
+      "lastMs": 1236,
       "flaky": false
     },
     {
@@ -2808,7 +2822,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 90,
+      "lastMs": 105,
       "flaky": false
     },
     {
@@ -2816,7 +2830,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 882,
+      "lastMs": 905,
       "flaky": false
     },
     {
@@ -2824,7 +2838,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 67,
+      "lastMs": 63,
       "flaky": false
     },
     {
@@ -2832,7 +2846,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 85,
+      "lastMs": 69,
       "flaky": false
     },
     {
@@ -2840,7 +2854,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 936,
+      "lastMs": 270,
       "flaky": false
     },
     {
@@ -2848,7 +2862,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 165,
+      "lastMs": 179,
       "flaky": false
     },
     {
@@ -2856,7 +2870,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 248,
+      "lastMs": 277,
       "flaky": false
     },
     {
@@ -2864,7 +2878,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 650,
+      "lastMs": 725,
       "flaky": false
     },
     {
@@ -2872,7 +2886,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 549,
+      "lastMs": 777,
       "flaky": false
     },
     {
@@ -2880,7 +2894,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 546,
+      "lastMs": 639,
       "flaky": false
     },
     {
@@ -2888,7 +2902,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 61,
+      "lastMs": 92,
       "flaky": false
     },
     {
@@ -2896,7 +2910,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 508,
+      "lastMs": 697,
       "flaky": false
     },
     {
@@ -2904,7 +2918,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1298,
+      "lastMs": 1449,
       "flaky": false
     },
     {
@@ -2912,7 +2926,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 68,
+      "lastMs": 91,
       "flaky": false
     },
     {
@@ -2920,7 +2934,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 441,
+      "lastMs": 635,
       "flaky": false
     },
     {
@@ -2928,7 +2942,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 100,
+      "lastMs": 212,
       "flaky": false
     },
     {
@@ -2936,7 +2950,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 50,
+      "lastMs": 94,
       "flaky": false
     },
     {
@@ -2944,7 +2958,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 57,
+      "lastMs": 93,
       "flaky": false
     },
     {
@@ -2952,7 +2966,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 195,
+      "lastMs": 208,
       "flaky": false
     },
     {
@@ -2960,7 +2974,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 613,
+      "lastMs": 990,
       "flaky": false
     },
     {
@@ -2968,7 +2982,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 48,
+      "lastMs": 78,
       "flaky": false
     },
     {
@@ -2976,7 +2990,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 50,
+      "lastMs": 77,
       "flaky": false
     },
     {
@@ -2984,7 +2998,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 59,
+      "lastMs": 89,
       "flaky": false
     },
     {
@@ -2992,7 +3006,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 1073,
+      "lastMs": 1227,
       "flaky": false
     },
     {
@@ -3000,7 +3014,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 54,
+      "lastMs": 80,
       "flaky": false
     },
     {
@@ -3008,7 +3022,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 513,
+      "lastMs": 788,
       "flaky": false
     },
     {
@@ -3016,7 +3030,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 66,
+      "lastMs": 114,
       "flaky": false
     },
     {
@@ -3024,7 +3038,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 495,
+      "lastMs": 640,
       "flaky": false
     },
     {
@@ -3032,7 +3046,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 626,
+      "lastMs": 783,
       "flaky": false
     },
     {
@@ -3040,7 +3054,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 69,
+      "lastMs": 116,
       "flaky": false
     },
     {
@@ -3048,7 +3062,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 2675,
+      "lastMs": 2766,
       "flaky": false
     },
     {
@@ -3056,7 +3070,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 313,
+      "lastMs": 454,
       "flaky": false
     },
     {
@@ -3064,7 +3078,7 @@
       "ok": true,
       "fails": 0,
       "attempts": 1,
-      "lastMs": 78,
+      "lastMs": 124,
       "flaky": false
     }
   ]

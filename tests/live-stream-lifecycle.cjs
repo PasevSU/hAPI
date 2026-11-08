@@ -40,20 +40,21 @@ const readUi = (name) => fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'ui'
 }
 
 // ── 2. Панелът наистина го предоставя ──────────────────────────────────────
+// От 0.69.205 живият поток живее на единната страница „Мониторинг“ (не на таблото).
 {
-  const panel = readUi('dashboard-panel.js');
-  assert.match(panel, /HapiDashboardPanel = \{[^}]*unmount/, 'панелът предоставя unmount');
+  const panel = readUi('monitoring-panel.js');
+  assert.match(panel, /HapiMonitoringPanel = \{[^}]*unmount/, 'панелът предоставя unmount');
   assert.match(panel, /function stopLive\(\)/, 'stopLive съществува');
   // `stopLive` трябва да ЗАТВАРЯ източника, не само да нулира променливата.
   const body = panel.slice(panel.indexOf('function stopLive()'), panel.indexOf('function startLive'));
   assert.match(body, /\.close\(\)/, 'stopLive вика close() на EventSource');
   assert.match(body, /liveSource = null/, 'след затваряне референцията се нулира');
-  ok('dashboard-panel.js: unmount → stopLive → close() и нулиране');
+  ok('monitoring-panel.js: unmount → stopLive → close() и нулиране');
 }
 
 // ── 3. `startLive` не оставя втори поток ──────────────────────────────────
 {
-  const panel = readUi('dashboard-panel.js');
+  const panel = readUi('monitoring-panel.js');
   const body = panel.slice(panel.indexOf('function startLive'), panel.indexOf('function mount('));
   // Първото нещо в startLive трябва да е затваряне на предишния поток.
   const firstStatement = body.split('\n').map((l) => l.trim()).filter(Boolean)[1] || '';
@@ -63,28 +64,29 @@ const readUi = (name) => fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'ui'
 
 // ── 4. Живият поток е по избор: без EventSource панелът не чупи ────────────
 {
-  const panel = readUi('dashboard-panel.js');
+  const panel = readUi('monitoring-panel.js');
   assert.match(panel, /typeof window\.EventSource !== 'function'/, 'липсващият EventSource се проверява');
   assert.match(panel, /return false/, 'без EventSource startLive връща false, вместо да хвърли');
-  assert.match(panel, /'изключено'/, 'панелът казва „изключено“, вместо да мълчи');
-  ok('без EventSource: startLive → false и панелът казва „изключено“');
+  // Без декоративна табелка състоянието се казва с ИЗРЕЧЕНИЕ (0.69.205).
+  assert.match(panel, /Потокът не е отворен/, 'панелът казва защо няма поток, вместо да мълчи');
+  ok('без EventSource: startLive → false и панелът казва защо няма поток');
 }
 
-// ── 4б. Лентата не лъже, когато потокът умре СЛЕД отварянето ───────────────
+// ── 4б. Потокът не лъже, когато умре СЛЕД отварянето ───────────────────────
 {
-  const panel = readUi('dashboard-panel.js');
-  // Сървърът затваря след 30 минути с `bye`, а мрежата може да падне. Без тези слушатели
-  // лентата оставаше „на живо“ върху мъртва връзка — твърдение, което не е вярно.
+  const panel = readUi('monitoring-panel.js');
+  // Сървърът затваря след 30 минути с `bye`, а мрежата може да падне. Затварянето
+  // освобождава източника, вместо да остави мъртва връзка, представена като жива.
   assert.match(panel, /addEventListener\('bye'/, '`bye` се обработва');
-  assert.match(panel, /addEventListener\('error'/, '`error` се обработва');
-  assert.match(panel, /addEventListener\('open'/, '`open` връща лентата в „на живо“');
-  assert.match(panel, /'приключи'/, 'след `bye` лентата казва „приключи“');
-  assert.match(panel, /'няма връзка'/, 'при грешка лентата казва „няма връзка“');
+  const byeAt = panel.indexOf("addEventListener('bye'");
+  const byeBody = panel.slice(byeAt, byeAt + 240);
+  assert.match(byeBody, /\.close\(\)/, 'след `bye` източникът се затваря');
+  assert.match(byeBody, /liveSource = null/, 'след `bye` референцията се нулира');
   // `bye` НЕ трябва да минава през `forward`: това е съобщение за състоянието, не събитие.
   const forwardLine = panel.match(/for \(const name of \[([^\]]*)\]\) forward\(name\)/);
   assert.ok(forwardLine, 'списъкът на излъчваните събития съществува');
   assert.ok(!/bye/.test(forwardLine[1]), '`bye` не е в списъка на бизнес събитията');
-  ok('потокът: bye → „приключи“, error → „няма връзка“, open → „на живо“');
+  ok('потокът: bye → close() + нулиране (без „мъртва зелена лента“)');
 }
 
 // ── 5. Сървърът брои клиентите — значи освобождаването е проверимо ─────────
@@ -99,13 +101,12 @@ const readUi = (name) => fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'ui'
 
 // ── 6. `stopLive` пуска и DOM референцията, не само връзката ───────────────
 {
-  const panel = readUi('dashboard-panel.js');
+  const panel = readUi('monitoring-panel.js');
   const body = panel.slice(panel.indexOf('function stopLive()'), panel.indexOf('function startLive'));
-  // Без това панелът държи откачен възел от изтрития изглед, а следващото `open`/`bye`
-  // би рисувало в него, вместо в новия — тоест лентата млъква след връщане на таблото.
-  assert.match(body, /liveBadgeEl = null/, 'stopLive нулира и DOM референцията');
-  assert.match(body, /liveState = 'off'/, 'състоянието се връща в „изключено“');
-  ok('stopLive: затваря връзката, нулира състоянието И DOM референцията');
+  // Без това панелът държи откачен възел от изтрития изглед, а следващото събитие
+  // би рисувало в него, вместо в новия — тоест списъкът млъква след връщане на панела.
+  assert.match(body, /liveListEl = null/, 'stopLive нулира и DOM референцията');
+  ok('stopLive: затваря връзката И нулира DOM референцията');
 }
 
 console.log('PASS live-stream-lifecycle: ' + cases.length + ' проверки — ' + cases.join('; '));

@@ -58,7 +58,10 @@
       a.download = name || 'download';
       a.rel = 'noopener';
       a.click();
-      setTimeout(() => URL.revokeObjectURL(u), 60000);
+      // Освобождаването не бива да държи процеса буден, когато панелът се пуска в тест
+      // (в браузъра `setTimeout` връща число и `unref` няма — поведението е същото).
+      const timer = setTimeout(() => URL.revokeObjectURL(u), 60000);
+      if (timer && typeof timer.unref === 'function') timer.unref();
     } catch (e) {
       toast(`Няма връзка: ${e.message}`, 'err');
     }
@@ -94,7 +97,6 @@
     const p = state.pkg;
     const dis = connected() ? '' : 'disabled';
     const off = connected() && p.encryption === 'password' ? '' : 'disabled';
-    const badge = connected() ? '<span class="badge ok">реален експорт</span>' : '<span class="badge demo">изисква връзка</span>';
     const portals = (p.portals || [])
       .map((x) => `<option value="${esc(x.id)}" ${p.portalId === x.id ? 'selected' : ''}>${esc(x.title)} (${esc(x.slug)})</option>`)
       .join('');
@@ -108,7 +110,7 @@
           : 'Избери портал и натисни „Създай и изтегли пакета“.';
     return `
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Пакет и PGP подпис</h2>${badge}</div>
+        <div class="panel-head"><h2>Пакет и PGP подпис</h2></div>
         <div class="panel-body">
           <p class="hint">Пакетът е ZIP с <code>PACKAGE_INDEX.json</code>, <code>hashes/sha256sum.txt</code>, манифест и оригиналите. Дали се подписва с PGP се задава в <strong>„Настройки → PGP ключ и автоподписване“</strong> — тук не се пита.</p>
           <div class="u-grid u-grid-fields">
@@ -194,7 +196,6 @@
       <div class="page-title">
         <h1>Export &amp; Download Center</h1>
         <p>Правила за изтегляне и експорт · проверка и пакет от add-on-а</p>
-        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? 'свързан с add-on-а' : 'офлайн преглед'}</span>
       </div>
 
       <div class="two-col">

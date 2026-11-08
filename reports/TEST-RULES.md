@@ -3,13 +3,13 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 383 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 384 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 177 |
 | портал | 35 |
-| GUI | 24 |
+| GUI | 25 |
 | Home Assistant | 17 |
 | отчети | 16 |
 | PGP | 14 |
@@ -263,7 +263,7 @@
 | `portal-tokens` | Portal tokens | `tests/portal-tokens.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (24)
+## GUI (25)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -273,6 +273,7 @@
 | `gui-debug-objects` | Gui debug objects | `tests/gui-debug-objects.cjs` |
 | `gui-file-share` | Gui file share | `tests/gui-file-share.cjs` |
 | `gui-journeys` | Gui journeys | `tests/gui-journeys.cjs` |
+| `gui-monitoring` | Gui monitoring | `tests/gui-monitoring.cjs` |
 | `gui-only-guard` | Gui only guard | `tests/gui-only-guard.cjs` |
 | `gui-open-portal-link` | Gui open portal link | `tests/gui-open-portal-link.cjs` |
 | `gui-package` | Gui package | `tests/gui-package.cjs` |

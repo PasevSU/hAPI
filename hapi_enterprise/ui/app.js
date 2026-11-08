@@ -8,6 +8,7 @@
       app: 'Enterprise Control Center',
       projects: 'Проект',
       dashboard: 'Dashboard',
+      monitoring: 'Мониторинг',
       portals: 'Портали & файлове',
       contacts: 'Контакти',
       cases: 'Дела',
@@ -39,6 +40,7 @@
       app: 'Enterprise Control Center',
       projects: 'Project',
       dashboard: 'Dashboard',
+      monitoring: 'Monitoring',
       portals: 'Portals & files',
       contacts: 'Contacts',
       cases: 'Cases',
@@ -70,6 +72,7 @@
       app: 'Enterprise Control Center',
       projects: 'Projekt',
       dashboard: 'Dashboard',
+      monitoring: 'Monitoring',
       portals: 'Portale & Dateien',
       contacts: 'Kontakte',
       cases: 'Fälle',
@@ -106,6 +109,7 @@
   // директно към своята секция в „Настройки“ — едно място за логиката, без копия.
   const NAV = [
     { id: 'dashboard', ico: 'dashboard' },
+    { id: 'monitoring', ico: 'chart' },
     { id: 'portals', ico: 'folder' },
     { id: 'contacts', ico: 'person' },
     { id: 'cases', ico: 'case' },
@@ -141,6 +145,9 @@
     // (`routes/*` → `adminGate`), за да не се показва панел, който ще отговори 403.
     panels.registerAll([
       { id: 'dashboard', title: 'Табло', global: 'HapiDashboardPanel' },
+      // Мониторингът е ЕДНА страница за всичко, което add-on-ът мери (0.69.205).
+      // Иска същата способност като сензорите, защото без нея няма какво да покаже.
+      { id: 'monitoring', title: 'Мониторинг', global: 'HapiMonitoringPanel', capabilities: ['sensors'] },
       { id: 'about', title: 'Относно', global: 'HapiDashboardPanel', method: 'mountAbout' },
       { id: 'report', title: 'Report Studio', global: 'ReportStudio', capabilities: ['settings'] },
       { id: 'visitors', title: 'Посетители', global: 'HapiVisitorsPanel', capabilities: ['sensors'] },
@@ -398,6 +405,16 @@
     return true;
   }
 
-  window.HapiUI = { toast, t, getLang: () => lang, setLang, go, nav: () => NAV.map((item) => ({ id: item.id, ico: item.ico })) };
+  // `nav()` издава СЪЩОТО, което рисува менюто: скритите входове (`hidden: true`, напр. `qr`
+  // — отваря се от картата на портала) не са раздели и не бива да стават бутони на таблото.
+  // Иначе таблото показваше 17 бутона при 16 в менюто и подписът „същите като в менюто“ лъжеше.
+  window.HapiUI = {
+    toast,
+    t,
+    getLang: () => lang,
+    setLang,
+    go,
+    nav: () => NAV.filter((item) => !item.hidden).map((item) => ({ id: item.id, ico: item.ico })),
+  };
   document.addEventListener('DOMContentLoaded', boot);
 })();

@@ -9,8 +9,10 @@
 //
 // Тестът пази три неща:
 //   1. скалата `--sp-*` и радиусите съществуват с ТОЧНИ стойности (те са договорът);
+//   1б. СЕМАНТИЧНИТЕ токени (`--gap-panels`, `--pad-card`, …) съществуват и компонентите
+//      питат тях, а не „някое“ число от скалата (0.69.205);
 //   2. „главите“ на блоковете (където подредбата се засича) нямат нито един px литерал;
-//   3. броят на литералните стойности НЕ РАСТЕ (ratchet): днес е 257 отстояния и 49 радиуса,
+//   3. броят на литералните стойности НЕ РАСТЕ (ratchet): днес е 253 отстояния и 49 радиуса,
 //      всяко ново локално задание чупи теста и трябва да мине през `var(--sp-*)`.
 //      Числата се намаляват, когато се оправят, никога не се вдигат.
 //
@@ -67,6 +69,57 @@ assert.match(block('.fm-file-ico'), /border-radius: var\(--radius-sm\);/);
 assert.match(block('.btn'), /padding: var\(--sp-4\) var\(--sp-6\);/);
 assert.match(block('.btn'), /border-radius: var\(--radius-md\);/);
 
+// ── 3б. СЕМАНТИЧНИ отстояния: скалата е суровината, договорът е ИМЕТО ────────
+// Докладван проблем (0.69.205): скалата съществуваше, но всеки компонент пак избираше
+// „някое“ число от нея — затова между панели, карти, бутони и табелки имаше четири
+// различни междини. Сега компонентите питат ЗА КАКВО е отстоянието, не „колко“.
+const SEMANTIC = [
+  ['--gap-panels', /var\(--sp-6\)/],
+  ['--gap-cards', /var\(--grid-gap\)/],
+  ['--gap-buttons', /var\(--sp-3\)/],
+  ['--gap-text', /var\(--sp-2\)/],
+  ['--gap-badges', /var\(--sp-2\)/],
+  ['--pad-panel', /var\(--sp-7\)/],
+  ['--pad-card', /var\(--sp-5\) var\(--sp-6\)/],
+];
+for (const [name, value] of SEMANTIC) {
+  assert.match(tokens, new RegExp(`${name}: ${value.source};`), `липсва семантичен токен ${name}`);
+}
+// Панел до панел: една междина за всички страници, не margin по всеки панел.
+assert.match(block('.panel+.panel'), /margin-top: var\(--gap-panels\);/);
+// Картите в таблото: и междина, и отстъп идват от семантиката. Проверяват се САМО
+// отстоянията — 1px рамка е линия, не междина.
+const spacingOf = (selector) => [...block(selector).matchAll(/(?:^|;)\s*(padding|margin|gap)(?:-[a-z-]+)?\s*:\s*([^;]+)/g)].map(
+  (m) => m[2].trim(),
+);
+for (const selector of ['.dash-grid', '.dash-card']) {
+  const spacing = spacingOf(selector);
+  assert.ok(spacing.length > 0, selector + ' не задава отстояние');
+  for (const value of spacing) {
+    assert.equal(/\d+px/.test(value), false, selector + ' ползва литерал „' + value + '“ вместо семантичен токен');
+  }
+}
+assert.match(block('.dash-grid'), /gap: var\(--gap-cards\);/);
+assert.match(block('.dash-card'), /gap: var\(--gap-text\);/);
+assert.match(block('.dash-card'), /padding: var\(--pad-card\);/);
+// Табелките: еднаква междина между две съседни, без ляво/дясно по ръка.
+assert.match(block('.state-chip'), /padding: var\(--sp-1\) var\(--sp-4\);/);
+
+// ── 3в. БУТОНИТЕ СА РАВНИ ПО ШИРИНА ────────────────────────────────────────
+// „Бутоните не са процентно разпределени по реда“ (0.69.205): всеки бутон беше колкото
+// текста си. Група от бутони вече е мрежа с равни дялове (1fr), а самите бутони я пълнят.
+for (const selector of ['.quick-grid', '.row-actions']) {
+  const body = block(selector);
+  assert.match(
+    body,
+    /grid-template-columns: repeat\(auto-fit, minmax\(\d+em, 1fr\)\);/,
+    selector + ' трябва да дели реда на равни дялове (1fr), а не по ширината на текста',
+  );
+  assert.match(body, /gap: var\(--gap-buttons\);/, selector + ' ползва семантичната междина за бутони');
+  assert.equal(/\d+px/.test(body), false, selector + ' ползва px литерал');
+  assert.match(block(selector + ' .btn'), /width: 100%;/, selector + ' .btn не пълни своя дял');
+}
+
 // ── 4. Печатните единици са само в печатната част ────────────────────────────
 const printAt = css.indexOf('@media print');
 assert.ok(printAt > 0, 'липсва печатна секция');
@@ -82,8 +135,8 @@ const uniqueLiteral = new Set(literal).size;
 const radii = [...css.matchAll(/border-radius\s*:\s*([^;}]+)/g)].map((m) => m[1].trim());
 const literalRadii = radii.filter((v) => !/var\(--/.test(v)).length;
 
-const LIMIT_SPACING = 257;
-const LIMIT_UNIQUE = 83;
+const LIMIT_SPACING = 253;
+const LIMIT_UNIQUE = 81;
 const LIMIT_RADII = 49;
 assert.ok(
   literal.length <= LIMIT_SPACING,
@@ -106,7 +159,8 @@ assert.ok(
 );
 
 console.log(
-  'PASS ui-spacing: скала --sp-1…--sp-10 · главите на блоковете без px литерал · ' +
+  'PASS ui-spacing: скала --sp-1…--sp-10 · седем семантични токена · равни дялове за бутоните · ' +
+  'главите на блоковете без px литерал · ' +
   `${tokenised}/${declarations.length} отстояния през променлива · ` +
   `${literal.length} литерални (таван ${LIMIT_SPACING}) · ${uniqueLiteral} уникални (таван ${LIMIT_UNIQUE}) · ` +
   `радиуси ${literalRadii} литерални (таван ${LIMIT_RADII}) · mm само в печатната част`,

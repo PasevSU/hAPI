@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **131** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **133** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -138,6 +138,8 @@ _Генериран списък: **131** документа. Пише се от
 | `07_RELEASE/AUDIT-PROTOCOL.md` | Протокол от одита и изданието |
 | `07_RELEASE/FEATURE_PARITY.md` | Паритет на функциите: `PasevSU/hAPI` ↔ това хранилище |
 | `07_RELEASE/QUALIFICATION_PLAN.md` | Qualification Plan — hAPI Enterprise |
+| `07_RELEASE/RELEASE_0.69.204.md` | Издание 0.69.204 — мутационен одит на собствените твърдения |
+| `07_RELEASE/RELEASE_0.69.205.md` | Издание 0.69.205 — правила за интерфейса: идеи, причини, резултати |
 | `07_RELEASE/RELEASE_0.69.87.md` | Издание 0.69.87 — какво влезе, защо и как е проверено |
 | `07_RELEASE/RELEASE_BUILD.md` | Изграждане и проверка на издание (Home Assistant) |
 | `07_RELEASE/RELEASE_CHECKLIST.md` | Release Checklist — hAPI Enterprise |

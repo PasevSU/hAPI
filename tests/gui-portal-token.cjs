@@ -41,8 +41,8 @@ const cookieOf = (res) => {
     ui.window.FilesManagerPanel.state.openPortal = portalId;
     ui.window.FilesManagerPanel.state.panel = 'actions';
     ui.window.FilesManagerPanel.mount(host);
-    // Блоковете са сгънати по подразбиране — разгъваме ги с истинските им заглавия.
-    await expandPortalBlocks(host);
+// Блоковете са сгънати по подразбиране, а са и акордеон — разгъваме САМО този с токените.
+await expandPortalBlocks(host, { block: 'control' });
 
     await waitFor(() => host.textContent.includes('Публичен достъп'), { label: 'секцията „Публичен достъп“' });
 
