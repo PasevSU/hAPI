@@ -211,8 +211,16 @@
     }
   }
 
+  /** Свързва етикетите с полетата в изгледа (`for`/`id`) веднага след рендер (DEF-38). */
+  function bindLabels(root) {
+    if (root && window.HapiFieldLabels) window.HapiFieldLabels.bind(root);
+  }
+
   function renderView() {
     const view = $('#view');
+    // Етикетите на полетата се свързват с тях (`for`/`id`) — иначе екранният четец не
+    // обявява име (DEF-38). Прави се след всеки рендер; виж и наблюдателя по-долу, защото
+    // панелите рисуват наново и СЛЕД монтирането (при заредени данни).
     // Всеки панел, който има `unmount`, получава шанс да освободи ресурси (напр. отворен SSE
     // поток). Досега това ставаше САМО за таблото, тоест панел със слушател оставаше монтиран
     // след напускане — видимо като растящ брой клиенти в `/admin/api/events`. Проверката е през
@@ -232,11 +240,13 @@
     if (panels && panels.available(current)) {
       view.innerHTML = '';
       const mounted = panels.mount(current, view, { capabilities });
+      bindLabels(view);
       if (mounted === true) return;
       if (mounted === 'DENIED') {
         // Различава се от „липсва панел“: човекът има право да знае, че не е за него, а не
         // че модулът липсва. Правата ги налага сървърът; тук само не се показва бутон.
         view.innerHTML = `<div class="page-title"><h1>${esc(t(current))}</h1><p class="muted">${esc(t('noPermission'))}</p></div>`;
+        bindLabels(view);
         return;
       }
     }
@@ -245,6 +255,7 @@
       view.innerHTML = '';
       window.SettingsPanel.state.section = 'general';
       window.SettingsPanel.mount(view);
+      bindLabels(view);
       return;
     }
     // Панел, чиито данни живеят в секция на „Настройки“ (UI-01): отваряме точно нея.
@@ -253,6 +264,7 @@
       view.innerHTML = '';
       window.SettingsPanel.state.section = navItem.section;
       window.SettingsPanel.mount(view);
+      bindLabels(view);
       return;
     }
     // Нищо друго не бива да се показва като „данни“: ако панелът не е монтиран, казваме го.
@@ -267,6 +279,7 @@
             проблемът остане, провери дали всички файлове от <code>ui/</code> са налични в изданието.</p>
         </div>
       </section>`;
+    bindLabels(view);
   }
 
   function setLang(next) {
@@ -389,6 +402,16 @@
     document.querySelector('.langs button[data-lang="bg"]').classList.add('active');
     const versionEl = document.getElementById('app-version');
     if (versionEl) versionEl.textContent = versionLabel();
+    // Наблюдател: панел, който се рисува наново след зареждане на данни, също получава
+    // свързани етикети, без да знае за това правило (DEF-38). Гледа се само `#view`, а
+    // смяната на атрибути не поражда `childList` — тоест няма безкраен цикъл.
+    const viewRoot = $('#view');
+    if (viewRoot && typeof MutationObserver === 'function') {
+      const labels = new MutationObserver(() => {
+        if (window.HapiFieldLabels) window.HapiFieldLabels.bind(viewRoot);
+      });
+      labels.observe(viewRoot, { childList: true, subtree: true });
+    }
     renderNav();
     renderView();
     void loadCapabilities();

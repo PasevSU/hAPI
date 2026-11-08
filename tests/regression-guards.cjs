@@ -58,6 +58,7 @@ const GUARDS = {
   'DEF-35': ['secret-panel.cjs', 'signed-url-restart.cjs'], // подписът не е страничен ефект на рисуването
   'DEF-36': ['files-manager.cjs', 'gui-sections.cjs'], // без видим и мъртъв бутон
   'DEF-37': ['ui-spacing.cjs'], // договорът за отстояния
+  'DEF-38': ['ui-field-labels.cjs'], // етикетите се свързват с полетата след всеки рендер
   'DEF-39': ['runtime-config.cjs', 'data-settings.cjs'], // частичен запис не връща съседните полета
   'DEF-40': ['api-input-errors.cjs'], // тяло `null` не е 500
   'DEF-41': ['cases.cjs', 'api-robustness.cjs'], // липсваща колекция не е 500
@@ -83,6 +84,7 @@ const ANCHORS = {
   'DEF-07': { file: 'qr-leads-to-folder.cjs', contains: 'qrTarget' },
   'DEF-15': { file: 'download-stream.cjs', contains: "'accept-ranges'" },
   'DEF-37': { file: 'ui-spacing.cjs', contains: 'LIMIT_SPACING' },
+  'DEF-38': { file: 'ui-field-labels.cjs', contains: 'HapiFieldLabels' },
   'DEF-48': { file: 'ui-spacing.cjs', contains: 'LIMIT_RADII' },
   'DEF-50': { file: 'sse-ticket.cjs', contains: 'ticket' },
   'DEF-53': { file: 'storage-roots.cjs', contains: 'нито един тест не строи' },

@@ -5,7 +5,7 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **114** backend модула · **17** HTTP компонента · **26** UI модула · **9** Python модула · **40** инструмента · **390** теста.
+Общо: **114** backend модула · **17** HTTP компонента · **27** UI модула · **9** Python модула · **40** инструмента · **391** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -151,7 +151,7 @@
 | `hapi_enterprise/routes/reports.js` | Report Studio + RFC 3161 — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/webhooks.js` | Webhooks с HMAC — административен компонент на HTTP слоя (F4-7). |
 
-### Интерфейс (`hapi_enterprise/ui/*.js`) (26)
+### Интерфейс (`hapi_enterprise/ui/*.js`) (27)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -163,6 +163,7 @@
 | `hapi_enterprise/ui/debug-objects.js` | ДЕБЪГ ИНСТРУМЕНТ: автоматично разпознаване на обектите в панела и прилагане на |
 | `hapi_enterprise/ui/directory-panel.js` | Контакти и дела (самостоятелни панели). Ползват същите административни API-та |
 | `hapi_enterprise/ui/export-center.js` | Export & Download Center (FD-2). |
+| `hapi_enterprise/ui/field-labels.js` | Етикети на полетата — едно място, след всеки рендер (DEF-38). |
 | `hapi_enterprise/ui/files-manager.js` | Портали & файлове (единен модул, план 17 + API-01/02). |
 | `hapi_enterprise/ui/i18n.js` | Речник за СЪДЪРЖАНИЕТО на панелите (не само навигацията) — BG/EN/DE. |
 | `hapi_enterprise/ui/icons.js` | Един набор от ИКОНИ за целия интерфейс — вградени SVG (без шрифт-икони, без CDN). |

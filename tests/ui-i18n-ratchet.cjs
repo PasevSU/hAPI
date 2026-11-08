@@ -49,6 +49,7 @@ const CEILING = {
   'debug-objects.js': 612,
   'directory-panel.js': 989,
   'export-center.js': 1977,
+  'field-labels.js': 0,
   'files-manager.js': 9672,
   'icons.js': 0,
   'monitoring-panel.js': 1831,
