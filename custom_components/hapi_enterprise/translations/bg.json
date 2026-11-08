@@ -156,6 +156,18 @@
       },
       "integrity_failed": {
         "name": "Провалени проверки на целостта"
+      },
+      "guardian_state": {
+        "name": "Състояние на Guardian"
+      },
+      "guardian_failures": {
+        "name": "Последователни грешки на Guardian"
+      },
+      "guardian_cache_candidates": {
+        "name": "Наблюдения за кеш оптимизация"
+      },
+      "guardian_success_percent": {
+        "name": "Потвърдена увереност за успех"
       }
     },
     "binary_sensor": {
@@ -167,6 +179,9 @@
       },
       "public_gateway_security_alert": {
         "name": "Сигурностна тревога на публичния gateway"
+      },
+      "guardian_issue": {
+        "name": "Проблем с Guardian"
       }
     }
   }
