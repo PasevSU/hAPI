@@ -1,0 +1,753 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "KNOWN_DEFECTS.md (main), 0.69.203",
+  "sourceSha": "cfc4fa052f3e57ed9920bc316fcd5cb9b9b17cf7",
+  "interpretation": "Historical cases for regression surveillance; not evidence of currently active defects. No model-weight training.",
+  "count": 46,
+  "defects": [
+    {
+      "id": "DEF-01",
+      "domain": "Документация",
+      "severity": "Ниска",
+      "state": "accepted",
+      "statusSource": "Приет (документиран; документът е исторически)",
+      "summary": "docs/plan/07-security-v4.3.md съдържа прилепен препис на чата за multi-tenancy (от ~L1937) — втори език на истината в исторически документ. Главният план 08-master-plan-v5.0.md е над него.",
+      "modules": [],
+      "testHints": [],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-02",
+      "domain": "—",
+      "severity": "—",
+      "state": "closed",
+      "statusSource": "Затворен (не е дефект)",
+      "summary": "„Локалната папка е hAPI Enterptice“ (печатна грешка) — папката е D:\\hAPI; такъв дефект няма.",
+      "modules": [],
+      "testHints": [],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-03",
+      "domain": "Портал",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (сверка в браузъра + `portal-hash-verify`)",
+      "summary": "Публичната страница показваше SHA-256, но не сверяваше изтегленото в браузъра — **затворен**: portal.js в двете копия (add-on и интеграция) смята crypto.subtle.digest(\"SHA-256\") върху blob.arrayBuffer() — същите байтове, които се записват — и при разминаване **не записва файла**. Без WebCrypto (страница по HT",
+      "modules": [
+        "portal.js",
+        "portal-i18n.js"
+      ],
+      "testHints": [],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-04",
+      "domain": "Крипто",
+      "severity": "Висока",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "RFC 3161 времеви печат и PKCS#7 подпис — **затворени**: tsa-client.js (вкл. /rfc3161/verify), cms-sign.js, report-stamp.js; тестове report-tsa-e2e, tsa-client, report-stamp.",
+      "modules": [
+        "tsa-client.js",
+        "cms-sign.js",
+        "report-stamp.js"
+      ],
+      "testHints": [],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-05",
+      "domain": "Крипто",
+      "severity": "Ниска",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "SHA-512 в манифеста — **има го**: report-manifest.js (HASH_ALGORITHMS) = CRC32, MD5, SHA1, SHA256, SHA512.",
+      "modules": [
+        "report-manifest.js"
+      ],
+      "testHints": [],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-06",
+      "domain": "Експлоатация",
+      "severity": "Средна",
+      "state": "open",
+      "statusSource": "Отворен (иска root/Object Lock, не код)",
+      "summary": "WORM е частичен: chmod 0444 пази от презаписване навсякъде (вкл. NTFS), а при архивиране байтовете влизат в печат .worm/<sha256> и се връщат с проверен хеш (worm.js, tests/sealed-vault.cjs). Физическата неизтриваемост иска chattr +i (root) или Object Lock — каквито основното хранилище няма.",
+      "modules": [
+        "worm.js"
+      ],
+      "testHints": [
+        "sealed-vault.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-07",
+      "domain": "Портал",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "QR кодът на папката кодираше JSON адреса /tree?path=… — сканиран с телефон, кодът отваряше суров JSON вместо портала на тази папка, докато QR-ът на портала отдавна води до страницата. **Затворен**: server.js кодира /p/<id>?folder=<папка> (за частен портал — със същия подписан достъп като QR-а на портала), api",
+      "modules": [
+        "server.js",
+        "api-spec.js"
+      ],
+      "testHints": [
+        "portal-chain.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-08",
+      "domain": "Портал",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "Страницата portal.html, която се записва В папката на портала, изреждаше само регистрираните файлове (качванията през API-то) — при портал върху реална папка тя казваше „още няма файлове“, докато до нея лежаха документите. Същото и на /portal.html?folder=<slug>. **Затворен**: portal-folder.js обхожда папката ",
+      "modules": [
+        "portal-folder.js",
+        "server.js"
+      ],
+      "testHints": [
+        "portal-folder-artifacts.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-09",
+      "domain": "Тайни връзки",
+      "severity": "Висока",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "Почистването на тайни (secret-links.js, sweep) триеше запис, който НЕ е успяло да прочете: read() поглъщаше всяка грешка и връщаше null, а null значеше „невалиден запис“. Едно EACCES/EIO/EMFILE изтриваше валидна, още неотворена тайна. **Затворен**: readRecord() различава „липсва“/„повреден“/код на грешката; s",
+      "modules": [
+        "secret-links.js"
+      ],
+      "testHints": [
+        "secret-sweep.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-10",
+      "domain": "Експлоатация",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "Споделеният режим на заключването (instance-lock.js, writePeer) нямаше повторен опит при rename, макар че точно там няколко процеса пишат в една папка — един задържан файл от антивирусна чупеше сърцебиенето; изчакването в другия път беше while (Date.now() < until) {}, което блокира събитийния цикъл и върти яд",
+      "modules": [
+        "instance-lock.js"
+      ],
+      "testHints": [
+        "instance-lock-retry.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-11",
+      "domain": "Експлоатация",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "Политиката за задържане (retention.js) съдеше недатируемите одитни редове различно в отчет и в действие: preview ги броеше за неизтекли, apply ги триеше и ги отчиташе като „изтекли по възраст“. Повреденият (недописан) ред е следа от прекъснат запис и изчезваше. **Затворен**: едно правило auditLineAt() за дват",
+      "modules": [
+        "retention.js"
+      ],
+      "testHints": [
+        "retention-audit-lines.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-12",
+      "domain": "Хранилище",
+      "severity": "Висока",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "core-store.js: ключът на променлива беше {префикс}-{db}-{ГРУПА}-{поле}, тоест два записа в една група с едно и също поле деляха ЕДИН ключ — ON CONFLICT(key) презаписваше стойността, а record_id оставаше на първия запис. Вторият запис записваше върху първия и четеше празно. **Затворен**: областта е записът ({г",
+      "modules": [
+        "core-store.js"
+      ],
+      "testHints": [
+        "core-store.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-13",
+      "domain": "Хранилище",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "Числово поле в core-store.js се разчиташе с Number(String(v).replace(',','.')) — една замяна и без махане на интервалите, затова „1 234,50“ и „1.234,56“ даваха NaN, който се записваше мълчаливо (колоната value_number празна, стойността се чете после като текст „NaN“). **Затворен**: разчитат се българските и а",
+      "modules": [
+        "core-store.js"
+      ],
+      "testHints": [
+        "core-store.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-14",
+      "domain": "Хранилище",
+      "severity": "Ниска",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "rekey в core-store.js подаваше updated_at и за created_at, тоест преместването на запис между групи презаписваше кога е създадена стойността с кога е последно променена. **Затворен**: преместването сменя само ключа, двете времена остават тези на стойността. Проверява се от core-store.cjs.",
+      "modules": [
+        "core-store.js"
+      ],
+      "testHints": [
+        "core-store.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-15",
+      "domain": "Изтегляне",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "download-stream.js изпращаше заглавките веднага след създаването на четящия поток, тоест ПРЕДИ файлът да е отворен. При липсващ, заключен или недостъпен файл (ENOENT, EACCES) res.headersSent вече беше истина, затова клонът с грешката не се изпълняваше и клиентът получаваше **200 с празно тяло и скъсана връзка",
+      "modules": [
+        "download-stream.js"
+      ],
+      "testHints": [
+        "download-stream.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-16",
+      "domain": "Документация",
+      "severity": "Ниска",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.162)",
+      "summary": "В reports/SCRIPT-ANALYSIS.md (в издадените преди това версии) две числа бяха написани, без да са измерени: разпределението на 88-те погълнати обещания („25/57/4/2“) и делението на 15-те синхронни четения („9 при старт / 6 по заявка“). Измерването по извикването преди .catch( дава 13 rm · 4 unlink · 3 remove ·",
+      "modules": [
+        "res.js"
+      ],
+      "testHints": [
+        "script-audit.cjs",
+        "analysis-claims.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-17",
+      "domain": "Портал",
+      "severity": "Висока",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "На **чиста инсталация** (нула портала) панелът files-manager.js рисуваше само подсказката „Няма портали. Създай първия с «Нов портал»“ — без самия бутон, за който говори — и излизаше от render() преди wire(), тоест дори добавен бутон щеше да е мъртъв. Портал не можеше да се създаде от интерфейса изобщо. **Зат",
+      "modules": [
+        "files-manager.js"
+      ],
+      "testHints": [
+        "gui-journeys.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-18",
+      "domain": "Портал",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "Качването на файлове от папка (uploadFolderFiles) броеше успешните качвания, но не пре-читаше портала: съобщението казваше „качени 2 файла“, а списъкът оставаше празен до ръчно обновяване. Единичното качване вече викаше reload(), а пътят с папка — не. **Затворен**: след успешно качване панелът пре-чита портал",
+      "modules": [],
+      "testHints": [
+        "gui-journeys.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-19",
+      "domain": "Портал",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен",
+      "summary": "generateApi в files-manager.js четеше препратките от record.references, а buildApiRecord дава същите адреси на горно ниво (apiUrl, manifest, files, storage, landing) — ключ references в записа няма. Затова state.api[id].refs беше празен обект: контролният панел показваше редовете „API“, „Манифест“, „Файлове“,",
+      "modules": [
+        "files-manager.js"
+      ],
+      "testHints": [
+        "gui-journeys.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-20",
+      "domain": "Портал",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.162)",
+      "summary": "Страницата на портала през Home Assistant отговаряше 200, но заковаваше на „Зареждане…“: PortalAPI връщаше **401** без X-Portal-Key, макар че същите данни излизат през публичния канал — тоест ПУБЛИЧЕН портал не можеше да се отвори без ключ. Отделно QR порталът нямаше нито един вход към папката: посетителят ви",
+      "modules": [],
+      "testHints": [
+        "qr-leads-to-folder.cjs",
+        "portal-folder-button.cjs",
+        "gui-open-portal-link.cjs",
+        "ha-auth-contract.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-21",
+      "domain": "Панел",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.162)",
+      "summary": "Менюто на API-то в панела (Отвори / Изтегли) теглеше ПУБЛИЧНИЯ адрес от api.json (https://<домейн>/api/v1/p/<slug>), докато панелът се отваря на произхода на Home Assistant — браузърът блокираше заявката с Content-Security-Policy: connect-src 'self' и двете действия не правеха нищо. **Затворен**: sameOrigin()",
+      "modules": [
+        "api.js",
+        "files-manager.js",
+        "api-base.js"
+      ],
+      "testHints": [
+        "gui-csp-same-origin.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-22",
+      "domain": "Тестове",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.162)",
+      "summary": "Тестовете на панела вървяха в DOM без браузър, тоест БЕЗ Content-Security-Policy — затова заявка към чужд произход минаваше в теста и се проваляше едва при човека (Connecting to 'https://…/api/v1/p/…' violates \"connect-src 'self'\"). Липсваше тестер, който да налага политиката. **Затворен**: csp.cjs обвива fet",
+      "modules": [],
+      "testHints": [
+        "csp.cjs",
+        "gui-csp-guard.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-23",
+      "domain": "Портал",
+      "severity": "Висока",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.162)",
+      "summary": "На РЕАЛНАТА инсталация всеки адрес на портал отваряше **404**, включително публичен и адресът, който носи QR кодът: start.js налагаше REQUIRE_PORTAL_TOKEN='true', portal-policy.js прескача правилото „публичен портал без идентичност“, а adminPortal връща празен accessQuery — тоест и подписаният достъп липсва. ",
+      "modules": [
+        "start.js",
+        "portal-policy.js",
+        "server.js"
+      ],
+      "testHints": [
+        "start-portal-open.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-24",
+      "domain": "Портал",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.162)",
+      "summary": "Портал **не можеше да се закрие от интерфейса** — в панела нямаше нито едно действие за това, а единственият път (DELETE /admin/api/portals/<id>) триеше файловете, API папката и записа **безвъзвратно** и на секундата. Тоест „махни този портал“ беше или невъзможно за човека (нарушение на правилото „всичко мина",
+      "modules": [
+        "portal-archive.js"
+      ],
+      "testHints": [
+        "portal-archive.cjs",
+        "gui-journeys.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-25",
+      "domain": "Крипто / Документация",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.168)",
+      "summary": "Документацията твърдеше, че включване на pgp_encrypt_paths/pgp_encrypt_workdir **без ключ отказва старт** (PGP_SECRET_KEY_REQUIRED), но кодът не го прави: path-crypto.js (requireEncryptionKey) хвърля едва при ПЪРВОТО криптиране, а стартът продължава. Затова на жива инсталация човек вижда две отметки „криптира",
+      "modules": [
+        "path-crypto.js",
+        "server.js"
+      ],
+      "testHints": [
+        "settings-defaults.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-26",
+      "domain": "Портал (панел)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.178)",
+      "summary": "До QR кода в контролния панел се стигаше с три действия: блокът се отваря ръчно, кодът е най-долу в дясната колона, а беше и малък (.qf-svg svg = 24% от ширината); адресът НЕ се виждаше като текст (само бутон „Копирай адреса“), така че не можеше нито да се прочете, нито да се провери. Подписаният достъп на ча",
+      "modules": [
+        "api.js",
+        "portal-control.js",
+        "files-manager.js"
+      ],
+      "testHints": [
+        "portal-card-link.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-27",
+      "domain": "Портал (панел)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.178)",
+      "summary": "Втори кръг по картата, след като първият я направи видима: (а) панелът теглеше сензорите **два пъти** при всяко отваряне — mount() вика loadMonitor(), а reload() (който върви веднага след него и след всяко действие) го викаше пак, тоест излишна заявка и по-бавна карта; (б) „Свали api.json“ **мълчеше** — файлъ",
+      "modules": [
+        "api.js"
+      ],
+      "testHints": [
+        "dom-stub.cjs",
+        "portal-card-link.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-28",
+      "domain": "Портал (панел) / i18n",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.178)",
+      "summary": "Панелът „Портали & файлове“ беше **само на български**, при положение че интерфейсът има речник за BG/EN/DE: settings-panel.js ползва T( 126 пъти, а files-manager.js и portal-control.js — нула. Това е остатъкът от BUG-11, за който се твърдеше, че е решен: немският или английският потребител виждаше преведено ",
+      "modules": [
+        "settings-panel.js",
+        "files-manager.js",
+        "portal-control.js",
+        "i18n.js"
+      ],
+      "testHints": [
+        "ui-i18n.cjs",
+        "files-manager.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-29",
+      "domain": "Портал (панел) / подредба",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.178)",
+      "summary": "Картата беше **разпръсната на три отделни реда** от бутони (u-row u-row-3, u-row u-row-3, u-row u-row-1), а QR стоеше извън групата на действията. На тясна карта (телефон или колона под Ingress) решетките се счупват на една колона и се получава стена от бутони един под друг, а адресът остава отделно — точно т",
+      "modules": [],
+      "testHints": [
+        "portal-card-link.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-30",
+      "domain": "Портал (публична страница)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.178)",
+      "summary": "Страницата, до която води QR кодът, беше устроена като  „заглавна част с бутони + карти с бутони“: пет едри бутона в хедъра (копирай, папка, API,  манифест, език) и отделна карта с рамка и собствени бутони за ВСЕКИ файл. За хранилище това  е грешният акцент — важното е списъкът с документи, а действията са вт",
+      "modules": [],
+      "testHints": [
+        "portal-page-render.cjs",
+        "portal-no-links.cjs",
+        "portal-page-contract.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-31",
+      "domain": "Портал (панел) / QR",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.179)",
+      "summary": "QR кодът се рисуваше на **три места** в панела — в картата на портала, в „Сподели / QR“ на **всеки файл** и в менюто на **всяка папка** — и трите кодираха различни адреси, а двата странични не бяха годни за получател: файловият носеше подписан адрес с живот **1 час** (ensureSigned, ttlSeconds: 3600) или, за з",
+      "modules": [
+        "api.js",
+        "portal-control.js",
+        "files-manager.js",
+        "portal-folders.js"
+      ],
+      "testHints": [
+        "portal-chain.cjs",
+        "portal-card-link.cjs",
+        "files-manager.cjs",
+        "folder-delete.cjs",
+        "gui-journeys.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-32",
+      "domain": "Портал (сървър) / подписан достъп",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.180)",
+      "summary": "adminPortal издаваше подписа за портала **два пъти** в един и същ обектен литерал — веднъж за accessQuery и веднъж за accessExpires (portal-access.js · issue()). Двете извиквания четат часовника поотделно, така че при смяна на секундата адресът, който панелът показва, изтичаше в един момент, а обявеният час с",
+      "modules": [
+        "portal-access.js",
+        "server.js"
+      ],
+      "testHints": [
+        "portal-page.cjs",
+        "files-manager.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-33",
+      "domain": "Портал (панел) / карта",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.181)",
+      "summary": "Адресът на портала се показваше на две места — табелка в картата и поле с „Копирай“ в блока „Връзка и QR код“ — но действията ѝ работеха върху адреса на **API-то**: „Копирай“ даваше /api/v1/p/<slug>?expires=…&sig=… (JSON, не страницата), „Отвори“ отваряше същия JSON, а „Свали api.json“ не сваляше файл — за ча",
+      "modules": [
+        "portal-control.js",
+        "files-manager.js"
+      ],
+      "testHints": [
+        "portal-card-link.cjs",
+        "files-manager.cjs",
+        "gui-portal-refs.cjs",
+        "gui-open-portal-link.cjs",
+        "gui-csp-guard.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-34",
+      "domain": "Портал (публична страница)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.184)",
+      "summary": "Страницата показваше QR код към **самата себе си**: посетителят вече е на нея, а кодът заемаше половин екран с подсказка „сканирай, за да отвориш портала“ — кръгова препратка, която противоречи на PP-04 (страницата не е „сайт с линкове“). **Затворен**: панелът .qr-panel е махнат от portal.html, #qr/#qr-hint/#",
+      "modules": [
+        "portal.js",
+        "qr.js"
+      ],
+      "testHints": [
+        "portal-page.cjs",
+        "portal-page-contract.cjs",
+        "portal-page-render.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-35",
+      "domain": "Панел („Сподели“ на файл)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.185)",
+      "summary": "Панелът издаваше подписания адрес като **страничен ефект на рисуването** (if (isFree && !link) void ensureSigned(f) в sharePane), а ensureSigned прерисуваше само страницата под модала — затова отвореният панел оставаше на „издава се…“ и човек натискаше „Нов ключ“. Кешът пазеше само адреса, без край на валидно",
+      "modules": [],
+      "testHints": [
+        "gui-file-share.cjs",
+        "files-manager.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-36",
+      "domain": "Панел (модал на файл)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.186)",
+      "summary": "Бутонът „Изтегли“ в заглавната лента на модала беше **видим и мъртъв** в панелите: стилът .btn { display: inline-flex } надвишава браузърното правило за [hidden], а showModal слага onclick само когато има downloadName (прегледано съдържание) — за „Действия“, „Разписка“, „Сподели“ обработчикът беше null. Отдел",
+      "modules": [],
+      "testHints": [
+        "gui-file-share.cjs",
+        "files-manager.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-37",
+      "domain": "Дизайн система",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.189)",
+      "summary": "Отстоянията нямаха централизиран договор: 300 декларации за padding/margin/gap в components.css ползваха **97 различни стойности**, а само 23 идваха от CSS променлива (шрифтовете отдавна минават през --fs-*). Затова едни и същи по роля „глави“ на блокове имаха три различни отстъпа (12px 14px · 8px 12px · 6px)",
+      "modules": [],
+      "testHints": [
+        "ui-spacing.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-38",
+      "domain": "Панел (достъпност)",
+      "severity": "Средна",
+      "state": "open",
+      "statusSource": "Отворен (0.69.191) — поправката иска `for`/`id` по формулярите или централизирано свързване на етикетите след рендер; инструментът я показва при всяко сканиране",
+      "summary": "Етикетите на полетата стоят **до** полето, но не са свързани с него: <div class=\"field\"><label>Тема</label><input …> без for/id и без обвиващ <label>. Визуално всичко изглежда наред, но екранният четец не обявява име на полето. Открито от дебъгинг инструмента (закон named), който при сканиране на живия портал",
+      "modules": [],
+      "testHints": [],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-39",
+      "domain": "Настройки",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.196)",
+      "summary": "Частичен запис на вложена настройка **връщаше съседните полета към подразбирането**: runtime.save() сливаше само sensors, а validateLimits/validateData/validateRetention/validatePreview започват от DEFAULT. Затова PATCH {limits:{publicBaseUrl}} (пътят на секция „Основни“) изтриваше зададените maxUploadMb, max",
+      "modules": [
+        "runtime-config.js",
+        "settings-panel.js"
+      ],
+      "testHints": [
+        "settings-policies.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-40",
+      "domain": "API (вход)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.196)",
+      "summary": "Тяло null — **валиден JSON** — връщаше **500** на 29 административни маршрута: parse() го подаваше нататък и null.field е TypeError, тоест клиентът четеше „Internal error“ и журналът пазеше unhandled за своя грешка. Същото важеше за четирите места в routes/reports.js, които разчитат тялото на място (PDF/CMS д",
+      "modules": [
+        "reports.js",
+        "server.js"
+      ],
+      "testHints": [
+        "api-robustness.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-41",
+      "domain": "API (дела)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.196)",
+      "summary": "GET /admin/api/evidence/assignments отговаряше **500** винаги когато db.cases липсва: мъртъв ред Array.isArray(getCases && getCases().users) достъпваше .users на undefined, макар резултатът му да се изхвърляше с void. **Затворен**: редът е премахнат (нямаше ефект), а не обвит в try. Проверява се от api-robust",
+      "modules": [],
+      "testHints": [
+        "api-robustness.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-42",
+      "domain": "Интеграция (сензори)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.199)",
+      "summary": "Сензорът sensor.hapi_enterprise_add_on_version **не се създаваше** в Home Assistant 2026.11: описанието на сензорите имаше suggested_display_precision: int = 0 като подразбиране за ВСЕКИ сензор, а HA отказва текстова стойност с прецизия (ValueError: … suggesting precision '0' … non-numeric value: '0.69.198').",
+      "modules": [],
+      "testHints": [
+        "ha-version-sensor.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-43",
+      "domain": "PGP (ключохранилище)",
+      "severity": "Висока",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.200)",
+      "summary": "Ключ, експортиран от PGPony, съдържа подключ с алгоритъм **36** (номер от чернова на RFC 9580, който не е в регистъра на изданието). pgp.parseKeyBlock хвърляше UNSUPPORTED_ALGORITHM за **целия блок**, тоест ключохранилището ставаше недостъпно (PUBLIC_UNREADABLE), PGP панелът в Настройки изглеждаше празен, а п",
+      "modules": [],
+      "testHints": [
+        "pgp-unknown-subkey.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-44",
+      "domain": "Съхранение (политика на пътищата)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.200)",
+      "summary": "Живата инсталация работеше на storage_location: addon_config / storage_subdirectory: hapi_enterprise, докато издадената политика от 0.69.166 е share / hAPI/data. Причината не е в кода (подразбирането в config.yaml и в storage-preflight.js е share/hapi/data), а в запазените опции на самото копие: Supervisor па",
+      "modules": [
+        "storage-preflight.js"
+      ],
+      "testHints": [
+        "storage.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-45",
+      "domain": "Портал (панел)",
+      "severity": "Средна",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.200)",
+      "summary": "Картата на портала започваше с отделен блок „Достъп и QR код“ с пет бутона („Отвори портала“, „Обнови достъпа“, „Свали QR“, „Печат на QR“, „Отвори папката“) и три реда подсказки. Блокът дублираше входа към портала, изяждаше половината екран и караше трите икони в заглавния ред да изглеждат част от него; изиск",
+      "modules": [],
+      "testHints": [
+        "portal-card-link.cjs",
+        "gui-open-portal-link.cjs",
+        "gui-portal-refs.cjs",
+        "gui-journeys.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    },
+    {
+      "id": "DEF-46",
+      "domain": "PGP (криптиране на средата)",
+      "severity": "Висока",
+      "state": "closed",
+      "statusSource": "Затворен (0.69.203)",
+      "summary": "Опциите на инстанцията казват pgp_encrypt_paths: true и pgp_encrypt_workdir: true, а инсталираният ключ беше **Ed25519 само за подпис** (генериран от самия add-on, keyId 1F5A1295EA95D45F). pgp.storageKeyOf() няма какво да избере за криптиране (приема само X25519/X448/RSA), затова keyring.status() даваше avail",
+      "modules": [
+        "pgp.js",
+        "path-crypto.js"
+      ],
+      "testHints": [
+        "pgp-keyring.cjs"
+      ],
+      "source": "documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md",
+      "evidenceLevel": "historical-documentation-not-live-verification"
+    }
+  ]
+}
