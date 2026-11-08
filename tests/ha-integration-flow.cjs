@@ -42,7 +42,7 @@ assert.match(coordinator, /UpdateFailed/, 'coordinator.py: грешките се
 // 4. Сензори: ключовете съвпадат с тези в coordinator и в преводите.
 const sensor = read('sensor.py');
 const sensorKeys = [...sensor.matchAll(/(?<![_a-z])key="([a-z_0-9]+)"/g)].map((m) => m[1]);
-assert.equal(sensorKeys.length, 29, 'очакват се 29 сензора (24 + 5 QR), намерени ' + sensorKeys.length);
+assert.equal(sensorKeys.length, 33, 'очакват се 33 сензора (24 + 5 QR + 4 Guardian), намерени ' + sensorKeys.length);
 for (const key of ['visits', 'downloads', 'files', 'portal_count', 'file_bytes', 'database_bytes', 'telemetry_bytes', 'unique_visitors', 'visitors_new_24h', 'download_visitors', 'denied_total', 'admin_logins', 'countries_known', 'version', 'sync', 'health', 'http_error_rate', 'latency_p95', 'download_denial_rate', 'recommended_action', 'active_portal_sessions', 'token_validation_failures', 'revoked_token_attempts', 'cross_portal_denials']) {
   assert.ok(sensorKeys.includes(key), 'sensor.py: липсва сензор ' + key);
   // `sync` не идва от payload-а: смята се в sensor.py от version + версията на
