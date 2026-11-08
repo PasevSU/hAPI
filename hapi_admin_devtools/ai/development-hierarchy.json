@@ -50,7 +50,8 @@
         "глобал",
         "дефиниц",
         "конфигурац"
-      ]
+      ],
+      "division": "strategy-lead"
     },
     {
       "id": "diagnostics",
@@ -78,7 +79,8 @@
         "отказ",
         "проблем",
         "дебъг"
-      ]
+      ],
+      "division": "reliability-lead"
     },
     {
       "id": "security",
@@ -106,7 +108,8 @@
         "достъп",
         "ключ",
         "подпис"
-      ]
+      ],
+      "division": "reliability-lead"
     },
     {
       "id": "storage",
@@ -132,7 +135,8 @@
         "база",
         "файл",
         "хранилищ"
-      ]
+      ],
+      "division": "reliability-lead"
     },
     {
       "id": "portals",
@@ -156,7 +160,8 @@
         "папк",
         "карантин",
         "линк"
-      ]
+      ],
+      "division": "reliability-lead"
     },
     {
       "id": "frontend",
@@ -181,7 +186,8 @@
         "бутон",
         "панел",
         "достъпност"
-      ]
+      ],
+      "division": "strategy-lead"
     },
     {
       "id": "performance",
@@ -205,7 +211,8 @@
         "бавн",
         "оптимиз",
         "производителност"
-      ]
+      ],
+      "division": "delivery-lead"
     },
     {
       "id": "localization",
@@ -230,7 +237,8 @@
         "език",
         "локализац",
         "стандарт"
-      ]
+      ],
+      "division": "strategy-lead"
     },
     {
       "id": "testing",
@@ -253,7 +261,8 @@
         "тест",
         "проверка",
         "регрес"
-      ]
+      ],
+      "division": "reliability-lead"
     },
     {
       "id": "release",
@@ -279,7 +288,8 @@
         "обнов",
         "ъпдейт",
         "публикув"
-      ]
+      ],
+      "division": "delivery-lead"
     },
     {
       "id": "recovery",
@@ -301,7 +311,8 @@
         "възстанов",
         "резервн",
         "връщан"
-      ]
+      ],
+      "division": "reliability-lead"
     },
     {
       "id": "documentation",
@@ -324,7 +335,8 @@
         "описан",
         "знани",
         "протокол"
-      ]
+      ],
+      "division": "strategy-lead"
     }
   ],
   "workflow": {
@@ -381,75 +393,111 @@
       ]
     },
     {
-      "id": "architecture-agent",
+      "id": "strategy-lead",
       "level": 1,
       "parent": "director",
+      "owns": "Architecture, UX, localization and knowledge strategy",
+      "managedCategories": [
+        "architecture",
+        "frontend",
+        "localization",
+        "documentation"
+      ]
+    },
+    {
+      "id": "reliability-lead",
+      "level": 1,
+      "parent": "director",
+      "owns": "Production safety, defect evidence and independent verification",
+      "managedCategories": [
+        "diagnostics",
+        "security",
+        "storage",
+        "portals",
+        "testing",
+        "recovery"
+      ]
+    },
+    {
+      "id": "delivery-lead",
+      "level": 1,
+      "parent": "director",
+      "owns": "Release readiness and performance improvements",
+      "managedCategories": [
+        "performance",
+        "release"
+      ]
+    },
+    {
+      "id": "architecture-agent",
+      "level": 2,
+      "parent": "strategy-lead",
       "owns": "Definitions, dependencies and versioned contracts"
     },
     {
       "id": "incident-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "reliability-lead",
       "owns": "Defect classification and reproductions"
     },
     {
       "id": "security-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "reliability-lead",
       "owns": "Independent threat and authorization assessment"
     },
     {
       "id": "storage-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "reliability-lead",
       "owns": "Data integrity and storage safety"
     },
     {
       "id": "portal-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "reliability-lead",
       "owns": "Portal features and folder/quarantine rules"
     },
     {
       "id": "frontend-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "strategy-lead",
       "owns": "UI and accessibility"
     },
     {
       "id": "performance-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "delivery-lead",
       "owns": "Cache measurements and profiling"
     },
     {
       "id": "locale-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "strategy-lead",
       "owns": "Language parity and standards"
     },
     {
       "id": "qa-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "reliability-lead",
       "owns": "Reproducible independent tests"
     },
     {
       "id": "release-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "delivery-lead",
       "owns": "Release eligibility reports"
     },
     {
       "id": "recovery-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "reliability-lead",
       "owns": "Restore drills and rollback evidence"
     },
     {
       "id": "knowledge-agent",
-      "level": 1,
-      "parent": "director",
+      "level": 2,
+      "parent": "strategy-lead",
       "owns": "Historical knowledge and documentation"
     }
   ],
@@ -470,6 +518,7 @@
     "highRiskNeedsSecurity": true,
     "productionUpdatesNeedRecovery": true,
     "unclassifiedTaskOwner": "director",
-    "confidenceSource": "measured evidence, never model self-rating"
+    "confidenceSource": "measured evidence, never model self-rating",
+    "divisionHierarchyRequired": true
   }
 }
