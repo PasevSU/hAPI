@@ -6,23 +6,25 @@ const fs=require('node:fs');
 const path=require('node:path');
 const http=require('node:http');
 const crypto=require('node:crypto');
+const {DEFINITIONS,getRuntimeConfig}=require('./definitions');
+const CONFIG=getRuntimeConfig();
 const identity=require('./identity');
 const githubVerification=require('./github-verification');
 const releaseGate=require('./release-gate');
 const ciEvidence=require('./github-actions-evidence');
 const {createMonitor}=require('./monitor');
-const DATA=process.env.HAPI_DEVTOOLS_DATA||'/data';
-const OPTIONS=process.env.HAPI_DEVTOOLS_OPTIONS||path.join(DATA,'options.json');
-const ENROLLMENT=path.join(DATA,'enrollment.json');
-const PORT=Number(process.env.PORT||8099);
-const MAX_POST_BYTES=30000;
+const DATA=CONFIG.dataDir;
+const OPTIONS=CONFIG.optionsPath;
+const ENROLLMENT=CONFIG.enrollmentPath;
+const PORT=CONFIG.ingressPort;
+const MAX_POST_BYTES=DEFINITIONS.limits.requestBodyBytes;
 const pending=new Map();
 function readOptions(){try{return JSON.parse(fs.readFileSync(OPTIONS,'utf8'))}catch{return {}}}
 function enrolledRecord(options){
   const expected=identity.normalizeFingerprint(options.openpgp_fingerprint);
   if(!identity.validateOptions(options))return null;
   try{
-    if(fs.statSync(ENROLLMENT).size>256000)return null;
+    if(fs.statSync(ENROLLMENT).size>DEFINITIONS.limits.enrollmentBytes)return null;
     const rec=JSON.parse(fs.readFileSync(ENROLLMENT,'utf8'));
     if(rec.username!==identity.GITHUB_USER||rec.fingerprint!==expected ||
        rec.challenge?.endsWith('fp='+expected+'\n')!==true ||
@@ -37,7 +39,7 @@ const monitor=createMonitor(path.join(DATA,'monitor'));
 if(unlocked)monitor.start();
 function ingressPeer(req){
   const remote=(req.socket.remoteAddress||'').replace(/^::ffff:/,'');
-  return remote==='172.30.32.2' ||
+  return remote===DEFINITIONS.transport.ingressProxyAddress ||
     (process.env.NODE_ENV==='test'&&(remote==='127.0.0.1'||remote==='::1'));
 }
 function answer(res,status,obj){
@@ -78,7 +80,7 @@ function records(){
 }
 async function hapiReadiness(){
   return new Promise(resolve=>{
-    const req=http.get({host:'hapi_enterprise',port:8099,path:'/ready',timeout:2500,agent:false},res=>{
+    const req=http.get({host:DEFINITIONS.transport.enterpriseHostname,port:DEFINITIONS.transport.enterprisePort,path:DEFINITIONS.enterprise.healthPath,timeout:DEFINITIONS.limits.hapiProbeTimeoutMs,agent:false},res=>{
       let count=0;
       res.on('data',chunk=>{count+=chunk.length;if(count>2000)req.destroy();});
       res.on('end',()=>resolve({reachable:true,httpStatus:res.statusCode,ready:res.statusCode===200}));
@@ -115,8 +117,8 @@ function createServer(){
         const id=crypto.randomBytes(16).toString('hex');
         pending.clear();
         pending.set(id,{challenge,publicKey:publicKey.toString('base64'),fingerprint:expected,
-          until:Date.now()+300000});
-        return answer(res,200,{id,challenge,expiresSeconds:300});
+          until:Date.now()+DEFINITIONS.limits.challengeExpiryMs});
+        return answer(res,200,{id,challenge,expiresSeconds:DEFINITIONS.limits.challengeExpiryMs/1000});
       }
       if(req.method==='POST'&&route==='/api/enroll'){
         const body=await readBody(req),entry=pending.get(body.id);
