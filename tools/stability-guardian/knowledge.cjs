@@ -4,6 +4,7 @@ const path=require('node:path');
 const root=path.join(__dirname,'..','..','hapi_enterprise','guardian','protocols');
 const defects=require(path.join(root,'historical-defects.json')).defects;
 const releases=require(path.join(root,'release-history.json')).releases;
+const riskIndex=require(path.join(root,'release-risk-index.json')).entries;
 const watches=require(path.join(root,'watch-contracts.json')).watchers;
 const IGNORE=new Set(['the','and','with','from','error','file','this','that','for','api','http','hapi','portal','или','като','при','със','за','не','на','от','преди','след','във','които','беше','вече','файл','папка']);
 function tokens(value){
@@ -28,9 +29,12 @@ function retrieve(incident,{maxDefects=5,maxReleases=5,maxWatches=6}={}){
   const matchedReleases=ranked(releases,x=>[x.version,x.notesPreview,(x.areas||[]).join(' ')].join(' '),maxReleases)
     .map(x=>({version:x.version,summary:x.notesPreview,source:x.source,matchScore:x.score,
       warning:'Release note, not live evidence'}));
+  const matchedRiskEvidence=ranked(riskIndex,x=>[x.version,(x.defectRefs||[]).join(' '),(x.historicalRiskNotes||[]).join(' ')].join(' '),maxReleases)
+    .map(x=>({version:x.version,defectRefs:x.defectRefs,historicalRiskNotes:x.historicalRiskNotes.slice(0,4),source:'CHANGELOG.md',matchScore:x.score,
+      warning:'Keyword-classified historical release notes; relevance not proof of a current defect'}));
   const matchedWatches=ranked(watches,x=>[x.domain,x.id,(x.files||[]).join(' '),(x.signals||[]).join(' ')].join(' '),maxWatches)
     .map(x=>({id:x.id,domain:x.domain,priority:x.priority,regression:x.regression,policy:x.policy,matchScore:x.score}));
-  return {matchedDefects,matchedReleases,matchedWatches,
+  return {matchedDefects,matchedReleases,matchedRiskEvidence,matchedWatches,
     notice:'Heuristic relevance by shared tokens; historical records are not current diagnoses. Verify against live metrics and tests.'};
 }
 module.exports={retrieve,tokens};
