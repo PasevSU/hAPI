@@ -46,6 +46,12 @@ _BINARY_SENSORS: tuple[PortalBinarySensorEntityDescription, ...] = (
         icon="mdi:harddisk-plus",
     ),
     PortalBinarySensorEntityDescription(
+        key="guardian_issue",
+        translation_key="guardian_issue",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:shield-alert-outline",
+    ),
+    PortalBinarySensorEntityDescription(
         key="api_available",
         translation_key="api_available",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
@@ -121,7 +127,7 @@ class PortalProblemBinarySensor(BinarySensorEntity):
             if cross is None and revoked is None:
                 return None
             return (cross or 0) + (revoked or 0) > 0
-        value = data.get("mirror_problem")
+        value = data.get("guardian_issue") if self.entity_description.key == "guardian_issue" else data.get("mirror_problem")
         # Липсващото измерване не е „проблем“: `None` → `unknown`, а не „on“.
         return None if value is None else bool(value)
 
