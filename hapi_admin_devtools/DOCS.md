@@ -1,60 +1,75 @@
-# hAPI Admin DevTools — инсталиране и удостоверяване
+# hAPI Admin DevTools — OpenPGP owner authorization
 
-**Това е втори, самостоятелен Home Assistant add-on в същото хранилище** `PasevSU/hAPI`. Показва нов администраторски панел „hAPI Admin DevTools“ в Home Assistant. Оригиналната добавка `hapi_enterprise` не се заменя.
+**Experimental standalone add-on** in the same `PasevSU/hAPI` repository. hAPI Enterprise and its SSH connection to Home Assistant remain independent and unchanged.
 
-## Важна техническа граница
+## GitHub's Verified status and OpenPGP
 
-Home Assistant позволява add-on да бъде инсталиран **преди** въвеждането на неговите настройки. Няма поддържан механизъм „първо въведи fingerprint, после позволи инсталиране“ в Store. Затова add-on-ът може да се появи и инсталира, но **не позволява активиране на административните функции**, докато не завърши удостоверяването.
+The reference is [GitHub: Displaying verification statuses for all of your commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/displaying-verification-statuses-for-all-of-your-commits).
 
-## Тип на ключа
+GitHub's `Verified` means it verified a particular commit/tag signature. That label **does not automatically grant** a process permission to edit a repository, sign new commits or publish releases. A separate GitHub App token with limited repository permissions, branch protection, CI and release approval gates are required for mutation.
 
-Предоставеният ключ е **SSH RSA public key** (`ssh-rsa`), не OpenPGP ключ. Не въвеждайте PGP key ID, GPG fingerprint или fingerprint на GitHub SSH *сървъра*. Тук се използва fingerprint на **личния публичен SSH ключ**:
+From the provided GitHub screenshot: **OpenPGP/GPG key ID `4FC0B2596C68DCB9`**, added November 8, 2026. **This short key ID is not the full OpenPGP fingerprint**. The RSA SSH key and its SHA256 fingerprint previously provided are separate and are no longer used to unlock Admin DevTools. PGPony's displayed encryption subkey is not necessarily the signing subkey for commits.
 
-```
-SHA256:m5FRNKDKpT7F0NbzLG80uK/MH4zyuVST7GatAS14n0w
-```
+## Installation versus activation
 
-Fingerprint е изчислен от ключовия blob на предоставения SSH RSA ключ. Публичният ключ е фиксиран в `identity.js`; в проекта няма частен ключ.
+Home Assistant stores install add-ons before reading their runtime options. The Store's **Install** button cannot be protected by a fingerprint supplied afterward. Accordingly, the add-on installs in locked mode and unlocks administrator functionality only after a full OpenPGP signature check. `panel_admin: true` restricts the add-on sidebar entry to Home Assistant administrators.
 
-## Настройване
+### 1. Obtain the full fingerprint locally
 
-1. Добавете хранилището `https://github.com/PasevSU/hAPI` в Home Assistant Settings → Apps (Add-ons) → App Store → Repositories, ако още не е добавено.
-2. Изберете **hAPI Admin DevTools**. Add-on-ът е независим от **hAPI Enterprise**.
-3. В **Configuration** задайте `github_username: PasevSU` и `github_ssh_fingerprint: SHA256:m5FRNKDKpT7F0NbzLG80uK/MH4zyuVST7GatAS14n0w`.
-4. Уверете се, че **точно този** публичен ключ е публикуван като SSH authentication key в GitHub профила `PasevSU` (GitHub Settings → SSH and GPG keys). Това не може да бъде доказано само от e-mail коментара в ключа.
-5. Стартирайте add-on-а и отворете неговия администраторски Ingress панел. Изберете **Генерирай еднократен challenge**. За първоначалната проверка е нужен интернет до `https://github.com/PasevSU.keys`. Ако ключът липсва в GitHub или GitHub не е достъпен, достъпът остава заключен.
-6. Запишете показания текст **без промени**, включително последния нов ред, като UTF-8 файл `challenge.txt` на компютъра, където е наличен **частният** SSH ключ. Командата за подписване е:
+Using GnuPG with the public/secret key imported:
 
-```bash
-ssh-keygen -Y sign -f ~/.ssh/id_rsa -n hapi-devtools challenge.txt
+```sh
+gpg --list-keys --with-fingerprint --with-subkey-fingerprint
+gpg --list-secret-keys --with-fingerprint --with-subkey-fingerprint
 ```
 
-При Windows PowerShell използвайте пълния път до ключа, например:
+Select the **primary OpenPGP fingerprint** for the GitHub key with key ID `4FC0B2596C68DCB9`, not a displayed SSH SHA256 fingerprint or the fingerprint of an unrelated encryption subkey. The add-on accepts a valid 40- or 64-hex full fingerprint only when it ends with that exact registered GPG key ID.
 
-```powershell
-ssh-keygen -Y sign -f "$env:USERPROFILE\.ssh\id_rsa" -n hapi-devtools challenge.txt
+The GitHub public certificate is fetched over HTTPS from `https://github.com/PasevSU.gpg` and validated in a temporary isolated GnuPG keyring. The full primary fingerprint must match the configured value. Internet is required for initial enrollment.
+
+### 2. Configure add-on options
+
+```yaml
+github_username: PasevSU
+openpgp_fingerprint: "YOUR_FULL_OPENPGP_PRIMARY_FINGERPRINT"
 ```
 
-Ако частният ключ има друго име, използвайте действителния му път. Командата създава `challenge.txt.sig`. Копирайте **целия** SSH SIGNATURE блок в полето на панела и натиснете **Провери подписа и активирай**.
+Do not paste the shortened key ID in place of the full fingerprint.
 
-**Никога не копирайте и не качвайте частния ключ.** Изпраща се само подписът над еднократно съобщение. Проверяването използва OpenSSH `ssh-keygen -Y verify` и публичния ключ.
+### 3. Prove private-key possession without uploading it
 
-## Защита и ограничения
+In the administrator Ingress panel click **Generate OpenPGP challenge**, copy the one-time text *including its final newline* into a UTF-8 `challenge.txt` file, then produce a detached signature locally:
 
-- Само HA администраторите виждат панела (`panel_admin: true`), а уеб услугата приема само Ingress proxy (или loopback единствено в тестов режим).
-- Backend не приема произволно въведени публични ключове: проверява фиксирания SHA256 fingerprint и точно съвпадение с публикувания ключ в GitHub профила.
-- Въведен fingerprint **сам по себе си не отключва** добавката: задължителен е подпис с частния ключ. Подписът не е SSH login или PGP подпис.
-- След успешна проверка подписаното удостоверение се съхранява локално (0600) и се проверява отново при рестарт. При загуба на интернет след успешно удостоверяване локалният диагностичен панел може да работи; при ново удостоверяване е нужна връзка до GitHub. GitHub revocation не може да бъде потвърден офлайн.
-- Системата е **read-only**: не редактира hAPI, не рестартира Supervisor, не създава/прилага поправки и не изпраща документи към AI.
-- Историческите диагностични протоколи са архивирани от предишния работен клон (база към 0.69.203), докато основният проект вече има по-нови версии. Те са контекст за анализ, не текуща диагноза.
-- В момента съществуващото hAPI приложение и HACS интеграцията не се променят. Администраторският панел е отделен панел в Home Assistant; бъдеща връзка като вътрешен раздел на hAPI трябва да мине през авторизирано откриване на наличния add-on.
-- Сензори от новия add-on в Home Assistant, AI агентите, бутонът за прилагане и независимият rollback controller са следващи етапи. **Не са представяни като готови функции.**
+```sh
+gpg --armor --detach-sign --local-user YOUR_FULL_OPENPGP_PRIMARY_FINGERPRINT challenge.txt
+```
 
-## Тестване
+Paste the entire `-----BEGIN PGP SIGNATURE----- ... -----END PGP SIGNATURE-----` block from `challenge.txt.asc` into the add-on and click **Verify and activate**.
 
-```bash
+PGPony can be used when it supports detached signature creation/export. The **private key is never uploaded**. Unlike SSH authorization or GitHub's existing SSH integration, this is a separate OpenPGP challenge bound to a 5-minute nonce. Replay attempts are rejected.
+
+The add-on stores the signed enrollment record and corresponding GitHub public certificate locally with restricted permissions. It verifies the record at restart. A changed GitHub key membership or revocation cannot be reliably established offline; future privileged GitHub actions must perform fresh online verification.
+
+## Repository edits and updates — restricted by design
+
+This initial build is read-only and contains nine historical Guardian protocols plus a local hAPI health monitor. It does **not** yet deploy updates or hold GitHub write credentials.
+
+A release-capable follow-up must implement:
+
+1. GitHub App installation authorization with short-lived repository-scoped tokens; no developer SSH private key stored in add-on and no permanent high-privilege PAT.
+2. Exact OpenPGP-signed authorization for a proposed source commit, version, change set, target repository and expiry.
+3. Two independent CI environments, regression/integrity checks, verified backup and external rollback controller, plus reproducible release artifacts.
+4. Branch protection, verified commit/tag signatures, and a release-only workflow with protected GitHub Environments and scoped permissions.
+5. Separate release verification and post-deployment monitoring. Failure triggers external rollback; no repeated unbounded loops.
+6. Immutable audit evidence and explicit denial if key validation, GitHub API, tests, or rollback controller are unavailable.
+
+A GitHub `Verified` badge alone is not sufficient to trigger a write action.
+
+## Current tests
+
+```sh
 node --test hapi_admin_devtools/tests/*.test.cjs
 docker build -f hapi_admin_devtools/Dockerfile hapi_admin_devtools
 ```
 
-До успешен CI и реална HAOS проверка add-on-ът е **експериментален** и не трябва да се публикува като стабилен release.
+Do not merge PR #16 into main or deploy until the new CI, CodeQL and Home Assistant OS qualification checks pass. No changes to the installed hAPI Enterprise app are needed for the prototype.
