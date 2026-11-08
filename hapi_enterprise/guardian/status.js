@@ -4,7 +4,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const STATES=new Set(['healthy','unready','unreachable','malformed']);
 const MAX_AGE_MS=3*60*1000;
-function publicStatus({dir='/data/stability-guardian', now=Date.now()}={}){
+function publicStatus({dir='/data/stability-guardian', now=Date.now(), enabled=process.env.HAPI_GUARDIAN_ENABLED==='true'}={}){
+  if (!enabled) return {enabled:false,available:false,state:'disabled',checkedAt:null,failureCount:null,cacheCandidates:null,remediationMode:'disabled',successPercent:null,automaticChanges:0,rollbackCount:0};
   try{
     const file=path.resolve(dir,'status.json');
     if(fs.statSync(file).size>4096)throw Error('STATUS_SIZE');
