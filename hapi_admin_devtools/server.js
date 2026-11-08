@@ -8,6 +8,7 @@ const http=require('node:http');
 const crypto=require('node:crypto');
 const identity=require('./identity');
 const githubVerification=require('./github-verification');
+const releaseGate=require('./release-gate');
 const {createMonitor}=require('./monitor');
 const DATA=process.env.HAPI_DEVTOOLS_DATA||'/data';
 const OPTIONS=process.env.HAPI_DEVTOOLS_OPTIONS||path.join(DATA,'options.json');
@@ -145,6 +146,13 @@ function createServer(){
         if(!/^[0-9a-f]{40}$/.test(sha||''))return answer(res,400,{error:'INVALID_COMMIT_SHA'});
         return answer(res,200,await githubVerification.auditCommit(sha,expected));
       }
+      if(req.method==='GET'&&route==='/api/release-policy')
+        return answer(res,200,{repository:releaseGate.REPO,
+          requiredPhases:['unit','integration','regression','integrity','rollback'],
+          dualIndependentCI:true,openpgpSignedIntent:true,
+          protectedEnvironment:true,scopedGitHubAppPermission:true,
+          backupAndExternalRollback:true,applyAvailable:false,
+          publishAvailable:false,releaseWorkflowStatus:'not-connected'});
       if(req.method==='GET'&&route==='/api/overview')
         return answer(res,200,{identity:{githubUsername:identity.GITHUB_USER,
           fingerprint:expected,verified:true,method:'OpenPGP'},
