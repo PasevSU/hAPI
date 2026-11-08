@@ -41,6 +41,22 @@
         const overview=await api('overview');
         $('hapi-health').textContent=overview.hapi.ready?t('ready'):t('offline');
         $('operation-mode').textContent=t('noAuto');
+        const [hierarchy,backlog]=await Promise.all([api('director/hierarchy'),api('director/backlog')]);
+        $('development-director').hidden=false;
+        $('director-state').textContent='Development Director · '+hierarchy.categories.length+
+          ' категории · '+hierarchy.roles.length+' роли · '+backlog.total+' автоматично класифицирани задачи';
+        const categories=$('director-categories');categories.replaceChildren();
+        for(const c of hierarchy.categories){
+          const li=document.createElement('li');
+          li.textContent=c.title+' · '+c.owner+' · '+(backlog.categories[c.id]||0)+' задачи';
+          categories.appendChild(li);
+        }
+        const pendingList=$('director-backlog');pendingList.replaceChildren();
+        for(const task of backlog.tasks.slice(0,25)){
+          const li=document.createElement('li');
+          li.textContent=task.id+' · '+task.category+' · '+task.title.slice(0,140);
+          pendingList.appendChild(li);
+        }
         const policy=await api('release-policy');
         $('release-control').hidden=false;
         $('release-status').textContent=policy.publishAvailable?'Release available':
@@ -61,6 +77,22 @@
       }
     }catch(error){$('identity-state').textContent=t('error')+error.message}
   }
+  $('director-plan-form').addEventListener('submit',async(event)=>{
+    event.preventDefault();
+    const title=$('director-plan-title').value.trim();
+    if(!title)return;
+    try{
+      const task=await api('director/plan',{method:'POST',
+        body:JSON.stringify({title,target:'enterprise'})});
+      $('director-plan-result').textContent=[
+        'Категория: '+task.category,
+        'Отговорник: '+task.owner,
+        'Риск: '+task.risk,
+        'Режим: '+task.automation,
+        ...task.plan.map((s,i)=>(i+1)+'. '+s.step+' / '+s.owner)
+      ].join('\n');
+    }catch(e){$('director-plan-result').textContent=t('error')+e.message;}
+  });
   $('challenge-btn').addEventListener('click',async()=>{
     try{
       const x=await api('challenge',{method:'POST',body:'{}'});
