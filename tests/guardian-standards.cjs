@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict');
+const s=require('../hapi_enterprise/guardian/standards.js');
+assert.equal(s.language('de-DE'),'de');
+assert.equal(s.language('bg-Cyrl-BG'),'bg');
+assert.equal(s.language('en_us'),'en');
+assert.equal(s.language('fr-FR'),null);
+assert.equal(s.language('invalid language!'),null);
+assert.equal(s.normalizedSearchText('e\u0301'),'é');
+assert.deepEqual(s.messageTokens('File {file} is {state} ({file})'),['file','state']);
+assert.equal(s.compatibleMessages('Грешка {file}','Error {file}'),true);
+assert.equal(s.compatibleMessages('Грешка {file}','Error {name}'),false);
+assert.equal(s.utcTimestamp('2026-11-08T13:00:01Z'),'2026-11-08T13:00:01.000Z');
+assert.equal(s.utcTimestamp('2026-11-08 13:00:01'),null);
+console.log('guardian locale/Unicode/RFC3339 contract: OK');
