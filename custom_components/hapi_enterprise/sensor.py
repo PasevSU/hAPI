@@ -254,9 +254,44 @@ _VERSION_SENSORS: tuple[PortalSensorEntityDescription, ...] = (
     ),
 )
 
+# Stability Guardian: live local diagnostics; no fabricated success percentage.
+_GUARDIAN_SENSORS: tuple[PortalSensorEntityDescription, ...] = (
+    PortalSensorEntityDescription(
+        key="guardian_state",
+        translation_key="guardian_state",
+        device_class=SensorDeviceClass.ENUM,
+        options=["disabled", "healthy", "unready", "unreachable", "malformed", "unknown"],
+        icon="mdi:shield-check-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    PortalSensorEntityDescription(
+        key="guardian_failures",
+        translation_key="guardian_failures",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:alert-circle-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    PortalSensorEntityDescription(
+        key="guardian_cache_candidates",
+        translation_key="guardian_cache_candidates",
+        state_class=SensorStateClass.MEASUREMENT,
+        icon="mdi:cached",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    PortalSensorEntityDescription(
+        key="guardian_success_percent",
+        translation_key="guardian_success_percent",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        icon="mdi:check-decagram-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+)
+
 SENSOR_KEYS = tuple(
     description.key
-    for description in (*_TOTAL_SENSORS, *_GUIDANCE_SENSORS, *_SECURITY_SENSORS, *_QR_SENSORS)
+    for description in (*_TOTAL_SENSORS, *_GUIDANCE_SENSORS, *_SECURITY_SENSORS, *_QR_SENSORS, *_GUARDIAN_SENSORS)
 )
 
 
@@ -296,6 +331,10 @@ async def async_setup_entry(
     async_add_entities(
         PortalEnterpriseTotalSensor(coordinator, entry, description)
         for description in _TOTAL_SENSORS
+    )
+    async_add_entities(
+        PortalGuardianSensor(coordinator, entry, description)
+        for description in _GUARDIAN_SENSORS
     )
     async_add_entities(
         PortalStatusSensor(coordinator, entry, description, integration_version)
@@ -593,4 +632,46 @@ class PortalSecuritySensor(SensorEntity):
 
     def _handle_coordinator_update(self) -> None:
         """Refresh the entity state on coordinator updates."""
+        self.async_write_ha_state()
+
+class PortalGuardianSensor(SensorEntity):
+    """Diagnostics reported by the add-on Guardian, not calculated by HA."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator, entry, description):
+        self.entity_description = description
+        self.coordinator = coordinator
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_device_info = portal_device_info(
+            entry, coordinator.backend_url, entry.data.get("addon_version")
+        )
+
+    @property
+    def available(self):
+        return self.coordinator.last_update_success and self.coordinator.data is not None
+
+    @property
+    def native_value(self):
+        data = self.coordinator.data or {}
+        key = self.entity_description.key
+        value = data.get(key)
+        if key == "guardian_state":
+            return value if value in self.entity_description.options else "unknown"
+        if key == "guardian_success_percent":
+            return _to_float(value)
+        return _to_int(value)
+
+    @property
+    def should_poll(self):
+        return False
+
+    async def async_added_to_hass(self):
+        self.async_on_remove(
+            self.coordinator.async_add_listener(self._handle_coordinator_update)
+        )
+        await super().async_added_to_hass()
+        self._handle_coordinator_update()
+
+    def _handle_coordinator_update(self):
         self.async_write_ha_state()
