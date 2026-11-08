@@ -41,6 +41,16 @@
         const overview=await api('overview');
         $('hapi-health').textContent=overview.hapi.ready?t('ready'):t('offline');
         $('operation-mode').textContent=t('noAuto');
+        const policy=await api('release-policy');
+        $('release-control').hidden=false;
+        $('release-status').textContent=policy.publishAvailable?'Release available':
+          'Release Control: само преглед. Публикуването и инсталирането са заключени.';
+        const requirements=$('release-requirements');requirements.replaceChildren();
+        for(const item of ['OpenPGP signed release intent','Trusted signed GitHub commit',
+          'Two independent CI environments','Verified backup and external rollback',
+          'Scoped GitHub App permissions','Protected release environment']){
+          const li=document.createElement('li');li.textContent=item;requirements.appendChild(li);
+        }
         const list=$('protocols');list.replaceChildren();
         for(const [name,record] of Object.entries(overview.modules)){
           const item=document.createElement('li');
