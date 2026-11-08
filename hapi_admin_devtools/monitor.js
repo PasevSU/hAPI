@@ -7,16 +7,18 @@ const {DEFINITIONS}=require('./definitions');
 const MAX_LOG=DEFINITIONS.limits.monitorJournalBytes;
 const STATES=new Set(['ready','not-ready','unreachable']);
 function probe({host=DEFINITIONS.transport.enterpriseHostname,port=DEFINITIONS.transport.enterprisePort,timeoutMs=DEFINITIONS.limits.hapiProbeTimeoutMs}={}){
+  const start=process.hrtime.bigint();
+  const latencyMs=()=>Math.round(Number(process.hrtime.bigint()-start)/1000000);
   return new Promise(resolve=>{
     const req=http.get({host,port,path:DEFINITIONS.enterprise.healthPath,timeout:timeoutMs,agent:false},res=>{
       res.resume();
-      res.on('end',()=>resolve({state:res.statusCode===200?'ready':'not-ready',httpStatus:res.statusCode||0}));
+      res.on('end',()=>resolve({state:res.statusCode===200?'ready':'not-ready',httpStatus:res.statusCode||0,latencyMs:latencyMs()}));
     });
     req.on('timeout',()=>req.destroy());
-    req.on('error',()=>resolve({state:'unreachable',httpStatus:0}));
+    req.on('error',()=>resolve({state:'unreachable',httpStatus:0,latencyMs:latencyMs()}));
   });
 }
-function createMonitor(dir,{intervalMs=DEFINITIONS.limits.monitorIntervalMs,onProbe=probe}={}){
+function createMonitor(dir,{intervalMs=DEFINITIONS.limits.monitorIntervalMs,onProbe=probe,onSample=()=>{}}={}){
   const root=path.resolve(dir),file=path.join(root,'monitor.jsonl');
   let timer=null,stopped=false,previous=null,consecutiveFailures=0,last=null;
   function record(result){
@@ -39,6 +41,7 @@ function createMonitor(dir,{intervalMs=DEFINITIONS.limits.monitorIntervalMs,onPr
     if(stopped)return;
     consecutiveFailures=result.state==='ready'?0:consecutiveFailures+1;
     last={...result,at:new Date().toISOString(),consecutiveFailures};
+    try{onSample(last)}catch(e){console.error('DEVTOOLS_DYNAMIC_SAMPLE_FAILED:',e.code||e.message)}
     if(result.state!==previous||consecutiveFailures%20===1)record(result);
     previous=result.state;
   }
