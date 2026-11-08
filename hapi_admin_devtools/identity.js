@@ -1,6 +1,11 @@
 'use strict';
-// This is the PUBLIC SSH key provided by the project owner, not a private key.
-// Its fingerprint must also appear in the public keys published by GitHub user PasevSU.
+/**
+ * Independent OpenPGP identity verification for hAPI Admin DevTools.
+ * SSH authentication for Home Assistant/GitHub is unrelated to this challenge.
+ *
+ * GitHub's .gpg endpoint publishes the OpenPGP public certificate; GnuPG verifies
+ * a fresh detached signature. No private keys or GitHub tokens enter the add-on.
+ */
 const crypto=require('node:crypto');
 const https=require('node:https');
 const fs=require('node:fs');
@@ -9,56 +14,87 @@ const path=require('node:path');
 const {spawnSync}=require('node:child_process');
 
 const GITHUB_USER='PasevSU';
-const PUBLIC_KEY_B64='AAAAB3NzaC1yc2EAAAADAQABAAACAQCRwy1f9M865/iOI4zHAe3Lvj0gMK1wXfALpMoYYHBTrZw+OB5AtwkyW8Yo0bKXyesgi4mIJTKtMVxlCJk+RzWz/lhwDXL8BtY8Bma+Yaac46apGbHZGsRFt49eOSP0msW44jZRY+bczyRECmGFqO8t9LfnUe+R3UQprKlIMuIbVvbi2ADVIs+bLFZJqEfjFEqWnbW8u5rOWdC1nqDYkqol0sxXoofUrx0LL/G4NGEFo1Zs98lLCxgB2hyzbw5glD1rLzJk9KUOIbNvUgLJsgDHYowZyRydOvPpQhIcFyBXtHSt21z8Yr5S54YSun/N7xYDrLKe/LlkaOMB4i1CgzpeAZLUoHXTJJzLqRTF7TbVcUSjlMBRKUyK8nzTMOqw4UIbM3000/Iw8a/L3ogOER4ftEIJ4Bf+1Qtmm8OTygi/efM8PILMipQwBIDy95OsiiqrzU5wziScc9MdevI+mF4duCKvWtipE6EBQMALhuMJOQxmVMjlbZZxnsU2ssJHRic/Fqkl2g4T7VFsPXW81OpyAlLJLwbJOwLHRikBCXlMNPtCN252BAWflEdTx9rBCGhHi79ecTyj+jRIDBIG5KCVNfBXnLYIHPRCW0TIs2/gFXqtIsGgeI7kp4eLCvyWaR8s8mAW/4OHjrk8XLWmHWRzt4vCBVv8olRT30Svg2534Q==';
-const EXPECTED_FINGERPRINT='SHA256:m5FRNKDKpT7F0NbzLG80uK/MH4zyuVST7GatAS14n0w';
-const PUBLIC_KEY='ssh-rsa '+PUBLIC_KEY_B64;
-
-function fingerprint(publicKey) {
-  const fields=String(publicKey||'').trim().split(/\s+/);
-  if(fields[0]!=='ssh-rsa'||!fields[1])return null;
-  const raw=Buffer.from(fields[1],'base64');
-  if(raw.length<11||raw.readUInt32BE(0)!==7||raw.subarray(4,11).toString()!=='ssh-rsa')return null;
-  return 'SHA256:'+crypto.createHash('sha256').update(raw).digest('base64').replace(/=+$/,'');
+const REGISTERED_GPG_KEY_ID='4FC0B2596C68DCB9';
+const FINGERPRINT_RE=/^[0-9A-F]{40}(?:[0-9A-F]{24})?$/;
+const SIGNATURE_HEADER='-----BEGIN PGP SIGNATURE-----';
+function normalizeFingerprint(value){
+  const v=String(value||'').replace(/\s/g,'').toUpperCase();
+  return FINGERPRINT_RE.test(v)&&v.endsWith(REGISTERED_GPG_KEY_ID)?v:null;
 }
-function keyMatches(line) {
-  const fields=String(line||'').trim().split(/\s+/);
-  return fields[0]==='ssh-rsa' && fields[1]===PUBLIC_KEY_B64;
+function validateOptions(options){
+  return !!options && options.github_username===GITHUB_USER &&
+    !!normalizeFingerprint(options.openpgp_fingerprint);
 }
-function githubKeys({timeoutMs=6000}={}) {
+function fetchGithubPublicKey({timeoutMs=8000}={}){
   return new Promise((resolve,reject)=>{
-    const req=https.get('https://github.com/'+GITHUB_USER+'.keys',
-      {timeout:timeoutMs,headers:{'user-agent':'hAPI-Admin-DevTools/0.1','accept':'text/plain'}},
-      res=>{
-        if(res.statusCode!==200){res.resume();return reject(Error('GITHUB_KEYS_HTTP_'+res.statusCode))}
-        let body='';
-        res.setEncoding('utf8');
-        res.on('data',chunk=>{body+=chunk;if(body.length>100000)req.destroy(Error('GITHUB_KEYS_TOO_LARGE'))});
-        res.on('end',()=>resolve(body.split(/\r?\n/).some(keyMatches)));
+    const req=https.get('https://github.com/'+GITHUB_USER+'.gpg',
+      {timeout:timeoutMs,headers:{'user-agent':'hAPI-Admin-DevTools/0.2','accept':'application/pgp-keys'}},res=>{
+        if(res.statusCode!==200){res.resume();return reject(Error('GITHUB_GPG_HTTP_'+res.statusCode));}
+        const chunks=[];let bytes=0;
+        res.on('data',chunk=>{
+          bytes+=chunk.length;
+          if(bytes>512000){req.destroy(Error('GITHUB_GPG_TOO_LARGE'));return;}
+          chunks.push(chunk);
+        });
+        res.on('end',()=>resolve(Buffer.concat(chunks)));
       });
-    req.on('timeout',()=>req.destroy(Error('GITHUB_KEYS_TIMEOUT')));
+    req.on('timeout',()=>req.destroy(Error('GITHUB_GPG_TIMEOUT')));
     req.on('error',reject);
   });
 }
-function verifySignature(challenge,signature,{binary='ssh-keygen',publicKey=PUBLIC_KEY}={}) {
-  if(typeof challenge!=='string'||!/^hapi-admin-devtools\/v1\nnonce=[a-f0-9]{64}\nfp=SHA256:[A-Za-z0-9+/]+\n$/.test(challenge))return false;
-  if(typeof signature!=='string'||signature.length>16000||!/^-----BEGIN SSH SIGNATURE-----[\s\S]+-----END SSH SIGNATURE-----\s*$/.test(signature))return false;
-  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hapi-ssh-'));
-  try {
-    const allowed=path.join(dir,'allowed_signers'),sig=path.join(dir,'challenge.sig');
-    fs.writeFileSync(allowed,'hapi_admin '+publicKey+'\n',{mode:0o600});
+function gpg(args,{homedir,input,timeout=10000}={}){
+  return spawnSync('gpg',['--homedir',homedir,'--batch','--no-tty','--no-default-keyring',...args],
+    {input,encoding:'utf8',timeout,maxBuffer:1024*1024});
+}
+function withKeyring(publicKey,fn){
+  if(!Buffer.isBuffer(publicKey)||publicKey.length<16||publicKey.length>512000)throw Error('INVALID_GPG_PUBLIC_KEY');
+  const home=fs.mkdtempSync(path.join(os.tmpdir(),'hapi-gpg-'));
+  fs.chmodSync(home,0o700);
+  try{
+    const importResult=gpg(['--import'],{homedir:home,input:publicKey});
+    if(importResult.status!==0)throw Error('GPG_IMPORT_FAILED');
+    return fn(home);
+  }finally{fs.rmSync(home,{recursive:true,force:true});}
+}
+function hasPrimaryFingerprint(home,expected){
+  const result=gpg(['--with-colons','--fingerprint','--list-keys'],{homedir:home});
+  if(result.status!==0)return false;
+  let inPrimary=false;
+  for(const line of result.stdout.split('\n')){
+    const cols=line.split(':');
+    if(cols[0]==='pub'){inPrimary=cols[1]!=='r' && cols[1]!=='e';continue;}
+    if(cols[0]==='sub'){inPrimary=false;continue;}
+    if(cols[0]==='fpr'&&inPrimary&&cols[9]===expected)return true;
+  }
+  return false;
+}
+function verifyDetached({challenge,signature,expectedFingerprint,publicKey}){
+  const expected=normalizeFingerprint(expectedFingerprint);
+  if(!expected||typeof challenge!=='string'||challenge.length>4096||!/^hapi-admin-devtools\/openpgp-v1\nnonce=[a-f0-9]{64}\nfp=[A-F0-9]{40}(?:[A-F0-9]{24})?\n$/.test(challenge) ||
+      !challenge.endsWith('fp='+expected+'\n') ||
+      typeof signature!=='string'||signature.length>16000||
+      !signature.trim().startsWith(SIGNATURE_HEADER))return false;
+  return withKeyring(publicKey,home=>{
+    if(!hasPrimaryFingerprint(home,expected))return false;
+    const msg=path.join(home,'challenge.txt'),sig=path.join(home,'challenge.asc');
+    fs.writeFileSync(msg,challenge,{mode:0o600});
     fs.writeFileSync(sig,signature,{mode:0o600});
-    const child=spawnSync(binary,['-Y','verify','-f',allowed,'-I','hapi_admin','-n','hapi-devtools','-s',sig],
-      {input:challenge,encoding:'utf8',timeout:6000,maxBuffer:8192});
-    return child.status===0 && !child.error;
-  } finally {fs.rmSync(dir,{recursive:true,force:true})}
+    const result=gpg(['--status-fd','1','--verify',sig,msg],{homedir:home});
+    if(result.status!==0)return false;
+    // VALIDSIG identifies both the signer and the PRIMARY key of a signing subkey.
+    const valid=result.stdout.split('\n').filter(x=>x.startsWith('[GNUPG:] VALIDSIG '));
+    return valid.some(line=>{
+      const parts=line.trim().split(/\s+/);
+      return (parts.at(-1)||'').toUpperCase()===expected ||
+        parts[2]?.toUpperCase()===expected;
+    });
+  });
 }
-function validateOptions(options) {
-  return options && options.github_username===GITHUB_USER &&
-    options.github_ssh_fingerprint===EXPECTED_FINGERPRINT &&
-    fingerprint(PUBLIC_KEY)===EXPECTED_FINGERPRINT;
+function newChallenge(expectedFingerprint){
+  const expected=normalizeFingerprint(expectedFingerprint);
+  if(!expected)throw Error('GPG_FINGERPRINT_INVALID');
+  return 'hapi-admin-devtools/openpgp-v1\nnonce='+crypto.randomBytes(32).toString('hex')+
+    '\nfp='+expected+'\n';
 }
-function newChallenge() {
-  return 'hapi-admin-devtools/v1\nnonce='+crypto.randomBytes(32).toString('hex')+
-   '\nfp='+EXPECTED_FINGERPRINT+'\n';
-}
-module.exports={EXPECTED_FINGERPRINT,GITHUB_USER,PUBLIC_KEY,fingerprint,keyMatches,githubKeys,verifySignature,validateOptions,newChallenge};
+module.exports={GITHUB_USER,REGISTERED_GPG_KEY_ID,normalizeFingerprint,validateOptions,
+  fetchGithubPublicKey,verifyDetached,newChallenge,hasPrimaryFingerprint};
