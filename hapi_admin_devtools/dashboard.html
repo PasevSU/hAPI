@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>hAPI Admin DevTools</title>
+  <link rel="stylesheet" href="./dashboard.css">
+</head>
+<body>
+<header><strong>hAPI <span>Admin DevTools</span></strong><div class="language"><button data-language="bg" aria-label="Български">BG</button><button data-language="en" aria-label="English">EN</button><button data-language="de" aria-label="Deutsch">DE</button></div></header>
+<main>
+  <h1 id="title">Административни инструменти</h1>
+  <p id="description">Самостоятелен модул за диагностика и исторически протоколи на hAPI.</p>
+  <section class="card" id="identity">
+    <h2 id="identity-title">Проверка на притежателя</h2>
+    <p id="identity-state" role="status">Проверка на конфигурацията…</p>
+    <p class="mono">GitHub: <strong>PasevSU</strong></p>
+    <p class="mono">SSH SHA256: <code id="fingerprint"></code></p>
+    <div id="enrollment" hidden>
+      <p id="help">Изпълнете проверката чрез подписване с вашия частен SSH ключ. Частният ключ никога не се изпраща.</p>
+      <button id="challenge-btn" type="button">Генерирай еднократен challenge</button>
+      <div id="challenge-block" hidden>
+        <label for="challenge-text">Съобщение за подписване (запишете дословно като challenge.txt)</label>
+        <textarea id="challenge-text" rows="5" readonly spellcheck="false"></textarea>
+        <button id="copy-btn" type="button">Копирай съобщението</button>
+        <p id="cmd-label">Подпишете локално с командата:</p>
+        <pre>ssh-keygen -Y sign -f ~/.ssh/id_rsa -n hapi-devtools challenge.txt</pre>
+        <label for="signature">Съдържанието на challenge.txt.sig (SSH SIGNATURE)</label>
+        <textarea id="signature" rows="8" spellcheck="false" autocomplete="off"></textarea>
+        <button id="verify-btn" type="button">Провери подписа и активирай</button>
+      </div>
+    </div>
+  </section>
+  <section class="card" id="overview" hidden>
+    <h2 id="overview-title">Състояние на системата</h2>
+    <p id="operation-mode">Режим: само четене · автоматичните поправки са изключени</p>
+    <p id="hapi-health" role="status"></p>
+    <h3 id="protocol-title">Исторически протоколи и наблюдение</h3>
+    <ul id="protocols"></ul>
+    <p id="safety-note">Този панел не обновява, рестартира и не редактира hAPI.</p>
+  </section>
+</main>
+<footer>hAPI Enterprise · Admin DevTools 0.1.0 · GitHub/PasevSU</footer>
+<script src="./dashboard.js" defer></script>
+</body></html>
