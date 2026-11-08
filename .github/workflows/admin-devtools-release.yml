@@ -1,0 +1,122 @@
+name: hAPI Admin DevTools · independent release
+
+# Separate from hAPI Enterprise v* tags and its image/release workflows.
+on:
+  push:
+    tags:
+      - 'hapi-dev-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  validate:
+    name: Validate DevTools tag, config and OpenPGP runtime
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify version tag is exclusively for DevTools
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(sed -nE 's/^version: "([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' hapi_admin_devtools/config.yaml)
+          test -n "$version"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            test "${GITHUB_REF_NAME}" = "hapi-dev-v${version}" || {
+              echo "::error::DevTools tag must match config.yaml version"; exit 1;
+            }
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Check Node syntax and unit tests
+        run: |
+          set -euo pipefail
+          for f in hapi_admin_devtools/*.js; do node --check "$f"; done
+          node --test hapi_admin_devtools/tests/*.test.cjs
+      - name: Ensure Enterprise release config is isolated
+        run: |
+          grep -Fq "slug: \"hapi_admin_devtools\"" hapi_admin_devtools/config.yaml
+          ! grep -q 'hapi_enterprise' hapi_admin_devtools/Dockerfile
+  build-images:
+    name: DevTools image · ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: armv7
+            platform: linux/arm/v7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve independent image namespace
+        id: image
+        shell: bash
+        run: |
+          owner=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/${owner}/${{ matrix.arch }}-addon-hapi_admin_devtools" >> "$GITHUB_OUTPUT"
+      - name: Build and publish versioned image
+        uses: docker/build-push-action@v6
+        with:
+          context: hapi_admin_devtools
+          platforms: ${{ matrix.platform }}
+          push: ${{ github.ref_type == 'tag' }}
+          build-args: |
+            BUILD_VERSION=${{ needs.validate.outputs.version }}
+            BUILD_ARCH=${{ matrix.arch }}
+          tags: |
+            ${{ steps.image.outputs.name }}:${{ needs.validate.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=hAPI Admin DevTools
+            org.opencontainers.image.version=${{ needs.validate.outputs.version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+  github-release:
+    name: Publish DevTools-only GitHub release
+    needs: [validate, build-images]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create DevTools-only package and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist-devtools
+          tar -czf "dist-devtools/hapi_admin_devtools-${{ needs.validate.outputs.version }}.tar.gz" hapi_admin_devtools
+          (cd dist-devtools && sha256sum *.tar.gz > SHA256SUMS.txt)
+          cat > dist-devtools/RELEASE-NOTES.md <<'NOTES'
+          # hAPI Admin DevTools
+          This is an independent hAPI Admin DevTools release.
+          It does not update or replace hAPI Enterprise.
+          Installation/activation requires OpenPGP administrator authorization.
+          NOTES
+      - name: Attach package to dedicated GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: hAPI Admin DevTools ${{ needs.validate.outputs.version }}
+          body_path: dist-devtools/RELEASE-NOTES.md
+          files: |
+            dist-devtools/hapi_admin_devtools-*.tar.gz
+            dist-devtools/SHA256SUMS.txt
