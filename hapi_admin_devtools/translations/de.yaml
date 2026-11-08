@@ -3,7 +3,7 @@ configuration:
     name: GitHub-Benutzername
     description: >-
       GitHub-Konto mit dem exakt festgelegten öffentlichen SSH-Schlüssel. Dieser Build akzeptiert nur PasevSU.
-  github_ssh_fingerprint:
-    name: SSH-SHA256-Fingerabdruck
+  openpgp_fingerprint:
+    name: OpenPGP-Fingerabdruck
     description: >-
-      SHA256-Fingerabdruck des persönlichen öffentlichen SSH-RSA-Schlüssels. Die Admin-Werkzeuge bleiben bis zur Signaturprüfung gesperrt.
+      Vollständiger OpenPGP-Fingerabdruck des bei GitHub registrierten Signaturschlüssels. Ein abgetrennter OpenPGP-Nachweis ist erforderlich.
