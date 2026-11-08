@@ -25,8 +25,8 @@ const { probe, createJournal } = require('../hapi_enterprise/guardian/monitor.js
     assert.deepEqual(JSON.parse(fs.readFileSync(journal.file,'utf8').trim()),entry);
     assert.equal(fs.existsSync(path.join(dir,'package.json')),false);
     const config=fs.readFileSync(path.join(__dirname,'../hapi_enterprise/config.yaml'),'utf8');
-    assert.match(config,/  stability_guardian_enabled: false/);
-    assert.match(config,/  stability_guardian_enabled: bool\?/);
+    assert.match(config,/ {2}stability_guardian_enabled: false/);
+    assert.match(config,/ {2}stability_guardian_enabled: bool\?/);
     const docker=fs.readFileSync(path.join(__dirname,'../hapi_enterprise/Dockerfile'),'utf8');
     assert.match(docker,/COPY guardian \/app\/guardian\//);
     const start=fs.readFileSync(path.join(__dirname,'../hapi_enterprise/start.js'),'utf8');
