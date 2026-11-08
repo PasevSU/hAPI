@@ -40,6 +40,22 @@
     <ul id="protocols"></ul>
     <p id="safety-note">Този панел не обновява, рестартира и не редактира hAPI.</p>
   </section>
+  <section class="card" id="development-director" hidden>
+    <h2>AI Development Director</h2>
+    <p>Главен координатор за развитието на hAPI. Автоматично категоризира и планира задачите от старите и новите модули. Публикуването и поправките в production са защитени отделно.</p>
+    <p id="director-state" role="status">Зареждане на йерархията…</p>
+    <h3>Категории и специализирани агенти</h3>
+    <ul id="director-categories"></ul>
+    <h3>Автоматично открито портфолио</h3>
+    <ul id="director-backlog"></ul>
+    <form id="director-plan-form">
+      <label for="director-plan-title">Нова задача за разработка</label>
+      <input id="director-plan-title" name="title" required minlength="4" maxlength="240" placeholder="Например: оптимизация на портали и кеш" style="width:100%;padding:12px;background:#0c172a;color:white;border:1px solid #60728d;border-radius:8px;margin:8px 0"/>
+      <button type="submit">Категоризирай и планирай</button>
+    </form>
+    <pre id="director-plan-result" role="status" style="white-space:pre-wrap"></pre>
+    <p>AI SDK orchestration: интерфейсът е подготвен. Без инсталирана и активирана AI зависимост плановете са детерминистични, без моделни заявки.</p>
+  </section>
   <section class="card" id="release-control" hidden>
     <h2 id="release-title">Release Control</h2>
     <p id="release-status">Публикуването е заключено до независима проверка.</p>
