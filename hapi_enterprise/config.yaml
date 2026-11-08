@@ -116,6 +116,9 @@ options:
   # (по подразбиране) означава, че прикачването НЕ създава папка — файловете в /share се
   # качват през „Папки на портала“, там където човекът ги иска.
   portal_folder_copy: false
+  # Вграден диагностичен Guardian: без AI/интернет, без външни зависимости.
+  # СТРОГО изключен по подразбиране за съвместимост със съществуващите инсталации.
+  stability_guardian_enabled: false
   # Кожа на ПУБЛИЧНАТА страница на портала (това, което QR кодът отваря):
   #   classic — изпитаният светъл/тъмен стил (по подразбиране, нищо не се променя);
   #   modern  — втората кожа: стъклени карти, едра типография, люспести бутони, мрежа от
@@ -170,6 +173,7 @@ schema:
   signing_key: str?
   encrypt_files: bool?
   portal_folder_copy: bool?
+  stability_guardian_enabled: bool?
   portal_skin: "list(classic|modern)"
   tls_cert: str?
   tls_key: str?
