@@ -68,6 +68,12 @@ function hasPrimaryFingerprint(home,expected){
   }
   return false;
 }
+function verifyPublicCertificate(publicKey,expectedFingerprint){
+  const expected=normalizeFingerprint(expectedFingerprint);
+  if(!expected)return false;
+  try{return withKeyring(publicKey,home=>hasPrimaryFingerprint(home,expected));}
+  catch{return false;}
+}
 function verifyDetached({challenge,signature,expectedFingerprint,publicKey}){
   const expected=normalizeFingerprint(expectedFingerprint);
   if(!expected||typeof challenge!=='string'||challenge.length>4096||!/^hapi-admin-devtools\/openpgp-v1\nnonce=[a-f0-9]{64}\nfp=[A-F0-9]{40}(?:[A-F0-9]{24})?\n$/.test(challenge) ||
@@ -97,4 +103,4 @@ function newChallenge(expectedFingerprint){
     '\nfp='+expected+'\n';
 }
 module.exports={GITHUB_USER,REGISTERED_GPG_KEY_ID,normalizeFingerprint,validateOptions,
-  fetchGithubPublicKey,verifyDetached,newChallenge,hasPrimaryFingerprint};
+  fetchGithubPublicKey,verifyPublicCertificate,verifyDetached,newChallenge,hasPrimaryFingerprint};
