@@ -22,7 +22,7 @@ function readProtocol(name) {
 function sortedUnique(values) { return [...new Set(values)].sort(); }
 function optionNames() {
   const source = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'config.yaml'), 'utf8');
-  const match = /^schema:\s*\n([\s\S]*?)(?=^map:|^environment:|\s*$)/m.exec(source);
+  const match = /^schema:[^\n]*\n([\s\S]*?)(?=^map:|^environment:|(?![\s\S]))/m.exec(source);
   if (!match) throw Error('Home Assistant schema section missing');
   return sortedUnique([...match[1].matchAll(/^  ([a-z][a-z0-9_]+):/gm)].map(m => m[1]));
 }
