@@ -1,0 +1,54 @@
+name: Admin DevTools add-on
+on:
+  push:
+    branches:
+      - main
+      - feature/admin-devtools-standalone-addon
+    paths:
+      - "hapi_admin_devtools/**"
+      - ".github/workflows/admin-devtools.yml"
+  pull_request:
+    paths:
+      - "hapi_admin_devtools/**"
+      - ".github/workflows/admin-devtools.yml"
+permissions:
+  contents: read
+jobs:
+  identity-and-runtime:
+    name: OpenPGP verification and compatibility · Node 22
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify syntax
+        run: |
+          node --check hapi_admin_devtools/identity.js
+          node --check hapi_admin_devtools/server.js
+          node --check hapi_admin_devtools/monitor.js
+          node --check hapi_admin_devtools/github-verification.js
+          node --check hapi_admin_devtools/release-gate.js
+          node --check hapi_admin_devtools/github-actions-evidence.js
+          node --check hapi_admin_devtools/ai/director.js
+          node --check hapi_admin_devtools/ai/workload.js
+          node --check hapi_admin_devtools/ai/sdk-manager.js
+          node --check hapi_admin_devtools/dashboard.js
+      - name: Run native unit and ingress tests
+        run: node --test hapi_admin_devtools/tests/*.test.cjs
+      - name: Check add-on descriptor
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          cfg=pathlib.Path('hapi_admin_devtools/config.yaml').read_text()
+          for item in ('slug: "hapi_admin_devtools"', 'ingress: true','panel_admin: true','openpgp_fingerprint: ""','github_username: "PasevSU"'):
+            assert item in cfg, item
+          print('Admin DevTools add-on descriptor: OK')
+          PY
+  addon-image:
+    name: Local Docker image build · amd64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build isolated add-on image
+        run: docker build --pull -f hapi_admin_devtools/Dockerfile -t hapi-admin-devtools:ci hapi_admin_devtools

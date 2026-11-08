@@ -1,0 +1,18 @@
+configuration:
+  github_username:
+    name: GitHub-Benutzername
+    description: >-
+      GitHub-Konto mit dem exakt festgelegten öffentlichen SSH-Schlüssel. Dieser Build akzeptiert nur PasevSU.
+  openpgp_fingerprint:
+    name: OpenPGP-Fingerabdruck
+    description: >-
+      Vollständiger OpenPGP-Fingerabdruck des bei GitHub registrierten Signaturschlüssels. Ein abgetrennter OpenPGP-Nachweis ist erforderlich.
+
+  dynamic_monitor_enabled:
+    name: Dynamische Überwachung
+    description: >-
+      Sammelt nach OpenPGP-Anmeldung lokale Betriebsdaten ohne automatische Reparaturen.
+  dynamic_analysis_interval_minutes:
+    name: Dynamisches Analyseintervall (Minuten)
+    description: >-
+      Zeitraum zwischen Analysen: 15–10080 Minuten. Standard 360 Minuten (6 Stunden).

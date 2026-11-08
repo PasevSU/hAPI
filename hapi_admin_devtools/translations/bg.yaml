@@ -1,0 +1,18 @@
+configuration:
+  github_username:
+    name: Потребителско име в GitHub
+    description: >-
+      GitHub акаунтът, който публикува точния публичен SSH ключ. За този build се приема само PasevSU.
+  openpgp_fingerprint:
+    name: OpenPGP fingerprint
+    description: >-
+      Пълният OpenPGP fingerprint на GPG подписващия ключ, регистриран в GitHub. Изисква се detached OpenPGP подпис на еднократно съобщение.
+
+  dynamic_monitor_enabled:
+    name: Динамичен мониторинг
+    description: >-
+      Непрекъснато събиране на локална телеметрия след OpenPGP удостоверяване, без автоматични поправки.
+  dynamic_analysis_interval_minutes:
+    name: Интервал за динамичен анализ (минути)
+    description: >-
+      Период между анализите: 15–10080 минути. По подразбиране 360 минути (6 часа).

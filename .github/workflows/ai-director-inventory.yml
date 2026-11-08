@@ -1,0 +1,63 @@
+name: hAPI-DEV AI Development Director inventory
+on:
+  push:
+    branches:
+      - main
+      - feature/admin-devtools-standalone-addon
+    paths:
+      - "hapi_enterprise/**"
+      - "hapi_admin_devtools/**"
+      - "custom_components/**"
+      - "tests/**"
+      - ".github/workflows/**"
+  pull_request:
+    paths:
+      - "hapi_enterprise/**"
+      - "hapi_admin_devtools/**"
+      - "custom_components/**"
+      - "tests/**"
+      - ".github/workflows/**"
+permissions:
+  contents: read
+jobs:
+  development-inventory:
+    runs-on: ubuntu-latest
+    name: Categorize project changes and historical backlog
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate director scripts
+        run: |
+          node --check hapi_admin_devtools/ai/director.js
+          node --check hapi_admin_devtools/ai/workload.js
+          node --check hapi_admin_devtools/ai/inventory-cli.js
+          node --check hapi_admin_devtools/ai/sdk-manager.js
+      - name: Test ownership and safety
+        run: node --test hapi_admin_devtools/tests/ai-*.test.cjs
+      - name: List changed project files
+        shell: bash
+        env:
+          PULL_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          base="${PULL_BASE:-${PUSH_BEFORE:-}}"
+          if [[ "$base" =~ ^[a-fA-F0-9]{40}$ ]] && [[ ! "$base" =~ ^0+$ ]]; then
+            git diff --name-only "$base" "$GITHUB_SHA" --               hapi_enterprise hapi_admin_devtools custom_components tests .github/workflows               > changed-files.txt
+          else
+            git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA"               > changed-files.txt
+          fi
+      - name: Create director report
+        run: |
+          node hapi_admin_devtools/ai/inventory-cli.js --changed-files changed-files.txt             > development-inventory.json
+          node -e "const x=require('./development-inventory.json'); if(!x.historicalTasks||!Array.isArray(x.changedModules))process.exit(1);console.log('Categories',Object.keys(x.categories).length,'Historical tasks',x.historicalTasks,'Changed modules',x.changedModuleCount)"
+      - name: Publish read-only development inventory artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hapi-devtools-development-inventory
+          path: development-inventory.json
+          retention-days: 14

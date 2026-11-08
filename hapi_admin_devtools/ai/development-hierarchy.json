@@ -1,0 +1,524 @@
+{
+  "schemaVersion": 1,
+  "authority": {
+    "name": "hAPI-DEV AI Development Director",
+    "role": "chief-development-orchestrator",
+    "scope": [
+      "hAPI Enterprise",
+      "hAPI Admin DevTools",
+      "HA integration",
+      "GitHub CI and release artifacts"
+    ],
+    "goal": "Continuously inventory, classify, plan and validate project improvements",
+    "autonomy": {
+      "observe": true,
+      "classify": true,
+      "plan": true,
+      "generateCandidatePatch": "sandbox-only-after-tooling",
+      "runTests": "isolated-test-runner-only",
+      "createDraftPR": "future-scoped-github-app",
+      "merge": false,
+      "publishRelease": false,
+      "deployToHA": false,
+      "modifyProduction": false
+    },
+    "supervision": "OpenPGP owner approval + deterministic release-gate; the AI never grants itself privileges"
+  },
+  "categories": [
+    {
+      "id": "architecture",
+      "title": "Architecture and definitions",
+      "owner": "architecture-agent",
+      "priority": "high",
+      "modules": [
+        "runtime-config",
+        "shared definitions",
+        "API contracts",
+        "feature registry"
+      ],
+      "keywords": [
+        "architecture",
+        "dependency",
+        "global",
+        "config",
+        "constant",
+        "schema",
+        "definition",
+        "migration",
+        "архитект",
+        "зависим",
+        "глобал",
+        "дефиниц",
+        "конфигурац"
+      ],
+      "division": "strategy-lead"
+    },
+    {
+      "id": "diagnostics",
+      "title": "Reliability and incidents",
+      "owner": "incident-agent",
+      "priority": "critical",
+      "modules": [
+        "health",
+        "readiness",
+        "logger",
+        "observer",
+        "error catalog"
+      ],
+      "keywords": [
+        "error",
+        "failure",
+        "crash",
+        "hang",
+        "timeout",
+        "incident",
+        "fault",
+        "bug",
+        "грешк",
+        "срив",
+        "отказ",
+        "проблем",
+        "дебъг"
+      ],
+      "division": "reliability-lead"
+    },
+    {
+      "id": "security",
+      "title": "Security and authorization",
+      "owner": "security-agent",
+      "priority": "critical",
+      "modules": [
+        "OpenPGP",
+        "RBAC",
+        "tokens",
+        "permission",
+        "policy",
+        "CSP"
+      ],
+      "keywords": [
+        "security",
+        "key",
+        "auth",
+        "permission",
+        "vulnerability",
+        "token",
+        "pgp",
+        "signature",
+        "сигурност",
+        "достъп",
+        "ключ",
+        "подпис"
+      ],
+      "division": "reliability-lead"
+    },
+    {
+      "id": "storage",
+      "title": "Data and integrity",
+      "owner": "storage-agent",
+      "priority": "critical",
+      "modules": [
+        "SQLite",
+        "files",
+        "WORM",
+        "retention",
+        "backup"
+      ],
+      "keywords": [
+        "sqlite",
+        "database",
+        "storage",
+        "file",
+        "worm",
+        "backup",
+        "restore",
+        "данни",
+        "база",
+        "файл",
+        "хранилищ"
+      ],
+      "division": "reliability-lead"
+    },
+    {
+      "id": "portals",
+      "title": "Portal and external access",
+      "owner": "portal-agent",
+      "priority": "high",
+      "modules": [
+        "portal",
+        "folder",
+        "QR",
+        "links",
+        "quarantine"
+      ],
+      "keywords": [
+        "portal",
+        "folder",
+        "qr",
+        "link",
+        "quarantine",
+        "порта",
+        "папк",
+        "карантин",
+        "линк"
+      ],
+      "division": "reliability-lead"
+    },
+    {
+      "id": "frontend",
+      "title": "UI and UX",
+      "owner": "frontend-agent",
+      "priority": "medium",
+      "modules": [
+        "dashboard",
+        "Ingress",
+        "UI panels",
+        "accessibility"
+      ],
+      "keywords": [
+        "ui",
+        "ux",
+        "panel",
+        "button",
+        "css",
+        "html",
+        "form",
+        "интерфейс",
+        "бутон",
+        "панел",
+        "достъпност"
+      ],
+      "division": "strategy-lead"
+    },
+    {
+      "id": "performance",
+      "title": "Performance and caching",
+      "owner": "performance-agent",
+      "priority": "medium",
+      "modules": [
+        "cache",
+        "latency",
+        "metrics",
+        "memory"
+      ],
+      "keywords": [
+        "cache",
+        "performance",
+        "slow",
+        "latency",
+        "memory",
+        "optimize",
+        "кеш",
+        "бавн",
+        "оптимиз",
+        "производителност"
+      ],
+      "division": "delivery-lead"
+    },
+    {
+      "id": "localization",
+      "title": "Localization and standards",
+      "owner": "locale-agent",
+      "priority": "medium",
+      "modules": [
+        "BG",
+        "EN",
+        "DE",
+        "BCP47",
+        "CLDR",
+        "ICU"
+      ],
+      "keywords": [
+        "translation",
+        "locale",
+        "language",
+        "i18n",
+        "unicode",
+        "превод",
+        "език",
+        "локализац",
+        "стандарт"
+      ],
+      "division": "strategy-lead"
+    },
+    {
+      "id": "testing",
+      "title": "Testing and quality",
+      "owner": "qa-agent",
+      "priority": "high",
+      "modules": [
+        "unit",
+        "integration",
+        "regression",
+        "HAOS staging"
+      ],
+      "keywords": [
+        "test",
+        "ci",
+        "regression",
+        "coverage",
+        "assert",
+        "qa",
+        "тест",
+        "проверка",
+        "регрес"
+      ],
+      "division": "reliability-lead"
+    },
+    {
+      "id": "release",
+      "title": "Build and release management",
+      "owner": "release-agent",
+      "priority": "critical",
+      "modules": [
+        "versions",
+        "GHCR",
+        "GitHub Actions",
+        "signed release"
+      ],
+      "keywords": [
+        "release",
+        "version",
+        "tag",
+        "build",
+        "docker",
+        "update",
+        "deploy",
+        "релийз",
+        "версия",
+        "обнов",
+        "ъпдейт",
+        "публикув"
+      ],
+      "division": "delivery-lead"
+    },
+    {
+      "id": "recovery",
+      "title": "Backup and rollback",
+      "owner": "recovery-agent",
+      "priority": "critical",
+      "modules": [
+        "snapshot",
+        "rollbacks",
+        "restore controller",
+        "failed updates"
+      ],
+      "keywords": [
+        "rollback",
+        "restore",
+        "recovery",
+        "snapshot",
+        "backup",
+        "възстанов",
+        "резервн",
+        "връщан"
+      ],
+      "division": "reliability-lead"
+    },
+    {
+      "id": "documentation",
+      "title": "Documentation and knowledge",
+      "owner": "knowledge-agent",
+      "priority": "low",
+      "modules": [
+        "README",
+        "changelog",
+        "protocols",
+        "standards"
+      ],
+      "keywords": [
+        "documentation",
+        "readme",
+        "changelog",
+        "protocol",
+        "knowledge",
+        "документ",
+        "описан",
+        "знани",
+        "протокол"
+      ],
+      "division": "strategy-lead"
+    }
+  ],
+  "workflow": {
+    "states": [
+      "new",
+      "categorized",
+      "evidence-collection",
+      "planned",
+      "reproduced",
+      "candidate-ready",
+      "variant-a-tested",
+      "variant-b-tested",
+      "review-ready",
+      "approved",
+      "staged",
+      "released",
+      "verified",
+      "rolled-back",
+      "blocked"
+    ],
+    "initialState": "new",
+    "defaultActions": [
+      "classify",
+      "inventory",
+      "writePlan"
+    ],
+    "remoteActionsAlwaysRequire": [
+      "OpenPGP authorization",
+      "CI verification",
+      "GitHub scoped rights",
+      "external recovery readiness"
+    ],
+    "noDirectTransitions": [
+      "new->released",
+      "planned->released",
+      "candidate-ready->released"
+    ]
+  },
+  "roles": [
+    {
+      "id": "director",
+      "level": 0,
+      "parent": null,
+      "owns": "All project development decisions and routing",
+      "permissions": [
+        "read",
+        "plan",
+        "delegate"
+      ],
+      "cannot": [
+        "write-production",
+        "publish",
+        "self-approve"
+      ]
+    },
+    {
+      "id": "strategy-lead",
+      "level": 1,
+      "parent": "director",
+      "owns": "Architecture, UX, localization and knowledge strategy",
+      "managedCategories": [
+        "architecture",
+        "frontend",
+        "localization",
+        "documentation"
+      ]
+    },
+    {
+      "id": "reliability-lead",
+      "level": 1,
+      "parent": "director",
+      "owns": "Production safety, defect evidence and independent verification",
+      "managedCategories": [
+        "diagnostics",
+        "security",
+        "storage",
+        "portals",
+        "testing",
+        "recovery"
+      ]
+    },
+    {
+      "id": "delivery-lead",
+      "level": 1,
+      "parent": "director",
+      "owns": "Release readiness and performance improvements",
+      "managedCategories": [
+        "performance",
+        "release"
+      ]
+    },
+    {
+      "id": "architecture-agent",
+      "level": 2,
+      "parent": "strategy-lead",
+      "owns": "Definitions, dependencies and versioned contracts"
+    },
+    {
+      "id": "incident-agent",
+      "level": 2,
+      "parent": "reliability-lead",
+      "owns": "Defect classification and reproductions"
+    },
+    {
+      "id": "security-agent",
+      "level": 2,
+      "parent": "reliability-lead",
+      "owns": "Independent threat and authorization assessment"
+    },
+    {
+      "id": "storage-agent",
+      "level": 2,
+      "parent": "reliability-lead",
+      "owns": "Data integrity and storage safety"
+    },
+    {
+      "id": "portal-agent",
+      "level": 2,
+      "parent": "reliability-lead",
+      "owns": "Portal features and folder/quarantine rules"
+    },
+    {
+      "id": "frontend-agent",
+      "level": 2,
+      "parent": "strategy-lead",
+      "owns": "UI and accessibility"
+    },
+    {
+      "id": "performance-agent",
+      "level": 2,
+      "parent": "delivery-lead",
+      "owns": "Cache measurements and profiling"
+    },
+    {
+      "id": "locale-agent",
+      "level": 2,
+      "parent": "strategy-lead",
+      "owns": "Language parity and standards"
+    },
+    {
+      "id": "qa-agent",
+      "level": 2,
+      "parent": "reliability-lead",
+      "owns": "Reproducible independent tests"
+    },
+    {
+      "id": "release-agent",
+      "level": 2,
+      "parent": "delivery-lead",
+      "owns": "Release eligibility reports"
+    },
+    {
+      "id": "recovery-agent",
+      "level": 2,
+      "parent": "reliability-lead",
+      "owns": "Restore drills and rollback evidence"
+    },
+    {
+      "id": "knowledge-agent",
+      "level": 2,
+      "parent": "strategy-lead",
+      "owns": "Historical knowledge and documentation"
+    }
+  ],
+  "teamPolicies": {
+    "allTasksMustHave": [
+      "id",
+      "category",
+      "owner",
+      "target",
+      "risk",
+      "status",
+      "source",
+      "createdAt",
+      "plan",
+      "evidence"
+    ],
+    "multiCategory": true,
+    "highRiskNeedsSecurity": true,
+    "productionUpdatesNeedRecovery": true,
+    "unclassifiedTaskOwner": "director",
+    "confidenceSource": "measured evidence, never model self-rating",
+    "divisionHierarchyRequired": true
+  }
+}

@@ -1,0 +1,34 @@
+name: "hAPI Admin DevTools"
+version: "0.2.0"
+slug: "hapi_admin_devtools"
+# Separate GHCR namespace. hAPI Enterprise keeps its own version and image.
+image: "ghcr.io/pasevsu/{arch}-addon-hapi_admin_devtools"
+description: "OpenPGP-authenticated administration, diagnostics and release workflow companion for hAPI Enterprise"
+url: "https://github.com/PasevSU/hAPI/tree/main/hapi_admin_devtools"
+documentation: "https://github.com/PasevSU/hAPI/tree/main/hapi_admin_devtools/DOCS.md"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+stage: experimental
+startup: application
+boot: manual
+init: false
+ingress: true
+ingress_port: 8099
+ingress_entry: /
+panel_title: "hAPI Admin DevTools"
+panel_icon: mdi:shield-bug
+panel_admin: true
+homeassistant: "2024.6.0"
+backup: cold
+options:
+  github_username: "PasevSU"
+  openpgp_fingerprint: ""
+  dynamic_monitor_enabled: true
+  dynamic_analysis_interval_minutes: 360
+schema:
+  github_username: str
+  openpgp_fingerprint: str
+  dynamic_monitor_enabled: bool
+  dynamic_analysis_interval_minutes: int(15,10080)

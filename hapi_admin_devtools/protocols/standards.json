@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "baseline": "0.69.203",
+  "policy": "Standards are normative requirements for future implementation; only items tagged implemented-in-prototype have code enforcement.",
+  "standards": [
+    {
+      "id": "BCP-47",
+      "scope": "Language tags and locale negotiation",
+      "state": "protocol",
+      "rules": [
+        "Use bg, en, de as supported language identifiers; accept valid BCP-47 variants and normalize to supported base language.",
+        "Never infer locale from IP address."
+      ]
+    },
+    {
+      "id": "RFC-8259",
+      "scope": "JSON interchange",
+      "state": "implemented-in-prototype",
+      "rules": [
+        "Strict JSON parsing on API and journal boundaries; bounded payload size and no credentials."
+      ]
+    },
+    {
+      "id": "RFC-3339",
+      "scope": "Timestamp encoding",
+      "state": "implemented-in-prototype",
+      "rules": [
+        "Use UTC ISO8601 timestamp with Z and millisecond precision in journal.",
+        "Reject invalid or stale timestamps in HA status."
+      ]
+    },
+    {
+      "id": "Unicode-15+-NFC",
+      "scope": "Text normalization",
+      "state": "protocol",
+      "rules": [
+        "Normalize identifiers/locale keys using NFC for indexing while preserving original user-visible text.",
+        "Do not normalize signed bytes or audit evidence."
+      ]
+    },
+    {
+      "id": "Unicode-CLDR",
+      "scope": "Plural/number/date formatting",
+      "state": "protocol",
+      "rules": [
+        "Use locale-specific rules for plurals and number/date formatting rather than assembling strings.",
+        "Maintain placeholder parity across BG, EN, DE."
+      ]
+    },
+    {
+      "id": "ICU-MessageFormat",
+      "scope": "Localization patterns",
+      "state": "protocol",
+      "rules": [
+        "Use parameterized messages with exact placeholder contracts; migrate gradually rather than change existing dictionary semantics.",
+        "Support safe escaping and test all locale substitutions."
+      ]
+    },
+    {
+      "id": "JSON-Schema-2020-12",
+      "scope": "Guardian protocol and incident schemas",
+      "state": "protocol",
+      "rules": [
+        "Version schemas and validate all structured incident/recovery events before ingestion."
+      ]
+    },
+    {
+      "id": "OpenAPI-3.1",
+      "scope": "Administrative API contracts",
+      "state": "protocol",
+      "rules": [
+        "Document new guardian read-only and future apply endpoints with role requirements and error responses."
+      ]
+    },
+    {
+      "id": "CloudEvents-1.0",
+      "scope": "Inter-component incident events",
+      "state": "protocol",
+      "rules": [
+        "Use stable type, source, id, time, subject and data fields; avoid PII and secrets."
+      ]
+    },
+    {
+      "id": "OpenTelemetry",
+      "scope": "Tracing and metrics",
+      "state": "protocol",
+      "rules": [
+        "Use stable semantic conventions and low-cardinality labels with opt-in exporters.",
+        "Offline collection must work without any exporter."
+      ]
+    },
+    {
+      "id": "WCAG-2.2-AA",
+      "scope": "Dashboard and apply UI",
+      "state": "protocol",
+      "rules": [
+        "Accessible names and labels, keyboard access, focus management, high-contrast and clear destructive-action confirmation."
+      ]
+    },
+    {
+      "id": "OWASP-ASVS",
+      "scope": "Privileged remediation security",
+      "state": "protocol",
+      "rules": [
+        "Explicit authorization, CSRF protection, immutable decision evidence and least privilege; no silent crossing of trust boundaries."
+      ]
+    },
+    {
+      "id": "SLSA",
+      "scope": "Release provenance",
+      "state": "protocol",
+      "rules": [
+        "Bind candidate fixes to exact source commit, build provenance and reproducible test artifacts."
+      ]
+    },
+    {
+      "id": "SemVer",
+      "scope": "Compatibility versioning",
+      "state": "protocol",
+      "rules": [
+        "Honor existing hAPI version source and release gates; do not silently change the version format."
+      ]
+    }
+  ]
+}

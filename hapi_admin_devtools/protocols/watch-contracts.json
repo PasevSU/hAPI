@@ -1,0 +1,415 @@
+{
+  "schemaVersion": 1,
+  "baseline": "0.69.203",
+  "semantics": "Guardian is not yet instrumenting all contracts; these are watch definitions and regression mappings.",
+  "defaultNewModule": "register and classify; require tests before enabling automatic action",
+  "watchers": [
+    {
+      "id": "ha-startup",
+      "domain": "home-assistant",
+      "priority": "critical",
+      "files": [
+        "hapi_enterprise/start.js",
+        "hapi_enterprise/config.yaml",
+        "hapi_enterprise/readiness.js"
+      ],
+      "signals": [
+        "/health",
+        "/ready",
+        "Supervisor add-on version/availability",
+        "startup exit code"
+      ],
+      "regression": [
+        "start-portal-open.cjs",
+        "addon-defaults-startup.cjs",
+        "ha-compatibility.cjs",
+        "ha-version-sensor.cjs"
+      ],
+      "historical": [
+        "DEF-23",
+        "DEF-42",
+        "DEF-44"
+      ],
+      "policy": "Validate installed version, actual runtime options and state; no autonomous update or restart"
+    },
+    {
+      "id": "portal-access",
+      "domain": "security",
+      "priority": "critical",
+      "files": [
+        "hapi_enterprise/portal-policy.js",
+        "hapi_enterprise/portal-access.js",
+        "hapi_enterprise/routes/portal-tokens.js"
+      ],
+      "signals": [
+        "401/403/404 by normalized route",
+        "portal.access.denied aggregate",
+        "signed URL expiry mismatch"
+      ],
+      "regression": [
+        "access-policy.cjs",
+        "portal-chain.cjs",
+        "ha-auth-contract.cjs",
+        "gui-csp-same-origin.cjs"
+      ],
+      "historical": [
+        "DEF-20",
+        "DEF-21",
+        "DEF-23",
+        "DEF-32"
+      ],
+      "policy": "Authorization checks never bypassed by Guardian"
+    },
+    {
+      "id": "data-integrity",
+      "domain": "storage",
+      "priority": "critical",
+      "files": [
+        "hapi_enterprise/sqlite-store.js",
+        "hapi_enterprise/core-store.js",
+        "hapi_enterprise/shared-data.js"
+      ],
+      "signals": [
+        "/ready database state",
+        "SQLite quick_check outcome",
+        "transaction retry/conflict rate",
+        "WAL/storage error"
+      ],
+      "regression": [
+        "core-store.cjs",
+        "corrupt-metadata.cjs",
+        "core-migration.cjs",
+        "core-variables.cjs"
+      ],
+      "historical": [
+        "DEF-12",
+        "DEF-13",
+        "DEF-14",
+        "DEF-39"
+      ],
+      "policy": "Never attempt automatic database migrations or destructive repair"
+    },
+    {
+      "id": "file-transfer",
+      "domain": "storage",
+      "priority": "high",
+      "files": [
+        "hapi_enterprise/download-stream.js",
+        "hapi_enterprise/routes/file-transfer.js",
+        "hapi_enterprise/storage-tree.js"
+      ],
+      "signals": [
+        "download status/bytes match",
+        "file open failures",
+        "stream abort/timeouts",
+        "missing path or symlink rejection"
+      ],
+      "regression": [
+        "download-stream.cjs",
+        "file-transfer.cjs",
+        "parallel-transfers.cjs"
+      ],
+      "historical": [
+        "DEF-15",
+        "DEF-18"
+      ],
+      "policy": "No caching of file bytes or pre-signed URLs in diagnostics"
+    },
+    {
+      "id": "evidence-worm",
+      "domain": "evidence",
+      "priority": "critical",
+      "files": [
+        "hapi_enterprise/worm.js",
+        "hapi_enterprise/retention.js",
+        "hapi_enterprise/audit-chain.js"
+      ],
+      "signals": [
+        "audit chain verification",
+        "sealed-vault verification",
+        "WORM integrity outcome",
+        "retention preview/apply divergence"
+      ],
+      "regression": [
+        "audit-chain.cjs",
+        "sealed-vault.cjs",
+        "retention-audit-lines.cjs"
+      ],
+      "historical": [
+        "DEF-06",
+        "DEF-11"
+      ],
+      "policy": "Fail closed; no automatic deletion or evidence modifications"
+    },
+    {
+      "id": "cryptography",
+      "domain": "security",
+      "priority": "critical",
+      "files": [
+        "hapi_enterprise/pgp.js",
+        "hapi_enterprise/pgp-tools.js",
+        "hapi_enterprise/tsa-client.js",
+        "hapi_enterprise/cms-sign.js"
+      ],
+      "signals": [
+        "key usable for requested operation",
+        "TSA response error classes",
+        "round-trip seal/open result",
+        "unsupported subkey event"
+      ],
+      "regression": [
+        "pgp-keyring.cjs",
+        "pgp-unknown-subkey.cjs",
+        "pgp-path-encryption.cjs"
+      ],
+      "historical": [
+        "DEF-04",
+        "DEF-25",
+        "DEF-43",
+        "DEF-46"
+      ],
+      "policy": "Never transmit private key, certificate secrets, or plaintext to an AI endpoint"
+    },
+    {
+      "id": "qr-sharing",
+      "domain": "portal",
+      "priority": "high",
+      "files": [
+        "hapi_enterprise/portal-qr.js",
+        "hapi_enterprise/portal-folder.js",
+        "hapi_enterprise/portal/portal.js"
+      ],
+      "signals": [
+        "QR target resolves to HTML not JSON",
+        "folder contents in portal listing",
+        "link expiry and actual client access"
+      ],
+      "regression": [
+        "qr-leads-to-folder.cjs",
+        "portal-folder-artifacts.cjs",
+        "portal-card-link.cjs"
+      ],
+      "historical": [
+        "DEF-03",
+        "DEF-07",
+        "DEF-08",
+        "DEF-31",
+        "DEF-34"
+      ],
+      "policy": "No persistent cache of identity-bound signed URLs"
+    },
+    {
+      "id": "gui-workflows",
+      "domain": "ui",
+      "priority": "high",
+      "files": [
+        "hapi_enterprise/ui/files-manager.js",
+        "hapi_enterprise/ui/settings-panel.js",
+        "hapi_enterprise/ui/app.js"
+      ],
+      "signals": [
+        "GUI journey test status",
+        "post-mutation UI freshness",
+        "event listener duplication",
+        "missing/disabled visible actions"
+      ],
+      "regression": [
+        "gui-journeys.cjs",
+        "files-manager.cjs",
+        "gui-panels.cjs",
+        "gui-csp-guard.cjs"
+      ],
+      "historical": [
+        "DEF-17",
+        "DEF-18",
+        "DEF-19",
+        "DEF-26",
+        "DEF-27",
+        "DEF-35",
+        "DEF-36",
+        "DEF-45"
+      ],
+      "policy": "Test behavior, not merely successful HTTP responses"
+    },
+    {
+      "id": "locale",
+      "domain": "i18n",
+      "priority": "high",
+      "files": [
+        "hapi_enterprise/ui/i18n.js",
+        "hapi_enterprise/portal/portal-i18n.js",
+        "hapi_enterprise/translations",
+        "custom_components/hapi_enterprise/translations"
+      ],
+      "signals": [
+        "BG/EN/DE parity",
+        "unused keys",
+        "placeholder parity",
+        "missing HA option translations",
+        "for/id label accessibility"
+      ],
+      "regression": [
+        "ui-i18n.cjs",
+        "portal-i18n.cjs",
+        "addon-translations.cjs",
+        "ha-translations.cjs"
+      ],
+      "historical": [
+        "DEF-28",
+        "DEF-38"
+      ],
+      "policy": "Never machine-translate silently; create review task when no vetted translation exists"
+    },
+    {
+      "id": "visitor-telemetry",
+      "domain": "operations",
+      "priority": "medium",
+      "files": [
+        "hapi_enterprise/observer.js",
+        "hapi_enterprise/visitor-intel.js",
+        "hapi_enterprise/decision-sensors.js"
+      ],
+      "signals": [
+        "route status p50/p95",
+        "aggregated visits/downloads",
+        "metric flush delay",
+        "unknown geo database"
+      ],
+      "regression": [
+        "decision-sensors.cjs",
+        "full-journey-sensors.cjs"
+      ],
+      "historical": [
+        "DEF-27",
+        "DEF-42"
+      ],
+      "policy": "Only aggregates without personal identifiers; no raw request or visitor IP capture"
+    },
+    {
+      "id": "background-jobs",
+      "domain": "operations",
+      "priority": "medium",
+      "files": [
+        "hapi_enterprise/job-manager.js",
+        "hapi_enterprise/mirror-target.js",
+        "hapi_enterprise/notify.js"
+      ],
+      "signals": [
+        "job queue depth/latency",
+        "stuck jobs",
+        "mirror retry/failure",
+        "notification errors"
+      ],
+      "regression": [
+        "job-manager.cjs",
+        "job-persistence.cjs",
+        "mirror-target.cjs"
+      ],
+      "historical": [
+        "DEF-10"
+      ],
+      "policy": "Bound concurrency; optional features must not stop core service"
+    },
+    {
+      "id": "release-artifacts",
+      "domain": "release",
+      "priority": "high",
+      "files": [
+        "scripts/build-release.cjs",
+        "scripts/verify-release.cjs",
+        "hapi_enterprise/Dockerfile"
+      ],
+      "signals": [
+        "CI matrix status",
+        "version mirror parity",
+        "addon image arch availability",
+        "release download integrity"
+      ],
+      "regression": [
+        "docker-runtime.cjs",
+        "addon-config.cjs",
+        "haoss-release.cjs",
+        "haoss-in-sync.cjs"
+      ],
+      "historical": [
+        "DEF-16",
+        "DEF-23",
+        "DEF-44"
+      ],
+      "policy": "Never auto tag, deploy or update production"
+    },
+    {
+      "id": "configuration",
+      "domain": "options",
+      "priority": "high",
+      "files": [
+        "hapi_enterprise/runtime-config.js",
+        "hapi_enterprise/config.yaml",
+        "hapi_enterprise/start.js"
+      ],
+      "signals": [
+        "defaults-vs-live differences",
+        "unknown Supervisor options",
+        "option validation errors",
+        "feature toggle runtime parity"
+      ],
+      "regression": [
+        "addon-defaults-startup.cjs",
+        "settings-defaults.cjs",
+        "addon-config.cjs"
+      ],
+      "historical": [
+        "DEF-25",
+        "DEF-39",
+        "DEF-44",
+        "DEF-46"
+      ],
+      "policy": "Every old and new option must have schema, default, safe failure and regression case"
+    },
+    {
+      "id": "quarantine",
+      "domain": "policy",
+      "priority": "critical",
+      "files": [
+        "hapi_enterprise/portal-policy.js",
+        "hapi_enterprise/routes/folders.js"
+      ],
+      "signals": [
+        "quarantine access denials",
+        "policy inheritance",
+        "offline fail-closed",
+        "unauthorized release attempts"
+      ],
+      "regression": [],
+      "historical": [
+        "DEF-06",
+        "DEF-09"
+      ],
+      "policy": "Future module only: disabled until quarantine feature exists. Do not claim live support",
+      "planned": true
+    },
+    {
+      "id": "all-source-modules",
+      "domain": "cross-cutting",
+      "priority": "medium",
+      "files": [
+        "hapi_enterprise/",
+        "custom_components/hapi_enterprise/"
+      ],
+      "signals": [
+        "source module hash drift",
+        "new named function inventory",
+        "test matrix health",
+        "generic route errors"
+      ],
+      "regression": [
+        "function-catalog.cjs",
+        "scenario-matrix.cjs",
+        "ha-compatibility.cjs"
+      ],
+      "historical": [],
+      "policy": "Every new module is inventoried with safe defaults and receives an explicit watch profile before release; read-only telemetry and existing tests until classified",
+      "fallback": true
+    }
+  ]
+}

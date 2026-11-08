@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>hAPI Admin DevTools</title>
+  <link rel="stylesheet" href="./dashboard.css">
+</head>
+<body>
+<header><strong>hAPI <span>Admin DevTools</span></strong><div class="language"><button data-language="bg" aria-label="Български">BG</button><button data-language="en" aria-label="English">EN</button><button data-language="de" aria-label="Deutsch">DE</button></div></header>
+<main>
+  <h1 id="title">Административни инструменти</h1>
+  <p id="description">Самостоятелен модул за диагностика и исторически протоколи на hAPI.</p>
+  <section class="card" id="identity">
+    <h2 id="identity-title">Проверка на притежателя</h2>
+    <p id="identity-state" role="status">Проверка на конфигурацията…</p>
+    <p class="mono">GitHub: <strong>PasevSU</strong></p>
+    <p class="mono">OpenPGP fingerprint: <code id="fingerprint"></code></p>
+    <div id="enrollment" hidden>
+      <p id="help">Подпишете еднократния challenge чрез OpenPGP в PGPony/GnuPG. Частният ключ никога не се изпраща.</p>
+      <button id="challenge-btn" type="button">Генерирай OpenPGP challenge</button>
+      <div id="challenge-block" hidden>
+        <label for="challenge-text">Съобщение за подписване (запишете дословно като challenge.txt)</label>
+        <textarea id="challenge-text" rows="5" readonly spellcheck="false"></textarea>
+        <button id="copy-btn" type="button">Копирай съобщението</button>
+        <p id="cmd-label">Подпишете локално с командата:</p>
+        <pre>ssh-keygen -Y sign -f ~/.ssh/id_rsa -n hapi-devtools challenge.txt</pre>
+        <label for="signature">Съдържанието на challenge.txt.asc (PGP SIGNATURE)</label>
+        <textarea id="signature" rows="8" spellcheck="false" autocomplete="off"></textarea>
+        <button id="verify-btn" type="button">Провери подписа и активирай</button>
+      </div>
+    </div>
+  </section>
+  <section class="card" id="overview" hidden>
+    <h2 id="overview-title">Състояние на системата</h2>
+    <p id="operation-mode">Режим: само четене · автоматичните поправки са изключени</p>
+    <p id="hapi-health" role="status"></p>
+    <h3 id="protocol-title">Исторически протоколи и наблюдение</h3>
+    <ul id="protocols"></ul>
+    <p id="safety-note">Този панел не обновява, рестартира и не редактира hAPI.</p>
+  </section>
+  <section class="card" id="development-director" hidden>
+    <h2>Статично развитие — AI Development Director</h2>
+    <p>Главен координатор за развитието на hAPI. Автоматично категоризира и планира задачите от старите и новите модули. Публикуването и поправките в production са защитени отделно.</p>
+    <p id="director-state" role="status">Зареждане на йерархията…</p>
+    <h3>Категории и специализирани агенти</h3>
+    <ul id="director-categories"></ul>
+    <h3>Автоматично открито портфолио</h3>
+    <ul id="director-backlog"></ul>
+    <form id="director-plan-form">
+      <label for="director-plan-title">Нова задача за разработка</label>
+      <input id="director-plan-title" name="title" required minlength="4" maxlength="240" placeholder="Например: оптимизация на портали и кеш" style="width:100%;padding:12px;background:#0c172a;color:white;border:1px solid #60728d;border-radius:8px;margin:8px 0"/>
+      <button type="submit">Категоризирай и планирай</button>
+    </form>
+    <pre id="director-plan-result" role="status" style="white-space:pre-wrap"></pre>
+    <p>AI SDK orchestration: интерфейсът е подготвен. Без инсталирана и активирана AI зависимост плановете са детерминистични, без моделни заявки.</p>
+  </section>
+  <section class="card" id="dynamic-development" hidden>
+    <h2>Динамично развитие — периодичен анализ</h2>
+    <p>Сензорни измервания, локална история и автоматично откриване на предложения. Няма директни поправки в production.</p>
+    <p id="dynamic-status" role="status">Динамичният мониторинг не е зареден.</p>
+    <p id="dynamic-coverage"></p>
+    <h3>Категории подобрения</h3>
+    <ul id="dynamic-categories"></ul>
+    <h3>Открити предложения</h3>
+    <ul id="dynamic-findings"></ul>
+    <p>Покритието на индивидуалните функции е отделно от общия health sensor. Ненаблюдаваните функции са маркирани като „неизвестно“, не „успешни“.</p>
+  </section>
+  <section class="card" id="release-control" hidden>
+    <h2 id="release-title">Release Control</h2>
+    <p id="release-status">Публикуването е заключено до независима проверка.</p>
+    <ul id="release-requirements"></ul>
+  </section>
+</main>
+<footer>hAPI Enterprise · Admin DevTools 0.2.0 · GitHub/PasevSU</footer>
+<script src="./dashboard.js" defer></script>
+</body></html>

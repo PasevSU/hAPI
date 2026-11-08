@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "locales": {
+    "bg": {
+      "guardian.name": "Интелигентна стабилизация",
+      "guardian.enabled": "Активирано наблюдение",
+      "guardian.disabled": "Наблюдението е изключено",
+      "guardian.state.healthy": "Работи нормално",
+      "guardian.state.unready": "Не е готово",
+      "guardian.state.unreachable": "Няма връзка с услугата",
+      "guardian.state.malformed": "Невалиден отговор от услугата",
+      "guardian.incident.new": "Нов инцидент",
+      "guardian.incident.reopened": "Повторно възникнал проблем",
+      "guardian.incident.resolved": "Потвърдено решение",
+      "guardian.incident.proposed": "Предложено решение (не е приложено)",
+      "guardian.cache.candidate": "Кандидат за кеширане",
+      "guardian.cache.unmeasured": "Няма достатъчно измервания",
+      "guardian.cache.approved": "Кеширането е одобрено след тестове",
+      "guardian.locale.missing": "Липсва превод",
+      "guardian.locale.review": "Необходим е преглед на превода",
+      "guardian.ai.offline": "AI анализът не е достъпен офлайн",
+      "guardian.ai.optin": "AI анализът изисква изрично активиране",
+      "guardian.safety.noaction": "Не са извършени промени по приложението",
+      "guardian.baseline.historical": "Исторически дефект, не текуща диагноза"
+    },
+    "en": {
+      "guardian.name": "Intelligent Stability",
+      "guardian.enabled": "Monitoring enabled",
+      "guardian.disabled": "Monitoring disabled",
+      "guardian.state.healthy": "Healthy",
+      "guardian.state.unready": "Not ready",
+      "guardian.state.unreachable": "Service unreachable",
+      "guardian.state.malformed": "Malformed service response",
+      "guardian.incident.new": "New incident",
+      "guardian.incident.reopened": "Reopened incident",
+      "guardian.incident.resolved": "Verified resolution",
+      "guardian.incident.proposed": "Suggested fix (not applied)",
+      "guardian.cache.candidate": "Cache candidate",
+      "guardian.cache.unmeasured": "Insufficient measurements",
+      "guardian.cache.approved": "Cache approved after testing",
+      "guardian.locale.missing": "Missing translation",
+      "guardian.locale.review": "Translation review required",
+      "guardian.ai.offline": "AI analysis unavailable offline",
+      "guardian.ai.optin": "AI analysis requires opt-in",
+      "guardian.safety.noaction": "No changes were applied",
+      "guardian.baseline.historical": "Historical defect, not a current diagnosis"
+    },
+    "de": {
+      "guardian.name": "Intelligente Stabilisierung",
+      "guardian.enabled": "Überwachung aktiviert",
+      "guardian.disabled": "Überwachung deaktiviert",
+      "guardian.state.healthy": "Betriebsbereit",
+      "guardian.state.unready": "Nicht bereit",
+      "guardian.state.unreachable": "Dienst nicht erreichbar",
+      "guardian.state.malformed": "Ungültige Dienstantwort",
+      "guardian.incident.new": "Neuer Vorfall",
+      "guardian.incident.reopened": "Wiederaufgetretener Vorfall",
+      "guardian.incident.resolved": "Bestätigte Lösung",
+      "guardian.incident.proposed": "Vorgeschlagene Lösung (nicht angewendet)",
+      "guardian.cache.candidate": "Cache-Kandidat",
+      "guardian.cache.unmeasured": "Unzureichende Messwerte",
+      "guardian.cache.approved": "Cache nach Tests freigegeben",
+      "guardian.locale.missing": "Fehlende Übersetzung",
+      "guardian.locale.review": "Übersetzungsprüfung erforderlich",
+      "guardian.ai.offline": "KI-Analyse offline nicht verfügbar",
+      "guardian.ai.optin": "KI-Analyse erfordert ausdrückliche Aktivierung",
+      "guardian.safety.noaction": "Keine Änderungen an der Anwendung vorgenommen",
+      "guardian.baseline.historical": "Historischer Fehler, keine aktuelle Diagnose"
+    }
+  },
+  "usage": "Canonical Guardian UI strings. Never generate production translations from AI without human review.",
+  "sources": [
+    "hapi_enterprise/ui/i18n.js",
+    "hapi_enterprise/portal/portal-i18n.js",
+    "hapi_enterprise/translations/{bg,en}.yaml",
+    "custom_components/hapi_enterprise/translations/{bg,en}.json"
+  ],
+  "languageSets": {
+    "adminUI": [
+      "bg",
+      "en",
+      "de"
+    ],
+    "portal": [
+      "bg",
+      "en",
+      "de"
+    ],
+    "addonConfig": [
+      "bg",
+      "en"
+    ],
+    "HAIntegration": [
+      "bg",
+      "en"
+    ]
+  },
+  "syncProtocol": {
+    "onNewFeature": "discover all new string keys and option names; produce missing translation report; block release until approved localized strings are committed",
+    "onDeletedFeature": "report orphan translations; remove only after code usage audit",
+    "placeholders": "language strings must have identical {tokens} for the same key",
+    "privacy": "never send user-entered documents or tokens to translation service",
+    "cadence": "each PR and each release, plus optional nightly read-only audit"
+  }
+}
