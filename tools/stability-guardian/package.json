@@ -1,0 +1,11 @@
+{
+  "name": "@hapi/stability-guardian",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "dependencies": {
+    "@openai/agents": "^0.3.0",
+    "zod": "^4.0.0"
+  }
+}
