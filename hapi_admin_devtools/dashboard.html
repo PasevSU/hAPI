@@ -16,17 +16,17 @@
     <h2 id="identity-title">Проверка на притежателя</h2>
     <p id="identity-state" role="status">Проверка на конфигурацията…</p>
     <p class="mono">GitHub: <strong>PasevSU</strong></p>
-    <p class="mono">SSH SHA256: <code id="fingerprint"></code></p>
+    <p class="mono">OpenPGP fingerprint: <code id="fingerprint"></code></p>
     <div id="enrollment" hidden>
-      <p id="help">Изпълнете проверката чрез подписване с вашия частен SSH ключ. Частният ключ никога не се изпраща.</p>
-      <button id="challenge-btn" type="button">Генерирай еднократен challenge</button>
+      <p id="help">Подпишете еднократния challenge чрез OpenPGP в PGPony/GnuPG. Частният ключ никога не се изпраща.</p>
+      <button id="challenge-btn" type="button">Генерирай OpenPGP challenge</button>
       <div id="challenge-block" hidden>
         <label for="challenge-text">Съобщение за подписване (запишете дословно като challenge.txt)</label>
         <textarea id="challenge-text" rows="5" readonly spellcheck="false"></textarea>
         <button id="copy-btn" type="button">Копирай съобщението</button>
         <p id="cmd-label">Подпишете локално с командата:</p>
         <pre>ssh-keygen -Y sign -f ~/.ssh/id_rsa -n hapi-devtools challenge.txt</pre>
-        <label for="signature">Съдържанието на challenge.txt.sig (SSH SIGNATURE)</label>
+        <label for="signature">Съдържанието на challenge.txt.asc (PGP SIGNATURE)</label>
         <textarea id="signature" rows="8" spellcheck="false" autocomplete="off"></textarea>
         <button id="verify-btn" type="button">Провери подписа и активирай</button>
       </div>
