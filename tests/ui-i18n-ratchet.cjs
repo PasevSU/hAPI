@@ -33,8 +33,22 @@ const stripComments = (src) =>
 
 const measure = (name) => {
   const code = stripComments(fs.readFileSync(path.join(uiDir, name), 'utf8'));
+  // Разделението е ЕВРИСТИКА, не истина: ред със `throw new Error(`, `new Error(` или
+  // `console.*(` носи съобщение за разработчика (лог/изключение), а не текст за екрана.
+  // Числото се ИЗМЕРВА, но не е отделен таван — то прави дълга (DEF-49) разбираем: колко от
+  // 36 850 знака са интерфейс и колко са съобщения, които не бива да минават през `t()`.
+  const DEV_LINE = /throw new Error\(|new Error\(|console\.(?:log|warn|error|info)\(/;
+  let cyrillic = 0;
+  let dev = 0;
+  for (const line of code.split('\n')) {
+    const n = (line.match(/[\u0400-\u04FF]/g) || []).length;
+    if (!n) continue;
+    cyrillic += n;
+    if (DEV_LINE.test(line)) dev += n;
+  }
   return {
-    cyrillic: (code.match(/[\u0400-\u04FF]/g) || []).length,
+    cyrillic,
+    dev,
     translated: (code.match(/\bt\(/g) || []).length,
   };
 };
@@ -75,14 +89,16 @@ const TRANSLATED_FLOOR = 9; // извиквания на `t(` извън `i18n.j
 // ── 1. Всеки модул е под своя таван ─────────────────────────────────────────
 let total = 0;
 let translated = 0;
+let developerText = 0;
 const modules = fs
   .readdirSync(uiDir)
   .filter((f) => f.endsWith('.js') && f !== DICTIONARY)
   .sort();
 for (const name of modules) {
-  const { cyrillic, translated: calls } = measure(name);
+  const { cyrillic, translated: calls, dev } = measure(name);
   total += cyrillic;
   translated += calls;
+  developerText += dev;
   if (!(name in CEILING)) {
     assert.fail(
       name +
@@ -124,5 +140,9 @@ console.log(
     translated +
     ' извиквания на t() (под ' +
     TRANSLATED_FLOOR +
-    ') · DEF-49 остава отворен, ръстът е заключен',
+    ') · от тях ' +
+    developerText +
+    ' в съобщения за грешка/логове, ' +
+    (total - developerText) +
+    ' в интерфейсен текст · DEF-49 остава отворен, ръстът е заключен',
 );
