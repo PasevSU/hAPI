@@ -100,7 +100,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 
 | Гейт | Команда | Резултат |
 | --- | --- | --- |
-| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **391/391**, **1** опит, 376 s |
+| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **391/391**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
 | Артефакт | `node scripts/verify-release.cjs` | **22/22**, `dist/` 6 файла |
 | Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 392 теста в дървото |
 | ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
