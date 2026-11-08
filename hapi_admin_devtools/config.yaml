@@ -25,6 +25,10 @@ backup: cold
 options:
   github_username: "PasevSU"
   openpgp_fingerprint: ""
+  dynamic_monitor_enabled: true
+  dynamic_analysis_interval_minutes: 360
 schema:
   github_username: str
   openpgp_fingerprint: str
+  dynamic_monitor_enabled: bool
+  dynamic_analysis_interval_minutes: int(15,10080)
