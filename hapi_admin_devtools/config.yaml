@@ -1,6 +1,8 @@
 name: "hAPI Admin DevTools"
 version: "0.2.0"
 slug: "hapi_admin_devtools"
+# Separate GHCR namespace. hAPI Enterprise keeps its own version and image.
+image: "ghcr.io/pasevsu/{arch}-addon-hapi_admin_devtools"
 description: "OpenPGP-authenticated administration, diagnostics and release workflow companion for hAPI Enterprise"
 url: "https://github.com/PasevSU/hAPI/tree/main/hapi_admin_devtools"
 documentation: "https://github.com/PasevSU/hAPI/tree/main/hapi_admin_devtools/DOCS.md"
