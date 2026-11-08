@@ -9,6 +9,7 @@ const crypto=require('node:crypto');
 const identity=require('./identity');
 const githubVerification=require('./github-verification');
 const releaseGate=require('./release-gate');
+const ciEvidence=require('./github-actions-evidence');
 const {createMonitor}=require('./monitor');
 const DATA=process.env.HAPI_DEVTOOLS_DATA||'/data';
 const OPTIONS=process.env.HAPI_DEVTOOLS_OPTIONS||path.join(DATA,'options.json');
@@ -145,6 +146,16 @@ function createServer(){
         const sha=new URL(req.url,'http://localhost').searchParams.get('sha');
         if(!/^[0-9a-f]{40}$/.test(sha||''))return answer(res,400,{error:'INVALID_COMMIT_SHA'});
         return answer(res,200,await githubVerification.auditCommit(sha,expected));
+      }
+      if(req.method==='GET'&&route==='/api/ci-evidence'){
+        const query=new URL(req.url,'http://localhost').searchParams;
+        const sha=query.get('sha');
+        const firstId=Number(query.get('first'));
+        const secondId=Number(query.get('second'));
+        if(!/^[a-f0-9]{40}$/.test(sha||'')||!Number.isSafeInteger(firstId)||firstId<=0||
+           !Number.isSafeInteger(secondId)||secondId<=0||firstId===secondId)
+          return answer(res,400,{error:'INVALID_CI_RUN_INPUT'});
+        return answer(res,200,await ciEvidence.inspectTwoRuns({sha,firstId,secondId}));
       }
       if(req.method==='GET'&&route==='/api/release-policy')
         return answer(res,200,{repository:releaseGate.REPO,
