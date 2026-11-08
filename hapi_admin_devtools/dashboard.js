@@ -57,6 +57,37 @@
           li.textContent=task.id+' · '+task.category+' · '+task.title.slice(0,140);
           pendingList.appendChild(li);
         }
+        const [modes,dynamicStatus,coverage,dynamicFindings]=await Promise.all([
+          api('work-modes'),api('dynamic/status'),api('dynamic/coverage'),
+          api('dynamic/findings')]);
+        $('dynamic-development').hidden=false;
+        const period=Number.isFinite(dynamicStatus.intervalMinutes)?
+          dynamicStatus.intervalMinutes+' минути':'не е зададен';
+        $('dynamic-status').textContent=dynamicStatus.analysisEnabled?
+          'Активен локален мониторинг · анализ на всеки '+period+
+          ' · последен резултат: '+dynamicStatus.lastAnalysisStatus:
+          'Динамичният режим е изключен или не е конфигуриран';
+        $('dynamic-coverage').textContent='Каталог: '+coverage.listedFunctions+
+          ' функции · пряко наблюдавани: '+coverage.liveInstrumented+
+          ' · без пряко покритие: '+coverage.unobserved;
+        const categories=$('dynamic-categories');categories.replaceChildren();
+        for(const item of modes.improvementCategories){
+          const li=document.createElement('li');li.textContent=item.name+' — '+item.description;
+          categories.appendChild(li);
+        }
+        const findings=$('dynamic-findings');findings.replaceChildren();
+        for(const analysis of dynamicFindings.analyses.slice(-4).reverse()){
+          for(const finding of (analysis.findings||[])){
+            const li=document.createElement('li');
+            li.textContent=analysis.at+' · '+finding.category+' · '+finding.summary;
+            findings.appendChild(li);
+          }
+        }
+        if(!findings.childNodes.length){
+          const li=document.createElement('li');
+          li.textContent='Няма достатъчно измервания или предложения за показване.';
+          findings.appendChild(li);
+        }
         const policy=await api('release-policy');
         $('release-control').hidden=false;
         $('release-status').textContent=policy.publishAvailable?'Release available':
