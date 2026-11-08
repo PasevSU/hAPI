@@ -47,6 +47,9 @@ const DEFINITIONS=deepFreeze({
     hapiProbeTimeoutMs:2500,
     monitorIntervalMs:30000,
     monitorJournalBytes:2097152,
+    dynamicAnalysisDefaultMinutes:360,
+    dynamicAnalysisMinMinutes:15,
+    dynamicAnalysisMaxMinutes:10080,
     challengeExpiryMs:300000,
   },
   security:{
