@@ -12,7 +12,7 @@
 //   1б. СЕМАНТИЧНИТЕ токени (`--gap-panels`, `--pad-card`, …) съществуват и компонентите
 //      питат тях, а не „някое“ число от скалата (0.69.205);
 //   2. „главите“ на блоковете (където подредбата се засича) нямат нито един px литерал;
-//   3. броят на литералните стойности НЕ РАСТЕ (ratchet): днес е 204 отстояния и 43 радиуса,
+//   3. броят на литералните стойности НЕ РАСТЕ (ratchet): днес е 104 отстояния и 24 радиуса,
 //      всяко ново локално задание чупи теста и трябва да мине през `var(--sp-*)`.
 //      Числата се намаляват, когато се оправят, никога не се вдигат.
 //
@@ -135,9 +135,9 @@ const uniqueLiteral = new Set(literal).size;
 const radii = [...css.matchAll(/border-radius\s*:\s*([^;}]+)/g)].map((m) => m[1].trim());
 const literalRadii = radii.filter((v) => !/var\(--/.test(v)).length;
 
-const LIMIT_SPACING = 204;
-const LIMIT_UNIQUE = 76;
-const LIMIT_RADII = 43;
+const LIMIT_SPACING = 104;
+const LIMIT_UNIQUE = 38;
+const LIMIT_RADII = 24;
 assert.ok(
   literal.length <= LIMIT_SPACING,
   `литералните отстояния са ${literal.length}, а таванът е ${LIMIT_SPACING}. Ново локално задание → var(--sp-*)`,
@@ -155,8 +155,8 @@ assert.ok(
 // 0.69.206: 105 от 309 (беше 56) — преводът на 49 литерала в скалата вдигна дела на 34 %.
 const tokenised = declarations.length - literal.length;
 assert.ok(
-  tokenised >= 105,
-  `през променлива минават само ${tokenised} отстояния — договорът иска поне 105`,
+  tokenised >= 205,
+  `през променлива минават само ${tokenised} отстояния — договорът иска поне 205`,
 );
 
 console.log(

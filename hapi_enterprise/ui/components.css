@@ -283,7 +283,7 @@ input[type="radio"] {
 .pv-hr {
   border: 0;
   border-top: 1px solid #d6dbe4;
-  margin: 2px 0;
+  margin: var(--sp-1) 0;
 }
 
 .pv-img {
@@ -328,7 +328,7 @@ input[type="radio"] {
 }
 
 .json-view {
-  margin: 10px 0 0;
+  margin: var(--sp-5) 0 0;
   padding: var(--sp-5);
   background: var(--bg-2);
   border: 1px solid var(--line);
@@ -343,14 +343,14 @@ input[type="radio"] {
 /* Виртуално хранилище (Портали & API) */
 .vs-tree {
   list-style: none;
-  margin: 6px 0 0;
+  margin: var(--sp-3) 0 0;
   padding: 0;
   font-size: var(--fs-12);
 }
 
 .vs-tree ul {
   list-style: none;
-  margin: 2px 0 2px 14px;
+  margin: var(--sp-1) 0 var(--sp-1) var(--sp-7);
   padding-left: var(--sp-5);
   border-left: 1px dashed var(--line-strong);
 }
@@ -483,7 +483,7 @@ input[type="radio"] {
 
 .col-list {
   list-style: none;
-  margin: 0 0 8px;
+  margin: 0 0 var(--sp-4);
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -549,7 +549,7 @@ input[type="radio"] {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: var(--sp-5) var(--sp-6);
-  margin: 8px 0 0;
+  margin: var(--sp-4) 0 0;
   font-family: ui-monospace, Consolas, 'Courier New', monospace;
   font-size: var(--fs-11-5);
   line-height: 1.55;
@@ -627,7 +627,7 @@ input[type="radio"] {
 }
 
 .err-list {
-  margin: 8px 0 0;
+  margin: var(--sp-4) 0 0;
   padding-left: var(--sp-9);
   color: var(--red);
   font-size: var(--fs-12);
@@ -661,7 +661,7 @@ input[type="radio"] {
 }
 
 .pf-panel h4 {
-  margin: 0 0 8px;
+  margin: 0 0 var(--sp-4);
   font-size: var(--fs-12-5);
   letter-spacing: 0.3px;
 }
@@ -686,7 +686,7 @@ input[type="radio"] {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   background: var(--panel-2);
-  padding: 10px 1.2%;
+  padding: var(--sp-5) 1.2%;
 }
 
 .pf-block-head {
@@ -747,7 +747,7 @@ input[type="radio"] {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   width: var(--w-100);
-  padding: 12px 1.2%;
+  padding: var(--sp-6) 1.2%;
   background: var(--bg-2);
 }
 
@@ -826,7 +826,7 @@ input[type="radio"] {
 .pf-link-actions .btn {
   flex: 0 0 auto;
   min-height: 30px;
-  padding: 0 10px;
+  padding: 0 var(--sp-5);
   gap: var(--sp-3);
   font-size: var(--fs-11-5);
   white-space: nowrap;
@@ -847,7 +847,7 @@ input[type="radio"] {
   }
 
   .pf-link-actions .btn {
-    padding: 0 8px;
+    padding: 0 var(--sp-4);
   }
 }
 
@@ -955,8 +955,8 @@ input[type="radio"] {
   max-width: 160px;
   aspect-ratio: 1;
   background: #fff;
-  padding: 6px;
-  border-radius: 8px;
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
 }
 
 .fm-detail {
@@ -968,7 +968,7 @@ input[type="radio"] {
 .fm-detail-row>td {
   background: rgba(34, 211, 238, 0.05);
   border-top: 1px solid var(--line-strong);
-  padding: 12px;
+  padding: var(--sp-6);
 }
 
 .fm-file:hover {
@@ -989,9 +989,9 @@ input[type="radio"] {
 .fm-toolbar select {
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--text);
-  padding: 6px 8px;
+  padding: var(--sp-3) var(--sp-4);
   font: inherit;
   font-size: var(--fs-12);
 }
@@ -1048,9 +1048,9 @@ input[type="radio"] {
   text-align: left;
   width: var(--w-100);
   min-height: calc(var(--tile-h) / 2);
-  padding: 2px 6px;
+  padding: var(--sp-1) var(--sp-3);
   font-size: var(--fs-10-5);
-  gap: 4px;
+  gap: var(--sp-2);
 }
 
 .fm-action small {
@@ -1061,9 +1061,9 @@ input[type="radio"] {
 .fm-meta {
   display: grid;
   grid-template-columns: minmax(0, 28%) minmax(0, 1fr);
-  gap: 6px 12px;
+  gap: var(--sp-3) var(--sp-6);
   font-size: var(--fs-11-5);
-  margin-top: 12px;
+  margin-top: var(--sp-6);
   width: var(--w-100);
 }
 
@@ -1078,7 +1078,7 @@ input[type="radio"] {
 #pf-settings {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
-  gap: 10px 14px;
+  gap: var(--sp-5) var(--sp-7);
   align-items: start;
 }
 
@@ -1106,7 +1106,7 @@ input[type="radio"] {
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
   font-size: var(--fs-11-5);
   font-weight: 600;
   color: var(--text);
@@ -1148,8 +1148,8 @@ input[type="radio"] {
 .pf-security-out code,
 .pf-token-value {
   display: block;
-  margin: 6px 0;
-  padding: 6px 8px;
+  margin: var(--sp-3) 0;
+  padding: var(--sp-3) var(--sp-4);
   border: 1px solid var(--line-strong);
   border-radius: calc(var(--grid-gap) / 2);
   background: var(--panel-2);
@@ -1265,13 +1265,13 @@ input[type="radio"] {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
+  gap: var(--sp-2);
   width: var(--w-100);
   min-width: 0;
   overflow: hidden;
   padding: 0 9px;
   height: 2em;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
   background: rgba(148, 178, 220, 0.1);
   font-size: var(--fs-10-5);
@@ -1342,7 +1342,7 @@ input[type="radio"] {
 .fm-folders {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-3);
   width: var(--w-100);
   min-width: 0;
 }
@@ -1351,7 +1351,7 @@ input[type="radio"] {
   width: var(--w-100);
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--panel-2);
   /* Менюто ⚙ се позиционира спрямо реда на папката. */
   position: relative;
@@ -1365,12 +1365,12 @@ input[type="radio"] {
 .fm-folder-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-4);
   width: var(--w-100);
   min-width: 0;
-  padding: 6px 9px;
+  padding: var(--sp-3) 9px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   /* Размерът на шрифта се наследява — табелките вътре остават стандартни. */
   background: transparent;
   color: var(--text);
@@ -1389,7 +1389,7 @@ input[type="radio"] {
 .fm-folder-tog {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-4);
   flex: 1 1 auto;
   min-width: 0;
   padding: 0;
@@ -1404,7 +1404,7 @@ input[type="radio"] {
 .fm-folder-icons {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--sp-1);
   flex: 0 0 auto;
 }
 
@@ -1417,7 +1417,7 @@ input[type="radio"] {
   height: 1.9em;
   padding: 0 0.35em;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--panel-2);
   color: var(--text);
   font: inherit;
@@ -1446,7 +1446,7 @@ input[type="radio"] {
 .fm-ico-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-2);
   flex: 0 0 auto;
 }
 
@@ -1477,9 +1477,9 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   min-width: 11em;
-  padding: 4px;
+  padding: var(--sp-2);
   border: 1px solid var(--line-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--panel);
   box-shadow: var(--shadow);
 }
@@ -1488,9 +1488,9 @@ input[type="radio"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-6);
   width: var(--w-100);
-  padding: 6px 10px;
+  padding: var(--sp-3) var(--sp-5);
   border: 0;
   border-radius: 5px;
   background: transparent;
@@ -1515,7 +1515,7 @@ input[type="radio"] {
 .fm-gear-sep {
   border: 0;
   border-top: 1px solid var(--line);
-  margin: 4px 2px;
+  margin: var(--sp-2) var(--sp-1);
   width: auto;
 }
 
@@ -1530,7 +1530,7 @@ input[type="radio"] {
 
 .fm-file-gear .fm-gear-item {
   justify-content: flex-start;
-  gap: 8px;
+  gap: var(--sp-4);
 }
 
 .fm-file-gear .fm-gear-item small {
@@ -1587,23 +1587,23 @@ input[type="radio"] {
 }
 
 .fm-folder-body {
-  padding: 2px 9px 9px 2.4em;
+  padding: var(--sp-1) 9px 9px 2.4em;
   min-width: 0;
 }
 
 .fm-folder-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--sp-3);
   justify-content: flex-end;
-  margin-top: 8px;
+  margin-top: var(--sp-4);
 }
 
 /* Папките са отделен блок с ясна граница. */
 .fm-folders-box {
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  padding: 10px 1.2%;
+  border-radius: var(--radius);
+  padding: var(--sp-5) 1.2%;
   background: var(--card-2);
   width: var(--w-100);
   min-width: 0;
@@ -1612,8 +1612,8 @@ input[type="radio"] {
 /* Файловете на портала също са в ограден блок („картите“ не се променят). */
 .fm-files-box {
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  padding: 10px 1.2%;
+  border-radius: var(--radius);
+  padding: var(--sp-5) 1.2%;
   background: var(--card-2);
   width: var(--w-100);
   min-width: 0;
@@ -1631,14 +1631,14 @@ input[type="radio"] {
 
 .fm-folder-comment {
   border-top: 1px solid var(--line);
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
   width: var(--w-100);
   min-width: 0;
 }
 
 .fm-folder-note {
-  margin: 0 0 6px;
+  margin: 0 0 var(--sp-3);
   font-size: var(--fs-11-5);
   color: var(--text);
   overflow-wrap: anywhere;
@@ -1656,19 +1656,19 @@ input[type="radio"] {
 .pf-portals {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-5);
 }
 
 .pf-portal {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-3);
   width: var(--w-100);
-  padding: 10px 1.2%;
+  padding: var(--sp-5) 1.2%;
   border: 1px solid var(--line-strong);
   border-left: 3px solid var(--accent-2);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: linear-gradient(180deg, var(--card), var(--card-2));
   color: var(--text);
 }
@@ -1684,7 +1684,7 @@ input[type="radio"] {
 .pf-archive {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--sp-4);
 }
 
 .pf-archive-head {
@@ -1696,10 +1696,10 @@ input[type="radio"] {
 .pf-archived {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 1.2%;
+  gap: var(--sp-2);
+  padding: var(--sp-4) 1.2%;
   border: 1px dashed var(--line-strong);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: rgba(148, 163, 184, 0.06);
 }
 
@@ -1707,7 +1707,7 @@ input[type="radio"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-4);
 }
 
 /* Адресът на портала НЕ стои в картата (0.69.181): табелката изглеждаше като линка към
@@ -1810,8 +1810,8 @@ input[type="radio"] {
 
 .pf-panel-body {
   border-top: 1px solid var(--line);
-  padding-top: 10px;
-  margin-top: 4px;
+  padding-top: var(--sp-5);
+  margin-top: var(--sp-2);
 }
 
 /* ── Табелка (chip): един стил, вид и големина за всички табелки ─────────── */
@@ -1825,7 +1825,7 @@ input[type="radio"] {
   gap: 5px;
   height: 2em;
   padding: 0 9px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
   background: rgba(148, 178, 220, 0.1);
   font-size: var(--fs-10-5);
@@ -1905,7 +1905,7 @@ input[type="radio"] {
   gap: 5px;
   height: 2em;
   padding: 0 9px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
   background: rgba(148, 178, 220, 0.1);
   color: var(--text);
@@ -1922,7 +1922,7 @@ input[type="radio"] {
 .u-divider {
   border: 0;
   border-top: 1px solid var(--line);
-  margin: 6px 0;
+  margin: var(--sp-3) 0;
   width: var(--w-100);
 }
 
@@ -1939,14 +1939,14 @@ input[type="radio"] {
 .pf-extras {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 6px;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
 }
 
 .pf-extras-rows {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-3);
 }
 
 .pf-extra-row {
@@ -1970,11 +1970,11 @@ input[type="radio"] {
 .pf-case-new {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 8px;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding: var(--sp-4);
   border: 1px dashed var(--line-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .pf-contact-new[hidden],
@@ -2140,9 +2140,9 @@ input[type="radio"] {
   width: 42%;
   min-width: 280px;
   max-width: 92%;
-  padding: 6px;
+  padding: var(--sp-3);
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--panel);
   box-shadow: var(--shadow);
 }
@@ -2154,11 +2154,11 @@ input[type="radio"] {
 .fm-menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-4);
   width: 100%;
   padding: 7px 9px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text);
   font: inherit;
@@ -2201,7 +2201,7 @@ input[type="radio"] {
   display: grid;
   place-items: center;
   background: rgba(3, 8, 16, 0.72);
-  padding: 18px;
+  padding: var(--sp-9);
 }
 
 .fm-modal[hidden] {
@@ -2279,7 +2279,7 @@ input[type="radio"] {
 }
 
 .fm-modal-body .fm-detail {
-  padding: 8px 10px;
+  padding: var(--sp-4) var(--sp-5);
 }
 
 .fm-modal-body iframe,
@@ -2293,7 +2293,7 @@ input[type="radio"] {
 
 .fm-modal-body pre {
   margin: 0;
-  padding: 12px;
+  padding: var(--sp-6);
   overflow: auto;
   height: 100%;
 }
@@ -2310,7 +2310,7 @@ input[type="radio"] {
 .fm-url {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
   flex-wrap: wrap;
 }
 
@@ -2340,7 +2340,7 @@ input[type="radio"] {
   --tree-step: 1.4em;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--sp-1);
   width: var(--w-100);
 }
 
@@ -2351,7 +2351,7 @@ input[type="radio"] {
   width: var(--w-100);
   grid-template-columns: 1.6em 1.6em minmax(0, 1fr) auto auto;
   padding: 3px 0.6em;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   font-size: var(--fs-11-5);
   line-height: 1.6;
@@ -2445,7 +2445,7 @@ input[type="radio"] {
 
 .fm-tree-actions {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--sp-2);
   align-items: center;
 }
 
@@ -2453,7 +2453,7 @@ input[type="radio"] {
 .fm-files {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--sp-4);
 }
 
 .fm-file {
@@ -2501,7 +2501,7 @@ input[type="radio"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
   min-width: 0;
 }
 
@@ -2607,12 +2607,12 @@ input[type="radio"] {
 
 .fm-file .fm-detail {
   border-top: 1px solid var(--line);
-  padding-top: 8px;
-  margin-top: 2px;
+  padding-top: var(--sp-4);
+  margin-top: var(--sp-1);
 }
 
 .doc-list {
-  padding: 8px;
+  padding: var(--sp-4);
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -2623,8 +2623,8 @@ input[type="radio"] {
 .doc-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
+  gap: var(--sp-4);
+  padding: 7px var(--sp-4);
   border-radius: 7px;
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -2684,7 +2684,7 @@ input[type="radio"] {
 
 .doc-item .row-actions {
   display: flex;
-  gap: 2px;
+  gap: var(--sp-1);
 }
 
 .doc-item .row-actions button {
@@ -2701,11 +2701,11 @@ input[type="radio"] {
 }
 
 .prop-body {
-  padding: 10px 12px;
+  padding: var(--sp-5) var(--sp-6);
 }
 
 .prop-body h4 {
-  margin: 0 0 8px;
+  margin: 0 0 var(--sp-4);
   font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: 0.7px;
@@ -2715,7 +2715,7 @@ input[type="radio"] {
 .hint {
   color: var(--muted);
   font-size: var(--fs-11-5);
-  margin: 6px 0 0;
+  margin: var(--sp-3) 0 0;
 }
 
 /* Едноредово подрязване в равен грид (без препълване). */
@@ -2729,8 +2729,8 @@ input[type="radio"] {
 }
 
 .errors {
-  margin: 8px 0 0;
-  padding: 8px 10px;
+  margin: var(--sp-4) 0 0;
+  padding: var(--sp-4) var(--sp-5);
   border-radius: 7px;
   list-style: none;
   background: rgba(239, 68, 68, 0.08);
@@ -2747,7 +2747,7 @@ input[type="radio"] {
 }
 
 .a4-wrap {
-  padding: 10px;
+  padding: var(--sp-5);
   display: flex;
   justify-content: center;
   background: var(--bg-2);
@@ -2762,7 +2762,7 @@ input[type="radio"] {
   color: #101828;
   border-radius: 3px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  padding: 16px 18px;
+  padding: var(--sp-8) var(--sp-9);
   overflow: hidden;
   font-size: var(--fs-9-5);
   line-height: 1.35;
@@ -2776,7 +2776,7 @@ input[type="radio"] {
   justify-content: space-between;
   align-items: flex-start;
   border-bottom: 1px solid #d6dbe4;
-  padding-bottom: 6px;
+  padding-bottom: var(--sp-3);
 }
 
 .a4 .pv-brand {
@@ -2805,7 +2805,7 @@ input[type="radio"] {
   font-weight: 750;
   color: #0b3b63;
   text-align: center;
-  margin-top: 4px;
+  margin-top: var(--sp-2);
 }
 
 .a4 .pv-sub {
@@ -2826,7 +2826,7 @@ input[type="radio"] {
 .a4 .pv-pagebreak {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
   font-size: 66%;
   color: #667085;
   text-transform: uppercase;
@@ -2850,7 +2850,7 @@ input[type="radio"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 3px 6px;
+  padding: 3px var(--sp-3);
   border-radius: 3px;
   font-size: 74%;
   font-weight: 700;
@@ -2872,7 +2872,7 @@ input[type="radio"] {
 .a4 .pv-sec {
   border: 1px solid #e4e7ec;
   border-radius: 3px;
-  padding: 5px 6px;
+  padding: 5px var(--sp-3);
 }
 
 .a4 .pv-sec h5 {
@@ -2890,7 +2890,7 @@ input[type="radio"] {
 .a4 th,
 .a4 td {
   border: 1px solid #e4e7ec;
-  padding: 2px 4px;
+  padding: var(--sp-1) var(--sp-2);
   text-align: left;
 }
 
@@ -2921,13 +2921,13 @@ input[type="radio"] {
   font-size: 68%;
   color: #667085;
   border-top: 1px solid #e4e7ec;
-  padding-top: 4px;
+  padding-top: var(--sp-2);
 }
 
 .export-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--sp-6);
   align-items: center;
   font-size: var(--fs-12);
   color: var(--muted);
@@ -2957,7 +2957,7 @@ input[type="radio"] {
   bottom: 42px;
   z-index: 50;
   max-width: 420px;
-  padding: 10px 14px;
+  padding: var(--sp-5) var(--sp-7);
   border-radius: 9px;
   background: var(--panel-2);
   border: 1px solid var(--line-strong);
@@ -2976,8 +2976,8 @@ input[type="radio"] {
 .statusbar {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 6px 14px;
+  gap: var(--sp-6);
+  padding: var(--sp-3) var(--sp-7);
   border-top: 1px solid var(--line);
   background: var(--bg-2);
   color: var(--muted);
@@ -3010,19 +3010,19 @@ input[type="radio"] {
 
 .set-key {
   display: grid;
-  gap: 4px;
+  gap: var(--sp-2);
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--panel-2);
-  padding: 6px 8px;
+  padding: var(--sp-3) var(--sp-4);
 }
 
 .set-key-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
   min-width: 0;
 }
 
@@ -3044,12 +3044,12 @@ input[type="radio"] {
 .set-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 4px 0 18px;
+  gap: var(--sp-4);
+  margin: var(--sp-2) 0 var(--sp-9);
 }
 
 .set-tab {
-  padding: 8px 14px;
+  padding: var(--sp-4) var(--sp-7);
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--card);
@@ -3081,9 +3081,9 @@ input[type="radio"] {
   background: #fff;
   color: #10151f;
   border: 1px solid var(--line-strong);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 8mm;
-  margin-top: 12px;
+  margin-top: var(--sp-6);
   width: 100%;
   max-width: 200mm;
   font-size: var(--fs-12);
