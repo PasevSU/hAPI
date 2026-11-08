@@ -72,21 +72,21 @@ async function run({ intervalMs = DEFAULT_INTERVAL_MS, dir = process.env.HAPI_GU
   port = Number(process.env.PORT || 8099), onProbe = probe, stop = () => false } = {}) {
   const journal = createJournal(dir);
   let previous = null;
+  let failures = 0;
   while (!stop()) {
     const result = await onProbe({ port });
     const signature = result.state + ':' + result.code + ':' + (result.checks || []).join(',');
     // Record transitions and persistent failures once every 20 checks, not every second.
-    if (signature !== previous || result.state !== 'healthy' && run.failures % 20 === 0) {
+    if (signature !== previous || result.state !== 'healthy' && failures % 20 === 0) {
       try { journal.record(result); } catch (error) {
         console.error('GUARDIAN_JOURNAL_ERROR:', error.code || error.message);
       }
     }
     previous = signature;
-    run.failures = result.state === 'healthy' ? 0 : (run.failures || 0) + 1;
+    failures = result.state === 'healthy' ? 0 : failures + 1;
     await delay(intervalMs);
   }
 }
-run.failures = 0;
 if (require.main === module) {
   let stopped = false;
   for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(signal, () => { stopped = true; });
