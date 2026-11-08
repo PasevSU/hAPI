@@ -13,6 +13,8 @@ const githubVerification=require('./github-verification');
 const releaseGate=require('./release-gate');
 const ciEvidence=require('./github-actions-evidence');
 const {createMonitor}=require('./monitor');
+const director=require('./ai/director');
+const {inventory:developmentInventory}=require('./ai/workload');
 const DATA=CONFIG.dataDir;
 const OPTIONS=CONFIG.optionsPath;
 const ENROLLMENT=CONFIG.enrollmentPath;
@@ -158,6 +160,28 @@ function createServer(){
            !Number.isSafeInteger(secondId)||secondId<=0||firstId===secondId)
           return answer(res,400,{error:'INVALID_CI_RUN_INPUT'});
         return answer(res,200,await ciEvidence.inspectTwoRuns({sha,firstId,secondId}));
+      }
+      if(req.method==='GET'&&route==='/api/director/hierarchy')
+        return answer(res,200,{...director.hierarchy,mode:'director-led',aiRuntime:'optional-not-activated',
+          deploymentAuthority:'external-controller-required'});
+      if(req.method==='GET'&&route==='/api/director/backlog'){
+        const backlog=developmentInventory();
+        return answer(res,200,{...backlog,tasks:backlog.tasks.map(({id,title,category,owner,
+          risk,status,source,evidenceLevel})=>({id,title,category,owner,risk,status,source,evidenceLevel}))});
+      }
+      if(req.method==='POST'&&route==='/api/director/plan'){
+        const input=await readBody(req);
+        if(!input||typeof input!=='object'||Array.isArray(input)||typeof input.title!=='string'||
+           input.title.trim().length===0||input.title.length>240)
+           return answer(res,400,{error:'INVALID_DEVELOPMENT_TASK'});
+        return answer(res,200,{...director.buildPlan(input),aiStatus:'not-run',
+          executionStatus:'analysis-only',releaseAuthorized:false});
+      }
+      if(req.method==='POST'&&route==='/api/director/analyze'){
+        // No AI credentials or model calls until the worker has its own installed,
+        // tested SDK dependency and opt-in secret management.
+        return answer(res,423,{error:'AI_WORKER_NOT_CONFIGURED',
+          required:['tested-sdk-runtime','explicit-ai-opt-in','credential-vault','cost-budget']});
       }
       if(req.method==='GET'&&route==='/api/release-policy')
         return answer(res,200,{repository:releaseGate.REPO,
