@@ -38,7 +38,7 @@ const cryptoOptions = require('./crypto-options').create({ optionValue, isEnable
 const rbac = require('./rbac').create({ adminToken, operatorToken, viewerToken, userRoles: parseRoles(process.env.USER_ROLES || addonOptions.user_roles), groupRoles: parseRoles(process.env.GROUP_ROLES || addonOptions.group_roles), defaultRole: process.env.DEFAULT_ROLE || 'admin', ssoRole: (req) => ssoRoleOf(req) });
 // Сензори: комуникация, файлове, извиквания, изтегляния, посещения. Агрегати без
 // лични данни; състоянието се записва в <DATA_DIR>/sensors.json и оцелява рестарт.
-const observer = require('./observer').create({ dir: root });
+const observer = require('./observer').create({ dir: root }); const paths = require('./paths'); // логически корени — един източник
 // Structured debug log: option `log_level`, overridable with LOG_LEVEL for troubleshooting.
 const log = require('./logger').create({ dir: root, level: process.env.LOG_LEVEL || addonOptions.log_level || 'info', maxBytes: process.env.LOG_MAX_BYTES, maxFiles: process.env.LOG_MAX_FILES, maxEntries: process.env.LOG_MAX_ENTRIES });
 const errorLog = require('./error-log').create(root); require('./process-guards').install({ log, errorLog });
@@ -118,11 +118,11 @@ const profilesConfig = (() => { const s = String(process.env.PROFILES || '').tri
 let docflowRegistry = null, coreStore = null;
 try { docflowRegistry = require('./registry').create(profilesConfig); coreStore = require('./core-store').create({ path: path.join(root, 'core.sqlite'), dbId: coreDbId, secret: adminToken }); } catch (e) { log.error('docflow.init.failed', { ns: 'core', err: e.message }) }
 const coreReady = () => { if (!docflowRegistry || !coreStore) throw Object.assign(new Error('Core unavailable'), { status: 503 }); return { registry: docflowRegistry, store: coreStore } };
-const backupsDir = (() => { const v = String(process.env.BACKUP_DIR || '').trim(); if (!v) return path.join(root, 'backups'); const abs = path.isAbsolute(v) ? path.resolve(v) : path.resolve('/share', v); if (!['/share', '/media', '/config', '/data'].some(p => abs === p || abs.startsWith(p + '/')) && !process.env.BACKUP_DIR_ANY) throw Error('backup_folder must be inside /share, /media or /config'); return abs })();
+const backupsDir = (() => { const v = String(process.env.BACKUP_DIR || '').trim(); if (!v) return path.join(root, 'backups'); const abs = path.isAbsolute(v) ? path.resolve(v) : path.join(paths.resolveRoot('share'), v); if (path.isAbsolute(v) && !['/share', '/media', '/config', '/data'].some(p => abs === p || abs.startsWith(p + '/')) && !process.env.BACKUP_DIR_ANY) throw Error('backup_folder must be inside /share, /media or /config'); return abs })();
 // Втори таргет за копията на базата (друго устройство/споделена папка). Празен = без
 // огледало. Всяко копие се проверява с SHA-256; при разлика копието се трие, за да не
 // остане „изглеждащ валиден“ архив.
-const backupsMirrorDir = (() => { const v = String(optionValue('BACKUP_MIRROR', 'backup_mirror', '')).trim(); if (!v) return ''; const abs = path.isAbsolute(v) ? path.resolve(v) : path.resolve('/share', v); if (!['/share', '/media', '/config', '/data'].some(p => abs === p || abs.startsWith(p + '/')) && !process.env.BACKUP_MIRROR_ANY) throw Error('backup_mirror must be inside /share, /media or /config'); if (abs === backupsDir) throw Error('backup_mirror must differ from backup_folder'); return abs })();
+const backupsMirrorDir = (() => { const v = String(optionValue('BACKUP_MIRROR', 'backup_mirror', '')).trim(); if (!v) return ''; const abs = path.isAbsolute(v) ? path.resolve(v) : path.join(paths.resolveRoot('share'), v); if (path.isAbsolute(v) && !['/share', '/media', '/config', '/data'].some(p => abs === p || abs.startsWith(p + '/')) && !process.env.BACKUP_MIRROR_ANY) throw Error('backup_mirror must be inside /share, /media or /config'); if (abs === backupsDir) throw Error('backup_mirror must differ from backup_folder'); return abs })();
 const auditChain = require('./audit-chain').createAuditChain(root);
 const scopesAllowed = ['read', 'download'];
 const htmlProjectsRoot = path.join(root, 'html-projects');
@@ -614,6 +614,7 @@ const PORTAL_FLAGS = ['none', 'info', 'important', 'urgent', 'archive'];
 const portalFlag = v => (PORTAL_FLAGS.includes(String(v || '')) ? String(v) : 'none');
 // Папка с файлове: само под разрешените корени, без „..“ и контролни знаци.
 const portalRoot = v => { const s = String(v == null ? '' : v).trim(); if (!s) return '/share'; if (!/^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(s) || s.includes('..')) throw Object.assign(new Error('Invalid storage_root'), { status: 400 }); return s.replace(/\/+$/, '') || '/share' };
+const portalAbs = v => paths.resolveStoragePath(portalRoot(v)); // логически → host път: единственото място
 
 // Флагове на папките: нормализирани (липсващ ключ = по подразбиране). На модулно ниво,
 // защото ги ползва и `routes/folders.js`. `reason` (LOCK_REASON_REQUIRED) се пази и връща.
@@ -763,7 +764,7 @@ const generatorRoutes = require('./routes/generator').create({ generator, adminG
 const adminDocs = require('./routes/admin-docs').create({ json, adminGate, baseUrl, addonVersion });
 // Публични токени за портал (Stage D) и изтегляне на файл от ПАПКАТА му (един вход, не адрес за всеки файл).
 const portalTokens = require('./routes/portal-tokens').create({ json, fail, parse, audit, adminGate, store: metadataStore, policy: portalPolicy, resolvePortal, baseUrl, portalPath: (p) => links.portalLandingPath(p), randomToken: (prefix) => prefix + crypto.randomBytes(32).toString('base64url'), publish: (e, d) => webhooks.publish(e, d) });
-const qrRegistry = require('./portal-qr'); const integrityRegistry = require('./portal-integrity'); const worm = require('./worm').create({ log, audit, filesRoot }); const sealFiles = async (portal, manifest, rootAbs) => worm.sealManifest(portal, manifest, rootAbs); const oidcRoutes = require('./routes/oidc').create({ json, fail, audit, oidc: oidcLib, metadataStore, keyDigest, newSessionToken, cookieSecure: (req) => portalPolicy.isSecureRequest(req), baseUrl }); const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr: qrRegistry, archiveRoot: path.join(root, 'archives'), db: () => db }); const portalArchive = require('./routes/portal-archive').create({ json, fail, audit, update, db: () => db, filesRoot, internalRoot, apiRoot, archiveRoot: path.join(root, 'archives'), portalFolder, mirrorPortalDir: storageMirrorDir ? mirrorPortalDir : null, writeApiDir, baseUrl, log, retentionDays: process.env.HAPI_PORTAL_RETENTION_DAYS }); const portalQr = require('./routes/portal-qr').create({ json, fail, parse, audit, fsp, path, portalRoot, update, qr: qrRegistry, integrity: integrityRegistry, archiveRoot: path.join(root, 'archives'), adminGate, db: () => db, sealFiles, worm });
+const qrRegistry = require('./portal-qr'); const integrityRegistry = require('./portal-integrity'); const worm = require('./worm').create({ log, audit, filesRoot }); const sealFiles = async (portal, manifest, rootAbs) => worm.sealManifest(portal, manifest, rootAbs); const oidcRoutes = require('./routes/oidc').create({ json, fail, audit, oidc: oidcLib, metadataStore, keyDigest, newSessionToken, cookieSecure: (req) => portalPolicy.isSecureRequest(req), baseUrl }); const portalStorage = require('./routes/portal-storage').create({ fail, audit, policy: portalPolicy, resolvePortal, portalRoot, portalAbs, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr: qrRegistry, archiveRoot: path.join(root, 'archives'), db: () => db }); const portalArchive = require('./routes/portal-archive').create({ json, fail, audit, update, db: () => db, filesRoot, internalRoot, apiRoot, archiveRoot: path.join(root, 'archives'), portalFolder, mirrorPortalDir: storageMirrorDir ? mirrorPortalDir : null, writeApiDir, baseUrl, log, retentionDays: process.env.HAPI_PORTAL_RETENTION_DAYS }); const portalQr = require('./routes/portal-qr').create({ json, fail, parse, audit, fsp, path, portalRoot, portalAbs, update, qr: qrRegistry, integrity: integrityRegistry, archiveRoot: path.join(root, 'archives'), adminGate, db: () => db, sealFiles, worm });
 // Публичната страница на портала: ЕДИН адрес (`/portal.html`), поздрав + порталите, до които
 // заявката има достъп. Логиката е в `routes/portal-page.js` — `server.js` има таван на редовете.
 const portalPage = require('./routes/portal-page').create({ fail, resolvePortal, policy: portalPolicy, portals: () => db.portals, baseUrl, recordTelemetry, portalFolder, links });
@@ -773,7 +774,7 @@ const keyring = require('./path-crypto').create({ env: process.env });
 const portalSkin = require('./portal-skin').create({ keyring, log }); // кожа на портала + предупреждение
 // PGP инструментите и подписването на папки/файлове: ключът идва от опциите, без да се пита.
 const pgpTools = require('./pgp-tools').create({ keyring, listKeys: () => db.pgpKeys || [], decryptSecret: key => { if (!key || !key.secretEnc) return ''; return fileCrypto.decrypt(Buffer.from(key.secretEnc, 'base64'), adminToken).toString('utf8') }, pgp });
-const pgpSign = require('./pgp-sign').create({ tools: pgpTools, root: path.join(root, 'pgp-signatures'), roots: { '/share': portalRoot('/share'), '/media': portalRoot('/media') }, audit, log });
+const pgpSign = require('./pgp-sign').create({ tools: pgpTools, root: path.join(root, 'pgp-signatures'), roots: { '/share': paths.resolveRoot('share'), '/media': paths.resolveRoot('media') }, audit, log });
 /**
  * L1 миграция (0.69.67): откритите `storagePath` стават `storagePathEnc`. Прави копие на
  * базата ПРЕДИ промяната (с проверка за цялост) и е идемпотентна — втори пуск не намира
@@ -796,10 +797,7 @@ const sealWorkdir = async () => {
   sharedData.sync();
   return require('./workdir-migrate')
     .create({
-      fsp,
-      path,
-      portalRoot,
-      keyring,
+      fsp, path, portalRoot, portalAbs, keyring,
       backupRoot: path.join(root, 'internal', 'workdir-backup'),
     })
     .sealPortals(db.portals);
@@ -811,7 +809,7 @@ const linkCheck = require('./routes/link-check').create({
 });
 const eventStream = require('./event-stream').create({ log }); const webhooks = require('./webhooks').create({ store: metadataStore, audit, log, stream: eventStream }); const webhooksRoutes = require('./routes/webhooks').create({ json, fail, parse, audit, adminGate, webhooks }); const eventsRoutes = require('./routes/events').create({ json, fail, adminGate, stream: eventStream }); const forensicRoutes = require('./routes/forensic').create({ json, fail, parse, audit, adminGate, fsp, path, filesRoot, getPortals: () => db.portals }); const evidenceRoutes = require('./routes/evidence').create({ json, fail, parse, audit, adminGate, store: metadataStore, getPortals: () => db.portals, getCases: () => db.cases, roleOf: (req) => rbac.role(req), worm });
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
-const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry }); const fileTransfer = require('./routes/file-transfer').create({ json, fail, parse, audit, update, clean, fsp, path, crypto, filesRoot, id, contentIds, storeMirrored, removeMirrored, portalFolder, portalFolderCopy, writeApiDir, baseUrl, observer, retention, getPortals: () => db.portals, publish: webhooks.publish }); const idempotency = require('./idempotency').create({ store: metadataStore, fail, audit, limit: () => runtime.effective().maxUploadBytes });
+const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalAbs, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry }); const fileTransfer = require('./routes/file-transfer').create({ json, fail, parse, audit, update, clean, fsp, path, crypto, filesRoot, id, contentIds, storeMirrored, removeMirrored, portalFolder, portalFolderCopy, writeApiDir, baseUrl, observer, retention, getPortals: () => db.portals, publish: webhooks.publish }); const idempotency = require('./idempotency').create({ store: metadataStore, fail, audit, limit: () => runtime.effective().maxUploadBytes });
 async function handler(req, res) {
   try {
     if (req.url.startsWith('//')) req.url = req.url.replace(/^\/{2,}/, '/'); const url = new URL(req.url, 'http://localhost');
@@ -1817,7 +1815,7 @@ async function handler(req, res) {
      * пакета остават пълни (`storage/<подпапка>/<файл>`), за да е еднозначно.
      */
     async function collectStorageFiles(storageRoot, { maxFiles = 500, maxBytes = 64 * 1024 * 1024, storagePath = '' } = {}) {
-      const base = portalRoot(storageRoot); const out = []; let bytes = 0;
+      const base = portalAbs(storageRoot); const out = []; let bytes = 0;
       const storageTree = require('./storage-tree');
       const sub = storagePath ? storageTree.normRel(storagePath) : '';
       if (sub === null) throw Object.assign(new Error('Invalid storage path'), { status: 400 });
@@ -1861,7 +1859,7 @@ async function handler(req, res) {
      * не блокира голяма папка. Връща и броячи, за да не се смятат в GUI-я.
      */
     async function collectStorageTree(storageRoot, { maxEntries = 2000, maxDepth = 12 } = {}) {
-      const base = portalRoot(storageRoot); const entries = []; const dirs = []; let truncated = false, exists = false;
+      const base = portalAbs(storageRoot); const entries = []; const dirs = []; let truncated = false, exists = false;
       try { const stat = await fsp.stat(base); exists = stat.isDirectory() } catch { exists = false }
       async function walk(dir, rel, depth) {
         if (entries.length >= maxEntries) { truncated = true; return }
@@ -1888,7 +1886,8 @@ async function handler(req, res) {
       const tree = storageTree.build(entries);
       // Празните папки също се показват (build създава само папки, в които има файлове).
       if (dirs.length) { for (const rel of dirs) storageTree.addFolder(tree, rel); storageTree.sortTree(tree); storageTree.recount(tree) }
-      return { storageRoot: base, exists, truncated, tree, folderCount: tree.folderCount, fileCount: tree.fileCount, bytes: tree.bytes };
+      // `base` е host пътят (за четене от диска), но навън се обявява ЛОГИЧЕСКИЯТ корен (`/share/...`) — дисковият път не излиза в API (тест `storage-tree-api`).
+      return { storageRoot: portalRoot(storageRoot), exists, truncated, tree, folderCount: tree.folderCount, fileCount: tree.fileCount, bytes: tree.bytes };
     }
     if (parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'pgp' && parts[3] === 'keys') {
       if (!adminGate(req, res, 'pgp', method)) return;
@@ -2233,8 +2232,7 @@ async function handler(req, res) {
           if (locked) return fail(res, 409, `Папката ${locked} е заключена`);
           const data = await body(req, runtime.effective().maxUploadBytes);
           if (!data.length) return fail(res, 400, 'Празен файл');
-          const root = portalRoot(p.storage_root || '/share');
-          const rootAbs = path.resolve(root);
+          const rootAbs = portalAbs(p.storage_root || '/share');
           const full = path.resolve(rootAbs, ...rel.split('/'));
           if (full !== rootAbs && !full.startsWith(rootAbs + path.sep)) return fail(res, 400, 'Invalid path');
           const overwrite = url.searchParams.get('overwrite') === '1';
@@ -2278,8 +2276,7 @@ async function handler(req, res) {
           const storagePath = '/' + rel;
           const already = p.files.some(f => (keyring.pathOf(f) ? keyring.pathOf(f) === storagePath : String(f.name || '').toLowerCase() === name.toLowerCase()));
           if (already) return fail(res, 409, 'Файл с това име вече е регистриран в портала');
-          const root = portalRoot(p.storage_root || '/share');
-          const rootAbs = path.resolve(root);
+          const rootAbs = portalAbs(p.storage_root || '/share');
           const full = path.resolve(rootAbs, ...rel.split('/'));
           if (!full.startsWith(rootAbs + path.sep)) return fail(res, 400, 'Invalid path');
           let stat; try { stat = await fsp.lstat(full) } catch { return fail(res, 404, 'Файлът не е намерен') }

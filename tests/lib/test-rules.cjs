@@ -362,6 +362,7 @@ const RULES = [
   { id: "storage-migrate", area: "съхранение", title: "Storage migrate", owner: "tests/storage-migrate.cjs" },
   { id: "storage-mirror", area: "съхранение", title: "Storage mirror", owner: "tests/storage-mirror.cjs" },
   { id: "storage-paths", area: "съхранение", title: "Storage paths", owner: "tests/storage-paths.cjs" },
+  { id: "storage-roots", area: "съхранение", title: "Storage roots", owner: "tests/storage-roots.cjs" },
   { id: "storage-tree", area: "съхранение", title: "Storage tree", owner: "tests/storage-tree.cjs" },
   { id: "storage-tree-api", area: "съхранение", title: "Storage tree api", owner: "tests/storage-tree-api.cjs" },
   { id: "store-accessors", area: "общо", title: "Store accessors", owner: "tests/store-accessors.cjs" },

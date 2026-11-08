@@ -50,8 +50,7 @@ const shareRoot = (env = process.env) => {
   // и очаква пътя в HA конфигурацията — тоест изборът на оператора се подменяше с платформения
   // (хванато от CI в S20, невидимо на Windows, където `/share` не се ползва).
   if (env && env !== process.env) return '';
-  return process.platform === 'win32' ? '' : '/share';
-};
+  return process.platform === 'win32' ? '' : '/share';};
 
 const sourceDir = () => path.join(__dirname, 'evidence-portal');
 const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');

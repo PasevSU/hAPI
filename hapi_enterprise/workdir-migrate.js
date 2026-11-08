@@ -18,7 +18,7 @@ const MAX_FILES = 5000;
 const MAX_BYTES = 512 * 1024 * 1024;
 
 function factory(deps) {
-  const { fsp, path, portalRoot, keyring, backupRoot } = deps;
+  const { fsp, path, portalRoot, portalAbs, keyring, backupRoot } = deps;
 
   async function walk(dir, rel, out) {
     let list;
@@ -71,12 +71,14 @@ function factory(deps) {
     const failed = [];
 
     for (const portal of portals || []) {
-      const root = portalRoot((portal && portal.storage_root) || '/share');
-      // Целият /share или /media не се пипа — само отделена папка на портал.
-      if (root === '/share' || root === '/media') {
+      const logical = portalRoot((portal && portal.storage_root) || '/share');
+      // Целият /share или /media не се пипа — само отделена папка на портал. Сравнението е
+      // по ЛОГИЧЕСКАТА стойност, а обхождането — по реалния host път (`paths.js`).
+      if (logical === '/share' || logical === '/media') {
         skipped++;
         continue;
       }
+      const root = portalAbs ? portalAbs(logical) : logical;
       const files = [];
       await walk(root, '', files);
       for (const file of files) {

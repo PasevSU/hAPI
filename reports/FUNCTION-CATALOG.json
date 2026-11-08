@@ -1,10 +1,10 @@
 {
   "generatedFor": "hapi_enterprise",
-  "total": 401,
-  "tested": 379,
-  "untested": 22,
-  "fnTotal": 358,
-  "fnTested": 358,
+  "total": 408,
+  "tested": 385,
+  "untested": 23,
+  "fnTotal": 362,
+  "fnTested": 362,
   "modules": [
     {
       "module": "hapi_enterprise/api-registry.js",
@@ -888,6 +888,46 @@
           "name": "wrapSecret",
           "kind": "функция",
           "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/paths.js",
+      "functions": [
+        {
+          "name": "ENV",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "isLogicalRoot",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "LOGICAL_ROOTS",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "logicalRoot",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "resolveRoot",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "resolveStoragePath",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "TEMP_BASE",
+          "kind": "константа",
+          "tested": false
         }
       ]
     },

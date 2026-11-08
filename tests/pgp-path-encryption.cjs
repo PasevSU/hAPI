@@ -16,7 +16,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { freePort } = require('./helpers.cjs');
+const { freePort, storageRoot } = require('./helpers.cjs');
 
 const FIX = path.join(__dirname, 'fixtures/pgp');
 const PUBLIC = path.join(FIX, 'public.asc');
@@ -26,15 +26,12 @@ const TOKEN = 'path-encryption-token-0123456789';
 const cases = [];
 const ok = (label) => cases.push(label);
 
-// `/share` се разресолва спрямо устройството на ТЕКУЩАТА директория (сървърът наследява
-// cwd), затова базата се взима от cwd — на Windows os.tmpdir() е на друго устройство.
-const shareBase = path.join(path.parse(process.cwd()).root, 'share');
-let shareBaseOk = true;
-try {
-  fs.mkdirSync(shareBase, { recursive: true });
-} catch {
-  shareBaseOk = false;
-}
+// `/share` е ЛОГИЧЕСКИ корен: host пътят се решава от `hapi_enterprise/paths.js`.
+// Тестът дава собствен времен корен през `STORAGE_ROOT_OVERRIDE` и НЕ създава `<диск>:\share`.
+const storage = storageRoot();
+const shareBase = storage.share;
+fs.mkdirSync(shareBase, { recursive: true });
+const shareBaseOk = true;
 
 /** Стартира сървъра с изолирана инсталация и чака /health. */
 async function boot({ encryptPaths, dataDir }) {
@@ -42,6 +39,7 @@ async function boot({ encryptPaths, dataDir }) {
   const port = await freePort();
   const env = {
     ...process.env,
+    ...storage.env,
     DATA_DIR: dir,
     ADMIN_TOKEN: TOKEN,
     PORT: String(port),

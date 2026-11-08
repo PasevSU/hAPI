@@ -13,10 +13,14 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
+const { storageRoot } = require('./helpers.cjs');
 
 const SLUG = 'karta-papka';
-// `/share` е абсолютен път в add-on-а: на Linux е `/share`, на Windows — `<диск>:\share`.
-const shareRoot = path.join(path.parse(process.cwd()).root, 'share');
+// `/share` е ЛОГИЧЕСКИ корен — host пътят го решава `hapi_enterprise/paths.js`. Тестът дава
+// временен корен (`STORAGE_ROOT_OVERRIDE`), за да не се появи `<диск>:\share`
+// (вж. `tests/storage-roots.cjs`).
+const storage = storageRoot();
+const shareRoot = storage.share;
 const folder = path.join(shareRoot, SLUG);
 const INSIDE = 'съдържание на файла в папката';
 const UPLOADED = 'съдържание на качения файл';
@@ -25,17 +29,12 @@ const clean = () => fs.rmSync(folder, { recursive: true, force: true });
 
 (async () => {
   clean();
-  try {
-    fs.mkdirSync(path.join(folder, 'Договори', '2026'), { recursive: true });
-  } catch (e) {
-    console.log(`SKIP portal-folder-contract: ${shareRoot} не може да се създаде (${e.code || e.message}) — липсва /share`);
-    process.exit(0);
-  }
+  fs.mkdirSync(path.join(folder, 'Договори', '2026'), { recursive: true });
   fs.writeFileSync(path.join(folder, 'Договори', '2026', 'анекс.txt'), INSIDE);
   // `portal_folder_copy` по подразбиране е изключено; тук е включено, защото точно то качва
   // файла в САМАТА папка на портала — тоест дава му `storagePath`, по който после се прилагат
   // правилата (ключ/необявен) и по който картата на папката го вижда.
-  const server = await startServer({ env: { PORTAL_FOLDER_COPY: '1' } });
+  const server = await startServer({ env: { PORTAL_FOLDER_COPY: '1', STORAGE_ROOT_OVERRIDE: storage.dir } });
   try {
     const created = await server.api('/admin/api/portals', 'POST', {
       slug: SLUG,
@@ -157,6 +156,7 @@ const clean = () => fs.rmSync(folder, { recursive: true, force: true });
   } finally {
     await server.stop();
     clean();
+    fs.rmSync(storage.dir, { recursive: true, force: true });
   }
 })().catch((error) => {
   console.error(error);

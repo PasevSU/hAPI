@@ -1,7 +1,7 @@
 'use strict';
 // Папките на портала: дърво през административното API, собствен API (api.json + QR)
 // за всяка папка и защита срещу публикуване на целия /share.
-const { stopChild, freePort } = require('./helpers.cjs');
+const { stopChild, freePort, storageRoot } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -12,22 +12,14 @@ const assert = require('node:assert/strict');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-tree-api-'));
   const port = await freePort();
   const token = 'storage-tree-test-token-24-chars';
-  // storage_root винаги е под /share — в теста това е <root>/share/<уникална>.
-  const shareBase = path.join(path.parse(os.tmpdir()).root, 'share');
-  // mkdtempSync изисква родителската папка да съществува (на Linux/macOS /share липсва).
-  // Ако средата не позволява създаването й (не сме root, read-only /), тестът казва
-  // защо пропуска — вместо да падне с неразбираем EACCES. В CI папката се създава
-  // предварително (ci.yml и release.yml), така че там проверката наистина върви.
-  try {
-    fs.mkdirSync(shareBase, { recursive: true });
-  } catch (e) {
-    console.log(`SKIP storage-tree-api: ${shareBase} не може да се създаде (${e.code || e.message}) — липсва /share`);
-    process.exit(0);
-  }
-  const storageDir = fs.mkdtempSync(path.join(shareBase, 'hapi-tree-'));
+  // storage_root винаги е ЛОГИЧЕСКИ път под /share. Къде живее той на диска, решава
+  // `hapi_enterprise/paths.js`: при `STORAGE_ROOT_OVERRIDE` (тук — временен корен) или
+  // реалния /share в add-on-а. Тестът НЕ създава `<диск>:\share` (вж. `tests/storage-roots.cjs`).
+  const storage = storageRoot();
+  fs.mkdirSync(storage.share, { recursive: true });
+  const storageDir = fs.mkdtempSync(path.join(storage.share, 'hapi-tree-'));
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
-    env: { ...process.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },
-    // Работната папка е на системния диск, за да сочи "/share" към <root>/share.
+    env: { ...process.env, ...storage.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },
     cwd: os.tmpdir(),
     stdio: 'ignore',
   });
@@ -234,6 +226,7 @@ const assert = require('node:assert/strict');
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(storageDir, { recursive: true, force: true });
+    fs.rmSync(storage.dir, { recursive: true, force: true });
   }
   process.exit(0);
 })().catch((e) => {

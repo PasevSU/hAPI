@@ -123,6 +123,18 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
    * в CI. По подразбиране файлът е един; сценариите за филтри подават няколко.
    */
   const ownPortalWithFile = async (slug, files, block = 'files') => {
+    // ХИГИЕНА НА ХРАНИЛИЩЕТО (DEF-53): тестовете пишат в хранилището на ТЕСТОВИЯ сървър,
+    // което е временна папка (`server.storageRoot()`), а не в `/share` на машината. Дотук
+    // всеки пуск на J53 оставяше още една папка `Papka-za-scenariy-*` в `D:\share`: след ~200
+    // пускания дървото на портала имаше 199 реда, рисуването стана бавно и чакането на
+    // бележката изтече на 45 s под товар — тоест „флейк“, който всъщност е натрупан боклук.
+    // Затова порталът на сценария се чисти ПРЕДИ да бъде създаден наново.
+    const shareDir = path.join(server.storageRoot(), 'share', slug);
+    try {
+      fs.rmSync(shareDir, { recursive: true, force: true });
+    } catch {
+      /* заключен файл от антивирусна: пускането ще покаже истинската грешка */
+    }
     const picked = Array.isArray(files) && files.length
       ? files
       : [pseudoFile('fayl-za-scenariy.txt', 'съдържание за сценария')];
@@ -2109,9 +2121,10 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
         return t && /Прикачен ключ/.test(t.message) ? t : null;
       }, { label: 'ключът за подписване', timeout: BUDGET });
 
-      // `/share` се решава спрямо работната папка на СЪРВЪРА (тук — хранилището), затова
-      // папката се създава на същия диск, а не под DATA_DIR (той е в %TEMP%, друг диск).
-      const shareBase = path.resolve('/share');
+      // `/share` е ЛОГИЧЕСКИ път: сървърът го превежда под временното си хранилище
+      // (`server.storageRoot()`), а не в корена на диска. Затова папката за подпис се строи
+      // по СЪЩОТО правило — иначе тестът пишеше в `D:\share` (вж. `tests/storage-roots.cjs`).
+      const shareBase = path.join(server.storageRoot(), 'share');
       const folderName = 'gui-sign-' + String(Date.now()).slice(-6);
       const folderAbs = path.join(shareBase, folderName);
       fs.mkdirSync(path.join(folderAbs, 'sub'), { recursive: true });

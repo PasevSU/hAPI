@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 // 0.69.79 — целостта на физическите архиви (правило `ARCHIVE_NOT_TAMPERED`).
 //
 // Проверява се НАЙ-ВАЖНОТО за доказателството: че подмяна на байтове се вижда без човешка
@@ -15,7 +16,8 @@ const { startServer } = require('./lib/gui-harness.cjs');
 const integrity = require('../hapi_enterprise/portal-integrity');
 const ooxml = require('../hapi_enterprise/ooxml');
 
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 const cleaned = [];
 
 /** ZIP с манифест, който твърди какво има вътре (за да могат да се правят „повреди“). */
@@ -84,7 +86,7 @@ function buildZip({ manifest, files }) {
     }
 
     // ── 2. Сървърът: проверка по заявка, запис и одит ────────────────────────
-    const server = await startServer();
+    const server = await startServer({ env: storage.env });
     try {
       const api = (p, method = 'GET', body) => server.authFetch(server.base + p, {
         method,

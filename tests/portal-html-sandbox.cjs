@@ -13,7 +13,7 @@ const { startServer } = require('./lib/gui-harness.cjs');
 //   • `connect-src 'none'` → няма fetch/XHR/WebSocket към нас;
 //   • ресурсите (.css/.js) остават обичайната статика, за да не се чупят проектите;
 //   • пътят не излиза от папката на проекта (realpath), както досега.
-const shareRoot = path.resolve('/share');
+const shareRootOf = (server) => path.join(server.storageRoot(), 'share');
 const HTML = '<!doctype html><html lang="bg"><head><meta charset="utf-8"><title>Проект</title>'
   + '<link rel="stylesheet" href="./style.css"></head><body><h1>Здравей</h1>'
   + '<script src="./app.js"></script><script>fetch("/admin/api/portals")</script></body></html>';
@@ -89,7 +89,7 @@ const HTML = '<!doctype html><html lang="bg"><head><meta charset="utf-8"><title>
     console.log('HTML_IN_SANDBOX OK: ' + csp.CODE + ' · sandbox без allow-same-origin · connect-src none · ресурсите остават статика · изходът от папката → 4xx');
   } finally {
     fs.rmSync(path.join(server.dir, 'html-projects', slug + '-site'), { recursive: true, force: true });
-    fs.rmSync(path.join(shareRoot, slug), { recursive: true, force: true });
+    fs.rmSync(path.join(shareRootOf(server), slug), { recursive: true, force: true });
     if (server.stop) await server.stop();
   }
 })().catch((e) => { console.error(e); process.exit(1) });

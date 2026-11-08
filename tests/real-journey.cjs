@@ -124,7 +124,7 @@ const BRIDGE_JOURNEY = [
   try {
     // ── Подготовка: частен портал с ЕДИН регистриран документ ────────────────
     const slug = 'journey-' + Date.now().toString(36);
-    const folder = path.join(path.resolve('/share'), slug);
+    const folder = path.join(server.storageRoot(), 'share', slug);
     fs.mkdirSync(folder, { recursive: true });
     const created = await server.api('/admin/api/portals', 'POST', { slug, title: 'Пътуване', visibility: 'private', storage_root: '/share/' + slug });
     assert.equal(created.status, 201, 'порталът се създава: ' + JSON.stringify(created.data).slice(0, 160));
@@ -258,7 +258,7 @@ const BRIDGE_JOURNEY = [
     console.log('PASS real-journey: /t/<токен> → 302 + бисквитка · портал 200 с нея и 404 без нея · 1 файл с точен SHA-256 · изтегляне и Range 206 · публичен портал без сесия · несъществуващ → 404 · Range извън файла → 416 · същото през интеграцията на HA · отнет токен → 404');
   } finally {
     await server.stop();
-    try { fs.rmSync(path.join(path.resolve('/share'), 'journey-' + ''), { recursive: true, force: true }) } catch { /* няма */ }
+    try { fs.rmSync(path.join(server.storageRoot(), 'share', 'journey-' + ''), { recursive: true, force: true }) } catch { /* няма */ }
   }
 })().catch((err) => {
   console.error(err);

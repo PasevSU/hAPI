@@ -1,6 +1,8 @@
 'use strict';
 const fs = require('node:fs'), path = require('node:path');
-const roots = { addon_config: '/config', media: '/media', share: '/share' };
+const paths = require('./paths');
+// Логическите корени идват от `paths.js` — един източник за целия проект (вж. `tests/storage-roots.cjs`).
+const roots = { addon_config: paths.LOGICAL_ROOTS.config, media: paths.LOGICAL_ROOTS.media, share: paths.LOGICAL_ROOTS.share };
 // Подразбиране от 0.69.87: `/share/hapi/data`. Документите са на едно предвидимо място,
 // видимо през Samba/File editor и извън папката на add-on-а, така че преинсталиране или
 // обновяване на add-on-а да не го мести. add-on папката остава валиден избор.

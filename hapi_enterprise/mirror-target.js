@@ -24,6 +24,7 @@
 const crypto = require('node:crypto');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
+const paths = require('./paths');
 
 const CODE = 'MIRROR_TARGET_PATH_OR_S3';
 const DEFAULT_REGION = 'us-east-1';
@@ -48,7 +49,7 @@ function parseSpec(raw, { root, allowAny = false } = {}) {
   const value = String(raw == null ? '' : raw).trim();
   if (!value) return null;
   if (!/^s3:\/\//i.test(value)) {
-    const abs = path.isAbsolute(value) ? path.resolve(value) : path.resolve('/share', value);
+    const abs = path.isAbsolute(value) ? path.resolve(value) : path.join(paths.resolveRoot('share'), value);
     // Само HA-видимите папки: иначе една буквална грешка в настройката може да насочи
     // второто копие към чужда директория. `STORAGE_MIRROR_ANY` е изричен изход за тестове
     // и за нестандартни инсталации.

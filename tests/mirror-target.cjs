@@ -89,7 +89,7 @@ function startFakeS3() {
   // Само HA-видими папки, освен с изричното разрешение — същото правило като преди 0.69.87.
   assert.throws(() => mirror.parseSpec('/etc/hapi'), /inside \/share/, 'път извън HA-видимите папки се отказва');
   assert.equal(mirror.parseSpec('/etc/hapi', { allowAny: true }).kind, 'path', 'STORAGE_MIRROR_ANY е изричен изход');
-  assert.throws(() => mirror.parseSpec(path.join('/share', 'x'), { root: path.join('/share', 'x'), allowAny: true }), /differ from the data directory/, 'огледалото не може да е самите данни');
+  assert.throws(() => mirror.parseSpec('/share/x', { root: '/share/x', allowAny: true }), /differ from the data directory/, 'огледалото не може да е самите данни');
 
   const s3 = mirror.parseSpec('s3://hapi-evidence/files-hapi?endpoint=http://minio:9000&region=eu-central-1&lock=30');
   assert.deepEqual({ kind: s3.kind, bucket: s3.bucket, prefix: s3.prefix, endpoint: s3.endpoint, region: s3.region, lockDays: s3.lockDays },

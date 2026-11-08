@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 // 0.69.76 — `order` е договорът на универсалния портал, а правилата за файловете се
 // прилага СЪРВЪРНО.
 //
@@ -19,13 +20,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
 
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 const cleaned = [];
 
 (async () => {
   // `PORTAL_FOLDER_COPY=1`, за да имат качените през API файлове `storagePath` в папката —
   // точно както при портал, който пази файловете си на диска.
-  const server = await startServer({ env: { PORTAL_FOLDER_COPY: '1' } });
+  const server = await startServer({ env: { ...storage.env, PORTAL_FOLDER_COPY: '1' } });
   try {
     const api = (p, method = 'GET', bodyJson, headers) =>
       server.authFetch(server.base + p, {

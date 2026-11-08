@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 // СТРАНИЦАТА НА ПОРТАЛА, КОЯТО ИНТЕГРАЦИЯТА СЕРВИРА (0.69.147) — с РАБОТЕЩА папка.
 //
 // Интеграцията има собствен изглед `/api/hapi_enterprise/portal/<slug>` (изискван от
@@ -23,7 +24,8 @@ const { createDocument } = require('./lib/dom-stub.cjs');
 
 const ROOT = path.join(__dirname, '..');
 const INT = path.join(ROOT, 'custom_components', 'hapi_enterprise');
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 
 /** Монтира страницата на интеграцията; заявките ѝ отиват в истинското API на add-on-а. */
 function mountIntegrationPortal(server, slug) {
@@ -79,7 +81,7 @@ function mountIntegrationPortal(server, slug) {
   for (const name of [withFolder, shared]) {
     try { fs.rmSync(path.join(shareRoot, name), { recursive: true, force: true }) } catch { /* заключен */ }
   }
-  const server = await startServer({ keepData: true });
+  const server = await startServer({ keepData: true, env: storage.env });
   try {
     // ── 1. Портал със СОБСТВЕНА папка ────────────────────────────────────────────────
     const made = await server.api('/admin/api/portals', 'POST', {

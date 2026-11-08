@@ -3,7 +3,7 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 388 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 389 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
@@ -14,7 +14,7 @@
 | отчети | 16 |
 | PGP | 14 |
 | ядро | 12 |
-| съхранение | 7 |
+| съхранение | 8 |
 | издаване | 6 |
 | оракул | 6 |
 | тайни връзки | 6 |
@@ -376,7 +376,7 @@
 | `core-store` | Core store | `tests/core-store.cjs` |
 | `core-variables` | Core variables | `tests/core-variables.cjs` |
 
-## съхранение (7)
+## съхранение (8)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -385,6 +385,7 @@
 | `storage-migrate` | Storage migrate | `tests/storage-migrate.cjs` |
 | `storage-mirror` | Storage mirror | `tests/storage-mirror.cjs` |
 | `storage-paths` | Storage paths | `tests/storage-paths.cjs` |
+| `storage-roots` | Storage roots | `tests/storage-roots.cjs` |
 | `storage-tree` | Storage tree | `tests/storage-tree.cjs` |
 | `storage-tree-api` | Storage tree api | `tests/storage-tree-api.cjs` |
 

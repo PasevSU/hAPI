@@ -76,6 +76,18 @@
 - **Токенът не влиза в адрес.** Живият поток НЕ приема `?token=` (401 дори с верния токен) —
   `EventSource` носи еднократен билет от `POST /admin/api/events/ticket` (30 s, изразходва се).
   Тест: `tests/sse-ticket.cjs`. Ако добавяш нов поток, искай билет, не ключ.
+- **Логическите корени живеят само в `hapi_enterprise/paths.js`.** `/share`, `/media`, `/config`,
+  `/data` са низове в конфигурацията, не host пътища. На Windows `path.resolve('/share')` е
+  `D:\share` — папка в корена на диска. Затова се ползва `paths.resolveRoot()` /
+  `paths.resolveStoragePath()` (в сървъра — `portalAbs()`), а тестовете получават времен
+  корен от `gui-harness`. Тест: `tests/storage-roots.cjs`.
+- **Нито един тест не строи `<диск>:\share`.** Новият тест взима пътя от
+  `tests/helpers.cjs#storageRoot()` (`{ dir, share, env }`) и подава `env: storage.env` /
+  `env: { ...storage.env, … }` на `startServer`/`spawn`. `tests/storage-roots.cjs` отказва
+  `…root, 'share'`, `path.resolve('/share')` и `path.join('/share'…)` извън `tests/lib/`,
+  `helpers.cjs` и себе си. Ако папката е нужна на диска — `path.join(storage.share, …)`.
+  Изключение по същност: `isLogicalRoot('')` е `true` (празно = коренът по подразбиране),
+  тоест портал без собствена папка НЕ получава `portal.html`.
 - **`aria-controls` само в разгънато състояние.** Сгънатият блок не носи препратка, защото
   тялото му не е в документа (`tests/ui-block-aria.cjs`).
 - **Езиковият дълг има таван.** `tests/ui-i18n-ratchet.cjs` мери българските стрингове по

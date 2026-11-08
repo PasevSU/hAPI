@@ -26,8 +26,9 @@ const treeOf = async (server, portalId) => {
   return res.json();
 };
 
-// Пътят, който сървърът би създал за `/share/<slug>` на тази платформа.
-const shareDir = (slug) => path.resolve('/share', slug);
+// Пътят, който сървърът би създал за `/share/<slug>` на тази платформа — идва от
+// временния корен на тестовия сървър (`STORAGE_ROOT_OVERRIDE`), не от корена на диска.
+const shareDir = (server, slug) => path.join(server.storageRoot(), 'share', slug);
 
 (async () => {
   // ── 1. По подразбиране: без копие и без създадена папка ─────────────────────
@@ -41,7 +42,7 @@ const shareDir = (slug) => path.resolve('/share', slug);
     await attach(first, portal.data.id, 'dogovor.txt', 'съдържание');
     const afterAttach = await treeOf(first, portal.data.id);
     assert.equal(afterAttach.exists, false, 'прикачването НЕ създава папка');
-    assert.equal(fs.existsSync(shareDir(slugA)), false, 'на диска няма папка ' + shareDir(slugA));
+    assert.equal(fs.existsSync(shareDir(first, slugA)), false, 'на диска няма папка ' + shareDir(first, slugA));
     // Файлът съществува в портала — махането на копието не маха самия файл.
     const files = await first.api(`/admin/api/portals/${portal.data.id}/files`);
     assert.equal(files.data.files.length, 1, 'файлът е в портала');
@@ -68,8 +69,8 @@ const shareDir = (slug) => path.resolve('/share', slug);
   } finally {
     await stopChild(second.child);
     await second.stop();
-    // Тестът чисти след себе си, ако е писал в общия /share.
-    fs.rmSync(shareDir(slugB), { recursive: true, force: true });
+    // Тестът чисти след себе си в собствения временен корен.
+    fs.rmSync(shareDir(second, slugB), { recursive: true, force: true });
   }
 
   console.log('portal-folder-copy OK: прикачването не създава папка · с PORTAL_FOLDER_COPY=1 копира');

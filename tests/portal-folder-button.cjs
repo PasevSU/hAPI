@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 // ДОГОВОР (0.69.147): страницата на портала има БУТОН към папката на портала.
 //
 // Порталът е QR кодът, който води до файловете. Затова страницата, която посетителят
@@ -19,7 +20,8 @@ const vm = require('node:vm');
 const { startServer, waitFor } = require('./lib/gui-harness.cjs');
 const { createDocument } = require('./lib/dom-stub.cjs');
 
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 
 /** Монтира живата страница на портала в DOM и връща {doc, location, base}. */
 async function mountPortal(base, portalId) {
@@ -64,7 +66,7 @@ async function mountPortal(base, portalId) {
   for (const name of [withFolder, shared]) {
     try { fs.rmSync(path.join(shareRoot, name), { recursive: true, force: true }) } catch { /* заключен файл */ }
   }
-  const server = await startServer({ keepData: true });
+  const server = await startServer({ keepData: true, env: storage.env });
   const { api, base } = server;
   try {
     // ── 1. Портал със СОБСТВЕНА папка ─────────────────────────────────────────────────

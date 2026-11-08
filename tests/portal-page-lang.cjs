@@ -78,7 +78,7 @@ const pageText = (doc) =>
   // 0.69.78: порталът получава СОБСТВЕНА папка `/share/<slug>`. Остатъци от предишен
   // пуск (или от паралелен тест) карат страницата да покаже файловете на ПАПКАТА
   // вместо регистрираните два → чистенето тук прави броя им предвидим.
-  const shareDir = path.resolve('/share', 'lang-demo');
+  const shareDir = path.join(server.storageRoot(), 'share', 'lang-demo');
   try { fs.rmSync(shareDir, { recursive: true, force: true }) } catch { /* заключен файл на Windows */ }
   try {
     const portal = (await server.api('/admin/api/portals', 'POST', { slug: 'lang-demo', title: 'Report Portal' })).data;

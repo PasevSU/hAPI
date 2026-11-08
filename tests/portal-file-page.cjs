@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -10,10 +11,11 @@ const { startServer } = require('./lib/gui-harness.cjs');
 //   • показва доказателствата: размер, SHA-256, Content ID и в коя QR ревизия/манифест влиза;
 //   • същите проверки за достъп и път като при изтегляне (traversal, скрита папка, чужд портал);
 //   • влиза се и с `?file=`, и с `:папка/път` (донорският формат), с еднакъв резултат.
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 
 (async () => {
-  const server = await startServer();
+  const server = await startServer({ env: storage.env });
   const slug = 'file-page-' + Date.now().toString(36);
   const folder = path.join(shareRoot, slug);
   try {

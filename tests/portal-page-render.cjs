@@ -16,9 +16,10 @@ const { createDocument } = require('./lib/dom-stub.cjs');
   // Порталът получава СОБСТВЕНА папка `/share/<slug>` и се отваря в режим „папка“.
   // Остатъци от предишно пускане (или от паралелен тест) добавят чужди карти към
   // списъка — затова тук папката се изчиства, преди да се създаде порталът.
-  const shareDir = path.resolve('/share', 'render-demo');
-  try { fs.rmSync(shareDir, { recursive: true, force: true }) } catch { /* заключен файл на Windows */ }
   const server = await startServer({ keepData: true });
+  const shareDir = path.join(server.storageRoot(), 'share', 'render-demo');
+  try { fs.rmSync(shareDir, { recursive: true, force: true }) } catch { /* заключен файл на Windows */ }
+
   const { api, authFetch, base } = server;
   try {
     const created = await api('/admin/api/portals', 'POST', {

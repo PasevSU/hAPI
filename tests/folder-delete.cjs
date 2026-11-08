@@ -150,9 +150,9 @@ const root = path.join(__dirname, '..');
     // Чистене: собствената папка на тестовия портал (празна е — съдържанието е изтрито
     // от маршрута, който тестът проверява).
     try {
-      fs.rmSync(path.resolve('/share', slug), { recursive: true, force: true });
+      fs.rmSync(path.join(server.storageRoot(), 'share', slug), { recursive: true, force: true });
     } catch {
-      /* на Linux /share може да не е достъпен за писане от теста — тогава остава празна папка */
+      /* заключен файл на Windows */
     }
   } finally {
     await server.stop();

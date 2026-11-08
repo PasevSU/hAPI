@@ -2,7 +2,22 @@
 
 const net = require('node:net');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+
+/**
+ * ЕДИН времен корен за хранилището на теста (0.69.208).
+ *
+ * Дотук тестовете решаваха логическите корени сами: `path.resolve('/share')` — на Windows
+ * това е `D:\share`, папка в КОРЕНА НА ДИСКА. Сега всеки тест взима свой времен корен и го
+ * подава на сървъра със `STORAGE_ROOT_OVERRIDE`; `share` е подпапката, която отговаря на
+ * логическия `/share`. Договорът се пази от `tests/storage-roots.cjs`.
+ * @returns {{dir: string, share: string, env: {STORAGE_ROOT_OVERRIDE: string}}}
+ */
+function storageRoot() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-storage-'));
+  return { dir, share: path.join(dir, 'share'), env: { STORAGE_ROOT_OVERRIDE: dir } };
+}
 
 async function stopChild(child) {
   if (!child || child.exitCode !== null || child.signalCode !== null) return;
@@ -182,4 +197,4 @@ async function waitHealthy(child, base, { attempts = 160, delay = 50, stderr = n
   throw new Error(`сървърът не стартира на ${base} (изчакани ${attempts} опита)${tail()}`);
 }
 
-module.exports = { stopChild, stopTree, reapInstance, freePort, waitHealthy };
+module.exports = { stopChild, stopTree, reapInstance, freePort, waitHealthy, storageRoot };

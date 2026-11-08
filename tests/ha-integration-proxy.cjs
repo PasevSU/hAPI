@@ -8,7 +8,7 @@
 // истински HTTP клиент (urllib), а `web.StreamResponse` записва байтовете. Извиква се
 // `view.get(request, tail='p/<slug>')` за изгледа `/api/v1/p/{tail:.*}` и се проверява, че
 // тялото е JSON-ът на портала, статусът е 200, а `Content-Type` е запазен.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, storageRoot } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -103,12 +103,15 @@ if (!python) {
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-proxy-'));
   const data = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-proxy-data-'));
-  // Папката на тестовия портал се чисти ПРЕДИ и СЛЕД пуск — иначе следващ тест вижда
-  // чужди файлове и „минава“ по грешка.
-  const shareDir = path.join(path.parse(process.cwd()).root, 'share', 'proxy-papka');
+  // Папката на тестовия портал е под ЛОГИЧЕСКИЯ /share; на диска е в временния корен на
+  // теста (`STORAGE_ROOT_OVERRIDE`), не в `<диск>:\share`.
+  const storage = storageRoot();
+  const shareBase = storage.share;
+  // Чисти се ПРЕДИ и СЛЕД пуск — иначе следващ тест вижда чужди файлове.
+  const shareDir = path.join(shareBase, 'proxy-papka');
   fs.rmSync(shareDir, { recursive: true, force: true });
   const child = spawn(process.execPath, [path.join(root, 'hapi_enterprise', 'server.js')], {
-    env: { ...process.env, DATA_DIR: data, ADMIN_TOKEN: token, PORT: String(port), PUBLIC_GATEWAY_PORT: '0', PUBLIC_BASE_URL: '' },
+    env: { ...process.env, ...storage.env, DATA_DIR: data, ADMIN_TOKEN: token, PORT: String(port), PUBLIC_GATEWAY_PORT: '0', PUBLIC_BASE_URL: '' },
     stdio: 'pipe',
   });
   try {
@@ -127,8 +130,6 @@ if (!python) {
     // Портал със СОБСТВЕНА папка: публичната страница в режим „папка“ вика `/tree` и
     // `/tree/file?path=` (portal.js), тоест без тези два пътя в моста страницата през
     // Home Assistant се отваря, но списъкът и файловете ѝ — не.
-    const shareDir = path.join(path.parse(process.cwd()).root, 'share', 'proxy-papka');
-    fs.rmSync(shareDir, { recursive: true, force: true });
     let folderReady = true;
     try {
       fs.mkdirSync(path.join(shareDir, 'Договори'), { recursive: true });

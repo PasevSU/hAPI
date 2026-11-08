@@ -34,10 +34,23 @@ const SHARED = [
 async function startServer({ dataDir, token, port, env, keepData } = {}) {
   const dir = dataDir || fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-gui-'));
   const keepDirectory = Boolean(keepData);
+  // ХРАНИЛИЩЕТО СЪЩО Е ВРЕМЕННО (0.69.208). Дотук то не се подаваше и сървърът решаваше
+  // логическия `/share` сам: на Windows това е `D:\share` — папка в КОРЕНА НА ДИСКА, която
+  // тестовете пълнеха с портали (измерено: 211) и която после бавеше дървото, докато един
+  // сценарий изтече като „флейк“. Сега всеки тестов сървър получава СВОЙ времен корен.
+  const storageRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-gui-storage-'));
   const listenPort = port || (await freePort());
   const adminToken = token || 'gui-' + require('node:crypto').randomBytes(18).toString('hex');
   const child = spawn(process.execPath, [path.join(root, 'hapi_enterprise', 'server.js')], {
-    env: { ...process.env, DATA_DIR: dir, PORT: String(listenPort), PUBLIC_GATEWAY_PORT: '0', ADMIN_TOKEN: adminToken, ...(env || {}) },
+    env: {
+      ...process.env,
+      DATA_DIR: dir,
+      STORAGE_ROOT_OVERRIDE: storageRoot,
+      PORT: String(listenPort),
+      PUBLIC_GATEWAY_PORT: '0',
+      ADMIN_TOKEN: adminToken,
+      ...(env || {}),
+    },
     stdio: ['ignore', 'ignore', 'pipe'],
   });
   // Последните редове от stderr са единственото, което обяснява защо сървърът не е тръгнал.
@@ -88,12 +101,18 @@ async function startServer({ dataDir, token, port, env, keepData } = {}) {
     child,
     authFetch,
     api,
+    // Къде е хранилището на ТОЗИ тестов сървър (временна папка). Тестовете, които чистят
+    // папка на портал, взимат пътя оттук — никога чрез `path.resolve('/share')`.
+    storageRoot: () => storageRoot,
     // Последните редове от stderr на сървъра — за тестове, които проверяват, че при спиране
     // НЯМА предупреждение (напр. „sharedMode is not defined“).
     logs: () => stderr,
     async stop({ keep = keepDirectory } = {}) {
       await stopChild(child);
-      if (!keep) fs.rmSync(dir, { recursive: true, force: true });
+      if (!keep) {
+        fs.rmSync(dir, { recursive: true, force: true });
+        fs.rmSync(storageRoot, { recursive: true, force: true });
+      }
     },
   };
 }

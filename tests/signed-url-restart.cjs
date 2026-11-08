@@ -14,8 +14,12 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
+const { storageRoot } = require('./helpers.cjs');
 
-const shareRoot = path.resolve('/share');
+// `/share` е ЛОГИЧЕСКИ корен: host пътят идва от `paths.js` през `STORAGE_ROOT_OVERRIDE`.
+// И трите сървъра тук гледат ЕДИН временен корен, за да е един и същ файлът след рестарта.
+const storage = storageRoot();
+const shareRoot = storage.share;
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-restart-'));
 const token = 'test-admin-token-restart';
 const slug = 'restart-' + Date.now().toString(36);
@@ -32,7 +36,7 @@ const issue = async (server, portalId, fileId, ttlSeconds) => {
 (async () => {
   try {
     // ── 1. Първи процес: частен портал, файл, подписан адрес ────────────────
-    let server = await startServer({ dataDir, token });
+    let server = await startServer({ dataDir, token, env: storage.env });
     let portalId = null;
     let fileId = null;
     let signedPath = '';
@@ -58,7 +62,7 @@ const issue = async (server, portalId, fileId, ttlSeconds) => {
 
     // ── 2. Рестарт върху СЪЩИТЕ данни: адресът работи ───────────────────────
     console.log('· адресът, издаден преди рестарта, се отваря след него');
-    server = await startServer({ dataDir, token });
+    server = await startServer({ dataDir, token, env: storage.env });
     try {
       const res = await fetch(server.base + signedPath);
       const text = await res.text();
@@ -72,7 +76,7 @@ const issue = async (server, portalId, fileId, ttlSeconds) => {
 
     // ── 3. Сменен администраторски ключ: подписът ПАДА ─────────────────────
     console.log('· смененият администраторски ключ обезсилва старите подписи (това е ротация)');
-    server = await startServer({ dataDir, token: token + '-нов' });
+    server = await startServer({ dataDir, token: token + '-нов', env: storage.env });
     try {
       assert.equal((await fetch(server.base + signedPath)).status, 404, 'старият подпис не важи след смяна на ключа');
       // Подправен подпис: същият срок, друг подпис → нищо.
@@ -91,6 +95,7 @@ const issue = async (server, portalId, fileId, ttlSeconds) => {
       try { fs.rmSync(path.join(shareRoot, name), { recursive: true, force: true }) } catch { /* Linux */ }
     }
     try { fs.rmSync(dataDir, { recursive: true, force: true }) } catch { /* Windows */ }
+    try { fs.rmSync(storage.dir, { recursive: true, force: true }) } catch { /* Windows */ }
   }
 })().catch((e) => {
   console.error(e);

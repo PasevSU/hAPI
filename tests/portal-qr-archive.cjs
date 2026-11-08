@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 // 0.69.77 — QR ревизии, физически архиви и дълбочина на дървото (архитектурният план).
 //
 // Проверява се онова, което планът изисква, а не „има бутон“:
@@ -13,11 +14,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
 
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 const cleaned = [];
 
 (async () => {
-  const server = await startServer();
+  const server = await startServer({ env: storage.env });
   try {
     const api = (p, method = 'GET', bodyJson) =>
       server.authFetch(server.base + p, {

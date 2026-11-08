@@ -72,9 +72,9 @@ const root = path.join(__dirname, '..');
 
     // ── 5. Чистене на тестовата папка на портала ───────────────────────────
     try {
-      fs.rmSync(path.resolve('/share', portal.slug), { recursive: true, force: true });
+      fs.rmSync(path.join(server.storageRoot(), 'share', portal.slug), { recursive: true, force: true });
     } catch {
-      /* на Linux /share може да не е достъпен за писане от теста */
+      /* заключен файл на Windows */
     }
 
     console.log(

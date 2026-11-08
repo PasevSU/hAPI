@@ -18,11 +18,12 @@
 // Договор като на останалите компоненти: `handle()` връща `true`, когато заявката е за
 // този компонент (и е приключена).
 function create(deps) {
-  const { fail, audit, policy, resolvePortal, portalRoot, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr, archiveRoot, db } = deps;
+  const { fail, audit, policy, resolvePortal, portalRoot, portalAbs, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr, archiveRoot, db } = deps;
   const fsp = require('node:fs/promises');
   const fs = require('node:fs');
   const path = require('node:path');
   const storageTree = require('../storage-tree');
+  const paths = require('../paths');
 
   const MIME = {
     '.pdf': 'application/pdf',
@@ -125,9 +126,9 @@ function create(deps) {
     const meta = folderMetaOf(portal);
     if (hiddenOrLockedAncestor(meta, rel)) { fail(res, 404, 'Not found'); return true }
 
-    const rootAbs = path.resolve(portalRoot(portal.storage_root || '/share'));
+    const rootAbs = portalAbs(portal.storage_root || '/share');
     // Общ корен (/share, /media) не се отдава: това би дало файловете на ВСИЧКИ портали.
-    if (rootAbs === path.resolve('/share') || rootAbs === path.resolve('/media')) { fail(res, 403, 'Folder API requires a dedicated folder'); return true }
+    if (paths.isLogicalRoot(portalRoot(portal.storage_root || '/share'))) { fail(res, 403, 'Folder API requires a dedicated folder'); return true }
     const wanted = path.resolve(rootAbs, ...rel.split('/'));
     if (wanted !== rootAbs && !wanted.startsWith(rootAbs + path.sep)) { fail(res, 400, 'Invalid path'); return true }
 
@@ -238,8 +239,8 @@ function create(deps) {
     const meta = folderMetaOf(portal);
     if (hiddenOrLockedAncestor(meta, rel)) { fail(res, 404, 'Not found'); return true }
 
-    const rootAbs = path.resolve(portalRoot(portal.storage_root || '/share'));
-    if (rootAbs === path.resolve('/share') || rootAbs === path.resolve('/media')) { fail(res, 403, 'Folder API requires a dedicated folder'); return true }
+    const rootAbs = portalAbs(portal.storage_root || '/share');
+    if (paths.isLogicalRoot(portalRoot(portal.storage_root || '/share'))) { fail(res, 403, 'Folder API requires a dedicated folder'); return true }
     const wantedAbs = path.resolve(rootAbs, ...rel.split('/'));
     if (wantedAbs !== rootAbs && !wantedAbs.startsWith(rootAbs + path.sep)) { fail(res, 400, 'Invalid path'); return true }
 

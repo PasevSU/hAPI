@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -8,10 +9,11 @@ const { startServer } = require('./lib/gui-harness.cjs');
 // а не се събират от `/portal/{id}/qr`. Тестът проверява точно това число, за да не
 // остане баджът декорация: нов портал → QR-001 · след архив → QR-002 + 1 архив ·
 // след прекратяване → `blocked` с основание.
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 
 (async () => {
-  const server = await startServer();
+  const server = await startServer({ env: storage.env });
   const slug = 'qr-badge-' + Date.now().toString(36);
   const folder = path.join(shareRoot, slug);
   try {

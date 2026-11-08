@@ -16,7 +16,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
-const { stopChild, freePort } = require('./helpers.cjs');
+const { stopChild, freePort, storageRoot } = require('./helpers.cjs');
 
 const ROOT = path.join(__dirname, '..');
 const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -26,14 +26,15 @@ let step = 'старт';
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-transfer-'));
   const port = await freePort();
   const token = 'file-transfer-token-at-least-24-chars';
+  // Логическият `/share` се превежда до host път от `hapi_enterprise/paths.js`; тестът
+  // подава собствен времен корен, за да не се появи `<диск>:\share` (DEF-54).
+  const storage = storageRoot();
   const child = spawn(process.execPath, [path.join(ROOT, 'hapi_enterprise', 'server.js')], {
-    env: { ...process.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },
+    env: { ...process.env, ...storage.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },
     cwd: dir,
     stdio: 'ignore',
   });
-  // `/share` се резолвва спрямо диска на работната папка на сървъра (тя е `dir`), затова
-  // тестът гледа същия корен, вместо да гадае къде отива папката на портала.
-  const shareRoot = path.join(path.parse(dir).root, 'share');
+  const shareRoot = storage.share;
   const base = `http://127.0.0.1:${port}`;
   const once = async (p, method = 'GET', data, headers = {}) => {
     const r = await fetch(base + p, { method, headers: { Authorization: 'Bearer ' + token, ...headers }, body: data });
@@ -191,6 +192,7 @@ let step = 'старт';
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });
     for (const slug of ['iztochnik', 'cel']) fs.rmSync(path.join(shareRoot, slug), { recursive: true, force: true });
+    fs.rmSync(storage.dir, { recursive: true, force: true });
   }
 })().catch((e) => {
   console.error('FAILED at step: ' + step);

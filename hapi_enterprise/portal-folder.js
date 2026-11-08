@@ -13,10 +13,13 @@
 
 const fsp = require('node:fs/promises');
 const path = require('node:path');
+const paths = require('./paths');
 
 /** Абсолютният път на папката на портала (на HA: /share/<slug>). */
 function folderPath(storageRoot) {
-  return path.resolve(String(storageRoot || '/share'));
+  // Логическият корен (`/share`) се превежда до host път САМО тук — през `paths.js`, за да не
+  // се появи „<диск>:\share“ на машина без Home Assistant (вж. `tests/storage-roots.cjs`).
+  return paths.resolveStoragePath(String(storageRoot || paths.LOGICAL_ROOTS.share));
 }
 
 /** Име без път и без управляващи знаци — то става име на файл на диска. */
@@ -43,8 +46,15 @@ async function exists(file) {
   return fsp.access(file).then(() => true, () => false);
 }
 
-/** Създава папката на портала (идемпотентно) и връща пътя ѝ. */
+/**
+ * Създава папката на портала (идемпотентно) и връща пътя ѝ.
+ *
+ * Общ корен (`/share`, `/media`, празен `storage_root`) НЕ се създава: това е папката на
+ * всички портали, а на машина без Home Assistant би била `<диск>:\share`. Тогава се връща
+ * `null` — порталът работи без собствена папка, както когато папката липсва.
+ */
 async function ensure(portal) {
+  if (paths.isLogicalRoot(portal && portal.storage_root)) return null;
   const dir = folderPath(portal && portal.storage_root);
   await fsp.mkdir(dir, { recursive: true });
   return dir;
@@ -56,6 +66,7 @@ async function ensure(portal) {
  */
 async function store(portal, name, data) {
   const dir = await ensure(portal);
+  if (!dir) return null;
   const wanted = safeName(name);
   for (let attempt = 1; attempt <= 500; attempt += 1) {
     const candidateName = candidate(wanted, attempt);
@@ -286,6 +297,9 @@ async function writeAtomic(file, content) {
 
 /** Съществува ли РЕАЛНО папката на портала (за обявяване на договора `/tree` в картата). */
 async function folderReady(portal) {
+  // Общ корен не е „папка на портала“ — договорът `/tree` там не важи (403), тоест картата
+  // не бива да го обявява дори когато `/share` съществува на диска.
+  if (paths.isLogicalRoot(portal && portal.storage_root)) return false;
   const stat = await fsp.stat(folderPath(portal && portal.storage_root)).catch(() => null);
   return Boolean(stat && stat.isDirectory());
 }
@@ -306,14 +320,16 @@ async function folderReady(portal) {
  */
 async function writeArtifacts(portal, base, artifacts = {}) {
   const dir = folderPath(portal && portal.storage_root);
-  if (dir === path.resolve('/share') || dir === path.resolve('/media')) return [];
+  // Общ корен — сравнява се ЛОГИЧЕСКАТА стойност, не host път.
+  if (paths.isLogicalRoot(portal && portal.storage_root)) return [];
   // Папката НЕ се създава тук: създаването на портал не бива да ражда папки в хранилището
   // (това е отделна опция, `portal_folder_copy`). Ако папката вече съществува — файловете
   // влизат в нея; ако не — порталът си работи както досега.
   const stat = await fsp.stat(dir).catch(() => null);
   if (!stat || !stat.isDirectory()) return [];
   // Страницата изрежда ИСТИНСКОТО съдържание на папката, а не само регистрираните файлове.
-  const tree = await listTree(dir);
+  // `listTree` очаква ЛОГИЧЕСКИЯ корен (`/share/...`) — тои самият превежда до host път.
+  const tree = await listTree(portal && portal.storage_root);
   const jobs = [['portal.html', page(portal, base, tree)]];
   if (artifacts && artifacts.record) jobs.push(['api.json', JSON.stringify(artifacts.record, null, 2)]);
   if (artifacts && artifacts.openapiText) jobs.push(['openapi.json', String(artifacts.openapiText)]);
@@ -338,7 +354,7 @@ async function writeArtifacts(portal, base, artifacts = {}) {
  */
 async function removeArtifacts(root) {
   const dir = folderPath(typeof root === 'string' ? root : root && root.storage_root);
-  if (dir === path.resolve('/share') || dir === path.resolve('/media')) return [];
+  if (paths.isLogicalRoot(typeof root === 'string' ? root : root && root.storage_root)) return [];
   const removed = [];
   for (const name of GENERATED) {
     const full = path.join(dir, name);

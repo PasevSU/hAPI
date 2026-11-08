@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 // 0.69.84 — възстановяване от архив (§10.2, §22) и публичен ръкостиск („връзката работи“).
 //
 // Проверява се РЕДЪТ на действията, а не само отговорът:
@@ -12,11 +13,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
 
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 const cleaned = [];
 
 (async () => {
-  const server = await startServer();
+  const server = await startServer({ env: storage.env });
   try {
     const api = (p, method = 'GET', body) => server.authFetch(server.base + p, {
       method,

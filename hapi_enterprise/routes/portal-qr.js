@@ -1,4 +1,6 @@
 'use strict';
+// Логическите корени (`/share`, `/media`) се разпознават през ЕДИН модул — `paths.js`.
+const paths = require('../paths');
 // QR ревизиите на един портал — компонент на HTTP слоя.
 //
 //   GET  /admin/api/portals/{id}/qr                  — активен QR, история, архиви, политика
@@ -11,7 +13,7 @@
 // Договор като на останалите компоненти: `handle()` връща `true`, когато заявката е за
 // този компонент (и е приключена). `db()` връща ЖИВИТЕ метаданни, за да няма втора истина.
 function create(deps) {
-  const { json, fail, parse, audit, fsp, path, portalRoot, update, qr, integrity, archiveRoot, adminGate, db, sealFiles, worm } = deps;
+  const { json, fail, parse, audit, fsp, path, portalRoot, portalAbs, update, qr, integrity, archiveRoot, adminGate, db, sealFiles, worm } = deps;
 
   const isQr = (parts) => parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'qr';
 
@@ -51,7 +53,7 @@ function create(deps) {
    */
   const makeArchive = async (portal, noteRaw) => update(async () => {
     const p = portal;
-    const rootAbs = path.resolve(portalRoot(p.storage_root || '/share'));
+    const rootAbs = portalAbs(p.storage_root || '/share');
     const files = await qr.walk(rootAbs);
     // Отказът назовава ПАПКАТА: „празна“ без адрес оставя човека да гадае дали порталът
     // гледа където трябва — най-честата причина архив да не се направи.
@@ -160,8 +162,8 @@ function create(deps) {
         void audit('qr.restore.refused', { portalId: p.id, qrId: sourceQrId, archiveId: archive.id, reason: check.reason, detail: check.detail || null });
         return fail(res, 409, 'Архивът не мина проверка за цялост (' + check.reason + ') — нищо не е променено');
       }
-      const rootAbs = path.resolve(portalRoot(p.storage_root || '/share'));
-      if (rootAbs === path.resolve('/share') || rootAbs === path.resolve('/media')) return fail(res, 403, 'Restore requires a dedicated folder');
+      const rootAbs = portalAbs(p.storage_root || '/share');
+      if (paths.isLogicalRoot(portalRoot(p.storage_root || '/share'))) return fail(res, 403, 'Restore requires a dedicated folder');
       const current = await qr.walk(rootAbs);
       let safety = null;
       if (current.length) {

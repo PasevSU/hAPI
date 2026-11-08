@@ -203,7 +203,7 @@ assert.ok(ccFiles.includes('portal.css'), 'интеграцията има porta
     // Порталът получава собствена папка `/share/placement` и се отваря в режим „папка“ —
     // остатък от предишно пускане се изчиства, за да не влияе на съседни тестове.
     try {
-      fs.rmSync(path.resolve('/share', 'placement'), { recursive: true, force: true });
+      fs.rmSync(path.join(server.storageRoot(), 'share', 'placement'), { recursive: true, force: true });
     } catch {
       /* заключен файл на Windows */
     }

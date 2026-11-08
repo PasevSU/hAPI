@@ -18,6 +18,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const helpers = require('./helpers.cjs');
 const { startServer } = require('./lib/gui-harness.cjs');
 
 const ROOT = path.join(__dirname, '..');
@@ -37,20 +38,16 @@ const stage = async (name, fn) => {
 };
 
 (async () => {
-  // Папка на портала: винаги под /share, както в контейнера. Използваме ТОЧНО пътя,
-  // който сървърът ще сметне от виртуалния `/share` (на Windows това е <диск>:\share),
-  // иначе сървърът гледа друга директория и „родителската папка липсва“.
-  const shareBase = path.resolve('/share');
-  try {
-    fs.mkdirSync(shareBase, { recursive: true });
-  } catch (e) {
-    console.log(`SKIP full-journey: ${shareBase} не може да се създаде (${e.code || e.message})`);
-    process.exit(0);
-  }
+  // Папка на портала: логически `/share`, както в контейнера. Host пътят идва от
+  // `tests/helpers.cjs#storageRoot()` и се подава на сървъра през `STORAGE_ROOT_OVERRIDE` —
+  // тестът НЕ създава `<диск>:\share` (вж. `tests/storage-roots.cjs`).
+  const storage = helpers.storageRoot();
+  const shareBase = storage.share;
+  fs.mkdirSync(shareBase, { recursive: true });
   const storageDir = fs.mkdtempSync(path.join(shareBase, 'hapi-journey-'));
   const storageRoot = '/share/' + path.basename(storageDir);
 
-  const server = await startServer({ keepData: true });
+  const server = await startServer({ keepData: true, env: { STORAGE_ROOT_OVERRIDE: storage.dir } });
   const { api, authFetch, base } = server;
   const text = (file, body) =>
     authFetch(`${base}${file}`, { method: 'POST', headers: { 'Content-Type': 'text/plain', 'X-File-Name': encodeURIComponent(body.name), 'X-File-Encrypt': '0' }, body: body.text });
@@ -296,5 +293,6 @@ const stage = async (name, fn) => {
     await server.stop({ keep: true }).catch(() => { });
     try { fs.rmSync(storageDir, { recursive: true, force: true }); } catch { /* Windows може да държи файла */ }
     try { fs.rmSync(server.dir, { recursive: true, force: true }); } catch { /* същото */ }
+    try { fs.rmSync(storage.dir, { recursive: true, force: true }); } catch { /* същото */ }
   }
 })().catch((e) => { console.error(e); process.exitCode = 1; });

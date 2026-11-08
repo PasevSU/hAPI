@@ -1,7 +1,7 @@
 'use strict';
 // API за PGP ключове и експортни пакети: прикачане на ключ (без генерация),
 // автоподписване, изтегляне на ZIP и на .asc, проверка на подписа и RBAC.
-const { stopChild, freePort } = require('./helpers.cjs');
+const { stopChild, freePort, storageRoot } = require('./helpers.cjs');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -14,9 +14,10 @@ const ooxml = require('../hapi_enterprise/ooxml.js');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-package-api-'));
   const port = await freePort();
   const token = 'package-api-test-token-at-least-24-chars';
+  const storage = storageRoot();
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
-    env: { ...process.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },
-    // Работната папка е на системния диск, за да сочи "/share" към <root>/share, а не към UNC пътя на хранилището.
+    env: { ...process.env, ...storage.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },
+    // Логическите корени се решават от `paths.js`; работата папка е без значение.
     cwd: os.tmpdir(),
     stdio: 'ignore',
   });
@@ -30,8 +31,8 @@ const ooxml = require('../hapi_enterprise/ooxml.js');
     const value = type.includes('application/json') ? await r.json() : await r.arrayBuffer();
     return { status: r.status, value, headers: r.headers };
   };
-  // Папката на портала винаги е под /share — в теста ползваме <root>/share/<уникална>.
-  const storageBase = path.join(path.parse(os.tmpdir()).root, 'share');
+  // Папката на портала е под ЛОГИЧЕСКИЯ /share; на диска е в временния корен на теста.
+  const storageBase = storage.share;
   const storageDir = path.join(storageBase, `hapi-pkg-${process.pid}-${Math.random().toString(16).slice(2, 8)}`);
   try {
     let ready = false;
@@ -223,6 +224,7 @@ const ooxml = require('../hapi_enterprise/ooxml.js');
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(storageDir, { recursive: true, force: true });
+    fs.rmSync(storage.dir, { recursive: true, force: true });
   }
   process.exit(0);
 })().catch((e) => {

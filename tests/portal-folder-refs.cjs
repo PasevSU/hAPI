@@ -18,7 +18,8 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
-const { stopChild, freePort } = require('./helpers.cjs');
+const helpers = require('./helpers.cjs');
+const { stopChild, freePort } = helpers;
 const fm = require('../hapi_enterprise/ui/files-manager.js');
 
 const sha256 = (text) => crypto.createHash('sha256').update(text).digest('hex');
@@ -28,14 +29,11 @@ const sha256 = (text) => crypto.createHash('sha256').update(text).digest('hex');
   const token = 'folder-refs-token-24-characters-ok';
   const port = await freePort();
 
-  // storage_root винаги е под /share — както е в контейнера.
-  const shareBase = path.join(path.parse(os.tmpdir()).root, 'share');
-  try {
-    fs.mkdirSync(shareBase, { recursive: true });
-  } catch (e) {
-    console.log(`SKIP portal-folder-refs: ${shareBase} не може да се създаде (${e.code || e.message}) — липсва /share`);
-    process.exit(0);
-  }
+  // storage_root винаги е ЛОГИЧЕСКИ път под /share; host пътят идва от `paths.js` през
+  // `STORAGE_ROOT_OVERRIDE` — тестът НЕ създава `<диск>:\share` (вж. `tests/storage-roots.cjs`).
+  const storage = helpers.storageRoot();
+  const shareBase = storage.share;
+  fs.mkdirSync(shareBase, { recursive: true });
   const storageDir = fs.mkdtempSync(path.join(shareBase, 'hapi-refs-'));
   const storageRoot = '/share/' + path.basename(storageDir);
 
@@ -47,7 +45,7 @@ const sha256 = (text) => crypto.createHash('sha256').update(text).digest('hex');
   fs.writeFileSync(path.join(storageDir, 'A', 'other.txt'), 'друг');
 
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
-    env: { ...process.env, DATA_DIR: dataDir, PORT: String(port), PUBLIC_GATEWAY_PORT: '0', ADMIN_TOKEN: token },
+    env: { ...process.env, ...storage.env, DATA_DIR: dataDir, PORT: String(port), PUBLIC_GATEWAY_PORT: '0', ADMIN_TOKEN: token },
     cwd: os.tmpdir(),
     stdio: 'ignore',
   });
@@ -141,6 +139,7 @@ const sha256 = (text) => crypto.createHash('sha256').update(text).digest('hex');
   } finally {
     await stopChild(child).catch(() => { });
     try { fs.rmSync(storageDir, { recursive: true, force: true }); } catch { /* Windows може да държи файла още */ }
+  try { fs.rmSync(storage.dir, { recursive: true, force: true }); } catch { /* същото */ }
     try { fs.rmSync(dataDir, { recursive: true, force: true }); } catch { /* същото */ }
   }
 })().catch((e) => { console.error(e); process.exitCode = 1; });

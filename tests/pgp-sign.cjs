@@ -16,7 +16,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { freePort, stopChild } = require('./helpers.cjs');
+const { freePort, stopChild, storageRoot } = require('./helpers.cjs');
 const pgp = require('../hapi_enterprise/pgp.js');
 const ooxml = require('../hapi_enterprise/ooxml.js');
 
@@ -30,14 +30,15 @@ const cases = [];
 const ok = (label) => cases.push(label);
 
 /** Стартира сървър и връща `call` + `stop`. `extraEnv` позволява среда БЕЗ ключ. */
-async function boot(extraEnv) {
+async function boot(extraEnv, storage = storageRoot()) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-pgp-sign-'));
   const port = await freePort();
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
-    // `cwd` е системният диск, за да сочи „/share“ към <root>/share, а не към UNC път.
+    // `cwd` е системният диск; логическите корени идват от `paths.js` + `STORAGE_ROOT_OVERRIDE`.
     cwd: os.tmpdir(),
     env: {
       ...process.env,
+      ...storage.env,
       DATA_DIR: dir,
       PORT: String(port),
       ADMIN_PORT: '0',
@@ -80,8 +81,9 @@ function unzip(buf) {
 }
 
 (async () => {
-  const withKey = await boot({ PGP_PATH_PUBLIC: PUBLIC, PGP_PATH_SECRET: SECRET, PGP_KEY_PASS: PASS });
-  const shareBase = path.join(path.parse(os.tmpdir()).root, 'share');
+  const storage = storageRoot();
+  const withKey = await boot({ PGP_PATH_PUBLIC: PUBLIC, PGP_PATH_SECRET: SECRET, PGP_KEY_PASS: PASS }, storage);
+  const shareBase = storage.share;
   const folderAbs = path.join(shareBase, 'hapi-sign-' + process.pid + '-' + Math.random().toString(16).slice(2, 8));
   const folder = '/share/' + path.basename(folderAbs);
   try {

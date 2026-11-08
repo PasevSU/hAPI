@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **113** backend модула · **17** HTTP компонента · **26** UI модула · **9** Python модула · **40** инструмента · **388** теста.
+Общо: **114** backend модула · **17** HTTP компонента · **26** UI модула · **9** Python модула · **40** инструмента · **389** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (113)
+### Backend модули (`hapi_enterprise/*.js`) (114)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -64,6 +64,7 @@
 | `hapi_enterprise/package-crypto.js` | Криптиран контейнер за експортен пакет (hapiPKG1). |
 | `hapi_enterprise/packager.js` | Пакетиране на портал (или избрани файлове) в ZIP с манифест, хешове и |
 | `hapi_enterprise/path-crypto.js` | Ключохранилище на PGP (бач B2 от `PLAN-0.69.67-LINKS-AND-FILES.md`). |
+| `hapi_enterprise/paths.js` | ЛОГИЧЕСКИТЕ КОРЕНИ НА ХРАНИЛИЩЕТО — ЕДНО МЯСТО ЗА ЦЕЛИЯ ПРОЕКТ. |
 | `hapi_enterprise/pdf-writer.js` | Dependency-free PDF writer with embedded TrueType fonts (Unicode incl. Cyrillic). |
 | `hapi_enterprise/pgp-sign.js` | ПОДПИСВАНЕ НА ПАПКА И НА МНОЖЕСТВО ФАЙЛОВЕ (PGP) — с ключа, който ВЕЧЕ е зададен. |
 | `hapi_enterprise/pgp-tools.js` | PGP ИНСТРУМЕНТИ — един списък с ключове и трите действия: подпис, проверка, публична част. |
@@ -114,7 +115,7 @@
 | `hapi_enterprise/start.js` | hAPI Enterprise — add-on entrypoint. |
 | `hapi_enterprise/storage-check.js` | Storage health checks: verifies that each configured storage location exists, is a |
 | `hapi_enterprise/storage-migrate.js` | !/usr/bin/env node |
-| `hapi_enterprise/storage-preflight.js` | Подразбиране от 0.69.87: `/share/hapi/data`. Документите са на едно предвидимо място, |
+| `hapi_enterprise/storage-preflight.js` | Логическите корени идват от `paths.js` — един източник за целия проект (вж. `tests/storage-roots.cjs`). |
 | `hapi_enterprise/storage-tree.js` | Дърво на папка от хранилището (storage_root) — чист модул (UMD). |
 | `hapi_enterprise/throttle.js` | Ограничаване на скоростта на ПОТОКА (bandwidth pacing). |
 | `hapi_enterprise/tsa-client.js` | RFC 3161 Time-Stamp Protocol клиент (TSQ → TSA → TSR), без зависимости. |
@@ -144,7 +145,7 @@
 | `hapi_enterprise/routes/pgp-keyring.js` | PGP ключохранилище — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/portal-archive.js` | ЗАКРИВАНЕ НА ПОРТАЛ (архив за съхранение, 6 месеца преди окончателно изтриване). |
 | `hapi_enterprise/routes/portal-page.js` | Публичната страница на портала — ЕДИН адрес, на адреса на add-on-а (и през Home Assistant). |
-| `hapi_enterprise/routes/portal-qr.js` | QR ревизиите на един портал — компонент на HTTP слоя. |
+| `hapi_enterprise/routes/portal-qr.js` | Логическите корени (`/share`, `/media`) се разпознават през ЕДИН модул — `paths.js`. |
 | `hapi_enterprise/routes/portal-storage.js` | Изтегляне на файл ОТ ПАПКАТА на портала (публичен вход през портала, не отделен адрес). |
 | `hapi_enterprise/routes/portal-tokens.js` | Публични токени за един портал (Stage D) — HTTP слоят. |
 | `hapi_enterprise/routes/reports.js` | Report Studio + RFC 3161 — компонент на HTTP слоя. |

@@ -9,7 +9,7 @@
 // Договор: `handle()` връща `true`, когато заявката е за този компонент (и е приключена),
 // и `false`, когато трябва да я поеме следващият компонент.
 function create(deps) {
-  const { json, fail, parse, audit, clean, fsp, path, portalRoot, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr } = deps;
+  const { json, fail, parse, audit, clean, fsp, path, portalAbs, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr } = deps;
 
   function notMatching(parts, method) {
     const target = parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'tree' && parts[5] === 'folder' && parts.length === 6;
@@ -27,7 +27,7 @@ function create(deps) {
     if (notMatching(parts, method)) return false;
     const st = require('../storage-tree');
     const p = portal;
-    const rootAbs = path.resolve(portalRoot(p.storage_root || '/share'));
+    const rootAbs = portalAbs(p.storage_root || '/share');
 
     if (method === 'POST') {
       const b = await parse(req);

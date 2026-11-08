@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 // 0.69.83 — идентичност на съдържанието (`content_id`), §11 и §12 от HAPI-ARCH-API-001.
 //
 // Проверява се ТВЪРДЕНИЕТО, а не наличието на поле: един номер не може да обозначава две
@@ -15,7 +16,8 @@ const { startServer } = require('./lib/gui-harness.cjs');
 const contentId = require('../hapi_enterprise/content-id');
 const ooxml = require('../hapi_enterprise/ooxml');
 
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 const cleaned = [];
 
 (async () => {
@@ -37,7 +39,7 @@ const cleaned = [];
     assert.equal(contentId.forFile({ id: 'p1' }, { contentId: first, sha256: other, size: 10 }), first);
   }
 
-  const server = await startServer();
+  const server = await startServer({ env: storage.env });
   try {
     const jsonOf = async (p, method, body) => {
       const res = await server.authFetch(server.base + p, {

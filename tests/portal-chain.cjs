@@ -17,11 +17,15 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
+const { storageRoot } = require('./helpers.cjs');
 
 /** Същият генератор като в `server.js` — за да докажем КАКВО точно кодира QR кодът. */
 const qrSvg = (text) => { const q = require('../hapi_enterprise/qrcode')(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 8, margin: 4, scalable: true }); };
 
-const shareRoot = path.join(path.parse(process.cwd()).root, 'share');
+// `/share` е ЛОГИЧЕСКИ корен — host пътят го решава `hapi_enterprise/paths.js`. Тестът дава
+// временен корен (`STORAGE_ROOT_OVERRIDE`) и НЕ създава `<диск>:\share`.
+const storage = storageRoot();
+const shareRoot = storage.share;
 const SLUG = 'veriga-' + process.pid.toString(36);
 const DIR = path.join(shareRoot, SLUG);
 const SHARED_SLUG = 'veriga-obsht-' + process.pid.toString(36);
@@ -49,16 +53,11 @@ async function portalPage(base, id) {
   assert.equal(serverSrc.includes('files: (node.files || []).map('), false, 'и няма втори, вграден вариант на същия запис');
 
   clean();
-  try {
-    fs.mkdirSync(path.join(DIR, 'Договори', '2026'), { recursive: true });
-  } catch (e) {
-    console.log(`SKIP portal-chain: ${shareRoot} не може да се създаде (${e.code || e.message}) — липсва /share`);
-    process.exit(0);
-  }
+  fs.mkdirSync(path.join(DIR, 'Договори', '2026'), { recursive: true });
   fs.writeFileSync(path.join(DIR, 'Договори', '2026', 'анекс.txt'), 'съдържание на анекса');
   fs.writeFileSync(path.join(DIR, 'четиме.txt'), 'прочети ме');
 
-  const server = await startServer();
+  const server = await startServer({ env: { STORAGE_ROOT_OVERRIDE: storage.dir } });
   try {
     // ── Скриптът на страницата: ЕДИН файл, който вика `/tree` (иначе „папки“ няма) ──
     const portalJs = await (await fetch(`${server.base}/portal.js`)).text();
@@ -160,6 +159,7 @@ async function portalPage(base, id) {
   } finally {
     await server.stop();
     clean();
+    fs.rmSync(storage.dir, { recursive: true, force: true });
   }
 })().catch((error) => {
   console.error(error);

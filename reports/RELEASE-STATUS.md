@@ -14,20 +14,20 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **388/388** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **389/389** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.208 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 617 файла · 109512 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 612 файла · 108588 реда · critical: 0 · high: 0 · medium: 2 · low: 194 — **има необяснени** · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 619 файла · 109978 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 614 файла · 109054 реда · critical: 0 · high: 0 · medium: 2 · low: 194 — **има необяснени** · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 388 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 389 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.208.tar.gz` | add-on архив (202 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.208.tar.gz` | add-on архив (203 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.208.zip` | интеграция за HACS (26 файла) | `dist/RELEASE.json` |
 | `hapi-enterprise-gui-0.69.208.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
@@ -44,8 +44,35 @@
   2px решетката, а преместването им с 1px мести подредбата; `0` и `auto` не са стойности от
   скалата; `em`-вдаденостите по дълбочина на дървото и `mm` в печатната част са друг
   договор. Затова таванът е 104/38/24 и се намалява, когато някой прегледа подредбата с очи.
-- **Таванът е свален в теста.** `tests/ui-spacing.cjs` пази новите числа и иска поне 205
-  отстояния през променлива — може само надолу.
+- **`share` вече НЕ е папка по подразбиране на машината — договор и тест.** На Windows
+  `path.resolve('/share')` е `D:\share`, тоест папка в КОРЕНА НА ДИСКА. Осем модула я строяха
+  сами, а ~110 теста пускаха сървъра без `STORAGE_ROOT_OVERRIDE` — така след серия пускания
+  на диска имаше 213 тестови портала, а в един от тях 199 папки. Сега логическите корени
+  (`/share`, `/media`, `/config`, `/data`) и имената на променливите живеят на ЕДНО място —
+  `hapi_enterprise/paths.js` (`LOGICAL_ROOTS`, `ENV`, `resolveRoot()`, `resolveStoragePath()`),
+  а сървърът ги превежда до host път само през `portalAbs()`. Ако логическата папка липсва на
+  машината, резултатът е `<temp>/hapi-storage/<корен>` — никога коренът на диска.
+  Пази го `tests/storage-roots.cjs`: статично (нито един друг файл не решава корен сам) и
+  динамично (сървър БЕЗ override създава портал и файл и `<диск>:\share` пак не се появява).
+- **ГУИ тестовете получават собствен времен корен.** `gui-harness` вече подава
+  `STORAGE_ROOT_OVERRIDE` (временна папка) и я издава с `storageRoot()`; `gui-journeys` чисти
+  портала на сценария преди създаване вместо да трупа папки. Това беше и причината за
+  „необяснимия“ флейк — записан като **DEF-53** (затворен с измерената причина).
+- **Правилото е наложено над ЦЕЛИЯ проект, не само над сървъра.** Статичната проверка в
+  `tests/storage-roots.cjs` вече минава и през `tests/`: нито един тест не бива да строи
+  `<диск>:\share` (`…root, 'share'`, `path.resolve('/share')`, `path.join('/share'…)`) — взима
+  пътя от `helpers.cjs#storageRoot()`. Намерени и преправени **16 теста** (`storage-tree-api`,
+  `portal-chain`, `portal-folder-*`, `full-journey`, `real-journey`, `signed-url-restart`,
+  `file-transfer`, `file-placement`, `folder-delete`, `layout`, `package-api`, `ha-integration-proxy`,
+  `pgp-sign`, `pgp-path-encryption`, `pgp-workdir-encryption`, `portal-folder-refs`,
+  `portal-html-sandbox`, `portal-page-lang`, `portal-page-render`). Измерено: след пълния
+  матрикс (388 теста) `D:\share` и `C:\share` НЕ съществуват.
+- **Три реални дефекта, намерени от същите тестове.** (1) `portal-folder.listTree()` получаваше
+  вече преведения host път и го превеждаше втори път; (2) `isLogicalRoot('')` връщаше `false`,
+  тоест портал с празен `storage_root` пишеше `portal.html` в общия корен — вече празното значи
+  „коренът по подразбиране“ и не се пипа; (3) L2 миграцията (`workdir-migrate`) обхождаше
+  логическия низ вместо реалната папка, тоест на машина без `/share` не криптираше нищо.
+  Кодът на `server.js` остава **≤ 2722** реда (днес **2719**).
 
 ## 4. Как се проверява наново
 

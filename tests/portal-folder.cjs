@@ -1,4 +1,5 @@
 'use strict';
+const { storageRoot } = require('./helpers.cjs');
 // 0.69.63: папката на портала — там СА файловете, с истинските им имена, и има portal.html.
 //
 // Какво се мери на живия сървър (не се твърди „работи“, а се гледа диска):
@@ -13,14 +14,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
 
-const shareRoot = path.resolve('/share');
+const storage = storageRoot();
+  const shareRoot = storage.share;
 let created = null;
 
 (async () => {
   // Тестът проверява САМАТА папка на портала, затова пуска с включено копие
   // (`portal_folder_copy`). По подразбиране прикачването не създава папка — това се
   // пази от `tests/portal-folder-copy.cjs`.
-  const server = await startServer({ env: { PORTAL_FOLDER_COPY: '1' } });
+  const server = await startServer({ env: { ...storage.env, PORTAL_FOLDER_COPY: '1' } });
   try {
     const api = (p, method = 'GET', bodyJson) =>
       server.authFetch(server.base + p, {
