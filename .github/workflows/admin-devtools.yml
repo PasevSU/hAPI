@@ -15,7 +15,7 @@ permissions:
   contents: read
 jobs:
   identity-and-runtime:
-    name: SSH verification and compatibility · Node 22
+    name: OpenPGP verification and compatibility · Node 22
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
           python3 - <<'PY'
           import pathlib
           cfg=pathlib.Path('hapi_admin_devtools/config.yaml').read_text()
-          for item in ('slug: "hapi_admin_devtools"', 'ingress: true','panel_admin: true','github_ssh_fingerprint: ""','github_username: "PasevSU"'):
+          for item in ('slug: "hapi_admin_devtools"', 'ingress: true','panel_admin: true','openpgp_fingerprint: ""','github_username: "PasevSU"'):
             assert item in cfg, item
           print('Admin DevTools add-on descriptor: OK')
           PY
