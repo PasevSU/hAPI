@@ -1,0 +1,2782 @@
+{
+  "schemaVersion": 1,
+  "source": "CHANGELOG.md",
+  "sourceSha": "88f5938aed9d3368d23c0b7a9a2470cf85b63c87",
+  "releaseSections": 222,
+  "warning": "Versions are documented sections, not independently checked GitHub releases. Area tags are keyword heuristics, not diagnoses.",
+  "releases": [
+    {
+      "version": "0.69.203",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Криптирането на средата отново работи — с ключ, който МОЖЕ да криптира. Опциите на",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.202",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "Панелчето с QR кода се затваря и с Escape, и с клик извън него. Дотук единственият начин",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.201",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "portal",
+        "network"
+      ],
+      "notesPreview": "Документацията в add-on пакета вече описва новата карта на портала. hapi_enterprise/ui/README.md",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.200",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Картата на портала: блокът „Достъп и QR код“ е махнат, QR кодът е бутон горе вдясно.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.199",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Поправен дефект DEF-42: сензорът за версията не се създаваше в Home Assistant 2026.11.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.198",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "Одит на пътя на обновяването + скрипт за прилагане. Измерено защо „Обнови“ не се",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.197",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Каталог на функциите и порта за покритие. Нов генератор scripts/function-catalog.cjs",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.196",
+      "areas": [
+        "security",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Тестът за устойчивостта пази и третия инвариант: нито един административен маршрут не",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.195",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Систематичен одит на цялата административна повърхност: 581 заявки през всички 213",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.194",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "network"
+      ],
+      "notesPreview": "Нова секция „Политики“ в панела — 18 настройки, които дотук се задаваха само с PATCH",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.193",
+      "areas": [
+        "release-ci"
+      ],
+      "notesPreview": "Интеграцията обявява hassio като after_dependencies. discovery.py внася",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.192",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Поправен платформен дефект в избора къде живее порталът на доказателствата. На Linux",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.191",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Инструментът за дебъгинг вече се натиска от панела. Настройки → Диагностика →",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.190",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Дебъгинг инструмент: разпознава обектите в живия панел и прилага законите върху тях.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.189",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci"
+      ],
+      "notesPreview": "Отстоянията вече са централизирана скала, не локално задание. components.css имаше",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.188",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "„обяви“ е чекбокс с надпис, а не икона 👁. Видимостта на файла в портала (флаг listed,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.187",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Чекбокс за избор в началото на файла, иконата на типа — вдясно. Дотук иконата на файла",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.186",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "„Изтегли“ в заглавната лента на панел вече тегли файла. Бутонът се виждаше във всеки",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.185",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "Панелът „Сподели“ на файл вече показва ПЪРВИЯ подписан адрес и не иска нов всеки път.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.184",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "QR кодът е махнат от самата публична страница. Той води до нея — посетителят вече е",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.183",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "QR кодът НЕ е част от контролния панел — вече се пази и от тест. До 0.69.174 кодът",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.182",
+      "areas": [
+        "ui-i18n",
+        "portal",
+        "network"
+      ],
+      "notesPreview": "Настройките на портала са в ТРИ колони, а не в един стълб. Формата #pf-settings",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.181",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Линкът в картата на портала е премахнат. Адресът се показваше като табелка в картата",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.180",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Подписът за портал се издава ВЕДНЪЖ. adminPortal в server.js викаше",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.179",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "QR кодът в панела е ЕДИН — този на портала. Дотук кодът се рисуваше на три места:",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.178",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Хранилището има име: „ПАП БОКС“. То стои на публичната страница на портала (там,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.177",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Страницата на портала изглежда като хранилище, а не като страница с бутони.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.176",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Цялата карта на портала е ЕДНА група, без стена от бутони. Дотук действията стояха",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.175",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Картата на портала вече говори езика на интерфейса (BG/EN/DE). Панелът",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.174",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "performance-cache"
+      ],
+      "notesPreview": "Записът на настройките вече се проверява с тест — и минава. Тестовият DOM не даваше",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.173",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Адресът и QR кодът на портала са на първия екран. Контролният панел вече започва с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.172",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Печатен отчет за прилагане на QR кода — „Paptresor“. В Настройки → Хранилище",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.171",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "Подпис на ПАПКА и на МНОЖЕСТВО ФАЙЛОВЕ — с ключа, който вече е зададен. Дотук се",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.170",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Втора кожа на ПАНЕЛА („модерен“ изглед). Бутон ✦ в горната лента (#skin-toggle, до",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.169",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "cryptography"
+      ],
+      "notesPreview": "PGP инструментите вече не искат ключ, когато той е зададен в опциите. Дотук подписът и",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.168",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Порталът вече може да се премахне от интерфейса. Контролният панел получи секция",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.167",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "network"
+      ],
+      "notesPreview": "Интеграцията се настройва сама. Формата за добавяне вече идва попълнена: адресът и",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.166",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Документите живеят в /share/hAPI/data по подразбиране. storage_location: share +",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.165",
+      "areas": [
+        "ui-i18n",
+        "cryptography"
+      ],
+      "notesPreview": "Жизнен цикъл на панелите. Настройките и файловият панел вече имат unmount(),",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.164",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Watchdog-ът е описан според поведението на Supervisor. watchdog: задава само",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.162",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Нова глава 7 в ръководството: интеграцията и интерфейсът. Дотук ръководството казваше",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.161",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Пълно ръководство от нулата: documentation/09_COMPLETE_MANUAL/. Дотук документацията",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.160",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Изданието се доставя с ТОЧНО тези настройки, с които е изпитано. Defaults в",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.159",
+      "areas": [],
+      "notesPreview": "Регистър на правилата: reports/TEST-RULES.md. Каталогът tests/lib/test-rules.cjs е код",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.158",
+      "areas": [
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "ВСЕКИ тестов файл вече е ПРАВИЛО с идентификатор. Дотук scenario-matrix.cjs познаваше",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.157",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "network"
+      ],
+      "notesPreview": "update-integration.ps1 вече разменя интеграцията атомарно. Дотук редът беше",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.156",
+      "areas": [
+        "security",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Нов одит на secrets.yaml — без да печата стойности. scripts/audit-ha-secrets.ps1",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.155",
+      "areas": [
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "update-integration.ps1 никога не е работил — поправен, след като беше пуснат наистина.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.154",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Store-ът вече ТЕГЛИ образа, вместо да го строи на машината. В config.yaml е добавен",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.153",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Картата в store-а вече има линк „Документация“. В config.yaml липсваше ключът",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.152",
+      "areas": [
+        "ui-i18n",
+        "portal"
+      ],
+      "notesPreview": "В заглавния ред на портала остана САМО адресът. Дотук там стоеше бутон API ▾, а до него",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.151",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Порталът вече се ЗАКРИВА, вместо да се трие. В контролния панел има бутон",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.150",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Поправено (висока тежест): на реалната инсталация ВСЕКИ адрес на портал отваряше 404 —",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.149",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "network"
+      ],
+      "notesPreview": "Тестер, който налага Content-Security-Policy в тестовете. Досега GUI тестовете вървяха",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.148",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Поправено: панелът не можеше да отвори портала пред домейн (CSP connect-src 'self').",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.147",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Копче „Отвори папката“ на страницата на портала. Порталът е QR кодът, който води до",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.146",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network",
+        "performance-cache"
+      ],
+      "notesPreview": "Порталът вече има ЕДИН адрес, който води до HTML страницата: /portal.html. Досега",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.145",
+      "areas": [
+        "ui-i18n",
+        "cryptography"
+      ],
+      "notesPreview": "Поправена валидация на интеграцията (hassfest). Изданието 0.69.144 сложи примерен",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.144",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "network"
+      ],
+      "notesPreview": "Устройството в Home Assistant вече сочи към портала. Описанието на устройството нямаше",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.143",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Одит на разположението: всеки файл е на мястото, на което кодът го търси. Нов тест",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.142",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "И началната страница на add-on-а спря да дава линк. На / адресът на публичното API",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.141",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Порталът вече не е „сайт с линкове“. Всичко, което публичната страница даваше като",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.140",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci"
+      ],
+      "notesPreview": "Още един сценарий САМО през интерфейса — 70 общо. J72 записва профил на настройките от",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.139",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Фокусът отива в новото поле по желание. След „＋ добави поле“ курсорът вече е в полето",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.138",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Още два сценария САМО през интерфейса — 69 общо. J70 отваря панела с филтри на блока",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.137",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Поправен дефект: менюто „API ▾“ на портала не се появяваше никога, а контролният панел",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.136",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "network"
+      ],
+      "notesPreview": "Поправен дефект: „Качи версия“ с бележка на кирилица не правеше нищо. Бележката се",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.135",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Шестдесети сценарий: хранилището се управлява изцяло през панела. J62 прикача файл с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.134",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Още три сценария върху картата на портала — 59 общо. J59 сгъва и разгъва контролния",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.133",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "„✕“ за поле по желание се проверява и при контакта. J42 вече добавя две полета, маха",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.132",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Още три сценария САМО през интерфейса — 56 общо. J56 редактира колоните на блок",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.131",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Поправен дефект в интерфейса: „✕“ на току-що добавено поле по желание не правеше нищо.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.130",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Менюто ⚙ на папката вече се натиска в сценарий — 51 сценария общо. Папка се създава през",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.129",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Още пет сценария САМО през интерфейса — 50 общо. Report Studio вече се проверява и в",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.128",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Пет нови сценария САМО през интерфейса — 45 общо. Добавени са действия, които дотогава",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.127",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Файловите сценарии минават ПРЕЗ СПИСЪКА, а не през догадка какво е нарисувал панелът.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.126",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Сценарият отваря СВОЯ портал, вместо да чака панелът да го направи. Панелът отваря новия",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.125",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Изчакването в новия файлов сценарий е за ФАЙЛА, не за „изгледът да утихне“. Панелът",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.124",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Файловите сценарии се връщат — вече самодостатъчни. В 0.69.123 три сценария отпаднаха,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.123",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "GUI-ONLY сценариите са 38, не 41. Трите файлови сценария (преименуване, бележка и",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.122",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "„Панел филтри“ е превключвател, а тестът го натискаше като „отвори“. Панелът помни",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.121",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Сценариите за файл вече си подсигуряват файла сами. J37, J38 и J39 разчитаха, че",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.120",
+      "areas": [
+        "ui-i18n",
+        "release-ci"
+      ],
+      "notesPreview": "Провал в CI вече се вижда, а не се гадае. verify-release S20 пуска целия набор през",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.119",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "network"
+      ],
+      "notesPreview": "Поправено: GUI-ONLY наборът падна в CI, а причината не се виждаше. На runner-а",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.118",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "GUI-ONLY сценариите стават 41 (бяха 32). Новите девет затварят области, които дотук",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.117",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "GUI-ONLY сценариите стават 32 (бяха 24): покрити са и останалите пътища, които дотук",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.116",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Нови GUI-ONLY тестове: 24 сценария, които минават САМО през интерфейса.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.115",
+      "areas": [
+        "storage",
+        "release-ci"
+      ],
+      "notesPreview": "Анализът твърдеше две числа, които данните не подкрепят. В §6 на",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.114",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Изтеглянето отговаряше „200 OK“ и късаше връзката, когато файлът не може да се отвори.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.113",
+      "areas": [
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Два записа в една група си деляха стойностите (загуба на данни, безшумно). Ключът на",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.112",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Цялостен обход на скриптовите файлове — и три дефекта, намерени с четене. Обходени са",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.111",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Съвместимостта с Home Assistant вече се проверява локално, преди таг. Дотук тези неща",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.110",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Планът на Evidence View не изреждаше файл, който се публикува. evidence-portal.js",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.109",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Три места показват една и съща папка — вече се проверява, че не се разминават.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.108",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Страницата в папката казваше „още няма файлове“ до пълна папка. portal.html се",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.107",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Инструментът за празни catch-ове падаше. scripts/document-empty-catches.cjs е",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.106",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Картата и панелът си разменяха едно име. Панелът връща folderUrl за ЧОВЕШКАТА",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.105",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Смяна на папката оставяше чужда карта в старата. След PATCH с нов storage_root",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.104",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Картата на API-то не казваше, че порталът има папка. api.json изреждаше",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.103",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Картата на папката показваше файла, но не и адреса му. GET /api/v1/p/<slug>/tree/api.json",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.101",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Картата на API-то обявяваше само КАРТИНКАТА на QR кода. api.json е документът, който",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.100",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Картата на API-то съществуваше на диска, но не и на адреса си. api-registry записва",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.99",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Липсващ превод в Home Assistant се вижда като ПРАЗНО място, без никаква грешка. Текстовете се",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.98",
+      "areas": [
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Изданието се раждаше с ПРАЗНИ бележки. Тагването създаваше release с тяло с дължина 0, а",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.97",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Config flow-ът казваше „не се свързва“ за три различни неща. Човек, който въведе адреса и",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.96",
+      "areas": [
+        "security",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Интеграцията на Home Assistant нямаше как да работи: админ API-то беше недостъпно за нея.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.95",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Мостът на интеграцията не подаваше Cookie — линкът се отваряше, а порталът не. /t/<токен>",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.94",
+      "areas": [
+        "network"
+      ],
+      "notesPreview": "links/check казваше „страницата не съществува“, когато всъщност отговаря Home Assistant.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.93",
+      "areas": [
+        "release-ci",
+        "portal",
+        "network"
+      ],
+      "notesPreview": "Мостът на интеграцията никога не беше ИЗВИКВАН в тест. ha-integration-import го зареждаше",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.92",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Интеграцията никога не беше ЗАРЕЖДАНА от нито един тест. ha-integration-python я",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.91",
+      "areas": [
+        "portal",
+        "network"
+      ],
+      "notesPreview": "Под префикс (както е зад Home Assistant) страницата търсеше адресите си в корена на HA.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.90",
+      "areas": [
+        "release-ci"
+      ],
+      "notesPreview": "Форматиране на теста на HA моста. tests/ha-range-bridge.cjs е минал през prettier —",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.89",
+      "areas": [
+        "security",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Публичната повърхност на порта на Home Assistant беше само половината. 0.69.88 сложи там",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.88",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Публичното API не отговаряше на адресите, които панелът сам пише. Проверено на живо:",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.87",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network",
+        "performance-cache"
+      ],
+      "notesPreview": "Съвместимостта с Home Assistant се проверява с правила, а не с „изглежда правилно“. Add-on-ът",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.86",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "GET /api/v1/auth/oidc/login → 302 към доставчика с PKCE S256, state и nonce;",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.85",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Проверено с тест (tests/signed-url-restart.cjs), върху ЧАСТЕН портал, защото там",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.84",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "portal",
+        "network"
+      ],
+      "notesPreview": "POST /admin/api/portals/<id>/qr/<qrId>/restore — връща състоянието от ТОЗИ архив.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.83",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Нов content-id.js (правило IMMUTABLE_CONTENT_ID):",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.82",
+      "areas": [
+        "security",
+        "ui-i18n"
+      ],
+      "notesPreview": "documentation/02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md — HAPI-ARCH-API-001",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.81",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "§10.1.7 и §19 — архивът се проверява ПРЕДИ да се отчете като успешен. След записа",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.80",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "/portal.html:<папка> (и /portal.html:<папка>/<подпапка>) — форматът, който външният",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.79",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Нов модул portal-integrity.js (правило ARCHIVE_NOT_TAMPERED). Проверява по ред и",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.78",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "?qr= в адреса (/portal.html?order=share/<папка>&qr=QR-002): сървърът проверява,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.77",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "MAX_BRANCH_DEPTH_3 — най-много три вложени подпапки под корена на портала.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.76",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "/portal.html?order=share/<папка>[/<подпапка>] сервира същата страница (portal.html),",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.75",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography",
+        "network",
+        "performance-cache"
+      ],
+      "notesPreview": "Страницата на портала /p/<id> се отваря директно в папката на портала (/share/<slug>",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.74",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Нова секция „Публичен достъп (токен за този портал)“ в „Контролен панел на портала“:",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.73",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "/admin/api/sensors връща guidance — статус (ok/warning/critical/unknown),",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.72",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "hapi_enterprise/portal-policy.js — едно решение за всички входове. Идентичност →",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.71",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "QR кодът в „Контролен панел на портала“ кодираше адреса на самото QR изображение.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.70",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Проблемът: portal.js сглобяваше адресите сам —",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.69",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "hapi_enterprise/portal/ — четирите файла на портала (portal.html, portal.js,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.68",
+      "areas": [
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Кой ключ криптира се решава по Key Flags, не по поредност. Досега при ключов пакет с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.67",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Токенът е задължителен вход, не изход. Досега start.js тихо генерираше токен, когато",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.66",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Проблемът: https://<ha>/api/v1/p/<slug>/files/<id>/download?expires=…&sig=… — подписът",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.65",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci"
+      ],
+      "notesPreview": "Проблемът: layout в /admin/api/diagnostics връщаше абсолютни пътища (/data/...,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.64",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Проблемът (от употреба): „програмата не намира portal.html и папките“. Причината е, че",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.63",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Проблемът (от употреба): качен в портал файл отиваше само в data директорията под име на",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.62",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Адресът в „Сподели / QR“ пак не се отваряше. Диалогът показваше два адреса, които искат",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.61",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Проблемът: четирите обекта се виждаха в библиотеката, но бяха заключени — липсваха им",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.60",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Проблемът: панелът показваше /api/public/v1/files/<id>/download като „публичен адрес“.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.59",
+      "areas": [
+        "security",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Проблемът: export-rules.capabilities() връщаше resume_transfer: implemented: false.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.58",
+      "areas": [
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "tests/parallel-transfers.cjs повтаря заявка веднъж, ако клиентът е взел мъртва връзка от",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.57",
+      "areas": [
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Какво се виждаше: на Ubuntu · Node 22 тестът падаше с UND_ERR_SOCKET при проба с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.56",
+      "areas": [
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Проблемът: scripts/fetch-package.cjs и tests/parallel-transfers.cjs правеха проба с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.55",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "Проблемът: export-rules.capabilities() връщаше parallel_transfers: implemented: false,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.54",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Проблемът: export-rules.capabilities() връщаше rate_limit: implemented: false, а",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.53",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Проблемът: export-rules.capabilities() връщаше split_archive: implemented: false.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.52",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Проблемът: export-rules.capabilities() връщаше encrypt_package: implemented: false.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.51",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci"
+      ],
+      "notesPreview": "Проблемът: export-rules.capabilities() връщаше compression: implemented: false, а ZIP",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.50",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Нов инструмент: node scripts/release-audit.cjs сравнява ВСЕКИ таг (55 тага) с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.49",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Проблемът (измерен, не предположен): адресите се строеха на седем места по три",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.48",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Какво липсваше: най-голямата част от административната повърхност — всичко под",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.47",
+      "areas": [
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Какво липсваше: в 0.69.46 договорът беше пълен за маршрутите, записани като",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.46",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Какво липсваше: api-spec.js описваше публичното портално API (11 пътя). За",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.45",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "network"
+      ],
+      "notesPreview": "Защо: анализа на всички издания (v0.68.0 → v0.69.44) показа, че навигацията НИКОГА",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.44",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Lint беше декоративен. eslint.config.mjs даваше Node среди на БРАУЗЪРНИТЕ файлове",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.43",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Теч на памет в ключалката на тайните. server.js слагаше в Map",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.42",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Защо: дефектът от 0.69.40 (frame-ancestors 'none' върху UI-я) мина през цялата",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.41",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "portal"
+      ],
+      "notesPreview": "Дефект: всички файлове на административния UI (/ui/) се сервираха с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.40",
+      "areas": [
+        "release-ci"
+      ],
+      "notesPreview": "Причина: версията беше вдигната в работното копие, но не беше качена — main в GitHub",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.39",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Отчетите и генераторът вече са отделни файлове: hapi_enterprise/routes/reports.js",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.38",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "network"
+      ],
+      "notesPreview": "Линкът, който HA дава към add-on панела (https://<ha>:8123/app/<id>_hapi_enterprise),",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.37",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci"
+      ],
+      "notesPreview": "Нов сензор „Версия на add-on-а“ (sensor.…_version): показва версията, която add-on-ът",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.36",
+      "areas": [
+        "storage",
+        "release-ci"
+      ],
+      "notesPreview": "Какво показва: версия на hAPI, схема на манифеста, профил, дата на издаване, среда",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.35",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Подзаглавие (subtitle) — заглавие на раздел. В PDF-а е истинско h2, а не уголемен",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.34",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Адресът на API-то идва от документа. Всички панели строяха адреса като",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.33",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "POST /admin/api/v2/reports/package връща ZIP с report.pdf, manifest.json,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.32",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Жив индекс вместо temp/index.json. Досега списъкът се строеше с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.31",
+      "areas": [
+        "ui-i18n",
+        "portal"
+      ],
+      "notesPreview": "configuration.yaml е единственият маркер за HA конфигурация (evidence-portal.js).",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.30",
+      "areas": [
+        "release-ci"
+      ],
+      "notesPreview": "README.md препраща към генерираната таблица с подразбиранията (add-on README и BG.md)",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.29",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Първият старт записва целия config/settings.json (hapi_enterprise/runtime-config.js).",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.28",
+      "areas": [
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "scripts/release-status.cjs вече не вписва самоличността на артефакта. sha256,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.27",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "visitor_ip_mode вече е match(^(hashed|masked|full)?$)? с подразбиране hashed.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.26",
+      "areas": [
+        "release-ci"
+      ],
+      "notesPreview": "Нов scripts/release-status.cjs — строи отчета от артефактите, а не от памет:",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.25",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Нова секция „Сензори“ в Настройки (hapi_enterprise/ui/settings-panel.js): режим на IP",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.24",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Нов hapi_enterprise/portal-i18n.js — речник на страницата на български, английски и немски:",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.23",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Нов модул hapi_enterprise/ui/report-scope.js — едно място, което сглобява манифест за",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.22",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "„Изтегли всички (ZIP)“ в публичната страница. POST /api/v1/p/<key>/package строи архив с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.21",
+      "areas": [
+        "release-ci",
+        "portal",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "Лимит на честотата за публичните маршрути. publicRateGate() в server.js брои заявките",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.20",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Сензори за комуникацията. Нов hapi_enterprise/visitor-intel.js отговаря на въпросите",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.19",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Дефект 1 — сливането можеше да изхвърли чужд запис. При празна база merge падаше към",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.18",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Нов слой hapi_enterprise/shared-data.js — единственият собственик на живите данни:",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.17",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "tests/oracle-digest-chain.cjs — един и същ файл през пет различни изхода (списък,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.16",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Нов тестов DOM (tests/lib/dom-stub.cjs + tests/dom-harness.cjs): малък, но честен",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.15",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Административен API: броячът е по sha256 на предявения Bearer токен (самият токен не",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.14",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Издаденият отчет вече е структура по PDF/A-3: XMP метаданни с pdfaid:part>3 и",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.13",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Нов ui/i18n.js — речник с 72 ключа × 3 езика (section., action., th.,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.12",
+      "areas": [
+        "ui-i18n",
+        "release-ci"
+      ],
+      "notesPreview": "ooxml.docxRich(buf) връща {blocks, media}: заглавия, абзаци, списъци, таблици",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.11",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Нов модул hapi_enterprise/interpolate.js: разгъва {{key}} със стойност от картотеката,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.10",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Нов модул hapi_enterprise/ui/secret-share.js — генерира линка в браузъра:",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.9",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Причина за дефекта: панелът четеше ядрото report-manifest.js още при дефиниране",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.8",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "ingress_entry: / — под Home Assistant панелът се отваря директно в новия интерфейс.",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.7",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "Пакетът е внесен в hapi_enterprise/evidence-portal/ (portal.html, assets/app.js,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.6",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network",
+        "performance-cache"
+      ],
+      "notesPreview": "Табове: Основни (връзка, публичен адрес, PGP, миграция) + Йерархия, Картотека,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.6",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "portal"
+      ],
+      "notesPreview": "Остават: Обзор, Портали, Указател, Променливи, Задачи, API достъп, Настройки (+ Enterprise GUI).",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.5",
+      "areas": [
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "25 празни catch в admin.js, cabinet.js, gateway-api.js, job-manager.js,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.4",
+      "areas": [
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "hapi_enterprise/CHANGELOG.md беше изостанал от кореновия CHANGELOG.md (последната",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.3",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "cryptography"
+      ],
+      "notesPreview": "Слоеве {mode: PRIVATE, roles: ['финанси']} и {mode: PRIVATE, roles: ['ЧР']}",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.2",
+      "areas": [
+        "release-ci",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "В OpenPGP MPI кодира цяло число, затова водещите нулеви битове не се пазят",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.1",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Нов тест tests/api-spec-coverage.cjs: всеки JSON маршрут от публичния блок на портала",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.69.0",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "scripts/bad-code-scan.cjs — сканира всички 255 файла (add-on, UI, скриптове,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.68.0",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "network"
+      ],
+      "notesPreview": "Таблото показва реални данни, не демо числа. Обектът DEMO в app.js (измислени",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.67.0",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Цялата административна логика вече се стига от конзолата. Девет функции имаха API без",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.66.0",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "cryptography"
+      ],
+      "notesPreview": "Тайните връзки са преработени по модела на scrt.link v2 (MIT): целият линк е във",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.65.0",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Тайни връзки (zero-knowledge) — „Сподели тайна“ в административния панел. Тайната",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.64.0",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "NFC/QR таг и universal link за всеки портал — нов модул share-links.js. Досега",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.63.1",
+      "areas": [
+        "cryptography"
+      ],
+      "notesPreview": "Поправено: add-on-ът не тръгваше след рестарт — instance lock: data directory",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.63.0",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network",
+        "performance-cache"
+      ],
+      "notesPreview": "Отчетни манифести като част от интеграцията —",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.62.1",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "release-ci"
+      ],
+      "notesPreview": "publish-addon-repo.ps1 пуска pre-push-audit ВИНАГИ (и с -SkipBuild) и спира",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.62.0",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network",
+        "performance-cache"
+      ],
+      "notesPreview": "scripts/export-tracked.cjs заменя robocopy /MIR в",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.61.4",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "manifest.json: ключовете са подредени според изискването на hassfest — domain,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.61.3",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Ingress SSO по истинските заглавки — rbac.js чете X-Remote-User-Name,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.61.2",
+      "areas": [
+        "security",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography",
+        "network"
+      ],
+      "notesPreview": "Entrypoint на JS — run.sh е премахнат; контейнерът стартира с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.54.0",
+      "areas": [
+        "security",
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "custom_components/hapi_enterprise/portal.html|portal.js|portal.css са подменени с",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.53.1",
+      "areas": [
+        "ui-i18n"
+      ],
+      "notesPreview": "Смяната на опциите (адрес, токен, интервал) вече се прилага веднага —",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.53.0",
+      "areas": [
+        "ui-i18n",
+        "storage",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "UI настройка: config_flow.py с config и options flow (адрес, административен токен,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.52.1",
+      "areas": [
+        "storage",
+        "release-ci",
+        "cryptography",
+        "performance-cache"
+      ],
+      "notesPreview": "hacs.json в корена на хранилището (content_in_root: false, homeassistant: 2024.6.0,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.52.0",
+      "areas": [
+        "ui-i18n",
+        "release-ci",
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Публичната страница и QR кодът се адресират с id на портала (/p/<id>), не с име;",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.51.0",
+      "areas": [
+        "cryptography"
+      ],
+      "notesPreview": "Пълен пакет хешове за файловете (sha256/sha512/sha384/sha3-256/sha1/md5) в API, в",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    },
+    {
+      "version": "0.50.0",
+      "areas": [
+        "portal",
+        "cryptography"
+      ],
+      "notesPreview": "Публична страница на портала (/p/<slug>), QR код към нея, контакт на издателя,",
+      "source": "CHANGELOG.md",
+      "evidenceLevel": "release-note-only"
+    }
+  ]
+}
