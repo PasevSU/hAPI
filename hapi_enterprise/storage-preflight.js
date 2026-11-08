@@ -3,6 +3,9 @@ const fs = require('node:fs'), path = require('node:path');
 const paths = require('./paths');
 // Логическите корени идват от `paths.js` — един източник за целия проект (вж. `tests/storage-roots.cjs`).
 const roots = { addon_config: paths.LOGICAL_ROOTS.config, media: paths.LOGICAL_ROOTS.media, share: paths.LOGICAL_ROOTS.share };
+// Имената в опциите (`addon_config`) не съвпадат с ключовете в `paths.LOGICAL_ROOTS`
+// (`config`) — това е единственото място, където се превеждат.
+const ROOT_NAMES = Object.freeze({ addon_config: 'config', media: 'media', share: 'share' });
 // Подразбиране от 0.69.87: `/share/hapi/data`. Документите са на едно предвидимо място,
 // видимо през Samba/File editor и извън папката на add-on-а, така че преинсталиране или
 // обновяване на add-on-а да не го мести. add-on папката остава валиден избор.
@@ -28,7 +31,12 @@ function check(options, env = process.env) {
   if (!Object.hasOwn(roots, kind)) throw Error('Unsupported storage location');
   const sub = options.storage_subdirectory || DEFAULT_SUB;
   if (!validSub(sub)) throw Error('Invalid storage subdirectory');
-  const root = env.STORAGE_ROOT_OVERRIDE ? path.resolve(env.STORAGE_ROOT_OVERRIDE, kind) : roots[kind];
+  // Пътят се взема от `paths.js`: при липсващ логически корен на ТАЗИ машина (или на
+  // Windows, където `/share` е `D:\share`) резултатът е празен низ — тогава preflight-ът се
+  // проваля ЗАКРИТО, вместо да създаде хранилище на чуждо място (вж. `tests/storage-roots.cjs`).
+  // Override-ът е тестов механизъм и пази ИМЕТО НА ОПЦИЯТА като име на папка (`addon_config`).
+  const root = env.STORAGE_ROOT_OVERRIDE ? path.resolve(env.STORAGE_ROOT_OVERRIDE, kind) : paths.existingRoot(ROOT_NAMES[kind], env);
+  if (!root) throw Error('Storage root is not available on this host: ' + roots[kind]);
   const mode = options.storage_mode || 'local';
   if (!['local', 'ha_network'].includes(mode)) throw Error('Unsupported storage mode');
   let parent = root;
@@ -44,9 +52,11 @@ function check(options, env = process.env) {
   let base = path.join(parent, sub), chosenRoot = root;
   // Миграционна защита: старото място има данни, новото е празно → ползва се СТАРОТО.
   // Иначе при обновяване „порталите изчезват“, защото add-on-ът стартира с нова празна база.
-  const legacyRoot = env.STORAGE_ROOT_OVERRIDE ? path.resolve(env.STORAGE_ROOT_OVERRIDE, LEGACY_LOCATION) : roots[LEGACY_LOCATION];
-  const legacyBase = path.join(legacyRoot, LEGACY_SUB);
-  if (base !== legacyBase && hasData(legacyBase) && !hasData(base)) {
+  const legacyRoot = env.STORAGE_ROOT_OVERRIDE
+    ? path.resolve(env.STORAGE_ROOT_OVERRIDE, LEGACY_LOCATION)
+    : paths.existingRoot(ROOT_NAMES[LEGACY_LOCATION], env);
+  const legacyBase = legacyRoot ? path.join(legacyRoot, LEGACY_SUB) : '';
+  if (legacyBase && base !== legacyBase && hasData(legacyBase) && !hasData(base)) {
     console.error('STORAGE_LEGACY_LOCATION: намерени са данни в ' + legacyBase + ' — ползва се това място, за да не се създаде празна инсталация. Премести ги в ' + base + ' и рестартирай, за да минеш на новото подразбиране.');
     base = legacyBase; chosenRoot = legacyRoot;
   }

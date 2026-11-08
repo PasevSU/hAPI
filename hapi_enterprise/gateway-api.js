@@ -6,6 +6,7 @@
 // повторно тук при всяка заявка (GUI не е граница за сигурност).
 const fs = require('node:fs');
 const path = require('node:path');
+const paths = require('./paths');
 const GW = require('./public-gateway.js');
 const ACC = require('./download-access.js');
 const R = require('./export-rules.js');
@@ -20,7 +21,9 @@ const MGR = require('./export-manager.js');
 //   4. <repo>/config/rules — авторското копие при разработка.
 // Ако никъде няма файл, се ползва вградената константа и се логва предупреждение.
 const BUNDLED_DIR = path.join(__dirname, 'rules');
-const CONTAINER_DIR = '/config/rules';
+// `/config` идва от глобалните дефиниции (`paths.CONFIG_ROOTS`), не е втори литерал — в add-on
+// това е собствената папка на add-on-а (`app_config`).
+const CONTAINER_DIR = path.join(paths.CONFIG_ROOTS[0], 'rules');
 const REPO_DIR = path.join(__dirname, '..', 'config', 'rules');
 const RULE_FILES = [
   'download_rules.json',
@@ -97,7 +100,7 @@ function config() {
   // опциите на add-on-а (Settings → Add-on configuration).
   let options = {};
   try {
-    options = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || '/data/options.json', 'utf8')) || {};
+    options = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || path.join(paths.LOGICAL_ROOTS.data, 'options.json'), 'utf8')) || {};
   } catch {
     options = {};
   }
@@ -176,7 +179,7 @@ function reload() {
 function defaultSeedDir() {
   const env = String(process.env.HAPI_CONFIG_DIR || '').trim();
   if (env) return env;
-  return fs.existsSync('/config') ? CONTAINER_DIR : '';
+  return fs.existsSync(paths.CONFIG_ROOTS[0]) ? CONTAINER_DIR : '';
 }
 
 /** Копира липсващите вградени правила в целевата директория (без презапис). */

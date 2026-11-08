@@ -1,6 +1,7 @@
 'use strict';
 const http = require('node:http'), fs = require('node:fs'), fsp = require('node:fs/promises'), path = require('node:path'), crypto = require('node:crypto');
-const root = path.resolve(process.env.DATA_DIR || '/data'), port = Number(process.env.PORT || 8099), adminToken = process.env.ADMIN_TOKEN;
+const paths = require('./paths'); // логически корени и имена на променливи — ЕДИН източник
+const root = path.resolve(process.env.DATA_DIR || paths.LOGICAL_ROOTS.data), port = Number(process.env.PORT || 8099), adminToken = process.env.ADMIN_TOKEN;
 // Една жива инстанция на data директория (виж instance-lock.js). Попълва се в start().
 const instanceId = String(process.env.INSTANCE_ID || '').trim() || crypto.randomBytes(6).toString('hex');
 let instanceState = { id: instanceId, acquired: false, tookOver: false };
@@ -27,7 +28,7 @@ const jobManager = require('./job-manager').create({
 }); const operatorToken = process.env.OPERATOR_TOKEN || null, viewerToken = process.env.VIEWER_TOKEN || null;
 const parseRoles = v => { if (!v) return {}; if (typeof v === 'object' && !Array.isArray(v)) return v; try { const o = JSON.parse(v); if (!o || typeof o !== 'object' || Array.isArray(o)) return {}; return o } catch { return {} } };
 // Роли за Ingress потребители: env (USER_ROLES) или опции на add-on-а (user_roles).
-const addonOptions = (() => { try { return JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || '/data/options.json', 'utf8')) || {} } catch { return {} } })();
+const addonOptions = (() => { try { return JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || path.join(paths.LOGICAL_ROOTS.data, 'options.json'), 'utf8')) || {} } catch { return {} } })();
 // Крипто опции: env (от start.js) има приоритет, после options.json, после default.
 // Така същите стойности важат и при ръчен старт без Supervisor.
 const optionValue = (envKey, optionKey, fallback) => { const env = process.env[envKey]; if (env !== undefined && String(env).trim() !== '') return String(env).trim(); const value = addonOptions[optionKey]; return value === undefined || value === null ? fallback : String(value).trim() };
@@ -38,7 +39,7 @@ const cryptoOptions = require('./crypto-options').create({ optionValue, isEnable
 const rbac = require('./rbac').create({ adminToken, operatorToken, viewerToken, userRoles: parseRoles(process.env.USER_ROLES || addonOptions.user_roles), groupRoles: parseRoles(process.env.GROUP_ROLES || addonOptions.group_roles), defaultRole: process.env.DEFAULT_ROLE || 'admin', ssoRole: (req) => ssoRoleOf(req) });
 // Сензори: комуникация, файлове, извиквания, изтегляния, посещения. Агрегати без
 // лични данни; състоянието се записва в <DATA_DIR>/sensors.json и оцелява рестарт.
-const observer = require('./observer').create({ dir: root }); const paths = require('./paths'); // логически корени — един източник
+const observer = require('./observer').create({ dir: root });
 // Structured debug log: option `log_level`, overridable with LOG_LEVEL for troubleshooting.
 const log = require('./logger').create({ dir: root, level: process.env.LOG_LEVEL || addonOptions.log_level || 'info', maxBytes: process.env.LOG_MAX_BYTES, maxFiles: process.env.LOG_MAX_FILES, maxEntries: process.env.LOG_MAX_ENTRIES });
 const errorLog = require('./error-log').create(root); require('./process-guards').install({ log, errorLog });
@@ -118,11 +119,11 @@ const profilesConfig = (() => { const s = String(process.env.PROFILES || '').tri
 let docflowRegistry = null, coreStore = null;
 try { docflowRegistry = require('./registry').create(profilesConfig); coreStore = require('./core-store').create({ path: path.join(root, 'core.sqlite'), dbId: coreDbId, secret: adminToken }); } catch (e) { log.error('docflow.init.failed', { ns: 'core', err: e.message }) }
 const coreReady = () => { if (!docflowRegistry || !coreStore) throw Object.assign(new Error('Core unavailable'), { status: 503 }); return { registry: docflowRegistry, store: coreStore } };
-const backupsDir = (() => { const v = String(process.env.BACKUP_DIR || '').trim(); if (!v) return path.join(root, 'backups'); const abs = path.isAbsolute(v) ? path.resolve(v) : path.join(paths.resolveRoot('share'), v); if (path.isAbsolute(v) && !['/share', '/media', '/config', '/data'].some(p => abs === p || abs.startsWith(p + '/')) && !process.env.BACKUP_DIR_ANY) throw Error('backup_folder must be inside /share, /media or /config'); return abs })();
+const backupsDir = (() => { const v = String(process.env.BACKUP_DIR || '').trim(); if (!v) return path.join(root, 'backups'); const abs = path.isAbsolute(v) ? path.resolve(v) : path.join(paths.resolveRoot('share'), v); if (path.isAbsolute(v) && !Object.values(paths.LOGICAL_ROOTS).some(p => abs === p || abs.startsWith(p + '/')) && !process.env.BACKUP_DIR_ANY) throw Error('backup_folder must be inside /share, /media or /config'); return abs })();
 // Втори таргет за копията на базата (друго устройство/споделена папка). Празен = без
 // огледало. Всяко копие се проверява с SHA-256; при разлика копието се трие, за да не
 // остане „изглеждащ валиден“ архив.
-const backupsMirrorDir = (() => { const v = String(optionValue('BACKUP_MIRROR', 'backup_mirror', '')).trim(); if (!v) return ''; const abs = path.isAbsolute(v) ? path.resolve(v) : path.join(paths.resolveRoot('share'), v); if (path.isAbsolute(v) && !['/share', '/media', '/config', '/data'].some(p => abs === p || abs.startsWith(p + '/')) && !process.env.BACKUP_MIRROR_ANY) throw Error('backup_mirror must be inside /share, /media or /config'); if (abs === backupsDir) throw Error('backup_mirror must differ from backup_folder'); return abs })();
+const backupsMirrorDir = (() => { const v = String(optionValue('BACKUP_MIRROR', 'backup_mirror', '')).trim(); if (!v) return ''; const abs = path.isAbsolute(v) ? path.resolve(v) : path.join(paths.resolveRoot('share'), v); if (path.isAbsolute(v) && !Object.values(paths.LOGICAL_ROOTS).some(p => abs === p || abs.startsWith(p + '/')) && !process.env.BACKUP_MIRROR_ANY) throw Error('backup_mirror must be inside /share, /media or /config'); if (abs === backupsDir) throw Error('backup_mirror must differ from backup_folder'); return abs })();
 const auditChain = require('./audit-chain').createAuditChain(root);
 const scopesAllowed = ['read', 'download'];
 const htmlProjectsRoot = path.join(root, 'html-projects');
@@ -2612,7 +2613,7 @@ async function firstRunSeed() {
   if (process.env.HAPI_FIRST_RUN_SEED !== '1') return;
   const marker = path.join(root, '.first-run-done');
   try { await fsp.access(marker); return } catch { /* ENOENT значи „още не е стартиран“ — това е очакваното */ }
-  let init = {}; try { init = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || '/data/options.json', 'utf8')) } catch { /* липсващи опции значат празен обект (първи старт) */ }
+  let init = {}; try { init = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || path.join(paths.LOGICAL_ROOTS.data, 'options.json'), 'utf8')) } catch { /* липсващи опции значат празен обект (първи старт) */ }
   const str = v => typeof v === 'string' ? v.trim() : '';
   const dbName = str(init.db_name);
   const slug = dbName.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'files';

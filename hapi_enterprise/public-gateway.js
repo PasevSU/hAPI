@@ -52,6 +52,8 @@
     schema_version: SCHEMA_VERSION,
     ingress: { port: 8099, stream: true, panel_admin: true, path: '/' },
     public: { port: 8088, published: false, require_https: true, domain: null, base_path: '/p/', relative: false },
+    // Стойностите са СЪЩИТЕ като в `paths.LOGICAL_ROOTS`; файлът е UMD без зависимости,
+    // затова ги пази `tests/storage-roots.cjs`, а не `require`.
     storage: { allowed_roots: ['/share', '/media'] },
     deny: {
       admin_paths: ['/admin', '/admin/api', '/hassio', '/supervisor', '/api/hassio', '/api/services', '/api/states', '/api/config'],

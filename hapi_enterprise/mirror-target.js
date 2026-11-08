@@ -53,7 +53,7 @@ function parseSpec(raw, { root, allowAny = false } = {}) {
     // Само HA-видимите папки: иначе една буквална грешка в настройката може да насочи
     // второто копие към чужда директория. `STORAGE_MIRROR_ANY` е изричен изход за тестове
     // и за нестандартни инсталации.
-    if (!allowAny && !['/share', '/media', '/config', '/data'].some((p) => abs === p || abs.startsWith(p + '/'))) {
+    if (!allowAny && !Object.values(paths.LOGICAL_ROOTS).some((p) => abs === p || abs.startsWith(p + '/'))) {
       throw Error('storage_mirror must be inside /share, /media or /config');
     }
     if (root && (abs === path.resolve(root) || abs === path.join(path.resolve(root), 'files'))) throw Error('storage_mirror must differ from the data directory');

@@ -120,6 +120,9 @@
     verify_sha256: true,
     temp_suffix: '.part',
     evidence: { verification: 'required', overwrite: 'forbidden' },
+    // Стойностите са СЪЩИТЕ като в `hapi_enterprise/paths.js` (`LOGICAL_ROOTS`); файлът е UMD
+    // без зависимости, затова не ги взима с `require` — равенството го пази
+    // `tests/storage-roots.cjs` (промяна в paths.js веднага чупи теста).
     storage: { allowed_roots: ['/data', '/share', '/media'] },
     capabilities: {
       compression: false,

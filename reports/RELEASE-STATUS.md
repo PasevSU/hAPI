@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **389/389** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.208 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 619 файла · 109978 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 614 файла · 109054 реда · critical: 0 · high: 0 · medium: 2 · low: 194 — **има необяснени** · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 619 файла · 110146 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 614 файла · 109222 реда · critical: 0 · high: 0 · medium: 2 · low: 194 — **има необяснени** · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -54,6 +54,16 @@
   машината, резултатът е `<temp>/hapi-storage/<корен>` — никога коренът на диска.
   Пази го `tests/storage-roots.cjs`: статично (нито един друг файл не решава корен сам) и
   динамично (сървър БЕЗ override създава портал и файл и `<диск>:\share` пак не се появява).
+- **Дефинициите стигат и до ИНСТАЛИРАНЕТО.** `start.js` (entrypoint-ът на add-on-а) вече
+  взима данните си от `paths.LOGICAL_ROOTS.data`, а `gateway-api.js`, `layout.js` и
+  `evidence-portal.js` — от `paths.CONFIG_ROOTS` и `paths.LOGICAL_ROOTS.data`; собствената
+  платформена догадка в `evidence-portal` (`win32 ? '' : '/share'`) е заменена с
+  `paths.existingRoot('share')`, който връща път САМО ако папката наистина съществува.
+  Вторите списъци с корени в `server.js` (`['/share','/media','/config','/data']`) и
+  `mirror-target.js` са премахнати; двата UMD файла без зависимости (`export-rules.js`,
+  `public-gateway.js`) пазят литерали, но равенството им с `paths.LOGICAL_ROOTS` се
+  проверява от теста. Ново: `tests/storage-roots.cjs` отказва ВСЕКИ втори плосък списък с
+  корени и иска `CONFIG_ROOTS`/`existingRoot` да идват от `paths.js`.
 - **ГУИ тестовете получават собствен времен корен.** `gui-harness` вече подава
   `STORAGE_ROOT_OVERRIDE` (временна папка) и я издава с `storageRoot()`; `gui-journeys` чисти
   портала на сценария преди създаване вместо да трупа папки. Това беше и причината за

@@ -14,6 +14,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const paths = require('./paths');
 
 // Файловете на пакета. Демо-данните се публикуват в ДВЕ подредби, защото фронтендът ги
 // търси по два начина:
@@ -40,9 +41,9 @@ const SUBPATH_TEXT = 'www/hapi/data';
 // защото само тя се сервира на /local/.
 const SHARE_SUBPATH = path.join('hAPI', 'data', 'portal');
 const SHARE_SUBPATH_TEXT = 'hAPI/data/portal';
-// `/share` е път на Home Assistant (Linux). На Windows `path.resolve('/share')` сочи към
-// диск `D:\share` и тестовете/локалните пускания случайно биха пипали чужд диск, затова
-// там папката се приема само при изрично зададен `EVIDENCE_PORTAL_SHARE`.
+// `/share` е път на Home Assistant — решава се от `paths.js`, не тук. `existingRoot()` връща
+// път САМО ако папката наистина съществува (иначе празен низ), тоест на машина без HA нищо
+// не се създава и не се пипа чужд диск.
 const shareRoot = (env = process.env) => {
   if (env.EVIDENCE_PORTAL_SHARE) return path.resolve(env.EVIDENCE_PORTAL_SHARE);
   // Изрично подаденият `env` е думата на викащия: щом в него няма папка с данни, значи няма
@@ -50,7 +51,7 @@ const shareRoot = (env = process.env) => {
   // и очаква пътя в HA конфигурацията — тоест изборът на оператора се подменяше с платформения
   // (хванато от CI в S20, невидимо на Windows, където `/share` не се ползва).
   if (env && env !== process.env) return '';
-  return process.platform === 'win32' ? '' : '/share';};
+  return paths.existingRoot('share', env);};
 
 const sourceDir = () => path.join(__dirname, 'evidence-portal');
 const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
@@ -59,10 +60,10 @@ const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file))
 function candidateRoots(env = process.env) {
   const roots = [];
   if (env.EVIDENCE_PORTAL_ROOT) roots.push(env.EVIDENCE_PORTAL_ROOT);
-  // `/config` е конфигурацията на HA при standalone/Docker употреба (там HA сервира `www/`
-  // на `/local/`). В add-on обаче `/config` е СОБСТВЕНАТА папка на add-on-а (`app_config`),
-  // а HA конфигурацията е монтирана на `/homeassistant`.
-  roots.push('/config', '/homeassistant');
+  // `/config` и `/homeassistant` са в глобалните дефиниции (`paths.CONFIG_ROOTS`), не тук:
+  // в add-on `/config` е собствената папка на add-on-а (`app_config`), а HA конфигурацията е
+  // монтирана на `/homeassistant`. Кой е истински се решава по `configuration.yaml`.
+  roots.push(...paths.CONFIG_ROOTS);
   return [...new Set(roots)];
 }
 

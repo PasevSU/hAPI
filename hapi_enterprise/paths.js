@@ -42,6 +42,14 @@ const ENV = Object.freeze({
 const TEMP_BASE = 'hapi-storage';
 
 /**
+ * Корените, в които може да живее КОНФИГУРАЦИЯТА на Home Assistant (не хранилището).
+ * В add-on `/config` е собствената папка на add-on-а (`app_config`), а HA конфигурацията е
+ * монтирана на `/homeassistant`; при standalone/Docker е обратното. Затова са списък, а
+ * решението кой е истински се взима по `configuration.yaml` (вж. `evidence-portal.js`).
+ */
+const CONFIG_ROOTS = Object.freeze(['/config', '/homeassistant']);
+
+/**
  * Истина, ако стойността сочи САМО логическия корен (`/share`, `/media`, …) — тоест общата
  * папка, в която портал НЕ бива да пише свои файлове. Празна/липсваща стойност значи
  * „коренът по подразбиране“ (`/share`), затова също е общ корен.
@@ -100,12 +108,40 @@ function resolveStoragePath(storageRoot, slug = '', env = process.env) {
   return path.join(base, ...parts, String(slug || ''));
 }
 
+/**
+ * Реалният път на логически корен, САМО ако той наистина съществува на тази машина.
+ *
+ * За разлика от `resolveRoot()` не подменя с временна папка: когато `/share` липсва, това е
+ * отговорът „тук няма Home Assistant-ско хранилище“ (празен низ), а не нов път за писане.
+ * @param {string} name име на логическия корен
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {string} абсолютен път или `''`
+ */
+function existingRoot(name, env = process.env) {
+  const logical = logicalRoot(name);
+  const override = String(env[ENV.STORAGE_ROOT_OVERRIDE] || '').trim();
+  // С override се гледа САМО неговата папка — тестът не бива да пропада до истинския /share.
+  if (override) {
+    const base = path.resolve(override, name);
+    return fs.existsSync(base) ? base : '';
+  }
+  // Home Assistant живее само на POSIX: `/share` е папка в корена на файловата система. На
+  // Windows същият низ е `D:\share` — папка в корена на ДИСКА, която никой не е поискал.
+  // Затова там „съществуващ корен“ има само при изрично зададен override (или env на
+  // викащия); иначе отговорът е „тук няма такова хранилище“.
+  if (process.platform === 'win32') return '';
+  const base = path.resolve(logical);
+  return fs.existsSync(base) ? base : '';
+}
+
 module.exports = {
   LOGICAL_ROOTS,
+  CONFIG_ROOTS,
   ENV,
   TEMP_BASE,
   isLogicalRoot,
   logicalRoot,
+  existingRoot,
   resolveRoot,
   resolveStoragePath,
 };

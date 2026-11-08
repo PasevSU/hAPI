@@ -88,6 +88,13 @@
   `helpers.cjs` и себе си. Ако папката е нужна на диска — `path.join(storage.share, …)`.
   Изключение по същност: `isLogicalRoot('')` е `true` (празно = коренът по подразбиране),
   тоест портал без собствена папка НЕ получава `portal.html`.
+- **И инсталирането чете същите дефиниции.** `start.js` взима данните от
+  `paths.LOGICAL_ROOTS.data`, `gateway-api.js`/`layout.js`/`evidence-portal.js` — от
+  `paths.CONFIG_ROOTS` (HA конфигурацията е `/config` при standalone, `/homeassistant` в
+  add-on), а `evidence-portal` ползва `paths.existingRoot('share')` — път само ако папката
+  съществува. Втори плосък списък с корени се отказва от `tests/storage-roots.cjs` §2б;
+  UMD файловете без зависимости (`export-rules.js`, `public-gateway.js`) пазят литерали,
+  но равенството им с глобалния списък се проверява.
 - **`aria-controls` само в разгънато състояние.** Сгънатият блок не носи препратка, защото
   тялото му не е в документа (`tests/ui-block-aria.cjs`).
 - **Езиковият дълг има таван.** `tests/ui-i18n-ratchet.cjs` мери българските стрингове по

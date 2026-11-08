@@ -1,10 +1,10 @@
 {
   "generatedFor": "hapi_enterprise",
-  "total": 408,
-  "tested": 385,
+  "total": 410,
+  "tested": 387,
   "untested": 23,
-  "fnTotal": 362,
-  "fnTested": 362,
+  "fnTotal": 363,
+  "fnTested": 363,
   "modules": [
     {
       "module": "hapi_enterprise/api-registry.js",
@@ -895,8 +895,18 @@
       "module": "hapi_enterprise/paths.js",
       "functions": [
         {
+          "name": "CONFIG_ROOTS",
+          "kind": "константа",
+          "tested": true
+        },
+        {
           "name": "ENV",
           "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "existingRoot",
+          "kind": "функция",
           "tested": true
         },
         {

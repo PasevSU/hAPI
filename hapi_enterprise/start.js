@@ -18,12 +18,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const storagePreflight = require('./storage-preflight');
+const paths = require('./paths');
 // Само чистата функция за формата на токена; нищо не се записва и не се валидира с нея.
 const { tokenShape } = require('./runtime-config');
 
-// Supervisor монтира личните данни на add-on-а в /data. HAPI_ADDON_DATA_DIR е
-// само за тестове/локален старт — в add-on-а винаги е /data.
-const ADDON_DATA_DIR = process.env.HAPI_ADDON_DATA_DIR || '/data';
+// Supervisor монтира личните данни на add-on-а в `/data` — същата стойност като в
+// `paths.LOGICAL_ROOTS.data`. `HAPI_ADDON_DATA_DIR` е само за тестове/локален старт.
+const ADDON_DATA_DIR = process.env.HAPI_ADDON_DATA_DIR || paths.LOGICAL_ROOTS.data;
 const OPTIONS_PATH = process.env.OPTIONS_PATH || path.join(ADDON_DATA_DIR, 'options.json');
 const SERVER = path.join(__dirname, 'server.js');
 const PLACEHOLDER_TOKEN = 'CHANGE_TO_RANDOM_SECRET_AT_LEAST_24_CHARACTERS';

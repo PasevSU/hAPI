@@ -46,6 +46,8 @@ async function main() {
     'логическите корени трябва да са точно тези четири',
   );
   assert.equal(Object.isFrozen(paths.LOGICAL_ROOTS), true, 'LOGICAL_ROOTS е замразен — никой не го предефинира по време на работа');
+  assert.deepEqual([...paths.CONFIG_ROOTS], ['/config', '/homeassistant'], 'корените на HA конфигурацията са в paths.js, не по модулите');
+  assert.equal(Object.isFrozen(paths.CONFIG_ROOTS), true, 'CONFIG_ROOTS е замразен');
   for (const name of ['STORAGE_ROOT_OVERRIDE', 'DATA_DIR', 'STORAGE_LOCATION', 'STORAGE_SUBDIRECTORY']) {
     assert.equal(Object.values(paths.ENV).includes(name), true, 'липсва име на променлива: ' + name);
   }
@@ -64,6 +66,51 @@ async function main() {
       }
     }
     assert.deepEqual(offenders, [], 'тези файлове решават логически корен сами, а не през paths.js: ' + offenders.join(', '));
+  }
+
+  // ── 2б. Няма ВТОРИ списък с логически корени ─────────────────────────────
+  // Дублиран списък се разминава тихо, когато `paths.js` се промени. Файловете, които са
+  // UMD (работят и в браузъра) и не могат да `require`-нат `paths.js`, са изрично изброени —
+  // за тях проверката е РАВЕНСТВО на стойностите, а не липса на литерали.
+  {
+    const umdWithPolicyList = {
+      'export-rules.js': ['/data', '/share', '/media'],
+      'public-gateway.js': ['/share', '/media'],
+    };
+    const literals = Object.values(paths.LOGICAL_ROOTS);
+    /** Всички масиви в кода, които изреждат поне два логически корена. */
+    const rootLists = (code) => [...code.matchAll(/\[([^[\]]*)\]/g)]
+      .map((m) => m[1])
+      // Само ПЛОСКИ списъци от низове (или разпръснат `...`): масив от обекти с поле
+      // `storage_root` е данни, не втори списък с корени.
+      .filter((t) => t.split(',').every((part) => /^\s*'\/(?:share|media|config|data)'\s*$/.test(part) || /^\s*\.\.\./.test(part)))
+      .filter((t) => (t.match(/'\/(?:share|media|config|data)'/g) || []).length >= 2)
+      .map((t) => [...new Set([...t.matchAll(/'(\/(?:share|media|config|data))'/g)].map((m) => m[1]))].sort());
+
+    const offenders = [];
+    for (const dir of ['hapi_enterprise', 'hapi_enterprise/routes']) {
+      for (const file of fs.readdirSync(path.join(root, dir)).filter((f) => f.endsWith('.js'))) {
+        if (file === 'paths.js') continue;
+        const lists = rootLists(stripCode(fs.readFileSync(path.join(root, dir, file), 'utf8')));
+        if (!lists.length) continue;
+        const expected = umdWithPolicyList[file];
+        if (!expected) { offenders.push(dir + '/' + file); continue; }
+        for (const found of lists) {
+          assert.deepEqual(found, [...expected].sort(), file + ': литералите се разминават с paths.LOGICAL_ROOTS: ' + found.join(', '));
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], 'тези файлове държат ВТОРИ списък с логически корени: ' + offenders.join(', '));
+
+    // ГУИ-ят не строи host пътища, а само предлага стойности — но и те не бива да се разминават.
+    for (const file of fs.readdirSync(path.join(root, 'hapi_enterprise/ui')).filter((f) => f.endsWith('.js'))) {
+      for (const found of rootLists(stripCode(fs.readFileSync(path.join(root, 'hapi_enterprise/ui', file), 'utf8')))) {
+        for (const value of found) assert.equal(literals.includes(value), true, file + ': „' + value + '“ не е логически корен от paths.js');
+        for (const value of [paths.LOGICAL_ROOTS.share, paths.LOGICAL_ROOTS.media]) {
+          assert.equal(found.includes(value), true, file + ': списъкът в интерфейса пропуска ' + value);
+        }
+      }
+    }
   }
 
   // ── 3. Решаването не излиза в корена на диска ────────────────────────────
@@ -211,6 +258,69 @@ async function main() {
       false,
       'gui-journeys строи пътя през server.storageRoot(), не през /share',
     );
+  }
+
+  // ── 5б. ИНСТАЛИРАНЕТО също чете глобалните дефиниции ────────────────────
+  // `/data` (данните на add-on-а) и `/config` (app_config) се срещат в entrypoint-а и в
+  // правилата за gateway-я — там също не бива да има втори литерал.
+  {
+    const start = stripCode(read('hapi_enterprise/start.js'));
+    assert.match(start, /require\('\.\/paths'\)/, 'start.js ползва paths.js');
+    assert.equal(
+      /HAPI_ADDON_DATA_DIR \|\| '\//.test(start),
+      false,
+      'start.js не бива да твърди /data сам — ползва paths.LOGICAL_ROOTS.data',
+    );
+    assert.match(start, /paths\.LOGICAL_ROOTS\.data/, 'entrypoint-ът взима данните на add-on-а от paths.js');
+    for (const file of ['gateway-api.js', 'layout.js', 'evidence-portal.js', 'start.js']) {
+      assert.match(read('hapi_enterprise/' + file), /require\('\.\/paths'\)/, file + ' ползва paths.js');
+    }
+    const evidence = stripCode(read('hapi_enterprise/evidence-portal.js'));
+    assert.equal(
+      /platform === 'win32' \? '' : '\/share'/.test(evidence),
+      false,
+      'evidence-portal не гадае по платформа — пита paths.existingRoot(…)',
+    );
+    assert.match(evidence, /paths\.existingRoot\('share'/, 'evidence-portal ползва paths.existingRoot');
+    assert.match(evidence, /paths\.CONFIG_ROOTS/, 'evidence-portal ползва paths.CONFIG_ROOTS');
+  }
+
+  // ── 5в. existingRoot: път само когато папката НАИСТИНА съществува ────────
+  {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-roots-existing-'));
+    try {
+      assert.equal(paths.existingRoot('share', { STORAGE_ROOT_OVERRIDE: tmp }), '', 'липсваща папка → празен низ, не нов път');
+      fs.mkdirSync(path.join(tmp, 'share'), { recursive: true });
+      assert.equal(paths.existingRoot('share', { STORAGE_ROOT_OVERRIDE: tmp }), path.join(tmp, 'share'), 'съществуваща → пътя');
+      assert.equal(paths.existingRoot('media', { STORAGE_ROOT_OVERRIDE: tmp }), '', '/media не се подменя с /share');
+      assert.throws(() => paths.existingRoot('nope', {}), /Unknown storage location/, 'непознат корен е грешка');
+      if (process.platform === 'win32') {
+        // Windows няма Home Assistant: `/share` там е `D:\share`. Без override отговорът е
+        // „няма такова хранилище“, дори папката да е останала от предишен тест.
+        assert.equal(paths.existingRoot('share', {}), '', 'на Windows без override няма /share');
+        assert.equal(paths.existingRoot('config', {}), '', 'на Windows без override няма /config');
+      }
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  // ── 5г. Preflight-ът (инсталирането) не създава хранилище на чуждо място ─
+  {
+    const preflight = require('../hapi_enterprise/storage-preflight.js');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-roots-preflight-'));
+    try {
+      // Без override и без логически корен на машината → отказ, а не „ще си направя“.
+      if (process.platform === 'win32') {
+        assert.throws(() => preflight.check({}, {}), /Storage root is not available/, 'липсващ корен е отказ, не mkdir');
+      }
+      // С override и съществуваща папка → минава и връща базата под нея.
+      fs.mkdirSync(path.join(tmp, 'share'), { recursive: true });
+      const base = preflight.check({}, { STORAGE_ROOT_OVERRIDE: tmp });
+      assert.equal(base, path.join(tmp, 'share', 'hapi', 'data'), 'preflight връща <override>/share/hapi/data');
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   }
 
   // ── 6. Правилото важи за ЦЕЛИЯ проект, не само за `hapi_enterprise/` ────

@@ -11,6 +11,7 @@
 const path = require('node:path');
 const fsp = require('node:fs/promises');
 const fs = require('node:fs');
+const paths = require('./paths');
 
 // Проверявани адреси и какво точно сервират — за да не се гадае.
 const ROUTES = [
@@ -35,7 +36,7 @@ function entries(ctx) {
     filesRoot: String(c.filesRoot || ''),
     internalRoot: String(c.internalRoot || ''),
     apiRoot: String(c.apiRoot || ''),
-    configDir: String(c.configDir || '/config'),
+      configDir: String(c.configDir || paths.CONFIG_ROOTS[0]),
   };
   return [
     {

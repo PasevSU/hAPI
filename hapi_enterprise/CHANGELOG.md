@@ -24,6 +24,16 @@
   машината, резултатът е `<temp>/hapi-storage/<корен>` — никога коренът на диска.
   Пази го `tests/storage-roots.cjs`: статично (нито един друг файл не решава корен сам) и
   динамично (сървър БЕЗ override създава портал и файл и `<диск>:\share` пак не се появява).
+- **Дефинициите стигат и до ИНСТАЛИРАНЕТО.** `start.js` (entrypoint-ът на add-on-а) вече
+  взима данните си от `paths.LOGICAL_ROOTS.data`, а `gateway-api.js`, `layout.js` и
+  `evidence-portal.js` — от `paths.CONFIG_ROOTS` и `paths.LOGICAL_ROOTS.data`; собствената
+  платформена догадка в `evidence-portal` (`win32 ? '' : '/share'`) е заменена с
+  `paths.existingRoot('share')`, който връща път САМО ако папката наистина съществува.
+  Вторите списъци с корени в `server.js` (`['/share','/media','/config','/data']`) и
+  `mirror-target.js` са премахнати; двата UMD файла без зависимости (`export-rules.js`,
+  `public-gateway.js`) пазят литерали, но равенството им с `paths.LOGICAL_ROOTS` се
+  проверява от теста. Ново: `tests/storage-roots.cjs` отказва ВСЕКИ втори плосък списък с
+  корени и иска `CONFIG_ROOTS`/`existingRoot` да идват от `paths.js`.
 - **ГУИ тестовете получават собствен времен корен.** `gui-harness` вече подава
   `STORAGE_ROOT_OVERRIDE` (временна папка) и я издава с `storageRoot()`; `gui-journeys` чисти
   портала на сценария преди създаване вместо да трупа папки. Това беше и причината за
