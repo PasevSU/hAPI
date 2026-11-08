@@ -1,0 +1,9 @@
+configuration:
+  github_username:
+    name: Потребителско име в GitHub
+    description: >-
+      GitHub акаунтът, който публикува точния публичен SSH ключ. За този build се приема само PasevSU.
+  github_ssh_fingerprint:
+    name: SSH SHA256 fingerprint
+    description: >-
+      SHA256 fingerprint на предоставения личен SSH RSA ключ. Административните инструменти остават заключени до проверка на подпис.
