@@ -41,7 +41,7 @@ COPY ui /app/ui/
 # HTTP компонентите (routes/*.js): всеки поема свой дял от API-то, за да не расте
 # `server.js` като монолит. Без този ред сървърът не стартира (MODULE_NOT_FOUND).
 COPY routes /app/routes/
-# Незадължителен offline Guardian, включен в стандартния образ; без npm install.
+# Незадължителен offline Guardian, включен в стандартния образ; без допълнителни пакетни зависимости.
 COPY guardian /app/guardian/
 # Evidence View порталът (QR): копира се в <HA config>/www/hapi/data при старт.
 COPY evidence-portal /app/evidence-portal/
