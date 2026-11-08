@@ -1,8 +1,8 @@
 # Защо обновяването не стига до Home Assistant — одит на пътя на изданието
 
 > Проверено на 2026-11-08 срещу живата инстанция `192.168.50.4` (Home Assistant 2026.11.0)
-> и срещу GitHub/GHCR за издание **0.69.197**. Всяко твърдение по-долу е измерено с
-> команда; където не е — е казано изрично.
+> и срещу GitHub/GHCR — първо за издание **0.69.197**, после повторно за **0.69.200**
+> (§3.2). Всяко твърдение по-долу е измерено с команда; където не е — е казано изрично.
 
 ## 1. Изводът в едно изречение
 
@@ -48,6 +48,25 @@ add-on се „обновява“ само ако някой подмени ф�
 в паметта работи старата версия. Add-on-ът **не е пипан**: преименуването на локалните папки
 (§5.1, стъпка 3) се прави, след като add-on-ът е инсталиран от хранилището, иначе той изчезва
 от store-а без замяна.
+
+### 3.2 Повторен одит при 0.69.200 (измерено)
+
+| Проверка | Команда | Резултат |
+| --- | --- | --- |
+| Изданието е публично | `gh release view v0.69.200` | non-draft, non-prerelease, **6 артефакта** |
+| Артефактите съвпадат | `gh release download` + `Get-FileHash` | **5/5 OK** (tar.gz, integration.zip, gui.zip, RELEASE.json, repository.yaml) |
+| Образи за трите архитектури | `ghcr.io/v2/pasevsu/{arch}-addon-hapi_enterprise/manifests/0.69.200` (анонимен токен) | **200** за `amd64`, `aarch64`, `armv7` |
+| Workflow-и по тага | `gh run list` / `gh run view` | Release **success** · Add-on image **success** (3/3 работни места) · CI · CodeQL · HACS validation — **success** |
+| HACS хранилище | `gh release view v0.69.200 -R PasevSU/hapi-enterprise-integration` | release non-draft; `Release` + 2× `Validate` — **success** |
+| Интеграция на инстанцията | `pwsh -File scripts/apply-update.ps1 -Mode Integration -Execute` | **26/26 файла байт по байт**; `manifest.json` = `0.69.200` |
+| Add-on на инстанцията | `robocopy /MIR` + `ha store reload` + `ha apps update` | `version: 0.69.200`, `state: started`; контейнерът работи с `ghcr.io/pasevsu/aarch64-addon-hapi_enterprise:0.69.200` |
+| Живо съдържание на UI | `GET :8098/ui/files-manager.js` отвътре в контейнера | HTTP 200; `data-qr-portal` ×2, `pf-qr-pop-link` ×1; в `/ui/portal-control.js` — **0** срещания на `data-block="link"` |
+| PGP ключохранилище | `GET :8098/admin/api/pgp/keyring` | `available=true canDecrypt=true keys=1` |
+| Политика на съхранение | `ha apps logs` → `server startup` | `dataDir=/share/hAPI/data` |
+
+Изводът от §3 не се променя: **автоматично обновяване няма**, докато хранилището не се
+добави в store-а (§5.1). Разликата спрямо първия одит е, че инстанцията вече е **на
+последната версия** — измерено отвътре в контейнера, не само по файлове на диска.
 
 ## 4. Защо HACS не е решението за add-on-а
 
@@ -97,10 +116,10 @@ Supervisor, който чете или add-on хранилище (`repository.ya
 
 | Проверка | Очакван резултат |
 | --- | --- |
-| Settings → Add-ons → hAPI Enterprise | версия **0.69.197** (или по-нова), бутон **Обнови** при ново издание |
-| `X:\custom_components\hapi_enterprise\manifest.json` | `"version": "0.69.197"` |
+| Settings → Add-ons → hAPI Enterprise | версия **0.69.200** (или по-нова), бутон **Обнови** при ново издание |
+| `X:\custom_components\hapi_enterprise\manifest.json` | `"version": "0.69.200"` |
 | Developer Tools → States → `update.hapi_enterprise_update` | `installed_version` = `latest_version` |
-| HACS → hAPI Enterprise (ако се ползва HACS) | „Installed: 0.69.197“, без червено предупреждение |
+| HACS → hAPI Enterprise (ако се ползва HACS) | „Installed: 0.69.200“, без червено предупреждение |
 
 ## 7. Скриптът
 
