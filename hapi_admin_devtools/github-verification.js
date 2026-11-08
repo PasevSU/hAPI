@@ -12,7 +12,7 @@ function getCommit(sha,{timeoutMs=DEFINITIONS.limits.githubCommitTimeoutMs}={}){
         'x-github-api-version':DEFINITIONS.github.apiVersion}},res=>{
       if(res.statusCode!==200){res.resume();return reject(Error('GITHUB_COMMIT_HTTP_'+res.statusCode));}
       const chunks=[];let bytes=0;
-      res.on('data',chunk=>{bytes+=chunk.length;if(bytes>DEFINITIONS.limits.githubCommitBytes{req.destroy(Error('GITHUB_COMMIT_TOO_LARGE'));return;}chunks.push(chunk);});
+      res.on('data',chunk=>{bytes+=chunk.length;if(bytes>DEFINITIONS.limits.githubCommitBytes){req.destroy(Error('GITHUB_COMMIT_TOO_LARGE'));return;}chunks.push(chunk);});
       res.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')))}catch{reject(Error('GITHUB_COMMIT_INVALID_JSON'));}});
     });
     req.on('timeout',()=>req.destroy(Error('GITHUB_COMMIT_TIMEOUT')));
