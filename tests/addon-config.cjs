@@ -122,6 +122,16 @@ for (const key of ['storage_location', 'storage_subdirectory', 'storage_mode', '
 assert.match(cfg, /storage_location: "list\(addon_config\|media\|share\)"/, 'storage_location трябва да е списък');
 assert.match(cfg, /storage_mode: "list\(local\|ha_network\)"/, 'storage_mode трябва да е списък');
 
+// ── Криптирането е ИЗКЛЮЧЕНО по подразбиране (0.69.204) ────────────────────
+// Свежа инсталация няма ключ. Ако `pgp_encrypt_*` тръгне включено, първото писане на път
+// или на работна папка пада с `PGP_SECRET_KEY_REQUIRED` (измерено на инстанцията: DEF-46),
+// тоест add-on-ът изглежда счупен, без човек да е поискал криптиране. Включването е
+// съзнателно решение СЛЕД като ключът е сложен и проверен, че може да криптира.
+for (const key of ['pgp_encrypt_paths', 'pgp_encrypt_workdir']) {
+  assert.ok(options.includes(key), 'липсва add-on опция ' + key);
+  assert.equal(optionDefaults[key], 'false', key + ' трябва да е изключено по подразбиране, а е ' + optionDefaults[key]);
+}
+
 // WAL SQLite must never be captured by a hot Supervisor backup, and stop must be graceful.
 assert.match(cfg, /^backup: cold$/m, 'backup трябва да е cold (SQLite WAL)');
 assert.match(cfg, /^timeout: 30$/m, 'timeout трябва да дава време за затваряне на SQLite');

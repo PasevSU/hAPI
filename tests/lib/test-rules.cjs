@@ -200,6 +200,7 @@ const RULES = [
   { id: "package-encryption", area: "пакети", title: "Package encryption", owner: "tests/package-encryption.cjs" },
   { id: "package-scripts", area: "пакети", title: "Package scripts", owner: "tests/package-scripts.cjs" },
   { id: "package-split", area: "пакети", title: "Package split", owner: "tests/package-split.cjs" },
+  { id: "packaged-docs", area: "общо", title: "Packaged docs", owner: "tests/packaged-docs.cjs" },
   { id: "packager", area: "общо", title: "Packager", owner: "tests/packager.cjs" },
   { id: "pagination", area: "общо", title: "Pagination", owner: "tests/pagination.cjs" },
   { id: "panel-framing", area: "общо", title: "Panel framing", owner: "tests/panel-framing.cjs" },

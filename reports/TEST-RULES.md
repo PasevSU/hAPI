@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 382 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 383 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 176 |
+| общо | 177 |
 | портал | 35 |
 | GUI | 24 |
 | Home Assistant | 17 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (176)
+## общо (177)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -150,6 +150,7 @@
 | `office-processing` | Office processing | `tests/office-processing.cjs` |
 | `oidc-login` | Oidc login | `tests/oidc-login.cjs` |
 | `openapi-admin` | Openapi admin | `tests/openapi-admin.cjs` |
+| `packaged-docs` | Packaged docs | `tests/packaged-docs.cjs` |
 | `packager` | Packager | `tests/packager.cjs` |
 | `pagination` | Pagination | `tests/pagination.cjs` |
 | `panel-framing` | Panel framing | `tests/panel-framing.cjs` |
