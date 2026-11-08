@@ -3,7 +3,7 @@ configuration:
     name: GitHub username
     description: >-
       GitHub account that publishes the exact pinned public SSH key. Only PasevSU is accepted by this build.
-  github_ssh_fingerprint:
-    name: SSH SHA256 fingerprint
+  openpgp_fingerprint:
+    name: OpenPGP fingerprint
     description: >-
-      SHA256 fingerprint of the provided personal SSH RSA public key. Administrative tools remain locked until signed proof is verified.
+      Full OpenPGP fingerprint of the GitHub-registered signing key. A detached OpenPGP signature of a one-time challenge is required.
