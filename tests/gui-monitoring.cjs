@@ -181,10 +181,19 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     assert.equal(d2.open, false, 'след затваряне не остава отворен блок');
     assert.equal(d1.open, false, 'и първият не се отваря сам');
 
-    // Потокът: адресът е същият административен маршрут, а събитието се вижда на екрана.
+    // Потокът: адресът е същият административен маршрут, но носи ЕДНОКРАТЕН БИЛЕТ, а не
+    // администраторския токен (0.69.206: токен в адрес влиза в история, Referer и логове).
+    await waitFor(() => live.instances.length === 1, { label: 'потокът да се отвори', timeout: BUDGET });
     assert.equal(live.instances.length, 1, 'страницата отваря ТОЧНО един поток: ' + live.instances.length);
     const source = live.instances[0];
-    assert.match(source.url, /\/admin\/api\/events\/stream\?token=/, 'потокът е към административния маршрут: ' + source.url);
+    assert.match(
+      source.url,
+      /\/admin\/api\/events\/stream\?ticket=[0-9a-f]{32,}/,
+      'потокът е към административния маршрут и носи билет: ' + source.url,
+    );
+    const adminToken = app.window.sessionStorage.getItem('hapiAdminToken');
+    assert.ok(adminToken, 'сесията има токен — иначе проверката по-долу е празна');
+    assert.equal(source.url.includes(adminToken), false, 'администраторският токен НЕ влиза в адреса на потока: ' + source.url);
     assert.equal(source.closed, false, 'потокът е отворен, докато панелът е на екрана');
     const liveBox = app.$('#mon-live');
     assert.match(text(liveBox), /Още нищо не е станало/, 'преди събитие секцията казва, че е празна');

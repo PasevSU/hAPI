@@ -154,15 +154,15 @@
 }
 
 .btn-sm {
-  padding: 4px 8px;
+  padding: var(--sp-2) var(--sp-4);
   font-size: var(--fs-11-5);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
   width: var(--w-100);
 }
 
@@ -182,7 +182,7 @@
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 7px;
-  padding: 6px 8px;
+  padding: var(--sp-3) var(--sp-4);
   font: inherit;
   font-size: var(--fs-12-5);
 }
@@ -203,7 +203,7 @@ table.grid {
 table.grid th,
 table.grid td {
   text-align: left;
-  padding: 8px 10px;
+  padding: var(--sp-4) var(--sp-5);
   border-bottom: 1px solid var(--line);
 }
 
@@ -222,11 +222,11 @@ table.grid tr:last-child td {
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
+  gap: var(--sp-5);
 }
 
 .stat {
-  padding: 12px;
+  padding: var(--sp-6);
   border-radius: 9px;
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -247,13 +247,13 @@ table.grid tr:last-child td {
 
 /* Помощни класове (вместо inline style — строг CSP без 'unsafe-inline'). */
 .u-mt {
-  margin-top: 12px;
+  margin-top: var(--sp-6);
 }
 
 /* Отметка до текст на един ред (в решетъчен ред не се пренася на два реда). */
 .hint.row-check {
   display: flex;
-  gap: 6px;
+  gap: var(--sp-3);
   align-items: center;
   white-space: nowrap;
 }
@@ -277,7 +277,7 @@ input[type="radio"] {
 .pv-note {
   font-size: 68%;
   color: #98a2b3;
-  margin-top: 2px;
+  margin-top: var(--sp-1);
 }
 
 .pv-hr {
@@ -295,7 +295,7 @@ input[type="radio"] {
 .two-col {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: var(--sp-5);
   align-items: start;
 }
 
@@ -329,10 +329,10 @@ input[type="radio"] {
 
 .json-view {
   margin: 10px 0 0;
-  padding: 10px;
+  padding: var(--sp-5);
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
   font-size: var(--fs-11);
   color: var(--muted);
@@ -351,14 +351,14 @@ input[type="radio"] {
 .vs-tree ul {
   list-style: none;
   margin: 2px 0 2px 14px;
-  padding-left: 10px;
+  padding-left: var(--sp-5);
   border-left: 1px dashed var(--line-strong);
 }
 
 .vs-tree .vs-folder>small {
   color: var(--muted);
   font-size: 88%;
-  margin-left: 6px;
+  margin-left: var(--sp-3);
 }
 
 .vs-tree .vs-file {
@@ -369,22 +369,22 @@ input[type="radio"] {
 .vs-tree .vs-file code {
   color: var(--accent);
   font-size: 88%;
-  margin-left: 6px;
+  margin-left: var(--sp-3);
 }
 
 /* ---------- Report Studio ---------- */
 .rs-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-4);
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  margin-bottom: var(--sp-5);
 }
 
 .rs-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: var(--sp-5);
   align-items: start;
 }
 
@@ -405,14 +405,14 @@ input[type="radio"] {
 .rs-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-5);
   min-width: 0;
 }
 
 .tabs {
   display: flex;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
   border-bottom: 1px solid var(--line);
   flex-wrap: wrap;
 }
@@ -422,7 +422,7 @@ input[type="radio"] {
   border: 1px solid transparent;
   border-radius: 999px;
   color: var(--muted);
-  padding: 4px 10px;
+  padding: var(--sp-2) var(--sp-5);
   font: inherit;
   font-size: var(--fs-11-5);
   cursor: pointer;
@@ -434,10 +434,10 @@ input[type="radio"] {
 }
 
 .lib-list {
-  padding: 8px;
+  padding: var(--sp-4);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--sp-2);
 }
 
 .lib-item {
@@ -487,18 +487,18 @@ input[type="radio"] {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--sp-2);
   font-size: var(--fs-12-5);
 }
 
 .col-list li {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .col-list li span {
@@ -530,14 +530,14 @@ input[type="radio"] {
 .checks {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-3);
   font-size: var(--fs-12-5);
 }
 
 .checks label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
 }
 
 .checks input {
@@ -547,8 +547,8 @@ input[type="radio"] {
 .tree {
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  padding: var(--sp-5) var(--sp-6);
   margin: 8px 0 0;
   font-family: ui-monospace, Consolas, 'Courier New', monospace;
   font-size: var(--fs-11-5);
@@ -596,8 +596,8 @@ input[type="radio"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 6px 8px;
+  gap: var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--bg-2);
@@ -607,7 +607,7 @@ input[type="radio"] {
 .grid-2 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 8px;
+  gap: var(--sp-4);
 }
 
 /* Дългите пътища/URL/хешове се пренасят, за да няма хоризонтален скрол. */
@@ -628,7 +628,7 @@ input[type="radio"] {
 
 .err-list {
   margin: 8px 0 0;
-  padding-left: 18px;
+  padding-left: var(--sp-9);
   color: var(--red);
   font-size: var(--fs-12);
 }
@@ -639,11 +639,11 @@ input[type="radio"] {
 }
 
 .u-ml {
-  margin-left: 8px;
+  margin-left: var(--sp-4);
 }
 
 .u-mb {
-  margin-bottom: 12px;
+  margin-bottom: var(--sp-6);
 }
 
 /* Портали & файлове (единен панел с акордеони) */
@@ -657,7 +657,7 @@ input[type="radio"] {
 
 .pf-detail>td {
   background: var(--bg-2);
-  padding: 12px;
+  padding: var(--sp-6);
 }
 
 .pf-panel h4 {
@@ -668,14 +668,14 @@ input[type="radio"] {
 
 /* Заглавие след блок (напр. „Файлове на портала“ след папките) — отделя се. */
 .pf-panel h4.u-mt {
-  margin-top: 14px;
+  margin-top: var(--sp-7);
 }
 
 /* ── Отворен портал: ТРИ САМОСТОЯТЕЛНИ контейнера (всеки със собствена рамка) ──
    1. контролен панел · 2. папки на портала · 3. файлове в портала            */
 .pf-panels {
   display: grid;
-  gap: 10px;
+  gap: var(--sp-5);
   width: var(--w-100);
   min-width: 0;
 }
@@ -684,7 +684,7 @@ input[type="radio"] {
   width: var(--w-100);
   min-width: 0;
   border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--panel-2);
   padding: 10px 1.2%;
 }
@@ -714,14 +714,14 @@ input[type="radio"] {
 }
 
 .pf-block-body {
-  padding-top: 8px;
+  padding-top: var(--sp-4);
 }
 
 /* Сгъваем блок: заглавието е бутон с шеврон, а тялото се показва само когато е отворен. */
 .pf-block-tog {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
   width: var(--w-100);
   padding: 0;
   border: 0;
@@ -745,7 +745,7 @@ input[type="radio"] {
 
 .pf-form {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   width: var(--w-100);
   padding: 12px 1.2%;
   background: var(--bg-2);
@@ -754,7 +754,7 @@ input[type="radio"] {
 .pf-qr {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-5);
 }
 
 /* ── Достъп и QR код (първи блок на портала, винаги отворен) ──────────────────
@@ -765,7 +765,7 @@ input[type="radio"] {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 14px;
+  gap: var(--sp-7);
 }
 
 /* QR кодът е НАЙ-ВДЯСНО в блока (`margin-inline-start: auto` го притиска), защото е
@@ -777,7 +777,7 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
   border-radius: 12px;
 }
 
@@ -798,8 +798,8 @@ input[type="radio"] {
   max-width: 176px;
   height: auto;
   background: #fff;
-  padding: 8px;
-  border-radius: 10px;
+  padding: var(--sp-4);
+  border-radius: var(--radius);
 }
 
 .pf-link-side {
@@ -809,7 +809,7 @@ input[type="radio"] {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--sp-4);
 }
 
 /* ВСИЧКИ действия са в ЕДНА лента (flex), а не в решетки с фиксирани колони: така
@@ -819,7 +819,7 @@ input[type="radio"] {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-3);
   width: var(--w-100);
 }
 
@@ -827,7 +827,7 @@ input[type="radio"] {
   flex: 0 0 auto;
   min-height: 30px;
   padding: 0 10px;
-  gap: 6px;
+  gap: var(--sp-3);
   font-size: var(--fs-11-5);
   white-space: nowrap;
 }
@@ -893,7 +893,7 @@ input[type="radio"] {
 .pf-link-state {
   flex: 0 0 auto;
   font-size: var(--fs-10-5);
-  padding: 2px 8px;
+  padding: var(--sp-1) var(--sp-4);
   border-radius: 999px;
   border: 1px solid var(--line-strong);
   color: var(--muted);

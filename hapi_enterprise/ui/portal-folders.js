@@ -153,7 +153,7 @@
     return `
       <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="folders">
         <div class="pf-block-head">
-          <h5><button type="button" class="link-btn pf-block-tog" data-pf-folders-tog aria-expanded="${open}" title="${open ? 'Сгъни' : 'Разгъни'
+          <h5><button type="button" class="link-btn pf-block-tog" data-pf-folders-tog aria-expanded="${open}" ${open ? 'aria-controls="pf-folders-body"' : ''} title="${open ? 'Сгъни' : 'Разгъни'
       } папките на портала">${ico(open ? 'chevronDown' : 'chevronRight')} ${ico('folder')} Папки на портала</button></h5>
           ${open ? `<span class="fm-ico-actions">
             <button type="button" class="fm-ico-btn" data-import-folder title="Прикачи папка с файлове в ${esc(
@@ -166,7 +166,7 @@
         }</button>
           </span>` : ''}
         </div>
-        ${open ? `<div class="pf-block-body">
+        ${open ? `<div class="pf-block-body" id="pf-folders-body">
           <p class="hint">${status}</p>
           ${state.newFolder
           ? `<form class="pf-form u-mb" id="fm-new-folder-form">

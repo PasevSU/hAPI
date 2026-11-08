@@ -157,7 +157,7 @@
     return `
       <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="files">
         <div class="pf-block-head">
-          <h5><button type="button" class="link-btn pf-block-tog" data-pf-files-tog aria-expanded="${open}" title="${open ? 'Сгъни' : 'Разгъни'
+          <h5><button type="button" class="link-btn pf-block-tog" data-pf-files-tog aria-expanded="${open}" ${open ? 'aria-controls="pf-files-body"' : ''} title="${open ? 'Сгъни' : 'Разгъни'
       } файловете на портала">${ico(open ? 'chevronDown' : 'chevronRight')} ${ico('file')} Файлове в портала (${scoped.length}) · <code>${esc(treePath(scope))}</code></button></h5>
           ${open ? `<span class="fm-ico-actions">
             <button type="button" class="fm-ico-btn" data-import-folder title="Прикачи папка с файлове в ${esc(
@@ -170,7 +170,7 @@
         }" title="Панел филтри">${ICON.filters}</button>
           </span>` : ''}
         </div>
-        ${open ? `<div class="pf-block-body">
+        ${open ? `<div class="pf-block-body" id="pf-files-body">
           ${state.filters
           ? `<div class="fm-toolbar">
             <input id="fm-search" placeholder="Търси по име или тема" value="${esc(state.query)}" />

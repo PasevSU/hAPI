@@ -17,13 +17,13 @@
     return `
       <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="control">
         <div class="pf-block-head">
-          <h5><button type="button" class="link-btn pf-block-tog" data-pf-control-tog aria-expanded="${open}" title="${open ? 'Сгъни' : 'Разгъни'
+          <h5><button type="button" class="link-btn pf-block-tog" data-pf-control-tog aria-expanded="${open}" ${open ? 'aria-controls="pf-control-body"' : ''} title="${open ? 'Сгъни' : 'Разгъни'
       } контролния панел">${ico(open ? 'chevronDown' : 'chevronRight')} Контролен панел на портала: ${esc(
         p.title,
       )}</button></h5>
         </div>
         ${open
-        ? `<div class="pf-block-body">
+        ? `<div class="pf-block-body" id="pf-control-body">
           <div class="two-col">
             <form id="pf-settings">
               <div class="field"><label>Заглавие</label><input name="title" value="${esc(p.title)}" maxlength="160" /></div>

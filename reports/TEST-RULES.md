@@ -3,13 +3,13 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 384 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 387 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 177 |
+| общо | 178 |
 | портал | 35 |
-| GUI | 25 |
+| GUI | 27 |
 | Home Assistant | 17 |
 | отчети | 16 |
 | PGP | 14 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (177)
+## общо (178)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -206,6 +206,7 @@
 | `single-source` | Single source | `tests/single-source.cjs` |
 | `smoke` | Smoke | `tests/smoke.cjs` |
 | `source-inventory` | Source inventory | `tests/source-inventory.cjs` |
+| `sse-ticket` | Sse ticket | `tests/sse-ticket.cjs` |
 | `start-entrypoint` | Start entrypoint | `tests/start-entrypoint.cjs` |
 | `start-portal-open` | Start portal open | `tests/start-portal-open.cjs` |
 | `start-token-required` | Start token required | `tests/start-token-required.cjs` |
@@ -263,7 +264,7 @@
 | `portal-tokens` | Portal tokens | `tests/portal-tokens.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (25)
+## GUI (27)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -282,9 +283,11 @@
 | `gui-portal-token` | Gui portal token | `tests/gui-portal-token.cjs` |
 | `gui-sections` | Gui sections | `tests/gui-sections.cjs` |
 | `gui-starter-pyw` | Gui starter pyw | `tests/gui-starter-pyw.cjs` |
+| `ui-block-aria` | Ui block aria | `tests/ui-block-aria.cjs` |
 | `ui-coverage` | Ui coverage | `tests/ui-coverage.cjs` |
 | `ui-css-split` | Ui css split | `tests/ui-css-split.cjs` |
 | `ui-i18n` | Ui i18n | `tests/ui-i18n.cjs` |
+| `ui-i18n-ratchet` | Ui i18n ratchet | `tests/ui-i18n-ratchet.cjs` |
 | `ui-icons` | Ui icons | `tests/ui-icons.cjs` |
 | `ui-navigation` | Ui navigation | `tests/ui-navigation.cjs` |
 | `ui-settings-sections` | Ui settings sections | `tests/ui-settings-sections.cjs` |

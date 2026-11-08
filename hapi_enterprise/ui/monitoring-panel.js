@@ -81,33 +81,49 @@
     stopLive();
     const url = base();
     const adminToken = token();
-    if (!url || !adminToken || typeof window.EventSource !== 'function') return false;
-    try {
-      liveSource = new window.EventSource(url + '/admin/api/events/stream?token=' + encodeURIComponent(adminToken));
-    } catch {
-      liveSource = null;
-      return false;
-    }
-    const forward = (name) =>
-      liveSource.addEventListener(name, (e) => {
-        let payload;
-        try {
-          payload = JSON.parse(e.data);
-        } catch {
-          payload = { event: name };
-        }
-        onEvent(name, payload);
-      });
-    for (const name of ['document.finalized', 'job.completed', 'access.created', 'report.packaged', 'resync']) forward(name);
-    liveSource.addEventListener('bye', () => {
+    if (!url || !adminToken || typeof window.EventSource !== 'function') return Promise.resolve(false);
+
+    // `EventSource` не може да слага `Authorization`, а администраторският токен НЕ бива да
+    // влиза в адрес (история, `Referer`, логове на прокси). Затова първо се иска ЕДНОКРАТЕН
+    // билет с обикновен `POST` и заглавка, а потокът получава само билета (0.69.206).
+    const open = async () => {
+      let ticket;
       try {
-        liveSource.close();
+        const res = await fetch(url + '/admin/api/events/ticket', { method: 'POST', headers: { Authorization: 'Bearer ' + adminToken } });
+        const body = await res.json().catch(() => null);
+        ticket = body && body.ticket ? String(body.ticket) : '';
       } catch {
-        /* вече е затворен */
+        ticket = '';
       }
-      liveSource = null;
-    });
-    return true;
+      if (!ticket) return false;
+      try {
+        liveSource = new window.EventSource(url + '/admin/api/events/stream?ticket=' + encodeURIComponent(ticket));
+      } catch {
+        liveSource = null;
+        return false;
+      }
+      const forward = (name) =>
+        liveSource.addEventListener(name, (e) => {
+          let payload;
+          try {
+            payload = JSON.parse(e.data);
+          } catch {
+            payload = { event: name };
+          }
+          onEvent(name, payload);
+        });
+      for (const name of ['document.finalized', 'job.completed', 'access.created', 'report.packaged', 'resync']) forward(name);
+      liveSource.addEventListener('bye', () => {
+        try {
+          liveSource.close();
+        } catch {
+          /* вече е затворен */
+        }
+        liveSource = null;
+      });
+      return true;
+    };
+    return open();
   }
 
   async function mount(view) {
@@ -423,7 +439,7 @@
     // ── Живи събития ─────────────────────────────────────────────────────────
     const liveBox = view.querySelector('#mon-live');
     if (!liveBox) return;
-    const liveOn = startLive((name, payload) => {
+    const liveOn = await startLive((name, payload) => {
       liveList.unshift({
         event: name,
         at: payload && payload.at ? String(payload.at).replace('T', ' ').slice(0, 19) : new Date().toISOString().replace('T', ' ').slice(0, 19),

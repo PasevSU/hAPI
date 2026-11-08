@@ -190,12 +190,15 @@ function reader(res, count, timeoutMs = 4000) {
       const anon = await fetch(base + '/admin/api/events');
       assert.equal(anon.status, 401, 'без токен състоянието на потока не се показва');
 
-      // `EventSource` не може да слага `Authorization`, затова потокът приема `?token=`.
-      // Проверява се, че това НЕ е отворена врата за останалите маршрути.
+      // `EventSource` не може да слага `Authorization`, затова потокът приема ЕДНОКРАТЕН
+      // билет (`POST /admin/api/events/ticket` → `?ticket=`), а НЕ токен в адреса: токенът
+      // влиза в историята, в `Referer` и в логовете (вж. `tests/sse-ticket.cjs`).
       const viaQuery = await fetch(base + '/admin/api/events?token=' + token);
       assert.equal(viaQuery.status, 401, '?token= НЕ работи за другите маршрути — само за потока');
       const wrongQuery = await fetch(base + '/admin/api/events/stream?token=грешен');
       assert.equal(wrongQuery.status, 401, 'грешен ?token= на потока → 401');
+      const goodQuery = await fetch(base + '/admin/api/events/stream?token=' + token);
+      assert.equal(goodQuery.status, 401, 'и ВЕРЕН ?token= на потока е 401 — токен в адрес не се приема');
 
       const state = await (await fetch(base + '/admin/api/events', { headers: auth })).json();
       assert.equal(state.ok, true);
