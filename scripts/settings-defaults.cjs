@@ -220,6 +220,10 @@ const MEANING = {
     en: '`false`: a file attached to a portal stays in the add-on data — no folder is created in /share. `true` also writes a copy with the original name into the portal folder (storage_root).',
     bg: '`false`: прикаченият към портал файл остава в данните на add-on-а — в /share не се създава папка. `true` слага и копие с истинското име в папката на портала (storage_root).',
   },
+  stability_guardian_enabled: {
+    en: '`false`: bundled offline Guardian diagnostics are disabled; enable explicitly in add-on options. AI analysis and automatic remediation remain off.',
+    bg: '`false`: вградената локална диагностика Guardian е изключена; включва се изрично от настройките на add-on-а. AI анализ и автоматични поправки остават изключени.',
+  },
   portal_skin: {
     en: '`classic`: the proven public portal style. `modern` serves a second skin (glassy cards, larger type, card grid for files) on the same `/portal.css`; the HTML and the QR address stay the same.',
     bg: '`classic`: изпитаният стил на публичния портал. `modern` сервира втора кожа (стъклени карти, по-едър шрифт, мрежа от карти за файловете) на същия `/portal.css`; HTML-ът и адресът на QR кода не се менят.',
