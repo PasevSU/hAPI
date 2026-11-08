@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 389 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 390 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 178 |
+| общо | 179 |
 | портал | 35 |
 | GUI | 28 |
 | Home Assistant | 17 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (178)
+## общо (179)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -176,6 +176,7 @@
 | `readiness` | Readiness | `tests/readiness.cjs` |
 | `readiness-integrity` | Readiness integrity | `tests/readiness-integrity.cjs` |
 | `real-journey` | Real journey | `tests/real-journey.cjs` |
+| `regression-guards` | Regression guards | `tests/regression-guards.cjs` |
 | `respond` | Respond | `tests/respond.cjs` |
 | `resume-transfer` | Resume transfer | `tests/resume-transfer.cjs` |
 | `retention` | Retention | `tests/retention.cjs` |

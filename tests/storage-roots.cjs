@@ -336,7 +336,10 @@ async function main() {
       { re: /path\.join\(\s*'\/(share|media)/, why: 'сглобява host път за /share' },
     ];
     const skip = new Set(['storage-roots.cjs']); // този файл проверява точно тези низове
-    const dirs = [path.join(root, 'tests')];
+    // Освен тестовете се сканират и инструментите за издаване (`scripts/`) и интеграцията:
+    // `artifact-smoke` строеше `/share` сам и пускаше сървъра от архива без override — точно
+    // затова `D:\share` се появяваше след ГУИ одита, а не след матрицата.
+    const dirs = [path.join(root, 'tests'), path.join(root, 'scripts'), path.join(root, 'custom_components')];
     const bad = [];
     while (dirs.length) {
       const dir = dirs.pop();

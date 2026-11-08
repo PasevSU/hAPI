@@ -137,7 +137,38 @@ const RULES = [
   },
 ];
 
-// ── Изключения (всяко с причина) ─────────────────────────────────────────────
+// ── Защити за най-новите дефекти (DEF-53/DEF-54) ─────────────────────────────
+// Тези правила гледат САМО кода (не коментарите), затова са тесни: старият начин да се
+// появи папка в корена на диска се хваща и статично, не само с поведение.
+RULES.push(
+  {
+    id: 'DEF-54-resolves-logical-root',
+    batch: 'B8',
+    enforced: true,
+    files: ['hapi_enterprise'],
+    re: /path\.resolve\(\s*'\/?(share|media|config|data)'/,
+    why: 'логически корен се решаваше до host път на място — на Windows това е D:\\share',
+    fix: 'единствено `paths.js`: `resolveRoot()`/`resolveStoragePath()`/`existingRoot()` (в сървъра — `portalAbs()`)',
+  },
+  {
+    id: 'DEF-54-platform-guess',
+    batch: 'B8',
+    enforced: true,
+    files: ['hapi_enterprise'],
+    re: /win32'\s*\?\s*''\s*:\s*'\/share'/,
+    why: 'модул решаваше дали има /share по платформа, а не по съществуваща папка',
+    fix: '`paths.existingRoot()` връща път само при съществуваща папка и никога на Windows без override',
+  },
+  {
+    id: 'DEF-54-second-root-list',
+    batch: 'B8',
+    enforced: true,
+    files: ['hapi_enterprise'],
+    re: /'\/share',\s*'\/media',\s*'\/config'/,
+    why: 'втори литерален списък с логически корени се разминава тихо с `paths.js`',
+    fix: '`Object.values(paths.LOGICAL_ROOTS)`; UMD файловете без зависимости се проверяват от тест',
+  },
+);
 const ALLOW = [
   {
     file: 'hapi_enterprise/standalone.js',

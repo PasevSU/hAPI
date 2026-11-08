@@ -280,6 +280,7 @@ const RULES = [
   { id: "readiness", area: "общо", title: "Readiness", owner: "tests/readiness.cjs" },
   { id: "readiness-integrity", area: "общо", title: "Readiness integrity", owner: "tests/readiness-integrity.cjs" },
   { id: "real-journey", area: "общо", title: "Real journey", owner: "tests/real-journey.cjs" },
+  { id: "regression-guards", area: "общо", title: "Regression guards", owner: "tests/regression-guards.cjs" },
   { id: "release-acceptance", area: "издаване", title: "Release acceptance", owner: "tests/release-acceptance.cjs" },
   { id: "release-archive-paths", area: "издаване", title: "Release archive paths", owner: "tests/release-archive-paths.cjs" },
   { id: "release-notes", area: "издаване", title: "Release notes", owner: "tests/release-notes.cjs" },

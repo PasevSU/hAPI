@@ -48,13 +48,17 @@ const port = 19700 + (process.pid % 200);
 const token = 'artifact-smoke-token-0123456789abcdef';
 const dataDir = path.join(work, 'data');
 const slug = 'artifact-' + Date.now().toString(36);
-const shareRoot = path.resolve('/share');
+// Логическият `/share` не се строи тук: сървърът от изданието получава времен корен през
+// `STORAGE_ROOT_OVERRIDE`, а тестът гледа същата папка (`<work>/storage/share`). Така
+// пускането не създава `<диск>:\share` на машината (DEF-54, `tests/storage-roots.cjs`).
+const storageRoot = path.join(work, 'storage');
+const shareRoot = path.join(storageRoot, 'share');
 const H = { authorization: 'Bearer ' + token, 'content-type': 'application/json' };
 const checks = [];
 
 (async () => {
   const child = spawn(process.execPath, [path.join(appDir, 'server.js')], {
-    env: { ...process.env, DATA_DIR: dataDir, ADMIN_TOKEN: token, PORT: String(port), PUBLIC_GATEWAY_PORT: '0' },
+    env: { ...process.env, STORAGE_ROOT_OVERRIDE: storageRoot, DATA_DIR: dataDir, ADMIN_TOKEN: token, PORT: String(port), PUBLIC_GATEWAY_PORT: '0' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';

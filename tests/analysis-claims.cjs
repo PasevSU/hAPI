@@ -70,4 +70,32 @@ const register = fs.readFileSync(path.join(root, 'documentation', '01_AS_IS_ARCH
 assert.ok(/^\| DEF-16 \|.*Затворен \(0\.\d+\.\d+\) \|$/m.test(register), 'DEF-16 липсва или не е затворен в регистъра');
 assert.ok(fs.existsSync(path.join(root, 'tests', 'analysis-claims.cjs')), 'тестът, с който DEF-16 е затворен, трябва да съществува');
 
+// ── 8. DEF-02: печатната грешка в името на ТЕКУЩАТА папка не се връща ───────
+// Исторически имена (`hAPI_Enterprice`, снапшоти, worktree) са факт и се срещат в ADR —
+// забранено е само твърдението, че ЛОКАЛНАТА/работната папка се казва така.
+{
+  const claim = /(локалната папка|работната папка|проектната папка|работим в|проектът е в)[^.\n]{0,40}Enterptice/i;
+  const offenders = [];
+  const check = (full) => {
+    const text = fs.readFileSync(full, 'utf8');
+    if (claim.test(text)) offenders.push(path.relative(root, full));
+  };
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { if (!['node_modules', 'archive', 'dist', 'release'].includes(entry.name)) walk(full); continue }
+      if (!/\.(md|json|ya?ml|js|cjs|ps1)$/i.test(entry.name)) continue;
+      if (path.basename(full) === 'KNOWN_DEFECTS.md') continue;
+      check(full);
+    }
+  };
+  for (const dir of ['documentation', 'docs', 'hapi_enterprise', 'custom_components']) {
+    if (fs.existsSync(path.join(root, dir))) walk(path.join(root, dir));
+  }
+  for (const file of ['README.md', 'BG.md', 'DE.md', 'AGENTS.md', 'CHANGELOG.md']) {
+    if (fs.existsSync(path.join(root, file))) check(path.join(root, file));
+  }
+  assert.deepEqual(offenders, [], 'твърдението, че локалната папка е с грешно име, се върна в: ' + offenders.join(', '));
+}
+
 console.log(`PASS analysis claims: ${data.files} файла · ${fmt(data.lines)} реда · ${data.bySeverity.low} сигнала · ${Object.keys(data.segments).length} сегмента · покритие ${withTest}/${data.filesDetail.length} · §11 с 7/7`);
