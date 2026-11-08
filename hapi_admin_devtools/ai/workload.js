@@ -16,7 +16,7 @@ function inventory(){
   const cache=read('cache-optimization').candidates;
   const backlog=[];
   for(const d of defects.filter(x=>x.state==='open')){
-    const task={id:'historic-'+d.id,title:'Review unresolved '+d.id+' '+d.summary,
+    const task={id:'historic-'+d.id,title:('Review unresolved '+d.id+' '+d.summary).slice(0,240),
       description:[d.domain,d.summary,...(d.modules||[])].join(' '),
       files:d.modules||[],target:'enterprise',risk:'critical'};
     backlog.push({...buildPlan(task),fingerprint:fingerprintTask(task),
