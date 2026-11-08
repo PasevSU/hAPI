@@ -8,6 +8,10 @@
 const {classify,buildPlan,hierarchy}=require('./director');
 const SPECIALISTS=[
  ['incident-agent','Reproduce current defect reports and distinguish historical issues from live incidents'],
+ ['storage-agent','Analyze file and SQLite integrity without changing stored data'],
+ ['portal-agent','Review portal, QR, folder and quarantine behavior without bypassing authorization'],
+ ['frontend-agent','Review UI flows and accessibility; propose isolated changes only'],
+ ['knowledge-agent','Find verified historical defects, changelog evidence and missing documentation'],
  ['architecture-agent','Plan APIs and central definitions without editing production'],
  ['security-agent','Review access, OpenPGP boundaries, untrusted data and quarantine policies'],
  ['qa-agent','Design independently reproducible baseline and candidate tests'],
