@@ -48,7 +48,7 @@
         const categories=$('director-categories');categories.replaceChildren();
         for(const c of hierarchy.categories){
           const li=document.createElement('li');
-          li.textContent=c.title+' · '+c.owner+' · '+(backlog.categories[c.id]||0)+' задачи';
+          li.textContent=c.title+' · '+c.division+' → '+c.owner+' · '+(backlog.categories[c.id]||0)+' задачи';
           categories.appendChild(li);
         }
         const pendingList=$('director-backlog');pendingList.replaceChildren();
@@ -86,6 +86,7 @@
         body:JSON.stringify({title,target:'enterprise'})});
       $('director-plan-result').textContent=[
         'Категория: '+task.category,
+        'Направление: '+task.division,
         'Отговорник: '+task.owner,
         'Риск: '+task.risk,
         'Режим: '+task.automation,
