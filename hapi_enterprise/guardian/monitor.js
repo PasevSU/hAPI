@@ -7,6 +7,7 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const { setTimeout: delay } = require('node:timers/promises');
 const performance = require('./performance');
+const {writeStatus}=require('./status');
 
 const DEFAULT_INTERVAL_MS = 30_000;
 const MAX_JOURNAL_BYTES = 2 * 1024 * 1024;
@@ -75,6 +76,7 @@ async function run({ intervalMs = DEFAULT_INTERVAL_MS, dir = process.env.HAPI_GU
   let previous = null;
   let failures = 0;
   let previousSensors = null;
+  let totalFindings = 0;
   while (!stop()) {
     const result = await onProbe({ port });
     const signature = result.state + ':' + result.code + ':' + (result.checks || []).join(',');
@@ -87,7 +89,7 @@ async function run({ intervalMs = DEFAULT_INTERVAL_MS, dir = process.env.HAPI_GU
     // Reuse the existing privacy-preserving observer.json telemetry. Caching is NEVER activated.
     try {
       const currentSensors = performance.loadSnapshot(process.env.DATA_DIR || '/data');
-      if (previousSensors) performance.recordFindings(dir, performance.evaluate(previousSensors, currentSensors));
+      if (previousSensors) totalFindings += performance.recordFindings(dir, performance.evaluate(previousSensors, currentSensors));
       previousSensors = currentSensors;
     } catch (error) {
       // Observer metrics can be absent on the first start. Diagnostics must not disturb hAPI.
@@ -95,6 +97,8 @@ async function run({ intervalMs = DEFAULT_INTERVAL_MS, dir = process.env.HAPI_GU
     }
     previous = signature;
     failures = result.state === 'healthy' ? 0 : failures + 1;
+    try { writeStatus(dir,result,{failureCount:failures,cacheCandidates:totalFindings}); }
+    catch(error){console.error('GUARDIAN_STATUS_WRITE_FAILED:',error.code||error.message)}
     await delay(intervalMs);
   }
 }
