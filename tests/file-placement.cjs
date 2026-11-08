@@ -39,7 +39,7 @@ assert.deepEqual(broken, [], 'require към несъществуващ файл
 // Кой какво зарежда: транзитивно от истинските входни точки. `standalone.js` е входната
 // точка за разработка (пуска сървъра извън Home Assistant) и нарочно НЕ влиза в образа,
 // затова за проверката на Dockerfile се ползват само `start.js` и `server.js`.
-const ENTRY = ['start.js', 'standalone.js', 'server.js'].map((f) => path.join(ADDON, f));
+const ENTRY = ['start.js', 'standalone.js', 'server.js', 'guardian/monitor.js'].map((f) => path.join(ADDON, f));
 const reach = (entries) => {
   const seen = new Set();
   const pending = [...entries];
@@ -55,7 +55,7 @@ const reach = (entries) => {
   return seen;
 };
 const loaded = reach(ENTRY);
-const prodModules = reach(['start.js', 'server.js'].map((f) => path.join(ADDON, f)));
+const prodModules = reach(['start.js', 'server.js', 'guardian/monitor.js'].map((f) => path.join(ADDON, f)));
 
 // Сервирани на браузъра: това са файловете, които `index.html` иска с `<script src>`, плюс
 // целите папки на публичните страници. Извеждат се от самата страница, не се изброяват тук.
