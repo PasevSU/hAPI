@@ -5,7 +5,7 @@ LABEL io.hass.version="${BUILD_VERSION}" io.hass.type="app" io.hass.arch="${BUIL
 # GnuPG validates detached OpenPGP signature challenges and exact GitHub certificate fingerprint.
 RUN apk add --no-cache gnupg
 WORKDIR /app
-COPY server.js identity.js monitor.js /app/
+COPY server.js identity.js monitor.js github-verification.js /app/
 COPY dashboard.html dashboard.js dashboard.css /app/
 COPY protocols /app/protocols/
 ENV NODE_ENV=production
