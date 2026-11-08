@@ -6,6 +6,7 @@ const path=require('node:path');
 const http=require('node:http');
 const crypto=require('node:crypto');
 const identity=require('./identity');
+const {createMonitor}=require('./monitor');
 const DATA=process.env.HAPI_DEVTOOLS_DATA||'/data';
 const OPTIONS=process.env.HAPI_DEVTOOLS_OPTIONS||path.join(DATA,'options.json');
 const ENROLLMENT=path.join(DATA,'enrollment.json');
@@ -26,6 +27,8 @@ function safeLoadEnrollment(){
   }catch{return false}
 }
 let unlocked=safeLoadEnrollment();
+const monitor=createMonitor(path.join(DATA,'monitor'));
+if(unlocked)monitor.start();
 function ingressPeer(req) {
   const remote=(req.socket.remoteAddress||'').replace(/^::ffff:/,'');
   return remote==='172.30.32.2' ||
@@ -117,13 +120,14 @@ function createServer() {
         fs.writeFileSync(tmp,JSON.stringify(record),{mode:0o600});
         fs.renameSync(tmp,ENROLLMENT);
         unlocked=true;
+        monitor.start();
         return answer(res,200,{activated:true});
       }
       if(!unlocked)return answer(res,423,{error:'SSH_SIGNED_ENROLLMENT_REQUIRED'});
       if(req.method==='GET'&&route==='/api/overview')
         return answer(res,200,{identity:{githubUsername:identity.GITHUB_USER,
           fingerprint:identity.EXPECTED_FINGERPRINT,verified:true},
-          modules:records(),hapi:await hapiReadiness(),
+          modules:records(),hapi:await hapiReadiness(),monitor:monitor.snapshot(),
           mode:'read-only',automaticRepairsEnabled:false,applyEnabled:false});
       return answer(res,404,{error:'NOT_FOUND'});
     }catch(error){
