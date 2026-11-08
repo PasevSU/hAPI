@@ -13,10 +13,11 @@ const os=require('node:os');
 const path=require('node:path');
 const {spawnSync}=require('node:child_process');
 
-const GITHUB_USER='PasevSU';
-const REGISTERED_GPG_KEY_ID='4FC0B2596C68DCB9';
+const {DEFINITIONS,readAddonVersion}=require('./definitions');
+const GITHUB_USER=DEFINITIONS.github.owner;
+const REGISTERED_GPG_KEY_ID=DEFINITIONS.github.keyId;
 const FINGERPRINT_RE=/^[0-9A-F]{40}(?:[0-9A-F]{24})?$/;
-const SIGNATURE_HEADER='-----BEGIN PGP SIGNATURE-----';
+const SIGNATURE_HEADER=DEFINITIONS.security.signatureHeader;
 function normalizeFingerprint(value){
   const v=String(value||'').replace(/\s/g,'').toUpperCase();
   return FINGERPRINT_RE.test(v)&&v.endsWith(REGISTERED_GPG_KEY_ID)?v:null;
@@ -25,15 +26,15 @@ function validateOptions(options){
   return !!options && options.github_username===GITHUB_USER &&
     !!normalizeFingerprint(options.openpgp_fingerprint);
 }
-function fetchGithubPublicKey({timeoutMs=8000}={}){
+function fetchGithubPublicKey({timeoutMs=DEFINITIONS.limits.githubTimeoutMs}={}){
   return new Promise((resolve,reject)=>{
-    const req=https.get('https://github.com/'+GITHUB_USER+'.gpg',
-      {timeout:timeoutMs,headers:{'user-agent':'hAPI-Admin-DevTools/0.2','accept':'application/pgp-keys'}},res=>{
+    const req=https.get(DEFINITIONS.github.baseUrl+'/'+GITHUB_USER+'.gpg',
+      {timeout:timeoutMs,headers:{'user-agent':'hAPI-Admin-DevTools/'+readAddonVersion(),'accept':'application/pgp-keys'}},res=>{
         if(res.statusCode!==200){res.resume();return reject(Error('GITHUB_GPG_HTTP_'+res.statusCode));}
         const chunks=[];let bytes=0;
         res.on('data',chunk=>{
           bytes+=chunk.length;
-          if(bytes>512000){req.destroy(Error('GITHUB_GPG_TOO_LARGE'));return;}
+          if(bytes>DEFINITIONS.limits.githubGpgBytes){req.destroy(Error('GITHUB_GPG_TOO_LARGE'));return;}
           chunks.push(chunk);
         });
         res.on('end',()=>resolve(Buffer.concat(chunks)));
@@ -47,7 +48,7 @@ function gpg(args,{homedir,input,timeout=10000}={}){
     {input,encoding:'utf8',timeout,maxBuffer:1024*1024});
 }
 function withKeyring(publicKey,fn){
-  if(!Buffer.isBuffer(publicKey)||publicKey.length<16||publicKey.length>512000)throw Error('INVALID_GPG_PUBLIC_KEY');
+  if(!Buffer.isBuffer(publicKey)||publicKey.length<16||publicKey.length>DEFINITIONS.limits.githubGpgBytes)throw Error('INVALID_GPG_PUBLIC_KEY');
   const home=fs.mkdtempSync(path.join(os.tmpdir(),'hapi-gpg-'));
   fs.chmodSync(home,0o700);
   try{
@@ -79,7 +80,7 @@ function verifyDetached({challenge,signature,expectedFingerprint,publicKey,allow
     ? expectedFingerprint : normalizeFingerprint(expectedFingerprint);
   if(!expected||typeof challenge!=='string'||challenge.length>4096||!/^hapi-admin-devtools\/openpgp-v1\nnonce=[a-f0-9]{64}\nfp=[A-F0-9]{40}(?:[A-F0-9]{24})?\n$/.test(challenge) ||
       !challenge.endsWith('fp='+expected+'\n') ||
-      typeof signature!=='string'||signature.length>16000||
+      typeof signature!=='string'||signature.length>DEFINITIONS.limits.gpgSignatureChars||
       !signature.trim().startsWith(SIGNATURE_HEADER))return false;
   return withKeyring(publicKey,home=>{
     if(!hasPrimaryFingerprint(home,expected))return false;
