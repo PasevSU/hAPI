@@ -386,7 +386,12 @@ const dict = require(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'i18n.j
 // (двойно щракване) или „Отвори портала“. Затова ключът за сваляне е махнат от речника.
 assert.equal(/portal\.link\.dlApi/.test(src), false, 'картата не сваля описанието като файл');
 assert.equal(dict.bg['portal.link.dlApi'], undefined, 'ключът за „Свали api.json“ е махнат от речника');
-assert.match(dict.bg['portal.tip.qrOpen'], /портал/i, 'подсказката за кода говори за портала');
+// 0.69.201: ключовете на махнатия блок (portal.link.*, portal.state.*, portal.tip.*,
+// portal.act.*) са изчистени от речника. Дотук тук се проверяваше `portal.tip.qrOpen` —
+// ключ, който вече никой не рисува, тоест тестът пазеше текстове, които не се показват.
+assert.equal(dict.bg['portal.tip.qrOpen'], undefined, 'ключът на махнатата подсказка е изчистен');
+assert.equal(dict.bg['portal.link.title'], undefined, 'ключът на махнатия блок е изчистен');
+assert.ok(dict.bg['portal.qr.button'], 'остава ключът на бутона, който картата рисува днес');
 assert.match(src, /\[data-open-portal\], \[data-open-portal-id\]/, 'щракването по картата отваря портала');
 assert.match(src, /findIndex\(\(x\) => x\.id === byId\)/, 'ИД-то се превежда до индекс, а не се гадае');
 assert.equal(/window\.open/.test(src), false, 'прегледът не отваря нов таб');

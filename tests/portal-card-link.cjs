@@ -192,6 +192,24 @@ assert.match(
     await waitFor(() => host.querySelector('[data-qr-pop]').hidden === true, { label: 'скрития QR код' });
     assert.equal(btn.getAttribute('aria-expanded'), 'false', 'бутонът отчита, че кодът е скрит');
 
+    // ── 9б. Escape и клик извън кода също го затварят ─────────────────────
+    // Дотук кодът се затваряше само с бутона си. Клавиатурният потребител оставаше с
+    // отворено панелче, докато не намери бутона отново, а клик върху картата не го скриваше.
+    // Двете се проверяват тук, защото са поведение — не присъствие на атрибут.
+    btn.click();
+    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === false, { label: 'отворения QR код' });
+    assert.equal(typeof btn.focus, 'function', 'бутонът може да поеме фокуса обратно');
+    ui.window.document.dispatchEvent({ type: 'keydown', key: 'Escape' });
+    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === true, { label: 'затворения от Escape код' });
+    assert.equal(btn.getAttribute('aria-expanded'), 'false', 'Escape връща aria-expanded на false');
+    assert.equal(ui.window.document.activeElement, btn, 'Escape връща фокуса на бутона, а не го оставя върху скрит елемент');
+
+    btn.click();
+    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === false, { label: 'пак отворения QR код' });
+    ui.window.document.dispatchEvent({ type: 'click', target: host });
+    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === true, { label: 'затворения при клик извън кода' });
+    assert.equal(btn.getAttribute('aria-expanded'), 'false', 'клик извън кода също връща aria-expanded на false');
+
     // ── 10. Сензорите се теглят ВЕДНЪЖ за отваряне, а настройките се запазват ──
     const monitorCalls = calls.filter((c) => c.endsWith('/admin/api/sensors'));
     assert.equal(monitorCalls.length, 1, 'сензорите се теглят един път при отваряне, а не два: ' + monitorCalls.length);

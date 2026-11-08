@@ -3627,6 +3627,36 @@
         btn.setAttribute('aria-expanded', String(!pop.hidden));
       });
     });
+    // Затваря отворените панелчета. С `returnFocus` фокусът се връща на бутона: Escape е
+    // клавиатурно действие и без това фокусът остава върху скрит елемент (невидим за човека,
+    // но не и за Tab).
+    const closeQrPops = (returnFocus) => {
+      if (!host) return;
+      host.querySelectorAll('[data-qr-pop]').forEach((pop) => {
+        if (pop.hidden) return;
+        pop.hidden = true;
+        const btn = host.querySelector(`[data-qr-portal="${pop.dataset.qrPop}"]`);
+        if (!btn) return;
+        btn.setAttribute('aria-expanded', 'false');
+        if (returnFocus && typeof btn.focus === 'function') btn.focus();
+      });
+    };
+    // Escape и клик извън кода. Слушателят е на ДОКУМЕНТА, а `wire()` се вика след всяко
+    // рисуване — затова се закача ВЕДНЪЖ (иначе след десет пре-рисувания има десет слушателя,
+    // които въртят едно и също и броят на извикванията расте).
+    if (!wire.qrCloseBound) {
+      wire.qrCloseBound = true;
+      document.addEventListener('keydown', (e) => {
+        if (!e || e.key !== 'Escape') return;
+        closeQrPops(true);
+      });
+      document.addEventListener('click', (e) => {
+        const t = e && e.target;
+        const inside = t && typeof t.closest === 'function' && (t.closest('[data-qr-pop]') || t.closest('[data-qr-portal]'));
+        if (inside) return;
+        closeQrPops(false);
+      });
+    }
     if (q('#pf-settings')) {
       q('#pf-settings').addEventListener('submit', (e) => {
         e.preventDefault();

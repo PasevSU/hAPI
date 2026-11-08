@@ -61,22 +61,33 @@ assert.equal(/data-block="link"/.test(control + manager), false, 'махнати
 for (const literal of ['Отвори портала', 'Обнови достъпа', 'Свали QR', 'Печат на QR', 'Свали api.json']) {
   assert.equal(control.includes(`'${literal}'`), false, `картата още държи твърд текст: ${literal}`);
 }
-assert.ok(i18n.DICT.de['portal.link.title'] && i18n.DICT.en['portal.link.title'], 'заглавието на картата има превод');
+assert.ok(i18n.DICT.de['portal.qr.button'] && i18n.DICT.en['portal.qr.button'], 'QR бутонът има превод');
 
-// Марка и криптографска защита: името „ПАП БОКС“ и обещанието за защита стоят на трите
-// езика — картата е мястото, откъдето човекът раздава адреса, тоест трябва да казва с какво
-// е защитен порталът, а не само къде е.
-for (const lang of langs) {
-  assert.equal(i18n.DICT[lang]['portal.brand'], 'ПАП БОКС', `${lang}: марката е „ПАП БОКС“`);
-  const crypto = String(i18n.DICT[lang]['portal.crypto'] || '');
-  assert.ok(crypto.length > 40, `${lang}: редът за криптографската защита не е празен`);
-  for (const token of ['SHA-256', 'AES-256-GCM']) {
-    assert.ok(crypto.includes(token), `${lang}: криптографската защита споменава ${token}`);
-  }
+// ── 2б. Речникът не расте с текстове, които никой не рисува ───────────────
+// Защо: до 0.69.201 в речника стояха 33 ключа × 3 езика от махнатия блок „Достъп и QR код“
+// (`portal.link.*`, `portal.state.*`, `portal.tip.*`, `portal.act.*`, `portal.brand`,
+// `portal.crypto`). Никой тест не ги хващаше, защото се проверява само обратната посока
+// („използван ключ съществува“). Сега ключ, който не се среща в нито един модул на `ui/`, е
+// грешка. Изключение са само ключовете, които се строят динамично (шаблон или конкатенация),
+// и те се изреждат тук с причина — иначе тестът ще лъже.
+const DYNAMIC_KEY_PREFIXES = ['state.', 'action.'];
+const modules = fs
+  .readdirSync(uiDir)
+  .filter((f) => f.endsWith('.js') && f !== 'i18n.js')
+  .map((f) => read(f))
+  .join('\n');
+const unusedKeys = keys.filter(
+  (key) => !modules.includes(key) && !DYNAMIC_KEY_PREFIXES.some((p) => key.startsWith(p)),
+);
+assert.deepEqual(unusedKeys, [], 'ключове, които никой модул не ползва: ' + unusedKeys.join(', '));
+// Същото и за блоковете, които са махнати от интерфейса — тях ги няма дори като префикс.
+for (const dead of ['portal.link.', 'portal.state.', 'portal.tip.', 'portal.act.']) {
+  assert.equal(
+    keys.some((k) => k.startsWith(dead)),
+    false,
+    `ключове от махнатия блок „Достъп и QR код“ са останали в речника: ${dead}*`,
+  );
 }
-assert.match(String(i18n.DICT.bg['portal.crypto']), /Криптографска защита/, 'на български редът е изписан с думи');
-assert.match(String(i18n.DICT.en['portal.crypto']), /Cryptographic protection/, 'на английски — „Cryptographic protection“');
-assert.match(String(i18n.DICT.de['portal.crypto']), /Kryptografischer Schutz/, 'на немски — „Kryptografischer Schutz“');
 // Секциите пазят ключ, а не текст: иначе смяната на езика не работи без презареждане.
 const sectionBlock = panel.slice(panel.indexOf('const SECTIONS = ['), panel.indexOf('];', panel.indexOf('const SECTIONS = [')));
 const sectionLabels = [...sectionBlock.matchAll(/label: '([^']+)'/g)].map((m) => m[1]);
