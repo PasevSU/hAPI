@@ -165,6 +165,12 @@ function mountUi(server, { lang = 'bg', modules = [], csp = true } = {}) {
     TextEncoder,
     TextDecoder,
     crypto: require('node:crypto').webcrypto,
+    // Минимален, но верен `CSS.escape` (CSSOM spec): екранира всичко извън [A-Za-z0-9_-]
+    // и водещата цифра. Панелът го ползва само за селектор по път на папка.
+    CSS: {
+      escape: (value) =>
+        String(value).replace(/[^A-Za-z0-9_\u00A0-\uFFFF-]/g, (ch) => '\\' + ch).replace(/^(\d)/, '\\3$1 '),
+    },
     btoa: (s) => Buffer.from(String(s), 'binary').toString('base64'),
     atob: (s) => Buffer.from(String(s), 'base64').toString('binary'),
     structuredClone,
@@ -200,6 +206,11 @@ function mountUi(server, { lang = 'bg', modules = [], csp = true } = {}) {
   win.URL = sandbox.URL;
   win.Blob = sandbox.Blob;
   win.crypto = sandbox.crypto;
+  // `CSS.escape` е част от браузъра, а панелът го ползва, за да строи селектор по път на
+  // папка (`[data-folder-comment="…"]`). Без него DOM-ът тук не е „същият като в браузър“
+  // и тест, който стига до това меню, пада с `CSS is not defined` — тоест тестът би
+  // изключвал истински път на интерфейса.
+  win.CSS = sandbox.CSS;
   // `HapiUI` е това, което `app.js` дава на панелите; тук само записва известията.
   win.HapiUI = {
     toast: (message, kind) => { toasts.push({ message: String(message), kind: kind || '' }) },

@@ -59,6 +59,9 @@
   // ── Жив поток от събития (SSE) ────────────────────────────────────────────
   let liveSource = null;
   let liveListEl = null;
+  let liveWant = false; // човекът е на страницата: потокът трябва да е жив
+  let liveTimer = null;
+  let liveRetry = 0;
   const liveList = [];
   const renderLive = () => {
     if (!liveListEl) return;
@@ -66,7 +69,18 @@
       ? liveList.map((item) => `<div class="fm-row"><span class="badge">${esc(item.event)}</span> <small class="hint">${esc(item.at)}</small></div>`).join('')
       : '<p class="hint">Още нищо не е станало от отварянето на панела.</p>';
   };
+  // Билетът е ЕДНОКРАТЕН, затова автоматичното повторно свързване на `EventSource` е
+  // безполезно: то чука на вече изразходван билет и получава 401. Същото важи и за `bye`
+  // след 30-минутния таван на сървъра. Затова панелът отваря наново САМ — с НОВ билет и с
+  // нарастващо изчакване (1 → 2 → 5 → 15 → 30 s), вместо „Живи събития“ да замлъкне до
+  // презареждане на страницата (0.69.207).
+  const LIVE_BACKOFF = [1000, 2000, 5000, 15000, 30000];
   function stopLive() {
+    liveWant = false;
+    if (liveTimer) {
+      clearTimeout(liveTimer);
+      liveTimer = null;
+    }
     if (liveSource) {
       try {
         liveSource.close();
@@ -82,28 +96,24 @@
     const url = base();
     const adminToken = token();
     if (!url || !adminToken || typeof window.EventSource !== 'function') return Promise.resolve(false);
+    liveWant = true;
+    liveRetry = 0;
 
-    // `EventSource` не може да слага `Authorization`, а администраторският токен НЕ бива да
-    // влиза в адрес (история, `Referer`, логове на прокси). Затова първо се иска ЕДНОКРАТЕН
-    // билет с обикновен `POST` и заглавка, а потокът получава само билета (0.69.206).
-    const open = async () => {
-      let ticket;
-      try {
-        const res = await fetch(url + '/admin/api/events/ticket', { method: 'POST', headers: { Authorization: 'Bearer ' + adminToken } });
-        const body = await res.json().catch(() => null);
-        ticket = body && body.ticket ? String(body.ticket) : '';
-      } catch {
-        ticket = '';
-      }
-      if (!ticket) return false;
-      try {
-        liveSource = new window.EventSource(url + '/admin/api/events/stream?ticket=' + encodeURIComponent(ticket));
-      } catch {
-        liveSource = null;
-        return false;
-      }
+    /** Отваря отново след изчакване — само докато панелът е на екрана. */
+    const schedule = () => {
+      if (!liveWant || liveTimer) return;
+      const wait = LIVE_BACKOFF[Math.min(liveRetry, LIVE_BACKOFF.length - 1)];
+      liveRetry += 1;
+      liveTimer = setTimeout(() => {
+        liveTimer = null;
+        void open();
+      }, wait);
+      liveTimer.unref?.();
+    };
+
+    const attach = (source) => {
       const forward = (name) =>
-        liveSource.addEventListener(name, (e) => {
+        source.addEventListener(name, (e) => {
           let payload;
           try {
             payload = JSON.parse(e.data);
@@ -113,14 +123,56 @@
           onEvent(name, payload);
         });
       for (const name of ['document.finalized', 'job.completed', 'access.created', 'report.packaged', 'resync']) forward(name);
-      liveSource.addEventListener('bye', () => {
+      // Таванът на сървъра (30 min) затваря потока с `bye`; всеки мрежов отказ дава
+      // `error`. И двете значат едно: връзката я няма и трябва нов билет.
+      source.addEventListener('bye', () => {
         try {
-          liveSource.close();
+          source.close();
         } catch {
           /* вече е затворен */
         }
-        liveSource = null;
+        if (liveSource === source) liveSource = null;
+        schedule();
       });
+      source.addEventListener('error', () => {
+        try {
+          source.close();
+        } catch {
+          /* вече е затворен */
+        }
+        if (liveSource === source) liveSource = null;
+        schedule();
+      });
+    };
+
+    // `EventSource` не може да слага `Authorization`, а администраторският токен НЕ бива да
+    // влиза в адрес (история, `Referer`, логове на прокси). Затова първо се иска ЕДНОКРАТЕН
+    // билет с обикновен `POST` и заглавка, а потокът получава само билета (0.69.206).
+    const open = async () => {
+      if (!liveWant) return false;
+      let ticket;
+      try {
+        const res = await fetch(url + '/admin/api/events/ticket', { method: 'POST', headers: { Authorization: 'Bearer ' + adminToken } });
+        const body = await res.json().catch(() => null);
+        ticket = body && body.ticket ? String(body.ticket) : '';
+      } catch {
+        ticket = '';
+      }
+      if (!liveWant) return false;
+      if (!ticket) {
+        // Сървърът е недостъпен или токенът е изтекъл: опитва се пак, вместо да млъкне.
+        schedule();
+        return false;
+      }
+      try {
+        liveSource = new window.EventSource(url + '/admin/api/events/stream?ticket=' + encodeURIComponent(ticket));
+      } catch {
+        liveSource = null;
+        schedule();
+        return false;
+      }
+      attach(liveSource);
+      liveRetry = 0;
       return true;
     };
     return open();

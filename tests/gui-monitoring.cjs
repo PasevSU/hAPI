@@ -46,6 +46,7 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
       this.url = String(url);
       this.listeners = new Map();
       this.closed = false;
+      this.readyState = 0;
       live.instances.push(this);
     }
     addEventListener(name, cb) {
@@ -54,6 +55,12 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     }
     emit(name, data) {
       for (const cb of this.listeners.get(name) || []) cb({ data: JSON.stringify(data || {}) });
+    }
+    /** Връзката умря (мрежа, 401, 30-минутен таван): браузърът пуска `error` и затваря. */
+    fail() {
+      this.readyState = 2;
+      this.closed = true;
+      for (const cb of this.listeners.get('error') || []) cb({ type: 'error' });
     }
     close() {
       this.closed = true;
@@ -200,10 +207,34 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     source.emit('document.finalized', { at: '2026-11-08T10:20:30.000Z' });
     await waitFor(() => /document\.finalized/.test(text(app.$('#mon-live'))), { label: 'събитието в „Живи събития“', timeout: BUDGET });
     assert.match(text(app.$('#mon-live')), /2026-11-08 10:20:30/, 'събитието носи и часа си');
-    // Изходът от панела затваря връзката — иначе всяко превключване на раздел оставя поток.
-    app.window.HapiMonitoringPanel.unmount();
-    assert.equal(source.closed, true, 'unmount затваря потока');
 
+    // ── 5б-2. Потокът се ВЪЗСТАНОВЯВА след смърт (0.69.207) ────────────────
+    // Билетът е еднократен: автоматичното повторно свързване на `EventSource` удря 401
+    // върху вече изразходван билет. Затова панелът трябва да поиска НОВ билет и да отвори
+    // нов поток, а не да остави „Живи събития“ мъртви до презареждане на страницата.
+    const streamsBefore = live.instances.length;
+    source.fail();
+    await waitFor(() => live.instances.length > streamsBefore, { label: 'нов поток след грешка', timeout: BUDGET });
+    const reopened = live.instances[live.instances.length - 1];
+    assert.equal(reopened.closed, false, 'след грешката има отворен поток');
+    assert.notEqual(reopened.url, source.url, 'новият поток носи НОВ билет, не изразходвания: ' + reopened.url);
+    assert.match(reopened.url, /\?ticket=[0-9a-f]{32,}/, 'новият поток пак е с билет, не с токен');
+    assert.equal(reopened.url.includes(adminToken), false, 'и в новия адрес няма администраторски токен');
+
+    // Сървърът затваря след 30 min с `bye` — панелът също се връща към живота.
+    const beforeBye = live.instances.length;
+    reopened.emit('bye', { reason: 'lifetime' });
+    await waitFor(() => live.instances.length > beforeBye, { label: 'нов поток след bye', timeout: BUDGET });
+    const afterBye = live.instances[live.instances.length - 1];
+    assert.equal(afterBye.closed, false, 'след `bye` потокът е отворен отново');
+    assert.notEqual(afterBye.url, reopened.url, 'и след `bye` билетът е нов');
+
+    // Изходът от панела затваря връзката — и НЕ оставя таймер, който да я отвори пак.
+    app.window.HapiMonitoringPanel.unmount();
+    assert.equal(afterBye.closed, true, 'unmount затваря потока');
+    const settled = live.instances.length;
+    await new Promise((r) => setTimeout(r, 1500));
+    assert.equal(live.instances.length, settled, 'след unmount никой таймер не отваря нов поток');
     // ── 5в. „Виж всички“ води към страницата с посетителите ─────────────────
     const goto = app.$('#mon-visitors [data-nav="visitors"]');
     assert.ok(goto, 'секцията „Посетители“ има бутон „Виж всички“');

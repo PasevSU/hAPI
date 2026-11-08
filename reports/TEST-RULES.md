@@ -3,13 +3,13 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 387 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 388 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 178 |
 | портал | 35 |
-| GUI | 27 |
+| GUI | 28 |
 | Home Assistant | 17 |
 | отчети | 16 |
 | PGP | 14 |
@@ -264,7 +264,7 @@
 | `portal-tokens` | Portal tokens | `tests/portal-tokens.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (27)
+## GUI (28)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -286,6 +286,7 @@
 | `ui-block-aria` | Ui block aria | `tests/ui-block-aria.cjs` |
 | `ui-coverage` | Ui coverage | `tests/ui-coverage.cjs` |
 | `ui-css-split` | Ui css split | `tests/ui-css-split.cjs` |
+| `ui-folder-note-race` | Ui folder note race | `tests/ui-folder-note-race.cjs` |
 | `ui-i18n` | Ui i18n | `tests/ui-i18n.cjs` |
 | `ui-i18n-ratchet` | Ui i18n ratchet | `tests/ui-i18n-ratchet.cjs` |
 | `ui-icons` | Ui icons | `tests/ui-icons.cjs` |

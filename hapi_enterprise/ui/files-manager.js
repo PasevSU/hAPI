@@ -2258,6 +2258,9 @@
     };
   }
 
+  /** Брояч на локалните записи по дървото: пази `loadTree` от остарели отговори. */
+  let treeMetaEpoch = 0;
+
   /** Зарежда папките на портала (при свързан режим — от add-on-а). */
   async function loadTree(force) {
     const p = portal();
@@ -2266,6 +2269,11 @@
     const fresh = state.tree.portalId !== p.id;
     // Дървото се зарежда СВИТО (open: null) — отваря се само папка, която потребителят избере.
     const open = fresh ? null : state.tree.open;
+    // Отговорът на четенето носи коментарите и флаговете КЪМ МОМЕНТА НА ЗАЯВКАТА. Ако междувременно
+    // е записана бележка или флаг, този отговор е ОСТАРЯЛ и не бива да ги презаписва — иначе
+    // „запазено“ изчезва от екрана до следващо обновяване (състезание, хванато от
+    // `tests/ui-folder-note-race.cjs`, и причината за периодичния флейк на J53).
+    const epoch = treeMetaEpoch;
     if (!connected()) {
       // Демо: коментарите живеят само в паметта на интерфейса.
       if (fresh) {
@@ -2276,6 +2284,8 @@
       return;
     }
     const r = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/tree`);
+    // Междувременно е записан коментар или флаг — този отговор е преди записа и се изхвърля.
+    if (epoch !== treeMetaEpoch) return;
     state.tree = {
       portalId: p.id,
       loaded: true,
@@ -2300,6 +2310,7 @@
     if (!p) return;
     if (!connected()) {
       const key = treePath(rel);
+      treeMetaEpoch += 1;
       state.folderMeta = Object.assign({}, state.folderMeta);
       state.folderMeta[key] = Object.assign({ visible: true, media: false, locked: false }, state.folderMeta[key], patch);
       render();
@@ -2308,6 +2319,7 @@
     const r = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/tree/folder`, { method: 'PATCH', json: { path: rel, ...patch } });
     if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
     const key = treePath(rel);
+    treeMetaEpoch += 1;
     state.folderMeta = Object.assign({}, state.folderMeta, { [key]: { visible: r.data.visible, media: r.data.media, locked: r.data.locked } });
     render();
     const labels = { visible: 'Видимост', media: 'Медийна', locked: 'Заключване' };
@@ -2428,6 +2440,7 @@
       state.folderNotes = Object.assign({}, state.folderNotes);
       if (value.trim()) state.folderNotes[key] = { text: value.trim(), at: new Date().toISOString() };
       else delete state.folderNotes[key];
+      treeMetaEpoch += 1;
       render();
       return toast('Демо: коментарът е само в интерфейса', '');
     }
@@ -2436,6 +2449,7 @@
       json: { path: rel, comment: value },
     });
     if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
+    treeMetaEpoch += 1;
     state.folderNotes = (r.data && r.data.notes) || {};
     render();
     toast(value.trim() ? 'Коментарът е запазен' : 'Коментарът е изчистен', 'ok');

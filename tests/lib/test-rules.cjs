@@ -376,6 +376,7 @@ const RULES = [
   { id: "ui-block-aria", area: "GUI", title: "Ui block aria", owner: "tests/ui-block-aria.cjs" },
   { id: "ui-coverage", area: "GUI", title: "Ui coverage", owner: "tests/ui-coverage.cjs" },
   { id: "ui-css-split", area: "GUI", title: "Ui css split", owner: "tests/ui-css-split.cjs" },
+  { id: "ui-folder-note-race", area: "GUI", title: "Ui folder note race", owner: "tests/ui-folder-note-race.cjs" },
   { id: "ui-i18n", area: "GUI", title: "Ui i18n", owner: "tests/ui-i18n.cjs" },
   { id: "ui-i18n-ratchet", area: "GUI", title: "Ui i18n ratchet", owner: "tests/ui-i18n-ratchet.cjs" },
   { id: "ui-icons", area: "GUI", title: "Ui icons", owner: "tests/ui-icons.cjs" },
