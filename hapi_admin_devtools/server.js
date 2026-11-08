@@ -18,6 +18,7 @@ const {inventory:developmentInventory}=require('./ai/workload');
 const operatingModes=require('./ai/operating-modes');
 const dynamicAnalysis=require('./ai/dynamic-analysis');
 const functionCoverage=require('./ai/function-coverage');
+const dynamicRouting=require('./ai/dynamic-routing');
 const DATA=CONFIG.dataDir;
 const OPTIONS=CONFIG.optionsPath;
 const ENROLLMENT=CONFIG.enrollmentPath;
@@ -193,10 +194,14 @@ function createServer(){
       if(req.method==='GET'&&route==='/api/dynamic/status')
         return answer(res,200,dynamicAnalyzer?.status()||
           {mode:'dynamic',analysisEnabled:false,reason:'DYNAMIC_MONITOR_DISABLED'});
-      if(req.method==='GET'&&route==='/api/dynamic/findings')
-        return answer(res,200,{mode:'dynamic',
-          analyses:dynamicAnalyzer?.readRecent()||[],
+      if(req.method==='GET'&&route==='/api/dynamic/findings'){
+        const analyses=dynamicAnalyzer?.readRecent()||[];
+        return answer(res,200,{mode:'dynamic',analyses,
+          assignedTasks:analyses.slice(-4).flatMap(x=>dynamicRouting.routeAnalysis(x))
+            .map(x=>({id:x.id,category:x.category,owner:x.owner,division:x.division,
+              risk:x.risk,sourceFindingId:x.sourceFindingId,applyAllowed:false})),
           findingsAreProposals:true,automaticFixes:false});
+      }
       if(req.method==='GET'&&route==='/api/dynamic/coverage'){
         const catalog=functionCoverage.inventory();
         return answer(res,200,{schemaVersion:catalog.schemaVersion,baselineVersion:catalog.baselineVersion,
