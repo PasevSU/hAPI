@@ -97,6 +97,26 @@ function verifyDetached({challenge,signature,expectedFingerprint,publicKey,allow
     });
   });
 }
+function verifyGitCommitSignature({payload,signature,publicKey,expectedFingerprint}){
+  const expected=normalizeFingerprint(expectedFingerprint);
+  if(!expected||typeof payload!=='string'||typeof signature!=='string'||
+     payload.length>200000||signature.length>20000||
+     !signature.trim().startsWith('-----BEGIN PGP SIGNATURE-----'))return false;
+  try{
+    return withKeyring(publicKey,home=>{
+      if(!hasPrimaryFingerprint(home,expected))return false;
+      const messageFile=path.join(home,'commit.payload'),signatureFile=path.join(home,'commit.asc');
+      fs.writeFileSync(messageFile,payload,{mode:0o600});
+      fs.writeFileSync(signatureFile,signature,{mode:0o600});
+      const outcome=gpg(['--status-fd','1','--verify',signatureFile,messageFile],{homedir:home});
+      if(outcome.status!==0)return false;
+      return outcome.stdout.split('\n').filter(x=>x.startsWith('[GNUPG:] VALIDSIG ')).some(line=>{
+        const parts=line.trim().split(/\s+/);
+        return parts.at(-1)?.toUpperCase()===expected||parts[2]?.toUpperCase()===expected;
+      });
+    });
+  }catch{return false;}
+}
 function newChallenge(expectedFingerprint){
   const expected=normalizeFingerprint(expectedFingerprint);
   if(!expected)throw Error('GPG_FINGERPRINT_INVALID');
@@ -104,4 +124,4 @@ function newChallenge(expectedFingerprint){
     '\nfp='+expected+'\n';
 }
 module.exports={GITHUB_USER,REGISTERED_GPG_KEY_ID,normalizeFingerprint,validateOptions,
-  fetchGithubPublicKey,verifyPublicCertificate,verifyDetached,newChallenge,hasPrimaryFingerprint};
+  fetchGithubPublicKey,verifyPublicCertificate,verifyDetached,verifyGitCommitSignature,newChallenge,hasPrimaryFingerprint};
