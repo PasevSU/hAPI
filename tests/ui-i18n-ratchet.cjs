@@ -46,6 +46,7 @@ const CEILING = {
   'bootstrap.js': 0,
   'dashboard-panel.js': 636,
   'data.js': 726,
+  'debug-ledger.js': 0, // протоколът на дебъгинга държи само ключове — текстът е в i18n.js
   'debug-objects.js': 612,
   'directory-panel.js': 989,
   'export-center.js': 1977,

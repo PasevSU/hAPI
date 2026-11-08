@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 391 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 392 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 179 |
+| общо | 180 |
 | портал | 35 |
 | GUI | 29 |
 | Home Assistant | 17 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (179)
+## общо (180)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -77,6 +77,7 @@
 | `crypto-options` | Crypto options | `tests/crypto-options.cjs` |
 | `dashboard` | Dashboard | `tests/dashboard.cjs` |
 | `data-settings` | Data settings | `tests/data-settings.cjs` |
+| `debug-ledger` | Debug ledger | `tests/debug-ledger.cjs` |
 | `decision-sensors` | Decision sensors | `tests/decision-sensors.cjs` |
 | `diagnostics` | Diagnostics | `tests/diagnostics.cjs` |
 | `directory-contract` | Directory contract | `tests/directory-contract.cjs` |

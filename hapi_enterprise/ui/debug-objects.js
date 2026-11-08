@@ -303,6 +303,15 @@
   /** Отчет в конзолата — редовете са готови за копиране в доклад за дефект. */
   function report(result) {
     var r = result || scan();
+    // Протоколът се води САМО при включен дебъгинг: находките влизат с причина, решение и
+    // теста, който ги пази (`ui/debug-ledger.js`). Ако модулът липсва — отчетът пак работи.
+    if (isDebug() && window.HapiDebugLedger && typeof window.HapiDebugLedger.open === 'function') {
+      try {
+        window.HapiDebugLedger.open(r);
+      } catch {
+        /* протоколът е помощен — той не бива да чупи самия отчет */
+      }
+    }
     // Конзолата показва същото като екрана плюс разбивката по закон — текстът се строи
     // веднъж (`reportLines`), за да не се разминават двата отчета.
     var lines = ['HapiDebugObjects: ' + r.objects.length + ' обекта · ' + r.violations.length + ' нарушения'];

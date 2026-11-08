@@ -64,6 +64,7 @@ const RULES = [
   { id: "crypto-options", area: "общо", title: "Crypto options", owner: "tests/crypto-options.cjs" },
   { id: "dashboard", area: "общо", title: "Dashboard", owner: "tests/dashboard.cjs" },
   { id: "data-settings", area: "общо", title: "Data settings", owner: "tests/data-settings.cjs" },
+  { id: "debug-ledger", area: "общо", title: "Debug ledger", owner: "tests/debug-ledger.cjs" },
   { id: "decision-sensors", area: "общо", title: "Decision sensors", owner: "tests/decision-sensors.cjs" },
   { id: "diagnostics", area: "общо", title: "Diagnostics", owner: "tests/diagnostics.cjs" },
   { id: "directory-contract", area: "общо", title: "Directory contract", owner: "tests/directory-contract.cjs" },

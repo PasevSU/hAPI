@@ -1162,7 +1162,14 @@
         return toast(T('diag.objectsMissing'), 'err');
       }
       const result = tools.scan(document.body);
-      if (out) out.textContent = tools.reportText(result);
+      // Находките влизат в протокола (причина → решение → тест) и екранът показва точно
+      // него: иначе човек вижда „нарушено“, но не и какво се прави. Записът е в самия
+      // инструмент (`ui/debug-ledger.js`), за да има един източник на текстовете.
+      const ledger = window.HapiDebugLedger;
+      if (ledger) ledger.open(result);
+      const lines = [tools.reportText(result)];
+      if (ledger) lines.push('', ledger.reportText());
+      if (out) out.textContent = lines.join('\n');
       return toast(tools.summaryText(result), result.violations.length ? 'err' : 'ok');
     }
     if (action === 'group') {
