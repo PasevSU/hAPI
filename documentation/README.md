@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **136** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **137** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -54,6 +54,7 @@ _Генериран списък: **136** документа. Пише се от
 | `01_AS_IS_ARCHITECTURE/MODULE_CATALOG.md` | Module Catalog — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md` | Source Inventory — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/STORAGE_LAYOUT.md` | Къде какво стои — структура на файловете |
+| `01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md` | Състояние на системата и промени в 0.69.208 |
 | `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` | hAPI ENTERPRISE — API Architecture & Runtime Logic Specification |
 | `02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md` | API Endpoint Reference |
 | `02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md` | Architecture Compliance Matrix |

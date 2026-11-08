@@ -1,0 +1,146 @@
+# Състояние на системата и промени в 0.69.208
+
+> Живият документ за **„какво е системата днес“**, за разлика от нормативните документи в
+> `02_TO_BE_ARCHITECTURE/` (какво трябва да бъде). Обновява се при всяко издание, а числата се
+> ВЗИМАТ от скриптове и отчети, не се пишат на ръка. Всичко тук е измерено в работното дърво
+> на 0.69.208; при разминаване меродавни са `reports/RELEASE-STATUS.md`,
+> `reports/test-matrix.json` и `documentation/01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md`.
+
+## 1. Какво е системата
+
+hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime зависимости**,
+`node:sqlite`) плюс HACS интеграция. Един процес обслужва административен HTTP слой, публични
+портали, криптирано хранилище, WORM-одит, отчети с електронен подпис и ГУИ панел, който се
+зарежда и през HA Ingress, и самостоятелно (Docker).
+
+| Показател | Стойност (измерено) |
+| --- | --- |
+| Версия | **0.69.208** (`hapi_enterprise/config.yaml`, огледала в 7 файла) |
+| Модули в add-on-а | **105** `.js` файла в `hapi_enterprise/` |
+| Изнесени HTTP компонента | **17** файла в `hapi_enterprise/routes/` |
+| Модули на панела | **28** `.js` файла в `hapi_enterprise/ui/` |
+| Обявени endpoint-и | **245** реда в `API_ENDPOINT_REFERENCE.md` |
+| `server.js` | **2720** реда (пор **2722**) |
+| Изнесени функции | **363** в 51 модула, **363** покрити с тест |
+| Тестове в дървото | **392** файла (`391` в матрикса + `release-status.cjs`) |
+| Артефакт | `dist/` — точно **6** файла, `verify-release` **22/22** |
+
+## 2. Какво се промени в 0.69.208
+
+| Промяна | Комит | Защо | Какво я пази |
+| --- | --- | --- | --- |
+| Логическите корени са на едно място; `<диск>:\share` вече не се създава | `8c4b4b5` | `path.resolve('/share')` на Windows е `D:\share`; 213 тестови портала се бяха натрупали на диска | `storage-roots.cjs` (статично + динамично), `legacy-logic-residue.cjs` |
+| Дефинициите стигат и до инсталирането (`start.js`, `gateway-api`, `layout`, `evidence-portal`) | `9991e82` | вторите плоски списъци с корени в entrypoint-а и в модулите | `storage-roots.cjs` §2б и §5б |
+| Регресионна карта „дефект → тест“ + критичен анализ на самите защити | `a40bfd4` | 39 от 54 затворени дефекта нямаха нищо, което да ги пази | `regression-guards.cjs` (52 защити), `analysis-claims.cjs` |
+| Флейк под товар: `stopChild` чака 15 s и ескалира до `SIGKILL` | `01d47f5` | `event-stream` падаше на `/health`, `evidence-portal` стигаше 66 s | `process-guards.cjs` §5, `event-stream.cjs` |
+| Етикетите на полетата се свързват след рендер (`ui/field-labels.js`) | `c0a3e6e` | 109 `.field` блока без `for`/`id` — екранният четец не обявява име (DEF-38) | `ui-field-labels.cjs` |
+| Протокол на дебъгинга: находка → причина → решение → тест (`ui/debug-ledger.js`) | `dcae049` | инструментът казваше „нарушено“ и не помнеше нищо | `debug-ledger.cjs` |
+| Котви на защитите: 10 → **41 от 52** | `08be943` | „има тест“ не значи „пази това правило“ | `regression-guards.cjs` (`ANCHORS`) |
+| Дългът по езика (DEF-49) стана измерим по вид текст | `c896563` | 36 850 знака изглеждаха еднаква работа, а 387 от тях не се превеждат | `ui-i18n-ratchet.cjs` |
+
+Пълното описание „какво, защо и какво е измерено“ е в `CHANGELOG.md` и
+`documentation/07_RELEASE/RELEASE_0.69.208.md` (§6а.1–§6а.7).
+
+## 3. Договори с един източник на истина
+
+Всяко от тези правила е възникнало от дефект и днес се проверява автоматично. Те са и
+„капаните“ за всеки, който добавя код.
+
+| Договор | Единственото място | Тест |
+| --- | --- | --- |
+| Логически корени `/share`, `/media`, `/config`, `/data` | `hapi_enterprise/paths.js` | `storage-roots.cjs` |
+| Сервирани UI файлове | `UI_FILES` в `server.js` (allowlist — нов файл иначе е 404) | `html-assets.cjs`, `docker-runtime.cjs` |
+| Етикети на полетата | `ui/field-labels.js` след всеки рендер | `ui-field-labels.cjs` |
+| Знания за грешките | `ui/debug-ledger.js` (`SOLUTIONS`) + речник `dbg.*` | `debug-ledger.cjs` |
+| Закони на оформлението | `ui/debug-objects.js` (`OBJECTS`, `LAWS`) | `gui-debug-objects.cjs` |
+| Преводи | `ui/i18n.js` (BG/EN/DE), ратчет само надолу | `ui-i18n.cjs`, `ui-i18n-ratchet.cjs` |
+| Затворен дефект | `KNOWN_DEFECTS.md` + `GUARDS`/`ANCHORS` | `regression-guards.cjs` |
+| Размер на монолита | `server.js` ≤ 2722 реда, нов код → `routes/*.js` | `server-structure.cjs` |
+| Жив поток без токен в адрес | еднократен билет от `POST /admin/api/events/ticket` | `sse-ticket.cjs` |
+| Проверки, които чакат под товар | `helpers.stopChild` (15 s + `SIGKILL`) | `process-guards.cjs` |
+
+## 4. Дебъгинг системата днес
+
+Два модула, които се включват **само** при `window.HAPI_DEBUG`, `?debug=1` или
+`localStorage['hapi.debug']='1'`:
+
+- `ui/debug-objects.js` — разпознава обектите (карта, контрола, поле, табелка, контейнер) и
+  прилага **6 закона**: `spacing-grid`, `symmetry`, `named`, `touch-target`, `no-inline-layout`,
+  `one-qr`. Липсваща стойност се прескача, не се брои за нарушение.
+- `ui/debug-ledger.js` — протокол: всяка находка влиза с **причина**, **решение** и името на
+  теста, който я пази. Подписът е `закон@вид`, повторението вдига брояч вместо да отваря нов
+  ред, `resolve()` затваря, появила се пак „решена“ находка се брои като **регресия**. Таван
+  **200** записа в `localStorage`, `toJSON()` за доклад за дефект.
+
+| Функция | Какво прави |
+| --- | --- |
+| `open(scanResult)` | записва находките; връща `{ added, repeated }` |
+| `resolve(подпис, бележка)` / `reopen(...)` | затваря / отваря отново |
+| `list({ status })`, `stats()` | четене и броячи (отворени, решени, повтарящи се, регресии) |
+| `reportText()` | отчетът за екрана и конзолата (причина · решение · „пази: tests/…“) |
+| `toJSON()`, `reset()` | готов отчет за прикачане; изчистване |
+
+Пълната спецификация: `documentation/04_FUNCTION_SPECIFICATIONS/DEBUG_OBJECTS.md` (§6).
+Отчетът се вижда на екрана в „Настройки → Диагностика → Прегледай обектите“.
+
+## 5. Дефекти
+
+| Състояние | Брой | Забележка |
+| --- | --- | --- |
+| Редове в регистъра | **55** | `KNOWN_DEFECTS.md`, заглавието носи версията |
+| Затворени | **52** | всеки с поне един тест в `GUARDS`; **41** и с котва |
+| Отворени | **3** | DEF-01 (приет, документиран — исторически документ), DEF-06, DEF-49 |
+
+- **DEF-06 (WORM):** физическата неизтриваемост иска `chattr +i` (root) или S3 Object Lock —
+  извън възможностите на средата, затова остава отворен, а не „затворен на думи“.
+- **DEF-49 (език):** 36 850 български знака, от които **387** са съобщения за грешка/логове, а
+  **36 463** интерфейсен текст. Ръстът е заключен от ратчет; преводът е отделна задача.
+
+## 6. Измерени порти (0.69.208)
+
+| Гейт | Команда | Резултат |
+| --- | --- | --- |
+| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **391/391**, **1** опит, 376 s |
+| Артефакт | `node scripts/verify-release.cjs` | **22/22**, `dist/` 6 файла |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 392 теста в дървото |
+| ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
+| Регресионни защити | `tests/regression-guards.cjs` | 52 защити · 73 теста · **41** котви |
+| Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 36 850 (таван 36 850) · 22 `t()` |
+| Одити | `logic-audit --gate` · `bad-code-scan --gate` | 0 · 0 |
+| Линт | `npx eslint . --max-warnings=0` | 0 |
+| Хигиена | `D:\share` / `C:\share` | не съществуват |
+
+## 7. Какво остава
+
+1. **Превод на 36 463 знака** интерфейсен текст (15 панела × BG/EN/DE) — DEF-49, отделна задача.
+2. **Котви за 11 защити** (DEF-13, 17, 20, 24, 26, 27, 31, 34, 39, 40, 42): тестовете им
+   проверяват състояние/HTTP код/ред на извиквания и нямат устойчив низ — котва там би била
+   декорация.
+3. **DEF-06 (WORM)** — иска root/Object Lock.
+4. **Нечетните `1/3/5/7/9px` и радиусите без токен** — преглед с очи, не скрипт.
+5. **Публикуване на 0.69.208** — таг `v0.69.208`, `scripts/publish-haoss.ps1 -Execute`,
+   проверка на SHA-256 (4/4). Не е пускано: чака изрично решение.
+
+## 8. Как се проверява състоянието
+
+```powershell
+node scripts/release-status.cjs            # отчетът за изданието
+node scripts/test-matrix.cjs --skip=release-status --attempts=1
+node scripts/verify-release.cjs            # S01–S23 върху dist/
+node tests/regression-guards.cjs           # дефект → тест → котва
+node tests/ui-i18n-ratchet.cjs             # дългът по езика
+node tests/debug-ledger.cjs                # знанията за грешките
+node scripts/audit-gui-compat.cjs          # ГУИ и съвместимост
+npx eslint . --max-warnings=0
+```
+
+## 9. Свързани документи
+
+- [`KNOWN_DEFECTS.md`](KNOWN_DEFECTS.md) — регистърът на дефектите (единственият списък).
+- [`SOURCE_INVENTORY.md`](SOURCE_INVENTORY.md) — всеки модул с роля и редове.
+- [`MODULE_CATALOG.md`](MODULE_CATALOG.md) · [`DEPENDENCY_GRAPH.md`](DEPENDENCY_GRAPH.md) —
+  графът на модулите.
+- [`../02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md`](../02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md) —
+  нормативното „какво трябва да бъде“ и съответствието.
+- [`../07_RELEASE/RELEASE_0.69.208.md`](../07_RELEASE/RELEASE_0.69.208.md) — бележките за изданието.
+- [`../../CHANGELOG.md`](../../CHANGELOG.md) — промените в ред за четене.

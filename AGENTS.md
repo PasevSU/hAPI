@@ -36,6 +36,8 @@
   (карта „Достъп и QR код“), `portal-folders.js` (дърво), `portal-files.js` (списък), `i18n.js` (BG/EN/DE).
 - `hapi_enterprise/portal/` — публичната страница: `portal.html`, `portal.js`, `portal-i18n.js`, `portal.css`.
 - `tests/` — един файл = едно правило; `tests/lib/gui-harness.cjs` пуска реален сървър + DOM.
+- `documentation/01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md` — СЪСТОЯНИЕТО днес: числа, порти,
+  договори, какво остава. Обновява се при всяко издание; числата се взимат от отчетите.
 
 ## Локална среда (тази машина, проверено 2026-11-07)
 
