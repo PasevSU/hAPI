@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "status": "design-not-production-executor",
+  "states": [
+    "DETECTED",
+    "REPRODUCED",
+    "VARIANT_A_TESTED",
+    "VARIANT_B_TESTED",
+    "EVIDENCE_REVIEWED",
+    "APPROVAL_REQUIRED",
+    "AUTOMATIC_ELIGIBLE",
+    "SNAPSHOT_VERIFIED",
+    "APPLYING",
+    "RESTARTING",
+    "POST_RESTART_VERIFYING",
+    "SUCCEEDED",
+    "FAILED",
+    "ROLLBACK_REQUESTED",
+    "ROLLBACK_VERIFYING",
+    "RESTORED",
+    "ESCALATED"
+  ],
+  "preconditions": [
+    "Two independent test runs (distinct environments and CI run IDs) with recorded artifacts and all regression/integrity/rollback gates passed",
+    "Verified backup and restore drill against preserved data",
+    "Out-of-process recovery controller: Guardian process cannot roll back its own crashed container",
+    "Explicit test contracts for old and new behavior; compare A=unmodified control and B=patched candidate or two independent implementation variants",
+    "Aggregate success estimate uses minimum of Wilson 95% lower confidence bounds for both independent environments; untested factors force blocked",
+    "RBAC and signed immutable change request; local time independent decision log"
+  ],
+  "decisionMatrix": [
+    {
+      "minimumLowerConfidencePercent": 0,
+      "maximumExclusive": 80,
+      "mode": "blocked"
+    },
+    {
+      "minimumLowerConfidencePercent": 80,
+      "maximumExclusive": 90,
+      "mode": "button-with-operator-approval"
+    },
+    {
+      "minimumLowerConfidencePercent": 90,
+      "maximumExclusive": 100.01,
+      "mode": "automatic-only-if-preapproved-reversible-allowlisted"
+    }
+  ],
+  "neverAutomatic": [
+    "new binary image",
+    "Home Assistant OS/Supervisor restart",
+    "data migrations",
+    "secrets/keys",
+    "quarantine/access policies",
+    "storage root changes",
+    "database repair",
+    "evidence deletion",
+    "public gateway security changes"
+  ],
+  "applySequence": [
+    "Create snapshot and verify checksum",
+    "Record pre-change version, config schema, impacted modules and deterministic regression evidence",
+    "Stage candidate side by side; never rewrite production in place",
+    "Apply only allowlisted reversible change or obtain explicit approval",
+    "Restart isolated target service only after external supervisor is armed (not whole HA OS)",
+    "Verify /ready, route contracts, database quick_check, portal accessibility, rollback command path, performance window",
+    "On failure signal the independent controller to restore exact prior version and configuration snapshot, check data hash and re-run old behavior tests",
+    "If rollback fails: isolate and escalate, never loop indefinitely; rate limit retry to one supervised attempt per unique candidate"
+  ],
+  "audit": "Record immutable proposal ID, evidence hashes, CI run IDs, before/after version, actions, timestamps, actor, results and any rollback",
+  "limits": [
+    "No automatic fixes or restarts wired in current branch",
+    "The word percentage means lower confidence bound from observed outcomes, not LLM probability or guarantee.",
+    "No credential exfiltration; private document bytes never enter AI prompts.",
+    "No operation without verified isolated restore controller."
+  ]
+}
