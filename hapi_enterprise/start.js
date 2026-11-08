@@ -265,6 +265,7 @@ const child = spawn(process.execPath, [SERVER], { env, stdio: 'inherit' });
 // Optional diagnostics as a sibling process. No separate installer, network calls or
 // runtime dependencies. It does not modify/restart hAPI and stays OFF on upgrades.
 const guardianEnabled = options.stability_guardian_enabled === true || options.stability_guardian_enabled === 'true';
+env.HAPI_GUARDIAN_ENABLED = guardianEnabled ? 'true' : 'false';
 let guardian = null;
 if (guardianEnabled) {
   guardian = spawn(process.execPath, [path.join(__dirname, 'guardian', 'monitor.js')], {
