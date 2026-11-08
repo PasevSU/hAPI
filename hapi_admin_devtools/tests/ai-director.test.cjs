@@ -10,6 +10,10 @@ test('director is chief of full project development and categories are distinct'
  assert.ok(hierarchy.categories.length>=12);
  assert.equal(new Set(hierarchy.categories.map(c=>c.id)).size,hierarchy.categories.length);
  assert.ok(hierarchy.roles.some(x=>x.id==='director'&&x.level===0));
+ assert.equal(hierarchy.roles.filter(x=>x.level===1).length,3);
+ assert.equal(hierarchy.roles.filter(x=>x.level===2).length,12);
+ assert.ok(hierarchy.categories.every(c=>c.division && hierarchy.roles.some(r=>r.id===c.division&&r.level===1)));
+ assert.ok(hierarchy.roles.filter(x=>x.level===2).every(r=>hierarchy.roles.some(p=>p.id===r.parent&&p.level===1)));
  assert.ok(hierarchy.categories.every(c=>hierarchy.roles.some(r=>r.id===c.owner)));
  assert.equal(hierarchy.authority.autonomy.publishRelease,false);
  assert.equal(hierarchy.authority.autonomy.modifyProduction,false);
@@ -18,6 +22,7 @@ test('the chief assigns real cases to specialists instead of leaving tasks unown
  const sqlite=director.classify({title:'SQLite database crash',target:'enterprise',files:['hapi_enterprise/sqlite-store.js']});
  assert.equal(sqlite.category,'storage');
  assert.equal(sqlite.owner,'storage-agent');
+ assert.equal(sqlite.division,'reliability-lead');
  assert.equal(sqlite.risk,'critical');
  const release=director.classify({title:'New version release build docker tag',target:'devtools'});
  assert.equal(release.category,'release');
@@ -57,7 +62,7 @@ test('SDK adapter has the director at the top and specialists only as read-only 
  const sdk={Agent,run:async()=>({finalOutput:'Analyze and propose a fix only'})};
  const built=sdkManager.createManager(sdk);
  assert.equal(built.director.name,'hAPI-DEV Development Director');
- assert.ok(built.tools.length>=7);
+ assert.equal(built.tools.length,12);
  assert.equal(built.tools.length,built.agents.length);
  const result=await sdkManager.analyzeTask({title:'Analyze portal folder regression',target:'enterprise'}, {sdk,maxTurns:2});
  assert.equal(result.status,'advisory-only');
