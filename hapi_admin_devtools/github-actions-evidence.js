@@ -5,15 +5,16 @@
  * All external data is untrusted until caller validates exact commit and trusted signer.
  */
 const https=require('node:https');
-const OWNER='PasevSU',REPO='hAPI';
-function fetchJson(apiPath,{timeoutMs=8000}={}){
+const {DEFINITIONS,readAddonVersion}=require('./definitions');
+const OWNER=DEFINITIONS.github.owner,REPO=DEFINITIONS.github.repo;
+function fetchJson(apiPath,{timeoutMs=DEFINITIONS.limits.githubTimeoutMs}={}){
  return new Promise((resolve,reject)=>{
-   const req=https.get('https://api.github.com/repos/'+OWNER+'/'+REPO+apiPath,{
-     timeout:timeoutMs,headers:{'user-agent':'hAPI-Admin-DevTools/0.2',
-       'accept':'application/vnd.github+json','x-github-api-version':'2022-11-28'}},res=>{
+   const req=https.get(DEFINITIONS.github.apiUrl+'/repos/'+OWNER+'/'+REPO+apiPath,{
+     timeout:timeoutMs,headers:{'user-agent':'hAPI-Admin-DevTools/'+readAddonVersion(),
+       'accept':'application/vnd.github+json','x-github-api-version':DEFINITIONS.github.apiVersion}},res=>{
      if(res.statusCode!==200){res.resume();return reject(Error('GITHUB_ACTIONS_HTTP_'+res.statusCode));}
      let bytes=0;const chunks=[];
-     res.on('data',c=>{bytes+=c.length;if(bytes>1024*1024){req.destroy(Error('GITHUB_ACTIONS_RESPONSE_TOO_LARGE'));return;}chunks.push(c);});
+     res.on('data',c=>{bytes+=c.length;if(bytes>DEFINITIONS.limits.githubActionsBytes){req.destroy(Error('GITHUB_ACTIONS_RESPONSE_TOO_LARGE'));return;}chunks.push(c);});
      res.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')))}catch{reject(Error('GITHUB_ACTIONS_JSON_INVALID'));}});
    });
    req.on('timeout',()=>req.destroy(Error('GITHUB_ACTIONS_TIMEOUT')));
@@ -23,7 +24,7 @@ function fetchJson(apiPath,{timeoutMs=8000}={}){
 const validSha=s=>typeof s==='string'&&/^[a-f0-9]{40}$/.test(s);
 const validId=id=>Number.isSafeInteger(id)&&id>0;
 function normalizeRun(run,sha){
- const matches=run?.head_sha===sha&&run?.head_repository?.full_name==='PasevSU/hAPI';
+ const matches=run?.head_sha===sha&&run?.head_repository?.full_name===OWNER+'/'+REPO;
  return {
   runId:run?.id??null,
   workflow:String(run?.name||'').slice(0,100),
