@@ -120,7 +120,7 @@ function verifyGitCommitSignature({payload,signature,publicKey,expectedFingerpri
 function verifyReleaseIntent({payload,signature,publicKey,expectedFingerprint}){
   const expected=normalizeFingerprint(expectedFingerprint);
   if(!expected||typeof payload!=='string'||payload.length>3000 ||
-     !payload.startsWith('hapi-admin-devtools/release-intent-v1\\n') ||
+     !payload.startsWith('hapi-admin-devtools/release-intent-v1\n') ||
      typeof signature!=='string'||signature.length>16000||
      !signature.trim().startsWith(SIGNATURE_HEADER))return false;
   try{
@@ -131,8 +131,8 @@ function verifyReleaseIntent({payload,signature,publicKey,expectedFingerprint}){
       fs.writeFileSync(sig,signature,{mode:0o600});
       const result=gpg(['--status-fd','1','--verify',sig,msg],{homedir:home});
       if(result.status!==0)return false;
-      return result.stdout.split('\\n').filter(x=>x.startsWith('[GNUPG:] VALIDSIG ')).some(line=>{
-        const parts=line.trim().split(/\\s+/);
+      return result.stdout.split('\n').filter(x=>x.startsWith('[GNUPG:] VALIDSIG ')).some(line=>{
+        const parts=line.trim().split(/\s+/);
         return parts.at(-1)?.toUpperCase()===expected||parts[2]?.toUpperCase()===expected;
       });
     });
