@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "sourceBaseline": "0.69.203",
+  "method": "instrument-then-measure-not-auto-cache",
+  "sampling": {
+    "initialWindowMinutes": 60,
+    "minimumCalls": 100,
+    "minP95ImprovementPercent": 15,
+    "maxCacheStaleFailures": 0,
+    "baselineRequired": true
+  },
+  "rules": [
+    "Every cache must specify key, owner, max size, expiry, invalidation, privacy boundaries, regression tests and rollback.",
+    "Do not cache authorization decisions, signed URLs persistently, private keys, credentials, audit append results or mutable evidence bytes.",
+    "Caching never changes evidence verification semantics; immutable content may be optimized only after integrity tests.",
+    "No runtime auto-enable: candidates move from suggested to approved only after measured production-safe trial."
+  ],
+  "candidates": [
+    {
+      "id": "C-001",
+      "component": "portal metadata/tree",
+      "target": [
+        "portal folder tree enumeration",
+        "metadata listing"
+      ],
+      "motivation": "Repeated directory enumeration may dominate large portal trees; requires measurement",
+      "status": "candidate-unmeasured",
+      "metric": [
+        "p50/p95 enumeration duration",
+        "filesystem scans/minute",
+        "tree size"
+      ],
+      "proposed": "Bounded short-TTL portal-local metadata cache; invalidate on folder create/delete/move/upload, policy update and permission change",
+      "ttlSecondsRange": [
+        2,
+        30
+      ],
+      "sensitivity": "no cached authorization decisions",
+      "historical": [
+        "DEF-08",
+        "DEF-18"
+      ]
+    },
+    {
+      "id": "C-002",
+      "component": "UI sensor requests",
+      "target": [
+        "dashboard sensor aggregate",
+        "portal sensor widgets"
+      ],
+      "motivation": "DEF-27 described duplicated fetch on opening a portal panel; first fix is deduplication, then consider cache",
+      "status": "candidate-unmeasured",
+      "metric": [
+        "duplicate requests per UI mount",
+        "p95 sensor response time",
+        "refresh frequency"
+      ],
+      "proposed": "In-flight request deduplication; only short-lived aggregate cache with explicit refresh/invalidate",
+      "ttlSecondsRange": [
+        1,
+        10
+      ],
+      "sensitivity": "no IP/user identifier in cached payload",
+      "historical": [
+        "DEF-27"
+      ]
+    },
+    {
+      "id": "C-003",
+      "component": "report generation",
+      "target": [
+        "preview thumbnails",
+        "PDF/table assembly"
+      ],
+      "motivation": "CPU-intensive work may be reusable per immutable content hash; validate against real workloads",
+      "status": "candidate-unmeasured",
+      "metric": [
+        "p95 generation ms",
+        "bytes produced",
+        "CPU usage",
+        "repeat content hashes"
+      ],
+      "proposed": "Content-addressed cache keyed by document SHA+renderer/version/options+permission context; storage caps and secure deletion",
+      "ttlSecondsRange": null,
+      "sensitivity": "document data: cache disabled unless encryption and access separation verified",
+      "historical": []
+    },
+    {
+      "id": "C-004",
+      "component": "public QR/portal static assets",
+      "target": [
+        "non-sensitive CSS/JS/icons"
+      ],
+      "motivation": "Immutable versioned assets can use conditional HTTP caching",
+      "status": "candidate-unmeasured",
+      "metric": [
+        "304 ratio",
+        "payload bytes",
+        "p95 asset latency"
+      ],
+      "proposed": "ETag and versioned asset Cache-Control; HTML and credentials remain uncached",
+      "ttlSecondsRange": [
+        60,
+        86400
+      ],
+      "sensitivity": "never cache tokens or dynamic portal HTML as public",
+      "historical": [
+        "DEF-34"
+      ]
+    },
+    {
+      "id": "C-005",
+      "component": "signed links",
+      "target": [
+        "signed portal share URL generation"
+      ],
+      "motivation": "DEF-32 and DEF-35 describe duplicate signing and expiry tracking; cache only in caller memory while valid",
+      "status": "candidate-unmeasured",
+      "metric": [
+        "sign operations per action",
+        "expiration validity errors",
+        "duplicate generation"
+      ],
+      "proposed": "Single-flight signing, expiry-aware per-session reuse with max TTL=min(signature expiry, 60s); explicit revoke invalidation",
+      "ttlSecondsRange": [
+        0,
+        60
+      ],
+      "sensitivity": "identity-bound; forbid disk/persistent/AI cache",
+      "historical": [
+        "DEF-32",
+        "DEF-35"
+      ]
+    },
+    {
+      "id": "C-006",
+      "component": "GeoIP lookups",
+      "target": [
+        "offline GeoIP database"
+      ],
+      "motivation": "visitor-intel has file-backed data; identify repeated lookups before optimizing",
+      "status": "candidate-unmeasured",
+      "metric": [
+        "lookup rate",
+        "database load ms",
+        "memory footprint"
+      ],
+      "proposed": "Bounded in-process LRU of anonymized prefix/result; invalidate when database file mtime/hash changes",
+      "ttlSecondsRange": [
+        60,
+        3600
+      ],
+      "sensitivity": "never store full IPs or send to remote agent",
+      "historical": []
+    },
+    {
+      "id": "C-007",
+      "component": "API metadata",
+      "target": [
+        "OpenAPI spec",
+        "stable source catalog"
+      ],
+      "motivation": "Static contracts vary with release rather than per request",
+      "status": "candidate-unmeasured",
+      "metric": [
+        "generation count",
+        "payload size",
+        "CPU ms"
+      ],
+      "proposed": "Precompute during build or cache by version hash; invalidate at release",
+      "ttlSecondsRange": null,
+      "sensitivity": "do not include live roles or secrets in cache",
+      "historical": []
+    }
+  ]
+}
