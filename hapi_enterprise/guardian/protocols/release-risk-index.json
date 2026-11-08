@@ -1,0 +1,2457 @@
+{
+  "schemaVersion": 1,
+  "baseline": "0.69.203",
+  "source": "CHANGELOG.md",
+  "sourceSha": "88f5938aed9d3368d23c0b7a9a2470cf85b63c87",
+  "notice": "Heuristic extraction of risk-related changelog bullets from all documented sections. Do not treat as an independently verified bug history or a currently active defect.",
+  "count": 222,
+  "entries": [
+    {
+      "version": "0.69.203",
+      "defectRefs": [
+        "DEF-46"
+      ],
+      "testHints": [
+        "pgp-keyring.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.202",
+      "defectRefs": [],
+      "testHints": [
+        "files-manager.cjs",
+        "ui-i18n.cjs",
+        "portal-card-link.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Речникът е изчистен от 33 мъртви ключа × 3 езика. Ключовете на махнатия блок",
+        "Нов гейт: ключ, който никой модул не ползва, е грешка. tests/ui-i18n.cjs обхожда"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.201",
+      "defectRefs": [
+        "DEF-45"
+      ],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.200",
+      "defectRefs": [
+        "DEF-43",
+        "DEF-44"
+      ],
+      "testHints": [
+        "portal-card-link.cjs",
+        "gui-open-portal-link.cjs",
+        "gui-portal-refs.cjs",
+        "files-manager.cjs",
+        "gui-journeys.cjs",
+        "pgp-unknown-subkey.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Поправен дефект DEF-43: непознат PGP подключ събаряше целия ключов блок.",
+        "Възстановена политика на съхранение на живата инстанция (DEF-44). Инсталацията работеше",
+        "Възстановен PGP панел на инстанцията. Опциите сочеха към /config/openvpn/ (в контейнера"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.199",
+      "defectRefs": [
+        "DEF-42"
+      ],
+      "testHints": [
+        "ha-version-sensor.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Поправен дефект DEF-42: сензорът за версията не се създаваше в Home Assistant 2026.11."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.198",
+      "defectRefs": [],
+      "testHints": [
+        "apply-update-script.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.197",
+      "defectRefs": [],
+      "testHints": [
+        "function-catalog.cjs",
+        "store-accessors.cjs",
+        "directory-contract.cjs",
+        "portal-policy-secret-links.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.196",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.195",
+      "defectRefs": [
+        "DEF-40",
+        "DEF-41"
+      ],
+      "testHints": [
+        "api-robustness.cjs"
+      ],
+      "historicalRiskNotes": [
+        "DEF-40: тяло null връщаше 500 на 29 маршрута. null е валиден JSON, затова"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.194",
+      "defectRefs": [
+        "DEF-39"
+      ],
+      "testHints": [
+        "settings-policies.cjs",
+        "gui-sections.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Поправен дефект в частичния запис на настройки (DEF-39). runtime.save() сливаше само"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.193",
+      "defectRefs": [],
+      "testHints": [
+        "hassfest-local.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.192",
+      "defectRefs": [],
+      "testHints": [
+        "evidence-portal.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Поправен платформен дефект в избора къде живее порталът на доказателствата. На Linux"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.191",
+      "defectRefs": [
+        "DEF-38"
+      ],
+      "testHints": [
+        "gui-debug-objects.cjs",
+        "gui-sections.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Два закона бяха сгрешени и са поправени. one-qr се прилагаше за всеки контейнер и",
+        "Инструментът веднага намери истински дефект: 9 полета в портала имат етикет, който само",
+        "Текстът на отчета се строи на едно място. debug-objects.js дава reportLines(),",
+        "Проверява се от gui-debug-objects.cjs: стъпка 5 натиска бутона през интерфейса и иска"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.190",
+      "defectRefs": [],
+      "testHints": [
+        "gui-debug-objects.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Включва се само при window.HAPI_DEBUG, ?debug=1 или localStorage['hapi.debug']='1';",
+        "Проверява се от gui-debug-objects.cjs: в живия панел се разпознават 100 обекта от",
+        "Документация: documentation/04_FUNCTION_SPECIFICATIONS/DEBUG_OBJECTS.md."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.189",
+      "defectRefs": [
+        "DEF-37"
+      ],
+      "testHints": [
+        "ui-spacing.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.188",
+      "defectRefs": [],
+      "testHints": [
+        "gui-journeys.cjs",
+        "files-manager.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.187",
+      "defectRefs": [],
+      "testHints": [
+        "files-manager.cjs",
+        "gui-journeys.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проверява се от files-manager.cjs (чекбоксът, иконата вдясно, липсата на metaChips в"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.186",
+      "defectRefs": [
+        "DEF-36"
+      ],
+      "testHints": [
+        "gui-file-share.cjs",
+        "files-manager.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.185",
+      "defectRefs": [
+        "DEF-35"
+      ],
+      "testHints": [
+        "gui-file-share.cjs",
+        "files-manager.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.184",
+      "defectRefs": [
+        "DEF-34"
+      ],
+      "testHints": [
+        "portal-page.cjs",
+        "portal-page-contract.cjs",
+        "portal-page-render.cjs",
+        "portal-i18n.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.183",
+      "defectRefs": [],
+      "testHints": [
+        "portal-card-link.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.182",
+      "defectRefs": [],
+      "testHints": [
+        "portal-card-link.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.181",
+      "defectRefs": [
+        "DEF-33"
+      ],
+      "testHints": [
+        "portal-card-link.cjs",
+        "files-manager.cjs",
+        "gui-portal-refs.cjs",
+        "gui-open-portal-link.cjs",
+        "gui-csp-guard.cjs",
+        "ui-i18n.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Дефектът е записан като DEF-33 в documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.180",
+      "defectRefs": [
+        "DEF-31",
+        "DEF-32"
+      ],
+      "testHints": [
+        "portal-page.cjs",
+        "files-manager.cjs"
+      ],
+      "historicalRiskNotes": [
+        "По-малко работа по списъка. GET /admin/api/portals връща всички портали през",
+        "Дефектът е записан като DEF-32 в documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md;"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.179",
+      "defectRefs": [
+        "DEF-31"
+      ],
+      "testHints": [
+        "portal-chain.cjs",
+        "portal-card-link.cjs",
+        "files-manager.cjs",
+        "folder-delete.cjs",
+        "gui-journeys.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Дефектът е записан като DEF-31 в documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.178",
+      "defectRefs": [],
+      "testHints": [
+        "portal-i18n.cjs",
+        "ui-i18n.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Тестът го пази: portal-i18n.cjs и ui-i18n.cjs искат и трите езика да съдържат"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.177",
+      "defectRefs": [
+        "DEF-30"
+      ],
+      "testHints": [],
+      "historicalRiskNotes": [
+        "Дефектът е записан като DEF-30 в documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.176",
+      "defectRefs": [
+        "DEF-29"
+      ],
+      "testHints": [
+        "portal-card-link.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Кратки надписи в лентата (portal.act. в трите езика): „Отвори“ · „Обнови“ ·",
+        "Дефектът е записан като DEF-29 в documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.175",
+      "defectRefs": [
+        "DEF-28"
+      ],
+      "testHints": [
+        "ui-i18n.cjs",
+        "files-manager.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Картата на портала вече говори езика на интерфейса (BG/EN/DE). Панелът",
+        "Дефектът е записан като DEF-28 в documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.174",
+      "defectRefs": [
+        "DEF-27"
+      ],
+      "testHints": [
+        "dom-stub.cjs",
+        "portal-card-link.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Дефектите са записани като DEF-27 в documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.173",
+      "defectRefs": [
+        "DEF-26"
+      ],
+      "testHints": [
+        "portal-card-link.cjs"
+      ],
+      "historicalRiskNotes": [
+        "folderUrl се записва при генериране на API — доскоро липсваше и QR кодът винаги падаше",
+        "Проверява се от tests/portal-card-link.cjs (жив сървър и истински панел), а дефектът е"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.172",
+      "defectRefs": [],
+      "testHints": [
+        "paptresor.cjs",
+        "gui-sections.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.171",
+      "defectRefs": [],
+      "testHints": [
+        "pgp-sign.cjs",
+        "gui-journeys.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.170",
+      "defectRefs": [],
+      "testHints": [
+        "ui-skin.cjs",
+        "gui-journeys.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.169",
+      "defectRefs": [],
+      "testHints": [
+        "pgp-tools.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.168",
+      "defectRefs": [
+        "DEF-25"
+      ],
+      "testHints": [
+        "gui-journeys.cjs",
+        "portal-skin.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.167",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-flow.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.166",
+      "defectRefs": [],
+      "testHints": [
+        "addon-defaults-startup.cjs",
+        "check-ha-live.cjs",
+        "secret-exposure.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.165",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.164",
+      "defectRefs": [],
+      "testHints": [
+        "addon-config.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Възстановена е поддръжката за armv7. Архитектурата присъства в config.yaml, а"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.162",
+      "defectRefs": [],
+      "testHints": [
+        "docs-index.cjs",
+        "docs-manual.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.161",
+      "defectRefs": [],
+      "testHints": [
+        "docs-manual.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.160",
+      "defectRefs": [],
+      "testHints": [
+        "compare-live-options.cjs",
+        "settings-defaults.cjs",
+        "addon-defaults-startup.cjs",
+        "raspberrypi-compat.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.159",
+      "defectRefs": [],
+      "testHints": [
+        "test-rules.cjs",
+        "scenario-matrix.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.158",
+      "defectRefs": [],
+      "testHints": [
+        "scenario-matrix.cjs",
+        "test-rules.cjs",
+        "gen-test-rules.cjs",
+        "zz-negative-probe.cjs",
+        "pgp-aead.cjs",
+        "pgp.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.157",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.156",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [
+        "Защо --include не работи на HA: grep там е BusyBox и не познава --include, а"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.155",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.154",
+      "defectRefs": [],
+      "testHints": [
+        "ha-compatibility.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проверката на образа беше счупена по два начина — поправена. check-addon-image.ps1"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.153",
+      "defectRefs": [],
+      "testHints": [
+        "ha-compatibility.cjs",
+        "integration-runtime-data.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Картата в store-а вече има линк „Документация“. В config.yaml липсваше ключът"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.152",
+      "defectRefs": [],
+      "testHints": [
+        "gui-journeys.cjs",
+        "files-manager.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.151",
+      "defectRefs": [
+        "DEF-24"
+      ],
+      "testHints": [
+        "portal-archive.cjs",
+        "gui-journeys.cjs",
+        "ui-shell-nav.cjs",
+        "dom-stub.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Връщане с едно натискане. Секция „Затворени портали (N)“ в панела показва оставащите"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.150",
+      "defectRefs": [],
+      "testHints": [
+        "start-portal-open.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.149",
+      "defectRefs": [],
+      "testHints": [
+        "csp.cjs",
+        "gui-csp-guard.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.148",
+      "defectRefs": [],
+      "testHints": [
+        "qr-leads-to-folder.cjs",
+        "gui-csp-same-origin.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.147",
+      "defectRefs": [],
+      "testHints": [
+        "portal-folder-button.cjs",
+        "portal-no-links.cjs",
+        "gui-open-portal-link.cjs",
+        "ha-portal-folder-page.cjs",
+        "qr-leads-to-folder.cjs",
+        "ha-auth-contract.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.146",
+      "defectRefs": [],
+      "testHints": [
+        "ha-auth-contract.cjs",
+        "hassfest-local.cjs"
+      ],
+      "historicalRiskNotes": [
+        "преводи — strings.json е равно на translations/en.json, нито един низ в трите",
+        "грешки на flow-а — всяка грешка, която config_flow.py може да върне, има превод,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.145",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-flow.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.144",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-flow.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.143",
+      "defectRefs": [],
+      "testHints": [
+        "file-placement.cjs",
+        "placement.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.142",
+      "defectRefs": [],
+      "testHints": [
+        "portal-no-links.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.141",
+      "defectRefs": [],
+      "testHints": [
+        "portal-no-links.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.140",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.139",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.138",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.137",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [
+        "Поправен дефект: менюто „API ▾“ на портала не се появяваше никога, а контролният панел"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.136",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [
+        "Поправен дефект: „Качи версия“ с бележка на кирилица не правеше нищо. Бележката се"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.135",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.134",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.133",
+      "defectRefs": [],
+      "testHints": [
+        "files-manager.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.132",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.131",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [
+        "Поправен дефект в интерфейса: „✕“ на току-що добавено поле по желание не правеше нищо."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.130",
+      "defectRefs": [],
+      "testHints": [
+        "files-manager.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.129",
+      "defectRefs": [],
+      "testHints": [
+        "files-manager.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.128",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.127",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.126",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.125",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.124",
+      "defectRefs": [],
+      "testHints": [
+        "gui-only-guard.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Файловите сценарии се връщат — вече самодостатъчни. В 0.69.123 три сценария отпаднаха,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.123",
+      "defectRefs": [],
+      "testHints": [
+        "gui-panels.cjs",
+        "files-manager.cjs",
+        "gui-only-guard.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.122",
+      "defectRefs": [],
+      "testHints": [
+        "gui-journeys.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.121",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.120",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [
+        "Провал в CI вече се вижда, а не се гадае. verify-release S20 пуска целия набор през"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.119",
+      "defectRefs": [],
+      "testHints": [
+        "gui-journeys.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.118",
+      "defectRefs": [],
+      "testHints": [
+        "gui-only-guard.cjs",
+        "internal.cjs",
+        "helpers.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.117",
+      "defectRefs": [],
+      "testHints": [
+        "dom-stub.cjs",
+        "gui-only-guard.cjs",
+        "signing.cjs",
+        "bulk-access.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Публичен gateway: „Тествай достъп“ с невалиден токен дава отказ с причина и решението"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.116",
+      "defectRefs": [
+        "DEF-17",
+        "DEF-18"
+      ],
+      "testHints": [
+        "gui-journeys.cjs",
+        "gui-only-guard.cjs",
+        "gui-journey.cjs",
+        "dom-stub.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.115",
+      "defectRefs": [
+        "DEF-16"
+      ],
+      "testHints": [
+        "script-audit.cjs",
+        "known-defects.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Изводът не се променя — нито един от тези 203 сигнала не е дефект — но документ, който се"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.114",
+      "defectRefs": [],
+      "testHints": [
+        "download-stream.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Поправката е доказана в двете посоки: връщането към старото поведение (заглавки преди"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.113",
+      "defectRefs": [],
+      "testHints": [
+        "core-store.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Числово поле превръщаше българските числа в NaN. Number(String(v).replace(',','.'))",
+        "Всяка от трите поправки е доказана в двете посоки: връщането ѝ към старото поведение чупи"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.112",
+      "defectRefs": [],
+      "testHints": [
+        "script-audit.cjs",
+        "secret-sweep.cjs",
+        "instance-lock-retry.cjs",
+        "retention-audit-lines.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Цялостен обход на скриптовите файлове — и три дефекта, намерени с четене. Обходени са",
+        "Всеки от трите дефекта има тест, който пада на стария код и минава на новия:"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.111",
+      "defectRefs": [],
+      "testHints": [
+        "ha-support-matrix.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проверено и обратно: премахването на share:rw от map чупи теста с името на липсващия"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.110",
+      "defectRefs": [],
+      "testHints": [
+        "evidence-portal.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.109",
+      "defectRefs": [],
+      "testHints": [
+        "portal-folder-artifacts.cjs",
+        "portal-folder-copy.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.108",
+      "defectRefs": [],
+      "testHints": [
+        "portal-folder-artifacts.cjs"
+      ],
+      "historicalRiskNotes": [
+        "tests/portal-folder-artifacts.cjs иска подпапката и файла в страницата, липсата на „още"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.107",
+      "defectRefs": [],
+      "testHints": [
+        "document-empty-catches.cjs",
+        "release-status.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.106",
+      "defectRefs": [],
+      "testHints": [
+        "api-generation.cjs",
+        "portal-chain.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Картата и панелът си разменяха едно име. Панелът връща folderUrl за ЧОВЕШКАТА"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.105",
+      "defectRefs": [],
+      "testHints": [
+        "portal-folder-artifacts.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.104",
+      "defectRefs": [],
+      "testHints": [
+        "api-json-links.cjs",
+        "portal-folder-contract.cjs",
+        "api-generation.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Договорът (api-spec.js) вече описва и двете врати на папката, които липсваха в него:"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.103",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-proxy.cjs",
+        "portal-folder-contract.cjs",
+        "portal-folder-artifacts.cjs",
+        "storage-tree-api.cjs",
+        "portal-qr-archive.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Папката на портала не работеше през Home Assistant. Публичната страница в режим „папка“"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.101",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-python.cjs",
+        "ha-integration-proxy.cjs",
+        "api-json-links.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.100",
+      "defectRefs": [],
+      "testHints": [
+        "api-spec-coverage.cjs",
+        "ha-integration-python.cjs",
+        "ha-integration-proxy.cjs",
+        "portal-api-map.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.99",
+      "defectRefs": [],
+      "testHints": [
+        "ha-translations.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Липсващ превод в Home Assistant се вижда като ПРАЗНО място, без никаква грешка. Текстовете се"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.98",
+      "defectRefs": [],
+      "testHints": [
+        "release-notes.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.97",
+      "defectRefs": [],
+      "testHints": [
+        "ha-config-flow-errors.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.96",
+      "defectRefs": [],
+      "testHints": [
+        "ha-admin-api-port.cjs",
+        "ha-diag-redaction.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.95",
+      "defectRefs": [],
+      "testHints": [
+        "real-journey.cjs",
+        "ha-stubs.cjs",
+        "files-manager.cjs",
+        "tsa-insecure-url.cjs",
+        "ingress-isolation.cjs",
+        "portal-qr-archive.cjs",
+        "ha-integration-proxy.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.94",
+      "defectRefs": [],
+      "testHints": [
+        "link-check-home-assistant.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.93",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-proxy.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.92",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-import.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.91",
+      "defectRefs": [],
+      "testHints": [
+        "ha-path-prefix.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.90",
+      "defectRefs": [],
+      "testHints": [
+        "ha-range-bridge.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.89",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-python.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.88",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-python.cjs",
+        "release-workflow-assets.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.87",
+      "defectRefs": [
+        "DEF-03",
+        "DEF-04",
+        "DEF-05"
+      ],
+      "testHints": [
+        "ha-compat.cjs",
+        "portal-hash-verify.cjs",
+        "ingress-isolation.cjs",
+        "html-assets.cjs",
+        "schema-reality.cjs",
+        "export-config.cjs",
+        "publish-script.cjs",
+        "powershell-scripts.cjs",
+        "build-release.cjs",
+        "dist-folder.cjs",
+        "release-lib.cjs",
+        "line-endings.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Преводите на опциите можеха да се разминат с config.yaml безнаказано. Supervisor рисува",
+        "Регистърът на дефектите казваше, че изданието е блокирано. KNOWN_DEFECTS.md беше от",
+        "Сгрешен download_rules.json се виждаше като „зареден“, а в сила бяха други правила.",
+        "Интеграцията за Home Assistant е Python, а тестовият пакет е JavaScript — счупен Python не се",
+        "Изключение, което вече не пази нищо, е ГРЕШКА, а не мълчание.",
+        "Поправен дефект в собствения WORM: заключването не заключваше нищо. sealManifest",
+        "Каталог на кодовете за грешка — генериран от кода. Одитът намери 23 кода, които"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.86",
+      "defectRefs": [],
+      "testHints": [
+        "oidc-login.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Поправен скрит дефект: parseScopes в sqlite-store.js режеше всичко извън"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.85",
+      "defectRefs": [],
+      "testHints": [
+        "signed-url-restart.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.84",
+      "defectRefs": [],
+      "testHints": [
+        "portal-qr-restore.cjs"
+      ],
+      "historicalRiskNotes": [
+        "POST /admin/api/portals/<id>/qr/<qrId>/restore — връща състоянието от ТОЗИ архив."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.83",
+      "defectRefs": [],
+      "testHints": [
+        "content-id.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.82",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.81",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.80",
+      "defectRefs": [],
+      "testHints": [
+        "portal-order.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.79",
+      "defectRefs": [],
+      "testHints": [
+        "portal-integrity.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Панел: бутон „Провери целостта на архивите“ показва проверени/общо и при провал —"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.78",
+      "defectRefs": [],
+      "testHints": [
+        "portal-qr-archive.cjs",
+        "ha-integration-flow.cjs",
+        "api-reference.cjs"
+      ],
+      "historicalRiskNotes": [
+        "blok — прекратен QR не отдава съдържание: връща се страница с код 410, която"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.77",
+      "defectRefs": [],
+      "testHints": [
+        "portal-qr-archive.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.76",
+      "defectRefs": [],
+      "testHints": [
+        "portal-order.cjs",
+        "storage-tree-api.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Качването не създава папки, които не си поискал. Качване на файл в липсваща папка е"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.75",
+      "defectRefs": [],
+      "testHints": [
+        "portal-folder-portal.cjs",
+        "portal-folder.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.74",
+      "defectRefs": [],
+      "testHints": [
+        "gui-portal-token.cjs",
+        "files-manager.cjs",
+        "portal-folder-copy.cjs",
+        "portal-folder.cjs"
+      ],
+      "historicalRiskNotes": [
+        "„Покажи издадените“ връща списък (етикет, права, срок/отнет) и „Отнеми“ за всеки"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.73",
+      "defectRefs": [],
+      "testHints": [
+        "decision-sensors.cjs",
+        "portal-tokens.cjs",
+        "ha-integration-flow.cjs"
+      ],
+      "historicalRiskNotes": [
+        "/admin/api/sensors връща guidance — статус (ok/warning/critical/unknown),"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.72",
+      "defectRefs": [],
+      "testHints": [
+        "portal-tokens.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.71",
+      "defectRefs": [],
+      "testHints": [
+        "portal-page.cjs",
+        "gui-panels.cjs",
+        "ingress-api-base.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.70",
+      "defectRefs": [],
+      "testHints": [
+        "links-contract.cjs",
+        "portal-page-render.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: portal.js сглобяваше адресите сам —"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.69",
+      "defectRefs": [],
+      "testHints": [
+        "portal-page.cjs",
+        "portal-i18n.cjs",
+        "layout.cjs",
+        "docker-runtime.cjs",
+        "ha-compatibility.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.68",
+      "defectRefs": [],
+      "testHints": [
+        "pgp-keyflags.cjs",
+        "pgp-keyring.cjs",
+        "docs-consistency.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.67",
+      "defectRefs": [],
+      "testHints": [
+        "legacy-logic-residue.cjs"
+      ],
+      "historicalRiskNotes": [
+        "PGP двигателят е поправен и премерен: възстановени са липсващите RSA помощни функции,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.66",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [
+        "Проблемът: https://<ha>/api/v1/p/<slug>/files/<id>/download?expires=…&sig=… — подписът"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.65",
+      "defectRefs": [],
+      "testHints": [
+        "diagnostics.cjs",
+        "layout.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: layout в /admin/api/diagnostics връщаше абсолютни пътища (/data/...,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.64",
+      "defectRefs": [],
+      "testHints": [
+        "layout.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът (от употреба): „програмата не намира portal.html и папките“. Причината е, че",
+        "Карта в програмата: GET /admin/api/diagnostics вече връща layout — всички места"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.63",
+      "defectRefs": [],
+      "testHints": [
+        "portal-folder.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът (от употреба): качен в портал файл отиваше само в data директорията под име на"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.62",
+      "defectRefs": [],
+      "testHints": [
+        "folder-delete.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.61",
+      "defectRefs": [],
+      "testHints": [
+        "report-objects-real.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: четирите обекта се виждаха в библиотеката, но бяха заключени — липсваха им"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.60",
+      "defectRefs": [],
+      "testHints": [
+        "file-link-works.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: панелът показваше /api/public/v1/files/<id>/download като „публичен адрес“.",
+        "Тест: tests/file-link-works.cjs — жив сървър: подписаният адрес връща файла без заглавки"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.59",
+      "defectRefs": [],
+      "testHints": [
+        "resume-package.cjs",
+        "resume-transfer.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: export-rules.capabilities() връщаше resume_transfer: implemented: false."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.58",
+      "defectRefs": [],
+      "testHints": [
+        "parallel-transfers.cjs",
+        "release-status.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.57",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.56",
+      "defectRefs": [],
+      "testHints": [
+        "fetch-package.cjs",
+        "parallel-transfers.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: scripts/fetch-package.cjs и tests/parallel-transfers.cjs правеха проба с"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.55",
+      "defectRefs": [],
+      "testHints": [
+        "fetch-package.cjs",
+        "parallel-transfers.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: export-rules.capabilities() връщаше parallel_transfers: implemented: false,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.54",
+      "defectRefs": [],
+      "testHints": [
+        "rate-limit.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: export-rules.capabilities() връщаше rate_limit: implemented: false, а"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.53",
+      "defectRefs": [],
+      "testHints": [
+        "join-package.cjs",
+        "package-split.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: export-rules.capabilities() връщаше split_archive: implemented: false."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.52",
+      "defectRefs": [],
+      "testHints": [
+        "decrypt-package.cjs",
+        "package-encryption.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: export-rules.capabilities() връщаше encrypt_package: implemented: false."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.51",
+      "defectRefs": [],
+      "testHints": [
+        "package-compression.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът: export-rules.capabilities() връщаше compression: implemented: false, а ZIP"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.50",
+      "defectRefs": [],
+      "testHints": [
+        "release-audit.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.49",
+      "defectRefs": [],
+      "testHints": [
+        "links-contract.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Проблемът (измерен, не предположен): адресите се строеха на седем места по три",
+        "Поправени разминавания: HTML проектът се връщаше относително и без наклон, а се"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.48",
+      "defectRefs": [],
+      "testHints": [
+        "admin-api-spec.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Какво липсваше: най-голямата част от административната повърхност — всичко под"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.47",
+      "defectRefs": [],
+      "testHints": [
+        "admin-api-spec.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Какво липсваше: в 0.69.46 договорът беше пълен за маршрутите, записани като"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.46",
+      "defectRefs": [],
+      "testHints": [
+        "admin-api-spec.cjs",
+        "server-structure.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Какво липсваше: api-spec.js описваше публичното портално API (11 пътя). За",
+        "Ново: GET /admin/api/openapi.json връща договор с 111 операции — метод,",
+        "Попътно открит и затворен клас грешка: handle е async, значи връща Promise, а"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.45",
+      "defectRefs": [],
+      "testHints": [
+        "dashboard.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.44",
+      "defectRefs": [],
+      "testHints": [
+        "lint-config.cjs",
+        "process-guards.cjs",
+        "docker-runtime.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Липсваше глобален предпазител. При 182 умишлено плаващи извиквания една пропусната",
+        "tests/docker-runtime.cjs веднага хвана, че process-guards.js липсва в COPY списъка."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.43",
+      "defectRefs": [],
+      "testHints": [
+        "secret-lock.cjs",
+        "error-logging.cjs",
+        "api-input-errors.cjs",
+        "runtime-config.cjs",
+        "docker-runtime.cjs"
+      ],
+      "historicalRiskNotes": [
+        "500 вместо 400 за невалиден вход. POST /admin/api/qr-artifacts с липсващ или",
+        "Грешките на клиента се записваха като ERROR … unhandled. Всяко очаквано"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.42",
+      "defectRefs": [],
+      "testHints": [
+        "panel-framing.cjs",
+        "csp-frame.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Защо: дефектът от 0.69.40 (frame-ancestors 'none' върху UI-я) мина през цялата"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.41",
+      "defectRefs": [],
+      "testHints": [
+        "blackbox-security.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Дефект: всички файлове на административния UI (/ui/) се сервираха с"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.40",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.39",
+      "defectRefs": [],
+      "testHints": [
+        "server-structure.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Тестът хваща и втората класическа грешка при изнасяне: require('./…') от routes/"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.38",
+      "defectRefs": [],
+      "testHints": [
+        "ingress-api-base.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.37",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-flow.cjs",
+        "ui-version.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Поправена грешна версия: телеметрията връщаше v2 (apiVersion.VERSION.CURRENT —",
+        "Преводи на EN/BG за новите сензори и състоянията им; договорът се пази от"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.36",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [
+        "Без измислени стойности: липсваща стойност е „—“; абсолютни пътища не влизат в отчета,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.35",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.34",
+      "defectRefs": [],
+      "testHints": [
+        "ingress-api-base.cjs",
+        "generator-app.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.33",
+      "defectRefs": [],
+      "testHints": [
+        "report-package.cjs"
+      ],
+      "historicalRiskNotes": [
+        "POST /admin/api/v2/reports/package връща ZIP с report.pdf, manifest.json,",
+        "Поправен капан: списъкът с липси пътуваше в HTTP заглавка като кирилица, което убива",
+        "Нов tests/report-package.cjs: класификацията (включително „половин“ TSA и липсващ"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.32",
+      "defectRefs": [],
+      "testHints": [
+        "generator-app.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.31",
+      "defectRefs": [],
+      "testHints": [
+        "evidence-portal-root.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Грешката казва какво е проверено: изрежда всеки кандидат и какво има или няма в него,",
+        "Преводите (bg, en) и генерираната таблица с подразбиранията посочват и двата пътя —"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.30",
+      "defectRefs": [],
+      "testHints": [
+        "settings-defaults.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.29",
+      "defectRefs": [],
+      "testHints": [
+        "settings-defaults.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.28",
+      "defectRefs": [],
+      "testHints": [
+        "release-status.cjs",
+        "verify-release.cjs",
+        "shared-data-lock.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.27",
+      "defectRefs": [],
+      "testHints": [
+        "addon-config.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Преводите (bg, en) са синхронизирани с премахнатата опция."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.26",
+      "defectRefs": [],
+      "testHints": [
+        "release-status.cjs"
+      ],
+      "historicalRiskNotes": [
+        "--check не пише нищо и връща код 1 с първия разминаващ се ред — така остарял отчет не"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.25",
+      "defectRefs": [],
+      "testHints": [
+        "sensor-settings.cjs"
+      ],
+      "historicalRiskNotes": [
+        "GET /admin/api/sensors връща sensorSettings (ipMode, trustProxy, retentionDays,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.24",
+      "defectRefs": [],
+      "testHints": [
+        "portal-i18n.cjs",
+        "portal-page-lang.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Езикът е избор на посетителя: ?lang=en, после запазения избор, иначе български; <html lang>"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.23",
+      "defectRefs": [],
+      "testHints": [
+        "report-scope.cjs",
+        "report-entry-points.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.22",
+      "defectRefs": [],
+      "testHints": [
+        "public-package.cjs",
+        "portal-page-render.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.21",
+      "defectRefs": [],
+      "testHints": [
+        "public-rate-limit.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.20",
+      "defectRefs": [],
+      "testHints": [
+        "visitor-sensors.cjs",
+        "visitors-panel.cjs",
+        "portal-monitoring.cjs",
+        "gui-panels.cjs",
+        "full-journey-sensors.cjs",
+        "portal-rules-applied.cjs",
+        "portal-folder-refs.cjs",
+        "portal-api-qr.cjs",
+        "portal-page-contract.cjs",
+        "portal-page-render.cjs",
+        "full-journey.cjs",
+        "full-journey-office.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Препращането към папките беше сгрешено — поправено. Регистриран в портала файл не пазеше"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.19",
+      "defectRefs": [],
+      "testHints": [
+        "shared-data.cjs",
+        "shared-data-burst.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Дефект 1 — сливането можеше да изхвърли чужд запис. При празна база merge падаше към",
+        "Дефект 2 — изчакването при конфликт идваше след четенето на базата, тоест всеки повторен"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.18",
+      "defectRefs": [],
+      "testHints": [
+        "shared-data.cjs",
+        "shared-data-processes.cjs",
+        "shared-data-access.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.17",
+      "defectRefs": [],
+      "testHints": [
+        "oracle-digest-chain.cjs",
+        "oracle-lifecycle.cjs",
+        "oracle-rbac-matrix.cjs",
+        "oracle-manifest-rules.cjs",
+        "oracle-slug-and-paths.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Изтичане на passwordHash: отговорът при създаване на потребител връщаше целия запис,",
+        "BUG-06 — смененият slug оставяше API-то на стария адрес: PATCH /admin/api/portals/:id"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.16",
+      "defectRefs": [],
+      "testHints": [
+        "dom-stub.cjs",
+        "dom-harness.cjs",
+        "gui-harness.cjs",
+        "gui-panels.cjs",
+        "gui-sections.cjs",
+        "gui-coverage.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.15",
+      "defectRefs": [],
+      "testHints": [
+        "admin-throttle.cjs",
+        "auth.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Вход: броячът е по акаунт (10 грешки/мин), а не по адрес. Заключен акаунт остава"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.14",
+      "defectRefs": [],
+      "testHints": [
+        "pdf-signature.cjs",
+        "cms-panel.cjs",
+        "docx-pdf.cjs",
+        "helpers.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.13",
+      "defectRefs": [],
+      "testHints": [
+        "ui-i18n.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Нов ui/i18n.js — речник с 72 ключа × 3 езика (section., action., th.,",
+        "Нов тест tests/ui-i18n.cjs: пълнота на трите езика, липса на кирилица в DE/EN, всеки"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.12",
+      "defectRefs": [],
+      "testHints": [
+        "docx-pdf.cjs"
+      ],
+      "historicalRiskNotes": [
+        "ooxml.docxRich(buf) връща {blocks, media}: заглавия, абзаци, списъци, таблици"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.11",
+      "defectRefs": [],
+      "testHints": [
+        "interpolate.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Нов тест tests/interpolate.cjs — модулът (липси, цикли, дати) + жив сървър (портал,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.10",
+      "defectRefs": [],
+      "testHints": [
+        "secret-panel.cjs",
+        "ui-settings-sections.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.9",
+      "defectRefs": [],
+      "testHints": [
+        "report-studio-panel.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Причина за дефекта: панелът четеше ядрото report-manifest.js още при дефиниране",
+        "Ядрото вече се чете при всяко ползване; ако още го няма, панелът казва какво липсва и се",
+        "Възстановени са панелите Потребители & RBAC, Задачи, Хранилища, Анализи, Сигурност,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.8",
+      "defectRefs": [],
+      "testHints": [
+        "ui-coverage.cjs"
+      ],
+      "historicalRiskNotes": [
+        "GET /admin връща 302 → /ui/index.html, за да не се губят стари отметки; GET /admin.js"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.7",
+      "defectRefs": [],
+      "testHints": [
+        "evidence-portal.cjs",
+        "addon-config.cjs"
+      ],
+      "historicalRiskNotes": [
+        "tests/addon-config.cjs вече брои 30 опции (новата evidence_portal_deploy с преводи)."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.6",
+      "defectRefs": [],
+      "testHints": [
+        "ui-settings-sections.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Данните се кешират за сесията, за да не се дърпат при всяко цъкане."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.6",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.5",
+      "defectRefs": [],
+      "testHints": [
+        "bad-code-scan.cjs",
+        "corrupt-metadata.cjs",
+        "enterprise-lifecycle.cjs"
+      ],
+      "historicalRiskNotes": [
+        "sqlite-store.js чете payload-а през parseStored(); при счупен JSON хвърля"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.4",
+      "defectRefs": [],
+      "testHints": [
+        "sync-addon-changelog.cjs",
+        "logic-boundaries.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.3",
+      "defectRefs": [],
+      "testHints": [
+        "logic-audit.cjs",
+        "logic-boundaries.cjs",
+        "helpers.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Сега validatePolicy връща ясна грешка при запис, а withinWindow казва",
+        "Дървото решава дубликатите с „ (2)“, но манифестът изчисляваше пътя отделно и връщаше",
+        "pruneTargets броеше само архивните версии, а history() връща архивните плюс"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.69.2",
+      "defectRefs": [],
+      "testHints": [
+        "pgp-mpi.cjs",
+        "publish-script.cjs",
+        "release-lib.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.1",
+      "defectRefs": [],
+      "testHints": [
+        "api-spec-coverage.cjs",
+        "check-tag-version.cjs",
+        "tag-version.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.69.0",
+      "defectRefs": [],
+      "testHints": [
+        "bad-code-scan.cjs",
+        "bad-code.cjs",
+        "whitebox-security.cjs",
+        "blackbox-security.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.68.0",
+      "defectRefs": [],
+      "testHints": [
+        "dashboard.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Панелът, който липсва, вече не се преструва на данни: показва „не е зареден“ с обяснение."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.67.0",
+      "defectRefs": [],
+      "testHints": [
+        "ui-coverage.cjs",
+        "no-stubs.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.66.0",
+      "defectRefs": [],
+      "testHints": [
+        "secret-links.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.65.0",
+      "defectRefs": [],
+      "testHints": [
+        "secret-links.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.64.0",
+      "defectRefs": [],
+      "testHints": [
+        "share-links.cjs"
+      ],
+      "historicalRiskNotes": [
+        "GET /admin/api/portals/<id>/api-info вече връща links: tag (id, адрес,"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.63.1",
+      "defectRefs": [],
+      "testHints": [
+        "instance-lock.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.63.0",
+      "defectRefs": [],
+      "testHints": [
+        "build-haoss.cjs",
+        "haoss-release.cjs",
+        "report-manifests.cjs",
+        "build-release.cjs",
+        "verify-release.cjs",
+        "release-archive-paths.cjs",
+        "report-render.cjs",
+        "report-stamp.cjs",
+        "report-api.cjs",
+        "report-tsa-e2e.cjs",
+        "export-tracked.cjs",
+        "update-repo.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.62.1",
+      "defectRefs": [],
+      "testHints": [
+        "export-tracked.cjs",
+        "secret-patterns.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.62.0",
+      "defectRefs": [],
+      "testHints": [
+        "export-tracked.cjs",
+        "secret-patterns.cjs",
+        "pre-push-audit.cjs",
+        "send.cjs",
+        "pgp-v6.cjs",
+        "ha-compatibility.cjs",
+        "core-plugins.cjs",
+        "build-haoss.cjs",
+        "haoss-release.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Ограничение на опитите с грешна парола: 5 за 15 минути на двойка (линк, IP)."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.61.4",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [
+        "Без HTML в преводите — (http://<addon-hostname>:8098) се приемаше за HTML таг и"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.61.3",
+      "defectRefs": [],
+      "testHints": [
+        "ha-compatibility.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.61.2",
+      "defectRefs": [],
+      "testHints": [
+        "start-entrypoint.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.54.0",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-flow.cjs",
+        "docker-runtime.cjs",
+        "ingress-isolation.cjs",
+        "addon-config.cjs",
+        "tsa-client.cjs",
+        "rfc3161-api.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Липсващ статичен асет връща 404 + ui.asset.missing в журнала, вместо 500."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.53.1",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-flow.cjs"
+      ],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.53.0",
+      "defectRefs": [],
+      "testHints": [
+        "ha-integration-flow.cjs",
+        "hacs-structure.cjs",
+        "verify-release.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Преводи: strings.json + translations/en.json и translations/bg.json."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.52.1",
+      "defectRefs": [],
+      "testHints": [
+        "hacs-structure.cjs",
+        "verify-release.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Кешовете на Python (__pycache__, .pyc) се изключват от изданието и се проверяват."
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.52.0",
+      "defectRefs": [],
+      "testHints": [
+        "build-release.cjs",
+        "verify-release.cjs"
+      ],
+      "historicalRiskNotes": [
+        "Невалиден публичен адрес се игнорира (пада към адреса на заявката) — както за"
+      ],
+      "reviewNeeded": false
+    },
+    {
+      "version": "0.51.0",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    },
+    {
+      "version": "0.50.0",
+      "defectRefs": [],
+      "testHints": [],
+      "historicalRiskNotes": [],
+      "reviewNeeded": true
+    }
+  ]
+}
