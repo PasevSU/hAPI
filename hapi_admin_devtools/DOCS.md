@@ -65,6 +65,38 @@ A release-capable follow-up must implement:
 
 A GitHub `Verified` badge alone is not sufficient to trigger a write action.
 
+## Independent versioning and release channels
+
+hAPI Enterprise and hAPI Admin DevTools are two separate Supervisor add-ons published from the same repository.
+
+| Item | hAPI Enterprise | hAPI Admin DevTools |
+| --- | --- | --- |
+| Slug | `hapi_enterprise` | `hapi_admin_devtools` |
+| Config version source | `hapi_enterprise/config.yaml` | `hapi_admin_devtools/config.yaml` |
+| Git tag pattern | `v<enterprise-version>` | `hapi-dev-v<devtools-version>` |
+| GHCR image | `ghcr.io/pasevsu/{arch}-addon-hapi_enterprise` | `ghcr.io/pasevsu/{arch}-addon-hapi_admin_devtools` |
+| Workflow | `release.yml` + `addon-image.yml` | `admin-devtools-release.yml` |
+
+The DevTools workflow checks the version embedded in its own config against its
+`hapi-dev-v*` tag, runs its isolated tests, and publishes versioned containers
+for `amd64`, `aarch64` and `armv7` in the DevTools-only package namespace.
+It then produces a GitHub release labeled **hAPI Admin DevTools**.
+
+This prevents an hAPI Enterprise version bump from automatically updating the
+DevTools image, or a DevTools tag from triggering the Enterprise release workflows.
+Both releases can appear on the *same GitHub Releases page*, with distinct tag
+prefixes and artifacts.
+
+**Note:** a DevTools image must be published and accessible by Home Assistant
+Supervisor before the standalone add-on can actually be installed. This
+development branch does not yet publish production images. Docker smoke tests
+and a separate GHCR-public-visibility/HAOS installation check are mandatory.
+
+**Runtime coupling:** add-on release independence does not guarantee application
+protocol compatibility. Before changing the authenticated hAPI diagnostic API,
+verify DevTools backwards-compatibility tests, and avoid restarting or updating
+the other add-on implicitly.
+
 ## Current tests
 
 ```sh
