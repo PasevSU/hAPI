@@ -82,6 +82,7 @@ for (const file of addonJs) {
 // Само за тестове и за CLI: съществуват нарочно, но никой продукционен път не ги зарежда.
 // Причината е записана — така нов файл тук не минава мълчаливо.
 const TEST_ONLY = new Map([
+  ['guardian/decision-policy.js', 'Самостоятелен алгоритъм за оценка на доказателства: ще се зарежда само от бъдещ външен recovery controller; сега се тества изолирано'],
   ['container.js', 'контейнер за зависимости: ползва се от tests/core-container.cjs'],
   ['event-bus.js', 'шина за събития: ползва се от tests/core-container.cjs'],
   ['repository.js', 'интерфейс на хранилището: ползва се от tests/core-repository.cjs'],
