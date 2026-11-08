@@ -28,7 +28,7 @@ function optionNames() {
 }
 function addonTranslatedOptions(lang) {
   const source = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'translations', lang + '.yaml'), 'utf8');
-  return sortedUnique([...source.matchAll(/^ {2}([a-z][a-z0-9_]+):\s*\n    name:/gm)].map(m => m[1]));
+  return sortedUnique([...source.matchAll(/^ {2}([a-z][a-z0-9_]+):\s*\n {4}name:/gm)].map(m => m[1]));
 }
 function walkSource(dir, result = []) {
   for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
