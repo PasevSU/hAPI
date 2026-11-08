@@ -37,6 +37,7 @@ function classify(input){
  return Object.freeze({
   id:typeof input.id==='string' && /^[a-zA-Z0-9_-]{4,96}$/.test(input.id)?input.id:null,
   title:input.title.trim(),category:category?.id||'unclassified',owner,
+  division:category?.division||'director',
   secondaryCategories:ranked.slice(1,5).map(x=>x.id),target,risk,
   status:'categorized',score:chosen?.score||0,
   requiresSecurityReview:critical||risk==='high',
