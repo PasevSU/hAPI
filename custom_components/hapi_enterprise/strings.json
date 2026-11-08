@@ -156,6 +156,18 @@
       },
       "integrity_failed": {
         "name": "Failed integrity checks"
+      },
+      "guardian_state": {
+        "name": "Guardian state"
+      },
+      "guardian_failures": {
+        "name": "Guardian consecutive failures"
+      },
+      "guardian_cache_candidates": {
+        "name": "Guardian performance findings"
+      },
+      "guardian_success_percent": {
+        "name": "Guardian verified success confidence"
       }
     },
     "binary_sensor": {
@@ -167,6 +179,9 @@
       },
       "public_gateway_security_alert": {
         "name": "Public gateway security alert"
+      },
+      "guardian_issue": {
+        "name": "Guardian health problem"
       }
     }
   }
