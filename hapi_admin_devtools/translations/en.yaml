@@ -7,3 +7,12 @@ configuration:
     name: OpenPGP fingerprint
     description: >-
       Full OpenPGP fingerprint of the GitHub-registered signing key. A detached OpenPGP signature of a one-time challenge is required.
+
+  dynamic_monitor_enabled:
+    name: Dynamic monitoring
+    description: >-
+      Collect local operational telemetry after OpenPGP enrollment, without autonomous repairs.
+  dynamic_analysis_interval_minutes:
+    name: Dynamic analysis interval (minutes)
+    description: >-
+      Time between analyses: 15–10080 minutes. Default 360 minutes (6 hours).
