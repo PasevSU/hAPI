@@ -3,11 +3,12 @@
 const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
-const MAX_LOG=2*1024*1024;
+const {DEFINITIONS}=require('./definitions');
+const MAX_LOG=DEFINITIONS.limits.monitorJournalBytes;
 const STATES=new Set(['ready','not-ready','unreachable']);
-function probe({host='hapi_enterprise',port=8099,timeoutMs=2500}={}){
+function probe({host=DEFINITIONS.transport.enterpriseHostname,port=DEFINITIONS.transport.enterprisePort,timeoutMs=DEFINITIONS.limits.hapiProbeTimeoutMs}={}){
   return new Promise(resolve=>{
-    const req=http.get({host,port,path:'/ready',timeout:timeoutMs,agent:false},res=>{
+    const req=http.get({host,port,path:DEFINITIONS.enterprise.healthPath,timeout:timeoutMs,agent:false},res=>{
       res.resume();
       res.on('end',()=>resolve({state:res.statusCode===200?'ready':'not-ready',httpStatus:res.statusCode||0}));
     });
@@ -15,7 +16,7 @@ function probe({host='hapi_enterprise',port=8099,timeoutMs=2500}={}){
     req.on('error',()=>resolve({state:'unreachable',httpStatus:0}));
   });
 }
-function createMonitor(dir,{intervalMs=30000,onProbe=probe}={}){
+function createMonitor(dir,{intervalMs=DEFINITIONS.limits.monitorIntervalMs,onProbe=probe}={}){
   const root=path.resolve(dir),file=path.join(root,'monitor.jsonl');
   let timer=null,stopped=false,previous=null,consecutiveFailures=0,last=null;
   function record(result){
