@@ -17,7 +17,7 @@ function fingerprint(publicKey) {
   const fields=String(publicKey||'').trim().split(/\s+/);
   if(fields[0]!=='ssh-rsa'||!fields[1])return null;
   const raw=Buffer.from(fields[1],'base64');
-  if(!raw.length||raw.readUInt32BE(0)!==7||raw.subarray(4,11).toString()!=='ssh-rsa')return null;
+  if(raw.length<11||raw.readUInt32BE(0)!==7||raw.subarray(4,11).toString()!=='ssh-rsa')return null;
   return 'SHA256:'+crypto.createHash('sha256').update(raw).digest('base64').replace(/=+$/,'');
 }
 function keyMatches(line) {
@@ -39,13 +39,13 @@ function githubKeys({timeoutMs=6000}={}) {
     req.on('error',reject);
   });
 }
-function verifySignature(challenge,signature,{binary='ssh-keygen'}={}) {
+function verifySignature(challenge,signature,{binary='ssh-keygen',publicKey=PUBLIC_KEY}={}) {
   if(typeof challenge!=='string'||!/^hapi-admin-devtools\/v1\nnonce=[a-f0-9]{64}\nfp=SHA256:[A-Za-z0-9+/]+\n$/.test(challenge))return false;
   if(typeof signature!=='string'||signature.length>16000||!/^-----BEGIN SSH SIGNATURE-----[\s\S]+-----END SSH SIGNATURE-----\s*$/.test(signature))return false;
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hapi-ssh-'));
   try {
     const allowed=path.join(dir,'allowed_signers'),sig=path.join(dir,'challenge.sig');
-    fs.writeFileSync(allowed,'hapi_admin '+PUBLIC_KEY+'\n',{mode:0o600});
+    fs.writeFileSync(allowed,'hapi_admin '+publicKey+'\n',{mode:0o600});
     fs.writeFileSync(sig,signature,{mode:0o600});
     const child=spawnSync(binary,['-Y','verify','-f',allowed,'-I','hapi_admin','-n','hapi-devtools','-s',sig],
       {input:challenge,encoding:'utf8',timeout:6000,maxBuffer:8192});
