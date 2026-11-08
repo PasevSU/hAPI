@@ -141,6 +141,7 @@ const RULES = [
   { id: "ha-range-bridge", area: "Home Assistant", title: "Ha range bridge", owner: "tests/ha-range-bridge.cjs" },
   { id: "ha-support-matrix", area: "Home Assistant", title: "Ha support matrix", owner: "tests/ha-support-matrix.cjs" },
   { id: "ha-translations", area: "Home Assistant", title: "Ha translations", owner: "tests/ha-translations.cjs" },
+  { id: "ha-version-sensor", area: "Home Assistant", title: "Ha version sensor", owner: "tests/ha-version-sensor.cjs" },
   { id: "hacs-structure", area: "общо", title: "Hacs structure", owner: "tests/hacs-structure.cjs" },
   { id: "haoss-in-sync", area: "HACS издание", title: "Haoss in sync", owner: "tests/haoss-in-sync.cjs" },
   { id: "haoss-release", area: "HACS издание", title: "Haoss release", owner: "tests/haoss-release.cjs" },

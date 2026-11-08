@@ -3,14 +3,14 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 380 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 381 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 176 |
 | портал | 35 |
 | GUI | 24 |
-| Home Assistant | 16 |
+| Home Assistant | 17 |
 | отчети | 16 |
 | PGP | 13 |
 | ядро | 12 |
@@ -291,7 +291,7 @@
 | `ui-spacing` | Ui spacing | `tests/ui-spacing.cjs` |
 | `ui-version` | Ui version | `tests/ui-version.cjs` |
 
-## Home Assistant (16)
+## Home Assistant (17)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -311,6 +311,7 @@
 | `ha-range-bridge` | Ha range bridge | `tests/ha-range-bridge.cjs` |
 | `ha-support-matrix` | Ha support matrix | `tests/ha-support-matrix.cjs` |
 | `ha-translations` | Ha translations | `tests/ha-translations.cjs` |
+| `ha-version-sensor` | Ha version sensor | `tests/ha-version-sensor.cjs` |
 
 ## отчети (16)
 
