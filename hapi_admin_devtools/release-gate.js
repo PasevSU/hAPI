@@ -56,7 +56,7 @@ function evaluate(plan,evidence,verified={}) {
       problems.push('CI_EVIDENCE_INVALID');
     else distinct.add(run.environment+':'+run.runId);
     // "passed" from the client is only descriptive until verified via GitHub API.
-    if(!Array.isArray(run?.checks)||!VALID_PHASES.values().every(phase=>run.checks.includes(phase)))
+    if(!Array.isArray(run?.checks)||![...VALID_PHASES].every(phase=>run.checks.includes(phase)))
       problems.push('CI_REQUIRED_PHASES_MISSING');
   }
   if(distinct.size!==2||new Set(runs.map(x=>x?.environment)).size!==2)
