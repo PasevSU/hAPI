@@ -1,0 +1,27 @@
+name: "hAPI Admin DevTools"
+version: "0.1.0"
+slug: "hapi_admin_devtools"
+description: "Independent, locked-down diagnostics and release intelligence companion for hAPI Enterprise"
+url: "https://github.com/PasevSU/hAPI/tree/main/hapi_admin_devtools"
+documentation: "https://github.com/PasevSU/hAPI/tree/main/hapi_admin_devtools/DOCS.md"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+startup: application
+boot: manual
+init: false
+ingress: true
+ingress_port: 8099
+ingress_entry: /
+panel_title: "hAPI Admin DevTools"
+panel_icon: mdi:shield-bug
+panel_admin: true
+homeassistant: "2024.6.0"
+backup: cold
+options:
+  github_username: "PasevSU"
+  github_ssh_fingerprint: ""
+schema:
+  github_username: str
+  github_ssh_fingerprint: str
