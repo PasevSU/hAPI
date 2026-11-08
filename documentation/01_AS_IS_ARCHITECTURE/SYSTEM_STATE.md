@@ -22,7 +22,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Обявени endpoint-и | **245** реда в `API_ENDPOINT_REFERENCE.md` |
 | `server.js` | **2720** реда (пор **2722**) |
 | Изнесени функции | **363** в 51 модула, **363** покрити с тест |
-| Тестове в дървото | **392** файла (`391` в матрикса + `release-status.cjs`) |
+| Тестове в дървото | **394** файла (`393` в матрикса + `release-status.cjs`) |
 | Артефакт | `dist/` — точно **6** файла, `verify-release` **22/22** |
 
 ## 2. Какво се промени в 0.69.208
@@ -37,6 +37,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Протокол на дебъгинга: находка → причина → решение → тест (`ui/debug-ledger.js`) | `dcae049` | инструментът казваше „нарушено“ и не помнеше нищо | `debug-ledger.cjs` |
 | Котви на защитите: 10 → **41 от 52** | `08be943` | „има тест“ не значи „пази това правило“ | `regression-guards.cjs` (`ANCHORS`) |
 | Дългът по езика (DEF-49) стана измерим по вид текст | `c896563` | 36 850 знака изглеждаха еднаква работа, а 387 от тях не се превеждат | `ui-i18n-ratchet.cjs` |
+| **Закон: менюто е на равни групи по смисъл** (3 × 6 секции) + прибиране при клик извън него | последният комит на изданието (виж `CHANGELOG.md`) | 18 чипа в един ред се чупеха на произволни редове, а „Журнал“ стоеше далеч от „Данни“ | `ui-nav-symmetry.cjs`, `ui-nav-outside-click.cjs`, законът `balanced-groups` |
 
 Пълното описание „какво, защо и какво е измерено“ е в `CHANGELOG.md` и
 `documentation/07_RELEASE/RELEASE_0.69.208.md` (§6а.1–§6а.7).
@@ -53,6 +54,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Етикети на полетата | `ui/field-labels.js` след всеки рендер | `ui-field-labels.cjs` |
 | Знания за грешките | `ui/debug-ledger.js` (`SOLUTIONS`) + речник `dbg.*` | `debug-ledger.cjs` |
 | Закони на оформлението | `ui/debug-objects.js` (`OBJECTS`, `LAWS`) | `gui-debug-objects.cjs` |
+| Симетрия на менюто и прибиране при клик извън него | `GROUPS` в `ui/settings-panel.js` · `applyNav` в `app.js` | `ui-nav-symmetry.cjs`, `ui-nav-outside-click.cjs` |
 | Преводи | `ui/i18n.js` (BG/EN/DE), ратчет само надолу | `ui-i18n.cjs`, `ui-i18n-ratchet.cjs` |
 | Затворен дефект | `KNOWN_DEFECTS.md` + `GUARDS`/`ANCHORS` | `regression-guards.cjs` |
 | Размер на монолита | `server.js` ≤ 2722 реда, нов код → `routes/*.js` | `server-structure.cjs` |
@@ -64,9 +66,10 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 Два модула, които се включват **само** при `window.HAPI_DEBUG`, `?debug=1` или
 `localStorage['hapi.debug']='1'`:
 
-- `ui/debug-objects.js` — разпознава обектите (карта, контрола, поле, табелка, контейнер) и
-  прилага **6 закона**: `spacing-grid`, `symmetry`, `named`, `touch-target`, `no-inline-layout`,
-  `one-qr`. Липсваща стойност се прескача, не се брои за нарушение.
+- `ui/debug-objects.js` — разпознава обектите (карта, контрола, поле, табелка, група от менюто,
+  контейнер) и прилага **7 закона**: `spacing-grid`, `symmetry`, `named`, `touch-target`,
+  `no-inline-layout`, `one-qr`, `balanced-groups` (менюто е на равни групи). Липсваща стойност
+  се прескача, не се брои за нарушение.
 - `ui/debug-ledger.js` — протокол: всяка находка влиза с **причина**, **решение** и името на
   теста, който я пази. Подписът е `закон@вид`, повторението вдига брояч вместо да отваря нов
   ред, `resolve()` затваря, появила се пак „решена“ находка се брои като **регресия**. Таван
@@ -100,9 +103,9 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 
 | Гейт | Команда | Резултат |
 | --- | --- | --- |
-| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **391/391**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
+| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **393/393**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
 | Артефакт | `node scripts/verify-release.cjs` | **22/22**, `dist/` 6 файла |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 392 теста в дървото |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 394 теста в дървото |
 | ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
 | Регресионни защити | `tests/regression-guards.cjs` | 52 защити · 73 теста · **41** котви |
 | Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 36 850 (таван 36 850) · 22 `t()` |

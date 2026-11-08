@@ -52,6 +52,11 @@
       fix: 'dbg.fix.one-qr.fix',
       guard: 'tests/debug-ledger.cjs',
     },
+    'balanced-groups': {
+      cause: 'dbg.fix.balanced-groups.cause',
+      fix: 'dbg.fix.balanced-groups.fix',
+      guard: 'tests/ui-nav-symmetry.cjs',
+    },
   };
 
   function t(key) {

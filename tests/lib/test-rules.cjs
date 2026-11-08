@@ -384,6 +384,8 @@ const RULES = [
   { id: "ui-i18n", area: "GUI", title: "Ui i18n", owner: "tests/ui-i18n.cjs" },
   { id: "ui-i18n-ratchet", area: "GUI", title: "Ui i18n ratchet", owner: "tests/ui-i18n-ratchet.cjs" },
   { id: "ui-icons", area: "GUI", title: "Ui icons", owner: "tests/ui-icons.cjs" },
+  { id: "ui-nav-outside-click", area: "GUI", title: "Ui nav outside click", owner: "tests/ui-nav-outside-click.cjs" },
+  { id: "ui-nav-symmetry", area: "GUI", title: "Ui nav symmetry", owner: "tests/ui-nav-symmetry.cjs" },
   { id: "ui-navigation", area: "GUI", title: "Ui navigation", owner: "tests/ui-navigation.cjs" },
   { id: "ui-settings-sections", area: "GUI", title: "Ui settings sections", owner: "tests/ui-settings-sections.cjs" },
   { id: "ui-shell-nav", area: "GUI", title: "Ui shell nav", owner: "tests/ui-shell-nav.cjs" },

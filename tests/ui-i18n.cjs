@@ -89,14 +89,20 @@ for (const dead of ['portal.link.', 'portal.state.', 'portal.tip.', 'portal.act.
   );
 }
 // Секциите пазят ключ, а не текст: иначе смяната на езика не работи без презареждане.
-const sectionBlock = panel.slice(panel.indexOf('const SECTIONS = ['), panel.indexOf('];', panel.indexOf('const SECTIONS = [')));
-const sectionLabels = [...sectionBlock.matchAll(/label: '([^']+)'/g)].map((m) => m[1]);
+// Секциите пазят ключ, а не текст: иначе смяната на езика не работи без презареждане.
+// От 0.69.208 секциите са в ГРУПИ (`GROUPS`) с ЛИТЕРАЛЕН ключ за всяка (`label: 'section.…'`),
+// а не динамичен `'section.' + id`: такъв ключ не се вижда нито от този тест, нито от
+// проверката за неизползвани ключове (именно това падна при въвеждането на групите).
+const groupBlock = panel.slice(panel.indexOf('const GROUPS = ['), panel.indexOf('const GROUP_TITLES'));
+const sectionLabels = [...groupBlock.matchAll(/label: '(section\.[A-Za-z]+)'/g)].map((m) => m[1]);
 assert.equal(sectionLabels.length, 17, 'седемнайсет секции');
 for (const label of sectionLabels) {
   assert.match(label, /^section\./, `секцията пази ключ, а не текст: ${label}`);
   assert.ok(i18n.has(label), `липсва ключ за секция: ${label}`);
   assert.equal(/[\u0400-\u04FF]/.test(label), false, 'в ключа няма кирилица');
 }
+assert.match(groupBlock, /label: 'tab\.general'/, 'първата секция („Основни“) също минава през речника');
+assert.match(panel, /T\('group\.structure'\)[\s\S]{0,200}T\('group\.access'\)[\s\S]{0,200}T\('group\.runtime'\)/, 'заглавията на групите са ключове, не текст');
 // Заглавките на таблиците не са твърд български текст.
 for (const header of ['Показател', 'Стойност', 'Портал', 'Адрес', 'Състояние', 'Напредък']) {
   assert.equal(new RegExp(`table\\(\\[[^\\]]*'${header}'`).test(panel), false, `заглавката „${header}“ още е твърд текст`);
@@ -165,21 +171,28 @@ function mountWithLang(lang) {
 
 const german = mountWithLang('de');
 // Табовете са навигацията на панела — там преводът трябва да е пълен.
-const germanTabs = german.slice(german.indexOf('<nav class="set-tabs"'), german.indexOf('</nav>'));
+// От 0.69.208 навигацията е в групи (`set-tabs-groups`), затова се взима целият ѝ блок.
+const germanTabs = german.slice(german.indexOf('<nav class="set-tabs-groups"'), german.indexOf('</nav>'));
 assert.ok(germanTabs.length > 100, 'намирам табовете в немския изглед');
 assert.equal(/[\u0400-\u04FF]/.test(germanTabs), false, 'немските табове нямат кирилица: ' + germanTabs.replace(/<[^>]+>/g, ' '));
 for (const label of ['Allgemein', 'Hierarchie', 'Kartei', 'Aufgaben', 'Benutzer', 'Variablen', 'Diagnose', 'Analysen', 'Sicherheit', 'QR-Archiv', 'Berichtssignatur', 'Speicher', 'Sicherungen', 'Protokoll']) {
   assert.ok(germanTabs.includes(label), `немският таб „${label}“ липсва`);
+}
+for (const group of ['Struktur', 'Zugang und Audit', 'Daten und Betrieb']) {
+  assert.ok(germanTabs.includes(group), `немското заглавие на група „${group}“ липсва`);
 }
 const germanTitle = german.slice(0, german.indexOf('<nav'));
 assert.equal(/[\u0400-\u04FF]/.test(germanTitle), false, 'заглавието на панела е преведено');
 assert.ok(germanTitle.includes('Einstellungen'), 'заглавието е „Einstellungen“');
 
 const english = mountWithLang('en');
-const englishTabs = english.slice(english.indexOf('<nav class="set-tabs"'), english.indexOf('</nav>'));
+const englishTabs = english.slice(english.indexOf('<nav class="set-tabs-groups"'), english.indexOf('</nav>'));
 assert.equal(/[\u0400-\u04FF]/.test(englishTabs), false, 'английските табове нямат кирилица');
 for (const label of ['General', 'Hierarchy', 'Jobs', 'Variables', 'Diagnostics', 'Storage', 'Backups', 'Log']) {
   assert.ok(englishTabs.includes(label), `английският таб „${label}“ липсва`);
+}
+for (const group of ['Structure', 'Access and audit', 'Data and operations']) {
+  assert.ok(englishTabs.includes(group), `английското заглавие на група „${group}“ липсва`);
 }
 const bulgarian = mountWithLang('bg');
 assert.ok(bulgarian.includes('Йерархия') && bulgarian.includes('Основни'), 'българският изглед не се е променил');

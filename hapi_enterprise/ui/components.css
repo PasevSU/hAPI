@@ -3041,6 +3041,27 @@ input[type="radio"] {
 /* ── Секции на „Настройки“ ──────────────────────────────────────────────────
    Седемте административни секции се отварят като табове в „Настройки“, а не като
    отделни редове в главното меню. */
+/* ЗАКОН „менюто има симетрия и логика“ (0.69.208): секциите на „Настройки“ са в групи по
+   смисъл, по шест чипа. Групите се подреждат една под друга, а вътре чиповете дишат по
+   същите токени като останалите контроли — нито един литерал, за да не расте `LIMIT_SPACING`. */
+.set-tabs-groups {
+  display: flex;
+  flex-direction: column;
+}
+
+.set-tabs-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.set-tabs-group-title {
+  font-size: var(--fs-12);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .set-tabs {
   display: flex;
   flex-wrap: wrap;

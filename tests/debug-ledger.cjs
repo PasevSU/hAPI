@@ -113,6 +113,17 @@ const cases = [
   ['named', { kind: 'control', el: el({ tagName: 'BUTTON' }), id: 'button', spacing: {}, box: null }],
   ['touch-target', { kind: 'control', el: el({ tagName: 'BUTTON' }), id: '#c', spacing: {}, box: { width: 20, height: 10 } }],
   ['no-inline-layout', { kind: 'panel', el: el({ style: { padding: '3px' } }), id: '#d', spacing: {}, box: null }],
+  // Менюто: групи с различен брой секции (законът за симетрия и логика, 0.69.208).
+  ['balanced-groups', {
+    kind: 'scope',
+    id: 'екран',
+    spacing: {},
+    box: null,
+    el: el({ querySelectorAll: () => [
+      { querySelectorAll: () => [1, 2, 3] },
+      { querySelectorAll: () => [1, 2] },
+    ] }),
+  }],
 ];
 for (const [id, object] of cases) {
   const detail = byId[id].check(object);

@@ -397,6 +397,28 @@
       }
       applyNav(saved);
       navToggle.addEventListener('click', () => applyNav(!document.body.classList.contains('nav-collapsed')));
+
+      // ЗАКОН „менюто се прибира само“ (0.69.208): отвореното меню се затваря при клик ИЗВЪН
+      // него, без човек да търси бутона. Вътре в менюто кликът не го затваря — иначе изборът
+      // на панел щеше да изчезва под ръката. Бутонът `#nav-toggle` е изключение: той сам решава
+      // (иначе „покажи“ веднага щеше да се затвори от собствения си клик).
+      // Escape прави същото за клавиатура — там „извън менюто“ няма координати.
+      const navPanel = $('#nav');
+      const navOpen = () => !document.body.classList.contains('nav-collapsed');
+      const closeNav = () => {
+        if (navOpen()) applyNav(true);
+      };
+      document.addEventListener('click', (event) => {
+        if (!navOpen()) return;
+        const target = event && event.target;
+        if (!target) return;
+        if (navPanel && navPanel.contains && navPanel.contains(target)) return;
+        if (navToggle.contains && navToggle.contains(target)) return;
+        closeNav();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event && event.key === 'Escape') closeNav();
+      });
     }
 
     document.querySelector('.langs button[data-lang="bg"]').classList.add('active');

@@ -135,7 +135,7 @@ const PANEL_MODULES = [
     }, { label: 'отговорът от прегледа на обектите', timeout: 20000 });
     const report = String(settingsHost.querySelector('#set-objects-out').textContent || '');
     assert.match(report, /Разпознати обекти: \d+/, 'отчетът е на екрана: ' + report.slice(0, 120));
-    assert.match(report, /Закони: 6 · нарушения: \d+/, 'отчетът казва колко закона е приложил: ' + report.slice(0, 200));
+    assert.match(report, new RegExp('Закони: ' + ui.window.HapiDebugObjects.LAWS.length + ' · нарушения: \\d+'), 'отчетът казва колко закона е приложил: ' + report.slice(0, 200));
     assert.match(said2.message, /Обекти: \d+ · нарушения: \d+/, 'известието брои обектите и нарушенията: ' + said2.message);
     // Инструментът НЕ лъже: щом има нарушения, известието е с вид „err“, а отчетът ги изброява.
     const counted = Number((said2.message.match(/нарушения: (\d+)/) || [0, 0])[1]);

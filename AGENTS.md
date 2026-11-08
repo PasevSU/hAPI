@@ -103,6 +103,11 @@
   `ui/field-labels.js` след рендер (`app.js` вика `bindLabels()` при всеки mount и през
   `MutationObserver`). Нов панел НЕ пише `for`/`id` сам — иначе вторият `id` се дублира.
   Полетата без етикет се връщат в `unnamed`, не се кръщават. `tests/ui-field-labels.cjs`.
+- **Менюто има симетрия и логика — това е закон, не вкус.** Секциите на „Настройки“ са в групи
+  с РАВЕН брой (`GROUPS` в `settings-panel.js`, днес 3 × 6), всяка с име за екранен четец; нов
+  раздел влиза в групата по смисъл, не „накрая“. Пази го `tests/ui-nav-symmetry.cjs`, а живият
+  екран — законът `balanced-groups` (с решение в `debug-ledger.js`). Отвореното меню се прибира
+  само при клик извън него и при `Escape` (`tests/ui-nav-outside-click.cjs`).
 - **Нов UI файл не се сервира сам.** `UI_FILES` в `server.js` е allowlist: без ред там
   `/ui/<нов>.js` връща **404** и падат `ingress-panel-load`, `panel-framing`, `report-api`,
   `file-placement` (+ `html-assets`, `docker-runtime` за списъка). Плюс ред в `CEILING` на

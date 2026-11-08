@@ -374,28 +374,67 @@
   }
 
   // ── Секции на „Настройки“ ─────────────────────────────────────────────────
-  // Десетте административни секции живеят ТУК, а не в главното меню: то остава късо,
-  // а всичко „под капака“ се отваря от едно място. Всяка секция показва реални данни от
-  // административния API и — където има смисъл — предлага самото действие.
-  const SECTIONS = [
-    { id: 'hierarchy', label: 'section.hierarchy' },
-    { id: 'cabinet', label: 'section.cabinet' },
-    { id: 'taxonomy', label: 'section.taxonomy' },
-    { id: 'jobs', label: 'section.jobs' },
-    { id: 'users', label: 'section.users' },
-    { id: 'variables', label: 'section.variables' },
-    { id: 'data', label: 'section.data' },
-    { id: 'diagnostics', label: 'section.diagnostics' },
-    { id: 'analytics', label: 'section.analytics' },
-    { id: 'sensors', label: 'section.sensors' },
-    { id: 'policies', label: 'section.policies' },
-    { id: 'security', label: 'section.security' },
-    { id: 'qr', label: 'section.qr' },
-    { id: 'cms', label: 'section.cms' },
-    { id: 'storage', label: 'section.storage' },
-    { id: 'backups', label: 'section.backups' },
-    { id: 'logs', label: 'section.logs' },
+  // ЗАКОН „менюто има симетрия и логика“ (0.69.208). Дотук секциите бяха ЕДИН ред от 18
+  // чипа: при първата ширина се чупеха на произволен брой редове, а съседни по вид секции
+  // стояха далеч една от друга („Данни“ до „Диагностика“, но „Журнал“ — най-накрая).
+  // Сега секциите са в ТРИ групи по смисъл, по ШЕСТ секции всяка:
+  //   • структура — какво има в системата (основи, йерархия, картотека, категории, задачи, променливи);
+  //   • достъп и одит — кой какво може и какво остава записано (потребители, политики, сигурност,
+  //     QR архиви, подпис на отчети, журнал);
+  //   • данни и експлоатация — какво се пази и мери (данни, диагностика, анализи, сензори, съхранение, резервни копия).
+  // Равен брой на група не е естетика: при еднакъв брой чипове редовете са равни при всяка
+  // ширина и нито един не „виси“ сам. Пази го `tests/ui-nav-symmetry.cjs`, а живият екран го
+  // проверява със закона `balanced-groups` в `debug-objects.js`.
+  const GROUPS = [
+    {
+      id: 'structure',
+      title: 'group.structure',
+      items: [
+        { id: 'general', label: 'tab.general' },
+        { id: 'hierarchy', label: 'section.hierarchy' },
+        { id: 'cabinet', label: 'section.cabinet' },
+        { id: 'taxonomy', label: 'section.taxonomy' },
+        { id: 'jobs', label: 'section.jobs' },
+        { id: 'variables', label: 'section.variables' },
+      ],
+    },
+    {
+      id: 'access',
+      title: 'group.access',
+      items: [
+        { id: 'users', label: 'section.users' },
+        { id: 'policies', label: 'section.policies' },
+        { id: 'security', label: 'section.security' },
+        { id: 'qr', label: 'section.qr' },
+        { id: 'cms', label: 'section.cms' },
+        { id: 'logs', label: 'section.logs' },
+      ],
+    },
+    {
+      id: 'runtime',
+      title: 'group.runtime',
+      items: [
+        { id: 'data', label: 'section.data' },
+        { id: 'diagnostics', label: 'section.diagnostics' },
+        { id: 'analytics', label: 'section.analytics' },
+        { id: 'sensors', label: 'section.sensors' },
+        { id: 'storage', label: 'section.storage' },
+        { id: 'backups', label: 'section.backups' },
+      ],
+    },
   ];
+  // Заглавията на групите се викат с литерал, за да ги вижда `tests/ui-i18n.cjs`.
+  const GROUP_TITLES = {
+    structure: () => T('group.structure'),
+    access: () => T('group.access'),
+    runtime: () => T('group.runtime'),
+  };
+  // Плоският изглед се строи ОТ групите — втори списък със секции не се поддържа.
+  const ITEMS = GROUPS.flatMap((group) => group.items.map((item) => ({ id: item.id, label: item.label, group: group.id })));
+  const labelOf = (id) => {
+    const item = ITEMS.find((x) => x.id === id);
+    return T(item ? item.label : 'app.title');
+  };
 
   const sectionCache = {};
   // Живо обновяване на „Задачи“ (Фаза 5): таймерът съществува само докато секцията е отворена.
@@ -431,7 +470,16 @@
     const tab = (id, label) =>
       '<button type="button" class="set-tab' + (current === id ? ' active' : '') + '" data-section="' + esc(id) + '"' +
       (current === id ? ' aria-current="true"' : '') + '>' + esc(label) + '</button>';
-    return '<nav class="set-tabs" aria-label="' + esc(T('aria.sections')) + '">' + tab('general', T('tab.general')) + SECTIONS.map((s) => tab(s.id, T(s.label))).join('') + '</nav>';
+    // Всяка група е `role="group"` с ИМЕ (заглавието е свързано през `aria-labelledby`), за да
+    // не е „18 бутона в един чувал“ за екранния четец. Редът вътре в групата е редът на работа:
+    // първо структурата, после достъпът, накрая данните.
+    const groups = GROUPS.map((group) => {
+      const titleId = 'set-group-' + group.id;
+      return '<div class="set-tabs-group" data-nav-group="' + esc(group.id) + '" role="group" aria-labelledby="' + titleId + '">' +
+        '<span class="set-tabs-group-title" id="' + titleId + '">' + esc(GROUP_TITLES[group.id]()) + '</span>' +
+        '<div class="set-tabs">' + group.items.map((item) => tab(item.id, T(item.label))).join('') + '</div></div>';
+    });
+    return '<nav class="set-tabs-groups" aria-label="' + esc(T('aria.sections')) + '">' + groups.join('') + '</nav>';
   }
 
   function bindTabs() {
@@ -1666,12 +1714,12 @@
     const epoch = mountEpoch;
     const targetHost = host;
     stopJobsTimer();
-    const meta = SECTIONS.find((s) => s.id === id) || { label: 'app.title' };
+    const meta = ITEMS.some((item) => item.id === id) ? { label: labelOf(id) } : { label: T('app.title') };
     host.innerHTML =
-      '<div class="page-title"><h1>' + esc(T('app.title')) + ' · ' + esc(T(meta.label)) + '</h1>' +
+      '<div class="page-title"><h1>' + esc(T('app.title')) + ' · ' + esc(meta.label) + '</h1>' +
       '<span class="badge ' + (connected() ? 'ok' : 'demo') + '">' + (connected() ? T('badge.linked') : T('badge.demo')) + '</span></div>' +
       renderTabs() +
-      '<section class="panel u-mt"><div class="panel-head"><h2>' + esc(T(meta.label)) + '</h2><span class="badge">API</span></div>' +
+      '<section class="panel u-mt"><div class="panel-head"><h2>' + esc(meta.label) + '</h2><span class="badge">API</span></div>' +
       '<div class="panel-body" id="set-section-body"><p class="hint">Зареждам…</p></div></section>';
     bindTabs();
     const body = targetHost && targetHost.querySelector('#set-section-body');

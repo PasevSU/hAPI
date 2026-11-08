@@ -28,6 +28,7 @@
     { kind: 'field', select: '.field', role: 'поле от форма' },
     { kind: 'table', select: 'table', role: 'таблица' },
     { kind: 'chip', select: '.chip, .state-chip, .badge', role: 'табелка' },
+    { kind: 'nav-group', select: '[data-nav-group]', role: T('dbg.role.nav-group') },
     { kind: 'panel', select: 'section.panel, .panel', role: 'контейнер' },
   ];
 
@@ -199,7 +200,32 @@
         return outside.length ? outside.length + ' QR кода извън блока „Достъп и QR код“' : null;
       },
     },
+    {
+      id: 'balanced-groups',
+      title: T('dbg.law.balanced-groups.title'),
+      // Закон за ЦЕЛИЯ екран: броят секции се сравнява МЕЖДУ групите, а не вътре в една.
+      // Затова е `scope` — като `one-qr`: иначе всяка група се съди сама и „равенството“ няма
+      // с какво да се сравни. Текстът му е в речника (DEF-49), а не литерал тук.
+      kinds: ['scope'],
+      check: function (scope) {
+        var groups = scope.el && scope.el.querySelectorAll ? scope.el.querySelectorAll('[data-nav-group]') : [];
+        if (!groups.length) return null; // няма групи на екрана — няма какво да се мери
+        var counts = Array.prototype.map.call(groups, function (group) {
+          return group.querySelectorAll ? group.querySelectorAll('[data-section]').length : 0;
+        });
+        var uneven = counts.filter(function (n) { return n !== counts[0]; });
+        if (uneven.length) return T('dbg.law.balanced-groups.uneven') + ': ' + counts.join(' · ');
+        if (counts[0] < 2) return T('dbg.law.balanced-groups.small') + ': ' + counts[0];
+        return null;
+      },
+    },
   ];
+
+  /** Текст от речника; без речник (напр. в тестов контекст) ключът се вижда като ключ. */
+  function T(key) {
+    var dict = window.HapiI18n;
+    return dict && typeof dict.t === 'function' ? dict.t(key) : String(key);
+  }
 
   function isDebug() {
     try {

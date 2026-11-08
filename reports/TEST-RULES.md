@@ -3,13 +3,13 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 392 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 394 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 180 |
 | портал | 35 |
-| GUI | 29 |
+| GUI | 31 |
 | Home Assistant | 17 |
 | отчети | 16 |
 | PGP | 14 |
@@ -266,7 +266,7 @@
 | `portal-tokens` | Portal tokens | `tests/portal-tokens.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (29)
+## GUI (31)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -293,6 +293,8 @@
 | `ui-i18n` | Ui i18n | `tests/ui-i18n.cjs` |
 | `ui-i18n-ratchet` | Ui i18n ratchet | `tests/ui-i18n-ratchet.cjs` |
 | `ui-icons` | Ui icons | `tests/ui-icons.cjs` |
+| `ui-nav-outside-click` | Ui nav outside click | `tests/ui-nav-outside-click.cjs` |
+| `ui-nav-symmetry` | Ui nav symmetry | `tests/ui-nav-symmetry.cjs` |
 | `ui-navigation` | Ui navigation | `tests/ui-navigation.cjs` |
 | `ui-settings-sections` | Ui settings sections | `tests/ui-settings-sections.cjs` |
 | `ui-shell-nav` | Ui shell nav | `tests/ui-shell-nav.cjs` |
