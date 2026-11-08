@@ -262,14 +262,32 @@ try {
 // SIGTERM/SIGINT надолу (SQLite WAL се затваря чисто) и да върне код на изхода.
 const child = spawn(process.execPath, [SERVER], { env, stdio: 'inherit' });
 
+// Optional diagnostics as a sibling process. No separate installer, network calls or
+// runtime dependencies. It does not modify/restart hAPI and stays OFF on upgrades.
+const guardianEnabled = options.stability_guardian_enabled === true || options.stability_guardian_enabled === 'true';
+let guardian = null;
+if (guardianEnabled) {
+  guardian = spawn(process.execPath, [path.join(__dirname, 'guardian', 'monitor.js')], {
+    env: { ...env, HAPI_GUARDIAN_DIR: path.join(ADDON_DATA_DIR, 'stability-guardian') },
+    stdio: 'inherit',
+  });
+  guardian.on('error', (error) => console.error('GUARDIAN_START_FAILED:', error.code || error.message));
+  guardian.on('exit', (code) => {
+    if (code !== 0 && !guardian.killed) console.error('GUARDIAN_STOPPED:', code);
+  });
+}
+
+
 for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) {
   process.on(signal, () => {
     if (!child.killed) child.kill(signal);
+    if (guardian && !guardian.killed) guardian.kill(signal);
   });
 }
 
 child.on('error', (e) => fail('Cannot start hAPI server: ' + e.message));
 child.on('exit', (code, signal) => {
+  if (guardian && !guardian.killed) guardian.kill('SIGTERM');
   if (signal) {
     process.kill(process.pid, signal);
     return;
