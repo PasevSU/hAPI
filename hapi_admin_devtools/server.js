@@ -15,6 +15,9 @@ const ciEvidence=require('./github-actions-evidence');
 const {createMonitor}=require('./monitor');
 const director=require('./ai/director');
 const {inventory:developmentInventory}=require('./ai/workload');
+const operatingModes=require('./ai/operating-modes');
+const dynamicAnalysis=require('./ai/dynamic-analysis');
+const functionCoverage=require('./ai/function-coverage');
 const DATA=CONFIG.dataDir;
 const OPTIONS=CONFIG.optionsPath;
 const ENROLLMENT=CONFIG.enrollmentPath;
@@ -37,8 +40,29 @@ function enrolledRecord(options){
   }catch{return null;}
 }
 let unlocked=!!enrolledRecord(readOptions());
-const monitor=createMonitor(path.join(DATA,'monitor'));
-if(unlocked)monitor.start();
+let dynamicAnalyzer=null;
+try {
+  const options=readOptions();
+  if(options.dynamic_monitor_enabled!==false) {
+    const intervalMinutes=operatingModes.parseInterval(
+      options.dynamic_analysis_interval_minutes??operatingModes.DYNAMIC.defaultAnalysisIntervalMinutes);
+    dynamicAnalyzer=dynamicAnalysis.createDynamicAnalyzer(
+      path.join(DATA,'dynamic'),{intervalMinutes});
+  }
+} catch(error){
+  // Wrong configuration fails closed for dynamic analysis without stopping
+  // the protected admin ingress and original monitor.
+  console.error('DEVTOOLS_DYNAMIC_CONFIG_INVALID:',error.code||error.message);
+}
+const monitor=createMonitor(path.join(DATA,'monitor'),{
+  onSample:observation=>{
+    if(unlocked&&dynamicAnalyzer)dynamicAnalyzer.sample(observation);
+  }
+});
+if(unlocked){
+  monitor.start();
+  dynamicAnalyzer?.start();
+}
 function ingressPeer(req){
   const remote=(req.socket.remoteAddress||'').replace(/^::ffff:/,'');
   return remote===DEFINITIONS.transport.ingressProxyAddress ||
@@ -143,6 +167,7 @@ function createServer(){
         fs.renameSync(tmp,ENROLLMENT);
         unlocked=true;
         monitor.start();
+        dynamicAnalyzer?.start();
         return answer(res,200,{activated:true});
       }
       if(!unlocked)return answer(res,423,{error:'OPENPGP_SIGNED_ENROLLMENT_REQUIRED'});
@@ -160,6 +185,26 @@ function createServer(){
            !Number.isSafeInteger(secondId)||secondId<=0||firstId===secondId)
           return answer(res,400,{error:'INVALID_CI_RUN_INPUT'});
         return answer(res,200,await ciEvidence.inspectTwoRuns({sha,firstId,secondId}));
+      }
+      if(req.method==='GET'&&route==='/api/work-modes')
+        return answer(res,200,{static:operatingModes.STATIC,dynamic:operatingModes.DYNAMIC,
+          improvementCategories:operatingModes.IMPROVEMENTS,
+          dynamicStatus:dynamicAnalyzer?.status()||{mode:'dynamic',analysisEnabled:false}});
+      if(req.method==='GET'&&route==='/api/dynamic/status')
+        return answer(res,200,dynamicAnalyzer?.status()||
+          {mode:'dynamic',analysisEnabled:false,reason:'DYNAMIC_MONITOR_DISABLED'});
+      if(req.method==='GET'&&route==='/api/dynamic/findings')
+        return answer(res,200,{mode:'dynamic',
+          analyses:dynamicAnalyzer?.readRecent()||[],
+          findingsAreProposals:true,automaticFixes:false});
+      if(req.method==='GET'&&route==='/api/dynamic/coverage'){
+        const catalog=functionCoverage.inventory();
+        return answer(res,200,{schemaVersion:catalog.schemaVersion,baselineVersion:catalog.baselineVersion,
+          listedFunctions:catalog.listed,liveInstrumented:catalog.liveInstrumented,
+          unobserved:catalog.unobserved,
+          note:'Static historic catalog, not proof of function runtime monitoring. Only /ready is currently probed.',
+          functions:catalog.functions.map(x=>({id:x.id,module:x.module,name:x.name,
+            domain:x.domain,coverage:x.coverage}))});
       }
       if(req.method==='GET'&&route==='/api/director/hierarchy')
         return answer(res,200,{...director.hierarchy,mode:'director-led',aiRuntime:'optional-not-activated',
