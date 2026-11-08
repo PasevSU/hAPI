@@ -27,6 +27,8 @@ test('no DevTools access without full OpenPGP fingerprint and detached signature
     let r=await request('api/status');
     assert.equal((await r.json()).activated,false);
     r=await request('api/overview');assert.equal(r.status,423);
+    r=await request('api/dynamic/findings');assert.equal(r.status,423);
+    r=await request('api/work-modes');assert.equal(r.status,423);
     r=await request('api/challenge','POST',{});assert.equal(r.status,423);
     fs.writeFileSync(process.env.HAPI_DEVTOOLS_OPTIONS,JSON.stringify({
       github_username:'PasevSU',openpgp_fingerprint:'4FC0B2596C68DCB9'}));
@@ -48,6 +50,24 @@ test('no DevTools access without full OpenPGP fingerprint and detached signature
     assert.equal(overview.identity.method,'OpenPGP');
     assert.equal(overview.applyEnabled,false);
     assert.equal(overview.automaticRepairsEnabled,false);
+    r=await request('api/work-modes');assert.equal(r.status,200);
+    const modes=await r.json();
+    assert.equal(modes.static.id,'static');
+    assert.equal(modes.dynamic.id,'dynamic');
+    assert.ok(modes.improvementCategories.some(x=>x.id==='optimization'));
+    r=await request('api/dynamic/status');assert.equal(r.status,200);
+    const status=await r.json();
+    assert.equal(status.analysisEnabled,true);
+    assert.equal(status.intervalMinutes,360);
+    r=await request('api/dynamic/coverage');assert.equal(r.status,200);
+    const coverage=await r.json();
+    assert.ok(coverage.listedFunctions>=300);
+    assert.equal(coverage.liveInstrumented,0);
+    r=await request('api/dynamic/findings');assert.equal(r.status,200);
+    const findings=await r.json();
+    assert.equal(findings.automaticFixes,false);
+    assert.deepEqual(findings.analyses,[]);
+
     assert.ok(Object.keys(overview.modules).length>=9);
     assert.equal(fs.statSync(path.join(tmp,'enrollment.json')).mode&0o777,0o600);
   }finally{
