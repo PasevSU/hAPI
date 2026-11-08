@@ -7,6 +7,7 @@ const path=require('node:path');
 const http=require('node:http');
 const crypto=require('node:crypto');
 const identity=require('./identity');
+const githubVerification=require('./github-verification');
 const {createMonitor}=require('./monitor');
 const DATA=process.env.HAPI_DEVTOOLS_DATA||'/data';
 const OPTIONS=process.env.HAPI_DEVTOOLS_OPTIONS||path.join(DATA,'options.json');
@@ -139,6 +140,11 @@ function createServer(){
         return answer(res,200,{activated:true});
       }
       if(!unlocked)return answer(res,423,{error:'OPENPGP_SIGNED_ENROLLMENT_REQUIRED'});
+      if(req.method==='GET'&&route==='/api/verify-commit'){
+        const sha=new URL(req.url,'http://localhost').searchParams.get('sha');
+        if(!/^[0-9a-f]{40}$/.test(sha||''))return answer(res,400,{error:'INVALID_COMMIT_SHA'});
+        return answer(res,200,await githubVerification.auditCommit(sha,expected));
+      }
       if(req.method==='GET'&&route==='/api/overview')
         return answer(res,200,{identity:{githubUsername:identity.GITHUB_USER,
           fingerprint:expected,verified:true,method:'OpenPGP'},
