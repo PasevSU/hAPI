@@ -70,10 +70,10 @@
         $('dynamic-coverage').textContent='Каталог: '+coverage.listedFunctions+
           ' функции · пряко наблюдавани: '+coverage.liveInstrumented+
           ' · без пряко покритие: '+coverage.unobserved;
-        const categories=$('dynamic-categories');categories.replaceChildren();
+        const dynamicCategories=$('dynamic-categories');dynamicCategories.replaceChildren();
         for(const item of modes.improvementCategories){
           const li=document.createElement('li');li.textContent=item.name+' — '+item.description;
-          categories.appendChild(li);
+          dynamicCategories.appendChild(li);
         }
         const findings=$('dynamic-findings');findings.replaceChildren();
         for(const analysis of dynamicFindings.analyses.slice(-4).reverse()){
