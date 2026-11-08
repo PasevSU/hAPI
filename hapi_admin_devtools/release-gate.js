@@ -7,8 +7,9 @@
  * All evidence must be independently verified by trusted CI/restore adapters.
  */
 const crypto=require('node:crypto');
-const REPO='PasevSU/hAPI';
-const VALID_PHASES=new Set(['unit','integration','regression','integrity','rollback']);
+const {DEFINITIONS}=require('./definitions');
+const REPO=DEFINITIONS.github.owner+'/'+DEFINITIONS.github.repo;
+const VALID_PHASES=new Set(DEFINITIONS.security.releasePhaseNames);
 const SHA=/^[0-9a-f]{40}$/;
 const VERSION=/^\d+\.\d+\.\d+$/;
 function isHex64(v){return typeof v==='string'&&/^[0-9a-f]{64}$/.test(v)}
@@ -18,7 +19,7 @@ function safePlan(plan) {
      !VERSION.test(plan.version||'')||!VERSION.test(plan.previousVersion||'')||
      !isHex64(plan.artifactSha256)||plan.version===plan.previousVersion)return null;
   if(!Array.isArray(plan.targets)||plan.targets.length===0||plan.targets.length>3||
-     plan.targets.some(t=>!['amd64','aarch64','armv7'].includes(t))||
+     plan.targets.some(t=>!DEFINITIONS.security.targetArchitectures.includes(t))||
      new Set(plan.targets).size!==plan.targets.length)return null;
   return {repository:REPO,commitSha:plan.commitSha,version:plan.version,
     previousVersion:plan.previousVersion,artifactSha256:plan.artifactSha256,
@@ -51,7 +52,7 @@ function evaluate(plan,evidence,verified={}) {
   if(runs.length!==2)problems.push('TWO_INDEPENDENT_CI_RUNS_REQUIRED');
   for(const run of runs){
     if(!run||!Number.isSafeInteger(run.runId)||run.runId<1 ||
-       typeof run.environment!=='string'||!['ubuntu','haos','windows'].includes(run.environment) ||
+       typeof run.environment!=='string'||!DEFINITIONS.security.releaseEnvironments.includes(run.environment) ||
        run.commitSha!==p.commitSha||run.artifactSha256!==p.artifactSha256)
       problems.push('CI_EVIDENCE_INVALID');
     else distinct.add(run.environment+':'+run.runId);
