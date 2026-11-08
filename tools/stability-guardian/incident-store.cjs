@@ -11,6 +11,7 @@ const MAX_MESSAGE = 1200;
 const MAX_EVENTS = 100000;
 function redact(value) {
   return String(value ?? '')
+    .replace(/(Authorization\s*:\s*)Bearer\s+[^\s,;]+/gi, '$1[REDACTED]')
     .replace(/(Bearer\s+)[A-Za-z0-9._~+/-]+/gi, '$1[REDACTED]')
     .replace(/((?:api[_-]?key|token|secret|password|authorization)\s*[:=]\s*)[^\s,;]+/gi, '$1[REDACTED]')
     .replace(/sk-[A-Za-z0-9_-]{12,}/g, '[REDACTED]')
