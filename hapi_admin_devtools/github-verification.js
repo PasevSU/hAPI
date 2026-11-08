@@ -2,16 +2,17 @@
 // Read-only GitHub commit verification gate. Does not authorize repository writes.
 const https=require('node:https');
 const identity=require('./identity');
-const REPO='PasevSU/hAPI';
-function getCommit(sha,{timeoutMs=7000}={}){
+const {DEFINITIONS,readAddonVersion}=require('./definitions');
+const REPO=DEFINITIONS.github.owner+'/'+DEFINITIONS.github.repo;
+function getCommit(sha,{timeoutMs=DEFINITIONS.limits.githubCommitTimeoutMs}={}){
   if(typeof sha!=='string'||!/^[0-9a-f]{40}$/.test(sha))return Promise.reject(Error('INVALID_COMMIT_SHA'));
   return new Promise((resolve,reject)=>{
-    const req=https.get('https://api.github.com/repos/'+REPO+'/commits/'+sha,{
-      timeout:timeoutMs,headers:{'user-agent':'hAPI-Admin-DevTools/0.2','accept':'application/vnd.github+json',
-        'x-github-api-version':'2022-11-28'}},res=>{
+    const req=https.get(DEFINITIONS.github.apiUrl+'/repos/'+REPO+'/commits/'+sha,{
+      timeout:timeoutMs,headers:{'user-agent':'hAPI-Admin-DevTools/'+readAddonVersion(),'accept':'application/vnd.github+json',
+        'x-github-api-version':DEFINITIONS.github.apiVersion}},res=>{
       if(res.statusCode!==200){res.resume();return reject(Error('GITHUB_COMMIT_HTTP_'+res.statusCode));}
       const chunks=[];let bytes=0;
-      res.on('data',chunk=>{bytes+=chunk.length;if(bytes>400000){req.destroy(Error('GITHUB_COMMIT_TOO_LARGE'));return;}chunks.push(chunk);});
+      res.on('data',chunk=>{bytes+=chunk.length;if(bytes>DEFINITIONS.limits.githubCommitBytes{req.destroy(Error('GITHUB_COMMIT_TOO_LARGE'));return;}chunks.push(chunk);});
       res.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')))}catch{reject(Error('GITHUB_COMMIT_INVALID_JSON'));}});
     });
     req.on('timeout',()=>req.destroy(Error('GITHUB_COMMIT_TIMEOUT')));
