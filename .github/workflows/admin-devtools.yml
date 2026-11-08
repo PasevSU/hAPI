@@ -28,6 +28,7 @@ jobs:
           node --check hapi_admin_devtools/server.js
           node --check hapi_admin_devtools/monitor.js
           node --check hapi_admin_devtools/github-verification.js
+          node --check hapi_admin_devtools/release-gate.js
           node --check hapi_admin_devtools/dashboard.js
       - name: Run native unit and ingress tests
         run: node --test hapi_admin_devtools/tests/*.test.cjs
