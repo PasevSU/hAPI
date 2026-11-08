@@ -8,5 +8,6 @@ WORKDIR /app
 COPY server.js identity.js monitor.js github-verification.js release-gate.js github-actions-evidence.js definitions.js /app/
 COPY dashboard.html dashboard.js dashboard.css /app/
 COPY protocols /app/protocols/
+COPY ai /app/ai/
 ENV NODE_ENV=production
 CMD ["node", "/app/server.js"]
