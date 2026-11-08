@@ -204,6 +204,48 @@ const keyringWith = (env) => create({ env });
   ok('pgp_encrypt_paths без ключ → PGP_SECRET_KEY_REQUIRED; с ключ → keyId');
 }
 
+// ── 8б. Ключ, който САМО ПОДПИСВА, не е ключ за криптиране ─────────────────
+// Точно случаят от инстанцията: `pgp_encrypt_paths=true`, а в опциите стои Ed25519 без
+// подключ за криптиране. Дотогава това се виждаше само като `available:true`, тоест
+// изглеждаше „ключът е налице“. Изискването е да е ГРЕШКА с причина NO_ENCRYPTION_KEY,
+// а не тихо „не криптира“ — иначе данните се пишат в открит вид с включен флаг.
+{
+  const pgp = require('../hapi_enterprise/pgp.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-sign-only-'));
+  const key = pgp.generate({ algorithm: 'ed25519', userId: 'hAPI Test <test@localhost>' });
+  const pub = path.join(dir, 'public.asc');
+  const sec = path.join(dir, 'secret.asc');
+  fs.writeFileSync(pub, key.publicArmored);
+  fs.writeFileSync(sec, key.secretArmored);
+  const k = keyringWith({ [ENV.public]: pub, [ENV.secret]: sec, [ENV.encryptPaths]: 'true', [ENV.encryptWorkdir]: 'true' });
+  const s = k.status();
+  assert.equal(s.available, true, 'ключът е налице и се чете');
+  assert.equal(s.canDecrypt, true, 'частният ключ се разчита');
+  assert.equal(s.storageKeyId, '', 'Ed25519 не може да криптира → няма ключ за данни в покой');
+  assert.equal(s.reason, 'NO_ENCRYPTION_KEY', 'причината трябва да е NO_ENCRYPTION_KEY, получено: ' + s.reason);
+  assert.deepEqual(s.keys.map((x) => x.kind), ['eddsa'], 'ключът е EdDSA, не RSA/X25519');
+  assert.throws(
+    () => k.requireEncryptionKey(),
+    (e) => e.code === 'PGP_SECRET_KEY_REQUIRED' && e.detail === 'NO_ENCRYPTION_KEY' && /pgp_encrypt_paths/.test(e.message),
+    'включено криптиране с ключ само за подпис трябва да е грешка, не мълчание'
+  );
+  // Обратното: RSA ключ, генериран от самия add-on, стига и за подпис, и за криптиране.
+  const rsa = pgp.generate({ algorithm: 'rsa3072', userId: 'hAPI Test <test@localhost>' });
+  const rpub = path.join(dir, 'rsa-public.asc');
+  const rsec = path.join(dir, 'rsa-secret.asc');
+  fs.writeFileSync(rpub, rsa.publicArmored);
+  fs.writeFileSync(rsec, rsa.secretArmored);
+  const okKey = keyringWith({ [ENV.public]: rpub, [ENV.secret]: rsec, [ENV.encryptPaths]: 'true' });
+  const st = okKey.status();
+  assert.equal(st.reason, '', 'RSA ключ не оставя причина');
+  assert.match(st.storageKeyId, /^[0-9A-F]{16}$/, 'RSA ключът се избира за криптиране на данните');
+  const sealed = okKey.sealPath('/share/hAPI/data/x/y.pdf');
+  assert.ok(sealed.includes('BEGIN PGP MESSAGE'), 'пътят излиза шифротекст');
+  assert.equal(okKey.openPath(sealed), '/share/hAPI/data/x/y.pdf', 'и се развива обратно');
+  fs.rmSync(dir, { recursive: true, force: true });
+  ok('ключ само за подпис → NO_ENCRYPTION_KEY (грешка, не мълчание); RSA → шифротекст и обратно');
+}
+
 // ── 9. Препрочитане: смяна на пътя се вижда след reload ────────────────────
 {
   // Собствена среда, за да не зависи тестът от това какво има в обвивката на машината

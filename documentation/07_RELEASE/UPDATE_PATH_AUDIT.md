@@ -100,6 +100,31 @@ store-ът изрежда **само** `99438e72_hapi_enterprise` — инста
 | Home Assistant след рестарта | `ha core check`; `ha core logs \| grep -i hapi` | конфигурацията е валидна; **0** реда за `hapi` (нито грешка, нито предупреждение) |
 | Живият CSS съдържа новите правила | `grep` в контейнера | `.pf-qr-pop { position: absolute; top: 38px; right: var(--sp-4); … }` — кодът е от дясно, както е искането |
 
+### 3.5 Криптирането на средата: ключът на инстанцията не можеше да криптира (0.69.203)
+
+Опциите на инстанцията казват `pgp_encrypt_paths: true` и `pgp_encrypt_workdir: true`, но
+инсталираният ключ беше **Ed25519 само за подпис** (`keyId 1F5A1295EA95D45F`,
+`version 4`, `algorithm EdDSA (Ed25519)`, в `/share/hAPI/keys/`). `pgp.storageKeyOf()` избира
+ключ за данни в покой само от X25519/X448/RSA, затова `keyring.status()` връщаше
+`available: true, canDecrypt: true`, но `storageKeyId: ""` и `reason: NO_ENCRYPTION_KEY`.
+Тоест „ключът е налице“ изглеждаше вярно, а криптиране **не се случваше**; първото писане на
+път или на работна папка би паднало с `PGP_SECRET_KEY_REQUIRED`.
+
+| Стъпка | Как е мерено | Резултат |
+| --- | --- | --- |
+| Какъв е бил ключът | `GET /admin/api/pgp/keyring` в контейнера | `available=true canDecrypt=true keys=1 storageKeyId=empty reason=NO_ENCRYPTION_KEY`, ключ `kind=eddsa keyFlags=15 roles=[certify,sign,encrypt-comms,encrypt-storage]` |
+| Има ли вече запечатани данни | `POST /admin/api/pgp/seal-paths` | `sealed:0` (инстанцията има 1 портал и 0 файла), копие `pre-l1-2026-11-08T03-26-13-356Z.sqlite`, **151 552 B** |
+| Новият ключ | `pgp.generate({algorithm:'rsa3072'})` в контейнера, старите файлове в `keys/backup/` | `keyId ADF1F1A403065DAD`, RSA **3072** бита, `public 1 237 B` / `secret 2 556 B`, `roundtrip=ok` |
+| Състоянието след `POST /admin/api/pgp/keyring/reload` | същият API | `reason: "-"`, `storageKeyId: set`, `storageKeySource: key-flags`, `encryptPaths=true encryptWorkdir=true` |
+| Криптирането наистина работи | `path-crypto` в контейнера с изрична среда | `sealPath` → `BEGIN PGP MESSAGE`, **744 B** за 51 B път; `openPath` връща оригинала; `wrapSecret`/`unwrapSecret` кръгът е `ok` |
+| Ключът е в сила за целия контейнер | `sha256sum` на `/app/ui/*` срещу локалната сглобка | **5/5** еднакви (`files-manager.js`, `portal-control.js`, `i18n.js`, `components.css`, `portal-files.js`) |
+
+Обратният път: старите два файла и `KEY-INFO.txt` стоят в `/share/hAPI/keys/backup/`;
+връщането им връща подписа, но **не** връща криптирането — затова е записано в
+`KNOWN_DEFECTS.md` (DEF-46), а `tests/pgp-keyring.cjs` (случай 8б) пази да не се повтори:
+ключ само за подпис при включено криптиране е грешка `PGP_SECRET_KEY_REQUIRED` с
+`detail: NO_ENCRYPTION_KEY`.
+
 ## 4. Защо HACS не е решението за add-on-а
 
 HACS е маркетплейс за **интеграции, табла и карти** — той живее в `/config/custom_components`
