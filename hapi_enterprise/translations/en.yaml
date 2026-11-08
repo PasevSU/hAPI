@@ -209,6 +209,12 @@ configuration:
       NOT create a folder in /share. Turn on to also place a copy with the original name
       in the portal folder (storage_root). Files in /share are uploaded from the portal
       folders panel, where you choose the folder yourself.
+  stability_guardian_enabled:
+    name: Stability Guardian · local monitoring
+    description: >-
+      Optional bundled diagnostic module. Disabled by default for backwards compatibility.
+      When enabled, checks hAPI readiness locally without internet, a separate installer,
+      automatic fixes or restarts. This option does not enable AI analysis.
   portal_skin:
     name: Public portal skin
     description: >-
