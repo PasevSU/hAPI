@@ -73,6 +73,7 @@ const GUARDS = {
   'DEF-52': ['ui-folder-note-race.cjs'], // бележката не изчезва при състезание
   'DEF-53': ['storage-roots.cjs', 'gui-journeys.cjs'], // флейкът от натрупани папки
   'DEF-54': ['storage-roots.cjs'], // логическите корени — един източник, без папка в корена на диска
+  'DEF-55': ['process-guards.cjs', 'event-stream.cjs'], // спиране/старт под товар: грация ≥ 10 s и SIGKILL
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -86,6 +87,7 @@ const ANCHORS = {
   'DEF-50': { file: 'sse-ticket.cjs', contains: 'ticket' },
   'DEF-53': { file: 'storage-roots.cjs', contains: 'нито един тест не строи' },
   'DEF-54': { file: 'storage-roots.cjs', contains: 'paths.existingRoot' },
+  'DEF-55': { file: 'process-guards.cjs', contains: 'DEF-55' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

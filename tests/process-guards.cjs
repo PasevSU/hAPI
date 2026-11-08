@@ -75,4 +75,21 @@ assert.deepEqual(JSON.parse(toggle.stdout.trim()), { on: true, off: false }, 'in
 const serverSource = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'server.js'), 'utf8');
 assert.match(serverSource, /process-guards'\)\.install\(/, 'server.js трябва да вдига предпазителя при старт');
 
-console.log('PASS process-guards: отхвърляне → жив процес + запис · изключение → код 1 · вдига се от server.js');
+// 5. Спирането на тестово дете не бива да пада по ВРЕМЕ (DEF-55).
+// Измерено: при натоварена машина 5 s грация не стигаха — `evidence-portal` падаше с
+// „Child process … did not stop“ след 66 s, а `event-stream` не дочакваше `/health`.
+// Затова: грация ≥ 10 s, ескалация до SIGKILL и стартов бюджет ≥ 10 s. Понеже това са
+// константи, а не поведение, проверката е статична — намалят ли се, тестът пада.
+{
+  const helpers = fs.readFileSync(path.join(ROOT, 'tests', 'helpers.cjs'), 'utf8');
+  const grace = /graceMs\s*=\s*(\d+)/.exec(helpers);
+  assert.ok(grace, 'helpers.stopChild трябва да има `graceMs` (константата 5 s падна под товар)');
+  assert.ok(Number(grace[1]) >= 10000, 'грацията на stopChild е ' + grace[1] + ' ms — под 10 000 ms се повтаря DEF-55');
+  assert.match(helpers, /child\.kill\('SIGKILL'\)/, 'stopChild трябва да ескалира до SIGKILL преди да се откаже');
+  const stream = fs.readFileSync(path.join(ROOT, 'tests', 'event-stream.cjs'), 'utf8');
+  const attempts = /for \(let i = 0; i < (\d+); i \+= 1\) \{\s*\n\s*try \{\s*\n\s*const r = await fetch\(base \+ '\/health'\)/.exec(stream);
+  assert.ok(attempts, 'event-stream трябва да чака /health в изричен цикъл');
+  assert.ok(Number(attempts[1]) >= 200, 'event-stream чака само ' + attempts[1] + ' опита — под товар това е под 10 s');
+}
+
+console.log('PASS process-guards: отхвърляне → жив процес + запис · изключение → код 1 · вдига се от server.js · спиране с грация ≥ 10 s и SIGKILL (DEF-55)');

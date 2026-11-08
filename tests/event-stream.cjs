@@ -174,7 +174,9 @@ function reader(res, count, timeoutMs = 4000) {
     child.stderr.on('data', (c) => { stderr += c.toString() });
     const base = 'http://127.0.0.1:' + port;
     const health = async () => {
-      for (let i = 0; i < 100; i += 1) {
+      // 240 × 50 ms ≈ 12 s: при натоварена машина стартът със SQLite надхвърля 5 s и
+      // тестът падаше по време, не по логика (DEF-55, измерено).
+      for (let i = 0; i < 240; i += 1) {
         try {
           const r = await fetch(base + '/health');
           if (r.status === 200) return true;

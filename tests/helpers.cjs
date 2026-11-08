@@ -19,17 +19,31 @@ function storageRoot() {
   return { dir, share: path.join(dir, 'share'), env: { STORAGE_ROOT_OVERRIDE: dir } };
 }
 
-async function stopChild(child) {
+/**
+ * Спира дете и чака изход.
+ *
+ * Бюджетът е 15 s, не 5 s: измерено (DEF-55) — на натоварена машина сървърът със SQLite
+ * не успява да спре за 5 s и тестът пада по време, а не по логика (`evidence-portal`
+ * стигна 66 s). След изтичане на грацията се праща SIGKILL и се чака още малко — тогава
+ * грешката е истинска (процесът не приема и SIGKILL), не „машината беше заета“.
+ * @param {import('node:child_process').ChildProcess} child
+ * @param {{graceMs?: number}} [options]
+ */
+async function stopChild(child, { graceMs = 15000 } = {}) {
   if (!child || child.exitCode !== null || child.signalCode !== null) return;
-  const exited = new Promise(resolve => child.once('exit', () => resolve(true)));
+  const waitExit = (ms) =>
+    new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(false), ms);
+      child.once('exit', () => {
+        clearTimeout(timer);
+        resolve(true);
+      });
+    });
   child.kill();
-  let timer;
-  const stopped = await Promise.race([
-    exited,
-    new Promise(resolve => { timer = setTimeout(() => resolve(false), 5000); })
-  ]);
-  clearTimeout(timer);
-  if (!stopped) throw new Error(`Child process ${child.pid} did not stop`);
+  if (await waitExit(graceMs)) return;
+  child.kill('SIGKILL');
+  if (await waitExit(2000)) return;
+  throw new Error(`Child process ${child.pid} did not stop (grace ${graceMs} ms + SIGKILL)`);
 }
 
 /**
