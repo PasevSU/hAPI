@@ -4,6 +4,7 @@
  * owner-directed; dynamic work consumes measured observations and creates
  * reviewable improvement proposals, not executed fixes.
  */
+const {DEFINITIONS}=require('../definitions');
 const STATIC=Object.freeze({
   id:'static',trigger:'assigned-task-or-repository-change',
   agents:['architecture-agent','incident-agent','security-agent','storage-agent',
@@ -23,8 +24,9 @@ const IMPROVEMENTS=Object.freeze([
 ]);
 const DYNAMIC=Object.freeze({
   id:'dynamic',trigger:'continuous-sampling-and-configurable-analysis-interval',
-  defaultAnalysisIntervalMinutes:360,minAnalysisIntervalMinutes:15,
-  maxAnalysisIntervalMinutes:10080,
+  defaultAnalysisIntervalMinutes:DEFINITIONS.limits.dynamicAnalysisDefaultMinutes,
+  minAnalysisIntervalMinutes:DEFINITIONS.limits.dynamicAnalysisMinMinutes,
+  maxAnalysisIntervalMinutes:DEFINITIONS.limits.dynamicAnalysisMaxMinutes,
   outputs:IMPROVEMENTS.map(x=>x.id),
   persistence:'local-bounded-jsonl',inputPolicy:'sanitized-aggregate-metrics-only',
   falseCoveragePolicy:'unknown-not-healthy',
