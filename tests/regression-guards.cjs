@@ -54,7 +54,7 @@ const GUARDS = {
   'DEF-31': ['portal-qr-badge.cjs', 'qr-dispatch.cjs'], // QR кодът е на едно място
   'DEF-32': ['portal-tokens.cjs'], // подписът се издава веднъж
   'DEF-33': ['portal-card-link.cjs'], // адресът на портала е на едно място
-  'DEF-34': ['portal-no-links.cjs'], // страницата не показва QR към себе си
+  'DEF-34': ['portal-no-links.cjs', 'portal-page.cjs'], // страницата не показва QR към себе си
   'DEF-35': ['secret-panel.cjs', 'signed-url-restart.cjs'], // подписът не е страничен ефект на рисуването
   'DEF-36': ['files-manager.cjs', 'gui-sections.cjs'], // без видим и мъртъв бутон
   'DEF-37': ['ui-spacing.cjs'], // договорът за отстояния
@@ -94,25 +94,35 @@ const ANCHORS = {
   'DEF-10': { file: 'instance-lock-retry.cjs', contains: 'EBUSY' },
   'DEF-11': { file: 'retention-audit-lines.cjs', contains: 'undated' },
   'DEF-12': { file: 'core-store.cjs', contains: 'groupId' },
+  'DEF-13': { file: 'core-store.cjs', contains: 'неразбираемо число е грешка на входа' },
   'DEF-14': { file: 'core-store.cjs', contains: 'created_at' },
   'DEF-15': { file: 'download-stream.cjs', contains: "'accept-ranges'" },
   'DEF-16': { file: 'analysis-claims.cjs', contains: 'измер' },
+  'DEF-17': { file: 'files-manager.cjs', contains: 'Създай и генерирай API' },
   'DEF-18': { file: 'files-manager.cjs', contains: 'folder-files' },
   'DEF-19': { file: 'api-generation.cjs', contains: 'openapi' },
+  'DEF-20': { file: 'portal-page-render.cjs', contains: 'id="hapi-boot"' },
   'DEF-21': { file: 'gui-open-portal-link.cjs', contains: 'openPortal' },
   'DEF-22': { file: 'gui-csp-guard.cjs', contains: 'Content-Security-Policy' },
   'DEF-23': { file: 'ha-portal-folder-page.cjs', contains: '/api/v1/p/' },
+  'DEF-24': { file: 'files-manager.cjs', contains: 'data-close-portal' },
   'DEF-25': { file: 'pgp-path-encryption.cjs', contains: 'sealed' },
+  'DEF-26': { file: 'portal-folder-button.cjs', contains: '#folder-open' },
   'DEF-28': { file: 'ui-i18n.cjs', contains: 'DICT' },
   'DEF-29': { file: 'ui-skin.cjs', contains: 'aria-pressed' },
   'DEF-30': { file: 'portal-page-render.cjs', contains: 'посетител' },
+  'DEF-31': { file: 'qr-dispatch.cjs', contains: 'branded landing link' },
   'DEF-32': { file: 'portal-tokens.cjs', contains: 'еднократ' },
   'DEF-33': { file: 'portal-card-link.cjs', contains: 'landing' },
+  'DEF-34': { file: 'portal-page.cjs', contains: 'qr-panel' },
   'DEF-35': { file: 'signed-url-restart.cjs', contains: 'restart' },
   'DEF-36': { file: 'gui-sections.cjs', contains: 'data-action' },
   'DEF-37': { file: 'ui-spacing.cjs', contains: 'LIMIT_SPACING' },
   'DEF-38': { file: 'ui-field-labels.cjs', contains: 'HapiFieldLabels' },
+  'DEF-39': { file: 'runtime-config.cjs', contains: 'catalog.json' },
+  'DEF-40': { file: 'api-input-errors.cjs', contains: 'RFC 9457' },
   'DEF-41': { file: 'api-robustness.cjs', contains: 'колекция' },
+  'DEF-42': { file: 'ha-version-sensor.cjs', contains: 'сензора за версия' },
   'DEF-43': { file: 'pgp-keyflags.cjs', contains: 'keyflags' },
   'DEF-44': { file: 'storage-check.cjs', contains: 'STORAGE' },
   'DEF-45': { file: 'ui-shell-nav.cjs', contains: 'aria-controls' },
