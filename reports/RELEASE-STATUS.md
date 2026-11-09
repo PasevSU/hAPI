@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **399/399** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.209 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 634 файла · 112890 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 629 файла · 111966 реда · critical: 0 · high: 0 · medium: 2 · low: 199 — **има необяснени** · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 634 файла · 113103 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 629 файла · 111993 реда · critical: 0 · high: 0 · medium: 2 · low: 199 — **има необяснени** · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -52,7 +52,9 @@
   `tests/portal-i18n.cjs` пази равенството на наборите и кирилицата в българския.
 - **Нов договор:** `tests/portal-mobile.cjs` — 21 възела на кората, числа от данните, сверка
   на живите байтове, 42 ключа × 3 езика, липса на QR към себе си, стилове в ДВЕТЕ кожи
-  (`portal.css` и `portal-modern.css`) и затваряне с Escape.
+  (`portal.css` и `portal-modern.css`) и затваряне с Escape. Същият набор възли се иска и от
+  **интеграционния** портал (`custom_components/hapi_enterprise/portal.*`) — тестът пази
+  паритета, за да не изостава единият вариант тихо.
 
 ## 4. Как се проверява наново
 

@@ -63,7 +63,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Проверки, които чакат под товар | `helpers.stopChild` (15 s + `SIGKILL`) | `process-guards.cjs` |
 | Цялост на кода при старт | `hapi_enterprise/integrity.js` + `integrity-manifest.json` | `integrity-startup.cjs` |
 | Пакет за дебъгинг | `scripts/diag-package.cjs` (без тайни, с README) | `diag-package.cjs` |
-| Мобилна кора на портала (числа · статус · лист · лента) | `portal/portal.html` + `portal/portal.js` (числата от ДАННИТЕ, не от HTML) | `portal-mobile.cjs` |
+| Мобилна кора на портала (числа · статус · лист · лента) | `portal/portal.html` + `portal/portal.js` (числата от ДАННИТЕ, не от HTML); същото в `custom_components/hapi_enterprise/portal.*` | `portal-mobile.cjs` (и паритет между двата портала) |
 
 ## 4. Дебъгинг системата днес
 
@@ -126,9 +126,10 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
    няма устойчив низ — иска тест с брояч, не декоративна котва.
 3. **DEF-06 (WORM)** — иска root/Object Lock.
 4. **Нечетните `1/3/5/7/9px` и радиусите без токен** — преглед с очи, не скрипт.
-5. **Мобилната кора е в add-on варианта на портала** (`hapi_enterprise/portal/*`), не в компактната
-   интеграционна копия (`custom_components/hapi_enterprise/portal.*`) — тя пази своите 6 бутона и
-   своя по-малък обхват. Разликата е записана, не скрита; сливането им е отделна задача.
+5. **Мобилната кора е в ДВАТА варианта на портала** — пълният (`hapi_enterprise/portal/*`, с речник
+   BG/EN/DE) и интеграционната копия (`custom_components/hapi_enterprise/portal.*`). Еднакъв
+   набор възли се пази от `portal-mobile.cjs` (паритет), а текстовете в интеграцията са
+   статични на български, защото тя няма свой речник.
 6. **QR код към самата страница НЕ е добавен** — примерният мобилен екран го показва, но това е
    кръгова препратка, забранена от PP-04 и пазена от три теста (DEF-34).
 7. **Публикуване на 0.69.209** — таг `v0.69.209`, `scripts/publish-haoss.ps1 -Execute`,

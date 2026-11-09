@@ -22,6 +22,10 @@ const js = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'portal', 'portal.
 const baseCss = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'portal', 'portal.css'), 'utf8');
 const modernCss = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'portal', 'portal-modern.css'), 'utf8');
 const i18n = require(path.join(ROOT, 'hapi_enterprise', 'portal', 'portal-i18n.js'));
+// Вторият портал (интеграцията) има същия договор: двата варианта не бива да се разминават.
+const intHtml = fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterprise', 'portal.html'), 'utf8');
+const intJs = fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterprise', 'portal.js'), 'utf8');
+const intCss = fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterprise', 'portal.css'), 'utf8');
 
 // ── 1. Възлите на кората ──────────────────────────────────────────────────────
 const IDS = [
@@ -32,10 +36,17 @@ const IDS = [
   'footbar', 'bar-top', 'bar-search', 'bar-info', 'bar-manifest',
 ];
 for (const id of IDS) assert.ok(html.includes(`id="${id}"`), `липсва възел #${id} в portal.html`);
+for (const id of IDS) assert.ok(intHtml.includes(`id="${id}"`), `липсва възел #${id} в интеграционния portal.html`);
+
+// Паритет: същият набор възли в двата портала — иначе единият изостава тихо.
+const idsOf = (source) =>
+  [...IDS].filter((id) => source.includes(`id="${id}"`)).sort().join(',');
+assert.equal(idsOf(html), idsOf(intHtml), 'двата портала трябва да имат еднакъв набор възли на кората');
 
 // Действията са бутони: на телефон `<a>` с празен href е капан, а страницата не дава линкове.
 for (const id of ['file-info-close', 'fi-verify', 'bar-top', 'bar-search', 'bar-info', 'bar-manifest']) {
   assert.match(html, new RegExp('<button[^>]*id="' + id + '"', 'i'), `#${id} трябва да е БУТОН`);
+  assert.match(intHtml, new RegExp('<button[^>]*id="' + id + '"', 'i'), `#${id} трябва да е БУТОН и в интеграцията`);
 }
 
 // Листът е диалог: скрит по подразбиране и с aria-modal, за да не се чете зад него.
@@ -69,12 +80,27 @@ assert.ok(
   'сверката трябва да е отказана за файл с ключ и за забранен файл',
 );
 
-// ── 5. Бързата лента вика съществуващи действия ───────────────────────────────
+// ── 5. Бързата лента вика съществуващи действия ──
 assert.ok(js.includes('function wireQuickBar()'), 'липсва wireQuickBar()');
 for (const call of ['openInfo("api")', 'openInfo("manifest")', 'closeFileInfo', 'window.scrollTo']) {
   assert.ok(js.includes(call), `бързата лента не връзва ${call}`);
 }
 assert.ok(js.includes('wireQuickBar();'), 'wireQuickBar не се вика при рисуване на портала');
+
+// ── 5б. Същото в интеграционния портал ─────────────────────────────────────
+for (const fn of [
+  'function paintStats()',
+  'function paintAccess(data)',
+  'function openFileInfo(file)',
+  'async function verifyFile(file)',
+  'function wireQuickBar()',
+]) {
+  assert.ok(intJs.includes(fn), `интеграционният portal.js няма ${fn}`);
+}
+assert.match(intJs, /sha256Hex\(await res\.arrayBuffer\(\)\)/, 'сверката в интеграцията трябва да е на живите байтове');
+assert.ok(intJs.includes('paintStats();'), 'интеграционният portal.js не вика paintStats');
+assert.ok(intJs.includes('wireQuickBar();'), 'интеграционният portal.js не вика wireQuickBar');
+assert.ok(intJs.includes('!f.accessMode || f.accessMode === "FREE"'), 'интеграцията трябва да брои „без ключ“ от данните');
 
 // ── 6. Всеки ключ има превод на трите езика ──────────────────────────────────
 const used = new Set();
@@ -97,6 +123,7 @@ for (const gone of ['qr-panel', 'id="qr"', 'id="qr-note"', 'id="qr-hint"', 'id="
 for (const cls of ['.stats', '.sheet', '.fi-block', '.footbar', '.bar-btn']) {
   assert.ok(baseCss.includes(cls), `portal.css (базата) съдържа ${cls}`);
   assert.ok(modernCss.includes(cls), `portal-modern.css (кожата) съдържа ${cls}`);
+  assert.ok(intCss.includes(cls), `интеграционният portal.css съдържа ${cls}`);
 }
 assert.ok(baseCss.includes('@media (min-width: 720px)'), 'базата има точка на пречупване за широк екран');
 assert.ok(modernCss.includes('@media (min-width: 720px)'), 'кожата има точка на пречупване за широк екран');
@@ -106,5 +133,5 @@ assert.ok(js.includes('e.key === "Escape"'), 'липсва затваряне с
 
 console.log(
   `PASS portal-mobile: ${IDS.length} възела · ${mobileKeys.length} ключа × ${i18n.LANGS.length} езика · ` +
-    'числа от данните · сверка на живите байтове · без QR към себе си',
+    'двата портала с един и същ набор · числа от данните · сверка на живите байтове · без QR към себе си',
 );
