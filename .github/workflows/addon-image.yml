@@ -67,7 +67,7 @@ jobs:
           echo "::notice::образ ${{ matrix.arch }} за версия $version · ${owner}"
 
       - name: Build и push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: hapi_enterprise
           platforms: ${{ matrix.platform }}
