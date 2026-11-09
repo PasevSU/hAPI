@@ -337,8 +337,7 @@ main {
 
 /* ── Долен колонтитул ───────────────────────────────────────────────────── */
 .foot {
-  margin-top: 22px;
-  padding: 22px 0 34px;
+  margin-top: 22px;  padding: 22px 0 34px;
   border-top: 1px solid var(--line);
 }
 
@@ -398,5 +397,132 @@ main {
   .file:hover,
   .btn:hover {
     transform: none;
+  }
+}
+
+/* ── МОБИЛНА КОРА (PP-15): числа, статус, лист за файл, бърза лента ────────
+   Посоката е обърната: съдържанието се чете ПЪРВО на телефон. Числата са едри и с
+   таблични цифри, картите са стъклени, действието е на една ръка разстояние. Всичко е
+   чист CSS — без външен шрифт, без икони-шрифт и без скрипт за оформлението. */
+.stats {
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.stat {
+  padding: 14px 15px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--panel) 90%, white 10%), var(--panel));
+  box-shadow: var(--shadow);
+}
+
+.stat-n {
+  font-size: clamp(1.5rem, 6vw, 1.9rem);
+  font-weight: 720;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.stat-l {
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.access-card .summary-list .chip {
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+}
+
+.sheet {
+  backdrop-filter: blur(7px);
+  animation: skin-fade 0.2s ease both;
+}
+
+.sheet-card {
+  border: 1px solid var(--line);
+  background: linear-gradient(170deg, color-mix(in srgb, var(--panel) 96%, white 4%), var(--panel));
+  box-shadow: 0 -28px 60px -30px rgba(2, 6, 23, 0.9);
+}
+
+.sheet-card .panel-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 10px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: var(--glass);
+}
+
+.sheet-card h3 {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fi-block {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+#fi-verify {
+  margin-top: 12px;
+}
+
+#fi-result[data-kind="ok"] {
+  color: var(--ok);
+}
+
+#fi-result[data-kind="err"] {
+  color: var(--err);
+}
+
+.footbar {
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: var(--glass);
+}
+
+.bar-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 560;
+  transition: transform 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.bar-btn:hover,
+.bar-btn:focus-visible {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  transform: translateY(-1px);
+}
+
+@keyframes skin-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Широк екран: същото съдържание, но с повече въздух — числата не се разтягат. */
+@media (min-width: 720px) {
+  .stats {
+    gap: 14px;
+  }
+
+  .sheet-card .panel-head {
+    padding-top: 4px;
+  }
+
+  .footbar {
+    border-radius: 18px 18px 0 0;
   }
 }

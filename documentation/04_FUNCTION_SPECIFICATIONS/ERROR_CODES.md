@@ -1,17 +1,18 @@
 # Кодове за грешка — каталог
 
-> **Генериран документ.** Версия на кода: **0.69.208**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.209**. Пише се от
 > `node scripts/error-codes.cjs`, проверява се от `tests/error-codes.cjs`.
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
 
-Общо: **68** кода, излъчвани от `hapi_enterprise/`. От тях **49** носят
+Общо: **70** кода, излъчвани от `hapi_enterprise/`. От тях **51** носят
 собствено обяснение в кода; останалите се разпознават по кода и файла.
 
 ## Кодове по азбучен ред
 
 | Код | Значение (от кода) | Къде се излъчва |
 | --- | ------------------ | --------------- |
+| `ACHTUNG` | die Prüfsumme stimmt NICHT — die Datei wurde verändert. | `hapi_enterprise/portal/portal-i18n.js` |
 | `ADMIN_TOKEN_LOOKS_LIKE_HA_LLAT` | the "token" option is shaped like a Home Assistant | `hapi_enterprise/start.js` |
 | `ADMIN_TOKEN_REQUIRED` | the "token" option still contains a "!secret …" reference, so Supervisor did not | `hapi_enterprise/start.js` |
 | `BACKUP_FAILED` | — | `hapi_enterprise/workdir-migrate.js` |
@@ -75,6 +76,7 @@
 | `UNSUPPORTED_KEY_VERSION` | — | `hapi_enterprise/pgp.js` |
 | `UNSUPPORTED_PKESK` | — | `hapi_enterprise/pgp.js` |
 | `UNSUPPORTED_S2K` | — | `hapi_enterprise/pgp.js` |
+| `WARNING` | the checksum does NOT match — the file has changed. | `hapi_enterprise/portal/portal-i18n.js` |
 | `WEAK_KEY` | — | `hapi_enterprise/pgp.js` |
 | `WORKDIR_CORRUPT` | Отрязан контейнер (липсва ключ) | `hapi_enterprise/workdir-crypto.js` |
 | `WORKDIR_LOCKED` | Файлът е криптиран, но ключът не е достъпен: | `hapi_enterprise/workdir-crypto.js` |

@@ -38,6 +38,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Котви на защитите: 10 → **53 от 54** | последният комит на изданието | „има тест“ не значи „пази това правило“ | `regression-guards.cjs` (`ANCHORS`) |
 | Дългът по езика (DEF-49) стана измерим по вид текст | `c896563` | 36 850 знака изглеждаха еднаква работа, а 387 от тях не се превеждат | `ui-i18n-ratchet.cjs` |
 | **Закон: менюто е на равни групи по смисъл** (3 × 6 секции) + прибиране при клик извън него | последният комит на изданието (виж `CHANGELOG.md`) | 18 чипа в един ред се чупеха на произволни редове, а „Журнал“ стоеше далеч от „Данни“ | `ui-nav-symmetry.cjs`, `ui-nav-outside-click.cjs`, законът `balanced-groups` |
+| **Мобилна кора на публичната страница (0.69.209)** — числа, статус на достъпа, лист за файл със сверка на отпечатъка, бърза лента | последният комит на изданието (виж `CHANGELOG.md`) | страницата се отваря ПЪРВО на телефон, а числата и статусът ѝ липсваха | `portal-mobile.cjs` |
 
 Пълното описание „какво, защо и какво е измерено“ е в `CHANGELOG.md` и
 `documentation/07_RELEASE/RELEASE_0.69.208.md` (§6а.1–§6а.7).
@@ -62,6 +63,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Проверки, които чакат под товар | `helpers.stopChild` (15 s + `SIGKILL`) | `process-guards.cjs` |
 | Цялост на кода при старт | `hapi_enterprise/integrity.js` + `integrity-manifest.json` | `integrity-startup.cjs` |
 | Пакет за дебъгинг | `scripts/diag-package.cjs` (без тайни, с README) | `diag-package.cjs` |
+| Мобилна кора на портала (числа · статус · лист · лента) | `portal/portal.html` + `portal/portal.js` (числата от ДАННИТЕ, не от HTML) | `portal-mobile.cjs` |
 
 ## 4. Дебъгинг системата днес
 
@@ -107,9 +109,9 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 
 | Гейт | Команда | Резултат |
 | --- | --- | --- |
-| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **397/397**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
+| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **398/398**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
 | Артефакт | `node scripts/verify-release.cjs` | **22/22**, `dist/` 6 файла |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 398 теста в дървото |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 399 теста в дървото |
 | ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
 | Регресионни защити | `tests/regression-guards.cjs` | 54 защити · 75 теста · **53** котви |
 | Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 36 360 (таван 36 360) · 23 `t()` · 1 модул със собствен речник извън дълга |
@@ -124,7 +126,12 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
    няма устойчив низ — иска тест с брояч, не декоративна котва.
 3. **DEF-06 (WORM)** — иска root/Object Lock.
 4. **Нечетните `1/3/5/7/9px` и радиусите без токен** — преглед с очи, не скрипт.
-5. **Публикуване на 0.69.208** — таг `v0.69.208`, `scripts/publish-haoss.ps1 -Execute`,
+5. **Мобилната кора е в add-on варианта на портала** (`hapi_enterprise/portal/*`), не в компактната
+   интеграционна копия (`custom_components/hapi_enterprise/portal.*`) — тя пази своите 6 бутона и
+   своя по-малък обхват. Разликата е записана, не скрита; сливането им е отделна задача.
+6. **QR код към самата страница НЕ е добавен** — примерният мобилен екран го показва, но това е
+   кръгова препратка, забранена от PP-04 и пазена от три теста (DEF-34).
+7. **Публикуване на 0.69.209** — таг `v0.69.209`, `scripts/publish-haoss.ps1 -Execute`,
    проверка на SHA-256 (4/4). Не е пускано: чака изрично решение.
 
 ## 8. Как се проверява състоянието

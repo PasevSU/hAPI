@@ -248,6 +248,7 @@ const RULES = [
   { id: "portal-html-sandbox", area: "портал", title: "Portal html sandbox", owner: "tests/portal-html-sandbox.cjs" },
   { id: "portal-i18n", area: "портал", title: "Portal i18n", owner: "tests/portal-i18n.cjs" },
   { id: "portal-integrity", area: "портал", title: "Portal integrity", owner: "tests/portal-integrity.cjs" },
+  { id: "portal-mobile", area: "портал", title: "Portal mobile", owner: "tests/portal-mobile.cjs" },
   { id: "portal-monitoring", area: "портал", title: "Portal monitoring", owner: "tests/portal-monitoring.cjs" },
   { id: "portal-no-links", area: "портал", title: "Portal no links", owner: "tests/portal-no-links.cjs" },
   { id: "portal-order", area: "портал", title: "Portal order", owner: "tests/portal-order.cjs" },

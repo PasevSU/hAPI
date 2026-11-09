@@ -71,6 +71,37 @@
   </header>
 
   <main class="wrap" id="main">
+    <!-- МОБИЛНА КОРА (PP-15): числата на портала се виждат преди списъка. Всяко число тук
+         е ИЗЧИСЛЕНО от данните на портала — на страницата няма нито едно написано число. -->
+    <section class="stats" id="stats" data-i18n-aria="stats.aria" aria-label="Порталът в числа">
+      <div class="stat">
+        <span class="stat-n" id="stat-files">0</span>
+        <span class="stat-l" id="stat-files-label" data-i18n="stats.files">Файлове</span>
+      </div>
+      <div class="stat">
+        <span class="stat-n" id="stat-folders">0</span>
+        <span class="stat-l" id="stat-folders-label" data-i18n="stats.folders">Папки</span>
+      </div>
+      <div class="stat">
+        <span class="stat-n" id="stat-hash">0</span>
+        <span class="stat-l" id="stat-hash-label" data-i18n="stats.hash">С отпечатък</span>
+      </div>
+      <div class="stat">
+        <span class="stat-n" id="stat-key">0</span>
+        <span class="stat-l" id="stat-key-label" data-i18n="stats.key">С ключ</span>
+      </div>
+    </section>
+
+    <!-- Статус на достъпа: какво може посетителят БЕЗ да гадае. Стойността и списъкът се
+         смятат от режимите на файловете, затова картата не обещава нещо, което я няма. -->
+    <section class="panel access-card" id="access-card" aria-labelledby="access-title">
+      <div class="panel-head">
+        <h2 id="access-title" data-i18n="access.title">Статус на достъпа</h2>
+        <span id="access-state" class="chip chip-ok" data-i18n="access.public">Публичен достъп</span>
+      </div>
+      <ul id="access-list" class="summary-list"></ul>
+    </section>
+
     <!-- PP-03/PP-06: какво представлява порталът и какво съдържа (брой файлове, обем, вид). -->
     <section class="panel summary-panel" aria-labelledby="summary-title">
       <h2 id="summary-title" data-i18n="summary.title">Какво съдържа този портал</h2>
@@ -113,7 +144,43 @@
       <p id="empty" class="empty" data-i18n="files.empty.public" hidden>Няма достъпни файлове за показване.</p>
       <p id="more" class="more" hidden></p>
     </section>
+
+    <!-- Лист с информацията за ЕДИН файл (мобилен изглед). Показва се на място, като лист,
+         защото на телефон отделна страница за един файл губи контекста на портала.
+         „Провери отпечатъка“ смята SHA-256 на СЪЩИТЕ байтове, които биха се свалили. -->
+    <section class="sheet" id="file-info" role="dialog" aria-modal="true" aria-labelledby="file-info-title"
+      hidden>
+      <div class="sheet-card">
+        <div class="panel-head">
+          <h2 id="file-info-title" data-i18n="fileinfo.title">Информация за файл</h2>
+          <button type="button" id="file-info-close" class="btn btn-ghost btn-sm"
+            data-i18n="fileinfo.close">Затвори</button>
+        </div>
+        <p id="file-info-name" class="file-name"></p>
+        <section class="fi-block" aria-labelledby="fi-general-title">
+          <h3 id="fi-general-title" data-i18n="fileinfo.general">Обща информация</h3>
+          <dl id="fi-general" class="info-list"></dl>
+        </section>
+        <section class="fi-block" aria-labelledby="fi-integrity-title">
+          <h3 id="fi-integrity-title" data-i18n="fileinfo.integrity">Цялост и отпечатък</h3>
+          <dl id="fi-integrity" class="info-list"></dl>
+          <p id="fi-hash" class="file-hash mono"></p>
+          <button type="button" id="fi-verify" class="btn btn-primary" data-i18n="fileinfo.verify">Провери
+            отпечатъка</button>
+          <p id="fi-result" class="status" role="status" aria-live="polite" hidden></p>
+        </section>
+      </div>
+    </section>
   </main>
+
+  <!-- Бързата лента: същите действия като в заглавната част, но на една ръка разстояние.
+       Всяко от тях прави нещо истинско — няма декоративни бутони (DEF-36). -->
+  <nav class="footbar" id="footbar" data-i18n-aria="bar.aria" aria-label="Бързи действия">
+    <button type="button" id="bar-top" class="bar-btn" data-i18n="bar.top">Начало</button>
+    <button type="button" id="bar-search" class="bar-btn" data-i18n="bar.search">Търси</button>
+    <button type="button" id="bar-info" class="bar-btn" data-i18n="bar.info">API</button>
+    <button type="button" id="bar-manifest" class="bar-btn" data-i18n="bar.manifest">Манифест</button>
+  </nav>
 
   <footer class="foot">
     <div class="wrap">

@@ -95,6 +95,9 @@ let allFiles = [];
 let folderMode = false;
 let folderFiles = [];
 let folderSubs = [];
+// Отвореният лист с информация за един файл (за преизвеждане при смяна на езика).
+let currentFile = null;
+let barWired = false;
 // Профил на съдържанието — всички текстове на страницата се извеждат от него.
 let prof = null;
 
@@ -541,6 +544,177 @@ function paintSummary(_portal) {
   );
 }
 
+/** Числата на портала: смятат се от заредените данни и НЕ се пишат в HTML. */
+function paintStats() {
+  const files = folderMode ? folderFiles : allFiles;
+  const hash = allFiles.filter((f) => f.sha256).length;
+  const key = allFiles.filter((f) => f.accessMode === "KEY_REQUIRED").length;
+  const set = (id, value) => {
+    const el = $(id);
+    if (el) el.textContent = String(value);
+  };
+  set("stat-files", files.length);
+  set("stat-folders", folderMode ? folderSubs.length : 0);
+  set("stat-hash", hash);
+  set("stat-key", key);
+}
+
+/** Статус на достъпа: едно изречение-състояние и броячи по режим на файловете. */
+function paintAccess(data) {
+  const state = $("access-state");
+  const list = $("access-list");
+  if (!state || !list) return;
+  const total = prof ? prof.total : allFiles.length;
+  const free = allFiles.filter((f) => !f.accessMode || f.accessMode === "FREE").length;
+  const key = allFiles.filter((f) => f.accessMode === "KEY_REQUIRED").length;
+  const disabled = allFiles.filter((f) => f.accessMode === "DISABLED").length;
+  const isPublic = Boolean(data && data.visibility === "public");
+  state.textContent = isPublic ? T("access.public") : T("access.private");
+  state.className = "chip " + (isPublic ? "chip-ok" : "chip-warn");
+  const items = [];
+  if (!total) items.push(T("access.none"));
+  else {
+    items.push(T("access.free.count", { n: free }));
+    if (key) items.push(T("access.key.count", { n: key }));
+    if (disabled) items.push(T("access.disabled.count", { n: disabled }));
+  }
+  list.replaceChildren(
+    ...items.map((value) => {
+      const li = document.createElement("li");
+      li.className = "chip";
+      li.textContent = value;
+      return li;
+    }),
+  );
+}
+
+/** Един ред „етикет: стойност“ в листа за ЕДИН файл. */
+function fiRow(list, label, value, opts) {
+  if (!list) return;
+  const dt = document.createElement("dt");
+  dt.textContent = label;
+  const dd = document.createElement("dd");
+  if (opts && opts.mono) dd.className = "mono";
+  if (isNode(value)) dd.append(value);
+  else dd.textContent = String(value == null || value === "" ? "∅" : value);
+  list.append(dt, dd);
+}
+
+/** Лист с подробности за ЕДИН файл — на място, без отделна страница. */
+function openFileInfo(file) {
+  const box = $("file-info");
+  if (!box || !file) return;
+  currentFile = file;
+  const general = $("fi-general");
+  const integrity = $("fi-integrity");
+  if (general) general.replaceChildren();
+  if (integrity) integrity.replaceChildren();
+  const name = $("file-info-name");
+  if (name) name.textContent = file.name;
+  fiRow(general, T("fileinfo.size"), fmtSize(file.size));
+  const date = fmtDate(file.uploadedAt);
+  if (date) fiRow(general, T("fileinfo.date"), date);
+  if (Number(file.version) > 1) fiRow(general, T("fileinfo.version"), String(file.version));
+  const tax = [file.topic, file.category, file.group].filter(Boolean).join(" · ");
+  if (tax) fiRow(general, T("fileinfo.taxonomy"), tax);
+  fiRow(
+    general,
+    T("fileinfo.mode"),
+    file.accessMode === "KEY_REQUIRED" ? T("access.key") : file.accessMode === "DISABLED" ? T("access.disabled") : T("access.free"),
+  );
+  fiRow(integrity, T("fileinfo.algorithm"), "SHA-256");
+  fiRow(integrity, T("fileinfo.encrypted"), file.encrypted ? T("fileinfo.yes") : T("fileinfo.no"));
+  const hashEl = $("fi-hash");
+  if (hashEl) {
+    hashEl.textContent = file.sha256 ? T("file.sha.label", { short: short(file.sha256, 32) }) : T("fileinfo.noHash");
+    hashEl.title = file.sha256 ? T("file.sha.title", { full: file.sha256 }) : "";
+  }
+  const result = $("fi-result");
+  if (result) {
+    result.hidden = true;
+    result.textContent = "";
+    result.dataset.kind = "";
+  }
+  const btn = $("fi-verify");
+  if (btn) {
+    // Проверката иска байтовете: файл с ключ не се проверява без ключ, а забраненият —
+    // изобщо. Затова бутонът се СКРИВА, вместо да обещава действие, което няма да стане.
+    const canVerify = Boolean(file.sha256) && file.accessMode !== "KEY_REQUIRED" && file.accessMode !== "DISABLED";
+    btn.hidden = !canVerify;
+    btn.disabled = false;
+    btn.onclick = () => void verifyFile(file);
+  }
+  box.hidden = false;
+  const close = $("file-info-close");
+  if (close) close.focus();
+}
+
+/** Затваря листа с информацията за файла. */
+function closeFileInfo() {
+  const box = $("file-info");
+  if (box) box.hidden = true;
+  currentFile = null;
+}
+
+/** Сверка на отпечатъка на ЖИВИТЕ байтове: същият SHA-256, който би се свалил. */
+async function verifyFile(file) {
+  const result = $("fi-result");
+  const btn = $("fi-verify");
+  const say = (text, kind) => {
+    if (!result) return;
+    result.hidden = !text;
+    result.textContent = text || "";
+    result.dataset.kind = kind || "";
+  };
+  if (!(crypto && crypto.subtle && crypto.subtle.digest)) {
+    say(T("fileinfo.noCrypto"));
+    return;
+  }
+  if (btn) btn.disabled = true;
+  say(T("fileinfo.verifying"));
+  try {
+    const res = await fetch(withAuth("/files/" + encodeURIComponent(file.id) + "/download"), {
+      referrerPolicy: "no-referrer",
+    });
+    if (!res.ok) {
+      say(T("file.status.http", { status: res.status }), "err");
+      return;
+    }
+    const actual = await sha256Hex(await res.arrayBuffer());
+    if (actual === String(file.sha256 || "").toLowerCase()) say(T("fileinfo.match"), "ok");
+    else say(T("fileinfo.mismatch"), "err");
+  } catch {
+    say(T("fileinfo.error"), "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+/** Бързата лента се връзва веднъж; всяко бутонче прави истинско действие. */
+function wireQuickBar() {
+  if (barWired) return;
+  barWired = true;
+  const top = $("bar-top");
+  if (top) top.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  const search = $("bar-search");
+  if (search)
+    search.addEventListener("click", () => {
+      const q = $("q");
+      if (!q) return;
+      q.focus();
+      if (q.scrollIntoView) q.scrollIntoView({ block: "center" });
+    });
+  const api = $("bar-info");
+  if (api) api.addEventListener("click", () => void openInfo("api"));
+  const manifest = $("bar-manifest");
+  if (manifest) manifest.addEventListener("click", () => void openInfo("manifest"));
+  const close = $("file-info-close");
+  if (close) close.addEventListener("click", closeFileInfo);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeFileInfo();
+  });
+}
+
 /** Карта на един файл: име, метаданни, SHA-256 и действие според политиката. */
 function fileCard(file) {
   const li = document.createElement("li");
@@ -624,6 +798,16 @@ function fileCard(file) {
     actions.append(btn);
   }
   if (file.accessMode !== "DISABLED") {
+    // Третото действие е СЪЩОТО съдържание като лист на място: подробности и сверка на
+    // отпечатъка без сваляне. Забранен файл не го получава (няма какво да се провери).
+    const infoBtn = document.createElement("button");
+    infoBtn.type = "button";
+    infoBtn.className = "btn btn-ghost btn-sm";
+    infoBtn.title = T("fileinfo.open");
+    infoBtn.setAttribute("aria-label", T("fileinfo.openFor", { name: file.name }));
+    infoBtn.append(icon("file"), document.createTextNode(T("fileinfo.open")));
+    infoBtn.addEventListener("click", () => openFileInfo(file));
+    actions.append(infoBtn);
     const copyLink = document.createElement("button");
     copyLink.type = "button";
     copyLink.className = "btn btn-ghost btn-sm";
@@ -725,6 +909,9 @@ async function loadFolder(rel) {
 }
 
 function paint(filter) {
+  // Броячите и статусът на достъпа следват списъка: в режим „папка“ числата са други.
+  paintStats();
+  paintAccess(portal);
   const q = String(filter || "").trim().toLocaleLowerCase();
   const source = folderMode ? folderFiles : allFiles;
   const list = q
@@ -895,6 +1082,7 @@ function paintPortal(data) {
   // копира и споделя, затова е абсолютен. На страницата НЕ се изписва: споделя се с бутон.
   const landingUrl = urls.landing ? absolute(urls.landing) : String(location.href).split(/[?#]/)[0];
   $("copy-link").addEventListener("click", () => copy(landingUrl, T("header.copyLink.ok")));
+  wireQuickBar();
 
   // Копчето към ПАПКАТА: порталът е QR кодът, който води до файловете — затова страницата
   // има директен вход към папката на портала (режим „папка“), а не само списък с
@@ -946,7 +1134,11 @@ function applyLanguage() {
   paintPortal(portal);
   applyWording(prof);
   paintSummary(portal);
+  paintStats();
+  paintAccess(portal);
   paint($("q") ? $("q").value : "");
+  // Отвореният лист с информация за файл се преизвежда на новия език, не остава на стария.
+  if (currentFile) openFileInfo(currentFile);
   // Отвореният панел с информация се преизвежда на новия език, а не остава на стария.
   if (infoKind) {
     const kind = infoKind;
