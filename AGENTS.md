@@ -103,11 +103,13 @@
   `ui/field-labels.js` след рендер (`app.js` вика `bindLabels()` при всеки mount и през
   `MutationObserver`). Нов панел НЕ пише `for`/`id` сам — иначе вторият `id` се дублира.
   Полетата без етикет се връщат в `unnamed`, не се кръщават. `tests/ui-field-labels.cjs`.
-- **Менюто има симетрия и логика — това е закон, не вкус.** Секциите на „Настройки“ са в групи
-  с РАВЕН брой (`GROUPS` в `settings-panel.js`, днес 3 × 6), всяка с име за екранен четец; нов
-  раздел влиза в групата по смисъл, не „накрая“. Пази го `tests/ui-nav-symmetry.cjs`, а живият
-  екран — законът `balanced-groups` (с решение в `debug-ledger.js`). Отвореното меню се прибира
-  само при клик извън него и при `Escape` (`tests/ui-nav-outside-click.cjs`).
+- **Менюто има симетрия и логика — това е закон, не вкус.** Двете менюта са в групи с РАВЕН
+  брой: „Настройки“ — `GROUPS` в `settings-panel.js` (днес 3 × 6), главното — `NAV_GROUPS` в
+  `app.js` (4 × 4), всяка група с име за екранен четец и `data-nav-group`. Нов раздел влиза в
+  групата по смисъл, не „накрая“; секция извън група чупи теста. Пази го
+  `tests/ui-nav-symmetry.cjs`, а живият екран — законът `balanced-groups` (с решение в
+  `debug-ledger.js`). Отвореното меню се прибира само при клик извън него и при `Escape`
+  (`tests/ui-nav-outside-click.cjs`).
 - **Нов UI файл не се сервира сам.** `UI_FILES` в `server.js` е allowlist: без ред там
   `/ui/<нов>.js` връща **404** и падат `ingress-panel-load`, `panel-framing`, `report-api`,
   `file-placement` (+ `html-assets`, `docker-runtime` за списъка). Плюс ред в `CEILING` на
@@ -117,6 +119,14 @@
   решение → тест (`tests/debug-ledger.cjs`). Нов закон в `debug-objects.js` без ред в
   `SOLUTIONS` (и без ключове `dbg.fix.*` на трите езика) чупи теста — текстът се пише в
   `i18n.js`, не в модула (таванът му е 0).
+- **Цялостта се сверява при старт.** `hapi_enterprise/integrity.js` сравнява SHA-256 на 12
+  критични файла с `integrity-manifest.json`. Промениш ли `start.js`, `server.js`, `paths.js`,
+  `storage-preflight.js`, `integrity.js` или който и да е от изброените `ui/*` → пусни
+  `node scripts/integrity-manifest.cjs`, иначе `tests/integrity-startup.cjs` пада (и е прав).
+  Новият критичен файл се добавя в `CRITICAL` и в `Dockerfile`.
+- **Пакетът за дебъгинг не носи тайни.** `scripts/diag-package.cjs` минава всеки файл през
+  скенер; `tests/diag-package.cjs` пада и при поставена тайна. Черната кутия
+  (`tests/blackbox-api.cjs`) проверява само HTTP — тя хвана изтекъл път в `/health` (DEF-56).
 - **Езиковият дълг има таван.** `tests/ui-i18n-ratchet.cjs` мери българските стрингове по
   модули; нов UI модул без ред в таблицата му пада, а таванът само се сваля (DEF-49).
 - **Затворен дефект без регресионна защита не съществува.** `tests/regression-guards.cjs`

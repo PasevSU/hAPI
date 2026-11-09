@@ -30,11 +30,14 @@ const TITLES = {
   504: 'Gateway Timeout',
 };
 
-/** Тялото на грешката: старото `error` + полетата по RFC 9457. */
+/** Тялото на грешката: старото `error` + полетата по RFC 9457 + `ok:false`. */
 function body(status, message) {
   const code = Number(status) || 500;
   const text = message == null ? '' : String(message);
-  return { error: text, type: 'about:blank', title: TITLES[code] || 'Error', status: code, detail: text };
+  // `ok: false` е добавено в 0.69.208: успешните отговори носят `ok: true`, а грешките — не,
+  // тоест клиентът трябваше да проверява две различни неща. Полето е ДОБАВЕНО, не сменено:
+  // `error`/`type`/`title`/`status`/`detail` остават, за да не се чупи нищо съществуващо.
+  return { ok: false, error: text, type: 'about:blank', title: TITLES[code] || 'Error', status: code, detail: text };
 }
 
 module.exports = { CODE, TITLES, body };

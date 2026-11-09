@@ -140,4 +140,24 @@ const literals = [...block.matchAll(/(?:padding|margin|gap)\s*:\s*([^;]+);/g)]
   .filter((v) => /^\d/.test(v) && v !== '0');
 assert.deepEqual(literals, [], 'в новите правила няма литерални отстояния: ' + literals.join(', '));
 
-console.log('PASS ui-nav-symmetry: 3 групи × 6 секции (18 общо, без повторение) · групите по смисъл и с име · законът balanced-groups в дебъгинга · решение на 3 езика · CSS само с токени');
+// ── 6. Законът важи и за ГЛАВНОТО меню, не само за „Настройки“ ─────────────
+// „Обиколи всички кодове“: вторият плосък списък в проекта беше страничната навигация.
+const app = fs.readFileSync(path.join(UI, 'app.js'), 'utf8');
+const navBlock = app.slice(app.indexOf('const NAV = ['), app.indexOf('];', app.indexOf('const NAV = [')));
+const groupsBlock = app.slice(app.indexOf('const NAV_GROUPS = ['), app.indexOf('];', app.indexOf('const NAV_GROUPS = [')));
+const groupIds = [...groupsBlock.matchAll(/id: '([a-z]+)'/g)].map((m) => m[1]);
+assert.deepEqual(groupIds, ['overview', 'content', 'access', 'system'], 'главното меню също е в четири групи по смисъл');
+const entries = [...navBlock.matchAll(/\{ id: '([a-z]+)'[^}]*\}/g)].map((m) => m[0]);
+const visibleIn = (group) => entries.filter((e) => e.includes(`group: '${group}'`) && !e.includes('hidden: true')).length;
+assert.deepEqual(groupIds.map(visibleIn), [4, 4, 4, 4], 'по четири видими секции на група: ' + groupIds.map((g) => g + '=' + visibleIn(g)).join(' · '));
+assert.equal(entries.filter((e) => !/group: '/.test(e)).length, 0, 'няма секция извън група — иначе законът се заобикаля с един ред');
+assert.match(app, /dataset\.navGroup = group\.id/, 'менюто се рисува по групи (`data-nav-group`)');
+assert.match(app, /block\.setAttribute\('role', 'group'\)/, 'групата е обявена като група');
+assert.match(app, /aria-labelledby/, 'групата има име за екранен четец');
+for (const key of ['navGroupOverview', 'navGroupContent', 'navGroupAccess', 'navGroupSystem']) {
+  const hits = (app.match(new RegExp('\\b' + key + ':', 'g')) || []).length;
+  assert.equal(hits, 3, 'заглавието „' + key + '“ е преведено на трите езика (намерени ' + hits + ')');
+}
+assert.match(read('layout.css'), /\.nav-group-title \{/, 'заглавието на групата има собствен стил (иначе е невидимо)');
+
+console.log('PASS ui-nav-symmetry: „Настройки“ 3 групи × 6 · главно меню 4 × 4 · групите по смисъл и с име · законът balanced-groups в дебъгинга · решение на 3 езика · CSS само с токени');

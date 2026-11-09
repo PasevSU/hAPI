@@ -33,10 +33,12 @@ const stripComments = (src) =>
 
 const measure = (name) => {
   const code = stripComments(fs.readFileSync(path.join(uiDir, name), 'utf8'));
-  // Разделението е ЕВРИСТИКА, не истина: ред със `throw new Error(`, `new Error(` или
+  // Модул със СВОЙ речник на трите езика (`bg:`/`en:`/`de:` в един файл, както е `app.js` за
+  // обвивката): българските му стрингове са БГ-страната на преведен текст, не дълг. Без това
+  // ратчето брои превода като непревършен и таванът трябваше да расте при всеки нов етикет.
+  const ownDictionary = name !== DICTIONARY && /bg:\s*\{[\s\S]*?en:\s*\{[\s\S]*?de:\s*\{/.test(code);
+  // Разделението `dev` е ЕВРИСТИКА, не истина: ред със `throw new Error(`, `new Error(` или
   // `console.*(` носи съобщение за разработчика (лог/изключение), а не текст за екрана.
-  // Числото се ИЗМЕРВА, но не е отделен таван — то прави дълга (DEF-49) разбираем: колко от
-  // 36 850 знака са интерфейс и колко са съобщения, които не бива да минават през `t()`.
   const DEV_LINE = /throw new Error\(|new Error\(|console\.(?:log|warn|error|info)\(/;
   let cyrillic = 0;
   let dev = 0;
@@ -49,6 +51,7 @@ const measure = (name) => {
   return {
     cyrillic,
     dev,
+    ownDictionary,
     translated: (code.match(/\bt\(/g) || []).length,
   };
 };
@@ -56,7 +59,7 @@ const measure = (name) => {
 // Измерено на 0.69.206. Само надолу.
 const CEILING = {
   'api-base.js': 0,
-  'app.js': 490,
+  'app.js': 0, // собствен речник BG/EN/DE — БГ-страната не е дълг (вж. `ownDictionary`)
   'bootstrap.js': 0,
   'dashboard-panel.js': 636,
   'data.js': 726,
@@ -83,20 +86,21 @@ const CEILING = {
   'settings-panel.js': 7423,
   'visitors-panel.js': 909,
 };
-const TOTAL_CEILING = 36850; // сумата без речника
+const TOTAL_CEILING = 36360; // сумата без речниците (беше 36 850, когато `app.js` се броеше като дълг)
 const TRANSLATED_FLOOR = 9; // извиквания на `t(` извън `i18n.js`
 
 // ── 1. Всеки модул е под своя таван ─────────────────────────────────────────
 let total = 0;
 let translated = 0;
 let developerText = 0;
+let dictionaryText = 0; // БГ-страната на модулите със собствен речник (не е дълг)
+let ownDictionaries = 0;
 const modules = fs
   .readdirSync(uiDir)
   .filter((f) => f.endsWith('.js') && f !== DICTIONARY)
   .sort();
 for (const name of modules) {
-  const { cyrillic, translated: calls, dev } = measure(name);
-  total += cyrillic;
+  const { cyrillic, translated: calls, dev, ownDictionary } = measure(name);
   translated += calls;
   developerText += dev;
   if (!(name in CEILING)) {
@@ -105,6 +109,14 @@ for (const name of modules) {
         ' е нов модул без измерване — добави реда му в CEILING на този тест (и помисли дали текстът му не може да мине през t() от i18n.js)',
     );
   }
+  // Модул със свой речник на трите езика не влиза в дълга: БГ-страната му е превод, не липса.
+  if (ownDictionary) {
+    ownDictionaries += 1;
+    dictionaryText += cyrillic;
+    assert.equal(CEILING[name], 0, name + ': модул със свой речник се измерва като 0 (иначе дългът се брои два пъти)');
+    continue;
+  }
+  total += cyrillic;
   assert.ok(
     cyrillic <= CEILING[name],
     name +
@@ -144,5 +156,9 @@ console.log(
     developerText +
     ' в съобщения за грешка/логове, ' +
     (total - developerText) +
-    ' в интерфейсен текст · DEF-49 остава отворен, ръстът е заключен',
+    ' в интерфейсен текст · ' +
+    ownDictionaries +
+    ' модула със собствен речник (' +
+    dictionaryText +
+    ' знака, не влизат в дълга) · DEF-49 остава отворен, ръстът е заключен',
 );

@@ -279,7 +279,10 @@ function create(options = {}) {
   }
 
   function state() {
-    return { revision, lock: lock ? lock.path : 'in-process', ...stats, subscribers: subscribers.size };
+    // Само ФАКТЪТ дали има междупроцесен ключ, не пътя до него: `state()` влиза в `/health`,
+    // който е публичен маршрут, а абсолютен път издава файловата система на домакина
+    // (намерено от чернокутийния тест `tests/blackbox-api.cjs`).
+    return { revision, lock: lock ? 'file' : 'in-process', ...stats, subscribers: subscribers.size };
   }
 
   /** Абонат за презареждане; връща функция за отписване. */

@@ -9,6 +9,11 @@
       projects: 'Проект',
       dashboard: 'Dashboard',
       monitoring: 'Мониторинг',
+      // Заглавия на групите на менюто (закон „симетрия и логика“): по четири секции.
+      navGroupOverview: 'Преглед',
+      navGroupContent: 'Съдържание',
+      navGroupAccess: 'Достъп и отчети',
+      navGroupSystem: 'Система',
       portals: 'Портали & файлове',
       contacts: 'Контакти',
       cases: 'Дела',
@@ -41,6 +46,10 @@
       projects: 'Project',
       dashboard: 'Dashboard',
       monitoring: 'Monitoring',
+      navGroupOverview: 'Overview',
+      navGroupContent: 'Content',
+      navGroupAccess: 'Access and reports',
+      navGroupSystem: 'System',
       portals: 'Portals & files',
       contacts: 'Contacts',
       cases: 'Cases',
@@ -73,6 +82,10 @@
       projects: 'Projekt',
       dashboard: 'Dashboard',
       monitoring: 'Monitoring',
+      navGroupOverview: 'Übersicht',
+      navGroupContent: 'Inhalt',
+      navGroupAccess: 'Zugang und Berichte',
+      navGroupSystem: 'System',
       portals: 'Portale & Dateien',
       contacts: 'Kontakte',
       cases: 'Fälle',
@@ -104,30 +117,43 @@
 
   // Иконите на навигацията са от общия SVG набор (ui/icons.js) — един стил навсякъде.
   //
-  // Списъкът следва плана (§6.11 `UI-01`: Enterprise Control Center с 13 панела).
-  // Панелите, чиито данни се четат и пишат през административните секции, водят
-  // директно към своята секция в „Настройки“ — едно място за логиката, без копия.
+  // ЗАКОН „менюто има симетрия и логика“ (0.69.208): и главното меню не е един дълъг списък.
+  // Секциите са в ЧЕТИРИ групи по ЧЕТИРИ, по смисъл:
+  //   • Преглед — какво се гледа: табло, мониторинг, анализи, кой влиза;
+  //   • Съдържание — с какво се работи: портали, контакти, дела, изтегляне;
+  //   • Достъп и отчети — кой какво може и какво излиза навън: шлюз, потребители, сигурност, отчети;
+  //   • Система — задачи, хранилища, настройки, „Относно“.
+  // Редът на групите е редът на работа, а равенството (4 × 4) пази редовете равни. Пази го
+  // `tests/ui-nav-symmetry.cjs`; живият екран го проверява със закона `balanced-groups`.
   const NAV = [
-    { id: 'dashboard', ico: 'dashboard' },
-    { id: 'monitoring', ico: 'chart' },
-    { id: 'portals', ico: 'folder' },
-    { id: 'contacts', ico: 'person' },
-    { id: 'cases', ico: 'case' },
-    { id: 'gateway', ico: 'share' },
-    { id: 'export', ico: 'download' },
-    { id: 'users', ico: 'person', section: 'users' },
-    { id: 'jobs', ico: 'clock', section: 'jobs' },
-    { id: 'storage', ico: 'drive', section: 'storage' },
-    { id: 'analytics', ico: 'chart', section: 'analytics' },
-    { id: 'visitors', ico: 'person' },
-    { id: 'security', ico: 'shield', section: 'security' },
+    { id: 'dashboard', ico: 'dashboard', group: 'overview' },
+    { id: 'monitoring', ico: 'chart', group: 'overview' },
+    { id: 'analytics', ico: 'chart', section: 'analytics', group: 'overview' },
+    { id: 'visitors', ico: 'person', group: 'overview' },
+    { id: 'portals', ico: 'folder', group: 'content' },
+    { id: 'contacts', ico: 'person', group: 'content' },
+    { id: 'cases', ico: 'case', group: 'content' },
+    { id: 'export', ico: 'download', group: 'content' },
+    { id: 'gateway', ico: 'share', group: 'access' },
+    { id: 'users', ico: 'person', section: 'users', group: 'access' },
+    { id: 'security', ico: 'shield', section: 'security', group: 'access' },
+    { id: 'report', ico: 'note', group: 'access' },
+    { id: 'jobs', ico: 'clock', section: 'jobs', group: 'system' },
+    { id: 'storage', ico: 'drive', section: 'storage', group: 'system' },
+    { id: 'settings', ico: 'gear', section: 'general', group: 'system' },
+    { id: 'about', ico: 'info', group: 'system' },
     // Скрити от менюто (по заявка): блоковете остават достъпни по id за сценариите,
-    // но не се рисуват в навигацията.
-    { id: 'backups', ico: 'archive', section: 'backups', hidden: true },
-    { id: 'qr', ico: 'qr', section: 'qr', hidden: true },
-    { id: 'report', ico: 'note' },
-    { id: 'settings', ico: 'gear', section: 'general' },
-    { id: 'about', ico: 'info' },
+    // но не се рисуват в навигацията — затова не влизат в броя на групите.
+    { id: 'backups', ico: 'archive', section: 'backups', group: 'system', hidden: true },
+    { id: 'qr', ico: 'qr', section: 'qr', group: 'access', hidden: true },
+  ];
+
+  // Групите на менюто в РЕДА, в който се показват: заглавието е ключ от речника по-горе.
+  const NAV_GROUPS = [
+    { id: 'overview', title: 'navGroupOverview' },
+    { id: 'content', title: 'navGroupContent' },
+    { id: 'access', title: 'navGroupAccess' },
+    { id: 'system', title: 'navGroupSystem' },
   ];
 
   // Измислените „демо“ числа бяха премахнати: таблото и „Относно“ се рисуват от
@@ -188,26 +214,42 @@
   function renderNav() {
     const nav = $('#nav');
     nav.innerHTML = '';
-    for (const item of NAV) {
-      if (item.hidden) continue;
-      // Панел, който иска способност, която ролята няма, не се показва. Проверява се само за
-      // регистрираните панели: останалите входове водят към секция на „Настройки“ и се
-      // решават от сървъра при самата заявка.
-      if (panels && panels.has(item.id) && !panels.allowed(item.id, capabilities)) continue;
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = `nav-item${item.id === current ? ' active' : ''}`;
-      button.dataset.panel = item.id;
-      button.innerHTML = `<span class="ico" aria-hidden="true">${window.HapiIcons ? window.HapiIcons.ico(item.ico) : ''
-        }</span><span>${esc(t(item.id))}</span>`;
-      button.addEventListener('click', () => {
-        if (item.id === current) return;
-        current = item.id;
-        history.replaceState(null, '', `#${item.id}`);
-        renderNav();
-        renderView();
-      });
-      nav.appendChild(button);
+    // Законът: рисува се по ГРУПИ, а не по плосък списък. Всяка група е `role="group"` с име,
+    // за да може екранният четец (и законът `balanced-groups`) да я види като група.
+    for (const group of NAV_GROUPS) {
+      const items = NAV.filter((item) => item.group === group.id && !item.hidden);
+      if (!items.length) continue;
+      const block = document.createElement('div');
+      block.className = 'nav-group';
+      block.dataset.navGroup = group.id;
+      block.setAttribute('role', 'group');
+      block.setAttribute('aria-labelledby', `nav-group-${group.id}`);
+      const title = document.createElement('span');
+      title.className = 'nav-group-title';
+      title.id = `nav-group-${group.id}`;
+      title.textContent = t(group.title);
+      block.appendChild(title);
+      for (const item of items) {
+        // Панел, който иска способност, която ролята няма, не се показва. Проверява се само за
+        // регистрираните панели: останалите входове водят към секция на „Настройки“ и се
+        // решават от сървъра при самата заявка.
+        if (panels && panels.has(item.id) && !panels.allowed(item.id, capabilities)) continue;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `nav-item${item.id === current ? ' active' : ''}`;
+        button.dataset.panel = item.id;
+        button.innerHTML = `<span class="ico" aria-hidden="true">${window.HapiIcons ? window.HapiIcons.ico(item.ico) : ''
+          }</span><span>${esc(t(item.id))}</span>`;
+        button.addEventListener('click', () => {
+          if (item.id === current) return;
+          current = item.id;
+          history.replaceState(null, '', `#${item.id}`);
+          renderNav();
+          renderView();
+        });
+        block.appendChild(button);
+      }
+      nav.appendChild(block);
     }
   }
 

@@ -10,13 +10,14 @@ const problem = require('../hapi_enterprise/problem.js');
 
 assert.equal(problem.CODE, 'PROBLEM_DETAILS_RFC9457', 'правилото има код');
 
-// 1. Петте полета, които клиентът може да чете.
+// 1. Шестте полета, които клиентът може да чете.
 const conflict = problem.body(409, 'Заето');
 assert.deepEqual(
   Object.keys(conflict).sort(),
-  ['detail', 'error', 'status', 'title', 'type'],
+  ['detail', 'error', 'ok', 'status', 'title', 'type'],
   'тялото носи точно договорените полета',
 );
+assert.equal(conflict.ok, false, 'грешката носи `ok:false` като успехът носи `ok:true`');
 assert.equal(conflict.error, 'Заето', 'старото `error` остава (обратна съвместимост)');
 assert.equal(conflict.detail, 'Заето', 'детайлът е същото съобщение');
 assert.equal(conflict.status, 409, 'status е число, не низ');

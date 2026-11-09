@@ -5,7 +5,7 @@
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
 
-Общо: **67** кода, излъчвани от `hapi_enterprise/`. От тях **48** носят
+Общо: **68** кода, излъчвани от `hapi_enterprise/`. От тях **49** носят
 собствено обяснение в кода; останалите се разпознават по кода и файла.
 
 ## Кодове по азбучен ред
@@ -24,6 +24,7 @@
 | `CHECKSUM_MISMATCH` | CRC24 на armor не съвпада | `hapi_enterprise/pgp.js` |
 | `DATA_TOO_LONG` | Данните не се побират в един RSA блок | `hapi_enterprise/pgp.js` |
 | `DECRYPT_FAILED` | Съобщението не може да бъде декриптирано | `hapi_enterprise/pgp.js` |
+| `INTEGRITY_MISMATCH` | работещият код не съвпада с издадения манифест → | `hapi_enterprise/integrity.js` · `hapi_enterprise/start.js` |
 | `INVALID_ARMOR` | Очаква се ASCII armor текст | `hapi_enterprise/pgp.js` |
 | `INVALID_DATA` | Очаква се Buffer за подпис | `hapi_enterprise/pgp.js` |
 | `INVALID_ID` | невалиден идентификатор на архив | `hapi_enterprise/pgp-sign.js` |

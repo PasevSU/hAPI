@@ -19,6 +19,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const storagePreflight = require('./storage-preflight');
 const paths = require('./paths');
+const integrity = require('./integrity');
 // Само чистата функция за формата на токена; нищо не се записва и не се валидира с нея.
 const { tokenShape } = require('./runtime-config');
 
@@ -43,6 +44,18 @@ try {
   if (typeof require('node:sqlite').DatabaseSync !== 'function') throw new Error('DatabaseSync is not a constructor');
 } catch (e) {
   fail('Node SQLite unavailable: ' + (e && e.message ? e.message : e));
+}
+
+// ── 1б. ПРАВИЛО ЗА ЦЯЛОСТ ПРИ СТАРТИРАНЕ ────────────────────────────────────
+// Сверява SHA-256 на критичните файлове с `integrity-manifest.json` (строи се при изданието
+// от `scripts/integrity-manifest.cjs`). Липсващ манифест само се съобщава (така работи
+// дървото за разработка); разминаване се съобщава с ИМЕНАТА на файловете и по подразбиране
+// не спира старта, за да не заключи инсталация при човешка поправка. Строгите инсталации
+// включват `HAPI_INTEGRITY_STRICT=1` и тогава разминаването е фатално (fail-closed).
+try {
+  integrity.create({ root: __dirname }).verifyAtStartup({ log: console });
+} catch (error) {
+  fail('INTEGRITY_MISMATCH: работещият код не съвпада с издадения манифест → ' + (error && error.message ? error.message : error));
 }
 
 // ── 2. Опции на add-on-а ────────────────────────────────────────────────────

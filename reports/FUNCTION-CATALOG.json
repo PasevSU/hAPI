@@ -1,10 +1,10 @@
 {
   "generatedFor": "hapi_enterprise",
-  "total": 410,
-  "tested": 387,
+  "total": 414,
+  "tested": 391,
   "untested": 23,
-  "fnTotal": 363,
-  "fnTested": 363,
+  "fnTotal": 367,
+  "fnTested": 367,
   "modules": [
     {
       "module": "hapi_enterprise/api-registry.js",
@@ -561,6 +561,31 @@
         },
         {
           "name": "release",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/integrity.js",
+      "functions": [
+        {
+          "name": "describe",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "readManifest",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "verify",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "verifyAtStartup",
           "kind": "функция",
           "tested": true
         }

@@ -22,7 +22,18 @@ const PLANNED = [
   'users', 'jobs', 'storage', 'analytics', 'visitors', 'security', 'backups', 'qr',
   'report', 'settings', 'about',
 ];
-assert.deepEqual(ids, PLANNED, 'навигацията следва плана: ' + PLANNED.length + ' панела');
+// Съдържанието е същото като по плана; РЕДЪТ вече се задава от групите (закон „менюто има
+// симетрия и логика“, 0.69.208), затова се сравнява множеството, а редът се проверява по-долу.
+assert.deepEqual(ids.slice().sort(), PLANNED.slice().sort(), 'навигацията съдържа точно панелите от плана: ' + PLANNED.length);
+
+// Групите на менюто: четири, по четири видими секции — симетрия, която се вижда на екрана.
+const groupsBlock = app.slice(app.indexOf('const NAV_GROUPS = ['), app.indexOf('];', app.indexOf('const NAV_GROUPS = [')));
+const groupIds = [...groupsBlock.matchAll(/id: '([a-z]+)'/g)].map((m) => m[1]);
+assert.deepEqual(groupIds, ['overview', 'content', 'access', 'system'], 'четири групи в реда на работа');
+const entries = [...navBlock.matchAll(/\{ id: '([a-z]+)'[^}]*\}/g)].map((m) => m[0]);
+const visibleOf = (group) => entries.filter((entry) => entry.includes("group: '" + group + "'") && !entry.includes('hidden: true')).length;
+assert.deepEqual(groupIds.map(visibleOf), [4, 4, 4, 4], 'всяка група има по четири видими секции: ' + groupIds.map((g) => g + '=' + visibleOf(g)).join(' · '));
+assert.match(app, /dataset\.navGroup = group\.id/, 'менюто се рисува по групи, а не като един списък');
 
 // Всеки панел, който няма собствен модул, трябва да сочи към съществуваща секция.
 const sections = ['general'].concat(

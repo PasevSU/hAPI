@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 394 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 398 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 180 |
+| общо | 182 |
 | портал | 35 |
 | GUI | 31 |
 | Home Assistant | 17 |
@@ -27,6 +27,7 @@
 | документация | 4 |
 | правила | 4 |
 | публичен API | 4 |
+| сигурност | 4 |
 | HTML | 3 |
 | грешки | 3 |
 | огледало | 3 |
@@ -34,14 +35,13 @@
 | HACS издание | 2 |
 | jobs | 2 |
 | връзки | 2 |
-| сигурност | 2 |
 | lint | 1 |
 | посетители | 1 |
 | потоци | 1 |
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (180)
+## общо (182)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -79,6 +79,7 @@
 | `data-settings` | Data settings | `tests/data-settings.cjs` |
 | `debug-ledger` | Debug ledger | `tests/debug-ledger.cjs` |
 | `decision-sensors` | Decision sensors | `tests/decision-sensors.cjs` |
+| `diag-package` | Diag package | `tests/diag-package.cjs` |
 | `diagnostics` | Diagnostics | `tests/diagnostics.cjs` |
 | `directory-contract` | Directory contract | `tests/directory-contract.cjs` |
 | `directory-organizations` | Directory organizations | `tests/directory-organizations.cjs` |
@@ -132,6 +133,7 @@
 | `instance-lock-retry` | Instance lock retry | `tests/instance-lock-retry.cjs` |
 | `integration-runtime-data` | Integration runtime data | `tests/integration-runtime-data.cjs` |
 | `integrity` | Integrity | `tests/integrity.cjs` |
+| `integrity-startup` | Integrity startup | `tests/integrity-startup.cjs` |
 | `internal` | Internal | `tests/internal.cjs` |
 | `interpolate` | Interpolate | `tests/interpolate.cjs` |
 | `known-defects` | Known defects | `tests/known-defects.cjs` |
@@ -510,6 +512,15 @@
 | `public-rate-limit` | Public rate limit | `tests/public-rate-limit.cjs` |
 | `public-route-allowlist` | Public route allowlist | `tests/public-route-allowlist.cjs` |
 
+## сигурност (4)
+
+| Правило | Заглавие | Файл |
+| --- | --- | --- |
+| `blackbox-api` | Blackbox api | `tests/blackbox-api.cjs` |
+| `blackbox-security` | Blackbox security | `tests/blackbox-security.cjs` |
+| `whitebox-invariants` | Whitebox invariants | `tests/whitebox-invariants.cjs` |
+| `whitebox-security` | Whitebox security | `tests/whitebox-security.cjs` |
+
 ## HTML (3)
 
 | Правило | Заглавие | Файл |
@@ -562,13 +573,6 @@
 | --- | --- | --- |
 | `link-check` | Link check | `tests/link-check.cjs` |
 | `link-check-home-assistant` | Link check home assistant | `tests/link-check-home-assistant.cjs` |
-
-## сигурност (2)
-
-| Правило | Заглавие | Файл |
-| --- | --- | --- |
-| `blackbox-security` | Blackbox security | `tests/blackbox-security.cjs` |
-| `whitebox-security` | Whitebox security | `tests/whitebox-security.cjs` |
 
 ## lint (1)
 

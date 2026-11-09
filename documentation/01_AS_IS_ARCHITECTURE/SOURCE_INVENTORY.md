@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **114** backend модула · **17** HTTP компонента · **28** UI модула · **9** Python модула · **40** инструмента · **394** теста.
+Общо: **115** backend модула · **17** HTTP компонента · **28** UI модула · **9** Python модула · **42** инструмента · **398** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (114)
+### Backend модули (`hapi_enterprise/*.js`) (115)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -49,6 +49,7 @@
 | `hapi_enterprise/generator/app.js` | PasevSU Document Generator — клиентската част. |
 | `hapi_enterprise/idempotency.js` | IDEMPOTENCY-KEY — повторена заявка не изпълнява действието втори път (docs/plan/17, F4-5). |
 | `hapi_enterprise/instance-lock.js` | Заключване на data директорията: една жива инстанция на add-on-а, един собственик. |
+| `hapi_enterprise/integrity.js` | ПРАВИЛО ЗА ЦЯЛОСТ ПРИ СТАРТИРАНЕ (0.69.208). |
 | `hapi_enterprise/interpolate.js` | Интерполация на `{{променлива}}` в текстове, които отиват към хора: име и описание на |
 | `hapi_enterprise/job-manager.js` | Persistent, bounded FIFO job queue with cooperative pause/resume and crash |
 | `hapi_enterprise/layout.js` | Карта на структурата: къде какво стои и на кой адрес се вижда. |
@@ -198,7 +199,7 @@
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (40)
+### Инструменти (`scripts/*.cjs`) (42)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -214,6 +215,7 @@
 | `scripts/compare-live-options.cjs` | СРАВНЯВА ЖИВИТЕ ОПЦИИ НА ADD-ON-А С defaults В `config.yaml` — БЕЗ ДА ПЕЧАТА ТАЙНИ. |
 | `scripts/decrypt-package.cjs` | Разшифроване на криптиран експортен пакет БЕЗ add-on. |
 | `scripts/dev-dashboard.cjs` | команди (запаметявани в dashboard-commands.json) |
+| `scripts/diag-package.cjs` | ПАКЕТ ЗА ДЕБЪГИНГ И ОТСТРАНЯВАНЕ НА ПРОБЛЕМИ (0.69.208). |
 | `scripts/docs-index.cjs` | ПЪЛНО СЪДЪРЖАНИЕ НА `documentation/` — ГЕНЕРИРАНО ОТ ДИСКА. |
 | `scripts/docs-manual.cjs` | ГЕНЕРАТОР НА ПРИЛОЖЕНИЯТА КЪМ ПЪЛНОТО РЪКОВОДСТВО (0.69.161). |
 | `scripts/document-empty-catches.cjs` | Еднократен инструмент: добавя КОНКРЕТНА причина във всеки празен `catch` в издавания код. |
@@ -223,6 +225,7 @@
 | `scripts/fetch-package.cjs` | Паралелно теглене на експортен пакет (или който и да е файл с Range поддръжка). |
 | `scripts/function-catalog.cjs` | Каталог на функциите: какво ВСЕКИ модул изнася и кой тест го покрива. |
 | `scripts/gen-test-rules.cjs` | ГЕНЕРАТОР НА КАТАЛОГА С ПРАВИЛАТА (0.69.158). |
+| `scripts/integrity-manifest.cjs` | ГЕНЕРАТОР НА МАНИФЕСТА ЗА ЦЯЛОСТ (`hapi_enterprise/integrity-manifest.json`). |
 | `scripts/join-package.cjs` | Слепване на разделен експортен пакет БЕЗ add-on. |
 | `scripts/logic-audit.cjs` | Логически одит — търси подозрителна ЛОГИКА, не синтаксис. |
 | `scripts/manifest-schema.cjs` | `config/schemas/manifest.schema.json` — ГЕНЕРИРАН ОТ КОДА. |

@@ -22,7 +22,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Обявени endpoint-и | **245** реда в `API_ENDPOINT_REFERENCE.md` |
 | `server.js` | **2720** реда (пор **2722**) |
 | Изнесени функции | **363** в 51 модула, **363** покрити с тест |
-| Тестове в дървото | **394** файла (`393` в матрикса + `release-status.cjs`) |
+| Тестове в дървото | **398** файла (`397` в матрикса + `release-status.cjs`) |
 | Артефакт | `dist/` — точно **6** файла, `verify-release` **22/22** |
 
 ## 2. Какво се промени в 0.69.208
@@ -54,12 +54,14 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Етикети на полетата | `ui/field-labels.js` след всеки рендер | `ui-field-labels.cjs` |
 | Знания за грешките | `ui/debug-ledger.js` (`SOLUTIONS`) + речник `dbg.*` | `debug-ledger.cjs` |
 | Закони на оформлението | `ui/debug-objects.js` (`OBJECTS`, `LAWS`) | `gui-debug-objects.cjs` |
-| Симетрия на менюто и прибиране при клик извън него | `GROUPS` в `ui/settings-panel.js` · `applyNav` в `app.js` | `ui-nav-symmetry.cjs`, `ui-nav-outside-click.cjs` |
+| Симетрия на менюто и прибиране при клик извън него | `GROUPS` в `ui/settings-panel.js` · `NAV_GROUPS` в `ui/app.js` · `applyNav` в `app.js` | `ui-nav-symmetry.cjs`, `ui-nav-outside-click.cjs` |
 | Преводи | `ui/i18n.js` (BG/EN/DE), ратчет само надолу | `ui-i18n.cjs`, `ui-i18n-ratchet.cjs` |
 | Затворен дефект | `KNOWN_DEFECTS.md` + `GUARDS`/`ANCHORS` | `regression-guards.cjs` |
 | Размер на монолита | `server.js` ≤ 2722 реда, нов код → `routes/*.js` | `server-structure.cjs` |
 | Жив поток без токен в адрес | еднократен билет от `POST /admin/api/events/ticket` | `sse-ticket.cjs` |
 | Проверки, които чакат под товар | `helpers.stopChild` (15 s + `SIGKILL`) | `process-guards.cjs` |
+| Цялост на кода при старт | `hapi_enterprise/integrity.js` + `integrity-manifest.json` | `integrity-startup.cjs` |
+| Пакет за дебъгинг | `scripts/diag-package.cjs` (без тайни, с README) | `diag-package.cjs` |
 
 ## 4. Дебъгинг системата днес
 
@@ -90,32 +92,34 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 
 | Състояние | Брой | Забележка |
 | --- | --- | --- |
-| Редове в регистъра | **55** | `KNOWN_DEFECTS.md`, заглавието носи версията |
-| Затворени | **52** | всеки с поне един тест в `GUARDS`; **41** и с котва |
+| Редове в регистъра | **57** | `KNOWN_DEFECTS.md`, заглавието носи версията |
+| Затворени | **54** | всеки с поне един тест в `GUARDS`; **43** и с котва |
 | Отворени | **3** | DEF-01 (приет, документиран — исторически документ), DEF-06, DEF-49 |
 
 - **DEF-06 (WORM):** физическата неизтриваемост иска `chattr +i` (root) или S3 Object Lock —
   извън възможностите на средата, затова остава отворен, а не „затворен на думи“.
-- **DEF-49 (език):** 36 850 български знака, от които **387** са съобщения за грешка/логове, а
-  **36 463** интерфейсен текст. Ръстът е заключен от ратчет; преводът е отделна задача.
+- **DEF-49 (език):** 36 360 български знака, от които **387** са съобщения за грешка/логове, а
+  **35 973** интерфейсен текст. Модулите със собствен речник (`app.js` — обвивката с BG/EN/DE в
+  един файл) не се броят като дълг: тяхната българска страна Е преводът. Ръстът е заключен от
+  ратчет; преводът е отделна задача.
 
 ## 6. Измерени порти (0.69.208)
 
 | Гейт | Команда | Резултат |
 | --- | --- | --- |
-| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **393/393**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
+| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **397/397**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
 | Артефакт | `node scripts/verify-release.cjs` | **22/22**, `dist/` 6 файла |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 394 теста в дървото |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 398 теста в дървото |
 | ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
-| Регресионни защити | `tests/regression-guards.cjs` | 52 защити · 73 теста · **41** котви |
-| Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 36 850 (таван 36 850) · 22 `t()` |
+| Регресионни защити | `tests/regression-guards.cjs` | 54 защити · 75 теста · **43** котви |
+| Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 36 360 (таван 36 360) · 23 `t()` · 1 модул със собствен речник извън дълга |
 | Одити | `logic-audit --gate` · `bad-code-scan --gate` | 0 · 0 |
 | Линт | `npx eslint . --max-warnings=0` | 0 |
 | Хигиена | `D:\share` / `C:\share` | не съществуват |
 
 ## 7. Какво остава
 
-1. **Превод на 36 463 знака** интерфейсен текст (15 панела × BG/EN/DE) — DEF-49, отделна задача.
+1. **Превод на 35 973 знака** интерфейсен текст (15 панела × BG/EN/DE) — DEF-49, отделна задача.
 2. **Котви за 11 защити** (DEF-13, 17, 20, 24, 26, 27, 31, 34, 39, 40, 42): тестовете им
    проверяват състояние/HTTP код/ред на извиквания и нямат устойчив низ — котва там би била
    декорация.
