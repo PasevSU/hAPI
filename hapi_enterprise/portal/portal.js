@@ -105,8 +105,12 @@ let barWired = false;
 // Профил на съдържанието — всички текстове на страницата се извеждат от него.
 let prof = null;
 
+// Единствената точка, която пише в лентата за състояние. Ако страницата не я носи (напр.
+// отказ за частен портал без токен, страница на файл, 410), скриптът НЕ бива да пада: това
+// не е грешка на данните, а друга страница. Затова липсващият възел е тихо „няма къде“.
 const setStatus = (text, kind) => {
   const el = $("status");
+  if (!el) return;
   el.textContent = text || "";
   el.hidden = !text;
   el.dataset.kind = kind || "";
@@ -228,12 +232,16 @@ function applyWording(p) {
   // Търсенето се показва само когато има какво да се търси, а подсказката —
   // само по полетата, които наистина съществуват в тези файлове.
   $("toolbar").hidden = p.total <= 3;
-  $("q").placeholder = p.hasTags
-    ? T("files.search.placeholder.tags")
-    : p.hasTax
-      ? T("files.search.placeholder.tax")
-      : T("files.search.placeholder.plain");
-  $("q-label").textContent = $("q").placeholder;
+  const qEl = $("q");
+  if (qEl) {
+    qEl.placeholder = p.hasTags
+      ? T("files.search.placeholder.tags")
+      : p.hasTax
+        ? T("files.search.placeholder.tax")
+        : T("files.search.placeholder.plain");
+    const label = $("q-label");
+    if (label) label.textContent = qEl.placeholder;
+  }
 
   // QR кодът НЕ се показва на самата страница: посетителят вече е тук, а кодът води точно
   // до тази страница. За споделяне има бутон „Копирай адреса“, който дава същия адрес.
@@ -1130,10 +1138,14 @@ function paintPortal(data) {
   const base = data.title || T("doc.title");
   // Заглавието на раздела назовава артефактите само когато има такива.
   document.title = prof && prof.total ? base + " · " + prof.noun.for : base;
-  $("title").textContent = data.title || T("doc.title");
+  const titleEl = $("title");
+  if (titleEl) titleEl.textContent = data.title || T("doc.title");
   const desc = String(data.description || data.subject || "").trim();
-  $("description").textContent = desc;
-  $("description").hidden = !desc;
+  const descEl = $("description");
+  if (descEl) {
+    descEl.textContent = desc;
+    descEl.hidden = !desc;
+  }
 
   const badges = [];
   if (data.visibility === "public") badges.push([T("badge.public"), "chip-ok"]);
@@ -1368,11 +1380,14 @@ async function loadQrInfo() {
     }
   } catch (err) {
     setStatus(String(err && err.message ? err.message : err), "err");
-    $("title").textContent = T("doc.unavailable");
+    const titleEl = $("title");
+    if (titleEl) titleEl.textContent = T("doc.unavailable");
   }
 })();
 
-$("q").addEventListener("input", (e) => paint(e.target.value));
+// Търсенето може да липсва на частична страница — тогава няма какво да се връзва.
+const searchBox = $("q");
+if (searchBox) searchBox.addEventListener("input", (e) => paint(e.target.value));
 
 // PP-04: „Към съдържанието“ е бутон — мести фокуса върху списъка, без да пипа адреса.
 const skipButton = $("skip");

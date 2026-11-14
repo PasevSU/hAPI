@@ -38,8 +38,17 @@ let prof = null;
 // Дали бързата лента е вързана (веднъж за живота на страницата).
 let barWired = false;
 
+// Единствената точка, която пише в лентата за състояние. Липсващият възел (страница на отказ,
+// файл, 410) не е грешка на данните — тогава просто няма къде да се пише, а не се пада.
+// Стойността на търсенето — празна, когато страницата няма поле за търсене.
+const qValue = () => {
+  const q = $("q");
+  return q ? q.value : "";
+};
+
 const setStatus = (text, kind) => {
   const el = $("status");
+  if (!el) return;
   el.textContent = text || "";
   el.hidden = !text;
   el.dataset.kind = kind || "";
@@ -161,12 +170,16 @@ function applyWording(p) {
   // Търсенето се показва само когато има какво да се търси, а подсказката —
   // само по полетата, които наистина съществуват в тези файлове.
   $("toolbar").hidden = p.total <= 3;
-  $("q").placeholder = p.hasTags
-    ? "Търси по име, тема, категория или етикет"
-    : p.hasTax
-      ? "Търси по име, тема или категория"
-      : "Търси по име";
-  $("q-label").textContent = $("q").placeholder;
+  const qEl = $("q");
+  if (qEl) {
+    qEl.placeholder = p.hasTags
+      ? "Търси по име, тема, категория или етикет"
+      : p.hasTax
+        ? "Търси по име, тема или категория"
+        : "Търси по име";
+    const label = $("q-label");
+    if (label) label.textContent = qEl.placeholder;
+  }
 
   // QR кодът НЕ се показва на самата страница: посетителят вече е тук, а кодът води точно
   // до тази страница. За споделяне има бутон „Копирай адреса“, който дава същия адрес.
@@ -456,7 +469,7 @@ async function loadFolder(rel) {
     folderSubs = Array.isArray(data.folders) ? data.folders.map((f) => ({ name: f.name, path: f.path })) : [];
     const head = $("files-title");
     if (head) head.textContent = "Папка /" + (folderRel ? folderRel + "/" : "");
-    paint($("q").value);
+    paint(qValue());
     setStatus("");
     return true;
   } catch {
@@ -516,7 +529,7 @@ async function toggleFolder() {
     if (btn) btn.textContent = "Отвори папката";
     const head = $("files-title");
     if (head) head.textContent = prof && prof.total ? prof.noun.capMany : "Съдържание";
-    paint($("q").value);
+    paint(qValue());
     return;
   }
   const ok = await loadFolder("");
@@ -898,10 +911,14 @@ function paintPortal(data) {
   const base = data.title || "Портал за документи";
   // Заглавието на раздела назовава артефактите само когато има такива.
   document.title = prof && prof.total ? base + " · " + prof.noun.for : base;
-  $("title").textContent = data.title || "Портал за документи";
+  const titleEl = $("title");
+  if (titleEl) titleEl.textContent = data.title || "Портал за документи";
   const desc = String(data.description || data.subject || "").trim();
-  $("description").textContent = desc;
-  $("description").hidden = !desc;
+  const descEl = $("description");
+  if (descEl) {
+    descEl.textContent = desc;
+    descEl.hidden = !desc;
+  }
 
   const badges = [];
   if (data.visibility === "public") badges.push(["Публичен", "chip-ok"]);
@@ -1007,11 +1024,14 @@ function paintPortal(data) {
     }
   } catch (err) {
     setStatus(String(err && err.message ? err.message : err), "err");
-    $("title").textContent = "Порталът не е достъпен";
+    const titleEl = $("title");
+    if (titleEl) titleEl.textContent = "Порталът не е достъпен";
   }
 })();
 
-$("q").addEventListener("input", (e) => paint(e.target.value));
+// Частична страница може да няма поле за търсене — тогава няма какво да се връзва.
+const searchBox = $("q");
+if (searchBox) searchBox.addEventListener("input", (e) => paint(e.target.value));
 
 // PP-04: „Към файловете“ е бутон — мести фокуса върху списъка, без да пипа адреса.
 const skipButton = $("skip");

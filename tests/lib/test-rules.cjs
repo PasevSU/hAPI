@@ -257,6 +257,7 @@ const RULES = [
   { id: "portal-page-contract", area: "портал", title: "Portal page contract", owner: "tests/portal-page-contract.cjs" },
   { id: "portal-page-lang", area: "портал", title: "Portal page lang", owner: "tests/portal-page-lang.cjs" },
   { id: "portal-page-render", area: "портал", title: "Portal page render", owner: "tests/portal-page-render.cjs" },
+  { id: "portal-partial-page", area: "портал", title: "Portal partial page", owner: "tests/portal-partial-page.cjs" },
   { id: "portal-policy-secret-links", area: "портал", title: "Portal policy secret links", owner: "tests/portal-policy-secret-links.cjs" },
   { id: "portal-qr-archive", area: "портал", title: "Portal qr archive", owner: "tests/portal-qr-archive.cjs" },
   { id: "portal-qr-badge", area: "портал", title: "Portal qr badge", owner: "tests/portal-qr-badge.cjs" },

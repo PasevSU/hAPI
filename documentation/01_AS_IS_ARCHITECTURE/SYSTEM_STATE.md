@@ -106,13 +106,13 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
   един файл) не се броят като дълг: тяхната българска страна Е преводът. Ръстът е заключен от
   ратчет; преводът е отделна задача.
 
-## 6. Измерени порти (0.69.208)
+## 6. Измерени порти (0.69.209)
 
 | Гейт | Команда | Резултат |
 | --- | --- | --- |
-| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **400/400**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
+| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **401/401**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
 | Артефакт | `node scripts/verify-release.cjs` | **22/22**, `dist/` 6 файла |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 401 теста в дървото |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 402 теста в дървото |
 | ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
 | Регресионни защити | `tests/regression-guards.cjs` | 54 защити · 75 теста · **53** котви |
 | Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 36 360 (таван 36 360) · 23 `t()` · 1 модул със собствен речник извън дълга |
@@ -136,6 +136,11 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
    кръгова препратка, забранена от PP-04 и пазена от три теста (DEF-34).
 7. **Публикуване на 0.69.209** — таг `v0.69.209`, `scripts/publish-haoss.ps1 -Execute`,
    проверка на SHA-256 (4/4). Не е пускано: чака изрично решение.
+8. **Скриптът на портала вече не пада на частична страница** (`setStatus` на липсващ `#status`
+   хвърляше `TypeError: Cannot set properties of null`). Пази го `tests/portal-partial-page.cjs`;
+   поправката е в двата варианта. Остава непокрит единствено случаят „страница без
+   `#toolbar`/`#visibility`“ — те се пишат само след успешен `GET` на портала, тоест не се
+   стигат на страница на отказ; ако някога се стигнат, редът е същият (проверка за възел).
 
 ## 8. Как се проверява състоянието
 

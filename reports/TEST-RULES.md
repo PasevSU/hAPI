@@ -3,12 +3,12 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 401 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 402 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 182 |
-| портал | 38 |
+| портал | 39 |
 | GUI | 31 |
 | Home Assistant | 17 |
 | отчети | 16 |
@@ -228,7 +228,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (38)
+## портал (39)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -260,6 +260,7 @@
 | `portal-page-contract` | Portal page contract | `tests/portal-page-contract.cjs` |
 | `portal-page-lang` | Portal page lang | `tests/portal-page-lang.cjs` |
 | `portal-page-render` | Portal page render | `tests/portal-page-render.cjs` |
+| `portal-partial-page` | Portal partial page | `tests/portal-partial-page.cjs` |
 | `portal-policy-secret-links` | Portal policy secret links | `tests/portal-policy-secret-links.cjs` |
 | `portal-qr-archive` | Portal qr archive | `tests/portal-qr-archive.cjs` |
 | `portal-qr-badge` | Portal qr badge | `tests/portal-qr-badge.cjs` |
