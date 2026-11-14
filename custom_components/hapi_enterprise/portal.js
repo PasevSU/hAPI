@@ -31,6 +31,9 @@ const MAX_LISTED = 500;
 let folderRel = null;
 let folderFiles = [];
 let folderSubs = [];
+// Дървото на портала (зарежда се веднъж) и дали списъкът показва ВСИЧКИ нива.
+let treeRoot = null;
+let showAll = false;
 let portal = null;
 let allFiles = [];
 // Профил на съдържанието — всички текстове на страницата се извеждат от него.
@@ -38,14 +41,14 @@ let prof = null;
 // Дали бързата лента е вързана (веднъж за живота на страницата).
 let barWired = false;
 
-// Единствената точка, която пише в лентата за състояние. Липсващият възел (страница на отказ,
-// файл, 410) не е грешка на данните — тогава просто няма къде да се пише, а не се пада.
 // Стойността на търсенето — празна, когато страницата няма поле за търсене.
 const qValue = () => {
   const q = $("q");
   return q ? q.value : "";
 };
 
+// Единствената точка, която пише в лентата за състояние. Липсващият възел (страница на отказ,
+// файл, 410) не е грешка на данните — тогава просто няма къде да се пише, а не се пада.
 const setStatus = (text, kind) => {
   const el = $("status");
   if (!el) return;
@@ -467,6 +470,14 @@ async function loadFolder(rel) {
     folderRel = String(rel || "");
     folderFiles = data.files.map((f) => ({ name: f.name, path: f.path, size: f.size, modifiedAt: f.modifiedAt }));
     folderSubs = Array.isArray(data.folders) ? data.folders.map((f) => ({ name: f.name, path: f.path })) : [];
+    // Ново ниво → старото дърво и режимът „всичко“ не важат вече.
+    treeRoot = null;
+    showAll = false;
+    const allBtn = $("tree-all");
+    if (allBtn) {
+      allBtn.hidden = false;
+      allBtn.textContent = "Покажи всичко";
+    }
     const head = $("files-title");
     if (head) head.textContent = "Папка /" + (folderRel ? folderRel + "/" : "");
     paint(qValue());
@@ -522,10 +533,15 @@ async function downloadFolderFile(rel) {
  */
 async function toggleFolder() {
   const btn = $("folder-open");
+  const allBtn = $("tree-all");
   if (folderRel !== null) {
     folderRel = null;
     folderFiles = [];
     folderSubs = [];
+    // Няма папка → няма и дърво за разгъване.
+    treeRoot = null;
+    showAll = false;
+    if (allBtn) allBtn.hidden = true;
     if (btn) btn.textContent = "Отвори папката";
     const head = $("files-title");
     if (head) head.textContent = prof && prof.total ? prof.noun.capMany : "Съдържание";
@@ -536,11 +552,92 @@ async function toggleFolder() {
   if (ok && btn) btn.textContent = "Регистрирани файлове";
 }
 
+// ── Цялото дърво на портала (0.69.209) ────────────────────────────────────
+// Порталът може да има папки в папки. За да не се рови папка по папка, дървото се обхожда
+// с едни и същи заявки (`/tree?path=`) до дълбочината, която сървърът разрешава (3 нива),
+// и се показва наведнъж, групирано по папка.
+
+/** Обхожда дървото от корена на портала. Пази се веднъж — повторното натискане не пита. */
+async function loadWholeTree() {
+  if (treeRoot) return treeRoot;
+  const MAX_DEPTH = 3; // договорът на сървъра: корен + 3 подпапки
+  const fetchFolder = async (rel) => {
+    const res = await fetch(apiBase + "/tree?path=" + encodeURIComponent("/" + rel), {
+      headers: authHeaders(),
+      referrerPolicy: "no-referrer",
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    if (!data || !Array.isArray(data.files)) return null;
+    return {
+      path: rel,
+      files: data.files.map((f) => ({ name: f.name, path: f.path, size: f.size, modifiedAt: f.modifiedAt })),
+      folders: (data.folders || []).map((f) => ({
+        name: f.name,
+        path: String(f.path || "").replace(/^\/+/, ""),
+        files: [],
+        folders: [],
+      })),
+    };
+  };
+  const walk = async (node, depth) => {
+    if (depth >= MAX_DEPTH || !node.folders.length) return;
+    for (const child of node.folders) {
+      const full = await fetchFolder(child.path);
+      if (!full) continue;
+      child.files = full.files;
+      child.folders = full.folders;
+      await walk(child, depth + 1);
+    }
+  };
+  const root = await fetchFolder("");
+  if (!root) return null;
+  await walk(root, 0);
+  treeRoot = root;
+  return treeRoot;
+}
+
+/** Файловете от ЦЯЛОТО дърво (за брояча в режим „покажи всичко“). */
+function treeFilesAll(node) {
+  const root = node || treeRoot;
+  if (!root) return [];
+  const out = [];
+  const walk = (n) => {
+    for (const f of n.files || []) out.push(f);
+    for (const child of n.folders || []) walk(child);
+  };
+  walk(root);
+  return out;
+}
+
+/** Редовете на „покажи всичко“: заглавие на папка, после файловете в нея. */
+function paintAllRows() {
+  const rows = [];
+  const walk = (node) => {
+    const files = node.files || [];
+    if (files.length) {
+      const head = document.createElement("li");
+      head.className = "tree-group";
+      const title = document.createElement("h3");
+      title.textContent = node.path ? "/" + node.path : "Коренът на портала";
+      head.append(title);
+      rows.push(head);
+      for (const f of files) rows.push(folderFileCard(f));
+    }
+    for (const child of node.folders || []) walk(child);
+  };
+  if (treeRoot) walk(treeRoot);
+  return rows;
+}
+
 /** Числата на портала: смятат се от заредените данни и НЕ се пишат в HTML. */
 function paintStats() {
-  // В режим „папка“ списъкът е смесен: файлове от диска + регистрирани извън папката.
+  // В режим „папка“ списъкът е смесен: файловете от диска ПЛЮС регистрираните, които не са
+  // в папката. В режим „покажи всичко“ се брои ЦЯЛОТО дърво — иначе картата казва едно,
+  // а списъкът показва друго.
   let files = allFiles.length;
-  if (folderRel !== null) {
+  if (folderRel !== null && showAll) files = treeFilesAll().length + allFiles.length;
+  else if (folderRel !== null) {
     const onDisk = new Set(folderFiles.map((f) => f.name));
     files = folderFiles.length + allFiles.filter((f) => !onDisk.has(f.name)).length;
   }
@@ -705,6 +802,19 @@ function wireQuickBar() {
   if (manifest) manifest.addEventListener("click", () => void openInfo("manifest"));
   const close = $("file-info-close");
   if (close) close.addEventListener("click", closeFileInfo);
+  // „Покажи всичко“ / „Само тази папка“: един бутон, който сменя обхвата на списъка.
+  const all = $("tree-all");
+  if (all)
+    all.addEventListener("click", () => {
+      void (async () => {
+        if (!showAll) {
+          setStatus("Зареждам цялото дърво…");
+          await loadWholeTree();
+        }
+        showAll = !showAll;
+        paint(qValue());
+      })();
+    });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeFileInfo();
   });
@@ -717,6 +827,19 @@ function paint(filter) {
   paintAccess(portal);
   const q = String(filter || "").trim().toLocaleLowerCase();
   const box = $("files");
+  const allBtn = $("tree-all");
+  if (allBtn && folderRel !== null) allBtn.textContent = showAll ? "Само тази папка" : "Покажи всичко";
+  // „Покажи всичко“: всички нива на портала наведнъж, групирани по папка.
+  if (folderRel !== null && showAll) {
+    const rows = paintAllRows();
+    box.replaceChildren(...rows);
+    $("empty").hidden = rows.length > 0;
+    if (!rows.length) $("empty").textContent = "Тази папка е празна.";
+    const all = treeFilesAll();
+    $("count").textContent = all.length + " " + nounFor(all.length, prof ? prof.noun : NOUNS.file);
+    if (rows.length) setStatus("");
+    return;
+  }
   // Режим „папка“: истинските файлове от папката на портала. Регистрираните остават втори
   // изглед — бутонът връща към тях, за да не се губи нищо, което издателят е обявил.
   if (folderRel !== null) {

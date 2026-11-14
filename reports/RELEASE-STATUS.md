@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **402/402** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.209 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 638 файла · 113811 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 633 файла · 112672 реда · critical: 0 · high: 0 · medium: 2 · low: 201 — **има необяснени** · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 638 файла · 113998 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 633 файла · 112736 реда · critical: 0 · high: 0 · medium: 2 · low: 201 — **има необяснени** · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -33,6 +33,16 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.209
+
+- **„Покажи всичко“ вече е и в HACS интеграцията.** Функцията съществуваше само в пълния
+  вариант на страницата (`hapi_enterprise/portal/*`); интеграционната копия
+  (`custom_components/hapi_enterprise/portal.*`), която се отваря през
+  `/api/hapi_enterprise/portal/<id>`, показваше само текущото ниво. Сега и тя обхожда дървото
+  (`/tree?path=`, до три нива), показва всички папки и файлове групирани по папка, брои същото
+  в картата с числата и връща нивото с второ натискане; при изход от папката бутонът се скрива
+  и дървото се изхвърля. Защита: `tests/portal-tree-all.cjs` проверява РАБОТАТА и в двата
+  варианта (заявките на интеграцията се пренасочват към същия сървър); със забранен клон
+  тестът пада с `status: 1` (проверено).
 
 - **Скриптът на портала не пада на частична страница.** Намери се истинска грешка:
   `TypeError: Cannot set properties of null (setting 'textContent') at setStatus` — `portal.js`
