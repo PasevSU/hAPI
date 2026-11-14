@@ -246,6 +246,7 @@ const RULES = [
   { id: "portal-folder-refs", area: "портал", title: "Portal folder refs", owner: "tests/portal-folder-refs.cjs" },
   { id: "portal-greeting", area: "портал", title: "Portal greeting", owner: "tests/portal-greeting.cjs" },
   { id: "portal-hash-verify", area: "портал", title: "Portal hash verify", owner: "tests/portal-hash-verify.cjs" },
+  { id: "portal-hidden-flag", area: "портал", title: "Portal hidden flag", owner: "tests/portal-hidden-flag.cjs" },
   { id: "portal-html-sandbox", area: "портал", title: "Portal html sandbox", owner: "tests/portal-html-sandbox.cjs" },
   { id: "portal-i18n", area: "портал", title: "Portal i18n", owner: "tests/portal-i18n.cjs" },
   { id: "portal-integrity", area: "портал", title: "Portal integrity", owner: "tests/portal-integrity.cjs" },

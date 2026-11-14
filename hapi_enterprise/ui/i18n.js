@@ -232,7 +232,7 @@
       'state.cancelled': 'отказано',
       // ── Картата на портала: QR кодът в заглавния ред (0.69.199+) ────────────
       // До 0.69.199 тук живееха ключовете на блока „Достъп и QR код“ (portal.link.*,
-      // portal.state.*, portal.tip.*, portal.act.*, portal.brand, portal.crypto). Блокът е
+      // portal.fileState.*, portal.tip.*, portal.act.*, portal.brand, portal.crypto). Блокът е
       // махнат, а с него и ключовете — речникът не бива да расте с текстове, които никой не
       // рисува. Пази се само онова, което картата ползва днес.
       'portal.qr.button': 'QR код към публичния портал',
@@ -249,6 +249,14 @@
       'portal.reg.pickAlt': 'Избор за регистриране: {name}',
       'portal.reg.allTitle': 'Регистрирай всички файлове от {where} в портала (подпапките включени)',
       'portal.reg.allLabel': 'регистрирай всички',
+      'portal.files.hidden': 'скрит',
+      'portal.files.hiddenTitle': 'Скрит файл: НЕ се вижда на страницата, към която води QR кодът. Отметни „обяви“, за да се появи.',
+      'portal.fileState.public': 'Публичен',
+      'portal.fileState.key': 'Изисква ключ',
+      'portal.fileState.hidden': 'Скрит',
+      'portal.fileState.hiddenKey': 'Скрит + ключ',
+      'portal.fileState.disabled': 'Забранен',
+      'portal.fileState.title': 'Състояние на достъпа',
       'portal.qr.missing': 'QR кодът още не е създаден — порталът го получава заедно с API-то.',
     },
     en: {
@@ -478,6 +486,14 @@
       'portal.reg.pickAlt': 'Select for registration: {name}',
       'portal.reg.allTitle': 'Register every file from {where} in the portal (subfolders included)',
       'portal.reg.allLabel': 'register all',
+      'portal.files.hidden': 'hidden',
+      'portal.files.hiddenTitle': 'Hidden file: it is NOT shown on the page the QR code leads to. Tick “announce” to publish it.',
+      'portal.fileState.public': 'Public',
+      'portal.fileState.key': 'Key required',
+      'portal.fileState.hidden': 'Hidden',
+      'portal.fileState.hiddenKey': 'Hidden + key',
+      'portal.fileState.disabled': 'Disabled',
+      'portal.fileState.title': 'Access state',
       'portal.qr.missing': 'The QR code is not created yet — the portal gets it together with its API.',
     },
     de: {
@@ -707,6 +723,14 @@
       'portal.reg.pickAlt': 'Zur Registrierung auswählen: {name}',
       'portal.reg.allTitle': 'Alle Dateien aus {where} im Portal registrieren (inkl. Unterordner)',
       'portal.reg.allLabel': 'alle registrieren',
+      'portal.files.hidden': 'verborgen',
+      'portal.files.hiddenTitle': 'Verborgene Datei: sie erscheint NICHT auf der Seite, zu der der QR-Code führt. „ankündigen“ anhaken, um sie zu veröffentlichen.',
+      'portal.fileState.public': 'Öffentlich',
+      'portal.fileState.key': 'Schlüssel nötig',
+      'portal.fileState.hidden': 'Verborgen',
+      'portal.fileState.hiddenKey': 'Verborgen + Schlüssel',
+      'portal.fileState.disabled': 'Gesperrt',
+      'portal.fileState.title': 'Zugriffsstatus',
       'portal.qr.missing': 'Der QR-Code ist noch nicht erstellt — das Portal erhält ihn zusammen mit seiner API.',
     },
   };

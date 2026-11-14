@@ -774,11 +774,13 @@
     return list;
   }
 
+  // Етикетите на състоянието минават през речника: дотук бяха български литерали, тоест
+  // английската и немската версия показваха български думи (DEF-49).
   function stateOf(f) {
-    if (f.accessMode === 'DISABLED') return { id: 'disabled', label: 'Забранен', cls: 'err' };
-    if (!f.listed) return { id: 'hidden', label: f.accessMode === 'KEY_REQUIRED' ? 'Скрит + ключ' : 'Скрит', cls: 'warn' };
-    if (f.accessMode === 'KEY_REQUIRED') return { id: 'key', label: 'Изисква ключ', cls: 'warn' };
-    return { id: 'public', label: 'Публичен', cls: 'ok' };
+    if (f.accessMode === 'DISABLED') return { id: 'disabled', label: T('portal.fileState.disabled'), cls: 'err' };
+    if (!f.listed) return { id: 'hidden', label: T(f.accessMode === 'KEY_REQUIRED' ? 'portal.fileState.hiddenKey' : 'portal.fileState.hidden'), cls: 'warn' };
+    if (f.accessMode === 'KEY_REQUIRED') return { id: 'key', label: T('portal.fileState.key'), cls: 'warn' };
+    return { id: 'public', label: T('portal.fileState.public'), cls: 'ok' };
   }
 
   // ── Връзка ───────────────────────────────────────────────────────────────

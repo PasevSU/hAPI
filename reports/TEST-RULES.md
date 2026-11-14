@@ -3,12 +3,12 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 402 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 403 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 182 |
-| портал | 39 |
+| портал | 40 |
 | GUI | 31 |
 | Home Assistant | 17 |
 | отчети | 16 |
@@ -228,7 +228,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (39)
+## портал (40)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -249,6 +249,7 @@
 | `portal-folder-refs` | Portal folder refs | `tests/portal-folder-refs.cjs` |
 | `portal-greeting` | Portal greeting | `tests/portal-greeting.cjs` |
 | `portal-hash-verify` | Portal hash verify | `tests/portal-hash-verify.cjs` |
+| `portal-hidden-flag` | Portal hidden flag | `tests/portal-hidden-flag.cjs` |
 | `portal-html-sandbox` | Portal html sandbox | `tests/portal-html-sandbox.cjs` |
 | `portal-i18n` | Portal i18n | `tests/portal-i18n.cjs` |
 | `portal-integrity` | Portal integrity | `tests/portal-integrity.cjs` |

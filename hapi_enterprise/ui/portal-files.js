@@ -8,15 +8,18 @@
   function card(x, ctx) {
     // `chip` и `fmtSize` се ползват само от картата на файл в хранилището — тук плочките
     // с метаданни са махнати (живеят в „Пълни данни“), затова не се дърпат в този обхват.
-    const { esc, state, ICON, ico, fileGlyph, stateOf, actionsPane } = ctx;
+    const { esc, state, ICON, ico, fileGlyph, stateOf, actionsPane, T } = ctx;
     const st = stateOf(x);
     const open = state.selected === x.id;
-    // ⚙ е изскачащо контекстно меню (като при папките) — отворено е най-много едно.
+    // ⚙ е изскачащо контекстно меню (както при папките) — отворено е най-много едно.
     const gear = state.fileGear !== null && state.fileGear === x.id;
     // Табелките показват САМО включените опции: няма табелка = опцията не е активна.
     // Затова „публичен“ (по подразбиране) не се изписва, а шифрован/заключен се виждат.
+    // Скритият файл носи обяснение в подсказката — иначе човек не разбира защо го няма
+    // на страницата, към която води QR кодът (`portal.files.hiddenTitle`).
+    const stateTitle = st.id === 'hidden' ? T('portal.files.hiddenTitle') : T('portal.fileState.title');
     const badges = [
-      st.id === 'public' ? '' : `<span class="state-chip ${st.cls}" title="Състояние на достъпа">${esc(st.label)}</span>`,
+      st.id === 'public' ? '' : `<span class="state-chip ${st.cls}" title="${esc(stateTitle)}">${esc(st.label)}</span>`,
       x.encrypted
         ? `<span class="state-chip enc" title="Шифрован (AES-256-GCM)">шифрован</span>`
         : '',

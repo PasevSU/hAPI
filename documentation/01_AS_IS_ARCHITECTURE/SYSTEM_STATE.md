@@ -110,12 +110,12 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 
 | Гейт | Команда | Резултат |
 | --- | --- | --- |
-| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **401/401**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
+| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **402/402**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
 | Артефакт | `node scripts/verify-release.cjs` | **22/22**, `dist/` 6 файла |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 402 теста в дървото |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 403 теста в дървото |
 | ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
 | Регресионни защити | `tests/regression-guards.cjs` | 54 защити · 75 теста · **53** котви |
-| Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 36 360 (таван 36 360) · 23 `t()` · 1 модул със собствен речник извън дълга |
+| Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 36 272 (таван 36 360) · 23 `t()` · 1 модул със собствен речник извън дълга |
 | Одити | `logic-audit --gate` · `bad-code-scan --gate` | 0 · 0 |
 | Линт | `npx eslint . --max-warnings=0` | 0 |
 | Хигиена | `D:\share` / `C:\share` | не съществуват |
