@@ -546,17 +546,27 @@ function paintSummary(_portal) {
 
 /** Числата на портала: смятат се от заредените данни и НЕ се пишат в HTML. */
 function paintStats() {
-  const files = folderMode ? folderFiles : allFiles;
+  // В режим „папка“ списъкът е смесен: файловете от диска ПЛЮС регистрираните, които не са
+  // в папката (вж. `paint`). Числата трябва да броят СЪЩОТО, което вижда посетителят —
+  // иначе картата казва „0“, а списъкът показва файлове.
+  const files = folderMode ? portalFileRows().length : allFiles.length;
   const hash = allFiles.filter((f) => f.sha256).length;
   const key = allFiles.filter((f) => f.accessMode === "KEY_REQUIRED").length;
   const set = (id, value) => {
     const el = $(id);
     if (el) el.textContent = String(value);
   };
-  set("stat-files", files.length);
+  set("stat-files", files);
   set("stat-folders", folderMode ? folderSubs.length : 0);
   set("stat-hash", hash);
   set("stat-key", key);
+}
+
+/** Файловете, които страницата показва в режим „папка“: от диска + регистрираните, които
+ * не са на диска. Едно и също име се брои веднъж — папката е истината. */
+function portalFileRows() {
+  const onDisk = new Set(folderFiles.map((f) => f.name));
+  return folderFiles.concat(allFiles.filter((f) => !onDisk.has(f.name)));
 }
 
 /** Статус на достъпа: едно изречение-състояние и броячи по режим на файловете. */
@@ -924,12 +934,12 @@ function paint(filter) {
     : source;
   const box = $("files");
   if (folderMode) {
-    const rows = list.map(folderCard);
     // Регистриран файл, който НЕ е сложен в папката (качен през панела при изключено
     // копиране), не бива да изчезва само защото страницата е в режим „папка“: показва се
     // със собствения си адрес. Едно и също име се брои веднъж (папката е истината).
     const onDisk = new Set(folderFiles.map((f) => f.name));
-    for (const file of allFiles) if (!onDisk.has(file.name)) rows.push(fileCard(file));
+    const extra = allFiles.filter((f) => !onDisk.has(f.name));
+    const rows = list.map(folderCard).concat(extra.map(fileCard));
     if (!q) {
       for (const sub of folderSubs) {
         const li = document.createElement("li");
@@ -953,8 +963,15 @@ function paint(filter) {
     box.replaceChildren(...rows);
     $("empty").hidden = rows.length > 0;
     if (!rows.length) $("empty").textContent = T("folder.empty");
-    $("count").textContent = rows.length + (rows.length === 1 ? " файл" : " файла");
-    if (rows.length) setStatus("");
+    // Броят разделя файлове от папки: дотук редът казваше „1 файл“ за ЕДНА папка, а
+    // картата с числата казваше 0 — посетителят четеше „нищо не се е заредило“.
+    const fileCount = list.length + extra.length;
+    const parts = [fileCount + " " + nounFor(fileCount, prof ? prof.noun : nounOf("file"))];
+    if (folderSubs.length) parts.push(T("folder.count", { n: folderSubs.length }));
+    $("count").textContent = parts.join(" · ");
+    // Файловете са вътре в подпапките — казва се, вместо да се чака човек да се сети.
+    if (!fileCount && folderSubs.length) setStatus(T("folder.onlyFolders", { n: folderSubs.length }));
+    else if (rows.length) setStatus("");
     return;
   }
   box.replaceChildren(...list.map(fileCard));

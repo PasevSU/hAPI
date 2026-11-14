@@ -525,14 +525,19 @@ async function toggleFolder() {
 
 /** Числата на портала: смятат се от заредените данни и НЕ се пишат в HTML. */
 function paintStats() {
-  const files = folderRel !== null ? folderFiles : allFiles;
+  // В режим „папка“ списъкът е смесен: файлове от диска + регистрирани извън папката.
+  let files = allFiles.length;
+  if (folderRel !== null) {
+    const onDisk = new Set(folderFiles.map((f) => f.name));
+    files = folderFiles.length + allFiles.filter((f) => !onDisk.has(f.name)).length;
+  }
   const hash = allFiles.filter((f) => f.sha256).length;
   const key = allFiles.filter((f) => f.accessMode === "KEY_REQUIRED").length;
   const set = (id, value) => {
     const el = $(id);
     if (el) el.textContent = String(value);
   };
-  set("stat-files", files.length);
+  set("stat-files", files);
   set("stat-folders", folderRel !== null ? folderSubs.length : 0);
   set("stat-hash", hash);
   set("stat-key", key);
@@ -708,8 +713,12 @@ function paint(filter) {
     box.replaceChildren(...rows);
     $("empty").hidden = rows.length > 0;
     if (!rows.length) $("empty").textContent = "Тази папка е празна.";
-    $("count").textContent = files.length + (files.length === 1 ? " файл" : " файла");
-    if (rows.length) setStatus("");
+    // Броят разделя файлове от папки: иначе една папка се чете като „1 файл“.
+    const parts = [files.length + (files.length === 1 ? " файл" : " файла")];
+    if (subs.length) parts.push("папки: " + subs.length);
+    $("count").textContent = parts.join(" · ");
+    if (!files.length && subs.length) setStatus("Файловете са в подпапките — има " + subs.length + ". Отвори папка, за да ги видиш.");
+    else if (rows.length) setStatus("");
     return;
   }
   const list = q

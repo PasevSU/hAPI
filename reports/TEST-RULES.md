@@ -3,12 +3,12 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 399 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 400 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 182 |
-| портал | 36 |
+| портал | 37 |
 | GUI | 31 |
 | Home Assistant | 17 |
 | отчети | 16 |
@@ -228,7 +228,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (36)
+## портал (37)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -243,6 +243,7 @@
 | `portal-folder-button` | Portal folder button | `tests/portal-folder-button.cjs` |
 | `portal-folder-contract` | Portal folder contract | `tests/portal-folder-contract.cjs` |
 | `portal-folder-copy` | Portal folder copy | `tests/portal-folder-copy.cjs` |
+| `portal-folder-count` | Portal folder count | `tests/portal-folder-count.cjs` |
 | `portal-folder-lock` | Portal folder lock | `tests/portal-folder-lock.cjs` |
 | `portal-folder-portal` | Portal folder portal | `tests/portal-folder-portal.cjs` |
 | `portal-folder-refs` | Portal folder refs | `tests/portal-folder-refs.cjs` |

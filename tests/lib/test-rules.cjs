@@ -240,6 +240,7 @@ const RULES = [
   { id: "portal-folder-button", area: "портал", title: "Portal folder button", owner: "tests/portal-folder-button.cjs" },
   { id: "portal-folder-contract", area: "портал", title: "Portal folder contract", owner: "tests/portal-folder-contract.cjs" },
   { id: "portal-folder-copy", area: "портал", title: "Portal folder copy", owner: "tests/portal-folder-copy.cjs" },
+  { id: "portal-folder-count", area: "портал", title: "Portal folder count", owner: "tests/portal-folder-count.cjs" },
   { id: "portal-folder-lock", area: "портал", title: "Portal folder lock", owner: "tests/portal-folder-lock.cjs" },
   { id: "portal-folder-portal", area: "портал", title: "Portal folder portal", owner: "tests/portal-folder-portal.cjs" },
   { id: "portal-folder-refs", area: "портал", title: "Portal folder refs", owner: "tests/portal-folder-refs.cjs" },

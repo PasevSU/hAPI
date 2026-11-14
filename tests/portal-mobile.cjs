@@ -58,7 +58,7 @@ assert.ok(/\shidden/.test(sheetTag[0]), 'листът е скрит, докат�
 
 // ── 2. Числата се смятат, не се пишат ─────────────────────────────────────────
 assert.ok(js.includes('function paintStats()'), 'липсва paintStats() — числата няма кой да ги сметне');
-for (const call of ['set("stat-files", files.length)', 'set("stat-hash", hash)', 'set("stat-key", key)']) {
+for (const call of ['set("stat-files", files)', 'set("stat-hash", hash)', 'set("stat-key", key)']) {
   assert.ok(js.includes(call), `paintStats не смята ${call}`);
 }
 // Числата идват от заредените данни, а не от литерал в скрипта.
