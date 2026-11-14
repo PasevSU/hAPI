@@ -105,12 +105,14 @@
    * няма данни, докато файлът не се регистрира в портала.
    */
   function storageCard(x, ctx) {
-    const { esc, ICON, chip, fmtSize, fmtDate, fileGlyph, folderFlags } = ctx;
+    const { esc, ICON, chip, fmtSize, fmtDate, fileGlyph, folderFlags, T } = ctx;
     const dir = String(x.path || '').replace(/\/[^/]*$/, '');
     const flags = folderFlags(dir);
     const stamp = x.modifiedAt || x.createdAt || '';
     return `<article class="fm-file fm-file-storage">
                          <div class="fm-file-head">
+                           <input type="checkbox" class="fm-file-check" data-pick-storage="${esc(x.path)}"
+                             aria-label="${esc(T('portal.reg.pickAlt', { name: x.name }))}" title="${esc(T('portal.reg.pickAlt', { name: x.name }))}" />
                            <span class="fm-folder-ico" aria-hidden="true">${fileGlyph(x)}</span>
                            <div class="fm-file-title">
                              <span class="fm-file-name">${esc(x.name)}</span>
@@ -149,7 +151,7 @@
 
   /** Блок „Файлове в портала“: заглавие с икони, панел с филтри и картите на файловете. */
   function render(ctx) {
-    const { esc, state, p, files, scoped, visible, scope, ICON, ico } = ctx;
+    const { esc, state, p, files, scoped, visible, scope, ICON, ico, T } = ctx;
     const treePath = ctx.treePath;
     const uploadForm = ctx.uploadForm;
     // Блокът е СГЪНАТ по подразбиране (както всички блокове на портала).
@@ -160,6 +162,7 @@
           <h5><button type="button" class="link-btn pf-block-tog" data-pf-files-tog aria-expanded="${open}" ${open ? 'aria-controls="pf-files-body"' : ''} title="${open ? 'Сгъни' : 'Разгъни'
       } файловете на портала">${ico(open ? 'chevronDown' : 'chevronRight')} ${ico('file')} Файлове в портала (${scoped.length}) · <code>${esc(treePath(scope))}</code></button></h5>
           ${open ? `<span class="fm-ico-actions">
+            <button type="button" class="fm-ico-btn" data-register-folder title="${esc(T('portal.reg.allTitle', { where: treePath(scope) }))}">${ico('file')} <span class="fm-ico-label">${esc(T('portal.reg.allLabel'))}</span></button>
             <button type="button" class="fm-ico-btn" data-import-folder title="Прикачи папка с файлове в ${esc(
         treePath(scope),
       )}">${ico('attachFolder')} <span class="fm-ico-label">цяла папка</span></button>

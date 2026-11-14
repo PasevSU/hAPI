@@ -2476,6 +2476,7 @@
       ICON,
       FLAGS,
       fileGlyph,
+      T,
       // Една и съща икона навсякъде: модулите викат ico('download') вместо свои глифове.
       ico,
       treePath,
@@ -2521,11 +2522,86 @@
       </div>`;
   }
 
+  /**
+   * След регистрация: QR кодът се появява САМ — без отделна стъпка „направи QR“. За всеки
+   * нов файл се показва кодът на адреса му за изтегляне. Така „Регистрирай в портала“ Е и
+   * публикуването на QR.
+   */
+  async function afterRegister(created, where, skippedCount) {
+    const p = portal();
+    await loadPortals();
+    await loadTree(true);
+    render();
+    const out = document.getElementById('pf-qr-out');
+    const qrBase = String((state.api[p.id] || {}).qrUrl || '');
+    // DEF-31: в панела има ЕДИН QR — този на портала. Регистрацията не създава втори код,
+    // а прави така, че СЪЩИЯТ код вече да води до новите файлове (те стават част от страницата).
+    const figures = qrBase
+      ? `<figure class="pf-reg-qr"><img src="${esc(qrBase)}" alt="QR на портала" width="128" height="128" /><figcaption>${esc(T('portal.qr.note'))}</figcaption></figure>`
+      : '';
+    if (out) {
+      out.innerHTML = created.length
+        ? `<p>${T('portal.reg.out', { n: created.length, where: esc(where) })}</p><div class="pf-reg-qrs">${figures}</div>` +
+          (skippedCount ? `<p class="hint">${esc(T('portal.reg.skipped', { n: skippedCount }))}</p>` : '')
+        : `<p>${esc(T('portal.reg.empty', { where }))}</p>`;
+      out.dataset.kind = created.length ? 'ok' : '';
+    }
+    toast(created.length ? T('portal.reg.done', { n: created.length }) : T('portal.reg.none'), created.length ? 'ok' : '');
+  }
+
+  /**
+   * Регистрира СПИСЪК пътища през същия маршрут като един файл
+   * (`POST …/tree/register { path }`) — така няма втори сървърен клон за същото действие.
+   * 409 значи „вече е регистриран“ и се брои като пропуснат, не като грешка.
+   */
+  async function registerStorageList(paths, where) {
+    const p = portal();
+    if (!p || !paths.length) return;
+    if (!connected()) return toast(T('portal.reg.demo'), 'err');
+    const created = [];
+    let skipped = 0;
+    for (const rel of paths) {
+      const r = await api(`${P()}/tree/register`, { method: 'POST', json: { path: '/' + rel } });
+      if (r.ok && r.data && r.data.id) created.push({ id: r.data.id, name: r.data.name });
+      else if (r.status === 409) skipped += 1;
+    }
+    await afterRegister(created, where, skipped);
+  }
+
+  /** Пътищата на файловете от ТЕКУЩАТА папка (подпапките включени). */
+  function storagePathsHere() {
+    const root = state.tree.data && state.tree.data.tree;
+    const folder = state.tree.open || '';
+    const paths = [];
+    const walk = (node) => {
+      for (const f of node.files || []) {
+        const rel = String(f.path || f.name).replace(/^\/+/, '');
+        if (!folder || rel.startsWith(folder + '/')) paths.push(rel);
+      }
+      for (const child of node.folders || []) walk(child);
+    };
+    if (root) walk(root);
+    return paths;
+  }
+
+  /** Регистрира ВСИЧКИ файлове от текущата папка (подпапките включени) — едно действие. */
+  async function registerStorageFolder() {
+    const paths = storagePathsHere();
+    if (!paths.length) return toast(T('portal.reg.none'), '');
+    await registerStorageList(paths, treePath(state.tree.open || ''));
+  }
+
+  /** Регистрира ИЗБРАНИТЕ с чекбокс файлове от папката. */
+  async function registerStoragePicked(paths) {
+    if (!paths.length) return toast(T('portal.reg.none'), '');
+    await registerStorageList(paths, T('portal.reg.picked'));
+  }
+
   /** Регистрира файл от папката на диска в портала (после картата става пълна). */
   async function registerStorageFile(rel) {
     const p = portal();
     if (!p || !rel) return;
-    if (!connected()) return toast('Демо: регистрирането става от add-on-а (свързан режим)', 'err');
+    if (!connected()) return toast(T('portal.reg.demo'), 'err');
     const r = await api(`${P()}/tree/register`, { method: 'POST', json: { path: rel } });
     if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
     await loadPortals();
@@ -3925,6 +4001,16 @@
     );
     host.querySelectorAll('[data-register-file]').forEach((el) =>
       el.addEventListener('click', () => void registerStorageFile(el.dataset.registerFile || '')),
+    );
+    // Регистрация с ЕДНО действие: цялата папка или избраните с чекбокс файлове.
+    host.querySelectorAll('[data-register-folder]').forEach((el) =>
+      el.addEventListener('click', () => void registerStorageFolder()),
+    );
+    host.querySelectorAll('[data-register-picked]').forEach((el) =>
+      el.addEventListener('click', () => {
+        const paths = [...host.querySelectorAll('[data-pick-storage]:checked')].map((box) => box.dataset.pickStorage || '');
+        void registerStoragePicked(paths.filter(Boolean));
+      }),
     );
     host.querySelectorAll('[data-toggle-filters]').forEach((el) => {
       el.addEventListener('click', () => {
