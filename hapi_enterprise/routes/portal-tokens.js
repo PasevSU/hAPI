@@ -53,6 +53,19 @@ function create(deps) {
   }
 
   /**
+   * QR за ТОЧНО този адрес. Строи се със същите настройки като `/api/v1/p/<slug>/qr.svg`
+   * (клетка 8, поле 4, мащабируем SVG), за да не изглеждат двата кода различно. Защо тук:
+   * адресът с токена се показва САМО веднъж и не се пази — QR трябва да се роди в същия
+   * отговор, иначе по-късно няма от какво да се направи.
+   */
+  function qrFor(url) {
+    const code = require('../qrcode')(0, 'M');
+    code.addData(url);
+    code.make();
+    return code.createSvgTag({ cellSize: 8, margin: 4, scalable: true });
+  }
+
+  /**
    * Отказ по адреса, който отваря БРАУЗЪР. `/t/<токен>` се цъка от човек, затова JSON тяло
    * („{"error":"Not found"}“) е задънена улица: посетителят вижда машинен текст и не знае
    * какво да прави. Затова при `Accept: text/html` се връща кратка страница, а API клиентът
@@ -197,7 +210,10 @@ function create(deps) {
       // достъп до кой портал). Токенът НЕ влиза в тялото — само че достъп е създаден.
       if (typeof publish === 'function') publish('access.created', { portalId: portal.id, kind: 'portal-token', scopes: scopes.length, expiresAt });
       // Токенът се връща ТУК и повече никъде — в базата стои само отпечатъкът.
-      return json(res, 201, { id, portalId: portal.id, scopes, label, expiresAt, maxUses, token, url: tokenUrl(req, token), sessionTtlSeconds: policy.sessionTtlSeconds, cookie: policy.snapshot().cookie }), true;
+      // `qrSvg` кодира СЪЩИЯ адрес, който връщаме в `url`: сканираният код води до него,
+      // а не към общия адрес на портала (който за частен портал иска подписан достъп).
+      const url = tokenUrl(req, token);
+      return json(res, 201, { id, portalId: portal.id, scopes, label, expiresAt, maxUses, token, url, qrSvg: qrFor(url), sessionTtlSeconds: policy.sessionTtlSeconds, cookie: policy.snapshot().cookie }), true;
     }
     if (tail.length === 2 && method === 'DELETE') {
       const revoked = store.revokePortalToken(tail[1]);

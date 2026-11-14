@@ -237,6 +237,8 @@
       // рисува. Пази се само онова, което картата ползва днес.
       'portal.qr.button': 'QR код към публичния портал',
       'portal.qr.note': 'Сканирай кода или натисни върху него — отваря публичния портал.',
+      'portal.token.qrAlt': 'QR към адреса с токена',
+      'portal.token.qrHint': 'Сканирай — кодът води до същия адрес.',
       'portal.qr.missing': 'QR кодът още не е създаден — порталът го получава заедно с API-то.',
     },
     en: {
@@ -454,6 +456,8 @@
       'state.cancelled': 'cancelled',
       'portal.qr.button': 'QR code to the public portal',
       'portal.qr.note': 'Scan the code or click it — it opens the public portal.',
+      'portal.token.qrAlt': 'QR for the link with the token',
+      'portal.token.qrHint': 'Scan it — the code leads to exactly this link.',
       'portal.qr.missing': 'The QR code is not created yet — the portal gets it together with its API.',
     },
     de: {
@@ -671,6 +675,8 @@
       'state.cancelled': 'abgebrochen',
       'portal.qr.button': 'QR-Code zum öffentlichen Portal',
       'portal.qr.note': 'Code scannen oder anklicken — er öffnet das öffentliche Portal.',
+      'portal.token.qrAlt': 'QR für den Link mit dem Token',
+      'portal.token.qrHint': 'Scannen — der Code führt genau zu diesem Link.',
       'portal.qr.missing': 'Der QR-Code ist noch nicht erstellt — das Portal erhält ihn zusammen mit seiner API.',
     },
   };

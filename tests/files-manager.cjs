@@ -154,8 +154,10 @@ assert.match(src, /\/admin\/api\/cases/);
 // Без него при `require_portal_token` панелът показва адреси, които никой отвън не отваря.
 assert.match(src, /id="pf-token-new"/, 'панелът има бутон за издаване на токен');
 assert.match(src, /id="pf-token-list"/, 'панелът има списък с издадените токени');
-assert.match(src, /id="pf-token-ttl"/, 'срокът се избира от панела');
-assert.match(src, /\/tokens`/, 'издаването минава през /tokens на портала');
+assert.match(src, /id="pf-token-ttl"/, 'срокът се избира от панела');  // QR към адреса с токена: показва се СЪЩИЯТ код, който сървърът е построил за този адрес.
+  assert.match(src, /r\.data\.qrSvg/, 'панелът взема QR от отговора за токена, не строи свой адрес');
+  assert.match(src, /class="pf-token-qr"/, 'QR-ът се показва до адреса с токена');
+  assert.match(src, /portal\.token\.qrHint/, 'до QR-а се казва, че води до същия адрес (през T)');assert.match(src, /\/tokens`/, 'издаването минава през /tokens на портала');
 assert.match(src, /data-token-revoke/, 'всеки токен може да се отнеме от панела');
 assert.match(src, /показва само сега|само сега/, 'казва, че токенът не се показва повторно');
 assert.equal(m.normalizeCase({ id: 'k', number: '1', title: 'T', extras: [{ key: 'a', value: 'b' }, { value: 'x' }] }).extras.length, 1);

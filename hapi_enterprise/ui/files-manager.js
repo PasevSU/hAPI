@@ -3640,9 +3640,18 @@
         const r = await api(`${P()}/tokens`, { method: 'POST', json: body });
         if (!r.ok) return sayToken(esc(r.error || `HTTP ${r.status}`), 'err');
         const url = r.data.url || '';
+        // QR кодът идва от СЪЩИЯ отговор и кодира СЪЩИЯ адрес — иначе сканираният код води
+        // до общия адрес на портала, който за частен портал иска вход.
+        const qrSvg = String(r.data.qrSvg || '');
+        const qrImg = qrSvg
+          ? `<img class="pf-token-qr" width="132" height="132" alt="${esc(T('portal.token.qrAlt'))}"
+               src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvg)}" />`
+          : '';
         sayToken(
           `<p><strong>Готово.</strong> Адресът се показва само сега — той отваря портала без вход.</p>
            <p class="pf-token-value">${esc(url)}</p>
+           ${qrImg}
+           ${qrImg ? `<p class="hint">${esc(T('portal.token.qrHint'))}</p>` : ''}
            <button type="button" class="btn btn-sm" id="pf-token-copy">${ICON.copy} Копирай адреса</button>`,
           'ok',
         );

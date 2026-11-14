@@ -71,6 +71,19 @@ const { freePort, stopChild } = require('./helpers.cjs');
     assert.match(issued.data.token, /^pt_[A-Za-z0-9_-]{20,}$/, 'токенът е криптографски случаен');
     assert.equal(issued.data.scopes.join(','), 'read');
     assert.ok(issued.data.url.endsWith('/t/' + issued.data.token), 'връща се готов адрес за вход');
+    // QR кодът трябва да води ИМЕННО до този адрес, а не до общия адрес на портала:
+    // за частен портал общият адрес иска подписан достъп, а този отваря без вход.
+    // Проверката е детерминирана: същият генератор със същия текст дава същия SVG.
+    const qrFor = (text) => {
+      const code = require('../hapi_enterprise/qrcode')(0, 'M');
+      code.addData(text);
+      code.make();
+      return code.createSvgTag({ cellSize: 8, margin: 4, scalable: true });
+    };
+    assert.equal(typeof issued.data.qrSvg, 'string', 'издаването връща QR за адреса');
+    assert.match(issued.data.qrSvg, /^<svg/, 'QR-ът е SVG: ' + String(issued.data.qrSvg).slice(0, 40));
+    assert.equal(issued.data.qrSvg, qrFor(issued.data.url), 'QR-ът кодира ТОЧНО адреса с токена');
+    assert.notEqual(issued.data.qrSvg, qrFor(issued.data.url + 'x'), 'различен адрес дава различен QR');
     const token = issued.data.token;
 
     // Отпечатъкът е това, което остава в базата — самият токен не се пази.
