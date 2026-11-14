@@ -64,6 +64,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Цялост на кода при старт | `hapi_enterprise/integrity.js` + `integrity-manifest.json` | `integrity-startup.cjs` |
 | Пакет за дебъгинг | `scripts/diag-package.cjs` (без тайни, с README) | `diag-package.cjs` |
 | Мобилна кора на портала (числа · статус · лист · лента) | `portal/portal.html` + `portal/portal.js` (числата от ДАННИТЕ, не от HTML); същото в `custom_components/hapi_enterprise/portal.*` | `portal-mobile.cjs` (и паритет между двата портала) |
+| QR код като SVG | `hapi_enterprise/qr-svg.js` (клетка 8 · поле 4 · мащабируем) | `portal-tokens.cjs`, `qr-dispatch.cjs` |
 
 ## 4. Дебъгинг системата днес
 

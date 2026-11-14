@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **138** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **139** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -139,6 +139,7 @@ _Генериран списък: **138** документа. Пише се от
 | `07_RELEASE/AUDIT-PROTOCOL.md` | Протокол от одита и изданието |
 | `07_RELEASE/CRITICAL_ANALYSIS_0.69.208.md` | Критичен анализ на 0.69.208 и какво остава |
 | `07_RELEASE/FEATURE_PARITY.md` | Паритет на функциите: `PasevSU/hAPI` ↔ това хранилище |
+| `07_RELEASE/LOGIC_AUDIT_0.69.209.md` | Логически одит на 0.69.209 — какво липсва, какво е остаряло, какво е премахнато |
 | `07_RELEASE/QUALIFICATION_PLAN.md` | Qualification Plan — hAPI Enterprise |
 | `07_RELEASE/RELEASE_0.69.204.md` | Издание 0.69.204 — мутационен одит на собствените твърдения |
 | `07_RELEASE/RELEASE_0.69.205.md` | Издание 0.69.205 — правила за интерфейса: идеи, причини, резултати |

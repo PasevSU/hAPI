@@ -738,7 +738,7 @@ const SEND_CSP = "default-src 'none'; style-src 'unsafe-inline'; form-action 'se
 // Страницата на тайна връзка пуска само собствения си скрипт (декриптирането е в
 // браузъра), затова `script-src 'self'` и нищо външно.
 const SECRET_CSP = "default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; img-src 'none'";
-function qrSvg(text) { const q = require('./qrcode')(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 8, margin: 4, scalable: true }) }
+function qrSvg(text) { return require('./qr-svg').svg(text) }
 // Единствен записвач на api/<slug>/: api-registry (атомарен запис, сериализиран по slug).
 // QR кодът сочи към публичната страница на портала, не към JSON API-то.
 const apiRegistry = require('./api-registry').create({ root: apiRoot, qrSvg: text => qrSvg(text), qrPayload: (record, portal, base) => portalLandingUrl(portal, base) });

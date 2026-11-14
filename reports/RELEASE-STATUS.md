@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **400/400** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.209 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 635 файла · 113430 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 630 файла · 112311 реда · critical: 0 · high: 0 · medium: 2 · low: 200 — **има необяснени** · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 636 файла · 113445 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 631 файла · 112326 реда · critical: 0 · high: 0 · medium: 2 · low: 200 — **има необяснени** · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,12 +27,23 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.209.tar.gz` | add-on архив (207 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.209.tar.gz` | add-on архив (208 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.209.zip` | интеграция за HACS (26 файла) | `dist/RELEASE.json` |
 | `hapi-enterprise-gui-0.69.209.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.209
+
+- **Логически одит на цялата система — с числа.** `documentation/07_RELEASE/LOGIC_AUDIT_0.69.209.md`:
+  635 файла / 113 430 реда в `logic-audit` (1 приета находка, 0 critical/high/medium),
+  `bad-code-scan` без блокери, `function-catalog` 367/367 покрити, 51 маркера за стар код —
+  всеки с изписана причина. Отделни раздели: какво ЛИПСВА (цялото дърво в страницата,
+  QR до папка/файл от панела — забранено от DEF-31, речник в интеграционния портал,
+  сесия/срок в публичния изглед, PDF преглед) и какво е ОСТАРЯЛО (v1 API, `/qr` 301,
+  `X-File-Key`, `STORAGE_LEGACY_LOCATION`, `legacyCopy`, `migration-bridge`, JSON копие) —
+  всяко с условието, при което пада. Compatibility шимовете НЕ са трити: те са жив договор.
+- **Един построител на QR вместо два.** Параметрите стояха в `server.js` и в
+  `routes/portal-tokens.js`; сега са в `hapi_enterprise/qr-svg.js` и двете места го викат.
 
 - **Регистрация на цяла папка и на избраните файлове — с едно действие.** Дотук файловете от
   папката на портала се регистрираха САМО един по един (бутон в картата на всеки файл от диска),

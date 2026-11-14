@@ -5,12 +5,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **115** backend модула · **17** HTTP компонента · **28** UI модула · **9** Python модула · **42** инструмента · **400** теста.
+Общо: **116** backend модула · **17** HTTP компонента · **28** UI модула · **9** Python модула · **42** инструмента · **400** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (115)
+### Backend модули (`hapi_enterprise/*.js`) (116)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -88,6 +88,7 @@
 | `hapi_enterprise/public-gateway.js` | Public API Gateway (PG-0) — втори, независим канал за достъп. |
 | `hapi_enterprise/public-package.js` | Еднократни токени за пакет, поискан от ПУБЛИЧНАТА страница. |
 | `hapi_enterprise/public-route-allowlist.js` | Allowlist за ПУБЛИЧНИЯ Gateway listener (`PUBLIC_GATEWAY_PORT`, в add-on-а 8088). |
+| `hapi_enterprise/qr-svg.js` | QR КОД КАТО SVG — единственото място, което решава с какви параметри се рисува. |
 | `hapi_enterprise/qrcode.js` | QR Code Generator for JavaScript |
 | `hapi_enterprise/rbac.js` | Role-based access control over the administrative API. Three roles are resolved |
 | `hapi_enterprise/readiness.js` | Решение за readiness — чиста функция, без I/O. |
