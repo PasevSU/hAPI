@@ -265,6 +265,7 @@ const RULES = [
   { id: "portal-rules-applied", area: "портал", title: "Portal rules applied", owner: "tests/portal-rules-applied.cjs" },
   { id: "portal-skin", area: "портал", title: "Portal skin", owner: "tests/portal-skin.cjs" },
   { id: "portal-tokens", area: "портал", title: "Portal tokens", owner: "tests/portal-tokens.cjs" },
+  { id: "portal-tree-all", area: "портал", title: "Portal tree all", owner: "tests/portal-tree-all.cjs" },
   { id: "portal-variants", area: "портал", title: "Portal variants", owner: "tests/portal-variants.cjs" },
   { id: "powershell-scripts", area: "общо", title: "Powershell scripts", owner: "tests/powershell-scripts.cjs" },
   { id: "preview", area: "общо", title: "Preview", owner: "tests/preview.cjs" },

@@ -110,9 +110,9 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 
 | Гейт | Команда | Резултат |
 | --- | --- | --- |
-| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **399/399**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
+| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **400/400**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
 | Артефакт | `node scripts/verify-release.cjs` | **22/22**, `dist/` 6 файла |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 400 теста в дървото |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 401 теста в дървото |
 | ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
 | Регресионни защити | `tests/regression-guards.cjs` | 54 защити · 75 теста · **53** котви |
 | Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 36 360 (таван 36 360) · 23 `t()` · 1 модул със собствен речник извън дълга |
@@ -130,7 +130,8 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 5. **Мобилната кора е в ДВАТА варианта на портала** — пълният (`hapi_enterprise/portal/*`, с речник
    BG/EN/DE) и интеграционната копия (`custom_components/hapi_enterprise/portal.*`). Еднакъв
    набор възли се пази от `portal-mobile.cjs` (паритет), а текстовете в интеграцията са
-   статични на български, защото тя няма свой речник.
+   статични на български, защото тя няма свой речник. Изгледът „Покажи всичко“ е само в
+   пълния вариант (обхожда `/tree` до три нива); в интеграцията остава текущото ниво.
 6. **QR код към самата страница НЕ е добавен** — примерният мобилен екран го показва, но това е
    кръгова препратка, забранена от PP-04 и пазена от три теста (DEF-34).
 7. **Публикуване на 0.69.209** — таг `v0.69.209`, `scripts/publish-haoss.ps1 -Execute`,

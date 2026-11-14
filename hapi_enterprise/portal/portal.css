@@ -829,6 +829,17 @@ main {
   font-size: 0.95rem;
 }
 
+/* Заглавие на група в режим „покажи всичко“: папката, под която стоят файловете ѝ. */
+.tree-group h3 {
+  margin: 18px 0 8px;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+}
+
+.tree-group:first-child h3 {
+  margin-top: 0;
+}
+
 .footbar {
   position: sticky;
   bottom: 0;

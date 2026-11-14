@@ -3,12 +3,12 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 400 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 401 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 182 |
-| портал | 37 |
+| портал | 38 |
 | GUI | 31 |
 | Home Assistant | 17 |
 | отчети | 16 |
@@ -228,7 +228,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (37)
+## портал (38)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -268,6 +268,7 @@
 | `portal-rules-applied` | Portal rules applied | `tests/portal-rules-applied.cjs` |
 | `portal-skin` | Portal skin | `tests/portal-skin.cjs` |
 | `portal-tokens` | Portal tokens | `tests/portal-tokens.cjs` |
+| `portal-tree-all` | Portal tree all | `tests/portal-tree-all.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
 ## GUI (31)

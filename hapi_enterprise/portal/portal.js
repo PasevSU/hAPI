@@ -95,6 +95,10 @@ let allFiles = [];
 let folderMode = false;
 let folderFiles = [];
 let folderSubs = [];
+// Цялото дърво на портала (от `/tree`) и дали посетителят иска да го види наведнъж.
+// Текущото ниво остава по подразбиране: така страницата не се разгъва на хиляди редове сама.
+let treeRoot = null;
+let showAll = false;
 // Отвореният лист с информация за един файл (за преизвеждане при смяна на езика).
 let currentFile = null;
 let barWired = false;
@@ -547,9 +551,11 @@ function paintSummary(_portal) {
 /** Числата на портала: смятат се от заредените данни и НЕ се пишат в HTML. */
 function paintStats() {
   // В режим „папка“ списъкът е смесен: файловете от диска ПЛЮС регистрираните, които не са
-  // в папката (вж. `paint`). Числата трябва да броят СЪЩОТО, което вижда посетителят —
-  // иначе картата казва „0“, а списъкът показва файлове.
-  const files = folderMode ? portalFileRows().length : allFiles.length;
+  // в папката (вж. `paint`). В режим „покажи всичко“ се брои ЦЯЛОТО дърво — иначе картата
+  // казва едно, а списъкът показва друго.
+  let files = allFiles.length;
+  if (folderMode && showAll) files = treeFilesAll().length + allFiles.length;
+  else if (folderMode) files = portalFileRows().length;
   const hash = allFiles.filter((f) => f.sha256).length;
   const key = allFiles.filter((f) => f.accessMode === "KEY_REQUIRED").length;
   const set = (id, value) => {
@@ -720,6 +726,16 @@ function wireQuickBar() {
   if (manifest) manifest.addEventListener("click", () => void openInfo("manifest"));
   const close = $("file-info-close");
   if (close) close.addEventListener("click", closeFileInfo);
+  // „Покажи всичко“ / „Само тази папка“: един бутон, който сменя обхвата на списъка.
+  const all = $("tree-all");
+  if (all)
+    all.addEventListener("click", () => {
+      void (async () => {
+        if (!showAll) await loadWholeTree();
+        showAll = !showAll;
+        paint($("q") ? $("q").value : "");
+      })();
+    });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeFileInfo();
   });
@@ -910,12 +926,88 @@ async function loadFolder(rel) {
   const data = await res.json().catch(() => null);
   if (!data || !Array.isArray(data.files)) return false;
   folderMode = true;
+  treeRoot = null;
   folderFiles = data.files.map((f) => ({ name: f.name, path: f.path, size: f.size, modifiedAt: f.modifiedAt }));
   folderSubs = Array.isArray(data.folders) ? data.folders.map((f) => ({ name: f.name, path: f.path })) : [];
+  const allBtn = $("tree-all");
+  if (allBtn) allBtn.hidden = false;
   paint("");
   const head = $("files-title");
   if (head) head.textContent = rel ? T("folder.title", { path: "/" + rel }) : (portal && portal.title) || T("files.title.other");
   return true;
+}
+
+async function loadWholeTree() {
+  if (treeRoot) return treeRoot;
+  const MAX_DEPTH = 3; // договорът на сървъра: корен + 3 подпапки
+  const fetchFolder = async (rel) => {
+    const res = await fetch(withAuth("/tree?path=" + encodeURIComponent("/" + rel)), { referrerPolicy: "no-referrer" });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    if (!data || !Array.isArray(data.files)) return null;
+    return {
+      type: "folder",
+      name: rel ? rel.split("/").pop() : "/",
+      path: rel,
+      files: data.files.map((f) => ({ name: f.name, path: f.path, size: f.size, modifiedAt: f.modifiedAt })),
+      folders: (data.folders || []).map((f) => ({ type: "folder", name: f.name, path: String(f.path || "").replace(/^\/+/, ""), files: [], folders: [] })),
+    };
+  };
+  const walk = async (node, depth) => {
+    if (depth >= MAX_DEPTH || !node.folders.length) return;
+    for (const child of node.folders) {
+      const full = await fetchFolder(child.path);
+      if (!full) continue;
+      child.files = full.files;
+      child.folders = full.folders;
+      await walk(child, depth + 1);
+    }
+  };
+  const root = await fetchFolder("");
+  if (!root) return null;
+  await walk(root, 0);
+  treeRoot = root;
+  return treeRoot;
+}
+
+/** Файловете от ЦЯЛОТО дърво (за режима „покажи всичко“). */
+function treeFilesAll(node) {
+  const root = node || treeRoot;
+  if (!root) return [];
+  const out = [];
+  const walk = (n) => {
+    for (const f of n.files || []) out.push({ name: f.name, path: f.path, size: f.size, modifiedAt: f.modifiedAt });
+    for (const child of n.folders || []) walk(child);
+  };
+  walk(root);
+  return out;
+}
+
+/**
+ * Режим „покажи всичко“: всички папки и файлове на портала в един списък, групирани по
+ * папка. Посетителят не трябва да влиза в пет папки, за да види какво има в портала.
+ */
+function paintAllRows() {
+  const rows = [];
+  const walk = (node) => {
+    const files = node.files || [];
+    if (files.length) {
+      const head = document.createElement("li");
+      head.className = "tree-group";
+      const title = document.createElement("h3");
+      title.textContent = node.path ? "/" + node.path : T("tree.root");
+      head.append(title);
+      rows.push(head);
+      for (const f of files) {
+        rows.push(
+          folderCard({ name: f.name, path: f.path, size: f.size, modifiedAt: f.modifiedAt }),
+        );
+      }
+    }
+    for (const child of node.folders || []) walk(child);
+  };
+  if (treeRoot) walk(treeRoot);
+  return rows;
 }
 
 function paint(filter) {
@@ -933,6 +1025,19 @@ function paint(filter) {
     )
     : source;
   const box = $("files");
+  const allBtn = $("tree-all");
+  if (allBtn && folderMode) allBtn.textContent = showAll ? T("tree.level") : T("tree.all");
+  if (folderMode && showAll) {
+    // Цялото дърво: групите са папките, редовете — файловете в тях.
+    const rows = paintAllRows();
+    box.replaceChildren(...rows);
+    const all = treeFilesAll();
+    $("empty").hidden = rows.length > 0;
+    if (!rows.length) $("empty").textContent = T("folder.empty");
+    $("count").textContent = all.length + " " + nounFor(all.length, prof ? prof.noun : nounOf("file"));
+    if (rows.length) setStatus("");
+    return;
+  }
   if (folderMode) {
     // Регистриран файл, който НЕ е сложен в папката (качен през панела при изключено
     // копиране), не бива да изчезва само защото страницата е в режим „папка“: показва се
