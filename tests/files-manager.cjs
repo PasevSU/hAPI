@@ -589,7 +589,7 @@ assert.match(src, /Array\.from\(e\.target\.files \|\| \[\]\)\.slice\(0, 1\)/);
 // Потвърждението за цяла папка брои файловете и пита — но текстът е в речника (BG/EN/DE),
 // за да не показва англичанин и немец българско изречение.
 assert.match(src, /T\('portal\.upload\.confirm', \{ n: files\.length/);
-assert.match(src, /async function uploadToStorage\(folderRel, fileList, opts\)/);assert.match(src, /\/tree\/upload\?path=/);
+  assert.match(src, /async function uploadToStorage\(folderRel, fileList, opts\)/);assert.match(src, /HAPIUploadProgress/, 'качването минава през прозореца за напредък (upload-progress.js)');
 assert.match(src, /webkitRelativePath/);
 // Освобождаването на blob адрес минава през `revokeLater`, който `unref`-ва таймера.
 // Без това 60 s таймер държеше процеса след последното твърдение и `gui-file-share`

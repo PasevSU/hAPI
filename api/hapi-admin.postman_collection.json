@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "hAPI Enterprise — административно API 0.69.213",
+    "name": "hAPI Enterprise — административно API 0.69.214",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Генериран от `hapi_enterprise/admin-api-spec.js` (node scripts/openapi-admin.cjs). Не се редактира на ръка."
   },
@@ -2065,6 +2065,174 @@
               ]
             },
             "description": "Регистриране на външен файл в дървото\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Активни сесии за качване и история на промените",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/uploads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "uploads"
+              ]
+            },
+            "description": "Активни сесии за качване и история на промените\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Отваряне на сесия за качване (размер + SHA-256 + mtime)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/uploads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "uploads"
+              ]
+            },
+            "description": "Отваряне на сесия за качване (размер + SHA-256 + mtime)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Състояние на сесия (кое е пристигнало — за възстановяване)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/uploads/{sessionId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "uploads",
+                "{{sessionId}}"
+              ]
+            },
+            "description": "Състояние на сесия (кое е пристигнало — за възстановяване)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Отказ на сесия (нищо не се записва)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/uploads/{sessionId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "uploads",
+                "{{sessionId}}"
+              ]
+            },
+            "description": "Отказ на сесия (нищо не се записва)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Парче от файла (собствен SHA-256 в X-Chunk-Sha256)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/uploads/{sessionId}/{chunkIndex}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "uploads",
+                "{{sessionId}}",
+                "{{chunkIndex}}"
+              ]
+            },
+            "description": "Парче от файла (собствен SHA-256 в X-Chunk-Sha256)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Сглобяване, сверка по SHA-256, запис и ред в историята",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/uploads/{sessionId}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "uploads",
+                "{{sessionId}}",
+                "complete"
+              ]
+            },
+            "description": "Сглобяване, сверка по SHA-256, запис и ред в историята\n\nПраво (RBAC): `portals`"
           },
           "response": []
         },

@@ -78,6 +78,7 @@ const GUARDS = {
   'DEF-56': ['blackbox-api.cjs'], // публичен /health не показва пътища и PID
   'DEF-57': ['problem.cjs', 'blackbox-api.cjs'], // грешката носи ok:false като успехът — ok:true
   'DEF-58': ['release-archive-ignored.cjs'], // архивът на изданието не взима игнорирани локални файлове
+  'DEF-59': ['upload-sessions.cjs', 'gui-upload-progress.cjs', 'gui-upload-resume.cjs', 'gui-upload-folder.cjs'], // качването е сесия със сверка по хеш, а не една заявка
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -139,6 +140,7 @@ const ANCHORS = {
   'DEF-56': { file: 'blackbox-api.cjs', contains: 'не показва файлови пътища' },
   'DEF-57': { file: 'problem.cjs', contains: 'като успехът носи' },
   'DEF-58': { file: 'release-archive-ignored.cjs', contains: 'нито един не влиза в изданието' },
+  'DEF-59': { file: 'upload-sessions.cjs', contains: 'X-Chunk-Sha256' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

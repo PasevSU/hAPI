@@ -2,13 +2,13 @@
 
 **Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 (API Architecture & Runtime Logic Specification)
 
-**Генериран от кода на hAPI Enterprise 0.69.213.** Не се редактира на ръка.
+**Генериран от кода на hAPI Enterprise 0.69.214.** Не се редактира на ръка.
 
 Източници (живи, не копия):
 
-- `hapi_enterprise/admin-api-spec.js` — 213 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
+- `hapi_enterprise/admin-api-spec.js` — 219 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
 - `hapi_enterprise/public-route-allowlist.js` — 33 правила за това какво Public Gateway пропуска.
-- `hapi_enterprise/routes/` — 18 компонента на HTTP слоя.
+- `hapi_enterprise/routes/` — 19 компонента на HTTP слоя.
 
 ```bash
 node scripts/api-reference.cjs           # записва документа
@@ -167,6 +167,12 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | POST | `/admin/api/portals/{portalId}/tree/upload` | Качване на файл в дървото на папката | `portals` |
 | POST | `/admin/api/portals/{portalId}/tree/comment` | Коментар към възел от дървото | `portals` |
 | POST | `/admin/api/portals/{portalId}/tree/register` | Регистриране на външен файл в дървото | `portals` |
+| GET | `/admin/api/portals/{portalId}/uploads` | Активни сесии за качване и история на промените | `portals` |
+| POST | `/admin/api/portals/{portalId}/uploads` | Отваряне на сесия за качване (размер + SHA-256 + mtime) | `portals` |
+| GET | `/admin/api/portals/{portalId}/uploads/{sessionId}` | Състояние на сесия (кое е пристигнало — за възстановяване) | `portals` |
+| DELETE | `/admin/api/portals/{portalId}/uploads/{sessionId}` | Отказ на сесия (нищо не се записва) | `portals` |
+| PUT | `/admin/api/portals/{portalId}/uploads/{sessionId}/{chunkIndex}` | Парче от файла (собствен SHA-256 в X-Chunk-Sha256) | `portals` |
+| POST | `/admin/api/portals/{portalId}/uploads/{sessionId}/complete` | Сглобяване, сверка по SHA-256, запис и ред в историята | `portals` |
 | GET | `/admin/api/portals/{portalId}/tree/api.json` | API карта на папката като JSON | `portals` |
 | GET | `/admin/api/portals/{portalId}/qr` | Активен QR, история на ревизиите и физическите архиви | `portals` |
 | POST | `/admin/api/portals/{portalId}/qr/archive` | Архивира: физически ZIP със SHA-256 + следващ QR | `portals` |
@@ -413,6 +419,7 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | `routes/portal-tokens.js` | Токени за портал и ACL |
 | `routes/portal-unlock.js` | — |
 | `routes/reports.js` | Отчети (Report Studio) |
+| `routes/upload-sessions.js` | — |
 | `routes/webhooks.js` | — |
 
 ## 4. Кодове за грешка
@@ -421,18 +428,18 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 
 | Код | Значение | Срещания |
 | --- | --- | --- |
-| 400 | Невалидна заявка/път/име — проверката е преди докосване на диска | 119 |
+| 400 | Невалидна заявка/път/име — проверката е преди докосване на диска | 126 |
 | 401 | Липсва или невалидна идентичност (административен токен/бисквитка) | 8 |
 | 403 | Идентичността е известна, но правото липсва (напр. заключен файл, общ корен) | 24 |
-| 404 | Ресурсът не съществува ИЛИ не бива да се разкрива (нарочно еднакъв отговор) | 171 |
+| 404 | Ресурсът не съществува ИЛИ не бива да се разкрива (нарочно еднакъв отговор) | 177 |
 | 405 | Методът не се поддържа за този път | 10 |
-| 409 | Конфликт със състоянието (съществуващо име, прекратен QR, максимална дълбочина) | 30 |
+| 409 | Конфликт със състоянието (съществуващо име, прекратен QR, максимална дълбочина) | 34 |
 | 410 | Ресурсът е прекратен (blok: QR е съществувал, достъпът е спрян) | 4 |
-| 413 | Твърде голям payload за операцията | 3 |
+| 413 | Твърде голям payload за операцията | 4 |
 | 415 | — | 2 |
 | 422 | — | 2 |
 | 429 | Твърде много заявки (rate limit) | 4 |
-| 500 | Вътрешна грешка — подробностите са в журнала, не в отговора | 8 |
+| 500 | Вътрешна грешка — подробностите са в журнала, не в отговора | 10 |
 | 502 | — | 2 |
 | 503 | — | 10 |
 

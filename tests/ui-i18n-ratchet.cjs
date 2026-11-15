@@ -67,6 +67,7 @@ const DEMO_DATA = {
 // Измерено на 0.69.206. Само надолу.
 const CEILING = {
   'api-base.js': 0,
+  'upload-progress.js': 0, // целият текст минава през t() — 0 е таванът, а не „още няма превод“
   'app.js': 0, // собствен речник BG/EN/DE — БГ-страната не е дълг (вж. `ownDictionary`)
   'bootstrap.js': 0,
   'dashboard-panel.js': 0,

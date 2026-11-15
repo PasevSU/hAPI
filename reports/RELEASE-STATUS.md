@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.213
+# Състояние на изданието — hAPI Enterprise 0.69.214
 
-Версия: **0.69.213** · клон `main`
+Версия: **0.69.214** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,38 +14,51 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **415/415** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.213 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 655 файла · 119572 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 649 файла · 117601 реда · critical: 0 · high: 0 · medium: 0 · low: 203 — чисто · изключения: 23/23 (0 мъртви) |
+| Тестове | `node scripts/test-matrix.cjs` | **419/419** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.214 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 661 файла · 121211 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 655 файла · 119240 реда · critical: 0 · high: 0 · medium: 0 · low: 209 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 415 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 419 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.213.tar.gz` | add-on архив (211 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.213.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.213.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.214.tar.gz` | add-on архив (213 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.214.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.214.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.213
+## 3. Какво влезе във 0.69.214
 
-- **Архивът на изданието съдържа само това, което е в хранилището.** `build-release.cjs`
-  събира файловете от файловата система, затова всеки локален, **игнориран** файл в
-  `hapi_enterprise/` влизаше в `dist/`. Измерено при 0.69.212: локалният
-  `hapi_enterprise/generator.7z` даде **212** файла в `dist/RELEASE.json`, а CI (където файла
-  го няма) — **211**. `reports/RELEASE-STATUS.md` цитира точно тази бройка, тоест отчетът
-  съдържаше машинно-зависимо число: CI го обяви за остарял (`reports/RELEASE-STATUS.md е
-  остарял`) и `Release` падна, без нито един ред код да е сгрешен. Сега `release-lib.cjs` има
-  `ignoredPaths()` (чете `git ls-files --others --ignored --exclude-standard`) и
-  `archiveEntries()`, което ползват add-on архивът, интеграцията и GUI пакетът. Без git
-  поведението е старото. Пази го `tests/release-archive-ignored.cjs` (собствено git хранилище
-  в `%TEMP%` + проверка, че в това хранилище нито един запис на изданието не е игнориран).
-- **Затваря DEF-58** (архивът зависи от локални файлове) — с котва в
+- **Качването на файлове и папки е безопасен процес, а не цикъл от заявки.** Досега
+  `POST …/tree/upload` приемаше цялото тяло наведнъж и отговаряше 201 или нищо: нямаше
+  напредък, нямаше как да се продължи след прекъсване и никой не доказваше, че стигналото е
+  същото, което е изпратено. Сега има **сесии** (`hapi_enterprise/routes/upload-sessions.js`):
+  `POST …/uploads` отваря сесия с размер, SHA-256 и `mtime`; `PUT …/uploads/<sid>/<i>` носи
+  едно парче и неговия хеш в `X-Chunk-Sha256`; `POST …/uploads/<sid>/complete` сглобява,
+  **сверява целия файл** и го записва; `GET …/uploads/<sid>` казва кое вече е пристигнало
+  (това е възстановяването, оцелява рестарт на add-on-а); `DELETE` отказва без файл.
+- **Нищо не се записва без сверка.** Парче с грешен хеш → 400 и не влиза в сесията; цял файл
+  с друг хеш → 409 и файл **не се появява**; след записа файлът се чете обратно (и през
+  `workdirIo`, тоест при криптирана работна папка) и хешът се сверява пак. Несъвпадение на
+  диска → записът се отменя.
+- **Даните не се пипат.** `mtime` от клиента се възстановява точно (`utimes`), датата на
+  създаване се пази в регистъра. `ctime` НЕ се задава — операционната система го държи и
+  няма API за него; това е записано в историята (`ctimeSettable: false`), вместо да се премълчи.
+- **Файл за следене на промените.** След всяко успешно качване се дописва един ред в
+  `upload-history/<portalId>.jsonl` — път, размер, SHA-256, `mtime`, `createdAt`, повторени
+  парчета, продължителност, `verified: true`. Същите записи се четат през `GET …/uploads`.
+- **Прозорец с реален напредък** (`hapi_enterprise/ui/upload-progress.js`): затъмнява фона
+  (`.up-backdrop`), заключва скрола (`body.up-locked`), `role="dialog" aria-modal="true"`,
+  `role="progressbar"` с `aria-valuenow` по **потвърдени от сървъра** байтове, списък с
+  файл по файл, неговия SHA-256 и състояние; бутони „Пауза“, „Продължи“, „Отказ“, „Затвори“.
+  Идентификаторите на сесиите се пазят в `sessionStorage`, за да може „Продължи“ да довърши
+  същия файл дори след презареждане на страницата.
+- **Затваря DEF-59** (качване без напредък, без сверка и без възстановяване) — с котва в
   `tests/regression-guards.cjs`.
 
 ## 4. Как се проверява наново

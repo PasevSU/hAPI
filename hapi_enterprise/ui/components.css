@@ -3540,3 +3540,108 @@ input[type="radio"] {
     border-color: #000;
   }
 }
+
+/* ── Прозорец за качване (0.69.214) ───────────────────────────────────────
+   Затъмненият фон е част от договора: докато тече качване, панелът под него
+   не е за натискане и не се скролира (`body.up-locked`). Всички стойности са
+   четни — нечетните пиксели са отделен дълг и не се увеличават оттук. */
+.up-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-10);
+  background: rgba(6, 10, 20, 0.66);
+  backdrop-filter: blur(2px);
+}
+
+body.up-locked {
+  overflow: hidden;
+}
+
+.up-dialog {
+  width: min(560px, 100%);
+  max-height: 80vh;
+  overflow: auto;
+  padding: var(--sp-10);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.46);
+}
+
+.up-dialog h3 {
+  margin: 0 0 var(--sp-2);
+  font-size: 16px;
+}
+
+.up-summary,
+.up-meta {
+  margin: 0 0 var(--sp-6);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.up-bar {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.up-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
+.up-list {
+  margin: var(--sp-8) 0;
+  padding-inline-start: var(--sp-1);
+  list-style: none;
+}
+
+.up-item {
+  padding: var(--sp-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.up-item[data-state="done"] .up-name::after {
+  content: " ✓";
+  color: var(--green);
+}
+
+.up-item[data-state="failed"] .up-name::after,
+.up-item[data-state="paused"] .up-name::after {
+  content: " !";
+  color: var(--red);
+}
+
+.up-name {
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.up-hash {
+  margin-left: var(--sp-4);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.up-error {
+  margin-top: var(--sp-2);
+  font-size: 12px;
+  color: var(--red);
+}
+
+.up-actions {
+  display: flex;
+  gap: var(--sp-4);
+  justify-content: flex-end;
+}

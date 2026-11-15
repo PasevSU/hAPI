@@ -2391,10 +2391,12 @@
    * Прикачва файлове в папката на портала (storage_root), като пази относителните
    * пътища на избраната папка (webkitRelativePath). Връща броя качени файлове.
    *
-   * 409 от сървъра НЕ е повреда: той значи „файлът вече е там“ (или папката е заключена).
-   * Затова се брои отделно от истинските грешки — иначе повторното качване на същата папка
-   * изглежда като „неуспешни 200“ и човек търси дефект, който го няма. Замяна се иска
-   * изрично с отметката „презапиши“ (`overwrite=1`), а не се подразбира.
+   * От 0.69.214 качването минава ПРЕЗ ПРОЗОРЕЦА за напредък (`upload-progress.js`), а не
+   * през `fetch` в цикъл: сървърът приема файла на парчета (по 1 MB), сверява SHA-256 на
+   * всяко парче, после на целия файл и накрая чете записаното обратно. Затова напредъкът е
+   * пристигнал байт, прекъсването може да продължи от същото място, а датите (`mtime`) се
+   * връщат точно каквито са били. 409 от сървъра НЕ е повреда: той значи „файлът вече е
+   * там“ (или папката е заключена) — затова се брои отделно от истинските грешки.
    */
   async function uploadToStorage(folderRel, fileList, opts) {
     const p = portal();
@@ -2404,37 +2406,57 @@
       toast(T('portal.upload.demo'), 'err');
       return 0;
     }
+    const UP = window.HAPIUploadProgress;
+    // Без модула качването НЕ бива да минава по стария път: тогава тестът и браузърът
+    // виждат различни неща, а „цялостта“ се проверява само на едното място.
+    if (!UP) {
+      toast('Липсва upload-progress.js: качването минава само през прозореца за напредък', 'err');
+      return 0;
+    }
     const overwrite = Boolean(opts && opts.overwrite);
     const dirRel = String(folderRel || '').replace(/^\/+|\/+$/g, '');
-    let done = 0;
-    const skipped = [];
-    const failed = [];
+    const items = [];
     for (const file of files) {
       const structure = String(file.webkitRelativePath || '').replace(/\\/g, '/').replace(/^\/+/, '');
       const rel = structure || String(file.name || '').replace(/\\/g, '/').replace(/^\/+/, '');
       if (!rel) continue;
-      const target = dirRel ? `${dirRel}/${rel}` : rel;
-      // `mkdir=1` се праща САМО при избор на цяла папка: тогава се пази структурата ѝ.
-      // Качване на файлове в избрана папка НЕ създава папки — липсваща е 404.
-      const r = await api(`${P()}/tree/upload?path=${encodeURIComponent('/' + target)}${structure ? '&mkdir=1' : ''}${overwrite ? '&overwrite=1' : ''}`, {
-        method: 'POST',
-        headers: { 'Content-Type': file.type || 'application/octet-stream' },
-        body: file,
+      items.push({
+        rel: dirRel ? `${dirRel}/${rel}` : rel,
+        size: Number(file.size) || 0,
+        lastModified: Number(file.lastModified) || 0,
+        arrayBuffer: () => file.arrayBuffer(),
       });
-      if (r.ok) done += 1;
-      // `status === 0` = заявката не стигна до сървъра: браузърът не прочете файла.
-      else if (r.status === 0) failed.push(`${rel}: ${T('portal.upload.unreadable')}`);
-      else if (r.status === 409) skipped.push(`${rel}: ${r.error || 'HTTP 409'}`);
-      else failed.push(`${rel}: ${r.error || `HTTP ${r.status}`}`);
     }
+    if (!items.length) return 0;
+    const where = treePath(dirRel);
+    const finished = [];
+    const progress = UP.create({
+      api,
+      translate: T,
+      portalId: () => p.id,
+      base: () => P(),
+      onFinish: (results, all) => {
+        for (const entry of all) finished.push(entry);
+      },
+    });
+    await progress.open(items, {
+      base: () => P(),
+      overwrite,
+      // `mkdir` се праща САМО когато се качва цяла папка: тогава се пази структурата ѝ.
+      // Качване на файлове в избрана папка НЕ създава папки — липсваща е 404.
+      mkdir: files.some((f) => f.webkitRelativePath),
+    });
+    const done = finished.filter((it) => it.status === 'done').length;
+    const failed = finished.filter((it) => it.status === 'failed').map((it) => `${it.rel}: ${it.error}`);
+    const skipped = failed.filter((line) => /409|съществува/i.test(line));
     await loadTree(true);
     render();
-    if (failed.length) {
-      toast(T('portal.upload.mixed', { done, skipped: skipped.length, failed: failed.length, reason: failed[0] }), 'err');
+    if (failed.length && skipped.length < failed.length) {
+      toast(T('portal.upload.mixed', { done, skipped: skipped.length, failed: failed.length - skipped.length, reason: failed[0] }), 'err');
     } else if (skipped.length) {
       toast(done ? T('portal.upload.exists', { done, skipped: skipped.length }) : T('portal.upload.allExists', { skipped: skipped.length }), done ? 'ok' : 'err');
-    } else {
-      toast(T('portal.upload.done', { done, where: treePath(dirRel) }), 'ok');
+    } else if (done) {
+      toast(T('portal.upload.done', { done, where }), 'ok');
     }
     return done;
   }

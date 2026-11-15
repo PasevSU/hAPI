@@ -1,6 +1,6 @@
 # Кодове за грешка — каталог
 
-> **Генериран документ.** Версия на кода: **0.69.213**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.214**. Пише се от
 > `node scripts/error-codes.cjs`, проверява се от `tests/error-codes.cjs`.
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
@@ -33,7 +33,7 @@
 | `KEY_TOO_LARGE` | Ключът е твърде голям | `hapi_enterprise/pgp.js` |
 | `KEYRING_UNAVAILABLE` | — | `hapi_enterprise/routes/pgp-keyring.js` |
 | `LOCK_REASON_REQUIRED` | заключването иска основание | `hapi_enterprise/routes/folders.js` · `hapi_enterprise/server.js` |
-| `MAX_BRANCH_DEPTH_3` | максималната дълбочина е 3 подпапки под корена | `hapi_enterprise/routes/folders.js` · `hapi_enterprise/server.js` |
+| `MAX_BRANCH_DEPTH_3` | максималната дълбочина е 3 подпапки под корена | `hapi_enterprise/routes/folders.js` · `hapi_enterprise/routes/upload-sessions.js` · `hapi_enterprise/server.js` |
 | `MDC_MISMATCH` | Контролната сума не съвпада — съобщението е подменено | `hapi_enterprise/pgp.js` |
 | `MDC_MISSING` | Липсва контрола за цялост (MDC) — съобщението е подменено или от стар формат | `hapi_enterprise/pgp.js` |
 | `NO_ENCRYPTION_KEY` | Няма ключ за криптиране (X25519, X448 или RSA) | `hapi_enterprise/pgp.js` |

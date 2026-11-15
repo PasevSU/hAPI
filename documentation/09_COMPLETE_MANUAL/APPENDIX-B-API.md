@@ -4,12 +4,12 @@
 > **не се редактира на ръка**. Всеки маршрут носи своята способност (виж
 > `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` за пълния договор).
 
-Общо: **214** маршрута в **2** групи.
+Общо: **220** маршрута в **2** групи.
 
 | Група | Маршрути |
 | --- | --- |
 | `/PATCH` | 1 |
-| `/admin/api` | 213 |
+| `/admin/api` | 219 |
 
 ## /PATCH
 
@@ -197,6 +197,12 @@
 | POST | `/admin/api/portals/{portalId}/tree/upload` | Качване на файл в дървото на папката |
 | POST | `/admin/api/portals/{portalId}/tree/comment` | Коментар към възел от дървото |
 | POST | `/admin/api/portals/{portalId}/tree/register` | Регистриране на външен файл в дървото |
+| GET | `/admin/api/portals/{portalId}/uploads` | Активни сесии за качване и история на промените |
+| POST | `/admin/api/portals/{portalId}/uploads` | Отваряне на сесия за качване (размер + SHA-256 + mtime) |
+| GET | `/admin/api/portals/{portalId}/uploads/{sessionId}` | Състояние на сесия (кое е пристигнало — за възстановяване) |
+| DELETE | `/admin/api/portals/{portalId}/uploads/{sessionId}` | Отказ на сесия (нищо не се записва) |
+| PUT | `/admin/api/portals/{portalId}/uploads/{sessionId}/{chunkIndex}` | Парче от файла (собствен SHA-256 в X-Chunk-Sha256) |
+| POST | `/admin/api/portals/{portalId}/uploads/{sessionId}/complete` | Сглобяване, сверка по SHA-256, запис и ред в историята |
 | GET | `/admin/api/portals/{portalId}/tree/api.json` | API карта на папката като JSON |
 | GET | `/admin/api/portals/{portalId}/files` | Файловете на портала (страницирани) |
 | POST | `/admin/api/portals/{portalId}/files` | Качване на файл в портала |

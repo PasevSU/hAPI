@@ -1,11 +1,11 @@
 # Одитни събития — каталог
 
-> **Генериран документ.** Версия на кода: **0.69.213**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.214**. Пише се от
 > `node scripts/audit-events.cjs`, проверява се от `tests/audit-events.cjs`.
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **191** събития, излъчвани от **20** файла.
+Общо: **197** събития, излъчвани от **21** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -153,6 +153,12 @@
 | `portal.unlock.denied` | `hapi_enterprise/routes/portal-unlock.js` |
 | `portal.unlock.ok` | `hapi_enterprise/routes/portal-unlock.js` |
 | `portal.update` | `hapi_enterprise/server.js` |
+| `portal.upload.chunk.rejected` | `hapi_enterprise/routes/upload-sessions.js` |
+| `portal.upload.complete` | `hapi_enterprise/routes/upload-sessions.js` |
+| `portal.upload.session.cancel` | `hapi_enterprise/routes/upload-sessions.js` |
+| `portal.upload.session.open` | `hapi_enterprise/routes/upload-sessions.js` |
+| `portal.upload.verify.disk` | `hapi_enterprise/routes/upload-sessions.js` |
+| `portal.upload.verify.failed` | `hapi_enterprise/routes/upload-sessions.js` |
 | `qr_artifact_created` | `hapi_enterprise/server.js` |
 | `qr_artifact_revoked` | `hapi_enterprise/server.js` |
 | `qr.archive.download` | `hapi_enterprise/routes/portal-storage.js` |

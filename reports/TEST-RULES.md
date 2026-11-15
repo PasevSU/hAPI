@@ -3,13 +3,13 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 415 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 419 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 185 |
+| общо | 186 |
 | портал | 47 |
-| GUI | 31 |
+| GUI | 34 |
 | Home Assistant | 18 |
 | отчети | 16 |
 | PGP | 14 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (185)
+## общо (186)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -224,6 +224,7 @@
 | `unfinished-register` | Unfinished register | `tests/unfinished-register.cjs` |
 | `update-repo` | Update repo | `tests/update-repo.cjs` |
 | `upload-rollback-guard` | Upload rollback guard | `tests/upload-rollback-guard.cjs` |
+| `upload-sessions` | Upload sessions | `tests/upload-sessions.cjs` |
 | `versioning` | Versioning | `tests/versioning.cjs` |
 | `virtual-storage` | Virtual storage | `tests/virtual-storage.cjs` |
 | `visitors-panel` | Visitors panel | `tests/visitors-panel.cjs` |
@@ -283,7 +284,7 @@
 | `portal-upload-409` | Portal upload 409 | `tests/portal-upload-409.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (31)
+## GUI (34)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -302,6 +303,9 @@
 | `gui-portal-token` | Gui portal token | `tests/gui-portal-token.cjs` |
 | `gui-sections` | Gui sections | `tests/gui-sections.cjs` |
 | `gui-starter-pyw` | Gui starter pyw | `tests/gui-starter-pyw.cjs` |
+| `gui-upload-folder` | Gui upload folder | `tests/gui-upload-folder.cjs` |
+| `gui-upload-progress` | Gui upload progress | `tests/gui-upload-progress.cjs` |
+| `gui-upload-resume` | Gui upload resume | `tests/gui-upload-resume.cjs` |
 | `ui-block-aria` | Ui block aria | `tests/ui-block-aria.cjs` |
 | `ui-coverage` | Ui coverage | `tests/ui-coverage.cjs` |
 | `ui-css-split` | Ui css split | `tests/ui-css-split.cjs` |

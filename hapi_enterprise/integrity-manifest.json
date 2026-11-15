@@ -1,18 +1,18 @@
 {
-  "version": "0.69.213",
-  "generatedAt": "2026-11-15T11:56:32.795Z",
+  "version": "0.69.214",
+  "generatedAt": "2026-11-15T13:14:17.800Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
-    "server.js": "4ebe95f6e28a829e01f1e61c17b58b7a0758fe4f8056bcf789d8ba9aa0916b3d",
+    "server.js": "f65c85ea835965a0a06b8444251357d99ee6baf3e8470faa6accae52f115eca1",
     "paths.js": "d0290da6b85956b34681e15f88db8fae918bc4330571a4e6ac8e5f4a3ce83ea0",
     "storage-preflight.js": "6eafb207ff1b346c54baa1c490bc92696d3f2322ff5fb679e62c3a06190a2c7a",
     "integrity.js": "648ac9ba00f6f78f481a929b50d6ec6364ae585dd574c73c7e463669ff8299de",
-    "ui/index.html": "4ff9d5ff7f5aba824073d75a454bb38693540bd21ea7d3881881303ea10b1e3c",
+    "ui/index.html": "a5acf44a8465d93387e0706d8aa73905a8c52e076de655d980aa85e0d2048df4",
     "ui/app.js": "f17a9569b53c80dc0edf971052ce2adbaa9748b913995c412fd60d6c3d2e8354",
     "ui/settings-panel.js": "5c717a4c7c8f1dd467e962ad7866f60cb4d20f74eba928f56474d840b2d0ae19",
     "ui/field-labels.js": "efd27ab8208417f711fc1a9c36180639f5096b5baa75edcb061793971dadb43d",
     "ui/debug-objects.js": "5b5089867c0fd97d46a932f3a51cd7e6f0d0e40b3ef823cef5ec31ff87a75735",
     "ui/debug-ledger.js": "8aba4c478b3543c4a34cbc769c9a69c02f4a1936813f8eac22f7375f258967e5",
-    "ui/i18n.js": "2e9ac0183be62339f18944336c8bd9c51ad1df242a2153edf9cdc79b38b43b40"
+    "ui/i18n.js": "86b0328762091ac8acf23c5b5b944351c4fbc484ef33775e04961535dceead86"
   }
 }

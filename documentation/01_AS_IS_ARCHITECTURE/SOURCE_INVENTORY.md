@@ -1,11 +1,11 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.213**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.214**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **118** backend модула · **18** HTTP компонента · **28** UI модула · **9** Python модула · **42** инструмента · **415** теста.
+Общо: **118** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **42** инструмента · **419** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -133,7 +133,7 @@
 | `hapi_enterprise/worm.js` | WORM ЗА ОСНОВНОТО ХРАНИЛИЩЕ — файл, който е влязъл в доказателство, не се презаписва |
 | `hapi_enterprise/x509.js` | Минимален X.509 (self-signed) — за подписване на отчети и за устройствени сертификати. |
 
-### HTTP компоненти (`hapi_enterprise/routes/*.js`) (18)
+### HTTP компоненти (`hapi_enterprise/routes/*.js`) (19)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -154,9 +154,10 @@
 | `hapi_enterprise/routes/portal-tokens.js` | Публични токени за един портал (Stage D) — HTTP слоят. |
 | `hapi_enterprise/routes/portal-unlock.js` | ОТКЛЮЧВАНЕ НА ЗАКЛЮЧЕН ПОРТАЛ С ПАРОЛА (0.69.210) — HTTP слоят. |
 | `hapi_enterprise/routes/reports.js` | Report Studio + RFC 3161 — компонент на HTTP слоя. |
+| `hapi_enterprise/routes/upload-sessions.js` | Качване на файл в папката на портала — НА СЕСИИ, с проверка по хеш и без пипане на датите (0.69.214). |
 | `hapi_enterprise/routes/webhooks.js` | Webhooks с HMAC — административен компонент на HTTP слоя (F4-7). |
 
-### Интерфейс (`hapi_enterprise/ui/*.js`) (28)
+### Интерфейс (`hapi_enterprise/ui/*.js`) (29)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -187,6 +188,7 @@
 | `hapi_enterprise/ui/report-studio.js` | Report Studio (Фаза 11 / RS-02): библиотека → документ → свойства → A4 preview. |
 | `hapi_enterprise/ui/secret-share.js` | Генериране на тайни връзки в БРАУЗЪРА — моделът на scrt.link v2 (MIT), собствен код. |
 | `hapi_enterprise/ui/settings-panel.js` | Настройки на връзката: админ токен, API адрес и публичен адрес за API/QR. |
+| `hapi_enterprise/ui/upload-progress.js` | Прозорец за качване с РЕАЛЕН напредък, сверка по хеш и възстановяване (0.69.214). |
 | `hapi_enterprise/ui/visitors-panel.js` | Панел „Кой влиза“ — чете сензорите за комуникацията (visitor-intel.js) през |
 
 ### Home Assistant интеграция (`custom_components/**/*.py`) (9)

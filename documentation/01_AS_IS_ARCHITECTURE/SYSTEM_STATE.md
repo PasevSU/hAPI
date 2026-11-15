@@ -22,7 +22,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Обявени операции | **213** в `API_ENDPOINT_REFERENCE.md` |
 | `server.js` | **2720** реда (пор **2722**) |
 | Изнесени функции | **369** в 52 модула, **369** покрити с тест |
-| Тестове в дървото | **415** файла (`414` в матрикса + `release-status.cjs`); `tests/helpers.cjs` не е тест |
+| Тестове в дървото | **419** файла (`418` в матрикса + `release-status.cjs`); `tests/helpers.cjs` не е тест |
 | Артефакт | `dist/` — точно **6** файла, `verify-release` **22/22** |
 
 ## 2. Какво се промени в 0.69.208

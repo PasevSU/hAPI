@@ -155,7 +155,7 @@ _Генериран списък: **144** документа. Пише се от
 | `07_RELEASE/RELEASE_CRITERIA.md` | Release Criteria — hAPI Enterprise |
 | `07_RELEASE/RELEASE_DECISION.md` | Release Decision — hAPI Enterprise |
 | `07_RELEASE/UNFINISHED_TASKS_0.69.210.md` | Неизпълнени задачи — критичен анализ (0.69.210, измерено 2026-11-15) |
-| `07_RELEASE/UNFINISHED_TASKS_0.69.211.md` | Неизпълнени задачи — критичен анализ (0.69.211, допълнен при 0.69.212 и 0.69.213; измерено 2026-11-15) |
+| `07_RELEASE/UNFINISHED_TASKS_0.69.211.md` | Неизпълнени задачи — критичен анализ (0.69.211, допълнен при 0.69.212–0.69.214; измерено 2026-11-15) |
 | `07_RELEASE/UPDATE_PATH_AUDIT.md` | Защо обновяването не стига до Home Assistant — одит на пътя на изданието |
 | `08_USER_GUIDES/admin-token.md` | Администраторски токен — какъв да бъде и защо |
 | `08_USER_GUIDES/install-hacs.md` | Инсталиране на интеграцията |
