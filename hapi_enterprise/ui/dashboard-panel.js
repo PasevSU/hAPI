@@ -16,6 +16,9 @@
 (function () {
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Целият текст минава през речника (BG/EN/DE); липсващ ключ се вижда като ключа, не като български.
+  const T = (key, vars) =>
+    typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key, vars) : String(key);
   // Адресът идва само от api-base.js (той пази `hapi.apiBase` и Ingress префикса).
   const base = () => (typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '').replace(/\/$/, '');
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
@@ -39,14 +42,14 @@
         <h1>Dashboard</h1>
       </div>
       <section class="panel">
-        <div class="panel-head"><h2>Всички раздели</h2></div>
+        <div class="panel-head"><h2>${esc(T('dsh.all'))}</h2></div>
         <div class="panel-body">
           <div class="quick-grid" id="dash-quick"></div>
-          <p class="hint" id="dash-quick-note">Същите раздели като в менюто — таблото е и вход към тях.</p>
+          <p class="hint" id="dash-quick-note">${esc(T('dsh.all.note'))}</p>
         </div>
       </section>
       <section class="panel">
-        <div class="panel-head"><h2>Отчети</h2></div>
+        <div class="panel-head"><h2>${esc(T('dsh.reports'))}</h2></div>
         <div class="panel-body" id="dash-reports"></div>
       </section>`;
 
@@ -71,13 +74,13 @@
       // Броят е ИЗРЕЧЕНИЕ, не табелка: табелката „16 РАЗДЕЛА“ дублираше съдържанието и
       // изглеждаше като статус, който не носи информация.
       if (quickNote) {
-        quickNote.textContent = targets.length + ' раздела · същите като в менюто — таблото е и вход към тях.';
+        quickNote.textContent = T('dsh.all.count', { n: targets.length });
       }
     }
 
     const portals = await api('/admin/api/portals');
     if (portals.offline) {
-      reportBox.innerHTML = '<p class="hint">Няма връзка с add-on-а. Свържи го от „Настройки“ (адрес и токен), за да видиш отчетите.</p>';
+      reportBox.innerHTML = `<p class="hint">${esc(T('dsh.offline'))}</p>`;
       return;
     }
 
@@ -89,16 +92,17 @@
     // (опциите на файла; картата на портала). На таблото стоят само обхватите
     // „всичко“, защото тук се вижда цялата система.
     if (!list.length) {
-      reportBox.innerHTML = '<p class="hint">Няма портали — комбо отчетът би бил празен. Създай портал от „Портали“.</p>';
+      reportBox.innerHTML = `<p class="hint">${esc(T('dsh.noPortals'))}</p>`;
       return;
     }
+    const filesOf = (n) => `${n} ${n === 1 ? T('noun.file.one') : T('noun.file.many')}`;
+    const portalsOf = (n) => `${n} ${n === 1 ? T('dsh.portal.one') : T('dsh.portal.many')}`;
     reportBox.innerHTML = `
-      <p class="hint">Отчетът се сглобява от данните на порталите и се отваря в „Отчети“ — там се
-        проверява, подпечатва (RFC 3161) и сваля като PDF. Обхват: ${list.length}
-        ${list.length === 1 ? 'портал' : 'портала'} · ${files} файла.</p>
+      <p class="hint">${esc(T('dsh.report.hint'))}
+        ${esc(T('dsh.report.scope', { scope: portalsOf(list.length) + ' · ' + filesOf(files) }))}</p>
       <div class="row-actions">
-        <button type="button" class="btn btn-primary" data-report="combo">Комбо отчет (всички портали)</button>
-        <button type="button" class="btn" data-report="combo-recursive">Рекурсивен комбо отчет (с папките)</button>
+        <button type="button" class="btn btn-primary" data-report="combo">${esc(T('dsh.combo'))}</button>
+        <button type="button" class="btn" data-report="combo-recursive">${esc(T('dsh.comboRecursive'))}</button>
       </div>
       <p class="hint" id="dash-report-note"></p>`;
     const note = reportBox.querySelector('#dash-report-note');
@@ -108,10 +112,10 @@
     };
     const runReport = async (recursive, button) => {
       const S = window.HapiReportScope;
-      if (!S) return toast('Модулът за отчети (report-scope.js) не е зареден', 'err');
+      if (!S) return toast(T('dsh.err.noScope'), 'err');
       const restore = button.textContent;
       button.disabled = true;
-      button.textContent = 'Сглобявам отчета…';
+      button.textContent = T('dsh.building');
       try {
         // Рекурсивният обхват включва и папките от хранилището на всеки портал. Чете се
         // последователно (`for … of` с `await`): `map` с `async` връща обещания, които
@@ -126,9 +130,9 @@
         }
         const result = S.buildCombo({ portals: list, trees, recursive });
         S.open(result);
-        if (note) note.textContent = result.label + ' · ' + (result.summary.files || 0) + ' файла';
+        if (note) note.textContent = result.label + ' · ' + filesOf(result.summary.files || 0);
       } catch (e) {
-        toast('Отчетът не може да се сглоби: ' + (e && e.message ? e.message : e), 'err');
+        toast(T('dsh.err.build', { message: e && e.message ? e.message : e }), 'err');
       } finally {
         button.disabled = false;
         button.textContent = restore;
@@ -143,20 +147,19 @@
 
   function mountAbout(view) {
     view.innerHTML = `
-      <div class="page-title"><h1>Относно</h1></div>
+      <div class="page-title"><h1>${esc(T('dsh.about.title'))}</h1></div>
       <section class="panel">
         <div class="panel-head"><h2>hAPI Enterprise</h2></div>
         <div class="panel-body">
           <dl class="fm-meta">
-            <dt>Продукт</dt><dd>hAPI Enterprise — портали с проверима цялост на документите</dd>
-            <dt>Версия</dt><dd><code>${esc(String(window.HAPI_VERSION || '—'))}</code></dd>
-            <dt>Лиценз</dt><dd>Apache-2.0</dd>
-            <dt>Документация</dt><dd><code>docs/</code> · <code>documentation/</code></dd>
-            <dt>Единен план</dt><dd><code>docs/plan/15-unified-master-plan-v6.0.md</code></dd>
-            <dt>Архитектурни решения</dt><dd><code>documentation/03_ADR/</code></dd>
+            <dt>${esc(T('dsh.about.product'))}</dt><dd>${esc(T('dsh.about.productValue'))}</dd>
+            <dt>${esc(T('dsh.about.version'))}</dt><dd><code>${esc(String(window.HAPI_VERSION || '—'))}</code></dd>
+            <dt>${esc(T('dsh.about.license'))}</dt><dd>Apache-2.0</dd>
+            <dt>${esc(T('dsh.about.docs'))}</dt><dd><code>docs/</code> · <code>documentation/</code></dd>
+            <dt>${esc(T('dsh.about.plan'))}</dt><dd><code>docs/plan/15-unified-master-plan-v6.0.md</code></dd>
+            <dt>${esc(T('dsh.about.adr'))}</dt><dd><code>documentation/03_ADR/</code></dd>
           </dl>
-          <p class="hint">Всички стойности в панелите идват от административния API на add-on-а —
-            интерфейсът не показва измислени числа.</p>
+          <p class="hint">${esc(T('dsh.about.hint'))}</p>
         </div>
       </section>`;
   }

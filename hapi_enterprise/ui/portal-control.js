@@ -6,7 +6,7 @@
 (function () {
   /** HTML на блока „Контролен панел на портала: <заглавие>“ + API/QR. */
   function render(ctx) {
-    const { esc, state, p, FLAGS, ICON, ico, fmtDate, contactSelect, caseSelect, newContactFields, newCaseFields } = ctx;
+    const { esc, state, p, FLAGS, ICON, ico, fmtDate, contactSelect, caseSelect, newContactFields, newCaseFields, T } = ctx;
     // Блокът се сгъва/разгъва — по подразбиране е СГЪНАТ (`controlOpen === true` го разгъва),
     // както всички блокове на портала: отвореният портал показва заглавия, не стена от текст.
     const open = state.controlOpen === true;
@@ -17,147 +17,129 @@
     return `
       <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="control">
         <div class="pf-block-head">
-          <h5><button type="button" class="link-btn pf-block-tog" data-pf-control-tog aria-expanded="${open}" ${open ? 'aria-controls="pf-control-body"' : ''} title="${open ? 'Сгъни' : 'Разгъни'
-      } контролния панел">${ico(open ? 'chevronDown' : 'chevronRight')} Контролен панел на портала: ${esc(
-        p.title,
-      )}</button></h5>
+          <h5><button type="button" class="link-btn pf-block-tog" data-pf-control-tog aria-expanded="${open}" ${open ? 'aria-controls="pf-control-body"' : ''} title="${esc(
+        T('pc.toggle.title', { action: open ? T('pc.toggle.collapse') : T('pc.toggle.expand') }),
+      )}">${ico(open ? 'chevronDown' : 'chevronRight')} ${esc(T('pc.title', { title: p.title }))}</button></h5>
         </div>
         ${open
         ? `<div class="pf-block-body" id="pf-control-body">
           <div class="two-col">
             <form id="pf-settings">
-              <div class="field"><label>Заглавие</label><input name="title" value="${esc(p.title)}" maxlength="160" /></div>
+              <div class="field"><label>${esc(T('pc.field.title'))}</label><input name="title" value="${esc(p.title)}" maxlength="160" /></div>
               <div class="field"><label>slug</label><input name="slug" value="${esc(p.slug)}" maxlength="63" /></div>
-              <div class="field"><label>Относно</label><input name="subject" value="${esc(p.subject || '')}" maxlength="200" /></div>
-              <div class="field"><label>Категория</label><input name="category" value="${esc(p.category || '')}" maxlength="120" list="pf-cats-set" />
+              <div class="field"><label>${esc(T('pc.field.subject'))}</label><input name="subject" value="${esc(p.subject || '')}" maxlength="200" /></div>
+              <div class="field"><label>${esc(T('pc.field.category'))}</label><input name="category" value="${esc(p.category || '')}" maxlength="120" list="pf-cats-set" />
                 <datalist id="pf-cats-set">${[...new Set(state.portals.map((x) => x.category).filter(Boolean))]
           .sort()
           .map((c) => `<option value="${esc(c)}"></option>`)
           .join('')}</datalist></div>
-              <div class="field"><label>Флаг</label>
+              <div class="field"><label>${esc(T('pc.field.flag'))}</label>
                 <select name="flag">${FLAGS.map(
             (f) => `<option value="${f.id}" ${(p.flag || 'none') === f.id ? 'selected' : ''}>${f.icon} ${esc(f.label)}</option>`,
           ).join('')}</select>
               </div>
-              <div class="field"><label>${ico('person')} Контакт</label>
+              <div class="field"><label>${ico('person')} ${esc(T('pc.field.contact'))}</label>
                 ${contactSelect(p.contactId || '')}
                 ${newContactFields()}
-                <small class="hint">Избери съществуващ контакт или „＋ нов контакт“ и попълни полетата.</small>
+                <small class="hint">${esc(T('pc.contact.hint'))}</small>
               </div>
-              <div class="field"><label>${ico('case')} Дело (case)</label>
+              <div class="field"><label>${ico('case')} ${esc(T('pc.field.case'))}</label>
                 ${caseSelect(p.caseId || '')}
                 ${newCaseFields()}
-                <small class="hint">Избери съществуващо дело или „＋ ново дело“ с полета по желание.</small>
+                <small class="hint">${esc(T('pc.case.hint'))}</small>
               </div>
-              <div class="field"><label>${ICON.folder} Папка с файлове (storage_root)</label>
+              <div class="field"><label>${ICON.folder} ${esc(T('pc.field.storage'))}</label>
                 <input name="storage_root" value="${esc(p.storage_root || '/share')}" maxlength="240" list="pf-roots-set" />
                 <datalist id="pf-roots-set">${[...new Set(['/share', '/media', ...state.portals.map((x) => x.storage_root || '/share')])]
           .filter(Boolean)
           .sort()
           .map((r) => `<option value="${esc(r)}"></option>`)
           .join('')}</datalist>
-                <small class="hint">Само под /share или /media.</small>
+                <small class="hint">${esc(T('pc.storage.hint'))}</small>
               </div>
-              <div class="field"><label>Описание</label><textarea name="description" rows="2">${esc(p.description)}</textarea></div>
-              <div class="field"><label>Бележки</label><textarea name="notes" rows="2" maxlength="2000">${esc(p.notes || '')}</textarea></div>
-              <div class="field"><label>Дата на създаване</label><input readonly value="${esc(fmtDate(p.createdAt))}" /></div>
-              <div class="field"><label>Видимост</label>
+              <div class="field"><label>${esc(T('pc.field.description'))}</label><textarea name="description" rows="2">${esc(p.description)}</textarea></div>
+              <div class="field"><label>${esc(T('pc.field.notes'))}</label><textarea name="notes" rows="2" maxlength="2000">${esc(p.notes || '')}</textarea></div>
+              <div class="field"><label>${esc(T('pc.field.created'))}</label><input readonly value="${esc(fmtDate(p.createdAt))}" /></div>
+              <div class="field"><label>${esc(T('pc.field.visibility'))}</label>
                 <select name="visibility">
                   <option value="private" ${p.visibility !== 'public' ? 'selected' : ''}>private</option>
                   <option value="public" ${p.visibility === 'public' ? 'selected' : ''}>public</option>
                 </select>
               </div>
-              <button type="submit" class="btn">Запази настройките</button>
+              <button type="submit" class="btn">${esc(T('pc.save'))}</button>
             </form>
             <div>
-              <p class="hint">QR кодът към публичния портал е <strong>бутонът горе вдясно</strong> в заглавния ред
-                на портала — отваря се на едно натискане, без да се разгъва този панел.</p>
+              <p class="hint">${T('pc.qrButton.hint')}</p>
               <div class="pf-security">
-                <h6>${ico('lock')} Сигурност на портала</h6>
-                <p class="hint">Ключът за подпис важи за подписаните URL адреси; проверката за цялост сравнява
-                  SHA-256 на всеки файл с регистрирания в портала.</p>
+                <h6>${ico('lock')} ${esc(T('pc.security.title'))}</h6>
+                <p class="hint">${T('pc.security.hint')}</p>
                 <div class="u-row u-row-2">
-                  <button type="button" class="btn btn-sm" id="pf-rotate-key" title="Нов ключ за подпис: старите подписани URL-и спират да важат">Обнови ключа за подпис</button>
-                  <button type="button" class="btn btn-sm" id="pf-integrity" title="Провери SHA-256 на всички файлове в портала">Провери целостта</button>
+                  <button type="button" class="btn btn-sm" id="pf-rotate-key" title="${esc(T('pc.rotate.title'))}">${esc(T('pc.rotate'))}</button>
+                  <button type="button" class="btn btn-sm" id="pf-integrity" title="${esc(T('pc.integrity.title'))}">${esc(T('pc.integrity'))}</button>
                 </div>
                 <div class="u-row u-row-2 u-mt">
-                  <button type="button" class="btn btn-sm" id="pf-integrity-job" title="Фонова проверка с прогрес">Пусни фонова проверка</button>
+                  <button type="button" class="btn btn-sm" id="pf-integrity-job" title="${esc(T('pc.integrityJob.title'))}">${esc(T('pc.integrityJob'))}</button>
                 </div>
                 <output class="pf-security-out" id="pf-security-out" aria-live="polite"></output>
               </div>
               <div class="pf-security">
-                <h6>${ico('lock')} Публичен достъп (токен за този портал)</h6>
-                <p class="hint">Токенът важи <strong>само за този портал</strong> и се показва <strong>веднъж</strong> —
-                  в базата остава само отпечатък. Адресът <code>/t/&lt;токен&gt;</code> издава кратка бисквитка
-                  (10 мин) и отваря портала; работи и при включено <code>require_portal_token</code>, защото
-                  токенът Е ключът. Отнемането спира и вече отворените сесии. Може да се зададе и
-                  <strong>лимит на отварянията</strong> — тогава токенът спира след последното.</p>
+                <h6>${ico('lock')} ${esc(T('pc.token.title'))}</h6>
+                <p class="hint">${T('pc.token.hint')}</p>
                 <div class="u-row u-row-3">
-                  <select id="pf-token-ttl" title="Колко да важи токенът">
-                    <option value="24">24 часа</option>
-                    <option value="168">7 дни</option>
-                    <option value="0">без срок</option>
+                  <select id="pf-token-ttl" title="${esc(T('pc.token.ttl.title'))}">
+                    <option value="24">${esc(T('pc.token.ttl.24'))}</option>
+                    <option value="168">${esc(T('pc.token.ttl.7d'))}</option>
+                    <option value="0">${esc(T('pc.token.ttl.none'))}</option>
                   </select>
-                  <select id="pf-token-max" title="Колко пъти може да се отвори">
-                    <option value="0">без лимит на отварянията</option>
-                    <option value="1">еднократен (1 отваряне)</option>
-                    <option value="3">3 отваряния</option>
-                    <option value="10">10 отваряния</option>
+                  <select id="pf-token-max" title="${esc(T('pc.token.max.title'))}">
+                    <option value="0">${esc(T('pc.token.max.none'))}</option>
+                    <option value="1">${esc(T('pc.token.max.1'))}</option>
+                    <option value="3">${esc(T('pc.token.max.3'))}</option>
+                    <option value="10">${esc(T('pc.token.max.10'))}</option>
                   </select>
-                  <button type="button" class="btn btn-sm" id="pf-token-new">Издай токен за портал</button>
+                  <button type="button" class="btn btn-sm" id="pf-token-new">${esc(T('pc.token.new'))}</button>
                 </div>
                 <div class="u-row u-row-2 u-mt">
-                  <button type="button" class="btn btn-sm" id="pf-token-list">Покажи издадените</button>
+                  <button type="button" class="btn btn-sm" id="pf-token-list">${esc(T('pc.token.list'))}</button>
                 </div>
                 <output class="pf-security-out" id="pf-token-out" aria-live="polite"></output>
               </div>
               <div class="pf-security">
-                <h6>${ico('qr')} QR ревизии и архиви</h6>
-                <p class="hint">Един портал — един адрес, но поредица от QR кодове: <strong>архивирането</strong>
-                  прави физически ZIP на днешното съдържание и издава следващ QR, който помни предходния.
-                  Максималната дълбочина е <strong>3 подпапки</strong> (ширината е свободна).</p>
+                <h6>${ico('qr')} ${esc(T('pc.qr.title'))}</h6>
+                <p class="hint">${T('pc.qr.hint')}</p>
                 <div class="u-row u-row-2">
-                  <button type="button" class="btn btn-sm" id="pf-qr-show">Покажи QR историята</button>
-                  <button type="button" class="btn btn-sm" id="pf-qr-archive">Архивирай и издай нов QR</button>
+                  <button type="button" class="btn btn-sm" id="pf-qr-show">${esc(T('pc.qr.show'))}</button>
+                  <button type="button" class="btn btn-sm" id="pf-qr-archive">${esc(T('pc.qr.archive'))}</button>
                 </div>
                 <div class="u-row u-row-2 u-mt">
-                  <input id="pf-qr-reason" type="text" maxlength="500" placeholder="Основание за прекратяване (задължително)">
-                  <button type="button" class="btn btn-sm" id="pf-qr-block">Прекрати активния QR</button>
+                  <input id="pf-qr-reason" type="text" maxlength="500" placeholder="${esc(T('pc.qr.reason'))}">
+                  <button type="button" class="btn btn-sm" id="pf-qr-block">${esc(T('pc.qr.block'))}</button>
                 </div>
                 <div class="u-row u-row-2 u-mt">
-                  <button type="button" class="btn btn-sm" id="pf-qr-verify">Провери целостта на архивите</button>
-                  <span class="hint">Сверява байтовете, манифеста и файловете вътре.</span>
+                  <button type="button" class="btn btn-sm" id="pf-qr-verify">${esc(T('pc.qr.verify'))}</button>
+                  <span class="hint">${esc(T('pc.qr.verify.hint'))}</span>
                 </div>
                 <div class="u-row u-row-2 u-mt">
                   <input id="pf-qr-restore-id" type="text" maxlength="16" placeholder="QR-001">
-                  <button type="button" class="btn btn-sm" id="pf-qr-restore">Върни това състояние</button>
+                  <button type="button" class="btn btn-sm" id="pf-qr-restore">${esc(T('pc.qr.restore'))}</button>
                 </div>
                 <output class="pf-security-out" id="pf-qr-out" aria-live="polite"></output>
               </div>
               <div class="pf-security">
-                <h6>${ico('lock')} Закриване на портала</h6>
-                <p class="hint">Закритият портал излиза от списъка и адресът му казва „Порталът е закрит“,
-                  а данните му отиват в <strong>архив за съхранение</strong> — нищо не се трие.
-                  Порталите се пазят <strong>6 месеца</strong> и през цялото време се връщат с едно натискане
-                  от „Затворени портали“; след срока се изтрива окончателно.</p>
+                <h6>${ico('lock')} ${esc(T('pc.close.title'))}</h6>
+                <p class="hint">${T('pc.close.hint')}</p>
                 <div class="u-row u-row-1">
-                  <button type="button" class="btn btn-sm" data-close-portal-submit="${esc(p.id)}" title="Премести портала в архив за съхранение">✕ Закрий портала</button>
+                  <button type="button" class="btn btn-sm" data-close-portal-submit="${esc(p.id)}" title="${esc(T('pc.close.attr'))}">✕ ${esc(T('pc.close'))}</button>
                 </div>
               </div>
               <div class="pf-security pf-danger">
-                <h6>${ico('delete')} Премахване на портала (окончателно)</h6>
-                <p class="hint">Това е единственото действие тук, което <strong>трие</strong>, а не архивира:
-                  порталът изчезва от списъка, а папката му в хранилището, вътрешната папка с метаданни
-                  и API папката се изтриват на секундата. Премахнат портал <strong>не се връща</strong> —
-                  ако искаш да може да се върне, използвай „Закрий портала“.
-                  Когато порталът има <strong>архивирани QR ревизии</strong>, add-on-ът отказва с
-                  <code>409</code> (правилото <code>EVIDENCE_NEVER_DELETED</code>) и пита отделно дали
-                  да тръгне със <code>?force=1</code> — доказателствата се трият само с изрично решение.</p>
+                <h6>${ico('delete')} ${esc(T('pc.delete.title'))}</h6>
+                <p class="hint">${T('pc.delete.hint')}</p>
                 <div class="u-row u-row-2">
                   <input id="pf-delete-confirm" type="text" maxlength="63" autocomplete="off"
-                    placeholder="Напиши slug-а (${esc(p.slug)}), за да потвърдиш" />
+                    placeholder="${esc(T('pc.delete.confirm', { slug: p.slug }))}" />
                   <button type="button" class="btn btn-danger btn-sm" data-delete-portal="${esc(p.id)}"
-                    title="Изтрий портала и файловете му окончателно">${ico('delete')} Премахни портала</button>
+                    title="${esc(T('pc.delete.attr'))}">${ico('delete')} ${esc(T('pc.delete'))}</button>
                 </div>
               </div>
             </div>
