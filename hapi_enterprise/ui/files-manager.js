@@ -1523,6 +1523,14 @@
     });
   }
 
+  /**
+   * Какво може да се рисува в iframe: само типове, които НЕ изпълняват скрипт.
+   * SVG, HTML и XML са ДОКУМЕНТИ — blob адресът им наследява произхода на панела, тоест
+   * скрипт вътре в тях стига до `sessionStorage` с администраторския токен. Затова те не
+   * се рисуват, а се предлага изтегляне (P-01, 0.69.216).
+   */
+  const SAFE_FRAME = /^(application\/pdf|image\/(png|jpeg|gif|webp))$/;
+
   async function preview(f) {
     state.lastAction = `Преглед на ${f.name}`;
     if (!connected()) {
@@ -1543,6 +1551,10 @@
     if (/^(text\/|application\/(json|xml))/.test(type) && blob.size < 200000) {
       const text = await blob.text();
       return showModal(`VIEW · ${f.name}`, { html: `<pre>${esc(text)}</pre>`, downloadName: f.name });
+    }
+    // Само безопасните типове стигат до iframe; всичко останало (вкл. SVG) — съобщение.
+    if (!SAFE_FRAME.test(type.split(';')[0].trim().toLowerCase())) {
+      return showModal(`VIEW · ${f.name}`, { html: `<p class="hint">${esc(T('fm.preview.unsafe'))}</p>`, downloadName: f.name });
     }
     showModal(`VIEW · ${f.name}`, { url: modalBlob, downloadName: f.name });
   }

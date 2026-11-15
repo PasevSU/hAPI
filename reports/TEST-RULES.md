@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 419 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 421 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 186 |
+| общо | 188 |
 | портал | 47 |
 | GUI | 34 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (186)
+## общо (188)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -167,6 +167,7 @@
 | `policy-gui` | Policy gui | `tests/policy-gui.cjs` |
 | `powershell-scripts` | Powershell scripts | `tests/powershell-scripts.cjs` |
 | `preview` | Preview | `tests/preview.cjs` |
+| `preview-unsafe-types` | Preview unsafe types | `tests/preview-unsafe-types.cjs` |
 | `problem` | Problem | `tests/problem.cjs` |
 | `process-guards` | Process guards | `tests/process-guards.cjs` |
 | `publish-script` | Publish script | `tests/publish-script.cjs` |
@@ -182,6 +183,7 @@
 | `readiness-integrity` | Readiness integrity | `tests/readiness-integrity.cjs` |
 | `real-journey` | Real journey | `tests/real-journey.cjs` |
 | `regression-guards` | Regression guards | `tests/regression-guards.cjs` |
+| `render-sinks-global` | Render sinks global | `tests/render-sinks-global.cjs` |
 | `respond` | Respond | `tests/respond.cjs` |
 | `resume-transfer` | Resume transfer | `tests/resume-transfer.cjs` |
 | `retention` | Retention | `tests/retention.cjs` |

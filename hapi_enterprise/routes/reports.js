@@ -197,7 +197,9 @@ function create(deps) {
           'X-Evidence-Missing': encodeURIComponent(pkg.evidence.missing.join('|')),
           'X-Manifest-SHA256': pkg.evidence.manifestSha256,
           'X-PDF-SHA256': pkg.evidence.pdfSha256,
-          'Content-Disposition': 'attachment; filename="' + pkg.name + '"',
+          // RFC 5987: името пътува процентно-кодирано. Сурово име в заглавка е Latin-1 —
+          // кирилица (или кавичка) вътре чупи връзката или отваря инжекция на заглавка.
+          'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(pkg.name),
         });
         return res.end(pkg.zip);
       } catch (e) { return fail(res, e.status || 500, (e.code ? e.code + ': ' : '') + (e.message || 'Report package failed')) }

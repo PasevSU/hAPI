@@ -16,16 +16,16 @@
 
 | Източник | Какво дава | Днес |
 | --- | --- | --- |
-| `documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md` + `tests/known-defects.cjs` | регистърът на дефектите | **59 дефекта, 3 отворени** (DEF-01, DEF-06, DEF-49) |
-| `tests/regression-guards.cjs` | защити за затворените | 56 затворени · 56 защити · 79 теста · **55 котви** (DEF-27 е без котва) |
+| `documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md` + `tests/known-defects.cjs` | регистърът на дефектите | **60 дефекта, 3 отворени** (DEF-01, DEF-06, DEF-49) |
+| `tests/regression-guards.cjs` | защити за затворените | 56 затворени · 57 защити · 83 теста · **56 котви** (DEF-27 е без котва) |
 | `documentation/07_RELEASE/LOGIC_AUDIT_0.69.209.md` §2 | пропуснати функции | **3 отворени · 2 затворени след него** (QR за папка/файл в 0.69.210, речник в интеграцията в 0.69.210) |
 | `documentation/07_RELEASE/CRITICAL_REVIEW_0.69.210.md` | излишно/мъртво | 3 мъртви опции (първото измерване каза 6 — четири от тях се четат като `options.<име>`) · 1 копирана функция |
 | `documentation/01_AS_IS_ARCHITECTURE/HA_COMPATIBILITY_2026-11.md` | HA и маркетплейс | 1 предупреждение, поправено; 3 непълноти |
 | `tests/no-stubs.cjs` | „по-късно“ в кода | **0 маркера TODO/FIXME/XXX/HACK** в runtime кода (8 срещания има — в самите проверки, които ги забраняват) |
 | `gh pr list -R hacs/default --author PasevSU` | PR към HACS | **празно** — PR не е отварян |
-| `reports/test-matrix.json` + `tests/release-status.cjs` | тестове | **418** в матрикса, **419** в дървото (с `release-status.cjs`) |
+| `reports/test-matrix.json` + `tests/release-status.cjs` | тестове | **420** в матрикса, **421** в дървото (с `release-status.cjs`) |
 
-## 2. Отворени дефекти (3 от 57) — какво реално липсва
+## 2. Отворени дефекти (3 от 60) — какво реално липсва
 
 | Дефект | Какво липсва | Измерено днес | Защо не е направено |
 | --- | --- | --- | --- |
