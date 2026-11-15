@@ -1794,6 +1794,54 @@ input[type="radio"] {
   color: #22303f;
 }
 
+/* QR карта: код за всяко ниво (портал, подпапки, файлове) — малки изображения в решетка,
+   защото човекът ги сравнява наведнъж, а не отваря по един. */
+.pf-qr-map {
+  margin: var(--sp-3) 0 0;
+}
+
+.pf-qr-map h6 {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-12-5);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.pf-qr-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--per-row-chips), minmax(0, 1fr));
+  gap: var(--grid-gap);
+}
+
+.pf-qr-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+  padding: var(--sp-2);
+  border: var(--sp-1) solid rgba(148, 163, 184, 0.35);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.pf-qr-mini {
+  display: block;
+  width: 100%;
+  max-width: 120px;
+  height: auto;
+}
+
+.pf-qr-cell span {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: var(--fs-12-5);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #22303f;
+}
+
 .pf-portal-head>* {
   min-width: 0;
   max-width: 100%;

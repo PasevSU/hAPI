@@ -112,19 +112,22 @@ const root = path.join(__dirname, '..');
       'заключената папка си стои',
     );
 
-    // ── 5. Панелът: един QR (на портала), един файл на прикачване, изтриване ──
+    // ── 5. Панелът: QR за ВСЯКО ниво, един файл на прикачване, изтриване ──
     const ui = (name) => fs.readFileSync(path.join(root, 'hapi_enterprise', 'ui', name), 'utf8');
     const filesUi = ui('files-manager.js');
     const foldersUi = ui('portal-folders.js');
     const filesBlock = ui('portal-files.js');
 
     assert.equal(filesUi.includes('/api/public/v1/files/'), false, 'панелът не строи адрес, който иска ключ');
-    // Файлът няма собствен QR код: в панела има ЕДИН код — този на портала (portal-control.js).
-    assert.equal(/files\/\$\{encodeURIComponent\(f\.id\)\}\/qr\.svg/.test(filesUi), false, 'няма отделен QR адрес за файл');
-    assert.equal(/function qrMarkup\(f, link\)/.test(filesUi), false, 'файлът няма собствен QR код');
-    assert.equal(/data-folder-qr/.test(foldersUi), false, 'папката няма собствен QR код');
-    assert.match(filesUi, /const QR_ONE_HINT = 'QR кодът е един/, 'панелът „Сподели“ казва къде е кодът');
-    // Самата рисунка е в картата на портала и строи адреса на СТРАНИЦАТА, не на SVG-то.
+    // Правилото се смени с решение на собственика (0.69.210): всеки портал има множество
+    // QR кодове — порталът, всяка подпапка и всеки файл — и те се строят от СЪРВЪРА, от
+    // публичната страница. Старото правило („един код на портал“, DEF-31) е отменено.
+    assert.match(filesUi, /qrLevel: \(rel\) =>/, 'панелът има един вход за QR на ниво');
+    assert.match(filesUi, /\/tree\/qr\.svg\?path=/, 'кодът на ниво идва от сървъра (`tree/qr.svg?path=`)');
+    assert.equal(/qrLevel:[\s\S]{0,160}admin\/api/.test(filesUi), false, 'кодът на ниво НЕ сочи към административния API');
+    assert.match(foldersUi, /data-qr-level="\$\{esc\(row\.rel\)\}"/, 'панелът рисува ред за всяко ниво');
+    assert.match(foldersUi, /ctx\.qrLevel\(row\.rel\)/, 'изображението идва от сървърния адрес, не се строи на ръка');
+    // Самата рисунка на порталния код е в картата на портала и строи адреса на СТРАНИЦАТА, не на SVG-то.
     assert.match(ui('files-manager.js'), /qrSvg\(qrUrl\)/, 'кодът на портала се строи от адреса на страницата');
     assert.match(filesUi, /data-folder-delete/, 'изтриването на папка е вързано към бутон');
     assert.match(filesUi, /async function deleteFolder\(rel\)/);
@@ -144,7 +147,7 @@ const root = path.join(__dirname, '..');
     );
 
     console.log(
-      'PASS folder-delete: непразна → 409 (2 файла, 1 папка) · recursive → 200 (2 файла, 1 подпапка, 1 регистриран) · празна → 200 · корен → 400 · липсваща → 404 · „..“ → 400 · заключена → 409 · панелът има ЕДИН QR — на портала',
+      'PASS folder-delete: непразна → 409 (2 файла, 1 папка) · recursive → 200 · празна → 200 · корен → 400 · липсваща → 404 · „..“ → 400 · заключена → 409 · панелът има QR за всяко ниво (от сървъра)',
     );
 
     // Чистене: собствената папка на тестовия портал (празна е — съдържанието е изтрито

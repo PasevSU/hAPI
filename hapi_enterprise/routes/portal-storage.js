@@ -18,7 +18,7 @@
 // Договор като на останалите компоненти: `handle()` връща `true`, когато заявката е за
 // този компонент (и е приключена).
 function create(deps) {
-  const { fail, audit, policy, resolvePortal, portalRoot, portalAbs, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr, archiveRoot, db } = deps;
+  const { fail, audit, policy, resolvePortal, portalRoot, portalAbs, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr, portalAccess, requirePortalToken, archiveRoot, db } = deps;
   const fsp = require('node:fs/promises');
   const fs = require('node:fs');
   const path = require('node:path');
@@ -92,6 +92,7 @@ function create(deps) {
     // JSON-ът е на `qr.json` (каноничното разширение), а `/qr` остава 301 → `qr.svg`
     // (решение от преди); архивът е `qr/<qrId>/archive`.
     if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'p' && method === 'GET' && (parts[4] === 'qr.json' || (parts[4] === 'qr' && parts[6] === 'archive'))) return serveQr({ req, res, parts });
+    if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'p' && parts[3] && parts[4] === 'tree' && parts[5] === 'qr.svg' && method === 'GET') { const portal = resolvePortal(parts[3]); if (!portal) { fail(res, 404, 'Not found'); return true } return serveNodeQr({ req, res, url, portal }) }
     // Ръкостиск: `GET /api/v1/p/<slug>/ping` доказва, че връзката до ТОЗИ портал е изградена:
     // право за четене, активен QR, договорите и версията на договора — без съдържание.
     if (parts[0] === 'api' && parts[1] === 'v1' && parts[2] === 'p' && parts[4] === 'ping' && parts.length === 5 && method === 'GET') return servePing({ req, res, parts });
@@ -304,6 +305,46 @@ function create(deps) {
     res.writeHead(410, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
     res.end(html);
     void audit('qr.blocked.view', { portalId: portal.id, qrId: revision.id });
+    return true;
+  }
+
+  /**
+   * QR за ВСЕКИ възел на портала — портал, папка или файл (0.69.210).
+   *
+   * Защо тук: дотук QR имаше само порталът, а панелът дори нямаше право да покаже код за
+   * папка или файл (затворен дефект DEF-31 „един код на портал“). Собственикът поиска
+   * обратното: всеки портал да има множество кодове — към цялата папка, към подпапка и към
+   * файл — и те да се създават САМИ, без отделно действие. Затова един маршрут обслужва
+   * всеки възел и връща готов SVG:
+   *
+   *   GET /api/v1/p/<slug>/tree/qr.svg?path=/<относителен път>
+   *
+   * Адресът в кода е ПУБЛИЧНАТА СТРАНИЦА, не API-то: сканиралият отваря четимо.
+   *   • папка (или коренът) → `/p/<slug>?folder=<rel>`
+   *   • файл                → `/file.html:<slug>/<rel>` (договорът `file`, страница за ЕДИН файл)
+   * Затворен портал добавя подписания достъп, както порталният QR.
+   */
+  async function serveNodeQr({ req, res, url, portal }) {
+    const root = portalRoot(portal.storage_root || '/share');
+    // Коренът `/share` и `/media` не се публикуват като дърво — същото правило като при списъка.
+    if (root === '/share' || root === '/media') { fail(res, 403, 'Folder API requires a dedicated folder (storage_root must be a subfolder)'); return true }
+    const rel = storageTree.normRel(url.searchParams.get('path') || '');
+    if (rel === null) { fail(res, 400, 'Invalid path'); return true }
+    if (!policy.decide({ req, res: undefined, url, portal, action: 'read' }).allowed) { fail(res, 404, 'Not found'); return true }
+    // Скрита или заключена папка не дава код — иначе кодът води до страница, която отказва.
+    if (rel && hiddenOrLockedAncestor(folderMetaOf(portal), rel)) { fail(res, 404, 'Not found'); return true }
+    // `portalAbs` приема ЛОГИЧЕСКИЯ корен (`/share/<папка>`), не (корен, rel) — пътят се
+    // долепя тук, след като `normRel` вече е отказал `..`.
+    const abs = rel ? path.join(portalAbs(portal.storage_root || '/share'), ...rel.split('/')) : portalAbs(portal.storage_root || '/share');
+    const stat = await fsp.stat(abs).catch(() => null);
+    if (!stat) { fail(res, 404, 'Path not found'); return true }
+    const base = baseUrl(req);
+    const access = portal.visibility === 'public' && !requirePortalToken ? '' : portalAccess.issue(portal.signingSecret, portal.id).query;
+    const target = stat.isFile()
+      ? `${base}/file.html:${portal.slug}/${rel.split('/').map(encodeURIComponent).join('/')}`
+      : links.joinQuery(base + links.portalLandingPath(portal), links.portalFolderQuery(rel), access);
+    res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
+    res.end(require('../qr-svg').svg(target));
     return true;
   }
 

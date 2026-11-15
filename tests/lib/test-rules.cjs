@@ -265,6 +265,7 @@ const RULES = [
   { id: "portal-policy-secret-links", area: "портал", title: "Portal policy secret links", owner: "tests/portal-policy-secret-links.cjs" },
   { id: "portal-qr-archive", area: "портал", title: "Portal qr archive", owner: "tests/portal-qr-archive.cjs" },
   { id: "portal-qr-badge", area: "портал", title: "Portal qr badge", owner: "tests/portal-qr-badge.cjs" },
+  { id: "portal-qr-levels", area: "портал", title: "Portal qr levels", owner: "tests/portal-qr-levels.cjs" },
   { id: "portal-qr-restore", area: "портал", title: "Portal qr restore", owner: "tests/portal-qr-restore.cjs" },
   { id: "portal-root-page", area: "портал", title: "Portal root page", owner: "tests/portal-root-page.cjs" },
   { id: "portal-rules-applied", area: "портал", title: "Portal rules applied", owner: "tests/portal-rules-applied.cjs" },

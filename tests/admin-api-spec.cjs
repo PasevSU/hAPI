@@ -169,9 +169,12 @@ const tailLiterals = new Set([...src.matchAll(/parts\[[4-9]\]\s*===\s*'([^']+)'/
 // `reveal` е на ПУБЛИЧНАТА страница на тайна връзка (`/api/v2/secrets/<id>/reveal`), не в
 // admin API-то — изключваме го изрично, вместо да разхлабваме проверката. `qr.json` е
 // публичният QR договор (`/api/v1/p/<slug>/qr.json`); `/qr` без разширение остава 301.
+// `qr.svg` е кодът за ВСЕКИ възел на портала (`/api/v1/p/<slug>/tree/qr.svg?path=…`) —
+// порталът, всяка папка и всеки файл, вж. `routes/portal-storage.js#serveNodeQr`.
 const NON_ADMIN_TAIL = {
   reveal: 'публичният маршрут /api/v2/secrets/{id}/reveal',
   'qr.json': 'публичният /api/v1/p/{slug}/qr.json (QR ревизии и архиви)',
+  'qr.svg': 'публичният /api/v1/p/{slug}/tree/qr.svg?path=… (код за портала, папка или файл)',
   ping: 'публичният ръкостиск /api/v1/p/{slug}/ping (дали връзката работи)',
 };
 const describedSegments = new Set([...describedPaths].flatMap((p) => p.split('/').filter(Boolean)));

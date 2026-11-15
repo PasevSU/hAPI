@@ -3,12 +3,12 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 408 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 409 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 184 |
-| портал | 42 |
+| портал | 43 |
 | GUI | 31 |
 | Home Assistant | 18 |
 | отчети | 16 |
@@ -230,7 +230,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (42)
+## портал (43)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -268,6 +268,7 @@
 | `portal-policy-secret-links` | Portal policy secret links | `tests/portal-policy-secret-links.cjs` |
 | `portal-qr-archive` | Portal qr archive | `tests/portal-qr-archive.cjs` |
 | `portal-qr-badge` | Portal qr badge | `tests/portal-qr-badge.cjs` |
+| `portal-qr-levels` | Portal qr levels | `tests/portal-qr-levels.cjs` |
 | `portal-qr-restore` | Portal qr restore | `tests/portal-qr-restore.cjs` |
 | `portal-root-page` | Portal root page | `tests/portal-root-page.cjs` |
 | `portal-rules-applied` | Portal rules applied | `tests/portal-rules-applied.cjs` |

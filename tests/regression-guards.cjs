@@ -51,7 +51,7 @@ const GUARDS = {
   'DEF-28': ['portal-i18n.cjs', 'ui-i18n.cjs'], // панелът е преведен
   'DEF-29': ['layout.cjs', 'ui-skin.cjs'], // картата не е разпръсната на три реда
   'DEF-30': ['portal-page-render.cjs', 'portal-page-lang.cjs'], // страницата е за посетителя, не за нас
-  'DEF-31': ['portal-qr-badge.cjs', 'qr-dispatch.cjs'], // QR кодът е на едно място
+  'DEF-31': ['portal-qr-badge.cjs', 'qr-dispatch.cjs', 'portal-qr-levels.cjs'], // QR кодът е на едно място, но от 0.69.210 — код за ВСЯКО ниво, всеки към човешката страница
   'DEF-32': ['portal-tokens.cjs'], // подписът се издава веднъж
   'DEF-33': ['portal-card-link.cjs'], // адресът на портала е на едно място
   'DEF-34': ['portal-no-links.cjs', 'portal-page.cjs'], // страницата не показва QR към себе си
@@ -111,7 +111,7 @@ const ANCHORS = {
   'DEF-28': { file: 'ui-i18n.cjs', contains: 'DICT' },
   'DEF-29': { file: 'ui-skin.cjs', contains: 'aria-pressed' },
   'DEF-30': { file: 'portal-page-render.cjs', contains: 'посетител' },
-  'DEF-31': { file: 'qr-dispatch.cjs', contains: 'branded landing link' },
+  'DEF-31': { file: 'portal-qr-levels.cjs', contains: 'ПУБЛИЧНАТА страница, не API-то' },
   'DEF-32': { file: 'portal-tokens.cjs', contains: 'еднократ' },
   'DEF-33': { file: 'portal-card-link.cjs', contains: 'landing' },
   'DEF-34': { file: 'portal-page.cjs', contains: 'qr-panel' },

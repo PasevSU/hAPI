@@ -130,8 +130,7 @@
 
   /** Блок „Папки на портала“: икони в заглавната лента + скриващи се менюта. */
   function render(ctx) {
-    const { esc, state, ICON, ico, plural, fmtSize, treePath, connected, T } = ctx;
-    const t = state.tree;
+    const { esc, state, ICON, ico, plural, fmtSize, treePath, connected, T } = ctx;    const t = state.tree;
     const data = t.data && t.portalId === ctx.p.id ? t.data : null;
     const root = data && data.tree ? data.tree : null;
     const empty = Boolean(root) && !(root.files || []).length && !(root.folders || []).length;
@@ -150,6 +149,32 @@
           )} · ${fmtSize(data.bytes || 0)}${data.truncated ? ' · показани са първите 2000 записа' : ''}${data.exists === false ? ' · <strong>папката липсва на диска</strong>' : ''
           }`
           : 'Папките не са заредени.';
+    // QR за ВСЯКО ниво на портала: коренът, всяка папка (и подпапка) и всеки файл. Дървото
+    // вече е заредено в паметта, затова кодовете се появяват САМИ — без отделно действие.
+    // Изображенията идват от сървъра (`tree/qr.svg?path=`), не се строят на ръка в панела.
+    const qrRows = [];
+    if (connected() && root && typeof ctx.qrLevel === 'function') {
+      qrRows.push({ rel: '', label: T('portal.qr.mapRoot') });
+      const walk = (node) => {
+        for (const sub of node.folders || []) {
+          qrRows.push({ rel: sub.path, label: treePath(sub.path) });
+          walk(sub);
+        }
+        for (const file of node.files || []) qrRows.push({ rel: file.path, label: file.name });
+      };
+      walk(root);
+    }
+    const qrMap = qrRows.length
+      ? `<div class="pf-qr-map"><h6>${ico('qr')} ${esc(T('portal.qr.map'))}</h6><div class="pf-qr-grid">${qrRows
+        .slice(0, 200)
+        .map(
+          (row) =>
+            `<div class="pf-qr-cell" data-qr-level="${esc(row.rel)}"><img class="pf-qr-mini" src="${esc(ctx.qrLevel(row.rel))}" alt="${esc(
+              T('portal.qr.mapAlt', { name: row.label }),
+            )}" loading="lazy" /><span>${esc(row.label)}</span></div>`,
+        )
+        .join('')}</div><p class="hint">${esc(T('portal.qr.mapHint'))}</p></div>`
+      : '';
     return `
       <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="folders">
         <div class="pf-block-head">
@@ -184,6 +209,7 @@
           : ''
         }
           <div class="fm-folders-box">
+            ${qrMap}
             <div class="fm-folders">${!root
           ? `<p class="hint">${t.error ? 'Папките не са заредени.' : 'Зареждане на папките…'}</p>`
           : empty

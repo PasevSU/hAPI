@@ -14,25 +14,39 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **408/408** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **409/409** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.210 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 644 файла · 114674 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 639 файла · 113412 реда · critical: 0 · high: 0 · medium: 2 · low: 202 — **има необяснени** · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 645 файла · 114887 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 640 файла · 113625 реда · critical: 0 · high: 0 · medium: 2 · low: 203 — **има необяснени** · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 408 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 409 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.210.tar.gz` | add-on архив (208 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.210.tar.gz` | add-on архив (209 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.210.zip` | интеграция за HACS (26 файла) | `dist/RELEASE.json` |
 | `hapi-enterprise-gui-0.69.210.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.210
+
+- **Всеки портал има QR за ВСЯКО ниво — портал, подпапка и файл — и те се създават сами.**
+  Дотук кодът беше един (затворен DEF-31) и панелът нямаше право да покаже код за папка или
+  файл. Сега един маршрут обслужва всеки възел: `GET /api/v1/p/<slug>/tree/qr.svg?path=…`
+  (`serveNodeQr` в `routes/portal-storage.js`) и кодира ЧОВЕШКАТА страница — папка →
+  `/p/<id>?folder=…`, файл → `/file.html:<slug>/<път>`. Затвореният DEF-31 остава затворен:
+  никой код не носи JSON, подписан за час или администраторски адрес. Панелът в блок
+  „Папки на портала“ рисува QR карта за всички нива на дървото (до 200 реда) веднага след
+  зареждането — без отделно действие; скрита/заключена папка не дава код (404), а портал
+  без собствена папка — 403, както списъкът. Защита: `tests/portal-qr-levels.cjs` — код за
+  корен, папка и файл · различните адреси дават различни кодове · кодът сочи страницата, не
+  API-то · скрито → 404 · общ корен → 403 · панелът ги рисува сам; добавен е и в котвите
+  на `tests/regression-guards.cjs` за DEF-31. Старият текст „QR кодът е един“ в панела
+  „Сподели“ е сменен с новото правило (`portal.qr.levelsHint`).
 
 - **Регистър на неизпълненото — измерен, не по памет.** `documentation/07_RELEASE/UNFINISHED_TASKS_0.69.210.md`:
   **3 отворени дефекта от 57** (DEF-01 прилепен план 120 713 байта, DEF-06 WORM без Object Lock за

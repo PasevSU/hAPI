@@ -1882,7 +1882,7 @@
     return new Date(expires * 1000).toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const QR_ONE_HINT = 'QR кодът е един — в блока „Връзка и QR код“ на портала; той отваря портала заедно с папката му.';
+  const QR_ONE_HINT = T('portal.qr.levelsHint');
 
   // ── Рендер ───────────────────────────────────────────────────────────────
   function render() {
@@ -2527,6 +2527,10 @@
       folderFlags,
       stateOf,
       actionsPane,
+      // Адресът на QR за ВСЕКИ възел (портал, папка, файл): сървърът строи SVG-то, панелът
+      // само сочи към него. Така кодът в панела е същият, който вижда посетителят.
+      qrLevel: (rel) =>
+        `${base()}/api/v1/p/${encodeURIComponent(p.id)}/tree/qr.svg?path=${encodeURIComponent('/' + String(rel || ''))}`,
       // Списъкът с действия се ползва и от изскачащото меню ⚙ на файла.
       ACTIONS: ACTIONS.concat(EXTRA_ACTIONS),
       contactSelect,
