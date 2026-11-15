@@ -504,7 +504,10 @@ assert.match(src, /aria-expanded="\$\{open\}"/);
 // Икона на папка + име + брой файлове + общ обем в заглавието на менюто.
 assert.match(src, /fm-folder-ico" aria-hidden="true">\$\{ico\(open \? 'folderOpen' : 'folder'\)\}/);
 assert.match(src, /class="fm-folder-name"/);
-assert.match(src, /plural\(count, 'файл', 'файла'\)/);
+// Текстът е в речника (DEF-49): броячът взима съществителните от `noun.file.*`, не носи
+// българските форми в кода — иначе панелът остава едноезичен при избран EN/DE.
+assert.match(src, /esc\(filesOf\(count\)\)/, 'броячът на файловете минава през речника');
+assert.match(src, /const filesOf = \(n\) => plural\(n, T\('noun\.file\.one'\), T\('noun\.file\.many'\)\);/);
 assert.match(src, /esc\(fmtSize\(bytes\)\)/);
 // Иконите на реда: добави файл, пакет на папката, разгъни и ⚙ меню с флагове.
 assert.match(src, /data-folder-upload="\$\{esc\(key\)\}"/);
@@ -517,9 +520,9 @@ assert.match(src, /data-folder-flag-btn="\$\{flag\}"/);
 // Щракването върху точка от менюто го затваря веднага (null = затворено).
 assert.match(src, /state\.gear = null;\s*\n\s*void saveFolderFlag\(rel, \{ \[flag\]: !current\[flag\] \}\);/);
 assert.match(src, /const gear = state\.gear !== null && state\.gear === key;/);
-assert.match(src, /gearItem\('visible', 'видима', flags\.visible\)/);
-assert.match(src, /gearItem\('media', 'медийна', flags\.media\)/);
-assert.match(src, /gearItem\('locked', 'заключване', flags\.locked\)/);
+assert.match(src, /gearItem\('visible', T\('pf\.flag\.visible'\), flags\.visible\)/);
+assert.match(src, /gearItem\('media', T\('pf\.flag\.media'\), flags\.media\)/);
+assert.match(src, /gearItem\('locked', T\('pf\.flag\.locked'\), flags\.locked\)/);
 assert.match(src, /class="fm-gear" data-gear-for=/);
 assert.match(src, /class="fm-gear-sep"/);
 assert.equal(/data-folder-flag="visible"/.test(src), false, 'няма чекбокси в менюто');
@@ -671,7 +674,9 @@ assert.match(src, /if \(!stored \|\| !onDisk\.has\(stored\)\) out\.push\(f\);/, 
 assert.match(src, /Папката \$\{esc\(treePath\(scope\)\)\} няма файлове\./);
 // В акордеона остава само обобщение + коментар + API/QR (файловете са в списъка).
 assert.equal(/class="fm-folder-file"/.test(src), false, 'няма редове с файлове в акордеона');
-assert.match(src, /показват се в „Файлове в портала“ по-долу/);
+// Изречението „… — показват се в „Файлове в портала“ по-долу“ живее в речника (`pf.filesInside`),
+// а панелът подава само числата — иначе преводът на EN/DE остава недовършен.
+assert.match(src, /T\('pf\.filesInside', \{/);
 assert.match(css, /\.fm-file-storage \{ border-style: dashed; \}/);
 assert.equal(/\.fm-folder-files/.test(css), false, 'стиловете за редовете в акордеона са премахнати');
 // ── Компактен режим по подразбиране ─────────────────────────────────────
