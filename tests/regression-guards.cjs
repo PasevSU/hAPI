@@ -77,6 +77,7 @@ const GUARDS = {
   'DEF-55': ['process-guards.cjs', 'event-stream.cjs'], // спиране/старт под товар: грация ≥ 10 s и SIGKILL
   'DEF-56': ['blackbox-api.cjs'], // публичен /health не показва пътища и PID
   'DEF-57': ['problem.cjs', 'blackbox-api.cjs'], // грешката носи ok:false като успехът — ok:true
+  'DEF-58': ['release-archive-ignored.cjs'], // архивът на изданието не взима игнорирани локални файлове
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -137,6 +138,7 @@ const ANCHORS = {
   'DEF-55': { file: 'process-guards.cjs', contains: 'DEF-55' },
   'DEF-56': { file: 'blackbox-api.cjs', contains: 'не показва файлови пътища' },
   'DEF-57': { file: 'problem.cjs', contains: 'като успехът носи' },
+  'DEF-58': { file: 'release-archive-ignored.cjs', contains: 'нито един не влиза в изданието' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

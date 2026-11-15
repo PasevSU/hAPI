@@ -316,7 +316,7 @@ const archived = (file) => {
 check('S08', 'Артефакт: add-on tar.gz съдържа точно файловете от дървото', () => {
   const entries = archived(addonArchive);
   const actual = new Map(entries.map((e) => [e.path, e]));
-  const expected = lib.walk(addonDir, lib.ADDON_DIR);
+  const expected = lib.archiveEntries(root, addonDir, lib.ADDON_DIR);
   assert(actual.size === expected.length, `архивът има ${actual.size} файла, дървото ${expected.length}`);
   for (const entry of expected) {
     const got = actual.get(entry.path);
@@ -332,7 +332,7 @@ check('S08', 'Артефакт: add-on tar.gz съдържа точно файл
 check('S09', 'Артефакт: интеграцията zip съдържа точно файловете от дървото', () => {
   const entries = archived(integrationArchive);
   const actual = new Map(entries.map((e) => [e.path, e]));
-  const expected = lib.walk(integrationDir, path.posix.join('custom_components', 'hapi_enterprise'));
+  const expected = lib.archiveEntries(root, integrationDir, path.posix.join('custom_components', 'hapi_enterprise'));
   assert(actual.size === expected.length, `архивът има ${actual.size} файла, дървото ${expected.length}`);
   for (const entry of expected) {
     const got = actual.get(entry.path);

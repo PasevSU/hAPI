@@ -301,6 +301,7 @@ const RULES = [
   { id: "real-journey", area: "общо", title: "Real journey", owner: "tests/real-journey.cjs" },
   { id: "regression-guards", area: "общо", title: "Regression guards", owner: "tests/regression-guards.cjs" },
   { id: "release-acceptance", area: "издаване", title: "Release acceptance", owner: "tests/release-acceptance.cjs" },
+  { id: "release-archive-ignored", area: "издаване", title: "Release archive ignored", owner: "tests/release-archive-ignored.cjs" },
   { id: "release-archive-paths", area: "издаване", title: "Release archive paths", owner: "tests/release-archive-paths.cjs" },
   { id: "release-notes", area: "издаване", title: "Release notes", owner: "tests/release-notes.cjs" },
   { id: "release-status", area: "издаване", title: "Release status", owner: "tests/release-status.cjs" },

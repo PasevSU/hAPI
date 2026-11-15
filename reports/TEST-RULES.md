@@ -3,7 +3,7 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 414 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 415 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
@@ -15,7 +15,7 @@
 | PGP | 14 |
 | ядро | 12 |
 | съхранение | 8 |
-| издаване | 6 |
+| издаване | 7 |
 | оракул | 6 |
 | тайни връзки | 6 |
 | пакети | 5 |
@@ -412,11 +412,12 @@
 | `storage-tree` | Storage tree | `tests/storage-tree.cjs` |
 | `storage-tree-api` | Storage tree api | `tests/storage-tree-api.cjs` |
 
-## издаване (6)
+## издаване (7)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
 | `release-acceptance` | Release acceptance | `tests/release-acceptance.cjs` |
+| `release-archive-ignored` | Release archive ignored | `tests/release-archive-ignored.cjs` |
 | `release-archive-paths` | Release archive paths | `tests/release-archive-paths.cjs` |
 | `release-notes` | Release notes | `tests/release-notes.cjs` |
 | `release-status` | Release status | `tests/release-status.cjs` |

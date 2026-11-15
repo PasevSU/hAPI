@@ -1,9 +1,9 @@
-# Състояние на системата и промени в 0.69.212
+# Състояние на системата и промени в 0.69.213
 
 > Живият документ за **„какво е системата днес“**, за разлика от нормативните документи в
 > `02_TO_BE_ARCHITECTURE/` (какво трябва да бъде). Обновява се при всяко издание, а числата се
 > ВЗИМАТ от скриптове и отчети, не се пишат на ръка. Всичко тук е измерено в работното дърво
-> на 0.69.212; при разминаване меродавни са `reports/RELEASE-STATUS.md`,
+> на 0.69.213; при разминаване меродавни са `reports/RELEASE-STATUS.md`,
 > `reports/test-matrix.json` и `documentation/01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md`.
 
 ## 1. Какво е системата
@@ -22,7 +22,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Обявени операции | **213** в `API_ENDPOINT_REFERENCE.md` |
 | `server.js` | **2720** реда (пор **2722**) |
 | Изнесени функции | **369** в 52 модула, **369** покрити с тест |
-| Тестове в дървото | **414** файла (`413` в матрикса + `release-status.cjs`); `tests/helpers.cjs` не е тест |
+| Тестове в дървото | **415** файла (`414` в матрикса + `release-status.cjs`); `tests/helpers.cjs` не е тест |
 | Артефакт | `dist/` — точно **6** файла, `verify-release` **22/22** |
 
 ## 2. Какво се промени в 0.69.208
@@ -44,6 +44,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | **Папката на порталите е фиксирана (0.69.211)** — `/share/hapi/data/root_storage/<slug>`, панелът само я показва | `811e191` | свободното поле даваше начин порталът да сочи общия `/share` (чуждите папки) или папка, която никой не намира | `portal-storage-fixed.cjs`, `storage-roots.cjs`, `files-manager.cjs`, `portal-card-link.cjs` |
 | **Портал „само за преглед“ със свой QR (0.69.211)** — втори запис `portal-view.js`, `inline` файлове, без пакет | `811e191` | при създаване трябва да има и read-only изглед, който не може да изтече като ZIP | `portal-readonly.cjs`, `portal-storage.cjs` |
 | **Образът СЕ билдва (0.69.212)** — двуетапен Dockerfile: `node:22.23.2-alpine AS node` дава само `/usr/local/bin/node`, вторият етап е `alpine:3.24`; npm/npx/corepack остават в изхвърления етап | виж `CHANGELOG.md` (0.69.212) | 0.69.210/0.69.211 теглеха Node от musl тарбол по несъществуващ адрес (`curl 404`) — нито един образ не стигна до ghcr.io, а Supervisor-ът на HA даваше `[404] manifest unknown` | `docker-runtime.cjs`, `raspberrypi-compat.cjs`, `ha-support-matrix.cjs` §6, `ha-compatibility.cjs` HA-C01, S04 на `verify-release` (всички гледат етапите, не регулярен израз) |
+| **Архивът не взима локални файлове (0.69.213)** — `release-lib.archiveEntries()` изключва всичко, което `git ls-files --others --ignored` познава; същото правило ползват `build-release` и S08/S09 на `verify-release` | виж `CHANGELOG.md` (0.69.213) | 0.69.212 даде 212 файла в `dist/RELEASE.json` на тази машина и 211 в CI (локален `generator.7z`); отчетът цитира бройката, CI го обяви за остарял и `CI`/`Release` паднаха | `release-archive-ignored.cjs`, `regression-guards.cjs` (DEF-58) |
 
 Пълното описание „какво, защо и какво е измерено“ е в `CHANGELOG.md` и
 `documentation/07_RELEASE/RELEASE_0.69.208.md` (§6а.1–§6а.7).

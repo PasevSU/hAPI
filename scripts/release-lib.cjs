@@ -13,6 +13,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const zlib = require('node:zlib');
+const { spawnSync } = require('node:child_process');
 
 const ROOT = path.join(__dirname, '..');
 const ADDON_DIR = 'hapi_enterprise';
@@ -113,6 +114,34 @@ function walk(dirAbs, prefix, out = []) {
   return out;
 }
 
+/**
+ * Пътищата, които git игнорира (`.gitignore`), относителни към корена и с `/`.
+ *
+ * Защо съществува: архивът на изданието се строи от файловата система, а тя не е същата
+ * на всяка машина. Измерено в 0.69.212: `hapi_enterprise/generator.7z` (локален, игнориран
+ * файл) влезе само в МОЯ архив — 212 файла срещу 211 в CI — и `reports/RELEASE-STATUS.md`,
+ * който цитира бройката от `dist/RELEASE.json`, стана различен на двете места. Затова в
+ * изданието влиза само това, което е в хранилището.
+ *
+ * Без git (или извън хранилище) списъкът е празен — тогава поведението е старото и
+ * `git ls-files` не е задължителен за строежа.
+ */
+function ignoredPaths(root = ROOT) {
+  const res = spawnSync('git', ['ls-files', '--others', '--ignored', '--exclude-standard', '-z'], {
+    cwd: root,
+    encoding: 'utf8',
+    maxBuffer: 8 * 1024 * 1024,
+  });
+  if (res.status !== 0 || !res.stdout) return new Set();
+  return new Set(res.stdout.split('\0').filter(Boolean).map(posix));
+}
+
+/** `walk` без игнорираните от git файлове — това е списъкът, който влиза в изданието. */
+function archiveEntries(root, dirAbs, prefix) {
+  const ignored = ignoredPaths(root);
+  return walk(dirAbs, prefix).filter((entry) => !ignored.has(entry.path));
+}
+
 const sha256 = (data) => crypto.createHash('sha256').update(data).digest('hex');
 const sha256File = (file) => sha256(fs.readFileSync(file));
 
@@ -129,7 +158,7 @@ function guiPackage(addonDirAbs, root = ROOT, version = readAddonVersion(root)) 
   if (!fs.existsSync(path.join(uiDir, 'index.html'))) {
     throw new Error('липсва ' + path.join(ADDON_DIR, 'ui', 'index.html') + ' — GUI пакетът няма какво да отвори');
   }
-  const entries = assertSafeEntryPaths(walk(uiDir, ADDON_DIR + '/ui'), 'gui');
+  const entries = assertSafeEntryPaths(archiveEntries(root, uiDir, ADDON_DIR + '/ui'), 'gui');
   for (const name of GUI_FILES) {
     const abs = path.join(root, name);
     if (!fs.existsSync(abs)) throw new Error('липсва стартер за GUI пакета: ' + name);
@@ -381,6 +410,8 @@ module.exports = {
   readIntegrationVersion,
   writeVersion,
   walk,
+  ignoredPaths,
+  archiveEntries,
   sha256,
   sha256File,
   crc32,
