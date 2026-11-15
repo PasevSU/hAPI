@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 406 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 407 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 182 |
+| общо | 183 |
 | портал | 42 |
 | GUI | 31 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (182)
+## общо (183)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -219,6 +219,7 @@
 | `store-migration` | Store migration | `tests/store-migration.cjs` |
 | `tag-version` | Tag version | `tests/tag-version.cjs` |
 | `taxonomy` | Taxonomy | `tests/taxonomy.cjs` |
+| `unfinished-register` | Unfinished register | `tests/unfinished-register.cjs` |
 | `update-repo` | Update repo | `tests/update-repo.cjs` |
 | `upload-rollback-guard` | Upload rollback guard | `tests/upload-rollback-guard.cjs` |
 | `versioning` | Versioning | `tests/versioning.cjs` |

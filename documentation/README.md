@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **141** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **142** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -153,6 +153,7 @@ _Генериран списък: **141** документа. Пише се от
 | `07_RELEASE/RELEASE_CHECKLIST.md` | Release Checklist — hAPI Enterprise |
 | `07_RELEASE/RELEASE_CRITERIA.md` | Release Criteria — hAPI Enterprise |
 | `07_RELEASE/RELEASE_DECISION.md` | Release Decision — hAPI Enterprise |
+| `07_RELEASE/UNFINISHED_TASKS_0.69.210.md` | Неизпълнени задачи — критичен анализ (0.69.210, измерено 2026-11-15) |
 | `07_RELEASE/UPDATE_PATH_AUDIT.md` | Защо обновяването не стига до Home Assistant — одит на пътя на изданието |
 | `08_USER_GUIDES/admin-token.md` | Администраторски токен — какъв да бъде и защо |
 | `08_USER_GUIDES/install-hacs.md` | Инсталиране на интеграцията |
