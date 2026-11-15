@@ -16,7 +16,10 @@ const ooxml = require('../hapi_enterprise/ooxml.js');
   const token = 'package-api-test-token-at-least-24-chars';
   const storage = storageRoot();
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
-    env: { ...process.env, ...storage.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token },
+    // `HAPI_PORTAL_STORAGE_ROOT_EDIT=1` е изричният изход за администратор: от 0.69.210
+    // панелът НЕ мести папката на портала и PATCH без този флаг връща 403
+    // (`tests/portal-storage-fixed.cjs` пази и двете страни на правилото).
+    env: { ...process.env, ...storage.env, DATA_DIR: dir, PORT: String(port), ADMIN_TOKEN: token, HAPI_PORTAL_STORAGE_ROOT_EDIT: '1' },
     // Логическите корени се решават от `paths.js`; работата папка е без значение.
     cwd: os.tmpdir(),
     stdio: 'ignore',

@@ -147,7 +147,7 @@ assert.equal(interp.render(null, ctx).output, '', 'null не гърми');
 
     // Пътищата НЕ се интерполират: стойност от данни там би била обход на директории.
     const serverSrc = fs.readFileSync(path.join(root, 'hapi_enterprise', 'server.js'), 'utf8');
-    assert.match(serverSrc, /storage_root: p\.storage_root \|\| '\/share'/, 'storage_root остава буквален в публичния изглед');
+    assert.match(serverSrc, /storage_root: p\.storage_root \|\| paths\.portalRootLogical\(\)/, 'storage_root остава буквален в публичния изглед');
     assert.equal(/withVars\(\s*p\.storage_root/.test(serverSrc), false, 'storage_root не минава през интерполация');
 
     console.log('PASS interpolate: {{променлива}} в име/описание/имейл · вградени дати · липси и цикли · пътищата са буквални');

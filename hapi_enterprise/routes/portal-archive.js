@@ -118,7 +118,7 @@ function create(deps) {
     };
     await update(() => {
       const d = live();
-      d.portals = d.portals.filter((x) => x.id !== portal.id);
+      d.portals = d.portals.filter((x) => x.id !== portal.id && !companionsOf(portal).includes(x));
       d.portalsArchive.push(entry);
       void audit('portal.close', {
         portalId: entry.id, slug: entry.slug, purgeAfter: entry.purgeAfter,
@@ -135,6 +135,12 @@ function create(deps) {
     // строят наново при връщане, затова се махат СЛЕД успешния запис.
     await fsp.rm(path.join(apiRoot, portal.slug), { recursive: true, force: true }).catch(() => { });
     await portalFolder.removeArtifacts(portal).catch(() => { });
+    // Спътникът „само за преглед“ също напуска: порталът вече е в архив, а той беше публичен.
+    for (const twin of companionsOf(portal)) {
+      await fsp.rm(path.join(apiRoot, twin.slug), { recursive: true, force: true }).catch(() => { });
+      await fsp.rm(path.join(filesRoot, twin.id), { recursive: true, force: true }).catch(() => { });
+      void audit('portal.close.companion', { portalId: twin.id, parentId: portal.id });
+    }
     if (mirrorPortalDir) await fsp.rm(mirrorPortalDir(portal.id), { recursive: true, force: true }).catch(() => { });
     return view(entry);
   }
@@ -220,6 +226,17 @@ function create(deps) {
   }
 
   /**
+   * Порталът „само за преглед“ (спътникът, `portal-view.js`) — ако има такъв.
+   *
+   * Защо се трие/закрива ЗАЕДНО с портала: спътникът е публичен и сочи СЪЩАТА папка.
+   * Ако останеше, „изтритият“ портал щеше да продължи да се чете през другия адрес —
+   * точно това, което човек не очаква от „Премахни портала“.
+   */
+  function companionsOf(portal) {
+    return live().portals.filter((x) => x && x.readonly === true && (x.parentId === portal.id || x.parentSlug === portal.slug));
+  }
+
+  /**
    * Старото „изтрий веднага“ (`DELETE /admin/api/portals/<id>`), запазено за скриптове.
    * Правилото `EVIDENCE_NEVER_DELETED` важи: портал с архивирани QR ревизии иска `?force=1`.
    */
@@ -230,6 +247,7 @@ function create(deps) {
       void audit('portal.delete.refused', { portalId: portal.id, archivedRevisions: archivedRevs.length });
       return fail(res, 409, `Evidence: порталът има ${archivedRevs.length} архивирани QR ревизии и изтриването им е отделно решение (EVIDENCE_NEVER_DELETED). Повтори със ?force=1, ако наистина искаш да изтриеш и доказателствата — решението влиза в одита`);
     }
+    const companions = companionsOf(portal);
     return json(res, 200, await update(async () => {
       portal.visibility = 'private';
       await fsp.rm(path.join(filesRoot, portal.id), { recursive: true, force: true });
@@ -237,15 +255,20 @@ function create(deps) {
       await fsp.rm(path.join(apiRoot, portal.slug), { recursive: true, force: true });
       await portalFolder.removeArtifacts(portal).catch(() => { });
       if (mirrorPortalDir) await fsp.rm(mirrorPortalDir(portal.id), { recursive: true, force: true }).catch(() => { });
+      // Спътниците: същите стъпки, за да не остане публичен изглед към изтрит портал.
+      for (const twin of companions) {
+        await fsp.rm(path.join(filesRoot, twin.id), { recursive: true, force: true }).catch(() => { });
+        await fsp.rm(path.join(apiRoot, twin.slug), { recursive: true, force: true }).catch(() => { });
+      }
       if (force && archivedRevs.length) {
         const d = live();
         if (d.portalQr) delete d.portalQr[portal.id];
         await fsp.rm(path.join(archiveRoot, portal.id), { recursive: true, force: true }).catch(() => { });
       }
       const d = live();
-      d.portals = d.portals.filter((x) => x !== portal);
-      void audit('portal.delete', { portalId: portal.id, forced: force, archivedRevisions: archivedRevs.length });
-      return { deleted: portal.id, forced: force, purgedArchives: force ? archivedRevs.length : 0 };
+      d.portals = d.portals.filter((x) => x !== portal && !companions.includes(x));
+      void audit('portal.delete', { portalId: portal.id, forced: force, archivedRevisions: archivedRevs.length, companions: companions.map((x) => x.slug) });
+      return { deleted: portal.id, forced: force, purgedArchives: force ? archivedRevs.length : 0, companions: companions.map((x) => x.slug) };
     }));
   }
 

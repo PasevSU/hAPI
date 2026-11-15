@@ -72,7 +72,10 @@ function create(deps) {
         fail(res, 404, 'Not found');
         return true;
       }
-      return serveOrder({ req, res, url, order: 'share/' + colon[1] + rest });
+      const own = resolvePortal(colon[1]);
+      const root = own ? links.portalFolderRel(portalRoot(own.storage_root || '/share')) : '';
+      if (!root) { fail(res, 404, 'Not found'); return true }
+      return serveOrder({ req, res, url, order: root + rest });
     }
     // Договорът `file` (§6): страница за ЕДИН файл. Не зарежда папката на портала и не
     // прилага филтрите на `order` — показва само този файл и неговите доказателства.
@@ -145,10 +148,13 @@ function create(deps) {
 
     const name = path.basename(realFile);
     const mime = MIME[path.extname(name).toLowerCase()] || 'application/octet-stream';
+    // Портал „само за преглед“ (спътникът със своя QR): файлът се ОТВАРЯ в браузъра, а не се
+    // сваля като `attachment`. Това е политика на записа, не настройка на страницата.
+    const disposition = portal.readonly === true ? 'inline' : 'attachment';
     res.writeHead(200, {
       'Content-Type': mime,
       'Content-Length': stat.size,
-      'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(name),
+      'Content-Disposition': disposition + "; filename*=UTF-8''" + encodeURIComponent(name),
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
@@ -159,7 +165,22 @@ function create(deps) {
   }
 
   /**
-   * Универсалният вход от QR кода: `/portal.html?order=share/<папка>[/<подпапка>]`.
+   * Порталът, чиято папка (`storage_root`) съдържа този относителен път — по НАЙ-ДЪЛГИЯ
+   * съвпадащ корен. Единственото място в модула, което знае как е подредено хранилището:
+   * от 0.69.211 коренът е `/share/hapi/data/root_storage/<slug>`, а не `/share/<slug>`.
+   */
+  function portalForPath(pathValue) {
+    const rel = links.portalFolderRel(pathValue);
+    const rows = (db && db().portals ? db().portals : [])
+      .map((p) => ({ p, root: links.portalFolderRel(portalRoot(p.storage_root || '/share')) }))
+      .filter((x) => x.root && (rel === x.root || rel.startsWith(x.root + '/')))
+      .sort((a, b) => b.root.length - a.root.length);
+    if (!rows.length) return { portal: null, rel, folder: '' };
+    return { portal: rows[0].p, rel, folder: rel.slice(rows[0].root.length).replace(/^\/+/, '') };
+  }
+
+  /**
+   * Универсалният вход от QR кода: `/portal.html?order=<папка на портала>[/<подпапка>]`.
    *
    * `order` е ДОГОВОРЪТ с страницата, не удостоверяване: страницата само РАЗЧИТА пътя и
    * иска съдържанието му. Затова сървърът тук проверява, че папката е ИМЕННО папката на
@@ -167,12 +188,9 @@ function create(deps) {
    * по себе си не отваря нищо. Подпапката се предава на страницата като `data-folder`.
    */
   function serveOrder({ req, res, url, order }) {
-    const rel = links.portalFolderRel(order === undefined ? (url.searchParams.get('order') || '') : order);
-    const segs = rel ? rel.split('/') : [];
-    if (segs.length < 2) { fail(res, 404, 'Not found'); return true }
-    const portal = resolvePortal(segs[1]);
-    const owned = portal && links.portalFolderRel(portalRoot(portal.storage_root || '/share')) === segs[0] + '/' + segs[1];
-    if (!owned) { fail(res, 404, 'Not found'); return true }
+    const found = portalForPath(order === undefined ? (url.searchParams.get('order') || '') : order);
+    if (!found.portal) { fail(res, 404, 'Not found'); return true }
+    const portal = found.portal;
     if (!policy.decide({ req, url, portal, action: 'read' }).allowed) { fail(res, 404, 'Not found'); return true }
     // `qr` е ИДЕНТИЧНОСТТА на печата (кой QR е донесъл посетителя), не право за достъп.
     // Прекратен QR не отдава съдържание — показва се `blok` страница с основанието.
@@ -182,7 +200,7 @@ function create(deps) {
       if (!known) { fail(res, 404, 'Not found'); return true }
       if (known.blockedAt) return serveBlocked(res, portal, known);
     }
-    const folder = segs.slice(2).join('/');
+    const folder = found.folder;
     const html = fs.readFileSync(path.join(__dirname, '..', 'portal', 'portal.html'), 'utf8')
       .replace('{{BASE}}', htmlEsc(baseUrl(req)))
       .replace('{{API}}', htmlEsc(links.portalApiPath(portal)))
@@ -191,7 +209,7 @@ function create(deps) {
       .replace('{{FOLDERS}}', '1');
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
     res.end(html);
-    void audit('portal.order.open', { portalId: portal.id, order: rel, folder: '/' + folder, qr: wanted || null });
+    void audit('portal.order.open', { portalId: portal.id, order: found.rel, folder: '/' + folder, qr: wanted || null });
     return true;
   }
 
@@ -209,6 +227,8 @@ function create(deps) {
    * Името на папката НЕ е удостоверяване: достъпът се решава от `policy.decide`.
    */
   async function serveFile({ req, res, url, spec }) {
+    // Договорът тук е `<slug на портала>/<път във папката>` — slug, не пълният път до
+    // папката: страницата на файла се строи от `api-spec`/`links` и знае slug-а.
     const raw = String(spec || '').trim();
     if (!raw) { fail(res, 404, 'Not found'); return true }
     const cut = raw.indexOf('/');

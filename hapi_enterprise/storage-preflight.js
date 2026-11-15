@@ -2,14 +2,14 @@
 const fs = require('node:fs'), path = require('node:path');
 const paths = require('./paths');
 // Логическите корени идват от `paths.js` — един източник за целия проект (вж. `tests/storage-roots.cjs`).
-const roots = { addon_config: paths.LOGICAL_ROOTS.config, media: paths.LOGICAL_ROOTS.media, share: paths.LOGICAL_ROOTS.share };
-// Имената в опциите (`addon_config`) не съвпадат с ключовете в `paths.LOGICAL_ROOTS`
-// (`config`) — това е единственото място, където се превеждат.
-const ROOT_NAMES = Object.freeze({ addon_config: 'config', media: 'media', share: 'share' });
+// Имената в опциите (`addon_config`) не съвпадат с ключовете в `paths.LOGICAL_ROOTS` (`config`);
+// превеждането живее в `paths.OPTION_ROOTS`, за да го ползва и логическият корен на порталите.
+const ROOT_NAMES = paths.OPTION_ROOTS;
+const roots = Object.fromEntries(Object.entries(ROOT_NAMES).map(([option, name]) => [option, paths.LOGICAL_ROOTS[name]]));
 // Подразбиране от 0.69.87: `/share/hapi/data`. Документите са на едно предвидимо място,
 // видимо през Samba/File editor и извън папката на add-on-а, така че преинсталиране или
 // обновяване на add-on-а да не го мести. add-on папката остава валиден избор.
-const DEFAULT_LOCATION = 'share', DEFAULT_SUB = 'hapi/data';
+const DEFAULT_LOCATION = paths.STORAGE_DEFAULTS.location, DEFAULT_SUB = paths.STORAGE_DEFAULTS.subdirectory;
 // Старото подразбиране — само за да НЕ се обяви стара инсталация за празна.
 const LEGACY_LOCATION = 'addon_config', LEGACY_SUB = 'hapi_enterprise';
 // До три нива (`hapi/data`, `documents/hapi/data`), всяко сегмент с безопасни знаци.
@@ -39,17 +39,18 @@ function check(options, env = process.env) {
   if (!root) throw Error('Storage root is not available on this host: ' + roots[kind]);
   const mode = options.storage_mode || 'local';
   if (!['local', 'ha_network'].includes(mode)) throw Error('Unsupported storage mode');
-  let parent = root;
+  let parent = root, mountName = '';
   if (mode === 'ha_network') {
     if (!['media', 'share'].includes(kind)) throw Error('Network storage requires media or share mapping');
     const mount = options.storage_mount_name || '';
     if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,79}$/.test(mount) || mount === '.' || mount === '..') throw Error('Invalid Home Assistant network storage name');
     parent = path.join(root, mount);
+    mountName = mount;
     if (!fs.existsSync(parent) || !fs.statSync(parent).isDirectory() || fs.lstatSync(parent).isSymbolicLink()) throw Error('Home Assistant network storage is not mounted: ' + parent);
     // Never create the mountpoint: a missing NAS must fail closed, not write to the host filesystem.
     if (env.STORAGE_ROOT_OVERRIDE === undefined && !isMounted(parent, env.MOUNTINFO_PATH || '/proc/self/mountinfo')) throw Error('Network storage mount is not active: ' + parent);
   }
-  let base = path.join(parent, sub), chosenRoot = root;
+  let base = path.join(parent, sub), chosenRoot = root, effectiveLocation = kind, effectiveSub = sub;
   // Миграционна защита: старото място има данни, новото е празно → ползва се СТАРОТО.
   // Иначе при обновяване „порталите изчезват“, защото add-on-ът стартира с нова празна база.
   const legacyRoot = env.STORAGE_ROOT_OVERRIDE
@@ -58,7 +59,7 @@ function check(options, env = process.env) {
   const legacyBase = legacyRoot ? path.join(legacyRoot, LEGACY_SUB) : '';
   if (legacyBase && base !== legacyBase && hasData(legacyBase) && !hasData(base)) {
     console.error('STORAGE_LEGACY_LOCATION: намерени са данни в ' + legacyBase + ' — ползва се това място, за да не се създаде празна инсталация. Премести ги в ' + base + ' и рестартирай, за да минеш на новото подразбиране.');
-    base = legacyBase; chosenRoot = legacyRoot;
+    base = legacyBase; chosenRoot = legacyRoot; effectiveLocation = LEGACY_LOCATION; effectiveSub = LEGACY_SUB;
   }
   if (!fs.existsSync(chosenRoot) || !fs.statSync(chosenRoot).isDirectory()) throw Error('Storage mount unavailable: ' + chosenRoot);
   if (fs.lstatSync(chosenRoot).isSymbolicLink()) throw Error('Symlink storage root refused');
@@ -82,6 +83,11 @@ function check(options, env = process.env) {
   const probe = path.join(base, '.write-test-' + process.pid);
   try { fs.writeFileSync(probe, 'ok', { flag: 'wx', mode: 0o600 }); fs.unlinkSync(probe) } catch (e) { throw Error('Storage is not writable: ' + e.message) }
   if (fs.statfsSync) { const s = fs.statfsSync(base); const free = Number(s.bavail) * Number(s.bsize); if (free < Number(options.min_free_mb || 100) * 1024 * 1024) throw Error('Insufficient free storage space') }
+  // Ефективният избор се записва в env: от него `paths.portalRootLogical()` строи логическия
+  // корен на порталите (`/share/hapi/data/root_storage`), без втори списък с корени.
+  env[paths.ENV.STORAGE_LOCATION] = effectiveLocation;
+  env[paths.ENV.STORAGE_SUBDIRECTORY] = effectiveSub;
+  env[paths.ENV.STORAGE_MOUNT] = mode === 'ha_network' ? mountName : '';
   return base;
 }
 if (require.main === module) { try { const options = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || '/data/options.json', 'utf8')); process.stdout.write(check(options) + '\n') } catch (e) { console.error('STORAGE PREFLIGHT FAILED: ' + e.message); process.exit(1) } }

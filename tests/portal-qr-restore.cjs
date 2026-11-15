@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalDir } = require('./helpers.cjs');
 // 0.69.84 — възстановяване от архив (§10.2, §22) и публичен ръкостиск („връзката работи“).
 //
 // Проверява се РЕДЪТ на действията, а не само отговорът:
@@ -36,7 +36,7 @@ const cleaned = [];
     const slug = 'restore-' + Date.now().toString(36);
     const portal = (await jsonOf('/admin/api/portals', 'POST', { slug, title: 'Възстановяване', visibility: 'public' })).data;
     cleaned.push(portal.slug);
-    const folder = path.join(shareRoot, slug);
+    const folder = portalDir(storage, portal.storage_root);
     fs.mkdirSync(path.join(folder, 'тема'), { recursive: true });
     const read = (rel) => fs.readFileSync(path.join(folder, ...rel.split('/')), 'utf8');
 

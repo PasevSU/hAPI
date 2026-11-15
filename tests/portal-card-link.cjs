@@ -239,9 +239,12 @@ assert.match(
     if (toggle && toggle.getAttribute('aria-expanded') === 'false') toggle.click();
     const settings = await waitFor(() => host.querySelector('#pf-settings'), { label: 'формата с настройките' });
     // Всички полета са в ЕДНА форма — мрежата ги подрежда в три колони, а не ги разкъсва.
-    for (const name of ['title', 'slug', 'subject', 'category', 'flag', 'storage_root', 'description', 'notes', 'visibility']) {
+    for (const name of ['title', 'slug', 'subject', 'category', 'flag', 'description', 'notes', 'visibility']) {
       assert.ok(settings.querySelector(`[name="${name}"]`), `полето ${name} е в същата форма`);
     }
+    // Папката се ПОКАЗВА, но не е поле за писане (0.69.211).
+    assert.ok(settings.querySelector('[data-pf-storage-root]'), 'папката се вижда в същата форма');
+    assert.equal(settings.querySelector('[name="storage_root"]'), null, 'папката не е input');
     assert.equal(host.querySelector('[data-block="control"] [data-qr-pop]'), null, 'в отворения контролен панел няма QR код');
     settings.querySelector('[name="title"]').value = 'Портал с код (обновен)';
     ui.clearToasts();

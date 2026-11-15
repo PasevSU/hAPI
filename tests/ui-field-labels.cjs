@@ -126,7 +126,8 @@ const labels = loadLabels();
   for (const label of named) {
     assert.ok(files.includes(label), 'липсва етикет ' + label + ' — дефектът изброява точно тези полета');
   }
-  assert.match(files, /name="storage_root"/, 'полето за storage_root трябва да е на място');
+  assert.match(files, /data-pf-storage-root/, 'папката на портала се показва (само за четене), за да се знае къде са файловете');
+  assert.doesNotMatch(files, /name="storage_root"/, 'папката на портала НЕ се редактира от панела');
 }
 
 // ── 4. Панелът наистина зарежда помощника и го вика след рендер ─────────────

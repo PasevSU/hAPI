@@ -1,16 +1,16 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.210**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.211**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **117** backend модула · **18** HTTP компонента · **28** UI модула · **9** Python модула · **42** инструмента · **412** теста.
+Общо: **118** backend модула · **18** HTTP компонента · **28** UI модула · **9** Python модула · **42** инструмента · **414** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (117)
+### Backend модули (`hapi_enterprise/*.js`) (118)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -81,6 +81,7 @@
 | `hapi_enterprise/portal-qr.js` | QR ревизии, манифести и ФИЗИЧЕСКИ архиви за един портал. |
 | `hapi_enterprise/portal-skin.js` | КОЖА НА ПУБЛИЧНАТА СТРАНИЦА НА ПОРТАЛА (`portal_skin`, env `PORTAL_SKIN`) — отделен модул, |
 | `hapi_enterprise/portal-term.js` | СРОК И ДОСТЪП НА ПОРТАЛА — задължителни при създаването (0.69.210). |
+| `hapi_enterprise/portal-view.js` | Портал „само за преглед“ — СПЪТНИК на нормалния портал, не трети вид страница. |
 | `hapi_enterprise/portal/portal-i18n.js` | Речник на ПУБЛИЧНАТА страница на портала (BG / EN / DE). |
 | `hapi_enterprise/portal/portal.js` | Публична страница на портала — това, което се отваря при сканиране на QR кода. |
 | `hapi_enterprise/preview.js` | Document preview & thumbnails (Phase 4.3). Dependency-free: renders text, |

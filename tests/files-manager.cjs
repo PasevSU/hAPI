@@ -122,9 +122,10 @@ assert.match(src, /name="flag"/);
 assert.match(src, /Относно:/);
 assert.match(src, /flag-badge/);
 assert.match(src, /посещение на лице/);
-// 7в. При създаване на портал може да се посочи папка с файлове.
+// 7в. Папката на портала идва от add-on-а — панелът я ПОКАЗВА, не я избира.
 assert.match(src, /storage_root/);
-assert.match(src, /name="storage_root"/);
+assert.match(src, /data-pf-storage-root/);
+assert.doesNotMatch(src, /name="storage_root"/, 'полето за папка вече не е input: сървърът задава пътя');
 assert.match(src, /pf-folder/);
 assert.match(src, /webkitdirectory/);
 assert.match(src, /function folderFiles/);
@@ -430,9 +431,11 @@ assert.match(serverSrc, /subject:\s*p\.subject\s*\|\|\s*''/);
 assert.match(serverSrc, /flag:\s*p\.flag\s*\|\|\s*'none'/);
 assert.match(serverSrc, /const portalFlag\s*=/);
 assert.match(serverSrc, /const portalRoot\s*=/);
-// 0.69.62: без изричен storage_root порталът получава СОБСТВЕНА папка `/share/<slug>`,
-// иначе експлорерът показва целия /share (стотици чужди папки), а не файловете на портала.
-assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\s*\|\|\s*'\/share\/'\s*\+\s*slug\)/);
+// 0.69.62: без изричен storage_root порталът получава СОБСТВЕНА папка, иначе експлорерът
+// показва целия /share (стотици чужди папки), а не файловете на портала.
+// 0.69.210: коренът идва от `paths.portalRootFor(slug)` — `/share/hapi/data/root_storage/<slug>`.
+assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\s*\|\|\s*paths\.portalRootFor\(slug\)\)/);
+assert.match(serverSrc, /const PORTAL_STORAGE_ROOT_EDIT\s*=\s*process\.env\.HAPI_PORTAL_STORAGE_ROOT_EDIT\s*===\s*'1'/);
 // 0.69.63: папката на портала се създава от модула `portal-folder` (там отиват и файловете).
 assert.match(serverSrc, /await portalFolder\.ensure\(p\)/);
 assert.match(serverSrc, /if \(p\.storage_root === '\/share' \|\| p\.storage_root === '\/media'\)/);
@@ -447,7 +450,9 @@ assert.ok(adminPortalSrc.length > 100, 'adminPortal е намерен в server.
 assert.equal((adminPortalSrc.match(/portalAccess\.issue\(/g) || []).length, 1, 'подписът за портал се издава веднъж');
 // 0.69.105: при смяна на папката порталът напуска старата и тя не бива да остава с неговата
 // карта (`portal.html`/`api.json`), затова старата стойност се пази и се изчиства.
-assert.match(serverSrc, /if\s*\(b\.storage_root\s*!==\s*undefined\)\s*\{[^}]*p\.storage_root\s*=\s*portalRoot\(b\.storage_root\);\s*if\s*\(portalFolderCopy\)\s*await portalFolder\.ensure\(p\)/);
+assert.match(serverSrc, /const wanted\s*=\s*portalRoot\(b\.storage_root\)/);
+assert.match(serverSrc, /if\s*\(wanted\s*!==\s*previousRoot\s*&&\s*!PORTAL_STORAGE_ROOT_EDIT\)/, 'смяната на папката е отказана, освен при изричния администраторски флаг');
+assert.match(serverSrc, /p\.storage_root\s*=\s*wanted;\s*if\s*\(portalFolderCopy\)\s*await portalFolder\.ensure\(p\)/);
 assert.match(serverSrc, /portalFolder\.removeArtifacts\(previousRoot\)/, 'старата папка се изчиства от генерираните файлове');
 // От 0.69.151 изтриването на портал живее в `routes/portal-archive.js` (закриване в архив,
 // 6 месеца преди окончателно триене) — `server.js` има таван на редовете. Затова тук се

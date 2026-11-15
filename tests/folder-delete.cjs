@@ -40,7 +40,7 @@ const root = path.join(__dirname, '..');
     assert.equal(portalRes.status, 201, 'порталът се създава: ' + (await portalRes.clone().text()).slice(0, 200));
     const created = await portalRes.json();
     const portal = created.id;
-    assert.equal(created.storage_root, '/share/' + slug, 'порталът получава собствена папка, а не целия /share');
+    assert.equal(created.storage_root, require('../hapi_enterprise/paths').portalRootFor(slug, { STORAGE_ROOT_OVERRIDE: server.storageRoot() }), 'порталът получава собствена папка, а не целия /share');
     const base = `/admin/api/portals/${portal}/tree`;
 
     const mk = await api(`${base}/folder`, 'POST', { parent: '', name: 'документи' });

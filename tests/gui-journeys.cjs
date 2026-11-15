@@ -170,7 +170,10 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       for (const el of app.$$('[data-open-portal]')) {
         let node = el;
         for (let i = 0; i < 6 && node; i++) {
-          if (text(node).includes(slug)) return el;
+          const label = text(node);
+          // Спътникът „само за преглед“ има slug `<slug>-view` и е по-нов, тоест пръв в
+          // списъка (подредба по дата). Търсим ИМЕННО портала, не неговия read-only близнак.
+          if (label.includes(slug) && !label.includes(slug + '-view')) return el;
           node = node.parentNode;
         }
       }

@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalDir } = require('./helpers.cjs');
 // 0.69.79 — целостта на физическите архиви (правило `ARCHIVE_NOT_TAMPERED`).
 //
 // Проверява се НАЙ-ВАЖНОТО за доказателството: че подмяна на байтове се вижда без човешка
@@ -104,7 +104,7 @@ function buildZip({ manifest, files }) {
       const slug = 'integrity-' + Date.now().toString(36);
       const portal = (await jsonOf('/admin/api/portals', 'POST', { slug, title: 'Целост', visibility: 'public' })).data;
       cleaned.push(portal.slug);
-      const folder = path.join(shareRoot, slug);
+      const folder = portalDir(storage, portal.storage_root);
       fs.mkdirSync(path.join(folder, 'тема'), { recursive: true });
       fs.writeFileSync(path.join(folder, 'договор.txt'), 'първи документ');
       fs.writeFileSync(path.join(folder, 'тема', 'фактура.txt'), 'втори документ');

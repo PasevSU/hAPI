@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalDir, portalFolderFor } = require('./helpers.cjs');
 // 0.69.77 — QR ревизии, физически архиви и дълбочина на дървото (архитектурният план).
 //
 // Проверява се онова, което планът изисква, а не „има бутон“:
@@ -38,7 +38,7 @@ const cleaned = [];
     const slug = 'qr-' + Date.now().toString(36);
     const portal = (await jsonOf('/admin/api/portals', 'POST', { slug, title: 'QR портал', visibility: 'public' })).data;
     cleaned.push(portal.slug);
-    const folder = path.join(shareRoot, slug);
+    const folder = portalDir(storage, portal.storage_root);
     fs.mkdirSync(folder, { recursive: true });
     const put = (rel, text) => {
       const full = path.join(folder, ...rel.split('/'));
@@ -182,10 +182,10 @@ const cleaned = [];
     assert.equal('note' in pubFirst.archive, false, 'вътрешните бележки не излизат публично');
     const pubZip = Buffer.from(await (await api(`/api/v1/p/${slug}/qr/QR-001/archive`)).arrayBuffer());
     assert.equal(require('node:crypto').createHash('sha256').update(pubZip).digest('hex'), ar.sha256, 'публичният архив е същият файл');
-    const withQr = await api(`/portal.html?order=${encodeURIComponent('share/' + slug)}&qr=QR-001`);
+    const withQr = await api(`/portal.html?order=${encodeURIComponent(String(portal.storage_root).replace(/^\/+/, ""))}&qr=QR-001`);
     assert.equal(withQr.status, 200, 'order + qr отваря страницата');
     assert.match(await withQr.text(), /data-qr="QR-001"/, 'страницата знае с кой QR е дошъл посетителят');
-    assert.equal((await api(`/portal.html?order=${encodeURIComponent('share/' + slug)}&qr=QR-999`)).status, 404, 'непознат QR → 404');
+    assert.equal((await api(`/portal.html?order=${encodeURIComponent(String(portal.storage_root).replace(/^\/+/, ""))}&qr=QR-999`)).status, 404, 'непознат QR → 404');
 
     // ── 4в. Сензорите виждат същото (един източник: portal-qr.stats) ────────
     const sensors = (await jsonOf('/admin/api/sensors')).data;
@@ -207,7 +207,7 @@ const cleaned = [];
     assert.equal(last.blockReason, 'подадена е нова редакция на делото', 'основанието е записано');
     assert.equal((await jsonOf(`/admin/api/portals/${portal.id}/qr/archive`, 'POST', {})).status, 409, 'след прекратяване не се архивира');
     // `blok`: прекратеният QR не отдава съдържание, но казва защо — с 410.
-    const blok = await api(`/portal.html?order=${encodeURIComponent('share/' + slug)}&qr=QR-003`);
+    const blok = await api(`/portal.html?order=${encodeURIComponent(String(portal.storage_root).replace(/^\/+/, ""))}&qr=QR-003`);
     assert.equal(blok.status, 410, 'прекратен QR дава blok страница');
     const blokHtml = await blok.text();
     assert.match(blokHtml, /QR-003/, 'страницата назовава прекратения QR');
@@ -220,7 +220,7 @@ const cleaned = [];
     const emptySlug = slug + '-empty';
     const emptyPortal = (await jsonOf('/admin/api/portals', 'POST', { slug: emptySlug, title: 'Празен QR', visibility: 'public' })).data;
     cleaned.push(emptyPortal.slug);
-    const emptyFolder = path.join(shareRoot, emptySlug);
+    const emptyFolder = portalFolderFor(storage, emptySlug);
     fs.mkdirSync(emptyFolder, { recursive: true });
     const emptyArchive = await jsonOf(`/admin/api/portals/${emptyPortal.id}/qr/archive`, 'POST', {});
     assert.equal(emptyArchive.status, 409, 'празна папка не се архивира');

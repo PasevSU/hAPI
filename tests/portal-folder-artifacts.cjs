@@ -34,7 +34,9 @@ const clean = () => fs.rmSync(DIR, { recursive: true, force: true });
   clean();
   fs.mkdirSync(path.join(DIR, 'Договори 2026'), { recursive: true });
   fs.writeFileSync(path.join(DIR, 'Договори 2026', 'анекс.txt'), DOC);
-  const server = await startServer({ env: { STORAGE_ROOT_OVERRIDE: storage.dir } });
+  // HAPI_PORTAL_STORAGE_ROOT_EDIT=1 е администраторският изход: от 0.69.211 панелът не мести папката,
+  // а тук се проверява точно какво става с генерираните файлове при местене (	ests/portal-storage-fixed.cjs).
+  const server = await startServer({ env: { STORAGE_ROOT_OVERRIDE: storage.dir, HAPI_PORTAL_STORAGE_ROOT_EDIT: '1' } });
   try {
     // ── 0. Общ корен не се пипа (гаранцията, а не надеждата) ─────────────────
     for (const root of ['/share', '/media', '']) {

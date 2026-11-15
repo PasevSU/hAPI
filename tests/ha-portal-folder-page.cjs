@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalDir, portalFolderFor } = require('./helpers.cjs');
 // СТРАНИЦАТА НА ПОРТАЛА, КОЯТО ИНТЕГРАЦИЯТА СЕРВИРА (0.69.147) — с РАБОТЕЩА папка.
 //
 // Интеграцията има собствен изглед `/api/hapi_enterprise/portal/<slug>` (изискван от
@@ -91,7 +91,7 @@ function mountIntegrationPortal(server, slug) {
       visibility: 'public',
     });
     assert.equal(made.status, 201, JSON.stringify(made.data));
-    const folder = path.join(shareRoot, withFolder);
+    const folder = portalDir(storage, made.data.storage_root);
     fs.mkdirSync(path.join(folder, 'архив'), { recursive: true });
     fs.writeFileSync(path.join(folder, 'протокол.txt'), 'съдържание', 'utf8');
 
@@ -153,7 +153,7 @@ function mountIntegrationPortal(server, slug) {
   } finally {
     for (const slug of [withFolder, shared]) {
       try { await server.api('/admin/api/portals/' + slug, 'DELETE') } catch { /* вече изтрит */ }
-      try { fs.rmSync(path.join(shareRoot, slug), { recursive: true, force: true }) } catch { /* заключен */ }
+      try { fs.rmSync(portalFolderFor(storage, withFolder), { recursive: true, force: true }) } catch { /* заключен */ }
     }
     await server.stop();
   }

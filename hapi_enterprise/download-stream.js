@@ -123,7 +123,7 @@ function create(deps) {
       ...(etag ? { ETag: etag } : {}),
       'Content-Type': 'application/octet-stream',
       'Content-Length': end - start + 1,
-      'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(name.replace(/[\r\n]/g, '')),
+      'Content-Disposition': ((opts && opts.inline) ? 'inline' : 'attachment') + "; filename*=UTF-8''" + encodeURIComponent(name.replace(/[\r\n]/g, '')),
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
       // Ограничението се обявява в отговора, за да не е „скрито“ поведение.

@@ -1079,9 +1079,13 @@
     const slug = field('slug').trim().toLowerCase();
     const title = field('title').trim();
     const visibility = field('visibility') || 'private';
-    // Празно поле → собствена папка на портала. С общ /share експлорерът показва ЦЯЛАТА
-    // директория на хранилището, а не файловете на портала (0.69.62).
-    const storageRoot = (field('storage_root').trim() || `/share/${slug}`).replace(/\/+$/, '') || `/share/${slug}`;
+    // Папката на портала НЕ се избира от панела (0.69.210): адресът ѝ идва от add-on-а
+    // (`paths.portalRootFor(slug)`), а сървърът отказва PATCH, който я мести. Полето се чете
+    // само защото стари форми/демо режимът още го подават.
+    const storageRoot = field('storage_root').trim().replace(/\/+$/, '');
+    // Квадратчето е отметнато по подразбиране: при създаване на портал се създава и неговият
+    // „само за преглед“ спътник със собствен QR (`hapi_enterprise/portal-view.js`).
+    const readonlyWanted = Boolean(form.querySelector('[name="readonly_view"]') && form.querySelector('[name="readonly_view"]').checked);
     if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) return toast('slug: 2–63 знака, a-z, 0-9, „-“', 'err');
     if (!title) return toast('Заглавието е задължително', 'err');
     // Срок и достъп — същите правила като `portal-term.js` на сървъра.
@@ -1095,7 +1099,7 @@
       return toast(T('portal.create.err.days'), 'err');
     if (!['free', 'locked'].includes(access)) return toast(T('portal.create.err.access'), 'err');
     if (access === 'locked' && password.length < 8) return toast(T('portal.create.err.password'), 'err');
-    if (!/^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(storageRoot) || storageRoot.includes('..'))
+    if (storageRoot && (!/^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(storageRoot) || storageRoot.includes('..')))
       return toast('Папката трябва да е под /share или /media (без „..“)', 'err');
     const foldered = folderFiles(form);
     let contactId = '';
@@ -1158,7 +1162,8 @@
         subject: field('subject'),
         flag: field('flag'),
         notes: field('notes'),
-        storage_root: storageRoot,
+        storage_root: storageRoot || undefined,
+        readonlyView: readonlyWanted,
         contactId,
         caseId,
       },
@@ -1280,12 +1285,7 @@
     } catch (e) {
       return toast(e.message, 'err');
     }
-    const storageRoot = String((form.storage_root && form.storage_root.value) || p.storage_root || '/share')
-      .trim()
-      .replace(/\/+$/, '') || '/share';
-    if (!/^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(storageRoot) || storageRoot.includes('..')) {
-      return toast('Папката трябва да е под /share или /media (без „..“)', 'err');
-    }
+    // Папката НЕ е част от payload-а: панелът не я променя, а сървърът връща 403 при опит.
     const payload = {
       title: String(form.title.value || '').trim(),
       description: String(form.description.value || '').trim(),
@@ -1293,7 +1293,6 @@
       category: String((form.category && form.category.value) || '').trim(),
       subject: String((form.subject && form.subject.value) || '').trim(),
       flag: (form.flag && form.flag.value) || 'none',
-      storage_root: storageRoot,
       contactId,
       caseId,
       visibility: form.visibility.value,
@@ -2254,14 +2253,12 @@
           ${caseSelect('')}
           ${newCaseFields()}
         </div>
-        <div class="field"><label>${ICON.folder} Папка с файлове в хранилището</label>
-          <input name="storage_root" list="pf-roots" value="" maxlength="240" placeholder="/share/portal-files (празно → /share/<slug>)" />
-          <datalist id="pf-roots">${[...new Set(['/share', '/media', ...state.portals.map((x) => x.storage_root || '/share')])]
-        .filter(Boolean)
-        .sort()
-        .map((r) => `<option value="${esc(r)}"></option>`)
-        .join('')}</datalist>
-          <small class="hint">Само под /share или /media. Ако оставиш полето празно, порталът получава СОБСТВЕНА папка <code>/share/&lt;slug&gt;</code> — иначе експлорерът щеше да показва целия /share.</small>
+        <div class="field"><label>${ICON.folder} ${esc(T('portal.create.folder'))}</label>
+          <code class="pf-fixed" data-pf-storage-root>add-on</code>
+          <small class="hint">${esc(T('portal.create.folderHint'))}</small>
+        </div>
+        <div class="field"><label>${ico('lock')} ${esc(T('portal.create.readonly'))}</label>
+          <label class="hint"><input type="checkbox" name="readonly_view" value="1" checked /> ${esc(T('portal.create.readonlyHint'))}</label>
         </div>
         <div class="field"><label>${ICON.folder} Качи файловете от папка на компютъра</label>
           <input type="file" id="pf-folder" webkitdirectory directory multiple />

@@ -1,10 +1,10 @@
 {
   "generatedFor": "hapi_enterprise",
-  "total": 414,
-  "tested": 391,
-  "untested": 23,
-  "fnTotal": 367,
-  "fnTested": 367,
+  "total": 419,
+  "tested": 394,
+  "untested": 25,
+  "fnTotal": 369,
+  "fnTested": 369,
   "modules": [
     {
       "module": "hapi_enterprise/api-registry.js",
@@ -950,6 +950,26 @@
           "tested": true
         },
         {
+          "name": "OPTION_ROOTS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "PORTAL_STORAGE_SUBDIR",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "portalRootFor",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "portalRootLogical",
+          "kind": "функция",
+          "tested": true
+        },
+        {
           "name": "resolveRoot",
           "kind": "функция",
           "tested": true
@@ -958,6 +978,11 @@
           "name": "resolveStoragePath",
           "kind": "функция",
           "tested": true
+        },
+        {
+          "name": "STORAGE_DEFAULTS",
+          "kind": "константа",
+          "tested": false
         },
         {
           "name": "TEMP_BASE",

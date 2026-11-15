@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalDir } = require('./helpers.cjs');
 // 0.69.76 — `order` е договорът на универсалния портал, а правилата за файловете се
 // прилага СЪРВЪРНО.
 //
@@ -46,13 +46,16 @@ const cleaned = [];
     const slug = 'ord-' + Date.now().toString(36);
     const portal = (await jsonOf('/admin/api/portals', 'POST', { slug, title: 'Портал с order', visibility: 'public' })).data;
     cleaned.push(portal.slug);
-    const folder = path.join(shareRoot, slug);
+    const folder = portalDir(storage, portal.storage_root);
     fs.mkdirSync(path.join(folder, 'архив'), { recursive: true });
     fs.writeFileSync(path.join(folder, 'данни.csv'), 'a,b\n1,2\n');
     fs.writeFileSync(path.join(folder, 'архив', 'стар.txt'), 'стар');
 
     // ── 1. Универсалният вход: `order` сочи папката на портала ────────────────
-    const page = await api('/portal.html?order=' + encodeURIComponent('share/' + slug));
+    // Стойността на `order` е ЛОГИЧЕСКИЯТ `storage_root` на портала без водеща наклонена
+    // черта — от 0.69.211 той е `/share/hapi/data/root_storage/<slug>`.
+    const orderOf = (x) => String(x.storage_root || '').replace(/^\/+/, '');
+    const page = await api('/portal.html?order=' + encodeURIComponent(orderOf(portal)));
     assert.equal(page.status, 200, 'order сервира страницата на портала');
     const pageHtml = await page.text();
     assert.match(pageHtml, /data-folders="1"/, 'страницата е в режим „папка“');
@@ -61,7 +64,7 @@ const cleaned = [];
     assert.match(pageHtml, /<div id="hapi-boot"/, 'това е приложението, не статичната страница на папката');
 
     // ── 2. Подпапка в `order` ────────────────────────────────────────────────
-    const sub = await api('/portal.html?order=' + encodeURIComponent(`share/${slug}/архив`));
+    const sub = await api('/portal.html?order=' + encodeURIComponent(`${orderOf(portal)}/архив`));
     assert.equal(sub.status, 200, 'order с подпапка се отваря');
     assert.match(await sub.text(), /data-folder="архив"/, 'подпапката стига до страницата');
 

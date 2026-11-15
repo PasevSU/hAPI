@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalDir, portalFolderFor } = require('./helpers.cjs');
 // ДОГОВОР (0.69.147): страницата на портала има БУТОН към папката на портала.
 //
 // Порталът е QR кодът, който води до файловете. Затова страницата, която посетителят
@@ -78,7 +78,7 @@ async function mountPortal(base, portalId) {
     assert.equal(created.status, 201, JSON.stringify(created.data));
     const portalId = created.data.id;
 
-    const folder = path.join(shareRoot, withFolder);
+    const folder = portalDir(storage, created.data.storage_root);
     fs.mkdirSync(path.join(folder, 'архив'), { recursive: true });
     fs.writeFileSync(path.join(folder, 'договор.txt'), 'съдържание', 'utf8');
 
@@ -134,7 +134,7 @@ async function mountPortal(base, portalId) {
   } finally {
     for (const slug of [withFolder, shared]) {
       try { await api('/admin/api/portals/' + slug, 'DELETE') } catch { /* вече изтрит */ }
-      try { fs.rmSync(path.join(shareRoot, slug), { recursive: true, force: true }) } catch { /* заключен файл */ }
+      try { fs.rmSync(portalFolderFor(storage, withFolder), { recursive: true, force: true }) } catch { /* заключен файл */ }
     }
     await server.stop();
   }

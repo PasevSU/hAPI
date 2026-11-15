@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalFolderFor } = require('./helpers.cjs');
 // ВЕРИГАТА НА ЦЕЛИЯ ПРОДУКТ, ПРОВЕРЕНА ОТ КРАЯ ДО КРАЯ (0.69.147):
 //
 //   QR кодът  →  страницата, която той отваря  →  бутонът „Отвори папката“  →  файловете
@@ -22,7 +22,7 @@ const { startServer, waitFor } = require('./lib/gui-harness.cjs');
 const { createDocument } = require('./lib/dom-stub.cjs');
 
 const storage = storageRoot();
-  const shareRoot = storage.share;
+
 
 /** Монтира живата страница (адреса, който носи QR кодът) в DOM. */
 async function mountAt(target) {
@@ -64,7 +64,7 @@ async function mountAt(target) {
 
 (async () => {
   const slug = 'qr-folder-' + Date.now().toString(36);
-  const folder = path.join(shareRoot, slug);
+  const folder = portalFolderFor(storage, slug);
   try { fs.rmSync(folder, { recursive: true, force: true }) } catch { /* заключен файл */ }
   const server = await startServer({ keepData: true, env: storage.env });
   try {

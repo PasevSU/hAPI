@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalFolderFor } = require('./helpers.cjs');
 // ДОГОВОР (0.69.141): страницата на портала НЕ Е „сайт с линкове“.
 //
 // До 0.69.140 посетителят получаваше: връзка „API“ и връзка „Манифест“ (суров JSON в нов
@@ -60,7 +60,7 @@ const intJs = fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterpr
   // Порталът получава собствена папка и се отваря в режим „папка“ — остатъци от предишно
   // пускане биха добавили чужди карти, затова папката се изчиства преди създаването.
   const storage = storageRoot();
-  const shareDir = path.join(storage.share, 'nolinks-demo');
+  const shareDir = portalFolderFor(storage, 'nolinks-demo');
   try { fs.rmSync(shareDir, { recursive: true, force: true }) } catch { /* заключен файл на Windows */ }
   const server = await startServer({ keepData: true, env: storage.env });
   const { api, authFetch, base } = server;
@@ -169,7 +169,7 @@ const intJs = fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterpr
     assert.ok(landing.includes('/api/v1/portals'), 'адресът на API-то се вижда като информация');
 
     // Един реален файл в папката на портала — страницата `/file.html` показва точно него.
-    const portalFolder = path.join(storage.share, 'nolinks-demo');
+    const portalFolder = portalFolderFor(storage, 'nolinks-demo');
     fs.mkdirSync(portalFolder, { recursive: true });
     fs.writeFileSync(path.join(portalFolder, 'doklad.txt'), 'съдържание за едностраничния изглед', 'utf8');
     const filePage = await (await fetch(`${base}/file.html?file=` + encodeURIComponent('nolinks-demo/doklad.txt'))).text();

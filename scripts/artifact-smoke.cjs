@@ -52,7 +52,14 @@ const slug = 'artifact-' + Date.now().toString(36);
 // `STORAGE_ROOT_OVERRIDE`, а тестът гледа същата папка (`<work>/storage/share`). Така
 // пускането не създава `<диск>:\share` на машината (DEF-54, `tests/storage-roots.cjs`).
 const storageRoot = path.join(work, 'storage');
-const shareRoot = path.join(storageRoot, 'share');
+
+// Логическият корен на порталите живее в `paths.js` — скриптът не го строи сам.
+const portalFolderOf = (name) =>
+  require('../hapi_enterprise/paths').resolveStoragePath(
+    require('../hapi_enterprise/paths').portalRootFor(name, { STORAGE_ROOT_OVERRIDE: storageRoot }),
+    '',
+    { STORAGE_ROOT_OVERRIDE: storageRoot },
+  );
 const H = { authorization: 'Bearer ' + token, 'content-type': 'application/json' };
 const checks = [];
 
@@ -78,7 +85,8 @@ const checks = [];
     const portal = await created.json();
     if (created.status !== 201) throw new Error('порталът не се създава: ' + created.status + ' ' + JSON.stringify(portal));
 
-    const folder = path.join(shareRoot, slug);
+    // Папката на портала идва от `paths.portalRootFor` (0.69.211): `<корен>/<slug>`.
+    const folder = portalFolderOf(slug);
     fs.mkdirSync(folder, { recursive: true });
     fs.writeFileSync(path.join(folder, 'договор.txt'), 'съдържание от изданието');
     const sha = crypto.createHash('sha256').update(fs.readFileSync(path.join(folder, 'договор.txt'))).digest('hex');
@@ -197,8 +205,8 @@ const checks = [];
       child.once('exit', () => resolve());
       setTimeout(resolve, 3000);
     });
-    fs.rmSync(path.join(shareRoot, slug), { recursive: true, force: true });
-    fs.rmSync(path.join(shareRoot, slug + '-dst'), { recursive: true, force: true });
+    fs.rmSync(portalFolderOf(slug), { recursive: true, force: true });
+    fs.rmSync(portalFolderOf(slug + '-dst'), { recursive: true, force: true });
     for (let i = 0; i < 5; i++) {
       try { fs.rmSync(work, { recursive: true, force: true }); break } catch { await new Promise((r) => setTimeout(r, 300)) }
     }

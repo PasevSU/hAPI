@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalDir } = require('./helpers.cjs');
 // 0.69.83 — идентичност на съдържанието (`content_id`), §11 и §12 от HAPI-ARCH-API-001.
 //
 // Проверява се ТВЪРДЕНИЕТО, а не наличието на поле: един номер не може да обозначава две
@@ -66,7 +66,7 @@ const cleaned = [];
     const slug = 'cid-' + Date.now().toString(36);
     const portal = (await jsonOf('/admin/api/portals', 'POST', { slug, title: 'Съдържание', visibility: 'public' })).data;
     cleaned.push(portal.slug);
-    fs.mkdirSync(path.join(shareRoot, slug), { recursive: true });
+    fs.mkdirSync(portalDir(storage, portal.storage_root), { recursive: true });
 
     // ── 2. Файлът носи content_id още при качване ─────────────────────────────
     console.log('· всеки качен файл получава собствен content_id');
@@ -88,7 +88,7 @@ const cleaned = [];
     console.log('· манифестът свързва content_id → sha256 → manifest_id → qr_id');
     // Архивира се ПАПКАТА на портала (source of truth за `order`); затова втората версия
     // се слага и на диска — така манифестът описва точно байтовете, които са публикувани.
-    fs.writeFileSync(path.join(shareRoot, slug, 'договор.pdf'), 'втора версия');
+    fs.writeFileSync(path.join(portalDir(storage, portal.storage_root), 'договор.pdf'), 'втора версия');
     const made = await jsonOf(`/admin/api/portals/${portal.id}/qr/archive`, 'POST', { note: 'версия 1 и 2' });
     assert.equal(made.status, 201, 'архивът се създава');
     const zip = Buffer.from(await (await server.authFetch(server.base + `/admin/api/portals/${portal.id}/qr/QR-001/archive`)).arrayBuffer());

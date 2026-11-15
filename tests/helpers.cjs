@@ -20,6 +20,38 @@ function storageRoot() {
 }
 
 /**
+ * Папката на портала на диска, изчислена от ЛОГИЧЕСКИЯ `storage_root` през `paths.js`.
+ *
+ * Тестът не бива да строи `<share>/<slug>` сам: от 0.69.210 коренът на порталите е
+ * `/share/hapi/data/root_storage` и живее на едно място (`paths.portalRootLogical`).
+ * @param {{dir: string, share: string, env: object}} storage резултат от `storageRoot()`
+ * @param {string} storageRootValue `storage_root` на портала, както го връща API-то
+ * @returns {string} абсолютен път на host
+ */
+function portalDir(storage, storageRootValue) {
+  // Закъсняло `require`, за да не тегли `paths.js` всеки тест, който не мери папки.
+  const paths = require('../hapi_enterprise/paths');
+  return paths.resolveStoragePath(storageRootValue, '', storage.env);
+}
+
+/** Логическият корен на порталите за средата на теста (напр. `/share/hapi/data/root_storage`). */
+function portalBase(storage) {
+  const paths = require('../hapi_enterprise/paths');
+  return paths.portalRootLogical(storage.env);
+}
+
+/**
+ * Папката, която НОВ портал с този slug ще получи — за тестове, които пишат във файловете
+ * преди саморъчно създадения портал (или преди да има отговор от API-то).
+ * @param {{dir: string, share: string, env: object}} storage
+ * @param {string} slug
+ */
+function portalFolderFor(storage, slug) {
+  const paths = require('../hapi_enterprise/paths');
+  return paths.resolveStoragePath(paths.portalRootFor(slug, storage.env), '', storage.env);
+}
+
+/**
  * Спира дете и чака изход.
  *
  * Бюджетът е 15 s, не 5 s: измерено (DEF-55) — на натоварена машина сървърът със SQLite
@@ -211,4 +243,4 @@ async function waitHealthy(child, base, { attempts = 160, delay = 50, stderr = n
   throw new Error(`сървърът не стартира на ${base} (изчакани ${attempts} опита)${tail()}`);
 }
 
-module.exports = { stopChild, stopTree, reapInstance, freePort, waitHealthy, storageRoot };
+module.exports = { stopChild, stopTree, reapInstance, freePort, waitHealthy, storageRoot, portalDir, portalBase, portalFolderFor };

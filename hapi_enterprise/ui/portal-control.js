@@ -49,12 +49,7 @@
                 <small class="hint">${esc(T('pc.case.hint'))}</small>
               </div>
               <div class="field"><label>${ICON.folder} ${esc(T('pc.field.storage'))}</label>
-                <input name="storage_root" value="${esc(p.storage_root || '/share')}" maxlength="240" list="pf-roots-set" />
-                <datalist id="pf-roots-set">${[...new Set(['/share', '/media', ...state.portals.map((x) => x.storage_root || '/share')])]
-          .filter(Boolean)
-          .sort()
-          .map((r) => `<option value="${esc(r)}"></option>`)
-          .join('')}</datalist>
+                <code class="pf-fixed" data-pf-storage-root>${esc(p.storage_root || '')}</code>
                 <small class="hint">${esc(T('pc.storage.hint'))}</small>
               </div>
               <div class="field"><label>${esc(T('pc.field.description'))}</label><textarea name="description" rows="2">${esc(p.description)}</textarea></div>

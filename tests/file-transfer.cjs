@@ -16,7 +16,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
-const { stopChild, freePort, storageRoot } = require('./helpers.cjs');
+const { stopChild, freePort, storageRoot, portalDir, portalFolderFor } = require('./helpers.cjs');
 
 const ROOT = path.join(__dirname, '..');
 const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -34,7 +34,7 @@ let step = 'старт';
     cwd: dir,
     stdio: 'ignore',
   });
-  const shareRoot = storage.share;
+
   const base = `http://127.0.0.1:${port}`;
   const once = async (p, method = 'GET', data, headers = {}) => {
     const r = await fetch(base + p, { method, headers: { Authorization: 'Bearer ' + token, ...headers }, body: data });
@@ -69,7 +69,7 @@ let step = 'старт';
     const B = (await json('/admin/api/portals', 'POST', { slug: 'cel', title: 'Цел' })).value;
     assert.ok(A.id && B.id, 'двата портала са създадени');
     // Папката на портала по подразбиране е `/share/<slug>` — там се архивира QR.
-    const folderA = path.join(shareRoot, A.slug);
+    const folderA = portalDir(storage, A.storage_root);
     fs.mkdirSync(folderA, { recursive: true });
     const body = Buffer.from('съдържание на документа, което трябва да оцелее при прехвърляне', 'utf8');
     const src = (await upload(A.id, 'документ.txt', body)).value;
@@ -168,13 +168,13 @@ let step = 'старт';
     step = 'изтриване на портал с доказателства';
     const C = (await json('/admin/api/portals', 'POST', { slug: 'treti', title: 'Трети', visibility: 'public' })).value;
     assert.ok(C.id, 'третият портал е създаден');
-    fs.mkdirSync(path.join(shareRoot, C.slug), { recursive: true });
+    fs.mkdirSync(portalDir(storage, C.storage_root), { recursive: true });
     // След 0.69.87 архивираните файлове СА заключени и на Windows (`0444` → EPERM при запис),
     // а папката на портала остава след принудителното изтриване — пазим доказателства. Затова
     // при ПОВТОРНО пускане на теста файлът от предишния опит е там и е само за четене.
     // `unlink` не се спира от `chmod`, тоест остатъкът се маха, вместо тестът да пада на втория опит.
-    fs.rmSync(path.join(shareRoot, C.slug, 'архив.txt'), { force: true });
-    fs.writeFileSync(path.join(shareRoot, C.slug, 'архив.txt'), 'съдържание за QR');
+    fs.rmSync(path.join(portalDir(storage, C.storage_root), 'архив.txt'), { force: true });
+    fs.writeFileSync(path.join(portalDir(storage, C.storage_root), 'архив.txt'), 'съдържание за QR');
     const archivedC = await json(`/admin/api/portals/${C.id}/qr/archive`, 'POST', { note: 'преди изтриване' });
     assert.equal(archivedC.status, 201, 'QR архивът на третия портал е създаден');
     const plainDelete = await call(`/admin/api/portals/${C.id}`, 'DELETE');
@@ -191,7 +191,7 @@ let step = 'старт';
   } finally {
     await stopChild(child);
     fs.rmSync(dir, { recursive: true, force: true });
-    for (const slug of ['iztochnik', 'cel']) fs.rmSync(path.join(shareRoot, slug), { recursive: true, force: true });
+    for (const slug of ['iztochnik', 'cel']) fs.rmSync(portalFolderFor(storage, slug), { recursive: true, force: true });
     fs.rmSync(storage.dir, { recursive: true, force: true });
   }
 })().catch((e) => {

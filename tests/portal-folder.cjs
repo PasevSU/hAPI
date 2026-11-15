@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalDir, portalBase } = require('./helpers.cjs');
 // 0.69.63: папката на портала — там СА файловете, с истинските им имена, и има portal.html.
 //
 // Какво се мери на живия сървър (не се твърди „работи“, а се гледа диска):
@@ -44,8 +44,11 @@ let created = null;
     created = portal;
 
     // ── 1. Собствена папка, създадена веднага ────────────────────────────────
-    assert.equal(portal.storage_root, '/share/' + slug, 'порталът получава собствена папка, не целия /share');
-    const folder = path.join(shareRoot, slug);
+    // От 0.69.210 коренът на порталите е `/share/hapi/data/root_storage` (едно място:
+    // `paths.portalRootLogical`) — тестът го взима оттам, а не го строи сам.
+    assert.equal(portal.storage_root, portalBase(storage) + '/' + slug, 'порталът получава собствена папка, не целия /share');
+    assert.ok(portal.storage_root.startsWith(portalBase(storage) + '/'), 'папката е под корена на порталите: ' + portal.storage_root);
+    const folder = portalDir(storage, portal.storage_root);
     assert.equal(fs.existsSync(folder), true, 'папката на портала съществува на диска: ' + folder);
     assert.equal(fs.statSync(folder).isDirectory(), true);
 
@@ -135,12 +138,12 @@ let created = null;
     const fresh = await api('/admin/api/portals', 'POST', { slug: freshSlug, title: 'Чист портал' });
     assert.equal(fresh.status, 201, 'нов портал се създава дори когато /share е пълен');
     const freshPortal = await fresh.json();
-    assert.equal(freshPortal.storage_root, '/share/' + freshSlug, 'новият портал сочи СВОЯТА папка');
+    assert.equal(freshPortal.storage_root, portalBase(storage) + '/' + freshSlug, 'новият портал сочи СВОЯТА папка');
     assert.equal(freshPortal.fileCount, 0, 'новият портал е с 0 файла, а не с чуждите');
     const freshTree = await (await api(`/admin/api/portals/${freshPortal.id}/tree`)).json();
     assert.deepEqual((freshTree.tree.files || []).map((f) => f.name), [], 'дървото на новия портал е празно');
     fs.rmSync(neighbour, { recursive: true, force: true });
-    fs.rmSync(path.join(shareRoot, freshSlug), { recursive: true, force: true });
+    fs.rmSync(portalDir(storage, freshPortal.storage_root), { recursive: true, force: true });
 
     // ── 8. Изтриването маха файла и от диска ─────────────────────────────────
     const del = await api(`/admin/api/portals/${portal.id}/files/${file.id}`, 'DELETE');

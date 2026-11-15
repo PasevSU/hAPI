@@ -1,5 +1,5 @@
 'use strict';
-const { storageRoot } = require('./helpers.cjs');
+const { storageRoot, portalDir, portalBase } = require('./helpers.cjs');
 // 0.69.75 — ЕДИН публичен вход и ЕДНА папка.
 //
 // Порталите вече не изискват всеки файл да е „регистриран“ и да получи собствен адрес:
@@ -43,9 +43,9 @@ const cleaned = [];
     assert.equal(created.status, 201, 'порталът се създава: ' + JSON.stringify(created.data).slice(0, 200));
     const portal = created.data;
     cleaned.push(portal.slug);
-    assert.equal(portal.storage_root, '/share/' + slug, 'порталът има собствена папка');
+    assert.equal(portal.storage_root, portalBase(storage) + '/' + slug, 'порталът има собствена папка');
 
-    const folder = path.join(shareRoot, slug);
+    const folder = portalDir(storage, portal.storage_root);
     const put = (rel, text) => {
       const full = path.join(folder, ...rel.split('/'));
       fs.mkdirSync(path.dirname(full), { recursive: true });
@@ -130,16 +130,19 @@ const cleaned = [];
     const privSlug = slug + '-priv';
     const priv = (await jsonOf('/admin/api/portals', 'POST', { slug: privSlug, title: 'Частен', visibility: 'private' })).data;
     cleaned.push(priv.slug);
-    const privFolder = path.join(shareRoot, privSlug);
+    const privFolder = portalDir(storage, priv.storage_root);
     fs.mkdirSync(privFolder, { recursive: true });
     fs.writeFileSync(path.join(privFolder, 'таен.txt'), 'само за свои');
     assert.equal((await api(`/api/v1/p/${privSlug}/tree/file?path=${encodeURIComponent('/таен.txt')}`)).status, 404, 'частен портал: файлът не се дава');
     assert.equal((await api('/p/' + priv.id)).status, 404, 'частен портал: страницата не се отваря');
 
     // ── 7. Общ корен (`/share`) не се отдава ─────────────────────────────────
-    const bare = (await jsonOf('/admin/api/portals', 'POST', { slug: slug + '-bare', title: 'Общ корен', visibility: 'public' })).data;
+    // Коренът се задава ПРИ СЪЗДАВАНЕТО: от 0.69.210 PATCH не мести папката на портала
+    // (`tests/portal-storage-fixed.cjs`). Тук се проверява следствието — такъв портал не
+    // отдава файловете на другите портали.
+    const bare = (await jsonOf('/admin/api/portals', 'POST', { slug: slug + '-bare', title: 'Общ корен', visibility: 'public', storage_root: '/share' })).data;
     cleaned.push(bare.slug);
-    assert.equal((await jsonOf(`/admin/api/portals/${bare.id}`, 'PATCH', { storage_root: '/share' })).status, 200, 'порталът може да сочи общия корен (за списък)');
+    assert.equal(bare.storage_root, '/share', 'порталът може да сочи общия корен (за списък)');
     const bareDl = await api(`/api/v1/p/${bare.slug}/tree/file?path=${encodeURIComponent('/' + slug + '/данни.csv')}`);
     assert.equal(bareDl.status, 403, 'общият корен НЕ отдава файловете на другите портали');
     await bareDl.arrayBuffer();
@@ -147,7 +150,7 @@ const cleaned = [];
     // ── 8. api-info сочи СТРАНИЦАТА (тя отваря папката) ──────────────────────
     const info = (await jsonOf(`/admin/api/portals/${portal.id}/api-info`)).data;
     assert.equal(info.folderUrl, info.landingUrl, 'адресът за споделяне е страницата, която отваря папката');
-    assert.equal(info.folder, 'share/' + slug, 'api-info назовава коя папка се сервира');
+    assert.equal(info.folder, portal.storage_root.replace(/^\/+/, ''), 'api-info назовава коя папка се сервира');
     assert.ok(info.qrTarget.startsWith(info.landingUrl), 'QR кодът води към страницата');
     assert.equal(info.qrTarget, info.landingUrl, 'публичният портал не носи подпис — не му е нужен');
     // Частният портал: същият адрес, но с краткотраен подпис, който отваря И папката.

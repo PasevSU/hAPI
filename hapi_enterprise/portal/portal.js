@@ -1358,6 +1358,10 @@ async function loadQrInfo() {
     if (!portalRes.ok) throw new Error(T("error.portal"));
     if (!filesRes.ok) throw new Error(T("error.files"));
     portal = await portalRes.json();
+    // Портал „само за преглед“ (`readonly`, спътникът на нормалния портал): казва го ясно,
+    // преди човек да е опитал да свали нещо. Файловете идват `inline` от сървъра, а пакетът
+    // (ZIP) е отказан — това не е настройка на страницата, а политика на записа.
+    if (portal && portal.readonly) setStatus(T("portal.readonly.hint"));
     const listing = await filesRes.json();
     allFiles = Array.isArray(listing.files) ? listing.files : [];
     prof = buildProfile(allFiles, portal);

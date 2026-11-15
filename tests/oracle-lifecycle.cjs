@@ -30,7 +30,7 @@ const findPortal = async (server, id) => {
     assert.equal(portal.visibility, 'private', 'по подразбиране порталът е ЛИЧЕН, не публичен');
     // 0.69.62: порталът получава СОБСТВЕНА папка по подразбиране — иначе експлорерът
     // показва целия /share (чужди папки), а не файловете на портала.
-    assert.equal(portal.storage_root, '/share/oracle-life', 'по подразбиране хранилището е /share/<slug>');
+    assert.equal(portal.storage_root, '/share/hapi/data/root_storage/oracle-life', 'по подразбиране хранилището е под корена на порталите');
     assert.equal(portal.fileCount, 0, 'нов портал има 0 файла');
     assert.equal(portal.flag, 'none', 'нов портал няма флаг');
     assert.equal(new Date(portal.createdAt).toISOString(), portal.createdAt, 'createdAt е валиден ISO низ');

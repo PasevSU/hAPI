@@ -3,12 +3,12 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 412 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 414 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 185 |
-| портал | 45 |
+| портал | 47 |
 | GUI | 31 |
 | Home Assistant | 18 |
 | отчети | 16 |
@@ -231,7 +231,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (45)
+## портал (47)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -271,9 +271,11 @@
 | `portal-qr-badge` | Portal qr badge | `tests/portal-qr-badge.cjs` |
 | `portal-qr-levels` | Portal qr levels | `tests/portal-qr-levels.cjs` |
 | `portal-qr-restore` | Portal qr restore | `tests/portal-qr-restore.cjs` |
+| `portal-readonly` | Portal readonly | `tests/portal-readonly.cjs` |
 | `portal-root-page` | Portal root page | `tests/portal-root-page.cjs` |
 | `portal-rules-applied` | Portal rules applied | `tests/portal-rules-applied.cjs` |
 | `portal-skin` | Portal skin | `tests/portal-skin.cjs` |
+| `portal-storage-fixed` | Portal storage fixed | `tests/portal-storage-fixed.cjs` |
 | `portal-term` | Portal term | `tests/portal-term.cjs` |
 | `portal-tokens` | Portal tokens | `tests/portal-tokens.cjs` |
 | `portal-tree-all` | Portal tree all | `tests/portal-tree-all.cjs` |

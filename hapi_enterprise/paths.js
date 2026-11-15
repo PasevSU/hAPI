@@ -36,7 +36,22 @@ const ENV = Object.freeze({
   STORAGE_LOCATION: 'STORAGE_LOCATION',
   /** Подпапка под корена (`hapi/data` по подразбиране). */
   STORAGE_SUBDIRECTORY: 'STORAGE_SUBDIRECTORY',
+  /** Име на монтирането при мрежово хранилище (`storage_mode: ha_network`). */
+  STORAGE_MOUNT: 'STORAGE_MOUNT_NAME',
 });
+
+/**
+ * Подразбиранията на хранилището — същите, които `storage-preflight.js` прилага към опциите
+ * `storage_location` / `storage_subdirectory`. Живеят ТУК, защото от тях зависи и логическият
+ * корен на порталите: втори списък с корени е забранен (`tests/storage-roots.cjs` §2б).
+ */
+const STORAGE_DEFAULTS = Object.freeze({ location: 'share', subdirectory: 'hapi/data' });
+
+/** Имената в опциите на add-on-а → ключове на `LOGICAL_ROOTS`. Единственото превеждане. */
+const OPTION_ROOTS = Object.freeze({ addon_config: 'config', media: 'media', share: 'share' });
+
+/** Подпапката на хранилището, в която живеят документите на порталите. */
+const PORTAL_STORAGE_SUBDIR = 'root_storage';
 
 /** Подпапката на временната папка, в която падат корените извън контейнера. */
 const TEMP_BASE = 'hapi-storage';
@@ -109,6 +124,33 @@ function resolveStoragePath(storageRoot, slug = '', env = process.env) {
 }
 
 /**
+ * Логическият корен на порталите — папката, в която нов портал получава СВОЯ подпапка.
+ *
+ * По подразбиране `/share/hapi/data/root_storage`: вътре в хранилището на add-on-а, но в
+ * отделна папка, за да не се смесват базата/настройките с потребителските документи.
+ * `STORAGE_LOCATION` и `STORAGE_SUBDIRECTORY` идват от storage preflight-а (той ги записва в
+ * env), затова при избрано `/media` или `addon_config` коренът следва избора, вместо да е
+ * закован към `/share`.
+ *
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {string} логически път, напр. `/share/hapi/data/root_storage`
+ */
+function portalRootLogical(env = process.env) {
+  const location = String(env[ENV.STORAGE_LOCATION] || '').trim() || STORAGE_DEFAULTS.location;
+  const sub = String(env[ENV.STORAGE_SUBDIRECTORY] || '').trim() || STORAGE_DEFAULTS.subdirectory;
+  const name = OPTION_ROOTS[location];
+  if (!name) throw new Error('Unknown storage location: ' + location);
+  const mount = String(env[ENV.STORAGE_MOUNT] || '').trim();
+  return [LOGICAL_ROOTS[name], mount, sub, PORTAL_STORAGE_SUBDIR].filter(Boolean).join('/').replace(/\/{2,}/g, '/');
+}
+
+/** Логическата папка на един портал: `<корен на порталите>/<slug>`. */
+function portalRootFor(slug, env = process.env) {
+  const base = portalRootLogical(env).replace(/\/+$/, '');
+  return base + '/' + String(slug || '').trim();
+}
+
+/**
  * Реалният път на логически корен, САМО ако той наистина съществува на тази машина.
  *
  * За разлика от `resolveRoot()` не подменя с временна папка: когато `/share` липсва, това е
@@ -139,9 +181,14 @@ module.exports = {
   CONFIG_ROOTS,
   ENV,
   TEMP_BASE,
+  STORAGE_DEFAULTS,
+  OPTION_ROOTS,
+  PORTAL_STORAGE_SUBDIR,
   isLogicalRoot,
   logicalRoot,
   existingRoot,
   resolveRoot,
   resolveStoragePath,
+  portalRootLogical,
+  portalRootFor,
 };
