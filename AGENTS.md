@@ -53,8 +53,9 @@
   Изключение: ~2 047 файла със собственик `BUILTIN\Administrators` не приемат Low integrity
   етикет — тях ги пиши с `write`/`edit`, не през shell. Възстановяване на правата:
   `D:\hAPI-acl-recovery\` (DACL) и `icacls D:\hAPI /setintegritylevel M /t` (етикети).
-- `origin/main` изостава от локалния `main`; виж `dev/PROJECT-ANALYSIS-2026-11-07.md` (R1)
-  преди `git push` — историята е разклонена.
+- `origin/main` изостава от локалния `main` (измерено 2026-11-15: **8 комита напред, 0 назад** —
+  историята НЕ е разклонена, push-ът е fast-forward). Историческата бележка за разклоняване е в
+  `dev/PROJECT-ANALYSIS-2026-11-07.md` (R1); при ново разклоняване там се добавя ред.
 
 ## Капани
 
