@@ -21,9 +21,9 @@
     const badges = [
       st.id === 'public' ? '' : `<span class="state-chip ${st.cls}" title="${esc(stateTitle)}">${esc(st.label)}</span>`,
       x.encrypted
-        ? `<span class="state-chip enc" title="Шифрован (AES-256-GCM)">шифрован</span>`
+        ? `<span class="state-chip enc" title="${esc(T('pfl.enc.title'))}">${esc(T('pfl.enc'))}</span>`
         : '',
-      x.locked ? `<span class="state-chip err" title="Заключен файл (без промени)">заключен</span>` : '',
+      x.locked ? `<span class="state-chip err" title="${esc(T('pfl.locked.title'))}">${esc(T('pfl.locked'))}</span>` : '',
     ]
       .filter(Boolean)
       .join('');
@@ -38,8 +38,8 @@
     const all = ctx.ACTIONS || [];
     const menu = !gear
       ? ''
-      : `<div class="fm-gear fm-file-gear" data-gear-for="${esc(x.id)}" role="menu" aria-label="Опции на файла ${esc(
-        x.name,
+      : `<div class="fm-gear fm-file-gear" data-gear-for="${esc(x.id)}" role="menu" aria-label="${esc(
+        T('pfl.gear.alt', { name: x.name }),
       )}">
           ${all.filter((a) => a.id !== 'delete').map(row).join('')}
           <hr class="fm-gear-sep" />
@@ -52,7 +52,7 @@
     return `<article class="fm-file ${open ? 'fm-selected' : ''}" data-id="${esc(x.id)}">
                          <div class="fm-file-head">
                            <input type="checkbox" class="fm-file-check" data-pick="${esc(x.id)}" ${state.selectedIds.has(x.id) ? 'checked' : ''
-      } aria-label="Избор на ${esc(x.name)}" title="Избор на файл: ${esc(x.name)}" />
+      } aria-label="${esc(T('pfl.pick.alt', { name: x.name }))}" title="${esc(T('pfl.pick.title', { name: x.name }))}" />
                            <div class="fm-file-title">
                              <button type="button" class="link-btn fm-file-name" data-open-file="${esc(x.id)}">${ico(
       open ? 'chevronDown' : 'chevronRight',
@@ -60,33 +60,33 @@
                              <span class="fm-file-badges">${badges}</span>
                            </div>
                            <span class="fm-file-icons">
-                             <span class="fm-file-ico" aria-hidden="true" title="Тип на файла: ${esc(
-      x.name,
+                             <span class="fm-file-ico" aria-hidden="true" title="${esc(
+      T('pfl.type.title', { name: x.name }),
     )}">${fileGlyph(x)}</span>
                              ${/* „обяви“: чекбоксът обявява файла в портала — тогава той се вижда на
                                   страницата, към която води QR кодът. Същият флаг `listed`, който
                                   пази и публичният API (скрит файл → 404). */ ''}
                              <label class="fm-publish" title="${x.listed
-      ? 'Обявен в портала — вижда се на страницата, към която води QR кодът. Щракни, за да го скриеш'
-      : 'Скрит — не се вижда на страницата на портала. Щракни, за да го обявиш'
+      ? esc(T('pfl.listed.on.title'))
+      : esc(T('pfl.listed.off.title'))
       }"><input type="checkbox" data-file-listed="${esc(x.id)}" ${x.listed ? 'checked' : ''
-      } aria-label="Обявен в портала: ${esc(x.name)}" /><span aria-hidden="true">обяви</span></label>
+      } aria-label="${esc(T('pfl.listed.alt', { name: x.name }))}" /><span aria-hidden="true">${esc(T('pfl.listed.label'))}</span></label>
                              <button type="button" class="fm-ico-btn ${x.locked ? 'on' : 'off'}" data-file-lock="${esc(
         x.id,
       )}" aria-pressed="${Boolean(x.locked)}" title="${x.locked
-        ? `Заключен${x.lockedBy ? ` (${x.lockedBy})` : ''} — щракни, за да отключиш`
-        : 'Отключен — щракни, за да заключиш (без качване и изтриване)'
+        ? esc(T('pfl.lock.on.title', { by: x.lockedBy ? ` (${x.lockedBy})` : '' }))
+        : esc(T('pfl.lock.off.title'))
       }">${x.locked ? ICON.locked : ICON.unlocked}</button>
                              <button type="button" class="fm-ico-btn fm-opts ${gear ? 'on' : ''}" data-file-gear="${esc(
         x.id,
-      )}" title="Опции на файла" aria-label="Опции на ${esc(
-        x.name,
+      )}" title="${esc(T('pfl.gear.title'))}" aria-label="${esc(
+        T('pfl.gear.alt', { name: x.name }),
       )}" aria-expanded="${gear}">${ico('gear')}</button>
                            </span>
                          </div>
                          ${menu}
                          <p class="fm-file-sub">${taxonomy.length ? `${esc(taxonomy.join(' / '))} · ` : ''
-      }<span title="Уникален идентификатор на файла">${ICON.id} id: <code>${esc(x.id)}</code></span></p>
+      }<span title="${esc(T('pfl.id.title'))}">${ICON.id} id: <code>${esc(x.id)}</code></span></p>
                          ${
       // Празна бележка не се изписва — редът се показва само когато има текст.
       x.notes ? `<hr class="u-divider" /><p class="fm-file-notes">${ICON.modified} ${esc(x.notes)}</p>` : ''
@@ -94,7 +94,7 @@
                          ${open
         ? `<hr class="u-divider strong" />
                                 <div class="fm-detail">
-                                  <div class="u-row u-row-1"><button type="button" class="btn btn-sm" id="fm-back">← Затвори панела</button></div>
+                                  <div class="u-row u-row-1"><button type="button" class="btn btn-sm" id="fm-back">← ${esc(T('pfl.close'))}</button></div>
                                   ${actionsPane(x)}
                                 </div>`
         : ''
@@ -120,10 +120,10 @@
                            <div class="fm-file-title">
                              <span class="fm-file-name">${esc(x.name)}</span>
                              <span class="fm-file-badges">
-                               <span class="state-chip warn" title="Файлът е само в папката на диска и не е регистриран в портала">хранилище</span>
-                               <code class="fm-code" title="Политика за достъп">—</code>
+                               <span class="state-chip warn" title="${esc(T('pfl.storage.chip.title'))}">${esc(T('pfl.storage.chip'))}</span>
+                               <code class="fm-code" title="${esc(T('pfl.policy.title'))}">—</code>
                                ${flags.locked
-        ? `<span class="fm-ico" title="Папката е заключена"><span class="fm-ico-g" aria-hidden="true">${ICON.locked}</span><span class="fm-ico-v">заключване</span></span>`
+        ? `<span class="fm-ico" title="${esc(T('pfl.folderLocked.title'))}"><span class="fm-ico-g" aria-hidden="true">${ICON.locked}</span><span class="fm-ico-v">${esc(T('pfl.folderLocked'))}</span></span>`
         : ''
       }
                              </span>
@@ -131,23 +131,23 @@
                          </div>
                          <p class="fm-file-sub">${ICON.folder} <code title="${esc(x.path)}">${esc(x.path)}</code></p>
                          <div class="fm-ico-row u-grid u-grid-chips">
-                           ${chip(ICON.size, 'Размер', `${fmtSize(x.size)} (${x.size} B)`, fmtSize(x.size))}
-                           ${chip(ICON.version, 'Версия', '—', '—')}
-                           ${chip(ICON.hash, 'SHA-256', 'изчислява се при регистриране', '—')}
-                           ${chip(ICON.id, 'id на файла', '—', '—')}
-                           ${chip(ICON.created, 'Създаден', stamp || '—', fmtDate(stamp))}
-                           ${chip(ICON.modified, 'Последна промяна', stamp || '—', fmtDate(stamp))}
+                           ${chip(ICON.size, T('pfl.chip.size'), `${fmtSize(x.size)} (${x.size} B)`, fmtSize(x.size))}
+                           ${chip(ICON.version, T('pfl.chip.version'), '—', '—')}
+                           ${chip(ICON.hash, 'SHA-256', T('pfl.chip.sha.note'), '—')}
+                           ${chip(ICON.id, T('pfl.chip.id'), '—', '—')}
+                           ${chip(ICON.created, T('pfl.chip.created'), stamp || '—', fmtDate(stamp))}
+                           ${chip(ICON.modified, T('pfl.chip.modified'), stamp || '—', fmtDate(stamp))}
                            ${chip(
         ICON.unlocked,
-        'Заключване',
-        flags.locked ? 'папката е заключена' : 'не е заключен',
-        flags.locked ? 'заключен' : 'свободен',
+        T('pfl.chip.lock'),
+        flags.locked ? T('pfl.chip.lock.folder') : T('pfl.chip.lock.off'),
+        flags.locked ? T('pfl.chip.lock.locked') : T('pfl.chip.lock.free'),
       )}
                          </div>
                          <hr class="u-divider" />
-                         <p class="fm-file-notes"><span class="hint">Вижда се от папката на портала; регистрирай го, за да има id, хеш, версия, действия и API.</span></p>
+                         <p class="fm-file-notes"><span class="hint">${esc(T('pfl.storageNote'))}</span></p>
                          <div class="u-row u-row-1">
-                           <button type="button" class="btn btn-sm btn-primary" data-register-file="${esc(x.path)}" ${flags.locked ? 'disabled' : ''} title="Регистрирай файла в портала (копира го и добавя id, SHA-256, версия и политика)">Регистрирай в портала</button>
+                           <button type="button" class="btn btn-sm btn-primary" data-register-file="${esc(x.path)}" ${flags.locked ? 'disabled' : ''} title="${esc(T('pfl.register.title'))}">${esc(T('pfl.register'))}</button>
                          </div>
                        </article>`;
   }
@@ -162,58 +162,59 @@
     return `
       <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="files">
         <div class="pf-block-head">
-          <h5><button type="button" class="link-btn pf-block-tog" data-pf-files-tog aria-expanded="${open}" ${open ? 'aria-controls="pf-files-body"' : ''} title="${open ? 'Сгъни' : 'Разгъни'
-      } файловете на портала">${ico(open ? 'chevronDown' : 'chevronRight')} ${ico('file')} Файлове в портала (${scoped.length}) · <code>${esc(treePath(scope))}</code></button></h5>
+          <h5><button type="button" class="link-btn pf-block-tog" data-pf-files-tog aria-expanded="${open}" ${open ? 'aria-controls="pf-files-body"' : ''} title="${esc(
+        T('pfl.toggle.title', { action: open ? T('pfl.toggle.collapse') : T('pfl.toggle.expand') }),
+      )}">${ico(open ? 'chevronDown' : 'chevronRight')} ${ico('file')} ${esc(T('pfl.title', { n: scoped.length }))} · <code>${esc(treePath(scope))}</code></button></h5>
           ${open ? `<span class="fm-ico-actions">
             <button type="button" class="fm-ico-btn" data-register-folder title="${esc(T('portal.reg.allTitle', { where: treePath(scope) }))}">${ico('file')} <span class="fm-ico-label">${esc(T('portal.reg.allLabel'))}</span></button>
-            <button type="button" class="fm-ico-btn" data-import-folder title="Прикачи папка с файлове в ${esc(
-        treePath(scope),
-      )}">${ico('attachFolder')} <span class="fm-ico-label">цяла папка</span></button>
-            <button type="button" class="fm-ico-btn" data-attach-file title="Прикачи файл в ${esc(
-        treePath(scope),
-      )}">${ICON.upload} <span class="fm-ico-label">един файл</span></button>
+            <button type="button" class="fm-ico-btn" data-import-folder title="${esc(
+        T('pfl.importFolder.title', { where: treePath(scope) }),
+      )}">${ico('attachFolder')} <span class="fm-ico-label">${esc(T('pfl.importFolder'))}</span></button>
+            <button type="button" class="fm-ico-btn" data-attach-file title="${esc(
+        T('pfl.attach.title', { where: treePath(scope) }),
+      )}">${ICON.upload} <span class="fm-ico-label">${esc(T('pfl.attach'))}</span></button>
             <button type="button" class="fm-ico-btn ${state.filters ? 'on' : ''}" data-toggle-filters aria-expanded="${state.filters
-        }" title="Панел филтри">${ICON.filters}</button>
+        }" title="${esc(T('pfl.filters.title'))}">${ICON.filters}</button>
           </span>` : ''}
         </div>
         ${open ? `<div class="pf-block-body" id="pf-files-body">
           ${state.filters
           ? `<div class="fm-toolbar">
-            <input id="fm-search" placeholder="Търси по име или тема" value="${esc(state.query)}" />
+            <input id="fm-search" placeholder="${esc(T('pfl.search'))}" value="${esc(state.query)}" />
             <select id="fm-type">
-              ${[['all', 'Всички типове'], ['pdf', 'PDF'], ['docx', 'DOCX'], ['xlsx', 'XLSX'], ['text', 'Текст'], ['archive', 'Архив'], ['other', 'Други']]
-            .map(([v, l]) => `<option value="${v}" ${state.type === v ? 'selected' : ''}>${l}</option>`)
+              ${[['all', T('pfl.type.all')], ['pdf', 'PDF'], ['docx', 'DOCX'], ['xlsx', 'XLSX'], ['text', T('pfl.type.text')], ['archive', T('pfl.type.archive')], ['other', T('pfl.type.other')]]
+            .map(([v, l]) => `<option value="${v}" ${state.type === v ? 'selected' : ''}>${esc(l)}</option>`)
             .join('')}
             </select>
             <select id="fm-access">
-              ${[['all', 'Всички политики'], ['FREE', 'FREE'], ['KEY_REQUIRED', 'KEY_REQUIRED'], ['DISABLED', 'DISABLED']]
-            .map(([v, l]) => `<option value="${v}" ${state.access === v ? 'selected' : ''}>${l}</option>`)
+              ${[['all', T('pfl.access.all')], ['FREE', 'FREE'], ['KEY_REQUIRED', 'KEY_REQUIRED'], ['DISABLED', 'DISABLED']]
+            .map(([v, l]) => `<option value="${v}" ${state.access === v ? 'selected' : ''}>${esc(l)}</option>`)
             .join('')}
             </select>
             <select id="fm-topic">
               ${['all', ...[...new Set(files.map((f) => f.topic).filter(Boolean))].sort()]
-            .map((v) => `<option value="${esc(v)}" ${state.topic === v ? 'selected' : ''}>${esc(v === 'all' ? 'Всички теми' : v)}</option>`)
+            .map((v) => `<option value="${esc(v)}" ${state.topic === v ? 'selected' : ''}>${esc(v === 'all' ? T('pfl.topic.all') : v)}</option>`)
             .join('')}
             </select>
             <select id="fm-category">
               ${['all', ...[...new Set(files.map((f) => f.category).filter(Boolean))].sort()]
-            .map((v) => `<option value="${esc(v)}" ${state.category === v ? 'selected' : ''}>${esc(v === 'all' ? 'Всички категории' : v)}</option>`)
+            .map((v) => `<option value="${esc(v)}" ${state.category === v ? 'selected' : ''}>${esc(v === 'all' ? T('pfl.category.all') : v)}</option>`)
             .join('')}
             </select>
             <select id="fm-sort">
-              ${[['name', 'Име ↑'], ['-name', 'Име ↓'], ['size', 'Размер ↑'], ['-size', 'Размер ↓'], ['-date', 'Дата ↓']]
-            .map(([v, l]) => `<option value="${v}" ${state.sort === v ? 'selected' : ''}>${l}</option>`)
+              ${[['name', T('pfl.sort.nameAsc')], ['-name', T('pfl.sort.nameDesc')], ['size', T('pfl.sort.sizeAsc')], ['-size', T('pfl.sort.sizeDesc')], ['-date', T('pfl.sort.dateDesc')]]
+            .map(([v, l]) => `<option value="${v}" ${state.sort === v ? 'selected' : ''}>${esc(l)}</option>`)
             .join('')}
             </select>
-            <button type="button" class="btn btn-sm btn-primary" id="fm-upload" title="Качи регистриран файл в портала (с метаданни)">Качи файл</button>
+            <button type="button" class="btn btn-sm btn-primary" id="fm-upload" title="${esc(T('pfl.upload.title'))}">${esc(T('pfl.upload'))}</button>
             ${state.selectedIds.size
-            ? `<span class="fm-bulk">Избрани ${state.selectedIds.size}
+            ? `<span class="fm-bulk">${esc(T('pfl.bulk.selected', { n: state.selectedIds.size }))}
                      <select id="fm-bulk-mode">
                        <option value="FREE">FREE</option>
                        <option value="KEY_REQUIRED">KEY_REQUIRED</option>
                        <option value="DISABLED">DISABLED</option>
                      </select>
-                     <button type="button" class="btn btn-sm" id="fm-bulk-apply">Приложи</button></span>`
+                     <button type="button" class="btn btn-sm" id="fm-bulk-apply">${esc(T('pfl.bulk.apply'))}</button></span>`
             : ''
           }
           </div>`
@@ -223,7 +224,9 @@
           ? `<div class="pf-form u-mt">${uploadForm()}</div>`
           : `<div class="fm-files-box u-mt">${scoped.length
             ? `<div class="fm-files">${visible.map((x) => (x.storage ? storageCard(x, ctx) : card(x, ctx))).join('')}</div>`
-            : `<p class="hint">${scope ? `Папката ${esc(treePath(scope))} няма файлове.` : 'Порталът няма файлове. Използвай „Качи файл“.'
+            : `<p class="hint">${scope
+              ? esc(T('pfl.empty.folder', { where: treePath(scope) }))
+              : esc(T('pfl.empty.portal'))
             }</p>`
           }</div>`
         }

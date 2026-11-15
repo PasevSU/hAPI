@@ -65,7 +65,7 @@ const CEILING = {
   'data.js': 726,
   'debug-ledger.js': 0, // протоколът на дебъгинга държи само ключове — текстът е в i18n.js
   'debug-objects.js': 612,
-  'directory-panel.js': 989,
+  'directory-panel.js': 0,
   'export-center.js': 1977,
   'field-labels.js': 0,
   'files-manager.js': 9672,
@@ -74,7 +74,7 @@ const CEILING = {
   'panel-registry.js': 117,
   'paptresor.js': 876,
   'portal-control.js': 2137,
-  'portal-files.js': 1059,
+  'portal-files.js': 0,
   'portal-folders.js': 53,
   'portals.js': 0,
   'public-gateway.js': 1274,
@@ -86,7 +86,7 @@ const CEILING = {
   'settings-panel.js': 7423,
   'visitors-panel.js': 0,
 };
-  const TOTAL_CEILING = 33563; // сумата без речниците (беше 36 850, когато `app.js` се броеше като дълг)
+  const TOTAL_CEILING = 31533; // сумата без речниците (беше 36 850, когато `app.js` се броеше като дълг)
 const TRANSLATED_FLOOR = 9; // извиквания на `t(` извън `i18n.js`
 
 // ── 1. Всеки модул е под своя таван ─────────────────────────────────────────

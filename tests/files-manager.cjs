@@ -246,7 +246,10 @@ assert.match(fileCards, /data-file-listed="\$\{esc\(x\.id\)\}"/);
 assert.match(fileCards, /data-file-lock="\$\{esc\(\s*x\.id,/);
 assert.equal(/ICON\.eye : ICON\.eyeOff/.test(fileCards), false, 'видимостта на файла е чекбокс „обяви“, не икона 👁');
 assert.match(fileCards, /class="fm-publish"/);
-assert.match(fileCards, /<span aria-hidden="true">обяви<\/span>/);
+// Етикетът живее в речника (BG/EN/DE) и картата го взема по ключ — затова се проверява
+// ключът в кода И стойността в българския речник, а не литерал в шаблона.
+assert.match(fileCards, /<span aria-hidden="true">\$\{esc\(T\('pfl\.listed\.label'\)\)\}<\/span>/);
+assert.equal(require('../hapi_enterprise/ui/i18n.js').DICT.bg['pfl.listed.label'], 'обяви');
 assert.match(css, /\.fm-publish input \{[\s\S]*?accent-color: var\(--accent\)/);
 assert.match(src, /async function toggleListed\(fileId\)/);
 assert.match(src, /json: \{ listed \}/);
@@ -559,14 +562,13 @@ assert.match(src, /function portalDetail\(p\)/);
 // показва папката и броя файлове — проверява се и двете, за да не се загуби информацията
 // при превръщането на заглавието в превключвател.
 assert.match(src, /data-pf-files-tog/, 'блокът „Файлове в портала“ има превключвател');
-assert.match(
-  src,
-  /Файлове в портала \(\$\{scoped\.length\}\) · <code>\$\{esc\(treePath\(scope\)\)\}<\/code>/,
-  'заглавието показва папката и броя файлове',
-);
+// Заглавието носи броя и пътя; текстът е в речника, затова се проверява ключът с
+// параметъра в кода И стойността в българския речник (BG/EN/DE живеят в i18n.js).
+assert.match(src, /\$\{esc\(T\('pfl\.title', \{ n: scoped\.length \}\)\)\} · <code>\$\{esc\(treePath\(scope\)\)\}<\/code>/);
+assert.equal(require('../hapi_enterprise/ui/i18n.js').DICT.bg['pfl.title'], 'Файлове в портала ({n})');
 // Икони в заглавния ред: прикачи папка, прикачи файл, панел филтри.
-assert.match(src, /data-import-folder title="Прикачи папка с файлове в \$\{esc\(/);
-assert.match(src, /data-attach-file title="Прикачи файл в/);
+assert.match(src, /data-import-folder title="\$\{esc\(\s*T\('pfl\.importFolder\.title'/);
+assert.match(src, /data-attach-file title="\$\{esc\(\s*T\('pfl\.attach\.title'/);
 assert.match(src, /data-toggle-filters aria-expanded="\$\{\s*state\.filters\s*\}"/);
 // „Добави файл“ качва ТОЧНО един файл: многофайловият избор е отделното копче за папка,
 // за да не качва „добави файл“ цяла директория (0.69.62).
@@ -659,19 +661,33 @@ assert.match(src, /function storageCard\(x, ctx\)/);
 assert.match(src, /class="fm-file fm-file-storage"/);
 // Картата на файл само на диска изглежда като останалите: същите плочки с метаданни
 // (размер, версия, SHA-256, id, дати, заключване) и бутон за регистриране в портала.
-assert.match(src, /chip\(ICON\.size, 'Размер'/);
-assert.match(src, /chip\(ICON\.version, 'Версия', '—', '—'\)/);
-assert.match(src, /chip\(ICON\.hash, 'SHA-256', 'изчислява се при регистриране', '—'\)/);
-assert.match(src, /chip\(ICON\.id, 'id на файла', '—', '—'\)/);
-assert.match(src, /chip\(ICON\.created, 'Създаден'/);
-assert.match(src, /chip\(ICON\.modified, 'Последна промяна'/);
-assert.match(src, /chip\(\s*ICON\.unlocked,\s*'Заключване'/);
+assert.match(src, /chip\(ICON\.size, T\('pfl\.chip\.size'\)/);
+assert.match(src, /chip\(ICON\.version, T\('pfl\.chip\.version'\), '—', '—'\)/);
+assert.match(src, /chip\(ICON\.hash, 'SHA-256', T\('pfl\.chip\.sha\.note'\), '—'\)/);
+assert.match(src, /chip\(ICON\.id, T\('pfl\.chip\.id'\), '—', '—'\)/);
+assert.match(src, /chip\(ICON\.created, T\('pfl\.chip\.created'\)/);
+assert.match(src, /chip\(ICON\.modified, T\('pfl\.chip\.modified'\)/);
+assert.match(src, /chip\(\s*ICON\.unlocked,\s*T\('pfl\.chip\.lock'\)/);
+// Самите етикети живеят в речника; българската им страна е същата, която беше в шаблона.
+{
+  const { DICT } = require('../hapi_enterprise/ui/i18n.js');
+  const expected = {
+    'pfl.chip.size': 'Размер',
+    'pfl.chip.version': 'Версия',
+    'pfl.chip.sha.note': 'изчислява се при регистриране',
+    'pfl.chip.id': 'id на файла',
+    'pfl.chip.created': 'Създаден',
+    'pfl.chip.modified': 'Последна промяна',
+    'pfl.chip.lock': 'Заключване',
+  };
+  for (const [key, bg] of Object.entries(expected)) assert.equal(DICT.bg[key], bg, key);
+}
 assert.match(src, /data-register-file="\$\{esc\(x\.path\)\}"/);
 assert.match(src, /async function registerStorageFile\(rel\)/);
 assert.match(src, /\/tree\/register`/);
 assert.match(src, /if \(!key\) \{/, 'коренът включва регистрираните файлове');
 assert.match(src, /if \(!stored \|\| !onDisk\.has\(stored\)\) out\.push\(f\);/, 'в корена остават само файловете без път или без файл на диска');
-assert.match(src, /Папката \$\{esc\(treePath\(scope\)\)\} няма файлове\./);
+assert.match(src, /esc\(T\('pfl\.empty\.folder', \{ where: treePath\(scope\) \}\)\)/);
 // В акордеона остава само обобщение + коментар + API/QR (файловете са в списъка).
 assert.equal(/class="fm-folder-file"/.test(src), false, 'няма редове с файлове в акордеона');
 // Изречението „… — показват се в „Файлове в портала“ по-долу“ живее в речника (`pf.filesInside`),
@@ -690,7 +706,7 @@ assert.match(src, /taxonomy\.length \? `\$\{esc\(taxonomy\.join\(' \/ '\)\)\} ·
 assert.match(src, /x\.notes \? `<hr class="u-divider" \/><p class="fm-file-notes">/);
 // 3. Табелките на файла показват само ВКЛЮЧЕНИТЕ опции (публичен = без табелка).
 assert.match(src, /st\.id === 'public' \? '' :/);
-assert.match(src, /state-chip enc" title="Шифрован/);
+assert.match(src, /state-chip enc" title="\$\{esc\(T\('pfl\.enc\.title'\)\)\}"/);
 // 4. Няма бутон „Генерирай API + QR“ — API/QR се създават с портала. Подсказката за това
 // живее в картата: „няма API/QR“ е табелка; текстът „API и QR се създават заедно с портала“
 // стоеше в махнатия блок „Достъп и QR код“ и вече не се рисува.

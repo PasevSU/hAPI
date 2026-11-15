@@ -7,6 +7,9 @@
 (function () {
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Целият текст минава през речника (BG/EN/DE); липсващ ключ се вижда като ключа, не като български.
+  const T = (key, vars) =>
+    typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key, vars) : String(key);
   const toast = (m, k) => window.HapiUI && window.HapiUI.toast(m, k);
   const iso = (v) => {
     const d = v ? new Date(v) : null;
@@ -42,7 +45,7 @@
     }
   }
 
-  const contactName = (c) => (c && (c.name || (c.fields && c.fields.name) || c.email)) || 'без име';
+  const contactName = (c) => (c && (c.name || (c.fields && c.fields.name) || c.email)) || T('dp.noName');
   const contactOf = (id) => state.contacts.find((c) => c.id === id) || null;
   const extrasOf = (x) => (Array.isArray(x && x.extras) ? x.extras : []).filter((e) => e && e.key);
 
@@ -71,7 +74,7 @@
         return input ? input.value.trim() : '';
       };
       const email = value('email');
-      if (!/^[^\s@<>"]{1,64}@[a-z0-9.-]{1,190}\.[a-z]{2,}$/i.test(email)) return toast('Невалиден имейл', 'err');
+      if (!/^[^\s@<>"]{1,64}@[a-z0-9.-]{1,190}\.[a-z]{2,}$/i.test(email)) return toast(T('dp.err.email'), 'err');
       const fields = {};
       for (const f of state.fields) {
         const v = value(`f_${f.key}`);
@@ -90,15 +93,15 @@
         : await api('/admin/api/directory/contacts', { method: 'POST', json: { email, fields, extras } });
       if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
       state.editing = null;
-      toast(editing ? 'Контактът е обновен' : 'Контактът е добавен', 'ok');
+      toast(editing ? T('dp.ok.contactUpdated') : T('dp.ok.contactAdded'), 'ok');
       await Contacts.load();
     },
 
     async remove(c) {
-      if (!window.confirm(`Изтриване на контакта „${contactName(c)}“?`)) return;
+      if (!window.confirm(T('dp.delete.contactConfirm', { name: contactName(c) }))) return;
       const r = await api(`/admin/api/directory/contacts/${encodeURIComponent(c.id)}`, { method: 'DELETE' });
       if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
-      toast('Контактът е изтрит', 'ok');
+      toast(T('dp.ok.contactDeleted'), 'ok');
       await Contacts.load();
     },
   };
@@ -107,15 +110,15 @@
     const rows = (list && list.length ? list : [{ key: '', value: '' }])
       .map(
         (x) => `<div class="pf-extra-row">
-          <input data-extra-key value="${esc(x.key || '')}" placeholder="поле (напр. Роля)" maxlength="60" />
-          <input data-extra-value value="${esc(x.value || '')}" placeholder="стойност" maxlength="500" />
-          <button type="button" class="btn btn-sm" data-extra-remove title="Премахни полето">✕</button>
+          <input data-extra-key value="${esc(x.key || '')}" placeholder="${esc(T('dp.extra.placeholderKey'))}" maxlength="60" />
+          <input data-extra-value value="${esc(x.value || '')}" placeholder="${esc(T('dp.extra.placeholderValue'))}" maxlength="500" />
+          <button type="button" class="btn btn-sm" data-extra-remove title="${esc(T('dp.extra.remove'))}">✕</button>
         </div>`,
       )
       .join('');
     return `<div class="pf-extras">
       <div class="pf-extras-rows">${rows}</div>
-      <div class="u-row u-row-1"><button type="button" class="btn btn-sm" data-extra-add>＋ добави поле по желание</button></div>
+      <div class="u-row u-row-1"><button type="button" class="btn btn-sm" data-extra-add>＋ ${esc(T('dp.extra.add'))}</button></div>
     </div>`;
   }
 
@@ -125,13 +128,13 @@
     const known = new Set(['name', 'phone', 'organization', 'department', 'city', 'country']);
     const extraKeys = state.fields.filter((f) => !known.has(f.key));
     return `<form id="ct-form" class="pf-form">
-      <h4>${editing ? 'Редактиране на контакт' : 'Нов контакт'}</h4>
+      <h4>${esc(editing ? T('dp.contact.editTitle') : T('dp.contact.newTitle'))}</h4>
       <div class="u-grid u-grid-fields">
-        <div class="field"><label>Име</label><input name="f_name" value="${esc(fields.name || '')}" maxlength="120" placeholder="Мария Иванова" /></div>
-        <div class="field"><label>Имейл (задължителен)</label><input name="email" value="${esc(editing ? editing.email : '')}" maxlength="190" placeholder="name@example.com" ${editing ? 'readonly' : ''
+        <div class="field"><label>${esc(T('dp.field.name'))}</label><input name="f_name" value="${esc(fields.name || '')}" maxlength="120" placeholder="${esc(T('dp.ph.personName'))}" /></div>
+        <div class="field"><label>${esc(T('dp.field.email'))}</label><input name="email" value="${esc(editing ? editing.email : '')}" maxlength="190" placeholder="name@example.com" ${editing ? 'readonly' : ''
       } /></div>
-        <div class="field"><label>Телефон</label><input name="f_phone" value="${esc(fields.phone || '')}" maxlength="25" placeholder="+359 88 123 4567" /></div>
-        <div class="field"><label>Организация</label><input name="f_organization" value="${esc(fields.organization || '')}" maxlength="120" /></div>
+        <div class="field"><label>${esc(T('dp.field.phone'))}</label><input name="f_phone" value="${esc(fields.phone || '')}" maxlength="25" placeholder="+359 88 123 4567" /></div>
+        <div class="field"><label>${esc(T('dp.field.organization'))}</label><input name="f_organization" value="${esc(fields.organization || '')}" maxlength="120" /></div>
         ${extraKeys
         .slice(0, 4)
         .map(
@@ -142,11 +145,11 @@
         )
         .join('')}
       </div>
-      <p class="hint">Полета по желание:</p>
+      <p class="hint">${esc(T('dp.extrasHint'))}</p>
       ${extrasEditor(extrasOf(editing))}
       <div class="u-row u-row-2 u-mt">
-        <button type="submit" class="btn btn-primary">${editing ? 'Запази промените' : 'Добави контакта'}</button>
-        <button type="button" class="btn" id="ct-reset">${editing ? 'Отказ' : 'Изчисти'}</button>
+        <button type="submit" class="btn btn-primary">${esc(editing ? T('dp.save') : T('dp.contact.add'))}</button>
+        <button type="button" class="btn" id="ct-reset">${esc(editing ? T('dp.cancel') : T('dp.clear'))}</button>
       </div>
     </form>`;
   }
@@ -160,7 +163,7 @@
         <span class="pf-portal-name">${esc(contactName(c))}</span>
         <span class="chip">✉ ${esc(c.email || '—')}</span>
         ${meta.map((m) => `<span class="chip">${esc(m)}</span>`).join('')}
-        <span class="state-chip ok">контакт</span>
+        <span class="state-chip ok">${esc(T('dp.chip.contact'))}</span>
       </div>
       ${extras.length
         ? `<div class="fm-ico-row u-grid u-grid-chips">${extras
@@ -171,12 +174,12 @@
               )}</span></span>`,
           )
           .join('')}</div>`
-        : '<p class="fm-file-sub">няма полета по желание</p>'
+        : `<p class="fm-file-sub">${esc(T('dp.noExtras'))}</p>`
       }
-      <p class="fm-file-sub">id: <code>${esc(shortId(c.id))}</code> · създаден ${esc(iso(c.createdAt))}</p>
+      <p class="fm-file-sub">id: <code>${esc(shortId(c.id))}</code> · ${esc(T('dp.meta.created', { date: iso(c.createdAt) }))}</p>
       <div class="u-row u-row-2 u-mt">
-        <button type="button" class="btn btn-sm" data-edit-contact="${esc(c.id)}">Редактирай</button>
-        <button type="button" class="btn btn-sm" data-del-contact="${esc(c.id)}">Изтрий</button>
+        <button type="button" class="btn btn-sm" data-edit-contact="${esc(c.id)}">${esc(T('dp.edit'))}</button>
+        <button type="button" class="btn btn-sm" data-del-contact="${esc(c.id)}">${esc(T('dp.delete'))}</button>
       </div>
     </article>`;
   }
@@ -194,25 +197,25 @@
 
     host.innerHTML = `
       <div class="page-title">
-        <h1>Контакти</h1>
-        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? `${state.contacts.length} контакта` : 'демо'}</span>
+        <h1>${esc(T('dp.contacts.title'))}</h1>
+        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? esc(T('dp.contacts.count', { n: state.contacts.length })) : esc(T('dp.demo'))}</span>
       </div>
       ${connected()
         ? ''
-        : '<section class="panel"><div class="panel-body"><p class="hint">Демо режим: списъкът с контакти се зарежда от add-on-а. Задай адрес и токен в „Настройки“.</p></div></section>'
+        : `<section class="panel"><div class="panel-body"><p class="hint">${esc(T('dp.demo.contacts'))}</p></div></section>`
       }
       <section class="panel">
-        <div class="panel-head"><h2>${state.editing ? 'Редакция' : 'Нов контакт'}</h2><span class="badge">контакти</span></div>
+        <div class="panel-head"><h2>${esc(state.editing ? T('dp.editing') : T('dp.contact.newTitle'))}</h2><span class="badge">${esc(T('dp.badge.contacts'))}</span></div>
         <div class="panel-body">${contactForm()}</div>
       </section>
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Списък (${list.length})</h2><span class="badge">директория</span></div>
+        <div class="panel-head"><h2>${esc(T('dp.listCount', { n: list.length }))}</h2><span class="badge">${esc(T('dp.badge.directory'))}</span></div>
         <div class="panel-body">
           <div class="fm-toolbar">
-            <input id="ct-search" placeholder="Търси по име, имейл, организация" value="${esc(state.query)}" />
+            <input id="ct-search" placeholder="${esc(T('dp.search.contacts'))}" value="${esc(state.query)}" />
           </div>
           ${state.error ? `<p class="err-list">${esc(state.error)}</p>` : ''}
-          <div class="pf-portals u-mt">${list.map(contactCard).join('') || '<p class="hint">Няма контакти.</p>'}</div>
+          <div class="pf-portals u-mt">${list.map(contactCard).join('') || `<p class="hint">${esc(T('dp.contacts.empty'))}</p>`}</div>
         </div>
       </section>`;
     wireContacts();
@@ -246,7 +249,7 @@
         const row = document.createElement('div');
         row.className = 'pf-extra-row';
         row.innerHTML =
-          '<input data-extra-key placeholder="поле" maxlength="60" /><input data-extra-value placeholder="стойност" maxlength="500" /><button type="button" class="btn btn-sm" data-extra-remove title="Премахни полето">✕</button>';
+          `<input data-extra-key placeholder="${esc(T('dp.extra.placeholderKeyShort'))}" maxlength="60" /><input data-extra-value placeholder="${esc(T('dp.extra.placeholderValue'))}" maxlength="500" /><button type="button" class="btn btn-sm" data-extra-remove title="${esc(T('dp.extra.remove'))}">✕</button>`;
         rows.appendChild(row);
         return;
       }
@@ -298,7 +301,7 @@
         subject: value('subject'),
         contactId: value('contactId'),
       };
-      if (!body.number) return toast('Номерът на делото е задължителен', 'err');
+      if (!body.number) return toast(T('dp.err.numberRequired'), 'err');
       const extras = [];
       form.querySelectorAll('[data-extra-key]').forEach((input) => {
         const row = input.closest('.pf-extra-row');
@@ -312,15 +315,15 @@
         : await api('/admin/api/cases', { method: 'POST', json: body });
       if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
       state.editing = null;
-      toast(editing ? 'Делото е обновено' : 'Делото е добавено', 'ok');
+      toast(editing ? T('dp.ok.caseUpdated') : T('dp.ok.caseAdded'), 'ok');
       await Cases.load();
     },
 
     async remove(c) {
-      if (!window.confirm(`Изтриване на дело „${c.number}“?`)) return;
+      if (!window.confirm(T('dp.delete.caseConfirm', { number: c.number }))) return;
       const r = await api(`/admin/api/cases/${encodeURIComponent(c.id)}`, { method: 'DELETE' });
       if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
-      toast('Делото е изтрито', 'ok');
+      toast(T('dp.ok.caseDeleted'), 'ok');
       await Cases.load();
     },
   };
@@ -329,15 +332,15 @@
     const editing = state.editing ? state.cases.find((c) => c.id === state.editing) : null;
     const c = editing || {};
     return `<form id="cs-form" class="pf-form">
-      <h4>${editing ? 'Редактиране на дело' : 'Ново дело'}</h4>
+      <h4>${esc(editing ? T('dp.case.editTitle') : T('dp.case.newTitle'))}</h4>
       <div class="u-grid u-grid-fields">
-        <div class="field"><label>Номер (задължителен)</label><input name="number" value="${esc(c.number || '')}" maxlength="80" placeholder="2026-114" /></div>
-        <div class="field"><label>Заглавие</label><input name="title" value="${esc(c.title || '')}" maxlength="160" placeholder="Дело 2026-114 — доказателства" /></div>
-        <div class="field"><label>Категория</label><input name="category" value="${esc(c.category || '')}" maxlength="120" placeholder="Правни дела" /></div>
-        <div class="field"><label>Относно</label><input name="subject" value="${esc(c.subject || '')}" maxlength="200" placeholder="посещение на лице" /></div>
-        <div class="field"><label>Контакт</label>
+        <div class="field"><label>${esc(T('dp.field.number'))}</label><input name="number" value="${esc(c.number || '')}" maxlength="80" placeholder="2026-114" /></div>
+        <div class="field"><label>${esc(T('dp.field.title'))}</label><input name="title" value="${esc(c.title || '')}" maxlength="160" placeholder="${esc(T('dp.ph.caseTitle'))}" /></div>
+        <div class="field"><label>${esc(T('dp.field.category'))}</label><input name="category" value="${esc(c.category || '')}" maxlength="120" placeholder="${esc(T('dp.ph.category'))}" /></div>
+        <div class="field"><label>${esc(T('dp.field.subject'))}</label><input name="subject" value="${esc(c.subject || '')}" maxlength="200" placeholder="${esc(T('dp.ph.subject'))}" /></div>
+        <div class="field"><label>${esc(T('dp.field.contact'))}</label>
           <select name="contactId">
-            <option value="">— без контакт —</option>
+            <option value="">${esc(T('dp.noContactOption'))}</option>
             ${state.contacts
         .map(
           (x) =>
@@ -348,11 +351,11 @@
           </select>
         </div>
       </div>
-      <p class="hint">Полета по желание:</p>
+      <p class="hint">${esc(T('dp.extrasHint'))}</p>
       ${extrasEditor(extrasOf(editing))}
       <div class="u-row u-row-2 u-mt">
-        <button type="submit" class="btn btn-primary">${editing ? 'Запази промените' : 'Добави делото'}</button>
-        <button type="button" class="btn" id="cs-reset">${editing ? 'Отказ' : 'Изчисти'}</button>
+        <button type="submit" class="btn btn-primary">${esc(editing ? T('dp.save') : T('dp.case.add'))}</button>
+        <button type="button" class="btn" id="cs-reset">${esc(editing ? T('dp.cancel') : T('dp.clear'))}</button>
       </div>
     </form>`;
   }
@@ -362,10 +365,10 @@
     const extras = extrasOf(c);
     return `<article class="pf-portal" data-case="${esc(c.id)}">
       <div class="pf-portal-head">
-        <span class="pf-portal-name">${esc(c.number)} — ${esc(c.title || 'без заглавие')}</span>
+        <span class="pf-portal-name">${esc(c.number)} — ${esc(c.title || T('dp.noTitle'))}</span>
         ${c.category ? `<span class="chip">🏷 ${esc(c.category)}</span>` : ''}
         ${c.subject ? `<span class="chip">ℹ ${esc(c.subject)}</span>` : ''}
-        <span class="state-chip ${contact ? 'ok' : 'warn'}">${contact ? esc(contactName(contact)) : 'без контакт'}</span>
+        <span class="state-chip ${contact ? 'ok' : 'warn'}">${contact ? esc(contactName(contact)) : esc(T('dp.noContact'))}</span>
       </div>
       ${extras.length
         ? `<div class="fm-ico-row u-grid u-grid-chips">${extras
@@ -378,10 +381,10 @@
           .join('')}</div>`
         : ''
       }
-      <p class="fm-file-sub">id: <code>${esc(shortId(c.id))}</code> · създадено ${esc(iso(c.createdAt))}</p>
+      <p class="fm-file-sub">id: <code>${esc(shortId(c.id))}</code> · ${esc(T('dp.meta.createdCase', { date: iso(c.createdAt) }))}</p>
       <div class="u-row u-row-2 u-mt">
-        <button type="button" class="btn btn-sm" data-edit-case="${esc(c.id)}">Редактирай</button>
-        <button type="button" class="btn btn-sm" data-del-case="${esc(c.id)}">Изтрий</button>
+        <button type="button" class="btn btn-sm" data-edit-case="${esc(c.id)}">${esc(T('dp.edit'))}</button>
+        <button type="button" class="btn btn-sm" data-del-case="${esc(c.id)}">${esc(T('dp.delete'))}</button>
       </div>
     </article>`;
   }
@@ -397,25 +400,25 @@
 
     host.innerHTML = `
       <div class="page-title">
-        <h1>Дела</h1>
-        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? `${state.cases.length} дела` : 'демо'}</span>
+        <h1>${esc(T('dp.cases.title'))}</h1>
+        <span class="badge ${connected() ? 'ok' : 'demo'}">${connected() ? esc(T('dp.cases.count', { n: state.cases.length })) : esc(T('dp.demo'))}</span>
       </div>
       ${connected()
         ? ''
-        : '<section class="panel"><div class="panel-body"><p class="hint">Демо режим: делата се зареждат от add-on-а. Задай адрес и токен в „Настройки“.</p></div></section>'
+        : `<section class="panel"><div class="panel-body"><p class="hint">${esc(T('dp.demo.cases'))}</p></div></section>`
       }
       <section class="panel">
-        <div class="panel-head"><h2>${state.editing ? 'Редакция' : 'Ново дело'}</h2><span class="badge">дела</span></div>
+        <div class="panel-head"><h2>${esc(state.editing ? T('dp.editing') : T('dp.case.newTitle'))}</h2><span class="badge">${esc(T('dp.badge.cases'))}</span></div>
         <div class="panel-body">${caseForm()}</div>
       </section>
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Списък (${list.length})</h2><span class="badge">дела</span></div>
+        <div class="panel-head"><h2>${esc(T('dp.listCount', { n: list.length }))}</h2><span class="badge">${esc(T('dp.badge.cases'))}</span></div>
         <div class="panel-body">
           <div class="fm-toolbar">
-            <input id="cs-search" placeholder="Търси по номер, заглавие, категория" value="${esc(state.query)}" />
+            <input id="cs-search" placeholder="${esc(T('dp.search.cases'))}" value="${esc(state.query)}" />
           </div>
           ${state.error ? `<p class="err-list">${esc(state.error)}</p>` : ''}
-          <div class="pf-portals u-mt">${list.map(caseCard).join('') || '<p class="hint">Няма дела.</p>'}</div>
+          <div class="pf-portals u-mt">${list.map(caseCard).join('') || `<p class="hint">${esc(T('dp.cases.empty'))}</p>`}</div>
         </div>
       </section>`;
     wireCases();
@@ -449,7 +452,7 @@
         const row = document.createElement('div');
         row.className = 'pf-extra-row';
         row.innerHTML =
-          '<input data-extra-key placeholder="поле" maxlength="60" /><input data-extra-value placeholder="стойност" maxlength="500" /><button type="button" class="btn btn-sm" data-extra-remove title="Премахни полето">✕</button>';
+          `<input data-extra-key placeholder="${esc(T('dp.extra.placeholderKeyShort'))}" maxlength="60" /><input data-extra-value placeholder="${esc(T('dp.extra.placeholderValue'))}" maxlength="500" /><button type="button" class="btn btn-sm" data-extra-remove title="${esc(T('dp.extra.remove'))}">✕</button>`;
         rows.appendChild(row);
         return;
       }
