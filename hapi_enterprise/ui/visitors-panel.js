@@ -9,6 +9,9 @@
 (function () {
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Целият текст минава през речника (BG/EN/DE); липсващ ключ се вижда като ключа, не като български.
+  const T = (key, vars) =>
+    typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key, vars) : String(key);
   // Адресът идва само от api-base.js (той пази `hapi.apiBase` и Ingress префикса).
   const base = () => (typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '').replace(/\/$/, '');
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
@@ -45,7 +48,8 @@
     const date = new Date(iso);
     return Number.isFinite(date.getTime()) ? date.toLocaleString() : String(iso);
   };
-  const fmtPlace = (geo) => (!geo ? 'неизвестно' : [geo.city, geo.country].filter(Boolean).join(', ') || geo.country || 'неизвестно');
+  const fmtPlace = (geo) =>
+    !geo ? T('vp.unknown') : [geo.city, geo.country].filter(Boolean).join(', ') || geo.country || T('vp.unknown');
   const shortId = (id) => String(id || '').slice(0, 10);
 
   function cell(doc, text, className) {
@@ -62,7 +66,7 @@
     tr.appendChild(cell(doc, fmtTime(visitor.lastSeen)));
     tr.appendChild(cell(doc, visitor.visits));
     tr.appendChild(cell(doc, visitor.downloads));
-    tr.appendChild(cell(doc, (visitor.ips || []).join(', ') || (visitor.geo && visitor.geo.private ? 'локален' : 'скрито'), 'mono'));
+    tr.appendChild(cell(doc, (visitor.ips || []).join(', ') || (visitor.geo && visitor.geo.private ? T('vp.local') : T('vp.hidden')), 'mono'));
     tr.appendChild(cell(doc, fmtPlace(visitor.geo)));
     tr.appendChild(cell(doc, (visitor.agents || [])[0] ? String((visitor.agents || [])[0]).replace(/\//g, ' · ') : '—'));
     tr.appendChild(cell(doc, visitor.language || '—'));
@@ -72,7 +76,7 @@
     remove.className = 'btn btn-ghost btn-sm';
     remove.dataset.action = 'forget-visitor';
     remove.dataset.id = visitor.id;
-    remove.textContent = 'Изтрий';
+    remove.textContent = T('vp.delete');
     remove.addEventListener('click', () => onDelete(visitor, remove));
     actions.appendChild(remove);
     tr.appendChild(actions);
@@ -89,51 +93,51 @@
     const doc = view.ownerDocument;
     view.innerHTML = `
       <div class="page-title">
-        <h1>Кой влиза</h1>
-        <span class="badge demo" id="v-badge">зареждане…</span>
+        <h1>${esc(T('vp.title'))}</h1>
+        <span class="badge demo" id="v-badge">${esc(T('vp.badge.loading'))}</span>
       </div>
       <section class="panel">
-        <div class="panel-head"><h2>Комуникация</h2></div>
+        <div class="panel-head"><h2>${esc(T('vp.section.comms'))}</h2></div>
         <div class="panel-body">
           <div class="dash-grid" id="v-cards"></div>
           <p class="hint" id="v-privacy"></p>
           <div class="row-actions">
-            <button type="button" class="btn" id="v-refresh">Обнови</button>
-            <button type="button" class="btn" id="v-csv">Експорт CSV</button>
+            <button type="button" class="btn" id="v-refresh">${esc(T('vp.refresh'))}</button>
+            <button type="button" class="btn" id="v-csv">${esc(T('vp.csv'))}</button>
           </div>
         </div>
       </section>
       <section class="panel">
-        <div class="panel-head"><h2>Посетители</h2></div>
+        <div class="panel-head"><h2>${esc(T('vp.section.visitors'))}</h2></div>
         <div class="panel-body">
           <table class="table" id="v-visitors">
             <thead><tr>
-              <th>Посетител</th><th>Последно видян</th><th>Посещения</th><th>Изтегляния</th>
-              <th>IP</th><th>Локация</th><th>Клиент</th><th>Език</th><th></th>
+              <th>${esc(T('vp.th.visitor'))}</th><th>${esc(T('vp.th.lastSeen'))}</th><th>${esc(T('vp.th.visits'))}</th><th>${esc(T('vp.th.downloads'))}</th>
+              <th>${esc(T('vp.th.ip'))}</th><th>${esc(T('vp.th.place'))}</th><th>${esc(T('vp.th.client'))}</th><th>${esc(T('vp.th.lang'))}</th><th></th>
             </tr></thead>
             <tbody></tbody>
           </table>
-          <p class="hint" id="v-empty">Още няма посетители.</p>
+          <p class="hint" id="v-empty">${esc(T('vp.visitors.empty'))}</p>
         </div>
       </section>
       <section class="panel">
-        <div class="panel-head"><h2>Какво се тегли</h2></div>
+        <div class="panel-head"><h2>${esc(T('vp.section.files'))}</h2></div>
         <div class="panel-body">
           <table class="table" id="v-files">
-            <thead><tr><th>Файл</th><th>Изтегляния</th><th>Посетители</th><th>Последно</th></tr></thead>
+            <thead><tr><th>${esc(T('vp.th.file'))}</th><th>${esc(T('vp.th.downloads'))}</th><th>${esc(T('vp.th.visitorCount'))}</th><th>${esc(T('vp.th.last'))}</th></tr></thead>
             <tbody></tbody>
           </table>
-          <p class="hint" id="v-files-empty">Няма изтегляния.</p>
+          <p class="hint" id="v-files-empty">${esc(T('vp.files.empty'))}</p>
         </div>
       </section>
       <section class="panel">
-        <div class="panel-head"><h2>Откъде идват</h2></div>
+        <div class="panel-head"><h2>${esc(T('vp.section.geo'))}</h2></div>
         <div class="panel-body">
           <table class="table" id="v-geo">
-            <thead><tr><th>Държава</th><th>Посетители</th></tr></thead>
+            <thead><tr><th>${esc(T('vp.th.country'))}</th><th>${esc(T('vp.th.visitorCount'))}</th></tr></thead>
             <tbody></tbody>
           </table>
-          <p class="hint" id="v-geo-empty">Локацията е неизвестна — няма офлайн база или още няма посетители.</p>
+          <p class="hint" id="v-geo-empty">${esc(T('vp.geo.empty'))}</p>
         </div>
       </section>`;
 
@@ -156,90 +160,95 @@
 
     async function forget(visitor, button) {
       const ask = typeof view.ownerDocument.defaultView?.confirm === 'function' ? view.ownerDocument.defaultView.confirm : null;
-      const question = 'Да изтрия ли всички данни за този посетител? Действието не може да се отмени.';
+      const question = T('vp.delete.confirm');
       if (ask && !ask(question)) return;
       button.disabled = true;
       const res = await api('/admin/api/sensors/visitors/' + encodeURIComponent(visitor.id), 'DELETE');
       if (!res.ok) {
         button.disabled = false;
-        toast(view, 'Изтриването не мина: ' + (res.status || 'няма връзка'), 'error');
+        toast(view, T('vp.err.delete', { status: res.status || T('vp.err.noConnShort') }), 'error');
         return;
       }
-      toast(view, 'Данните на посетителя са изтрити', 'ok');
+      toast(view, T('vp.ok.deleted'), 'ok');
       await load();
     }
 
     async function exportCsv() {
       const url = base();
-      if (!url) return toast(view, 'Няма връзка с add-on-а', 'error');
+      if (!url) return toast(view, T('vp.err.noConnection'), 'error');
       try {
         const res = await fetch(url + '/admin/api/sensors/visitors.csv', { headers: token() ? { Authorization: 'Bearer ' + token() } : {} });
-        if (!res.ok) return toast(view, 'Експортът не мина: ' + res.status, 'error');
+        if (!res.ok) return toast(view, T('vp.err.export', { status: res.status }), 'error');
         const blob = await res.blob();
         const link = doc.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = 'visitors.csv';
         link.click();
-        toast(view, 'CSV файлът е изтеглен', 'ok');
+        toast(view, T('vp.ok.csv'), 'ok');
       } catch (e) {
-        toast(view, 'Експортът не мина: ' + e.message, 'error');
+        toast(view, T('vp.err.export', { status: e.message }), 'error');
       }
     }
 
     async function load() {
       const [list, sensors] = await Promise.all([api('/admin/api/sensors/visitors?limit=50'), api('/admin/api/sensors')]);
       if (list.offline || sensors.offline) {
-        badge.textContent = 'няма връзка';
-        privacy.textContent = 'Няма връзка с add-on-а. Свържи го от „Настройки“ (адрес и токен).';
+        badge.textContent = T('vp.badge.offline');
+        privacy.textContent = T('vp.offline.note');
         cards.innerHTML = '';
         body.innerHTML = '';
-        empty.textContent = 'Няма връзка с add-on-а.';
+        empty.textContent = T('vp.err.noConnection');
         return;
       }
       if (!list.ok || !sensors.ok) {
-        badge.textContent = 'грешка ' + (list.status || sensors.status);
+        badge.textContent = T('vp.badge.error', { status: list.status || sensors.status });
         privacy.textContent = list.status === 403 || sensors.status === 403
-          ? 'Токенът няма право „sensors“ — сензорите се четат от администраторски токен.'
-          : 'Сензорите не могат да се прочетат (' + (list.status || sensors.status) + ').';
+          ? T('vp.err.forbidden')
+          : T('vp.err.sensors', { status: list.status || sensors.status });
         return;
       }
 
       const intel = sensors.data.visitorsIntel || {};
       const mode = list.data.ipMode || (intel.privacy && intel.privacy.ipMode) || 'hashed';
-      badge.textContent = mode === 'full' ? 'пълни IP адреси' : mode === 'masked' ? 'маскирани IP' : 'само хеш (без IP)';
+      badge.textContent = mode === 'full' ? T('vp.mode.full') : mode === 'masked' ? T('vp.mode.masked') : T('vp.mode.hashed');
 
       cards.innerHTML = [
-        card('Уникални посетители', intel.unique_visitors ?? 0, 'по хеш от IP + клиент'),
-        card('Нови (24 ч)', intel.visitors_new_24h ?? 0),
-        card('Теглили файл', intel.download_visitors ?? 0),
-        card('Отказани достъпи', intel.denied_total ?? 0),
-        card('Админ. влизания', intel.admin_logins ?? 0),
-        card('Държави', intel.countries_known ?? 0),
+        card(T('vp.card.unique'), intel.unique_visitors ?? 0, T('vp.card.unique.note')),
+        card(T('vp.card.new24'), intel.visitors_new_24h ?? 0),
+        card(T('vp.card.downloaders'), intel.download_visitors ?? 0),
+        card(T('vp.card.denied'), intel.denied_total ?? 0),
+        card(T('vp.card.logins'), intel.admin_logins ?? 0),
+        card(T('vp.card.countries'), intel.countries_known ?? 0),
       ].join('');
 
       const geoFile = (intel.privacy && intel.privacy.geoFile) || {};
-      privacy.textContent =
-        'Режим на IP: ' + mode + ' · срок на пазене: ' + ((intel.privacy && intel.privacy.retentionDays) || 0) + ' дни' +
-        ' · външни заявки: ' + ((intel.privacy && intel.privacy.externalCalls) ? 'да' : 'не') +
-        ' · офлайн база за локация: ' + (geoFile.loaded ? geoFile.ranges + ' диапазона' : 'няма' + (geoFile.error ? ' (' + geoFile.error + ')' : '')) + '.';
+      const geoText = geoFile.loaded
+        ? T('vp.geo.ranges', { n: geoFile.ranges })
+        : T('vp.geo.none') + (geoFile.error ? ' (' + geoFile.error + ')' : '');
+      privacy.textContent = T('vp.privacy', {
+        mode,
+        days: (intel.privacy && intel.privacy.retentionDays) || 0,
+        external: (intel.privacy && intel.privacy.externalCalls) ? T('vp.yes') : T('vp.no'),
+        geo: geoText,
+      });
 
       body.innerHTML = '';
       const visitors = (list.data.visitors || []);
-      empty.textContent = visitors.length ? '' : 'Още няма посетители.';
+      empty.textContent = visitors.length ? '' : T('vp.visitors.empty');
       for (const visitor of visitors) body.appendChild(row(doc, visitor, forget));
 
       filesBody.innerHTML = '';
       const files = (intel.files || []);
-      filesEmpty.textContent = files.length ? '' : 'Няма изтегляния.';
+      filesEmpty.textContent = files.length ? '' : T('vp.files.empty');
       for (const file of files.slice(0, 50)) filesBody.appendChild(simpleRow(doc, [file.name || file.id, file.downloads, file.visitors, fmtTime(file.lastAt)]));
 
       geoBody.innerHTML = '';
       const countries = Object.entries(intel.geo ? intel.geo.countries || {} : {}).sort((a, b) => b[1] - a[1]);
-      geoEmpty.textContent = countries.length ? '' : 'Локацията е неизвестна — няма офлайн база или още няма посетители.';
+      geoEmpty.textContent = countries.length ? '' : T('vp.geo.empty');
       for (const [country, count] of countries) geoBody.appendChild(simpleRow(doc, [country, count]));
     }
 
-    view.querySelector('#v-refresh').addEventListener('click', () => { badge.textContent = 'обновяване…'; void load(); });
+    view.querySelector('#v-refresh').addEventListener('click', () => { badge.textContent = T('vp.badge.refreshing'); void load(); });
     view.querySelector('#v-csv').addEventListener('click', exportCsv);
     await load();
   }

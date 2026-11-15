@@ -84,9 +84,9 @@ const CEILING = {
   'report-studio.js': 3260,
   'secret-share.js': 84,
   'settings-panel.js': 7423,
-  'visitors-panel.js': 909,
+  'visitors-panel.js': 0,
 };
-  const TOTAL_CEILING = 34472; // сумата без речниците (беше 36 850, когато `app.js` се броеше като дълг)
+  const TOTAL_CEILING = 33563; // сумата без речниците (беше 36 850, когато `app.js` се броеше като дълг)
 const TRANSLATED_FLOOR = 9; // извиквания на `t(` извън `i18n.js`
 
 // ── 1. Всеки модул е под своя таван ─────────────────────────────────────────
