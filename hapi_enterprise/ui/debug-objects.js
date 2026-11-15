@@ -19,17 +19,17 @@
   // ── Обекти: подредбата е от по-специфично към по-общо ──────────────────────
   // Първото съвпадение печели, затова иконата-бутон и чекбоксът стоят преди „контрола“.
   var OBJECTS = [
-    { kind: 'icon-button', select: '.fm-ico-btn', role: 'икона-бутон' },
-    { kind: 'checkbox', select: 'input[type="checkbox"]', role: 'избор' },
-    { kind: 'field-control', select: 'input, select, textarea', role: 'поле за въвеждане' },
-    { kind: 'control', select: 'button, a[href], [role="button"]', role: 'контрола' },
-    { kind: 'card', select: '.fm-file, .pf-portal', role: 'карта' },
-    { kind: 'block', select: '.pf-block', role: 'блок на портал' },
-    { kind: 'field', select: '.field', role: 'поле от форма' },
-    { kind: 'table', select: 'table', role: 'таблица' },
-    { kind: 'chip', select: '.chip, .state-chip, .badge', role: 'табелка' },
+    { kind: 'icon-button', select: '.fm-ico-btn', role: T('dbg.role.icon-button') },
+    { kind: 'checkbox', select: 'input[type="checkbox"]', role: T('dbg.role.checkbox') },
+    { kind: 'field-control', select: 'input, select, textarea', role: T('dbg.role.field-control') },
+    { kind: 'control', select: 'button, a[href], [role="button"]', role: T('dbg.role.control') },
+    { kind: 'card', select: '.fm-file, .pf-portal', role: T('dbg.role.card') },
+    { kind: 'block', select: '.pf-block', role: T('dbg.role.block') },
+    { kind: 'field', select: '.field', role: T('dbg.role.field') },
+    { kind: 'table', select: 'table', role: T('dbg.role.table') },
+    { kind: 'chip', select: '.chip, .state-chip, .badge', role: T('dbg.role.chip') },
     { kind: 'nav-group', select: '[data-nav-group]', role: T('dbg.role.nav-group') },
-    { kind: 'panel', select: 'section.panel, .panel', role: 'контейнер' },
+    { kind: 'panel', select: 'section.panel, .panel', role: T('dbg.role.panel') },
   ];
 
   // ── Закони: един списък за целия интерфейс ────────────────────────────────
@@ -118,7 +118,7 @@
   var LAWS = [
     {
       id: 'spacing-grid',
-      title: 'отстоянията са на 2px решетката (--sp-*)',
+      title: T('dbg.law.spacing.title'),
       kinds: ['panel', 'block', 'card', 'field', 'control', 'icon-button', 'field-control', 'chip'],
       check: function (o) {
         var bad = [];
@@ -132,7 +132,7 @@
     },
     {
       id: 'symmetry',
-      title: 'контейнерът е симетричен: ляво = дясно, горе = долу',
+      title: T('dbg.law.symmetry.title'),
       kinds: ['panel', 'block', 'card'],
       check: function (o) {
         var s = o.spacing;
@@ -141,14 +141,14 @@
         var top = px(s['padding-top']);
         var bottom = px(s['padding-bottom']);
         var bad = [];
-        if (left !== null && right !== null && Math.abs(left - right) > 0.5) bad.push('ляво ' + s['padding-left'] + ' ≠ дясно ' + s['padding-right']);
-        if (top !== null && bottom !== null && Math.abs(top - bottom) > 0.5) bad.push('горе ' + s['padding-top'] + ' ≠ долу ' + s['padding-bottom']);
+        if (left !== null && right !== null && Math.abs(left - right) > 0.5) bad.push(T('dbg.law.symmetry.left') + ' ' + s['padding-left'] + ' ≠ ' + T('dbg.law.symmetry.right') + ' ' + s['padding-right']);
+        if (top !== null && bottom !== null && Math.abs(top - bottom) > 0.5) bad.push(T('dbg.law.symmetry.top') + ' ' + s['padding-top'] + ' ≠ ' + T('dbg.law.symmetry.bottom') + ' ' + s['padding-bottom']);
         return bad.length ? bad.join(' · ') : null;
       },
     },
     {
       id: 'named',
-      title: 'всяка контрола има име за екранен четец',
+      title: T('dbg.law.accessible-name.title'),
       kinds: ['control', 'icon-button', 'field-control', 'checkbox'],
       check: function (o) {
         if (nameOf(o.el)) return null;
@@ -156,24 +156,24 @@
         var label = labelNameOf(o.el);
         if (label.indexOf('#unlinked:') === 0) {
           var text = label.slice('#unlinked:'.length);
-          return 'етикетът „' + text + '“ не е свързан с полето (липсва for/id) — екранният четец не го обявява';
+          return T('dbg.law.accessible-name.unlinked', { label: text });
         }
         if (label) return null;
-        return 'без текст, aria-label, title или placeholder';
+        return T('dbg.law.accessible-name.empty');
       },
     },
     {
       id: 'touch-target',
-      title: 'контролата е поне 20px висока',
+      title: T('dbg.law.target-size.title'),
       kinds: ['control', 'icon-button'],
       check: function (o) {
         if (!o.box) return null; // без размери (тестов DOM) → не се съди
-        return o.box.height < 20 ? 'височина ' + o.box.height + 'px' : null;
+        return o.box.height < 20 ? T('dbg.law.target-size.detail') + ' ' + o.box.height + 'px' : null;
       },
     },
     {
       id: 'no-inline-layout',
-      title: 'оформлението не се задава на място (инлайн стил)',
+      title: T('dbg.law.no-inline.title'),
       kinds: ['panel', 'block', 'card', 'field'],
       check: function (o) {
         var style = o.el.style || {};
@@ -183,12 +183,12 @@
           'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
           'marginTop', 'marginRight', 'marginBottom', 'marginLeft'];
         var bad = keys.filter(function (key) { return style[key]; });
-        return bad.length ? 'инлайн: ' + bad.join(', ') : null;
+        return bad.length ? T('dbg.law.no-inline.detail') + ' ' + bad.join(', ') : null;
       },
     },
     {
       id: 'one-qr',
-      title: 'QR кодът е един — този на портала (без собствени кодове по файлове)',
+      title: T('dbg.law.single-qr.title'),
       // Законът е за ЦЕЛИЯ екран, не за всеки контейнер: иначе един код се брои три пъти
       // (панел → карта → блок) и отчетът плаши с число, което не съществува.
       kinds: ['scope'],
@@ -197,7 +197,7 @@
         var outside = Array.prototype.filter.call(nodes, function (node) {
           return !(node.closest && node.closest('[data-block="link"]'));
         });
-        return outside.length ? outside.length + ' QR кода извън блока „Достъп и QR код“' : null;
+        return outside.length ? T('dbg.law.single-qr.detail', { n: outside.length }) : null;
       },
     },
     {
@@ -222,9 +222,9 @@
   ];
 
   /** Текст от речника; без речник (напр. в тестов контекст) ключът се вижда като ключ. */
-  function T(key) {
+  function T(key, vars) {
     var dict = window.HapiI18n;
-    return dict && typeof dict.t === 'function' ? dict.t(key) : String(key);
+    return dict && typeof dict.t === 'function' ? dict.t(key, vars) : String(key);
   }
 
   function isDebug() {
@@ -269,7 +269,7 @@
         try {
           detail = law.check(object);
         } catch (e) {
-          detail = 'законът не може да се приложи: ' + (e && e.message ? e.message : e);
+          detail = T('dbg.msg.law-failed') + ': ' + (e && e.message ? e.message : e);
         }
         if (!detail) return;
         violations.push({ law: law.id, title: law.title, kind: rule.kind, object: object.id, detail: detail });
@@ -283,11 +283,11 @@
       if (law.kinds.indexOf('scope') === -1) return;
       var detail;
       try {
-        detail = law.check({ kind: 'scope', id: 'екран', el: scope, spacing: {}, box: null });
+        detail = law.check({ kind: 'scope', id: 'scope', el: scope, spacing: {}, box: null });
       } catch (e) {
-        detail = 'законът не може да се приложи: ' + (e && e.message ? e.message : e);
+        detail = T('dbg.msg.law-failed') + ': ' + (e && e.message ? e.message : e);
       }
-      if (detail) violations.push({ law: law.id, title: law.title, kind: 'scope', object: 'екран', detail: detail });
+      if (detail) violations.push({ law: law.id, title: law.title, kind: 'scope', object: T('dbg.role.screen'), detail: detail });
     });
     var byLaw = {};
     violations.forEach(function (v) { byLaw[v.law] = (byLaw[v.law] || 0) + 1; });
@@ -305,14 +305,14 @@
     Object.keys(r.summary.byKind).sort().forEach(function (kind) {
       lines.push('  ' + kind + ': ' + r.summary.byKind[kind]);
     });
-    lines.push('Закони: ' + LAWS.length + ' · нарушения: ' + r.violations.length);
+    lines.push(T('dbg.msg.laws-line', { laws: LAWS.length, violations: r.violations.length }));
     r.violations.forEach(function (v) {
       lines.push('  ✘ ' + v.law + ' · ' + v.kind + ' ' + v.object + ' — ' + v.detail);
     });
     if (!r.violations.length) {
-      lines.push('Няма нарушения по измереното — липсващите стойности се прескачат, не се броят за наред.');
+      lines.push(T('dbg.msg.no-violations'));
     }
-    return ['Разпознати обекти: ' + r.objects.length].concat(lines);
+    return [T('dbg.msg.objects-found', { n: r.objects.length })].concat(lines);
   }
 
   /** Екранният отчет: редовете от `reportLines`, слепени за `<pre>`. */
@@ -323,7 +323,7 @@
   /** Едноредовото резюме за известие: „Обекти: N · нарушения: M“. */
   function summaryText(result) {
     var r = result || scan();
-    return 'Обекти: ' + r.objects.length + ' · нарушения: ' + r.violations.length;
+    return T('dbg.msg.objects-line', { n: r.objects.length }) + ' · ' + T('dbg.msg.violations-line', { n: r.violations.length });
   }
 
   /** Отчет в конзолата — редовете са готови за копиране в доклад за дефект. */
@@ -340,9 +340,9 @@
     }
     // Конзолата показва същото като екрана плюс разбивката по закон — текстът се строи
     // веднъж (`reportLines`), за да не се разминават двата отчета.
-    var lines = ['HapiDebugObjects: ' + r.objects.length + ' обекта · ' + r.violations.length + ' нарушения'];
+    var lines = [T('dbg.msg.console-head', { objects: r.objects.length, violations: r.violations.length })];
     Object.keys(r.summary.byLaw).sort().forEach(function (law) {
-      lines.push('  закон ' + law + ': ' + r.summary.byLaw[law]);
+      lines.push('  ' + T('dbg.msg.by-law', { law: law, n: r.summary.byLaw[law] }));
     });
     lines = lines.concat(reportLines(r));
     if (window.console && window.console.log) lines.forEach(function (line) { window.console.log(line); });
