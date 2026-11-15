@@ -70,6 +70,7 @@ function mountIntegrationPortal(server, slug) {
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(INT, 'portal-i18n.js'), 'utf8'), sandbox, { filename: 'portal-i18n.js' });
   vm.runInContext(fs.readFileSync(path.join(INT, 'portal.js'), 'utf8'), sandbox, { filename: 'portal.js' });
   return { doc, location };
 }

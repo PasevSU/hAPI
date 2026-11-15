@@ -133,6 +133,12 @@ async function mountPortal(base, pagePath) {
   intSandbox.window = intSandbox;
   intSandbox.globalThis = intSandbox;
   vm.createContext(intSandbox);
+  // Речникът се зарежда ПРЕДИ страницата — точно както `<script>`-овете в portal.html.
+  vm.runInContext(
+    fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterprise', 'portal-i18n.js'), 'utf8'),
+    intSandbox,
+    { filename: 'portal-integration-i18n.js' },
+  );
   vm.runInContext(intJs, intSandbox, { filename: 'portal-integration.js' });
 
   // Интеграционната страница НЕ отваря папката сама (за разлика от add-on варианта):

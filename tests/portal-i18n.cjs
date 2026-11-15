@@ -43,12 +43,16 @@ console.log('· английският и немският нямат кирил
       assert.equal(CYRILLIC.test(value), false, lang + '/' + key + ' съдържа кирилица: ' + value);
     }
   }
-  // Българският, обратно, трябва да е кирилски — иначе „преводът“ е копие на английския.  // Изключение: МАРКАТА (`brand.*`) не се превежда — „ПАП БОКС“ е име на продукта и
-  // стои еднакво на трите езика, както и `header.api`/`header.manifest` са термини.
-  const bgValues = Object.entries(I.dictionary('bg')).filter(([key]) => !/^(header\.api|header\.manifest)$/.test(key));
+  // Българският, обратно, трябва да е кирилски — иначе „преводът“ е копие на английския.
+  // Изключения има само за ТЕРМИНИ и ШАБЛОНИ, които стоят еднакво на трите езика: марката
+  // (`brand.*` — „ПАП БОКС“ е собствено име), `API`/`Манифест` като термини и стойности,
+  // съставени само от заместители и технически думи (`{n} {what}`, `SHA-256 {short}`,
+  // `QR {id}`) — при тях няма какво да се превежда.
+  const TECHNICAL = /^(header\.api|header\.manifest|file\.count|file\.sha\.label|file\.sha\.title|qr\.badge)$/;
+  const bgValues = Object.entries(I.dictionary('bg')).filter(([key]) => !TECHNICAL.test(key));
   assert.ok(
-    bgValues.filter(([, value]) => CYRILLIC.test(value)).length >= bgValues.length - 3,
-    'българският речник е наистина български',
+    bgValues.filter(([, value]) => CYRILLIC.test(value)).length === bgValues.length,
+    'българският речник е наистина български (извън изброените термини)',
   );
 }
 
@@ -56,10 +60,14 @@ console.log('· всеки ключ от HTML и от portal.js съществу
 {
   const dict = new Set(keysOf('bg'));
   const used = new Set();
-  for (const m of html.matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)) used.add(m[1]);
+  // Речникът е ЕДИН за двете страници (add-on и интеграция) — употребата се търси в ДВАТА
+  // чифта файлове: ключ, който ползва само интеграцията, не е мъртъв текст.
+  const intHtml = fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterprise', 'portal.html'), 'utf8');
+  const intJs = fs.readFileSync(path.join(ROOT, 'custom_components', 'hapi_enterprise', 'portal.js'), 'utf8');
+  for (const m of (html + '\n' + intHtml).matchAll(/data-i18n(?:-[a-z]+)?="([^"]+)"/g)) used.add(m[1]);
   // Само литерални ключове: `T("flag." + x)` е съставен ключ и се проверява от самите
   // стойности на флаговете (info/important/urgent/archive), не от този списък.
-  for (const m of js.matchAll(/T\(\s*"([^"]+)"\s*[,)]/g)) used.add(m[1]);
+  for (const m of (js + '\n' + intJs).matchAll(/T\(\s*"([^"]+)"\s*[,)]/g)) used.add(m[1]);
   assert.ok(used.size >= 30, 'страницата ползва речника, не твърди текстове: ' + used.size + ' ключа');
   const missing = [...used].filter((key) => !dict.has(key));
   assert.deepEqual(missing, [], 'липсващи ключове в речника: ' + missing.join(', '));
@@ -69,9 +77,9 @@ console.log('· всеки ключ от HTML и от portal.js съществу
   const DYNAMIC = ['flag.'];
   const unused = [...dict].filter((key) => {
     if (used.has(key)) return false;
-    if (new RegExp('"' + key.replace(/\./g, '\\.') + '"').test(js)) return false;
+    if (new RegExp('"' + key.replace(/\./g, '\\.') + '"').test(js + '\n' + intJs)) return false;
     const prefix = DYNAMIC.find((p) => key.startsWith(p));
-    if (prefix) return !js.includes('T("' + prefix + '" +');
+    if (prefix) return !(js + '\n' + intJs).includes('T("' + prefix + '" +');
     return true;
   });
   assert.deepEqual(unused, [], 'ключове без употреба: ' + unused.join(', '));

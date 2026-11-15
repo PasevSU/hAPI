@@ -57,8 +57,10 @@ for (const key of ['file.status.verified', 'file.status.mismatch', 'file.status.
   assert.ok(addon.includes(`T("${key}")`), `add-on страницата ползва ${key}`);
 }
 const integration = fs.readFileSync(COPIES[1][1], 'utf8');
-assert.ok(integration.includes('SHA-256 НЕ съвпада'), 'интеграцията казва за разминаване');
-assert.ok(integration.includes('SHA-256 съвпада'), 'интеграцията казва за съвпадение');
-assert.ok(integration.includes('без сверка'), 'интеграцията казва, че сверка няма');
+// След 0.69.210 двете копия казват едно и също чрез ЕДИН речник — затова се сверява
+// КЛЮЧЪТ, а не българският низ: текстът живее в `portal-i18n.js`, не в двата скрипта.
+for (const key of ['file.status.verified', 'file.status.mismatch', 'file.status.noVerify']) {
+  assert.ok(integration.includes(`T("${key}")`), `интеграцията ползва ${key}`);
+}
 
 console.log('portal-hash-verify: 2 копия · сверка преди запис · разминаване спира свалянето · без WebCrypto → „без сверка“ — наред');

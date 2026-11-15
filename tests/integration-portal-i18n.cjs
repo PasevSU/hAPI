@@ -75,6 +75,20 @@ assert.match(
 const build = fs.readFileSync(path.join(ROOT, 'scripts', 'build-haoss.cjs'), 'utf8');
 assert.ok(build.includes("'portal-i18n.js'"), 'build-haoss изисква речникът да е в HACS пакета');
 
+// Заместителите стигат до речника: `T(key, vars)` трябва да подава `vars` на `I18N.t`.
+// Точно това се счупи веднъж — `T` беше `(key, fallback)`, тоест броячите излизаха като
+// „{n} {what}“ вместо „3 файла“, а статичните текстове изглеждаха наред.
+const portalJs = read('portal.js');
+assert.match(
+  portalJs,
+  /const T = \(key, vars\) => \(I18N \? I18N\.t\(LANG, key, vars\) : key\)/,
+  'T(key, vars) подава заместителите на речника (иначе „{n}“ стига до екрана)',
+);
+assert.ok(
+  /T\("[a-z.]+", \{ n:/.test(portalJs),
+  'броячите минават през T() със заместител — не се сглобяват на ръка',
+);
+
 // ── 4. Страницата сменя езика в ЖИВ DOM ─────────────────────────────────────
 const portalHtml = read('portal.html');
 const bodyHtml = portalHtml.slice(portalHtml.indexOf('<body>') + '<body>'.length, portalHtml.indexOf('</body>'));
@@ -182,21 +196,17 @@ console.log('· запазен избор на посетителя се пом�
   assertTranslated(doc, 'en', 'en след смяна');
 }
 
-// ── 5. Ратчет: оставащият български текст не расте ─────────────────────────
-// Преведени са СТАТИЧНИТЕ текстове (заглавия, бутони, етикети, подсказки). Съобщенията,
-// които кодът строи (статуси, грешки, изречения за съдържанието), още са на български —
-// те искат ключове × 3 езика и са отделна задача. Числото е измерено днес; може само да пада.
-const LIMIT_DEBT = 2916;
-const debtOf = (file) => {
-  const src = read(file);
-  const code = file.endsWith('.js') ? stripComments(src) : src.replace(/<!--[\s\S]*?-->/g, ' ');
-  return (code.match(/[\u0400-\u04FF]/g) || []).length;
-};
-const debtJs = debtOf('portal.js');
-const debtHtml = debtOf('portal.html');
+// ── 5. Ратчет: оставащият български текст в КОДА не расте ─────────────────
+// Българското в `portal.html` е НАРОЧНО: това е страницата без JavaScript (същото правило
+// като в add-on портала — „българският е по подразбиране и е пълният“); с JavaScript всеки
+// възел с `data-i18n` се превежда. Броят се съобщенията, които кодът строи: след
+// превода в 0.69.210 остана само резервното съществително (23 знака) за случая, в който
+// речникът не се зареди. Преди това бяха 2454. Само надолу.
+const LIMIT_DEBT = 23;
+const debtJs = (stripComments(read('portal.js')).match(/[\u0400-\u04FF]/g) || []).length;
 assert.ok(
-  debtJs + debtHtml <= LIMIT_DEBT,
-  `българският текст в интеграционния портал е ${debtJs + debtHtml} знака, таванът е ${LIMIT_DEBT}. ` +
+  debtJs <= LIMIT_DEBT,
+  `българският текст в кода на интеграционния портал е ${debtJs} знака, таванът е ${LIMIT_DEBT}. ` +
     'Нов текст минава през t() от portal-i18n.js; ако си ПРЕВЕЛ модул, свали тавана в същия комит.',
 );
 
@@ -207,8 +217,8 @@ console.log(
     dict.LANGS.length +
     ' езика · asset обявен в __init__.py и в build-haoss · ' +
     'страницата сменя езика в DOM (bg/en/de, fr→bg) · остават ' +
-    (debtJs + debtHtml) +
-    ' български знака (таван ' +
+    debtJs +
+    ' български знака в КОДА (таван ' +
     LIMIT_DEBT +
-    ')',
+    '; HTML-ът пази българския като вариант без JavaScript)',
 );
