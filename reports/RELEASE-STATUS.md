@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **412/412** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.210 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 651 файла · 118344 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 645 файла · 116385 реда · critical: 0 · high: 0 · medium: 0 · low: 203 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 651 файла · 118607 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 645 файла · 116648 реда · critical: 0 · high: 0 · medium: 0 · low: 203 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -33,6 +33,11 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.210
+
+- **Public Gateway & Access говори три езика.** Каналите, gateway настройките, пълните настройки
+  на портала, файловите политики, „Public Access Test“ и изолационните проверки минават през
+  `T('pgw.*')` — **84** нови ключа × BG/EN/DE (речникът става **924** ключа на език). Ратчетът е
+  свален: `public-gateway.js` 1 274 → **0**, общо **24 952 → 23 678**.
 
 - **Мониторингът говори три езика.** Единната страница за състояние, ресурси, посетители и живи
   събития минава през `T('mon.*')` — **105** нови ключа × BG/EN/DE (речникът става **840** ключа

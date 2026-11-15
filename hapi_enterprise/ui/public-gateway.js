@@ -8,6 +8,9 @@
   const ACC = () => globalThis.HapiDownloadAccess;
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Целият текст минава през речника (BG/EN/DE); липсващ ключ се вижда като ключа, не като български.
+  const T = (key, vars) =>
+    typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key, vars) : String(key);
   const toast = (m, k) => window.HapiUI && window.HapiUI.toast(m, k);
   const fmtSize = (n) => {
     const v = Number(n) || 0;
@@ -58,7 +61,7 @@
       ? data.map((p, i) => ({
         id: String(p.slug || p.id || `portal-${i + 1}`),
         slug: String(p.slug || p.id || `portal-${i + 1}`),
-        title: p.title || p.name || `Портал ${i + 1}`,
+        title: p.title || p.name || T('pgw.portalFallback', { n: i + 1 }),
         status: p.status || 'active',
         access: p.access || (p.mode && p.mode.toUpperCase()) || (p.visibility === 'public' ? 'FREE' : 'KEY_REQUIRED'),
         visibility: p.visibility === 'hidden' || p.visibility === 'private' ? 'hidden' : 'public',
@@ -68,7 +71,7 @@
       : [
         { id: 'public-notices', slug: 'public-notices', title: 'Public notices', status: 'active', access: 'FREE', visibility: 'public', storage_root: '/share', html: 'catalog' },
         { id: 'chronoseal-vault', slug: 'chronoseal-vault', title: 'ChronoSeal-Vault', status: 'active', access: 'KEY_REQUIRED', visibility: 'public', storage_root: '/share', html: 'catalog' },
-        { id: 'forensic-2026-114', slug: 'forensic-2026-114', title: 'Forensic — дело 2026-114', status: 'paused', access: 'PRIVATE', visibility: 'hidden', storage_root: '/share', html: 'none' },
+        { id: 'forensic-2026-114', slug: 'forensic-2026-114', title: 'Forensic — 2026-114', status: 'paused', access: 'PRIVATE', visibility: 'hidden', storage_root: '/share', html: 'none' },
       ];
     state.portals = list.map((p) => GW().normalizePortal(p));
     list.forEach((p) => {
@@ -124,101 +127,109 @@
     host.innerHTML = `
       <div class="page-title">
         <h1>Public Gateway &amp; Access</h1>
-        <p>Публични портали · ключове · файлови политики · Public Access Test</p>
-        <span class="badge demo">интерактивен модел</span>
+        <p>${esc(T('pgw.subtitle'))}</p>
+        <span class="badge demo">${esc(T('pgw.demo'))}</span>
       </div>
 
       <section class="panel">
-        <div class="panel-head"><h2>Два независими канала</h2>
-          <span class="badge">${summary.active} активни · ${summary.paused} пауза · ${summary.disabled} изключени</span>
+        <div class="panel-head"><h2>${esc(T('pgw.channels.title'))}</h2>
+          <span class="badge">${esc(T('pgw.channels.summary', { active: summary.active, paused: summary.paused, disabled: summary.disabled }))}</span>
         </div>
         <div class="panel-body">
           <table class="grid">
-            <thead><tr><th>Компонент</th>${GW().CHANNELS.map((c) => `<th>${esc(c.label)}</th>`).join('')}</tr></thead>
+            <thead><tr><th>${esc(T('pgw.th.component'))}</th>${GW().CHANNELS.map((c) => `<th>${esc(c.label)}</th>`).join('')}</tr></thead>
             <tbody>
               ${['purpose', 'access', 'auth', 'users', 'download', 'api', 'logs']
         .map(
           (key) =>
             `<tr><td>${esc(
-              { purpose: 'Предназначение', access: 'Достъп', auth: 'Автентикация', users: 'Потребители', download: 'Изтегляне', api: 'API', logs: 'Логове' }[key],
+              {
+                purpose: T('pgw.row.purpose'),
+                access: T('pgw.row.access'),
+                auth: T('pgw.row.auth'),
+                users: T('pgw.row.users'),
+                download: T('pgw.row.download'),
+                api: 'API',
+                logs: T('pgw.row.logs'),
+              }[key],
             )}</td>${GW().CHANNELS.map((c) => `<td>${esc(c[key])}</td>`).join('')}</tr>`,
         )
         .join('')}
             </tbody>
           </table>
-          <p class="hint">Ingress ${base.ingress.port} (само през Home Assistant) · Public ${base.public.port} (без HA сесия). Публичният канал не достига административни маршрути.</p>
+          <p class="hint">${esc(T('pgw.channels.hint', { ingress: base.ingress.port, public: base.public.port }))}</p>
         </div>
       </section>
 
       <div class="two-col u-mt">
         <section class="panel">
-          <div class="panel-head"><h2>Gateway</h2><span class="badge ${gw.public.published ? 'ok' : 'err'}">${gw.public.published ? 'публикуван' : 'непубликуван'
+          <div class="panel-head"><h2>Gateway</h2><span class="badge ${gw.public.published ? 'ok' : 'err'}">${esc(gw.public.published ? T('pgw.published') : T('pgw.unpublished'))
       }</span></div>
           <div class="panel-body">
             <div class="two-col">
-              <div class="field"><label>Ingress порт</label><input value="${esc(base.ingress.port)}" readonly /></div>
-              <div class="field"><label>Public порт</label><input id="pg-port" value="${esc(base.public.port)}" /></div>
+              <div class="field"><label>${esc(T('pgw.f.ingressPort'))}</label><input value="${esc(base.ingress.port)}" readonly /></div>
+              <div class="field"><label>${esc(T('pgw.f.publicPort'))}</label><input id="pg-port" value="${esc(base.public.port)}" /></div>
             </div>
-            <div class="field"><label>Публичен домейн</label>
+            <div class="field"><label>${esc(T('pgw.f.domain'))}</label>
               <input id="pg-domain" value="${esc(gw.public.domain || '')}" placeholder="portal.example.com" />
             </div>
             <div class="checks">
-              <label><input type="checkbox" id="pg-published" ${gw.public.published ? 'checked' : ''}/> Публикувай публичния порт</label>
-              <label><input type="checkbox" id="pg-https" ${gw.public.require_https ? 'checked' : ''}/> Изисквай HTTPS</label>
-              <label><input type="checkbox" id="pg-relative" ${gw.public.relative ? 'checked' : ''}/> Същият IP и порт като HA (относителни адреси)</label>
+              <label><input type="checkbox" id="pg-published" ${gw.public.published ? 'checked' : ''}/> ${esc(T('pgw.publish'))}</label>
+              <label><input type="checkbox" id="pg-https" ${gw.public.require_https ? 'checked' : ''}/> ${esc(T('pgw.https'))}</label>
+              <label><input type="checkbox" id="pg-relative" ${gw.public.relative ? 'checked' : ''}/> ${esc(T('pgw.relative'))}</label>
             </div>
-            <p class="hint">${gw.public.relative ? 'Адресите са относителни и се отварят на origin-а на Home Assistant (напр. https://192.168.50.4:8123/api/public/v1/…).' : 'Адресите ползват отделен домейн/порт.'}</p>
-            <p class="hint">Разрешени storage roots: ${esc(base.storage.allowed_roots.join(', '))}. Публичният gateway не чете <code>/config</code> или Supervisor данни.</p>
+            <p class="hint">${esc(gw.public.relative ? T('pgw.hint.relativeOn') : T('pgw.hint.relativeOff'))}</p>
+            <p class="hint">${esc(T('pgw.hint.roots', { roots: base.storage.allowed_roots.join(', ') }))}</p>
           </div>
         </section>
 
         <section class="panel">
-          <div class="panel-head"><h2>Портал</h2><span class="badge">${esc(p.slug)}</span></div>
+          <div class="panel-head"><h2>${esc(T('pgw.portal.title'))}</h2><span class="badge">${esc(p.slug)}</span></div>
           <div class="panel-body">
-            <div class="field"><label>Избор</label>
+            <div class="field"><label>${esc(T('pgw.f.pick'))}</label>
               <select id="pg-portal">
                 ${state.portals.map((item, i) => `<option value="${i}" ${i === state.index ? 'selected' : ''}>${esc(item.title)}</option>`).join('')}
               </select>
             </div>
             <div class="two-col">
-              <div class="field"><label>Статус</label>
+              <div class="field"><label>${esc(T('pgw.f.status'))}</label>
                 <select id="pg-status">
                   ${GW().PORTAL_STATUS.map((s) => `<option ${s === p.status ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
               </div>
-              <div class="field"><label>Достъп</label>
+              <div class="field"><label>${esc(T('pgw.f.access'))}</label>
                 <select id="pg-access">
                   ${ACC().MODES.map((m) => `<option value="${m.id}" ${m.id === p.access ? 'selected' : ''}>${esc(m.short)}</option>`).join('')}
                 </select>
               </div>
             </div>
             <div class="two-col">
-              <div class="field"><label>Видимост</label>
+              <div class="field"><label>${esc(T('pgw.f.visibility'))}</label>
                 <select id="pg-visibility">
                   ${ACC().VISIBILITY.map((v) => `<option value="${v.id}" ${v.id === p.visibility ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}
                 </select>
               </div>
               <div class="field"><label>Storage root</label><input id="pg-root" value="${esc(p.storage_root)}" /></div>
             </div>
-            <h4 class="u-mt">Пълни настройки на портала</h4>
+            <h4 class="u-mt">${esc(T('pgw.portal.full'))}</h4>
             <dl class="fm-meta">
               <dt>id</dt><dd><code>${esc(p.id)}</code></dd>
               <dt>slug</dt><dd><code>${esc(p.slug)}</code></dd>
-              <dt>Заглавие</dt><dd>${esc(p.title)}</dd>
-              <dt>Статус</dt><dd>${esc(p.status)}</dd>
-              <dt>Достъп</dt><dd><code>${esc(p.access)}</code></dd>
-              <dt>Видимост</dt><dd>${esc(p.visibility)}</dd>
+              <dt>${esc(T('pgw.f.title'))}</dt><dd>${esc(p.title)}</dd>
+              <dt>${esc(T('pgw.f.status'))}</dt><dd>${esc(p.status)}</dd>
+              <dt>${esc(T('pgw.f.access'))}</dt><dd><code>${esc(p.access)}</code></dd>
+              <dt>${esc(T('pgw.f.visibility'))}</dt><dd>${esc(p.visibility)}</dd>
               <dt>HTML</dt><dd>${esc(p.html)}</dd>
-              <dt>API</dt><dd>${p.api ? 'включено' : 'изключено'}</dd>
-              <dt>QR</dt><dd>${p.qr ? 'включено' : 'изключено'}</dd>
-              <dt>Наследяване</dt><dd>${p.inherit ? 'да' : 'не'}</dd>
-              <dt>Storage root</dt><dd><code>${esc(p.storage_root)}</code></dd>
-              <dt>Ключ TTL</dt><dd>${p.token_policy.ttl_hours == null ? 'безсрочен (освен ако не се зададе при издаване)' : p.token_policy.ttl_hours + ' ч.'}</dd>
-              <dt>Ключ лимит</dt><dd>${p.token_policy.max_uses == null ? 'без лимит (освен ако не се зададе при издаване)' : p.token_policy.max_uses + ' отваряния'}</dd>
-              <dt>Отзоваване</dt><dd>${p.token_policy.revocable ? 'разрешено' : 'забранено'}</dd>
+              <dt>API</dt><dd>${p.api ? esc(T('pgw.on')) : esc(T('pgw.off'))}</dd>
+              <dt>QR</dt><dd>${p.qr ? esc(T('pgw.on')) : esc(T('pgw.off'))}</dd>
+              <dt>${esc(T('pgw.f.inherit'))}</dt><dd>${p.inherit ? esc(T('pgw.yes')) : esc(T('pgw.no'))}</dd>
+              <dt>${esc(T('pgw.f.storageRoot'))}</dt><dd><code>${esc(p.storage_root)}</code></dd>
+              <dt>${esc(T('pgw.f.ttl'))}</dt><dd>${p.token_policy.ttl_hours == null ? esc(T('pgw.ttl.none')) : esc(T('pgw.ttl.hours', { n: p.token_policy.ttl_hours }))}</dd>
+              <dt>${esc(T('pgw.f.maxUses'))}</dt><dd>${p.token_policy.max_uses == null ? esc(T('pgw.maxUses.none')) : esc(T('pgw.maxUses.count', { n: p.token_policy.max_uses }))}</dd>
+              <dt>${esc(T('pgw.f.revoke'))}</dt><dd>${p.token_policy.revocable ? esc(T('pgw.allowed')) : esc(T('pgw.forbidden'))}</dd>
               <dt>Landing URL</dt><dd><code>${esc(GW().publicUrl(p, base))}</code></dd>
               <dt>Portal API</dt><dd><code>${esc(GW().apiUrls(p, base).portal)}</code></dd>
-              <dt>Файлове API</dt><dd><code>${esc(GW().apiUrls(p, base).files)}</code></dd>
+              <dt>${esc(T('pgw.f.filesApi'))}</dt><dd><code>${esc(GW().apiUrls(p, base).files)}</code></dd>
               <dt>QR URL</dt><dd><code>${esc(GW().apiUrls(p, base).qr)}</code></dd>
             </dl>
           </div>
@@ -226,10 +237,10 @@
       </div>
 
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Файлове в портала</h2><span class="badge demo">демонстрационни данни</span></div>
+        <div class="panel-head"><h2>${esc(T('pgw.files.title'))}</h2><span class="badge demo">${esc(T('pgw.demoData'))}</span></div>
         <div class="panel-body">
           <table class="grid">
-            <thead><tr><th>Файл</th><th>id</th><th>Размер</th><th>Политика</th><th>Видимост</th><th>Роли</th><th>Макс.</th><th>Състояние</th><th>Поведение</th><th>Адрес</th></tr></thead>
+            <thead><tr><th>${esc(T('pgw.th.file'))}</th><th>id</th><th>${esc(T('pgw.th.size'))}</th><th>${esc(T('pgw.th.policy'))}</th><th>${esc(T('pgw.th.visibility'))}</th><th>${esc(T('pgw.th.roles'))}</th><th>${esc(T('pgw.th.max'))}</th><th>${esc(T('pgw.th.state'))}</th><th>${esc(T('pgw.th.behaviour'))}</th><th>${esc(T('pgw.th.url'))}</th></tr></thead>
             <tbody>
               ${files()
         .map(
@@ -253,55 +264,55 @@
         .join('')}
             </tbody>
           </table>
-          <p class="hint">По-слаба файлова политика не може да отмени порталната: при конфликт се прилага по-строгото правило.</p>
+          <p class="hint">${esc(T('pgw.files.hint'))}</p>
         </div>
       </section>
 
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Public Access Test</h2><span class="badge demo">симулация без HA сесия</span></div>
+        <div class="panel-head"><h2>Public Access Test</h2><span class="badge demo">${esc(T('pgw.test.badge'))}</span></div>
         <div class="panel-body">
           <div class="two-col">
-            <div class="field"><label>Файл</label>
+            <div class="field"><label>${esc(T('pgw.th.file'))}</label>
               <select id="pg-file">
                 ${files().map((f, i) => `<option value="${i}">${esc(f.name)}</option>`).join('')}
               </select>
             </div>
-            <div class="field"><label>Потребител (по подразбиране: анонимен)</label>
+            <div class="field"><label>${esc(T('pgw.test.user'))}</label>
               <select id="pg-user">
-                <option value="anonymous" ${state.ctx.user === 'anonymous' ? 'selected' : ''}>анонимен (без HA сесия)</option>
-                <option value="operator" ${state.ctx.user === 'operator' ? 'selected' : ''}>оператор</option>
-                <option value="admin" ${state.ctx.user === 'admin' ? 'selected' : ''}>администратор</option>
+                <option value="anonymous" ${state.ctx.user === 'anonymous' ? 'selected' : ''}>${esc(T('pgw.test.anon'))}</option>
+                <option value="operator" ${state.ctx.user === 'operator' ? 'selected' : ''}>${esc(T('pgw.test.operator'))}</option>
+                <option value="admin" ${state.ctx.user === 'admin' ? 'selected' : ''}>${esc(T('pgw.test.admin'))}</option>
               </select>
             </div>
           </div>
           <div class="two-col">
-            <div class="field"><label>Право</label>
+            <div class="field"><label>${esc(T('pgw.test.permission'))}</label>
               <select id="pg-permission">
                 ${ACC().PERMISSIONS.map((perm) => `<option value="${perm.id}" ${perm.id === state.ctx.permission ? 'selected' : ''}>${esc(perm.id)}</option>`).join('')}
               </select>
             </div>
-            <div class="field"><label>Ключ (по избор)</label>
-              <input id="pg-token" value="${esc(state.ctx.tokenString)}" placeholder="hapi_… (HA JWT се отхвърля)" />
+            <div class="field"><label>${esc(T('pgw.test.token'))}</label>
+              <input id="pg-token" value="${esc(state.ctx.tokenString)}" placeholder="${esc(T('pgw.test.tokenPh'))}" />
             </div>
           </div>
           <div class="u-row u-row-2">
-            <button type="button" class="btn btn-primary" id="pg-test">Тествай достъп</button>
-            <button type="button" class="btn" id="pg-copy">Копирай правилата като JSON</button>
+            <button type="button" class="btn btn-primary" id="pg-test">${esc(T('pgw.test.run'))}</button>
+            <button type="button" class="btn" id="pg-copy">${esc(T('pgw.test.copy'))}</button>
           </div>
-          ${state.result ? renderResult() : '<p class="hint">Избери файл и натисни „Тествай достъп“, за да видиш решението и причината.</p>'}
+          ${state.result ? renderResult() : `<p class="hint">${esc(T('pgw.test.hint'))}</p>`}
         </div>
       </section>
 
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Изолация</h2><span class="badge">проверки на пътя</span></div>
+        <div class="panel-head"><h2>${esc(T('pgw.isolation.title'))}</h2><span class="badge">${esc(T('pgw.isolation.badge'))}</span></div>
         <div class="panel-body">
           <table class="grid">
-            <thead><tr><th>Път</th><th>Резултат</th></tr></thead>
+            <thead><tr><th>${esc(T('pgw.th.path'))}</th><th>${esc(T('pgw.th.result'))}</th></tr></thead>
             <tbody>
               ${['/config/secrets.yaml', '/admin/api/v2/portals', '/api/hassio/auth', '/p/../../etc/passwd', `/p/${esc(p.slug)}/`]
         .map((path) => {
           const r = GW().isolate(path, base);
-          return `<tr><td>${esc(path)}</td><td>${r.ok ? '<span class="state-chip ok">разрешено</span>' : `<span class="state-chip err">${esc(r.reason)}</span>`
+          return `<tr><td>${esc(path)}</td><td>${r.ok ? `<span class="state-chip ok">${esc(T('pgw.isolation.ok'))}</span>` : `<span class="state-chip err">${esc(r.reason)}</span>`
             }</td></tr>`;
         })
         .join('')}
@@ -316,11 +327,11 @@
   function renderResult() {
     const r = state.result;
     return `<div class="u-mt">
-      <p><span class="state-chip ${r.allowed ? 'ok' : 'err'}">${r.allowed ? 'ДОСТЪП РАЗРЕШЕН' : 'ОТКАЗ'}</span>
+      <p><span class="state-chip ${r.allowed ? 'ok' : 'err'}">${esc(r.allowed ? T('pgw.result.allowed') : T('pgw.result.denied'))}</span>
         ${r.allowed ? '' : `<b class="u-ml">${esc(r.reason)}</b> <span class="hint">${esc(r.detail)}</span>`}</p>
       <p class="hint">${esc(r.behaviour.label)} · ${esc(r.url)}</p>
       <table class="grid">
-        <thead><tr><th>Проверка</th><th>Резултат</th><th>Детайл</th></tr></thead>
+        <thead><tr><th>${esc(T('pgw.th.check'))}</th><th>${esc(T('pgw.th.result'))}</th><th>${esc(T('pgw.th.detail'))}</th></tr></thead>
         <tbody>${r.checks
         .map(
           (c) =>
@@ -418,7 +429,7 @@
         },
       });
       render();
-      toast(state.result.allowed ? 'Достъпът е разрешен' : `Отказ: ${state.result.reason}`, state.result.allowed ? 'ok' : 'err');
+      toast(state.result.allowed ? T('pgw.toast.allowed') : T('pgw.toast.denied', { reason: state.result.reason }), state.result.allowed ? 'ok' : 'err');
     });
     q('#pg-copy').addEventListener('click', () => {
       const payload = {
@@ -429,11 +440,11 @@
       const text = JSON.stringify(payload, null, 2);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(
-          () => toast('Правилата са копирани', 'ok'),
-          () => toast('Копирането не е поддържано', 'err'),
+          () => toast(T('pgw.toast.copied'), 'ok'),
+          () => toast(T('pgw.toast.copyUnsupported'), 'err'),
         );
       } else {
-        toast('Копирането не е поддържано от тази среда', 'err');
+        toast(T('pgw.toast.copyUnsupportedEnv'), 'err');
       }
     });
   }
