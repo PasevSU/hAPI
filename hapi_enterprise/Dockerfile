@@ -25,9 +25,16 @@ FROM alpine:3.24
 # Закачената версия е нарочна: плаващ таг прави изданието невъзпроизводимо.
 ARG NODE_VERSION=22.23.2
 
-# 1. Пакетите на Alpine се вдигат до актуалните поправки (базовият слой на Alpine
-#    носеше 4 critical + 26 high в 0.69.87; оттогава това е първото нещо при build).
-RUN apk upgrade --no-cache && rm -rf /var/cache/apk/*
+# 1. Пакетите на Alpine се вдигат до актуалните поправки. `--available` не е украса: без
+#    него `apk upgrade` подминава пакети, чиято произходна група е сменена между изданията
+#    на Alpine, а точно така излизат поправките за zlib/musl/openssl. Docker Scout отчита
+#    в БАЗОВИЯ минирутфс (alpine:3.24.4) 7 поправими находки — zlib 1.3.2-r1
+#    (CVE-2026-4738, critical), musl 1.2.6-r3 (CVE-2026-107891, high) и пет в openssl
+#    3.5.9-r0; точно този слой ги вдига до версиите от хранилището. Версиите се печатат,
+#    за да е видимо в лога на build-а какво е влязло в готовия образ.
+RUN apk upgrade --no-cache --available \
+ && (apk info -v zlib musl openssl libssl3 libcrypto3 || true) \
+ && rm -rf /var/cache/apk/*
 
 # 2. Node от официалния tarball, без пакетния мениджър на npm.
 RUN set -eu; \

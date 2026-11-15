@@ -22,7 +22,11 @@ assert.match(run, /node:sqlite/);
 assert.doesNotMatch(docker, /apk add.*nodejs/);
 // 0.69.87: слой за сигурност. Alpine пакетите се вдигат, а npm/npx/yarn/corepack се махат —
 // add-on-ът няма нито една npm зависимост и не бива да носи чуждите CVEs на npm.
-assert.match(docker, /RUN apk upgrade --no-cache/, 'Dockerfile вдига пакетите на Alpine до актуалните поправки');
+// 0.69.211: `--available` е задължителен — без него `apk upgrade` подминава пакети със
+// сменена произходна група, а точно така идват поправките за zlib/musl/openssl, които
+// Docker Scout отчита в базовия минирутфс (zlib 1.3.2-r1, musl 1.2.6-r3, openssl 3.5.9-r0).
+assert.match(docker, /RUN apk upgrade --no-cache --available/, 'Dockerfile вдига пакетите на Alpine до актуалните поправки (`--available`)');
+assert.match(docker, /apk info -v zlib musl openssl/, 'версиите на zlib/musl/openssl се печатат в лога на build-а');
 // npm/npx/corepack не се трият по-късно (това оставя следа в слоя) — не се копират изобщо.
 assert.doesNotMatch(docker, /rm -rf \/usr\/local\/lib\/node_modules\/npm/, 'npm не се трие след копиране — той не влиза');
 assert.match(docker, /apk del \.fetch/, 'временните fetch пакети се махат в СЪЩИЯ слой');
