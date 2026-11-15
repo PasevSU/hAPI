@@ -859,3 +859,27 @@ main {
   font-size: 0.8rem;
   cursor: pointer;
 }
+
+/* Заключен портал: едно поле и един бутон — без рамка на втори формуляр. */
+.unlock-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-block: 8px;
+}
+
+.unlock-field input {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.unlock-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

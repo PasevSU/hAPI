@@ -1498,11 +1498,14 @@ async function handler(req, res) {
     // Публична страница на портала — адресът, който QR кодът отваря: /p/<id портала>[/] (приема се и /p/<slug> за стари връзки).
     if (parts[0] === 'p' && (parts.length === 2 || (parts.length === 3 && parts[2] === '')) && method === 'GET') {
       const portal = resolvePortal(parts[1]); if (!portal) { if (portalArchive.sendClosed(res, parts[1])) return; return fail(res, 404, 'Not found') }
-      if (!portalPolicy.decide({ req, url, portal, action: 'read' }).allowed) return fail(res, 404, 'Not found');
+      // Заключеният портал СЕ ОТВАРЯ като кора (без съдържание), за да попита за парола:
+      // иначе посетителят вижда 404 и няма къде да я въведе. Изтеклият остава 404.
+      const decision = portalPolicy.decide({ req, url, portal, action: 'read' });
+      if (!decision.allowed && decision.reason !== 'locked') return fail(res, 404, 'Not found');
       void recordTelemetry('visit', req, portal, null, url);
       // Адресите се строят ТУК (links.js): база от public_base_url/заявката, не от location.origin.
       // `{{FOLDERS}}` казва на страницата, че порталът има СОБСТВЕНА папка — тогава тя се отваря в режим „папка“, а `?folder=` сочи подпапка в нея.
-      const stRoot = portalRoot(portal.storage_root || '/share'), dedicated = stRoot !== '/share' && stRoot !== '/media', fwd = links.prefixFromHeaders(req.headers), base = links.withBase(baseUrl(req), fwd), html = fs.readFileSync(path.join(__dirname, 'portal', 'portal.html'), 'utf8').replace('{{BASE}}', htmlEsc(base)).replace('{{API}}', htmlEsc(links.withBase(fwd, links.portalApiPath(portal)))).replace('{{FOLDER}}', htmlEsc(links.portalFolderRel(url.searchParams.get('order') || url.searchParams.get('folder') || ''))).replace('{{QR}}', htmlEsc(String(url.searchParams.get('qr') || ''))).replace('{{FOLDERS}}', dedicated ? '1' : '');
+      const stRoot = portalRoot(portal.storage_root || '/share'), dedicated = stRoot !== '/share' && stRoot !== '/media', fwd = links.prefixFromHeaders(req.headers), base = links.withBase(baseUrl(req), fwd), html = fs.readFileSync(path.join(__dirname, 'portal', 'portal.html'), 'utf8').replace('{{BASE}}', htmlEsc(base)).replace('{{API}}', htmlEsc(links.withBase(fwd, links.portalApiPath(portal)))).replace('{{FOLDER}}', htmlEsc(links.portalFolderRel(url.searchParams.get('order') || url.searchParams.get('folder') || ''))).replace('{{QR}}', htmlEsc(String(url.searchParams.get('qr') || ''))).replace('{{FOLDERS}}', dedicated ? '1' : '').replace('{{LOCKED}}', decision.allowed ? '' : '1');
       // inline стилове не се allow-ват; QR кодът е локален SVG (img-src 'self').
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' });
       return res.end(html);

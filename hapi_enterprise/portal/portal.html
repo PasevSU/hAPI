@@ -17,7 +17,7 @@
        копираният линк е абсолютен и верен и когато страницата е зад прокси с префикс
        (вж. documentation/02_TO_BE_ARCHITECTURE/LINK_AND_STORAGE_CONTRACT.md, правило 6). -->
   <div id="hapi-boot" hidden data-base="{{BASE}}" data-api="{{API}}" data-folder="{{FOLDER}}" data-folders="{{FOLDERS}}"
-    data-qr="{{QR}}"></div>
+    data-qr="{{QR}}" data-locked="{{LOCKED}}"></div>
 
   <!-- PP-04: страницата не съдържа НИТО ЕДИН линк. И скокът към съдържанието е бутон —
        `<a>` се ползва само временно при сваляне на файл, за да отвори диалога на браузъра. -->
@@ -148,6 +148,23 @@
       <ul id="files" class="files"></ul>
       <p id="empty" class="empty" data-i18n="files.empty.public" hidden>Няма достъпни файлове за показване.</p>
       <p id="more" class="more" hidden></p>
+    </section>
+
+    <!-- ЗАКЛЮЧЕН ПОРТАЛ (0.69.210): паролата се пита ТУК, а не на отделен адрес.
+         Паролата отива само в тялото на POST `/unlock` — не в адреса, не в историята. -->
+    <section class="panel" id="locked" hidden aria-labelledby="locked-title">
+      <div class="panel-head">
+        <h2 id="locked-title" data-i18n="unlock.title">Порталът е заключен</h2>
+      </div>
+      <p class="hint" data-i18n="unlock.note">За да видиш файловете, въведи паролата, която издателят ти е дал.</p>
+      <div class="unlock-field">
+        <label for="unlock-pw" data-i18n="unlock.label">Парола</label>
+        <input id="unlock-pw" type="password" autocomplete="current-password" maxlength="200" />
+      </div>
+      <div class="unlock-row">
+        <button type="button" id="unlock-go" class="btn btn-primary" data-i18n="unlock.button">Отключи</button>
+      </div>
+      <p id="unlock-status" class="status" role="status" aria-live="polite" hidden></p>
     </section>
 
     <!-- Лист с информацията за ЕДИН файл (мобилен изглед). Показва се на място, като лист,

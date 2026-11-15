@@ -66,7 +66,7 @@ const boot = (() => {
     String(v == null ? "" : v)
       .trim()
       .replace(/\/+$/, "");
-  return { base: trim(data.base), api: trim(data.api), folder: trim(data.folder), folders: trim(data.folders), qr: trim(data.qr) };
+  return { base: trim(data.base), api: trim(data.api), folder: trim(data.folder), folders: trim(data.folders), qr: trim(data.qr), locked: trim(data.locked) === "1" };
 })();
 // Част от заявката, която НЕ бива да се губи при отваряне на подпапка (подписан достъп / токен).
 const keptQuery = () => {
@@ -1388,6 +1388,70 @@ async function loadQrInfo() {
 // Търсенето може да липсва на частична страница — тогава няма какво да се връзва.
 const searchBox = $("q");
 if (searchBox) searchBox.addEventListener("input", (e) => paint(e.target.value));
+
+// ── Заключен портал: паролата се пита на самата страница (0.69.210) ─────────
+// Сървърът сервира КОРАТА и слага `data-locked="1"` (иначе посетителят виждаше 404 и
+// нямаше къде да въведе паролата). Паролата отива само в тялото на POST `/unlock`; при
+// успех страницата се презарежда с подписания достъп (`?expires&sig`) и всичко останало
+// работи както при публичен портал. Адресът НЕ се строи на ръка — базата идва от `boot`.
+function wireUnlock() {
+  const box = $("locked");
+  if (!box || !boot.locked) return;
+  box.hidden = false;
+  const panel = $("files") && $("files").closest ? $("files").closest("section") : null;
+  if (panel) panel.hidden = true;
+  const out = $("unlock-status");
+  const say = (text, kind) => {
+    if (!out) return;
+    out.hidden = !text;
+    out.textContent = text || "";
+    out.dataset.kind = kind || "";
+  };
+  const input = $("unlock-pw");
+  const button = $("unlock-go");
+  const submit = async () => {
+    if (button) button.disabled = true;
+    say(T("unlock.working"));
+    try {
+      const res = await fetch(boot.api + "/unlock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: input ? input.value : "" }),
+        referrerPolicy: "no-referrer",
+      });
+      if (res.status === 410) {
+        say(T("unlock.expired"), "err");
+        return;
+      }
+      if (!res.ok) {
+        say(T("unlock.bad"), "err");
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      const query = data && data.query ? String(data.query) : "";
+      if (!query) {
+        say(T("unlock.bad"), "err");
+        return;
+      }
+      // Презареждане със същия адрес + подписания достъп: страницата не строи адреси.
+      const next = new URL(location.href);
+      for (const [name, value] of new URLSearchParams(query.replace(/^\?/, ""))) next.searchParams.set(name, value);
+      location.replace(next.toString());
+    } catch {
+      say(T("unlock.offline"), "err");
+    } finally {
+      if (button) button.disabled = false;
+    }
+  };
+  if (button) button.addEventListener("click", () => void submit());
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") void submit();
+    });
+    if (typeof input.focus === "function") input.focus();
+  }
+}
+wireUnlock();
 
 // PP-04: „Към съдържанието“ е бутон — мести фокуса върху списъка, без да пипа адреса.
 const skipButton = $("skip");
