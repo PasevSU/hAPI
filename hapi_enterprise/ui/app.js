@@ -31,6 +31,7 @@
       report: 'Report Studio',
       settings: 'Настройки',
       about: 'Относно',
+      agents: 'Агенти',
       ready: 'Готов',
       metric: 'Показател',
       value: 'Стойност',
@@ -67,6 +68,7 @@
       report: 'Report Studio',
       settings: 'Settings',
       about: 'About',
+      agents: 'Agents',
       ready: 'Ready',
       metric: 'Metric',
       value: 'Value',
@@ -103,6 +105,7 @@
       report: 'Report Studio',
       settings: 'Einstellungen',
       about: 'Über',
+      agents: 'Agenten',
       ready: 'Bereit',
       metric: 'Kennzahl',
       value: 'Wert',
@@ -147,6 +150,12 @@
     { id: 'backups', ico: 'archive', section: 'backups', group: 'system', hidden: true },
     { id: 'qr', ico: 'qr', section: 'qr', group: 'access', hidden: true },
   ];
+
+  // Отделното меню за агенти не участва в четирите симетрични групи.
+  // ВАЖНО: UI филтърът не е API авторизация; бъдещите маршрути изискват RBAC.
+  const AGENT_HOSTNAME = 'pasev.asuscomm.com';
+  const agentHostAllowed = () =>
+    typeof location !== 'undefined' && location.protocol === 'https:' && location.hostname === AGENT_HOSTNAME;
 
   // Групите на менюто в РЕДА, в който се показват: заглавието е ключ от речника по-горе.
   const NAV_GROUPS = [
@@ -251,6 +260,32 @@
       }
       nav.appendChild(block);
     }
+    if (agentHostAllowed()) {
+      const block = document.createElement('div');
+      block.className = 'nav-group agent-nav-group';
+      block.dataset.agentMenu = 'true';
+      block.setAttribute('role', 'group');
+      block.setAttribute('aria-labelledby', 'nav-group-agents');
+      const title = document.createElement('span');
+      title.className = 'nav-group-title';
+      title.id = 'nav-group-agents';
+      title.textContent = t('agents');
+      block.appendChild(title);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `nav-item${current === 'agents' ? ' active' : ''}`;
+      button.dataset.panel = 'agents';
+      button.textContent = t('agents');
+      button.addEventListener('click', () => {
+        if (current === 'agents') return;
+        current = 'agents';
+        history.replaceState(null, '', '#agents');
+        renderNav();
+        renderView();
+      });
+      block.appendChild(button);
+      nav.appendChild(block);
+    }
   }
 
   /** Свързва етикетите с полетата в изгледа (`for`/`id`) веднага след рендер (DEF-38). */
@@ -268,6 +303,7 @@
     // след напускане — видимо като растящ брой клиенти в `/admin/api/events`. Проверката е през
     // локална променлива, за да не изглежда като обявяване на панелен модул (виж
     // `tests/gui-coverage.cjs`).
+    if (current === 'agents' && !agentHostAllowed()) current = 'dashboard';
     if (panels) panels.unmountAll();
     else {
       const dashboard = window.HapiDashboardPanel;
@@ -291,6 +327,15 @@
         bindLabels(view);
         return;
       }
+    }
+
+    if (current === 'agents' && agentHostAllowed()) {
+      view.innerHTML = `<div class="page-title"><h1>${esc(t('agents'))}</h1></div>` +
+        '<section class="panel"><div class="panel-body">' +
+        '<p class="hint">Multi-Agent backend is not connected. No agent controls are available yet.</p>' +
+        '</div></section>';
+      bindLabels(view);
+      return;
     }
 
     if (current === 'settings' && window.SettingsPanel) {
@@ -378,6 +423,7 @@
   function boot() {
     const fromHash = (location.hash || '').replace('#', '');
     if (NAV.some((n) => n.id === fromHash)) current = fromHash;
+    if (fromHash === 'agents' && agentHostAllowed()) current = 'agents';
     updateBar();
 
     document.querySelectorAll('.langs button').forEach((button) => {
@@ -484,7 +530,7 @@
   // Панелите могат да водят към друг панел (напр. „Виж всички“ от таблото), без да
   // знаят как е устроена навигацията. `go` е единствената такава врата.
   function go(id) {
-    if (!NAV.some((n) => n.id === id)) return false;
+    if (!NAV.some((n) => n.id === id) && !(id === 'agents' && agentHostAllowed())) return false;
     current = id;
     history.replaceState(null, '', `#${id}`);
     renderNav();
@@ -501,7 +547,8 @@
     getLang: () => lang,
     setLang,
     go,
-    nav: () => NAV.filter((item) => !item.hidden).map((item) => ({ id: item.id, ico: item.ico })),
+    nav: () => [...NAV.filter((item) => !item.hidden).map((item) => ({ id: item.id, ico: item.ico })),
+      ...(agentHostAllowed() ? [{ id: 'agents', ico: 'gear' }] : [])],
   };
   document.addEventListener('DOMContentLoaded', boot);
 })();
