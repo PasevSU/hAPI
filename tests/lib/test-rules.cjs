@@ -165,6 +165,7 @@ const RULES = [
   { id: "ingress-panel-load", area: "общо", title: "Ingress panel load", owner: "tests/ingress-panel-load.cjs" },
   { id: "instance-lock", area: "общо", title: "Instance lock", owner: "tests/instance-lock.cjs" },
   { id: "instance-lock-retry", area: "общо", title: "Instance lock retry", owner: "tests/instance-lock-retry.cjs" },
+  { id: "integration-portal-i18n", area: "общо", title: "Integration portal i18n", owner: "tests/integration-portal-i18n.cjs" },
   { id: "integration-runtime-data", area: "общо", title: "Integration runtime data", owner: "tests/integration-runtime-data.cjs" },
   { id: "integrity", area: "общо", title: "Integrity", owner: "tests/integrity.cjs" },
   { id: "integrity-startup", area: "общо", title: "Integrity startup", owner: "tests/integrity-startup.cjs" },

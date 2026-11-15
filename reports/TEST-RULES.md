@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 409 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 410 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 184 |
+| общо | 185 |
 | портал | 43 |
 | GUI | 31 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (184)
+## общо (185)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -132,6 +132,7 @@
 | `ingress-panel-load` | Ingress panel load | `tests/ingress-panel-load.cjs` |
 | `instance-lock` | Instance lock | `tests/instance-lock.cjs` |
 | `instance-lock-retry` | Instance lock retry | `tests/instance-lock-retry.cjs` |
+| `integration-portal-i18n` | Integration portal i18n | `tests/integration-portal-i18n.cjs` |
 | `integration-runtime-data` | Integration runtime data | `tests/integration-runtime-data.cjs` |
 | `integrity` | Integrity | `tests/integrity.cjs` |
 | `integrity-startup` | Integrity startup | `tests/integrity-startup.cjs` |

@@ -352,7 +352,7 @@ const icon = path.join(buildDir, 'brand', 'icon.png');
 if (!fs.existsSync(icon)) fail('липсва brand/icon.png (HACS изисква brand assets)');
 else if (fs.statSync(icon).size < 513) fail('brand/icon.png е подозрително малък');
 
-for (const file of ['translations/en.json', 'strings.json', 'portal.html', 'portal.css', 'portal.js']) {
+for (const file of ['translations/en.json', 'strings.json', 'portal.html', 'portal.css', 'portal.js', 'portal-i18n.js']) {
   if (!fs.existsSync(path.join(buildDir, file))) fail(`липсва ${file}`);
 }
 

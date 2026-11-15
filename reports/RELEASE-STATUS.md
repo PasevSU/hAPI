@@ -14,25 +14,38 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **409/409** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **410/410** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.210 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 645 файла · 114913 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 640 файла · 113651 реда · critical: 0 · high: 0 · medium: 2 · low: 203 — **има необяснени** · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 647 файла · 115787 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 641 файла · 113867 реда · critical: 0 · high: 0 · medium: 2 · low: 203 — **има необяснени** · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 409 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 410 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
 | `hapi_enterprise-0.69.210.tar.gz` | add-on архив (209 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.210.zip` | интеграция за HACS (26 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.210.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
 | `hapi-enterprise-gui-0.69.210.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.210
+
+- **Интеграционният портал говори три езика — със СЪЩИЯ речник като add-on портала.**
+  Публичната страница съществува в две копия: в add-on-а (с речник BG/EN/DE от 0.69.78) и в
+  HACS интеграцията, която беше само на български — чужд потребител, отворил QR кода през Home
+  Assistant, виждаше български интерфейс. Сега `custom_components/hapi_enterprise/portal-i18n.js`
+  е **байт по байт същият файл** (`tests/integration-portal-i18n.cjs` го сравнява), 32 статични
+  текста в страницата минават през `data-i18n`, а езикът идва от адреса (`?lang=en`), от
+  избора на посетителя (помни се) иначе от страницата. Речникът се сервира като asset от
+  интеграцията (`/api/hapi_enterprise/assets/portal-i18n.js`) — и в `_read_static_files`, и в
+  allowlist-а на изгледа, защото забравено място дава 404 при зелен код (капанът от DEF-38;
+  проверено: махне ли се от allowlist-а, тестът пада). Съобщенията, които кодът строи
+  (статуси, грешки, изречения за съдържанието), още са на български — ратчет с таван **2916**
+  знака, който само пада.
 
 - **Всеки портал има QR за ВСЯКО ниво — портал, подпапка и файл — и те се създават сами.**
   Дотук кодът беше един (затворен DEF-31) и панелът нямаше право да покаже код за папка или

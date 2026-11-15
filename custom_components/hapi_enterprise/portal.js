@@ -12,6 +12,50 @@
 // `tests/portal-variants.cjs` пази точно това правило (и в двете копия на страницата).
 
 const $ = (id) => document.getElementById(id);
+
+// ── Език на страницата (PP-14) ───────────────────────────────────────────────
+// Речникът е СЪЩИЯТ файл като в add-on портала (`portal-i18n.js`, BG/EN/DE), сервиран от
+// интеграцията като asset — едни текстове за двете страници, без втори речник. Езикът идва
+// от адреса (`?lang=en`), после от запазения избор на посетителя, иначе от `lang` на самата
+// страница (български). Без речник (стар кеш) остават българските текстове от HTML —
+// страницата НЕ показва ключове вместо думи.
+const I18N = globalThis.HapiPortalI18n || null;
+const LANG_KEY = "hapi.portalLang";
+function resolveLang() {
+  const fromUrl = new URL(location.href).searchParams.get("lang");
+  if (I18N && I18N.isLang(fromUrl)) return I18N.pick(fromUrl);
+  try {
+    const saved = localStorage.getItem(LANG_KEY);
+    if (I18N && I18N.isLang(saved)) return I18N.pick(saved);
+  } catch {
+    // Няма хранилище (частен режим) — остава езикът от адреса или подразбирането.
+  }
+  const html = document.documentElement && document.documentElement.getAttribute("lang");
+  return I18N ? I18N.pick(html) : "bg";
+}
+let LANG = resolveLang();
+/**
+ * Текст по ключ (с `{заместители}`). Без речник (стар кеш) връща подадения български текст —
+ * така страницата никога не показва ключ вместо дума.
+ */
+const T = (key, fallback) => (I18N ? I18N.t(LANG, key) : fallback || key);
+
+/**
+ * Прилага езика: статичните текстове (`data-i18n*` в HTML) и — ако данните вече са
+ * заредени — преизвежда заглавието, изречението за съдържанието и списъка, за да не
+ * остане екранът на стария език до презареждане.
+ */
+function applyLanguage() {
+  if (I18N) I18N.apply(document, LANG);
+  else if (document.documentElement) document.documentElement.setAttribute("lang", LANG);
+  const select = $("lang");
+  if (select) select.value = LANG;
+  if (!portal) return;
+  paintPortal(portal);
+  if (prof) applyWording(prof);
+  paint(qValue());
+}
+
 // Ключът на портала от адреса: /api/hapi_enterprise/portal/<id или slug>.
 const PORTAL_PATH = /^\/api\/hapi_enterprise\/portal\/([^/]+)\/?$/;
 const key = decodeURIComponent((location.pathname.match(PORTAL_PATH) || [])[1] || "").trim();
@@ -1148,7 +1192,7 @@ function paintPortal(data) {
   } catch (err) {
     setStatus(String(err && err.message ? err.message : err), "err");
     const titleEl = $("title");
-    if (titleEl) titleEl.textContent = "Порталът не е достъпен";
+    if (titleEl) titleEl.textContent = T("doc.unavailable", "Порталът не е достъпен");
   }
 })();
 
@@ -1169,3 +1213,23 @@ if (skipButton) {
     if (typeof target.scrollIntoView === "function") target.scrollIntoView({ block: "start" });
   });
 }
+
+// PP-14: изборът на език е на посетителя — помни се и се прилага веднага, без презареждане.
+// `applyLanguage()` се вика и при старт, за да дойде езикът от адреса/запазения избор, а не
+// само от `lang` на страницата.
+const langSelect = $("lang");
+if (langSelect) {
+  langSelect.value = LANG;
+  langSelect.addEventListener("change", (event) => {
+    const next = I18N && I18N.isLang(event.target.value) ? I18N.pick(event.target.value) : "bg";
+    if (next === LANG) return;
+    LANG = next;
+    try {
+      localStorage.setItem(LANG_KEY, LANG);
+    } catch {
+      // Частен режим без хранилище: изборът важи до затваряне на страницата.
+    }
+    applyLanguage();
+  });
+}
+applyLanguage();
