@@ -97,7 +97,9 @@ assert.match(src, /const accessOf = \(p\) => \(\{ query:/, 'подписът и�
 assert.match(src, /accessQuery: p\.accessQuery \|\| ''/, 'нормализаторът пази подписа');
 assert.equal(/accessQuery/.test(fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'portal-control.js'), 'utf8')), false, 'контролният панел повече не рисува състоянието на достъпа');
 assert.match(src, /Създай и генерирай API \+ QR/);
-assert.match(src, /openapi\.json/);
+  // Текстът „API, openapi.json и qr.svg…“ живее в речника (`fm.apiWritten`), затова тук се
+  // проверява ключът — иначе тестът щеше да изисква български литерал в панела (DEF-49).
+  assert.match(src, /fm\.apiWritten/);
 assert.match(src, /fm-bulk/);
 assert.match(src, /bulk-access/);
 assert.match(src, /Нов ключ/);

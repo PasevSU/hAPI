@@ -77,7 +77,7 @@ const CEILING = {
   'directory-panel.js': 0,
   'export-center.js': 0,
   'field-labels.js': 0,
-  'files-manager.js': 9672,
+  'files-manager.js': 9051,
   'icons.js': 0,
   'monitoring-panel.js': 0,
   'panel-registry.js': 117,
@@ -95,7 +95,7 @@ const CEILING = {
   'settings-panel.js': 7423,
   'visitors-panel.js': 0,
 };
-  const TOTAL_CEILING = 21464; // сумата без речниците и без демо данните (беше 36 850 с `app.js`)
+  const TOTAL_CEILING = 21142; // сумата без речниците и без демо данните (беше 36 850 с `app.js`)
 const TRANSLATED_FLOOR = 9; // извиквания на `t(` извън `i18n.js`
 
 // ── 1. Всеки модул е под своя таван ─────────────────────────────────────────

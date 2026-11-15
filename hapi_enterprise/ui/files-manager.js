@@ -603,7 +603,7 @@
         const scope = add.dataset.extrasAdd;
         const box = root.querySelector(`[data-extras="${scope}"] .pf-extras-rows`);
         if (!box) return;
-        if (box.children.length >= 20) return toast('Максимум 20 полета', 'err');
+        if (box.children.length >= 20) return toast(T('fm.maxFields'), 'err');
         box.insertAdjacentHTML('beforeend', extrasRow('', ''));
         // Новодобавеният ред НЕ получава собствен слушател: той се добавя след
         // рисуването, а слушателите се слагат при него. Затова „✕“ се хваща от един
@@ -1010,7 +1010,7 @@
   function generateApi(p, quiet, access) {
     const spec = window.HapiApiSpec;
     if (!spec) {
-      toast('Липсва api-spec.js', 'err');
+      toast(T('fm.specMissing'), 'err');
       return null;
     }
     try {
@@ -1045,7 +1045,7 @@
       // беше само коментиран в `portal-control.js` и липсваше тук, тоест QR кодът винаги
       // падаше на `landing`. Сега има една стойност и двата пътя дават ЕДИН адрес.
       state.api[p.id] = { record, openapi, refs: refsQ, qrUrl, landing, folderUrl: landing, accessQuery: q, accessExpires: (access && access.expires) || null, at: new Date().toISOString() };
-      if (!quiet) toast('API и QR са генерирани за портала', 'ok');
+      if (!quiet) toast(T('fm.apiQrGenerated'), 'ok');
       return state.api[p.id];
     } catch (e) {
       toast(`${e.code || 'ГРЕШКА'}: ${e.message}`, 'err');
@@ -1064,8 +1064,8 @@
     const info = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/api-info`);
     const access = info.ok && info.data ? { query: info.data.accessQuery || '', expires: info.data.accessExpires || null } : null;
     generateApi(p, true, access);
-    if (!r.ok) toast(r.error || 'API не е записано на сървъра', 'err');
-    else toast('API, openapi.json и qr.svg са записани от add-on-а', 'ok');
+    if (!r.ok) toast(r.error || T('fm.apiNotSaved'), 'err');
+    else toast(T('fm.apiWritten'), 'ok');
     render();
   }
 
@@ -1086,8 +1086,8 @@
     // Квадратчето е отметнато по подразбиране: при създаване на портал се създава и неговият
     // „само за преглед“ спътник със собствен QR (`hapi_enterprise/portal-view.js`).
     const readonlyWanted = Boolean(form.querySelector('[name="readonly_view"]') && form.querySelector('[name="readonly_view"]').checked);
-    if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) return toast('slug: 2–63 знака, a-z, 0-9, „-“', 'err');
-    if (!title) return toast('Заглавието е задължително', 'err');
+    if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) return toast(T('fm.slugInvalid'), 'err');
+    if (!title) return toast(T('fm.titleRequired'), 'err');
     // Срок и достъп — същите правила като `portal-term.js` на сървъра.
     const term = field('term') || 'unlimited';
     const termDays = field('termDays').trim();
@@ -1100,7 +1100,7 @@
     if (!['free', 'locked'].includes(access)) return toast(T('portal.create.err.access'), 'err');
     if (access === 'locked' && password.length < 8) return toast(T('portal.create.err.password'), 'err');
     if (storageRoot && (!/^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(storageRoot) || storageRoot.includes('..')))
-      return toast('Папката трябва да е под /share или /media (без „..“)', 'err');
+      return toast(T('fm.folderOutsideRoots'), 'err');
     const foldered = folderFiles(form);
     let contactId = '';
     let caseId = '';
@@ -1111,7 +1111,7 @@
       return toast(e.message, 'err');
     }
     if (!connected()) {
-      if (state.portals.some((p) => p.slug === slug)) return toast('Този slug вече съществува', 'err');
+      if (state.portals.some((p) => p.slug === slug)) return toast(T('fm.slugExists'), 'err');
       const p = {
         id: `demo-${Date.now()}`,
         slug,
@@ -1224,7 +1224,7 @@
   async function uploadFolderFiles(list) {
     if (!list || !list.length) return 0;
     if (list.length > 200) {
-      toast('Максимум 200 файла от папка наведнъж', 'err');
+      toast(T('fm.tooManyFiles'), 'err');
       return 0;
     }
     let done = 0;
@@ -1317,7 +1317,7 @@
       ? { query: info.data.accessQuery || '', expires: info.data.accessExpires || null }
       : accessOf(fresh);
     generateApi(fresh, true, access);
-    toast('Порталът е обновен — адресът и QR кодът са преизчислени', 'ok');
+    toast(T('fm.portalUpdated'), 'ok');
     render();
   }
 
@@ -1337,7 +1337,7 @@
       state.panel = 'upload';
       return render();
     }
-    if (!f) return toast('Избери файл', 'err');
+    if (!f) return toast(T('fm.chooseFile'), 'err');
     if (id === 'preview') return preview(f);
     if (id === 'download') return download(f);
     if (id === 'versions') return openVersions(f);

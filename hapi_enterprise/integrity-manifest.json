@@ -1,6 +1,6 @@
 {
-  "version": "0.69.214",
-  "generatedAt": "2026-11-15T13:14:17.800Z",
+  "version": "0.69.215",
+  "generatedAt": "2026-11-15T13:37:00.213Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
     "server.js": "f65c85ea835965a0a06b8444251357d99ee6baf3e8470faa6accae52f115eca1",
@@ -13,6 +13,6 @@
     "ui/field-labels.js": "efd27ab8208417f711fc1a9c36180639f5096b5baa75edcb061793971dadb43d",
     "ui/debug-objects.js": "5b5089867c0fd97d46a932f3a51cd7e6f0d0e40b3ef823cef5ec31ff87a75735",
     "ui/debug-ledger.js": "8aba4c478b3543c4a34cbc769c9a69c02f4a1936813f8eac22f7375f258967e5",
-    "ui/i18n.js": "86b0328762091ac8acf23c5b5b944351c4fbc484ef33775e04961535dceead86"
+    "ui/i18n.js": "93fb31de1a6d53f9b60209d45da3947dbad228ef60b8163fc402f74a62b54252"
   }
 }
