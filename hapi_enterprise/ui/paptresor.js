@@ -22,25 +22,51 @@
   const LAYOUTS = ['poster', 'labels'];
   const LABELS_PER_SHEET = 8;
 
+  // Модулът върви и в браузъра (глобалният речник), и като `require` в тестовете — затова
+  // речникът се взима оттам, където е: `window.HapiI18n` или `./i18n.js`.
+  const dictionary = () => {
+    if (typeof window !== 'undefined' && window.HapiI18n) return window.HapiI18n;
+    try {
+      return typeof require === 'function' ? require('./i18n.js') : null;
+    } catch {
+      return null;
+    }
+  };
+  const P = (key, vars) => {
+    const d = dictionary();
+    if (!d) return String(key);
+    const lang = typeof d.getLang === 'function' ? d.getLang() : 'bg';
+    const raw = d.DICT[lang] && d.DICT[lang][key] !== undefined ? d.DICT[lang][key] : d.DICT.bg[key];
+    const text = raw === undefined ? String(key) : raw;
+    if (!vars) return text;
+    return String(text).replace(/\{(\w+)\}/g, (all, name) =>
+      Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : all,
+    );
+  };
+
   // Стойностите по подразбиране са ТЕКСТ, който човек може да смени в панела. Затова
-  // всяко поле от отчета идва оттук, а не е зашито в шаблона.
+  // всяко поле от отчета идва оттук, а не е зашито в шаблона — и то от речника
+  // (BG/EN/DE), за да не се строи български лист на чужд език.
   const DEFAULTS = {
-    title: 'Отчет за прилагане на QR код',
-    explanation:
-      'Листът се разпечатва и се прилага към документа или папката. Сканирането на кода отваря портала ' +
-      'с актуалните файлове, версии и отпечатъци — така хартиеното копие остава свързано с електронния ' +
-      'оригинал. Отбележете номера на документа, датата и изпълнителя в полетата долу.',
-    ads: [
-      { title: 'Paptresor', text: 'QR отчети и етикети за документи — печат на A4, без интернет.' },
-      { title: 'Проверка на място', text: 'Сканирайте кода и сравнете отпечатъка SHA-256 с този в отчета.' },
-      { title: 'Хранилище', text: 'Всички версии остават в портала — старите не се губят.' },
-    ],
-    steps: [
-      'Разпечатайте листа на A4 при 100% мащаб — без „побиране в страницата“, иначе кодът се смалява.',
-      'Поставете кода върху документа или папката и отбележете №, дата и изпълнител.',
-      'При проверка сканирайте кода — порталът показва актуалните файлове и версии.',
-    ],
-    fields: ['Документ №', 'Дата', 'Изпълнител', 'Място'],
+    get title() {
+      return P('pt.def.title');
+    },
+    get explanation() {
+      return P('pt.def.explanation');
+    },
+    get ads() {
+      return [
+        { title: P('pt.def.ad1.title'), text: P('pt.def.ad1.text') },
+        { title: P('pt.def.ad2.title'), text: P('pt.def.ad2.text') },
+        { title: P('pt.def.ad3.title'), text: P('pt.def.ad3.text') },
+      ];
+    },
+    get steps() {
+      return [P('pt.def.step1'), P('pt.def.step2'), P('pt.def.step3')];
+    },
+    get fields() {
+      return [P('pt.def.field1'), P('pt.def.field2'), P('pt.def.field3'), P('pt.def.field4')];
+    },
   };
 
   const esc = (s) =>
@@ -70,7 +96,14 @@
   function accessText(portal) {
     const raw = text(portal && (portal.access || portal.visibility));
     if (!raw) return '—';
-    const known = { public: 'Публичен', private: 'Частен', unlisted: 'Скрит', hidden: 'Скрит', free: 'Публичен', key_required: 'С ключ за достъп' };
+    const known = {
+      public: P('pt.access.public'),
+      private: P('pt.access.private'),
+      unlisted: P('pt.access.hidden'),
+      hidden: P('pt.access.hidden'),
+      free: P('pt.access.public'),
+      key_required: P('pt.access.key'),
+    };
     return known[raw.toLowerCase()] || raw;
   }
 
@@ -78,7 +111,7 @@
     const p = value || {};
     const files = Array.isArray(p.files) ? p.files.length : Number(p.files) || 0;
     return {
-      title: text(p.title) || 'Портал без име',
+      title: text(p.title) || P('pt.noName'),
       id: text(p.id),
       slug: text(p.slug),
       link: text(p.link),
@@ -94,32 +127,32 @@
   function qrMarkup(svg) {
     const clean = String(svg == null ? '' : svg).trim();
     if (/^<svg[\s>]/i.test(clean) && !/<script/i.test(clean)) return clean;
-    return '<div class="pt-qr-empty">QR кодът липсва — ползвай адреса</div>';
+    return `<div class="pt-qr-empty">${esc(P('pt.qrMissing'))}</div>`;
   }
 
   function metaRows(portal) {
     const row = (label, value) => '<tr><th>' + esc(label) + '</th><td>' + value + '</td></tr>';
     const code = (v) => (v ? '<code>' + esc(v) + '</code>' : '—');
     return '<table class="pt-table"><tbody>' +
-      row('Портал', esc(portal.title)) +
-      row('Адрес', code(portal.link)) +
-      row('Идентификатор', code(portal.id)) +
-      row('Кратко име', code(portal.slug)) +
-      row('Достъп', esc(portal.access)) +
-      row('Документи', esc(String(portal.files))) +
+      row(P('pt.meta.portal'), esc(portal.title)) +
+      row(P('pt.meta.url'), code(portal.link)) +
+      row(P('pt.meta.id'), code(portal.id)) +
+      row(P('pt.meta.slug'), code(portal.slug)) +
+      row(P('pt.meta.access'), esc(portal.access)) +
+      row(P('pt.meta.files'), esc(String(portal.files))) +
       '</tbody></table>';
   }
 
   function noteBlock(lines) {
     if (!lines.length) return '';
-    return '<section class="pt-note"><h3>Обяснение</h3>' +
+    return '<section class="pt-note"><h3>' + esc(P('pt.note')) + '</h3>' +
       lines.map((line) => '<p>' + esc(line) + '</p>').join('') +
       '</section>';
   }
 
   function fieldLines(fields) {
     const list = (Array.isArray(fields) && fields.length ? fields : DEFAULTS.fields).map(text).filter(Boolean);
-    return '<section class="pt-fill"><h3>Отбелязва се при прилагане</h3><div class="pt-lines">' +
+    return '<section class="pt-fill"><h3>' + esc(P('pt.fields')) + '</h3><div class="pt-lines">' +
       list.map((f) => '<span class="pt-line">' + esc(f) + '</span>').join('') +
       '</div></section>';
   }
@@ -135,7 +168,7 @@
 
   function footer(brand, when) {
     return '<footer class="pt-foot"><span>' + esc(brand) + '</span>' +
-      '<span>Отчетът е генериран от hAPI Enterprise</span>' +
+      '<span>' + esc(P('pt.generatedBy')) + '</span>' +
       '<span>' + esc(when) + '</span></footer>';
   }
 
@@ -147,17 +180,17 @@
       '<div class="pt-brand">' + esc(brand) + '</div>' +
       '<div class="pt-head-title"><h2>' + esc(title) + '</h2>' +
       (subtitle ? '<p class="pt-head-sub">' + esc(subtitle) + '</p>' : '') + '</div>' +
-      '<div class="pt-head-date">Издаден<br><strong>' + esc(when) + '</strong></div>' +
+      '<div class="pt-head-date">' + esc(P('pt.issued')) + '<br><strong>' + esc(when) + '</strong></div>' +
       '</header>' +
       '<section class="pt-main">' +
       '<div class="pt-qr-box"><span class="pt-corner tl"></span><span class="pt-corner tr"></span>' +
       '<span class="pt-corner bl"></span><span class="pt-corner br"></span>' +
       '<div class="pt-qr">' + qr + '</div>' +
-      '<p class="pt-qr-hint">Сканирай с камерата на телефона</p></div>' +
-      '<div class="pt-meta"><h3>Къде води кодът</h3>' + metaRows(portal) + '</div>' +
+      '<p class="pt-qr-hint">' + esc(P('pt.scan')) + '</p></div>' +
+      '<div class="pt-meta"><h3>' + esc(P('pt.leads')) + '</h3>' + metaRows(portal) + '</div>' +
       '</section>' +
       noteBlock(explanation) +
-      '<section class="pt-steps"><h3>Как се прилага</h3><ol>' +
+      '<section class="pt-steps"><h3>' + esc(P('pt.steps')) + '</h3><ol>' +
       (stepList.length ? stepList.map((s) => '<li>' + esc(s) + '</li>').join('') : '<li>—</li>') +
       '</ol></section>' +
       fieldLines(ctx.fields) +
@@ -174,7 +207,7 @@
       '<div class="pt-label-text"><strong>' + esc(title) + '</strong>' +
       '<span class="pt-label-portal">' + esc(portal.title) + '</span>' +
       (portal.link ? '<code>' + esc(portal.link) + '</code>' : '') +
-      '<span class="pt-label-line">№ ' + esc(String(n)) + ' · ______________</span></div>' +
+      '<span class="pt-label-line">' + esc(P('pt.label.number', { n })) + '</span></div>' +
       '<span class="pt-label-brand">' + esc(brand) + '</span>' +
       '</div>';
     const cells = [];
@@ -184,7 +217,7 @@
       '<header class="pt-head pt-head-sm">' +
       '<div class="pt-brand">' + esc(brand) + '</div>' +
       '<div class="pt-head-title"><h2>' + esc(title) + '</h2>' +
-      '<p class="pt-head-sub">' + esc(LABELS_PER_SHEET + ' етикета на лист · ' + when) + '</p></div>' +
+      '<p class="pt-head-sub">' + esc(P('pt.labels.perSheet', { n: LABELS_PER_SHEET, when })) + '</p></div>' +
       '</header>' +
       '<section class="pt-grid">' + cells.join('') + '</section>' +
       (explanation.length ? '<p class="pt-labels-note">' + esc(explanation.join(' ')) + '</p>' : '') +
