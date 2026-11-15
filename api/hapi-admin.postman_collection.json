@@ -1133,7 +1133,7 @@
           "response": []
         },
         {
-          "name": "Нов портал",
+          "name": "Нов портал (срокът и достъпът са задължителни в панела: term+termDays, access+password)",
           "request": {
             "method": "POST",
             "header": [
@@ -1153,7 +1153,7 @@
                 "portals"
               ]
             },
-            "description": "Нов портал\n\nПраво (RBAC): `portals`"
+            "description": "Нов портал (срокът и достъпът са задължителни в панела: term+termDays, access+password)\n\nПраво (RBAC): `portals`"
           },
           "response": []
         },

@@ -175,6 +175,7 @@ const NON_ADMIN_TAIL = {
   reveal: 'публичният маршрут /api/v2/secrets/{id}/reveal',
   'qr.json': 'публичният /api/v1/p/{slug}/qr.json (QR ревизии и архиви)',
   'qr.svg': 'публичният /api/v1/p/{slug}/tree/qr.svg?path=… (код за портала, папка или файл)',
+  unlock: 'публичният /api/v1/p/{slug}/unlock (парола → подписан достъп за заключен портал)',
   ping: 'публичният ръкостиск /api/v1/p/{slug}/ping (дали връзката работи)',
 };
 const describedSegments = new Set([...describedPaths].flatMap((p) => p.split('/').filter(Boolean)));

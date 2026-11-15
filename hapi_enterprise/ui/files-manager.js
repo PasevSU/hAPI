@@ -1084,6 +1084,17 @@
     const storageRoot = (field('storage_root').trim() || `/share/${slug}`).replace(/\/+$/, '') || `/share/${slug}`;
     if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(slug)) return toast('slug: 2–63 знака, a-z, 0-9, „-“', 'err');
     if (!title) return toast('Заглавието е задължително', 'err');
+    // Срок и достъп — същите правила като `portal-term.js` на сървъра.
+    const term = field('term') || 'unlimited';
+    const termDays = field('termDays').trim();
+    const access = field('access') || 'free';
+    const password = field('password');
+    if (!['unlimited', 'limited'].includes(term)) return toast(T('portal.create.err.term'), 'err');
+    if (term === 'limited' && !/^\d{1,4}$/.test(termDays)) return toast(T('portal.create.err.days'), 'err');
+    if (term === 'limited' && (Number(termDays) < 1 || Number(termDays) > 3650))
+      return toast(T('portal.create.err.days'), 'err');
+    if (!['free', 'locked'].includes(access)) return toast(T('portal.create.err.access'), 'err');
+    if (access === 'locked' && password.length < 8) return toast(T('portal.create.err.password'), 'err');
     if (!/^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(storageRoot) || storageRoot.includes('..'))
       return toast('Папката трябва да е под /share или /media (без „..“)', 'err');
     const foldered = folderFiles(form);
@@ -1138,6 +1149,10 @@
         // изпращаше с втори PATCH след създаването: два записа за едно решение и прозорец,
         // в който порталът съществува частен, а вече е обявен за публичен.
         visibility,
+        term,
+        termDays: term === 'limited' ? Number(termDays) : undefined,
+        access,
+        password: access === 'locked' ? password : undefined,
         description: field('description'),
         category: field('category'),
         subject: field('subject'),
@@ -2205,6 +2220,30 @@
               <option value="public">${esc(T('portal.create.public'))}</option>
             </select>
             <small class="hint">${esc(T('portal.create.visibilityHint'))}</small>
+          </div>
+        </div>
+        <div class="u-grid u-grid-fields">
+          <div class="field"><label>${esc(T('portal.create.term'))}</label>
+            <select name="term">
+              <option value="unlimited">${esc(T('portal.create.term.unlimited'))}</option>
+              <option value="limited">${esc(T('portal.create.term.limited'))}</option>
+            </select>
+            <small class="hint">${esc(T('portal.create.termHint'))}</small>
+          </div>
+          <div class="field"><label>${esc(T('portal.create.termDays'))}</label>
+            <input name="termDays" type="number" min="1" max="3650" step="1" placeholder="30" />
+            <small class="hint">${esc(T('portal.create.termDaysHint'))}</small>
+          </div>
+          <div class="field"><label>${esc(T('portal.create.access'))}</label>
+            <select name="access">
+              <option value="free">${esc(T('portal.create.access.free'))}</option>
+              <option value="locked">${esc(T('portal.create.access.locked'))}</option>
+            </select>
+            <small class="hint">${esc(T('portal.create.accessHint'))}</small>
+          </div>
+          <div class="field"><label>${esc(T('portal.create.password'))}</label>
+            <input name="password" type="password" minlength="8" maxlength="200" autocomplete="new-password" />
+            <small class="hint">${esc(T('portal.create.passwordHint'))}</small>
           </div>
         </div>
         <div class="field"><label>${ico('person')} Контакт (от контактите или нов)</label>

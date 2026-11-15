@@ -1945,7 +1945,7 @@
         }
       },
       "post": {
-        "summary": "Нов портал",
+        "summary": "Нов портал (срокът и достъпът са задължителни в панела: term+termDays, access+password)",
         "operationId": "post_portals",
         "tags": [
           "portals"

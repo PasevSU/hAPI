@@ -1,9 +1,9 @@
 {
   "version": "0.69.210",
-  "generatedAt": "2026-11-15T04:21:18.493Z",
+  "generatedAt": "2026-11-15T05:24:56.594Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
-    "server.js": "1005ef36d50a3f177f00b8514a6210ff4a9178bd0c1fac80ff5ffcb4e8665825",
+    "server.js": "2a92f172611b2f2aa2cb760b7d7da92435b468731116f2a15fa90c415b60dc4f",
     "paths.js": "07def6867029ffe6a1add2cfd8349c18fb4d7db9600afca412fd9698d1c2740b",
     "storage-preflight.js": "e762909974615cb51bdeabb0bdd2b68a228f49da36ae822b81e36c4dd923b746",
     "integrity.js": "648ac9ba00f6f78f481a929b50d6ec6364ae585dd574c73c7e463669ff8299de",
@@ -13,6 +13,6 @@
     "ui/field-labels.js": "efd27ab8208417f711fc1a9c36180639f5096b5baa75edcb061793971dadb43d",
     "ui/debug-objects.js": "b3f97e0c69afb76cff50b7615061d4b0426cbbf9af4c4b574a46bb99b8b0707c",
     "ui/debug-ledger.js": "8aba4c478b3543c4a34cbc769c9a69c02f4a1936813f8eac22f7375f258967e5",
-    "ui/i18n.js": "1cb14754d722cc66348c90e827a767212d843d02316e4d5b46920d0624acc0bd"
+    "ui/i18n.js": "db83e793717e76a30d781e686d2744d1386fb5fb77106b36d285beae71330589"
   }
 }

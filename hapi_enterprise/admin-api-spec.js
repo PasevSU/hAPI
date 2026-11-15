@@ -103,7 +103,7 @@ const ROUTES = [
 
   // ── портали (блок) ────────────────────────────────────────────────────────
   ['GET', '/admin/api/portals', 'Всички портали', 'portals', 'portals'],
-  ['POST', '/admin/api/portals', 'Нов портал', 'portals', 'portals'],
+  ['POST', '/admin/api/portals', 'Нов портал (срокът и достъпът са задължителни в панела: term+termDays, access+password)', 'portals', 'portals'],
   ['POST', '/admin/api/portals/merge', 'Сливане на портали в един', 'portals', 'portals'],
   ['GET', '/admin/api/taxonomy', 'Категории и групи', 'portals', 'portals'],
   ['POST', '/admin/api/taxonomy', 'Добавяне на категория или група', 'portals', 'portals'],

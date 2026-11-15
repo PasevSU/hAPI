@@ -116,10 +116,16 @@ function create({ store, signedPortal, sessionTtlSeconds = 600, requireToken = f
       noteDenial(reason, portal);
       return deny(reason);
     };
+    // 0. СРОК И ЗАКЛЮЧВАНЕ (0.69.210) — преди всичко останало.
+    //    Срокът е решение на издателя, а не начин за достъп: изтекъл портал не се сервира
+    //    дори когато е публичен. Заключеният портал НЕ пада в „публичния“ клон — иначе
+    //    паролата щеше да се заобикаля с един флаг за видимост.
+    if (portal.expiresAt && Date.parse(portal.expiresAt) <= now()) return refusal('expired');
+    const locked = portal.access === 'locked';
     // 1. Публичен портал: достъп без идентичност, но само когато add-on-ът не иска токен.
     //    Действието (изтегляне/ключ на файл) се решава после от самия файл — тук се пуска
     //    САМО порталът, не конкретен ресурс.
-    if (portal.visibility === 'public' && !requireToken) return { allowed: true, via: 'public', reason: '' };
+    if (portal.visibility === 'public' && !requireToken && !locked) return { allowed: true, via: 'public', reason: '' };
     // 2. Публична сесия (бисквитка от `/t/<token>`): един портал, скоупи от токена.
     const raw = readSessionToken(req);
     if (raw) {
@@ -140,11 +146,12 @@ function create({ store, signedPortal, sessionTtlSeconds = 600, requireToken = f
         return { allowed: true, via: 'user-session', identity: session, reason: '' };
       }
     }
-    // 4. Подписан достъп за целия портал (собственикът го издава от панела).
+    // 4. Подписан достъп за целия портал (собственикът го издава от панела, а заключеният
+    //    портал го получава след вярна парола — `routes/portal-unlock.js`).
     if (!requireToken && action === 'read' && typeof signedPortal === 'function' && signedPortal(url, portal)) {
       return { allowed: true, via: 'signed-portal', reason: '' };
     }
-    return refusal('no-identity');
+    return refusal(locked ? 'locked' : 'no-identity');
   }
 
   /** Еднакъв отказ за всички случаи: 404 без обяснение навън, причината — в сензорите. */

@@ -74,7 +74,7 @@
 | GET | `/admin/api/audit/verify` | Проверка на хеш-веригата |
 | GET | `/admin/api/audit/export` | Изтегляне на одитната верига |
 | GET | `/admin/api/portals` | Всички портали |
-| POST | `/admin/api/portals` | Нов портал |
+| POST | `/admin/api/portals` | Нов портал (срокът и достъпът са задължителни в панела: term+termDays, access+password) |
 | POST | `/admin/api/portals/merge` | Сливане на портали в един |
 | GET | `/admin/api/taxonomy` | Категории и групи |
 | POST | `/admin/api/taxonomy` | Добавяне на категория или група |
