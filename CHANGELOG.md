@@ -51,11 +51,13 @@
   `documentation/01_AS_IS_ARCHITECTURE/HA_COMPATIBILITY_2026-11.md`.
 
 - **Критичен анализ на имитиращите и ненужните функции/опции.** `documentation/07_RELEASE/CRITICAL_REVIEW_0.69.210.md`:
-  **6 от 44** опции на add-on-а не се четат никъде (`username`, `db_name`, `public_same_origin`,
-  `storage_mode`, `storage_mount_name`, `min_free_mb`); в панела има 23 едноименни функции, но
-  само **1** е буквално копие (`api()` в `dashboard-panel.js` и `monitoring-panel.js`); изброени
-  са и местата, където две места претендират за едно правило, и остарелите пътища, които НЕ се
-  трият, защото са жив договор.
+  **3 от 44** опции на add-on-а не се четат никъде (`username`, `password`, `db_name`) — първото
+  измерване каза 6, но четири от тях се четат като `options.<име>` (`min_free_mb` в
+  `storage-preflight.js`, `public_same_origin` в `gateway-api.js`, `storage_mode` и
+  `storage_mount_name` в preflight), затова днес има тест за ВСЯКА опция:
+  `tests/addon-options-wired.cjs`. `db_name` вече не се представя за работеща (преводът казва
+  „не се ползва“, BG/EN); в панела има 23 едноименни функции, но само **1** е буквално копие
+  (`api()` в `dashboard-panel.js` и `monitoring-panel.js`).
 
 ## 0.69.209
 

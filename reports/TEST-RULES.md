@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 407 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 408 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 183 |
+| общо | 184 |
 | портал | 42 |
 | GUI | 31 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (183)
+## общо (184)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -49,6 +49,7 @@
 | `addon-changelog` | Addon changelog | `tests/addon-changelog.cjs` |
 | `addon-config` | Addon config | `tests/addon-config.cjs` |
 | `addon-defaults-startup` | Addon defaults startup | `tests/addon-defaults-startup.cjs` |
+| `addon-options-wired` | Addon options wired | `tests/addon-options-wired.cjs` |
 | `addon-translations` | Addon translations | `tests/addon-translations.cjs` |
 | `analysis-claims` | Analysis claims | `tests/analysis-claims.cjs` |
 | `api-generation` | Api generation | `tests/api-generation.cjs` |

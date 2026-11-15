@@ -12,6 +12,7 @@ const RULES = [
   { id: "addon-changelog", area: "общо", title: "Addon changelog", owner: "tests/addon-changelog.cjs" },
   { id: "addon-config", area: "общо", title: "Addon config", owner: "tests/addon-config.cjs" },
   { id: "addon-defaults-startup", area: "общо", title: "Addon defaults startup", owner: "tests/addon-defaults-startup.cjs" },
+  { id: "addon-options-wired", area: "общо", title: "Addon options wired", owner: "tests/addon-options-wired.cjs" },
   { id: "addon-translations", area: "общо", title: "Addon translations", owner: "tests/addon-translations.cjs" },
   { id: "admin-api-spec", area: "админ API", title: "Admin api spec", owner: "tests/admin-api-spec.cjs" },
   { id: "admin-hierarchy", area: "админ API", title: "Admin hierarchy", owner: "tests/admin-hierarchy.cjs" },

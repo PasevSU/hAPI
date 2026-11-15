@@ -14,14 +14,14 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **407/407** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **408/408** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.210 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 643 файла · 114582 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 638 файла · 113320 реда · critical: 0 · high: 0 · medium: 2 · low: 202 — **има необяснени** · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 644 файла · 114674 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 639 файла · 113412 реда · critical: 0 · high: 0 · medium: 2 · low: 202 — **има необяснени** · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 407 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 408 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
 
 ## 2. Артефакти (`dist/`)
 
@@ -79,11 +79,13 @@
   `documentation/01_AS_IS_ARCHITECTURE/HA_COMPATIBILITY_2026-11.md`.
 
 - **Критичен анализ на имитиращите и ненужните функции/опции.** `documentation/07_RELEASE/CRITICAL_REVIEW_0.69.210.md`:
-  **6 от 44** опции на add-on-а не се четат никъде (`username`, `db_name`, `public_same_origin`,
-  `storage_mode`, `storage_mount_name`, `min_free_mb`); в панела има 23 едноименни функции, но
-  само **1** е буквално копие (`api()` в `dashboard-panel.js` и `monitoring-panel.js`); изброени
-  са и местата, където две места претендират за едно правило, и остарелите пътища, които НЕ се
-  трият, защото са жив договор.
+  **3 от 44** опции на add-on-а не се четат никъде (`username`, `password`, `db_name`) — първото
+  измерване каза 6, но четири от тях се четат като `options.<име>` (`min_free_mb` в
+  `storage-preflight.js`, `public_same_origin` в `gateway-api.js`, `storage_mode` и
+  `storage_mount_name` в preflight), затова днес има тест за ВСЯКА опция:
+  `tests/addon-options-wired.cjs`. `db_name` вече не се представя за работеща (преводът казва
+  „не се ползва“, BG/EN); в панела има 23 едноименни функции, но само **1** е буквално копие
+  (`api()` в `dashboard-panel.js` и `monitoring-panel.js`).
 
 ## 4. Как се проверява наново
 

@@ -250,7 +250,7 @@ this tab. Options apply on add-on restart.
 | Encrypt the portal work folder | `pgp_encrypt_workdir` | `false` | `false`: work files are encrypted with the internal key only; `true` wraps them with the PGP key (layer 2) and needs a loaded secret key. |
 | Console user name (not used — leave empty) | `username` | — | Empty: a standalone console user `api` is created on first start. Under Ingress the Home Assistant account is used. |
 | Console password (not used — leave empty) | `password` | — | Empty: a random password is generated on first start and written to `api-credentials.txt` (mode 0600). |
-| Database and portal name | `db_name` | `Files` | Names the first portal (`Files`, slug `files`). Change it before the first start to get another name. |
+| Database name (not used — leave empty) | `db_name` | `Files` | Names the first portal (`Files`, slug `files`). Change it before the first start to get another name. |
 | Backup folder | `backup_folder` | — | Empty: `<storage>/backups` inside the add-on data folder. A relative path resolves inside `/share`. |
 | Backup mirror folder | `backup_mirror` | — | Empty: no second copy of the database backups. Every configured copy is verified with SHA-256. |
 | Second copy of the files (folder or s3) | `storage_mirror` | — | Empty: no second copy of uploaded files. A folder is verified and repairable; `s3://bucket/prefix?endpoint=…&lock=дни` writes the same copy into S3-compatible storage with Object Lock. |

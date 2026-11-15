@@ -50,8 +50,8 @@ configuration:
       Encrypts the file contents in the portal work folder (AES-256-GCM with a per-file key wrapped
       by PGP). Requires a loaded key. Without the key and passphrase the files cannot be read.
   db_name:
-    name: Database and portal name
-    description: Name used for the first portal and for the database file.
+    name: Database name (not used — leave empty)
+    description: Kept for old configurations only. No code reads it: the database is `hapi.sqlite` in /data, and the first portal takes the name you give it in the console. Changing this value renames nothing.
   memory_limit_mb:
     name: Node heap limit (MB)
     description: >-
