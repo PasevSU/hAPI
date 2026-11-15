@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.211
+# Състояние на изданието — hAPI Enterprise 0.69.212
 
-Версия: **0.69.211** · клон `main`
+Версия: **0.69.212** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -15,9 +15,9 @@
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **414/414** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.211 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 654 файла · 119454 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 648 файла · 117483 реда · critical: 0 · high: 0 · medium: 0 · low: 203 — чисто · изключения: 23/23 (0 мъртви) |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.212 — отпечатъците се сверяват от `verify-release.cjs` |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 654 файла · 119475 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 648 файла · 117504 реда · critical: 0 · high: 0 · medium: 0 · low: 203 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -27,47 +27,29 @@
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.211.tar.gz` | add-on архив (212 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.211.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.211.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.212.tar.gz` | add-on архив (212 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.212.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.212.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.211
+## 3. Какво влезе във 0.69.212
 
-- **Папката с файлове на портала вече е фиксирана от add-on-а.** Нов портал получава
-  собствена подпапка на **`/share/hapi/data/root_storage`** (логическият корен се строи от
-  `hapi_enterprise/paths.js`: `paths.portalRootLogical()` / `paths.portalRootFor(slug)`), а
-  панелът я **показва само за четене** — полето за `storage_root` вече не е input, нито в
-  контролния панел, нито при създаване. Сървърът също отказва: `PATCH` на портал със
-  `storage_root` връща **403**, освен при изричния администраторски изход
-  `HAPI_PORTAL_STORAGE_ROOT_EDIT=1` (същата стойност остава позволена, за да не се чупят
-  стари форми). Причината е измерена: единственото, което свободното поле даваше, беше
-  начин порталът да сочи общия `/share` (тоест чуждите папки) или папка, която после никой
-  не намира. Стари портали запазват своята папка — файлове не се местят.
-  Пази го `tests/portal-storage-fixed.cjs`; `tests/storage-roots.cjs` остава зелено, защото
-  коренът живее на едно място, а `storage-preflight.js` вече взима подразбиранията и
-  превода „опция → логически корен“ от `paths.js` (втори списък няма).
-
-- **Портал „само за преглед“ със собствен QR, създаван паралелно** (`hapi_enterprise/portal-view.js`).
-  При създаване на портал панелът (по подразбиране отметнато квадратче) подава
-  `readonlyView: true` и сървърът създава **втори запис** — същата папка, собствен `slug`
-  (`<slug>-view`), собствен QR и `readonly: true`. Файловете от него се отдават **`inline`**
-  (гледат се в браузъра), а пакетът/ZIP е **отказан с 403** — „свали всичко“ не е преглед.
-  Направено е като отделен запис, а не като `?view=1`, защото параметър в адреса не е
-  защита: при публичен портал всеки може да го махне. Пази го `tests/portal-readonly.cjs`.
-  Страницата също не лъже: бутонът на файла е „Прегледай“ и отваря `inline` адреса, пакетът
-  не се предлага, а в заглавието стои чип „Само за преглед“.
-
-- **Базовите пакети на Alpine се вдигат и до версии със сменен произход.** Docker Scout
-  показва в минирутфса на `alpine:3.24.4` 7 поправими находки — `zlib 1.3.2-r1`
-  (CVE-2026-4738, critical), `musl 1.2.6-r3` (CVE-2026-107891, high) и пет в
-  `openssl 3.5.9-r0`. Стъпка 1 на Dockerfile-а вече е `apk upgrade --no-cache --available`:
-  без `--available` `apk upgrade` подминава пакети, чиято произходна група е сменена между
-  изданията на Alpine, а точно така излизат тези поправки. Версиите, които влизат в образа,
-  се печатат в лога на build-а (`apk info -v zlib musl openssl libssl3 libcrypto3`), за да е
-  видимо какво носи готовият образ, вместо да се гадае по базовия слой. `SECURITY.md`
-  обяснява и разликата между двете страници на Scout (базов образ срещу нашия build).
-  Пази го `tests/docker-runtime.cjs`.
+- **Образът вече СЕ билдва — и без npm.** В 0.69.210/0.69.211 Dockerfile-ът теглеше Node от
+  `https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-<arch>-musl.tar.xz`. Такъв файл **не
+  съществува** за официалните издания: и трите джоба на „Add-on image“ паднаха с
+  `curl: (22) The requested URL returned error: 404` (плюс CI и Release workflow-ите).
+  Причината: локалният тест четеше Dockerfile-а с регулярни изрази и „минаваше“, без никога
+  да билдва образа. Сега Dockerfile-ът е на **два етапа**: `node:22.23.2-alpine` е етап 1 и от
+  него се копира **само** `/usr/local/bin/node`; етап 2 е чист `alpine:3.24` с `libstdc++`
+  (динамичният Node го иска). npm/npx/corepack остават в изхвърления етап — не съществуват
+  нито във файловата система, нито в историята на слоевете. Измерено на истински build:
+  `node --version` → `v22.23.2`, `npm/npx/corepack` → няма, `require("node:sqlite").DatabaseSync`
+  → `function`, `zlib-1.4-r0`.
+- **Заключеният critical в zlib е поправен; musl/openssl чакат Alpine.** `apk policy` в
+  `alpine:3.24` показва, че хранилището дава `zlib 1.4-r0` (вдигнат от `--available`) и **само**
+  `musl 1.2.6-r3` / `openssl 3.5.9-r0` — тоест за тях поправка в този клон още няма, а
+  `alpine:3.25` не съществува (`docker pull` → `not found`). Записано е в `SECURITY.md` с
+  точните версии и с едноредовия изход (`FROM alpine:3.2X`), когато клонът излезе.
 
 ## 4. Как се проверява наново
 

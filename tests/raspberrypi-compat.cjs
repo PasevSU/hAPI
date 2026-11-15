@@ -34,19 +34,20 @@ for (const unsupported of ['armhf', 'i386', 'armv6']) {
 }
 assert.match(archBlock[0], /armhf[\s\S]{0,60}Pi Zero/i, 'коментарът в arch обяснява защо armhf липсва');
 
-// ── 2. Dockerfile: архитектурно неутрален ───────────────────────────────────
+// ── 2. Dockerfile: архитектурно неутрален ──────────────────────────────────
 const dockerfile = read('hapi_enterprise/Dockerfile');
-const from = /^FROM\s+(\S+)/m.exec(dockerfile);
-assert.ok(from, 'Dockerfile: липсва FROM');
-assert.match(from[1], /^alpine:\d+\.\d+$/, `очаквам чист Alpine като база (Node идва от официалния tarball), намерено ${from[1]}`);
+const froms = [...dockerfile.matchAll(/^FROM\s+(\S+)/gm)].map((m) => m[1]);
+assert.ok(froms.length, 'Dockerfile: липсва FROM');
+assert.match(froms[froms.length - 1], /^alpine:\d+\.\d+$/, `очаквам чист Alpine като КРАЕН етап, намерено ${froms[froms.length - 1]}`);
+assert.match(froms[0], /^node:\$\{NODE_VERSION\}-alpine$/, `Node идва от официалния multi-arch образ, намерено ${froms[0]}`);
 assert.match(dockerfile, /^ARG NODE_VERSION=22\.\d+\.\d+$/m, 'Node 22 е закачен през ARG (архитектурата се избира по време на build)');
 assert.ok(!/--platform=/.test(dockerfile), 'не се фиксира --platform (иначе снимката е само за една архитектура)');
 assert.ok(!/--platform=\S*arm64\/v8/.test(dockerfile), 'без arm64/v8 фиксация');
-// apk се ползва САМО за временния fetch-слой (curl/xz), който се маха в СЪЩИЯ RUN —
-// така в крайния образ не остават архитектурно-зависими пакети от нашия слой.
+// apk се ползва само за РАНТАЙМ библиотеки (libstdc++ за динамичния Node) — нито един
+// пакет, който носи собствен Node или npm, защото те са архитектурно-зависими и чужди.
 for (const line of dockerfile.split('\n')) {
   if (!/^\s*RUN\s+.*\bapk\s+add\b/.test(line)) continue;
-  assert.match(line, /--virtual \.fetch/, 'apk add е само за временния fetch-слой: ' + line.trim());
+  assert.match(line, /apk add --no-cache libstdc\+\+/, 'apk add е само за libstdc++ (нужно на Node): ' + line.trim());
 }
 assert.ok(!/npm (install|ci)/.test(dockerfile), 'без npm install по време на билд');
 assert.match(dockerfile, /linux\/arm\/v7/, 'коментарът изброява поддържаните платформи');

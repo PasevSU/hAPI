@@ -1,9 +1,9 @@
-# Състояние на системата и промени в 0.69.211
+# Състояние на системата и промени в 0.69.212
 
 > Живият документ за **„какво е системата днес“**, за разлика от нормативните документи в
 > `02_TO_BE_ARCHITECTURE/` (какво трябва да бъде). Обновява се при всяко издание, а числата се
 > ВЗИМАТ от скриптове и отчети, не се пишат на ръка. Всичко тук е измерено в работното дърво
-> на 0.69.211; при разминаване меродавни са `reports/RELEASE-STATUS.md`,
+> на 0.69.212; при разминаване меродавни са `reports/RELEASE-STATUS.md`,
 > `reports/test-matrix.json` и `documentation/01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md`.
 
 ## 1. Какво е системата
@@ -15,7 +15,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 
 | Показател | Стойност (измерено) |
 | --- | --- |
-| Версия | **0.69.211** (`hapi_enterprise/config.yaml`, огледала в 8 файла) |
+| Версия | **0.69.212** (`hapi_enterprise/config.yaml`, огледала в 8 файла) |
 | Модули в add-on-а | **109** `.js` файла в `hapi_enterprise/` |
 | Изнесени HTTP компонента | **18** файла в `hapi_enterprise/routes/` |
 | Модули на панела | **28** `.js` файла в `hapi_enterprise/ui/` |
@@ -43,6 +43,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | **Двата портала са обяснени (ADR-0027)** — динамичен `/p/<slug>` срещу статичен evidence-portal | `59a3406` | въпросът „защо има два портала“ нямаше писмен отговор | `documentation/03_ADR/ADR-0027-two-portals.md` |
 | **Папката на порталите е фиксирана (0.69.211)** — `/share/hapi/data/root_storage/<slug>`, панелът само я показва | `811e191` | свободното поле даваше начин порталът да сочи общия `/share` (чуждите папки) или папка, която никой не намира | `portal-storage-fixed.cjs`, `storage-roots.cjs`, `files-manager.cjs`, `portal-card-link.cjs` |
 | **Портал „само за преглед“ със свой QR (0.69.211)** — втори запис `portal-view.js`, `inline` файлове, без пакет | `811e191` | при създаване трябва да има и read-only изглед, който не може да изтече като ZIP | `portal-readonly.cjs`, `portal-storage.cjs` |
+| **Образът СЕ билдва (0.69.212)** — двуетапен Dockerfile: `node:22.23.2-alpine AS node` дава само `/usr/local/bin/node`, вторият етап е `alpine:3.24`; npm/npx/corepack остават в изхвърления етап | виж `CHANGELOG.md` (0.69.212) | 0.69.210/0.69.211 теглеха Node от musl тарбол по несъществуващ адрес (`curl 404`) — нито един образ не стигна до ghcr.io, а Supervisor-ът на HA даваше `[404] manifest unknown` | `docker-runtime.cjs`, `raspberrypi-compat.cjs`, `ha-support-matrix.cjs` §6, `ha-compatibility.cjs` HA-C01, S04 на `verify-release` (всички гледат етапите, не регулярен израз) |
 
 Пълното описание „какво, защо и какво е измерено“ е в `CHANGELOG.md` и
 `documentation/07_RELEASE/RELEASE_0.69.208.md` (§6а.1–§6а.7).

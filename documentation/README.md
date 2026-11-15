@@ -55,7 +55,7 @@ _Генериран списък: **144** документа. Пише се от
 | `01_AS_IS_ARCHITECTURE/MODULE_CATALOG.md` | Module Catalog — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md` | Source Inventory — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/STORAGE_LAYOUT.md` | Къде какво стои — структура на файловете |
-| `01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md` | Състояние на системата и промени в 0.69.211 |
+| `01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md` | Състояние на системата и промени в 0.69.212 |
 | `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` | hAPI ENTERPRISE — API Architecture & Runtime Logic Specification |
 | `02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md` | API Endpoint Reference |
 | `02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md` | Architecture Compliance Matrix |
@@ -155,7 +155,7 @@ _Генериран списък: **144** документа. Пише се от
 | `07_RELEASE/RELEASE_CRITERIA.md` | Release Criteria — hAPI Enterprise |
 | `07_RELEASE/RELEASE_DECISION.md` | Release Decision — hAPI Enterprise |
 | `07_RELEASE/UNFINISHED_TASKS_0.69.210.md` | Неизпълнени задачи — критичен анализ (0.69.210, измерено 2026-11-15) |
-| `07_RELEASE/UNFINISHED_TASKS_0.69.211.md` | Неизпълнени задачи — критичен анализ (0.69.211, измерено 2026-11-15) |
+| `07_RELEASE/UNFINISHED_TASKS_0.69.211.md` | Неизпълнени задачи — критичен анализ (0.69.211, допълнен при 0.69.212; измерено 2026-11-15) |
 | `07_RELEASE/UPDATE_PATH_AUDIT.md` | Защо обновяването не стига до Home Assistant — одит на пътя на изданието |
 | `08_USER_GUIDES/admin-token.md` | Администраторски токен — какъв да бъде и защо |
 | `08_USER_GUIDES/install-hacs.md` | Инсталиране на интеграцията |

@@ -5,18 +5,24 @@ const path = require('node:path');
 const root = path.join(__dirname, '../hapi_enterprise');
 const docker = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
 const run = fs.readFileSync(path.join(root, 'start.js'), 'utf8');
-// Базовият образ е ЧИСТ Alpine, а Node идва от официалния musl tarball без npm/npx/corepack.
-// Причината е измерена: `node:*` образът носи npm, а Docker Scout отчита точно в него
-// 2 critical + high (npm/tar 7.5.11, npm/brace-expansion, npm/ip-address) — код, който
-// никога не се изпълнява в add-on-а. Изтриването на по-късен слой оставя пакета в
-// историята на образа, затова е изключен ОЩЕ при разархивирането.
-assert.match(docker, /^FROM alpine:\d+\.\d+$/m, 'базовият образ е чист Alpine');
-assert.doesNotMatch(docker, /^FROM node:/m, 'Node НЕ идва от `node:*` образ (той носи npm)');
+// Два етапа: официалният `node:*` образ (само за бинарника) → чист Alpine като краен образ.
+// Причината е измерена: `node:*` носи npm, а Docker Scout отчита точно в него 2 critical +
+// high (npm/tar 7.5.11, npm/brace-expansion, npm/ip-address) — код, който никога не се
+// изпълнява в add-on-а. Изтриването на по-късен слой оставя пакета в историята на образа,
+// затова npm/npx/corepack остават в ИЗХВЪРЛЕНИЯ етап, а в готовия образ влиза един файл.
+const stages = [...docker.matchAll(/^FROM\s+(\S+)(?:\s+AS\s+(\w+))?$/gm)].map((m) => ({ image: m[1], alias: m[2] }));
+assert.ok(stages.length >= 2, 'Dockerfile трябва да е на два етапа (node → alpine): ' + JSON.stringify(stages));
+assert.match(stages[0].image, /^node:\$\{NODE_VERSION\}-alpine$/, 'първият етап е официалният node образ (по ARG), намерено ' + stages[0].image);
+assert.equal(stages[0].alias, 'node', 'първият етап се казва `node` — към него сочи COPY --from');
+const lastStage = stages[stages.length - 1];
+assert.match(lastStage.image, /^alpine:\d+\.\d+$/, 'последният етап е чист Alpine, намерено ' + lastStage.image);
 assert.match(docker, /^ARG NODE_VERSION=22\.\d+\.\d+$/m, 'версията на Node е закачена');
-assert.match(docker, /node-v\$\{NODE_VERSION\}-linux-\$\{node_arch\}-musl\.tar\.xz/, 'Node идва от официалния musl tarball');
-assert.match(docker, /--exclude='\*\/npm'/, 'npm не влиза в образа');
-assert.match(docker, /--exclude='\*\/npx'/, 'npx не влиза в образа');
-assert.match(docker, /--exclude='\*\/corepack'/, 'corepack не влиза в образа');
+// От етапа с Node се копира САМО бинарникът — това е целият смисъл на двата етапа.
+const fromNodeCopies = [...docker.matchAll(/^COPY --from=node\s+(.+)$/gm)].map((m) => m[1].trim());
+assert.deepEqual(fromNodeCopies, ['/usr/local/bin/node /usr/local/bin/node'], 'от етапа с Node се копира само бинарникът `node`: ' + JSON.stringify(fromNodeCopies));
+assert.doesNotMatch(docker, /COPY --from=node[^\n]*(node_modules|\bnpm\b|\bnpx\b|corepack)/, 'npm/npx/corepack не се копират в готовия образ');
+// Node от официалния Alpine билд е динамично свързан с libstdc++ — без него `node` не стартира.
+assert.match(docker, /apk add --no-cache libstdc\+\+/, 'libstdc++ се слага — иначе Node не зарежда libstdc++.so.6');
 assert.match(docker, /node:sqlite/);
 assert.match(run, /node:sqlite/);
 assert.doesNotMatch(docker, /apk add.*nodejs/);
@@ -27,9 +33,10 @@ assert.doesNotMatch(docker, /apk add.*nodejs/);
 // Docker Scout отчита в базовия минирутфс (zlib 1.3.2-r1, musl 1.2.6-r3, openssl 3.5.9-r0).
 assert.match(docker, /RUN apk upgrade --no-cache --available/, 'Dockerfile вдига пакетите на Alpine до актуалните поправки (`--available`)');
 assert.match(docker, /apk info -v zlib musl openssl/, 'версиите на zlib/musl/openssl се печатат в лога на build-а');
-// npm/npx/corepack не се трият по-късно (това оставя следа в слоя) — не се копират изобщо.
+// npm/npx/corepack не се копират в готовия образ (виж `COPY --from=node` по-горе) и не се
+// трият след това — изтриването оставя следа в слоя.
 assert.doesNotMatch(docker, /rm -rf \/usr\/local\/lib\/node_modules\/npm/, 'npm не се трие след копиране — той не влиза');
-assert.match(docker, /apk del \.fetch/, 'временните fetch пакети се махат в СЪЩИЯ слой');
+assert.doesNotMatch(docker, /\bapk add\b[^\n]*\bnodejs\b/, 'Node не идва от apk пакет');
 // Правилото на проекта: entrypoint-ът е JavaScript. Shell скрипт в add-on-а
 // (run.sh и подобни) би върнал втори език за стартиране и чупи това правило.
 assert.doesNotMatch(docker, /CMD\s+\["\/app\/run\.sh"\]/, 'Dockerfile не бива да стартира shell entrypoint');

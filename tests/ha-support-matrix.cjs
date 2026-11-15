@@ -166,13 +166,16 @@ assert.ok(vnum(floor) >= vnum(needed),
 
 // ── 6. Архитектури срещу базовия образ ────────────────────────────────────
 const dockerfile = read(ADDON, 'Dockerfile');
-const from = (/^FROM\s+(\S+)/m.exec(dockerfile) || [])[1];
-assert.ok(from, 'Dockerfile има FROM');
-// Базата е чист Alpine, а Node идва от официалния musl tarball за всяка обявена
-// архитектура (`apk --print-arch` → x64/arm64/armv7l). Тагът на Node е ЗАКАЧЕН
+const froms = [...dockerfile.matchAll(/^FROM\s+(\S+)/gm)].map((m) => m[1]);
+assert.ok(froms.length, 'Dockerfile има FROM');
+// КРАЙНИЯТ етап е чист Alpine (без npm), а Node идва от официалния multi-arch `node:*`
+// образ, от който се копира само бинарникът. Тагът на Node е ЗАКАЧЕН
 // (`ARG NODE_VERSION=22.x.y`) — плаващ таг прави изданието невъзпроизводимо.
 const NODE_PLATFORMS = { amd64: 'linux/amd64', aarch64: 'linux/arm64', armv7: 'linux/arm/v7' };
-assert.match(from, /^alpine:\d+\.\d+$/, 'базовият образ е чист Alpine (без npm): ' + from);
+const finalFrom = froms[froms.length - 1];
+assert.match(finalFrom, /^alpine:\d+\.\d+$/, 'крайният образ е чист Alpine (без npm): ' + finalFrom);
+assert.match(froms[0], /^node:\$\{NODE_VERSION\}-alpine$/, 'Node идва от официалния multi-arch образ: ' + froms[0]);
+assert.match(dockerfile, /^COPY --from=node\s+\/usr\/local\/bin\/node/m, 'от етапа с Node се копира само бинарникът');
 assert.match(dockerfile, /^ARG NODE_VERSION=22\./m, 'Node 22 е закачен през ARG');
 for (const arch of yamlBlock('arch')) {
   assert.ok(NODE_PLATFORMS[arch], `\`arch: ${arch}\` няма съответствие в Node tarball-а — не се билдва`);
@@ -185,4 +188,4 @@ assert.equal(manifest.config_flow, true, 'config_flow е включен');
 assert.ok(fs.existsSync(path.join(ROOT, 'custom_components', 'hapi_enterprise', 'config_flow.py')), 'config_flow.py съществува');
 assert.ok(Array.isArray(manifest.dependencies) && manifest.dependencies.includes('http'), 'зависи от `http`');
 
-console.log(`ha-support-matrix OK: ${map.length} mount-а (share/media/homeassistant_config/app_config/ssl) · портове 8099+8088 в config, описание и 2 превода · ingress 8098 + watchdog 8099 · homeassistant_api за Supervisor проксито · минимална HA ${floor} (кодът иска ${needed}) · arch ${yamlBlock('arch').join('/')} срещу ${from}`);
+console.log(`ha-support-matrix OK: ${map.length} mount-а (share/media/homeassistant_config/app_config/ssl) · портове 8099+8088 в config, описание и 2 превода · ingress 8098 + watchdog 8099 · homeassistant_api за Supervisor проксито · минимална HA ${floor} (кодът иска ${needed}) · arch ${yamlBlock('arch').join('/')} срещу ${finalFrom} (Node от ${froms[0]})`);

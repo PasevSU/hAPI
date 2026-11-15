@@ -225,15 +225,18 @@ check('HA-M12', 'манифест', 'blocker', 'options ↔ schema ↔ translati
 
 // ── Image / build ───────────────────────────────────────────────────────────
 check('HA-C01', 'образ', 'blocker', 'фиксиран Node + node:sqlite gate', () => {
-  const from = (docker.match(/^FROM\s+(\S+)/m) || [])[1];
-  // Базата е чист Alpine, а Node е ЗАКАЧЕН през ARG и идва от официалния musl tarball
-  // без npm/npx/corepack (npm носи 2 critical + high, които add-on-ът никога не изпълнява).
-  need(/^alpine:\d+\.\d+$/.test(from || ''), 'FROM не е чист alpine:x.y (без npm в образа)');
+  const froms = [...docker.matchAll(/^FROM\s+(\S+)/gm)].map((m) => m[1]);
+  const finalFrom = froms[froms.length - 1] || '';
+  // Два етапа: официалният `node:*` образ дава САМО бинарника (npm/npx/corepack остават
+  // в изхвърления етап), а крайният образ е чист Alpine — така npm не носи своите
+  // 2 critical + high, които add-on-ът никога не изпълнява.
+  need(/^alpine:\d+\.\d+$/.test(finalFrom), 'крайният FROM не е чист alpine:x.y (без npm в образа)');
+  need(froms.length >= 2 && /^node:\$\{NODE_VERSION\}-alpine$/.test(froms[0]), 'липсва етап `node:${NODE_VERSION}-alpine` за бинарника');
   need(/^ARG NODE_VERSION=22\.\d+\.\d+$/m.test(docker), 'липсва закачена версия на Node (ARG NODE_VERSION=22.x.y)');
-  need(/musl\.tar\.xz/.test(docker), 'Node не идва от официалния musl tarball');
-  need(!/^FROM\s+node:/m.test(docker), 'Node не бива да идва от `node:*` образ (той носи npm)');
+  need(/^COPY --from=node\s+\/usr\/local\/bin\/node\s+\/usr\/local\/bin\/node$/m.test(docker), 'от етапа с Node не се копира точно бинарникът');
+  need(!/COPY --from=node[^\n]*(node_modules|npm)/.test(docker), 'npm не бива да се копира в крайния образ');
   need(/node:sqlite/.test(docker), 'липсва build gate за node:sqlite');
-  return from;
+  return finalFrom;
 });
 
 check('HA-C02', 'образ', 'blocker', 'entrypoint е JavaScript, без shell', () => {

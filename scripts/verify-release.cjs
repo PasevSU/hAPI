@@ -179,12 +179,15 @@ check('S03', 'Add-on: всички файлове за стартиране са
 // ── S04. Dockerfile покрива всички модули ───────────────────────────────────
 check('S04', 'Dockerfile: COPY покрива всички локални модули', () => {
   const docker = readText(path.join(addonDir, 'Dockerfile'));
-  // Базата е чист Alpine, а Node идва от официалния musl tarball БЕЗ npm/npx/corepack:
-  // `node:*` образът носи npm, а Docker Scout отчита точно там 2 critical + high.
-  assert(/^FROM\s+alpine:\d+\.\d+$/m.test(docker), 'FROM трябва да е чист alpine:x.y (без npm в образа)');
+  // Два етапа: официалният `node:*` образ дава САМО бинарника (npm/npx/corepack остават в
+  // изхвърления етап), а крайният образ е чист Alpine — `node:*` носи npm, а Docker Scout
+  // отчита точно там 2 critical + high.
+  const froms = [...docker.matchAll(/^FROM\s+(\S+)/gm)].map((m) => m[1]);
+  assert(/^alpine:\d+\.\d+$/.test(froms[froms.length - 1] || ''), 'крайният FROM трябва да е чист alpine:x.y (без npm в образа)');
+  assert(froms.length >= 2 && /^node:\$\{NODE_VERSION\}-alpine$/.test(froms[0]), 'първият етап трябва да е node:${NODE_VERSION}-alpine');
   assert(/^ARG NODE_VERSION=22\.\d+\.\d+$/m.test(docker), 'версията на Node трябва да е закачена (ARG NODE_VERSION=22.x.y)');
-  assert(/musl\.tar\.xz/.test(docker), 'Node трябва да идва от официалния musl tarball');
-  assert(/--exclude='\*\/npm'/.test(docker), 'npm трябва да е изключен още при разархивирането');
+  assert(/^COPY --from=node\s+\/usr\/local\/bin\/node\s+\/usr\/local\/bin\/node$/m.test(docker), 'от етапа с Node трябва да се копира точно бинарникът');
+  assert(!/COPY --from=node[^\n]*(node_modules|npm)/.test(docker), 'npm не бива да се копира в готовия образ');
   assert(/^EXPOSE\s+.*8098/m.test(docker) && /8099/.test(docker), 'EXPOSE трябва да включва 8098 и 8099');
   assert(/^CMD\s+\["node",\s*"\/app\/start\.js"\]/m.test(docker), 'CMD трябва да стартира node /app/start.js');
   assert(/^COPY\s+fonts\s+\/app\/fonts\/$/m.test(docker), 'липсва COPY на шрифтовете');

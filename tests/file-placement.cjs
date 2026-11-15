@@ -220,7 +220,11 @@ assert.ok(ccFiles.includes('portal.css'), 'интеграцията има porta
     // на отделни.
     const docker = read(path.join(ADDON, 'Dockerfile'));
     const copied = new Set();
+    const FROM_STAGE = /^COPY\s+--from=/;
     for (const line of docker.split('\n')) {
+      // `COPY --from=<етап>` взема от ДРУГ етап, не от контекста — там няма какво да се
+      // проверява в дървото (0.69.212: бинарникът `node` идва точно така).
+      if (FROM_STAGE.test(line)) continue;
       const m = line.match(/^COPY\s+(.+?)\s+(\S+)\s*$/);
       if (!m) continue;
       for (const entry of m[1].split(/\s+/)) copied.add(entry);

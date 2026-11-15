@@ -2,28 +2,28 @@
 # The Home Assistant Supervisor can build this add-on without relying on the
 # variable Node version available in a generic BUILD_FROM base image.
 #
-# Multi-arch: the official Node tarball is published for linux/amd64, linux/arm64 and
+# Multi-arch: the official `node:*` image is published for linux/amd64, linux/arm64 and
 # linux/arm/v7, so the same Dockerfile builds on x86-64 servers, 64-bit Raspberry Pi OS
-# (aarch64) and 32-bit Raspberry Pi OS (armv7). No --platform pin and no dependency
-# install: every dependency is a Node built-in, which keeps the image architecture
-# independent. armhf/armv6 (Pi Zero/1) has no Node 22 build and is not claimed in
-# config.yaml. The base is plain Alpine ON PURPOSE (see below): the official `node:*`
-# image ships npm, and npm's own packages are what Docker Scout reports as critical.
-FROM alpine:3.24
-
-# ── Node БЕЗ npm / npx / yarn / corepack ─────────────────────────────────
-# Официалният `node:*` образ НОСИ npm със себе си. Този add-on няма нито една npm
-# зависимост (всичко е вградено в Node), а Docker Scout отчита точно в тези пакети
-# 2 critical + част от high (npm/tar 7.5.11, npm/brace-expansion, npm/ip-address) —
-# код, който никога не се изпълнява в add-on-а. Дотук те се ТРИЕХА на по-късен слой;
-# това оставя следа в историята на образа и скенерът продължаваше да ги вижда.
-# Затова Node влиза от ОФИЦИАЛНИЯ musl tarball с изключени npm/npx/corepack: чуждите
-# пакети не стигат до образа, вместо да се махат след това.
+# (aarch64) and 32-bit Raspberry Pi OS (armv7). No --platform pin and no npm dependency:
+# every dependency is a Node built-in. armhf/armv6 (Pi Zero/1) has no Node 22 build and is
+# not claimed in config.yaml.
 #
-# Многоархивност: tarball-ът се избира по `apk --print-arch`, за да се билдва СЪЩИЯТ
-# Dockerfile за linux/amd64, linux/arm64 и linux/arm/v7 (архитектурите в config.yaml).
+# ── ДВА ЕТАПА: npm НЕ СТИГА ДО ГОТОВИЯ ОБРАЗ ───────────────────────────────────────────
+# Етап 1 е официалният `node:*` образ — той носи npm, npx и corepack. От него се взема
+# САМО един файл: бинарникът `node`. Етап 2 е чист Alpine и не наследява нищо друго, тоест
+# пакетите на npm не съществуват нито във файловата система, нито в историята на слоевете
+# (точно това отчиташе Docker Scout: npm/tar 7.5.11, npm/brace-expansion, npm/ip-address —
+# код, който никога не се изпълнява в add-on-а).
+#
+# Защо НЕ tarball от nodejs.org (опит от 0.69.211): адресите
+# `node-vX-linux-<arch>-musl.tar.xz` НЕ съществуват за официалните издания — build-ът падаше
+# с `curl: (22) 404` и на трите архитектури. Официалните Docker образи се строят за musl
+# (Alpine) за всички три архитектури, затова бинарникът се взема оттам.
 # Закачената версия е нарочна: плаващ таг прави изданието невъзпроизводимо.
 ARG NODE_VERSION=22.23.2
+FROM node:${NODE_VERSION}-alpine AS node
+
+FROM alpine:3.24
 
 # 1. Пакетите на Alpine се вдигат до актуалните поправки. `--available` не е украса: без
 #    него `apk upgrade` подминава пакети, чиято произходна група е сменена между изданията
@@ -32,35 +32,26 @@ ARG NODE_VERSION=22.23.2
 #    (CVE-2026-4738, critical), musl 1.2.6-r3 (CVE-2026-107891, high) и пет в openssl
 #    3.5.9-r0; точно този слой ги вдига до версиите от хранилището. Версиите се печатат,
 #    за да е видимо в лога на build-а какво е влязло в готовия образ.
+#    `libstdc++` е нужно на САМИЯ Node: официалният Alpine бинарник е динамично свързан
+#    с него (без него `node` пада с „Error loading shared library libstdc++.so.6“).
 RUN apk upgrade --no-cache --available \
- && (apk info -v zlib musl openssl libssl3 libcrypto3 || true) \
+ && apk add --no-cache libstdc++ \
+ && (apk info -v zlib musl openssl libssl3 libcrypto3 libstdc++ || true) \
  && rm -rf /var/cache/apk/*
 
-# 2. Node от официалния tarball, без пакетния мениджър на npm.
-RUN set -eu; \
-    case "$(apk --print-arch)" in \
-      x86_64) node_arch=x64 ;; \
-      aarch64) node_arch=arm64 ;; \
-      armv7) node_arch=armv7l ;; \
-      *) echo "unsupported architecture: $(apk --print-arch)" >&2; exit 1 ;; \
-    esac; \
-    apk add --no-cache --virtual .fetch curl xz; \
-    curl -fsSLo /tmp/node.tar.xz "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${node_arch}-musl.tar.xz"; \
-    tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1 --no-same-owner \
-      --exclude='*/npm' --exclude='*/npx' --exclude='*/corepack'; \
-    rm -f /tmp/node.tar.xz; \
-    apk del .fetch; \
-    rm -rf /var/cache/apk/*
+# 2. Node: ЕДИН файл от етап 1 — без npm, npx, corepack, без node_modules.
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
 
 WORKDIR /app
-# Сигурност на слоя (0.69.87, преработено): находките на Docker Scout идваха от две места —
-# базовите пакети на Alpine и npm, който базовият образ носи със себе си. Затова:
+# Сигурност на слоя: находките на Docker Scout идваха от две места — базовите пакети на
+# Alpine и npm, който официалният Node образ носи със себе си. Затова:
 #   • пакетите на Alpine се вдигат до актуалните поправки (стъпка 1 горе);
-#   • npm/npx/yarn/corepack НЕ се копират изобщо (стъпка 2) — няма какво да се трие.
-# Това е проверено от `tests/docker-runtime.cjs`: той иска `apk upgrade` и изключен npm
-# в tarball-а, а не „изтрит по-късно“ (изтриването оставя пакета в историята на слоя).
-# Цената е, че build-ът не е байт-идентичен при повторение. Това е съзнателно (сигурност
-# пред пълна възпроизводимост) и е записано в CHANGELOG.
+#   • от етап 1 се копира САМО бинарникът `node` (стъпка 2) — npm, npx и corepack
+#     остават в изхвърления етап, тоест не съществуват в готовия образ.
+# Пази го `tests/docker-runtime.cjs`: той иска точно едно `COPY --from=node`, което сочи
+# само `/usr/local/bin/node`, и никакво копиране на `node_modules`/`npm`.
+# Цената е, че build-ът не е байт-идентичен при повторение (заради `apk upgrade`). Това е
+# съзнателно (сигурност пред пълна възпроизводимост) и е записано в CHANGELOG.
 # Всички локални модули, които server.js изисква (пряко или през друг модул).
 # tests/docker-runtime.cjs проверява списъка срещу реалните require-и.
 COPY integrity.js api-registry.js api-spec.js api-version.js audit-chain.js cabinet.js cases.js cms-sign.js config-profiles.js container.js core-store.js crypto-options.js directory.js download-access.js download-stream.js error-log.js event-bus.js export-manager.js export-rules.js file-crypto.js gateway-api.js generator.js instance-lock.js interpolate.js job-manager.js links.js load-control.js logger.js migration-bridge.js mirror-target.js notify.js observer.js ooxml.js package-crypto.js packager.js path-crypto.js paths.js pdf-writer.js pgp.js plugins.js portal-folder.js portal-access.js public-route-allowlist.js portal-policy.js portal-term.js portal-qr.js portal-view.js portal-integrity.js portal-skin.js pgp-tools.js pgp-sign.js content-id.js oidc.js decision-sensors.js layout.js preview.js process-guards.js public-gateway.js public-package.js qr-svg.js qrcode.js rbac.js readiness.js registry.js report-manifest.js report-package.js report-render.js report-stamp.js repository.js retention.js runtime-config.js secret-lock.js secret-links.js secret-page.js secret-view.js send.js server.js share-links.js shared-data.js signer.js sqlite-repository.js sqlite-store.js start.js storage-check.js storage-migrate.js storage-preflight.js storage-tree.js throttle.js tsa-client.js versioning.js virtual-storage.js visitor-intel.js workdir-crypto.js workdir-io.js workdir-migrate.js evidence-portal.js x509.js site-csp.js admin-api-spec.js problem.js idempotency.js respond.js webhooks.js event-stream.js worm.js exif.js forensic.js case-access.js /app/
