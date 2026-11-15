@@ -76,6 +76,32 @@ for (const rule of ['DEF-34', 'Демо режим', 'Остарели пъти�
 assert.ok(doc.includes(open.length + ' отворени'), 'броят на отворените дефекти в анализа е друг');
 assert.ok(doc.includes('57 дефекта'), 'общият брой дефекти в анализа е друг');
 
+// ── 5. Числата за езиковия дълг идват от мерителя, не от памет ─────────────
+// Причина: първата версия на §2 цитираше „35 723 знака“, докато ратчето мереше 35 656 —
+// преписан номер остарява тихо. Затова анализът НЕ носи жив брой: той цитира тавана и
+// сочи теста, който мери. Тук се сверява и двете: таванът е същият като `TOTAL_CEILING`
+// в ратчето (сваля ли се там, документът трябва да го последва в същия комит), а броят
+// на модулите в таблицата е същият, който анализът обявява.
+const ratchet = fs.readFileSync(path.join(root, 'tests', 'ui-i18n-ratchet.cjs'), 'utf8');
+const totalCeiling = Number((ratchet.match(/const TOTAL_CEILING = (\d+);/) || [])[1]);
+assert.ok(Number.isFinite(totalCeiling) && totalCeiling > 0, 'ратчето трябва да обявява TOTAL_CEILING');
+const ceilingTable = (ratchet.match(/const CEILING = \{([\s\S]*?)\n\};/) || [])[1] || '';
+const ceilingRows = (ceilingTable.match(/^\s*'[^']+':/gm) || []).length;
+assert.ok(ceilingRows >= 20, 'таблицата с тавани в ратчето изглежда празна');
+const spaced = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+assert.ok(
+  doc.includes(spaced(totalCeiling)),
+  'анализът трябва да цитира тавана на езиковия дълг „' + spaced(totalCeiling) + '“ (TOTAL_CEILING в ратчето)',
+);
+assert.ok(
+  doc.includes('**' + ceilingRows + '** модула'),
+  'анализът трябва да обявява ' + ceilingRows + ' модула — толкова реда има таблицата на ратчето',
+);
+assert.ok(
+  doc.includes('tests/ui-i18n-ratchet.cjs'),
+  'анализът трябва да сочи мерителя на езиковия дълг (tests/ui-i18n-ratchet.cjs), а не да преписва число',
+);
+
 console.log(
-  `PASS unfinished-register: ${open.length} отворени дефекта (${open.join(', ')}) · липсващ de.json · DEF-01 план 120 KB · WORM без Object Lock · ${oddPx} нечетни px · ${radiusLiterals} радиуси без токен`,
+  `PASS unfinished-register: ${open.length} отворени дефекта (${open.join(', ')}) · липсващ de.json · DEF-01 план 120 KB · WORM без Object Lock · ${oddPx} нечетни px · ${radiusLiterals} радиуси без токен · езиков дълг цитира таван ${spaced(totalCeiling)} от ратчето (${ceilingRows} модула)`,
 );
