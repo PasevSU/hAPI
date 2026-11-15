@@ -10,6 +10,9 @@
   const R = () => globalThis.HapiExportRules;
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Целият текст минава през речника (BG/EN/DE); липсващ ключ се вижда като ключа, не като български.
+  const T = (key, vars) =>
+    typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key, vars) : String(key);
   const toast = (m, k) => window.HapiUI && window.HapiUI.toast(m, k);
 
   let host = null;
@@ -63,7 +66,7 @@
       const timer = setTimeout(() => URL.revokeObjectURL(u), 60000);
       if (timer && typeof timer.unref === 'function') timer.unref();
     } catch (e) {
-      toast(`Няма връзка: ${e.message}`, 'err');
+      toast(T('ex.err.offline', { message: e.message }), 'err');
     }
   }
 
@@ -102,68 +105,68 @@
       .join('');
     const option = (value, current, label) => `<option value="${value}" ${current === value ? 'selected' : ''}>${label}</option>`;
     const stateLine = !connected()
-      ? 'Демо: създаването на пакет изисква свързан add-on.'
+      ? esc(T('ex.demo.build'))
       : p.error
         ? esc(p.error)
         : p.last
           ? lastPackageHtml(p)
-          : 'Избери портал и натисни „Създай и изтегли пакета“.';
+          : esc(T('ex.pickPortal'));
     return `
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Пакет и PGP подпис</h2></div>
+        <div class="panel-head"><h2>${esc(T('ex.pkg.title'))}</h2></div>
         <div class="panel-body">
-          <p class="hint">Пакетът е ZIP с <code>PACKAGE_INDEX.json</code>, <code>hashes/sha256sum.txt</code>, манифест и оригиналите. Дали се подписва с PGP се задава в <strong>„Настройки → PGP ключ и автоподписване“</strong> — тук не се пита.</p>
+          <p class="hint">${T('ex.pkg.hint')}</p>
           <div class="u-grid u-grid-fields">
-            <div class="field"><label for="ec-pkg-portal">Портал</label>
+            <div class="field"><label for="ec-pkg-portal">${esc(T('ex.f.portal'))}</label>
               <select id="ec-pkg-portal" ${dis}>${portals}</select>
             </div>
-            <div class="field"><label for="ec-pkg-compression">Компресия на пакета</label>
+            <div class="field"><label for="ec-pkg-compression">${esc(T('ex.f.compression'))}</label>
               <select id="ec-pkg-compression" ${dis}>
-                ${option('none', p.compression, 'Без компресия (0)')}
-                ${option('default', p.compression, 'Обичайна (6)')}
-                ${option('max', p.compression, 'Максимална (9)')}
+                ${option('none', p.compression, esc(T('ex.opt.compNone')))}
+                ${option('default', p.compression, esc(T('ex.opt.compDefault')))}
+                ${option('max', p.compression, esc(T('ex.opt.compMax')))}
               </select>
             </div>
-            <div class="field"><label for="ec-pkg-encryption">Криптиране на пакета</label>
+            <div class="field"><label for="ec-pkg-encryption">${esc(T('ex.f.encryption'))}</label>
               <select id="ec-pkg-encryption" ${dis}>
-                ${option('none', p.encryption, 'Без криптиране')}
-                ${option('password', p.encryption, 'С парола (AES-256-GCM)')}
+                ${option('none', p.encryption, esc(T('ex.opt.encNone')))}
+                ${option('password', p.encryption, esc(T('ex.opt.encPassword')))}
               </select>
             </div>
-            <div class="field"><label for="ec-pkg-password">Парола за пакета</label>
-              <input type="password" id="ec-pkg-password" autocomplete="new-password" placeholder="минимум 8 знака · празно = генерирана"
+            <div class="field"><label for="ec-pkg-password">${esc(T('ex.f.password'))}</label>
+              <input type="password" id="ec-pkg-password" autocomplete="new-password" placeholder="${esc(T('ex.opt.passwordPh'))}"
                 value="${esc(p.password)}" ${off} />
             </div>
-            <div class="field"><label for="ec-pkg-split">Размер на частта</label>
+            <div class="field"><label for="ec-pkg-split">${esc(T('ex.f.split'))}</label>
               <select id="ec-pkg-split" ${dis}>
-                ${option('none', p.split, 'Без разделяне')}
-                ${option('10', p.split, 'Части по 10 MB')}
-                ${option('50', p.split, 'Части по 50 MB')}
-                ${option('100', p.split, 'Части по 100 MB')}
+                ${option('none', p.split, esc(T('ex.opt.splitNone')))}
+                ${option('10', p.split, esc(T('ex.opt.split10')))}
+                ${option('50', p.split, esc(T('ex.opt.split50')))}
+                ${option('100', p.split, esc(T('ex.opt.split100')))}
               </select>
             </div>
-            <div class="field"><label for="ec-pkg-rate">Ограничение на скоростта</label>
+            <div class="field"><label for="ec-pkg-rate">${esc(T('ex.f.rate'))}</label>
               <select id="ec-pkg-rate" ${dis}>
-                ${option('0', String(p.rateKbps), 'Без ограничение')}
+                ${option('0', String(p.rateKbps), esc(T('ex.opt.rateNone')))}
                 ${option('128', String(p.rateKbps), '128 KB/s')}
                 ${option('512', String(p.rateKbps), '512 KB/s')}
                 ${option('2048', String(p.rateKbps), '2 MB/s')}
               </select>
             </div>
-            <div class="field"><label for="ec-pkg-parallel">Паралелни заявки</label>
+            <div class="field"><label for="ec-pkg-parallel">${esc(T('ex.f.parallel'))}</label>
               <select id="ec-pkg-parallel" ${dis}>
-                ${option('1', String(p.parallelChunks), '1 (един поток)')}
-                ${option('2', String(p.parallelChunks), '2 потока')}
-                ${option('4', String(p.parallelChunks), '4 потока')}
-                ${option('8', String(p.parallelChunks), '8 потока')}
+                ${option('1', String(p.parallelChunks), esc(T('ex.opt.par1')))}
+                ${option('2', String(p.parallelChunks), esc(T('ex.opt.par2')))}
+                ${option('4', String(p.parallelChunks), esc(T('ex.opt.par4')))}
+                ${option('8', String(p.parallelChunks), esc(T('ex.opt.par8')))}
               </select>
             </div>
           </div>
           <div class="u-row u-row-4 u-mt">
-            <button type="button" class="btn btn-primary" id="ec-pkg-build" ${dis}>Създай и изтегли пакета</button>
-            <button type="button" class="btn" id="ec-pkg-zip" ${p.last ? '' : 'disabled'}>Свали ZIP</button>
-            <button type="button" class="btn" id="ec-pkg-asc" ${p.last && p.last.hasSignature ? '' : 'disabled'}>Свали .asc</button>
-            <button type="button" class="btn" id="ec-pkg-verify" ${p.last && p.last.hasSignature ? '' : 'disabled'}>Провери подписа</button>
+            <button type="button" class="btn btn-primary" id="ec-pkg-build" ${dis}>${esc(T('ex.pkg.build'))}</button>
+            <button type="button" class="btn" id="ec-pkg-zip" ${p.last ? '' : 'disabled'}>${esc(T('ex.pkg.zip'))}</button>
+            <button type="button" class="btn" id="ec-pkg-asc" ${p.last && p.last.hasSignature ? '' : 'disabled'}>${esc(T('ex.pkg.asc'))}</button>
+            <button type="button" class="btn" id="ec-pkg-verify" ${p.last && p.last.hasSignature ? '' : 'disabled'}>${esc(T('ex.pkg.verify'))}</button>
           </div>
           <p class="hint" id="ec-pkg-state">${stateLine}</p>
         </div>
@@ -172,15 +175,15 @@
 
   function lastPackageHtml(p) {
     const last = p.last;
-    const sig = last.hasSignature ? `подпис ${esc(last.signature.keyId)}` : 'без подпис';
-    const enc = last.hasEncryption ? `криптиран (${esc(last.encryption.cipher)})` : 'без криптиране';
+    const sig = last.hasSignature ? T('ex.last.signed', { keyId: last.signature.keyId }) : T('ex.last.unsigned');
+    const enc = last.hasEncryption ? T('ex.last.encrypted', { cipher: last.encryption.cipher }) : T('ex.last.plain');
     const split = last.hasSplit
-      ? `${last.split.count} части по ${Math.round(last.split.partBytes / 1024 / 1024)} MB`
-      : 'един файл';
+      ? T('ex.last.parts', { n: last.split.count, mb: Math.round(last.split.partBytes / 1024 / 1024) })
+      : T('ex.last.single');
     const pass = p.generatedPassword
-      ? ` · <strong>генерирана парола: <code>${esc(p.generatedPassword)}</code></strong> (показва се само сега)`
+      ? ` · <strong>${T('ex.last.generatedPassword', { password: esc(p.generatedPassword) })}</strong>`
       : '';
-    const head = `Последен пакет: <code>${esc(last.fileName)}</code> · ${last.files} файла`;
+    const head = T('ex.last.head', { name: esc(last.fileName), n: last.files });
     const sum = `SHA-256 <code>${esc(String(last.sha256).slice(0, 8))}</code>`;
     return `${head} · ${sum} · ${sig} · ${enc} · ${split}${pass}`;
   }
@@ -195,15 +198,15 @@
     host.innerHTML = `
       <div class="page-title">
         <h1>Export &amp; Download Center</h1>
-        <p>Правила за изтегляне и експорт · проверка и пакет от add-on-а</p>
+        <p>${esc(T('ex.subtitle'))}</p>
       </div>
 
       <div class="two-col">
         <section class="panel">
-          <div class="panel-head"><h2>Режим на експортиране</h2><span class="badge">${esc(cfg.mode)}</span></div>
+          <div class="panel-head"><h2>${esc(T('ex.mode.title'))}</h2><span class="badge">${esc(cfg.mode)}</span></div>
           <div class="panel-body">
             <div class="field">
-              <label for="ec-mode">Режим</label>
+              <label for="ec-mode">${esc(T('ex.f.mode'))}</label>
               <select id="ec-mode">
                 ${R()
         .MODES.map((m) => `<option value="${m.id}" ${m.id === cfg.mode ? 'selected' : ''}>${esc(m.label)}</option>`)
@@ -211,7 +214,7 @@
               </select>
             </div>
             <div class="field">
-              <label>Съдържание на пакета</label>
+              <label>${esc(T('ex.f.contents'))}</label>
               <div class="checks">
                 ${R()
         .CONTENT_IDS.map(
@@ -223,7 +226,7 @@
             </div>
             <div class="two-col">
               <div class="field">
-                <label for="ec-format">Формат</label>
+                <label for="ec-format">${esc(T('ex.f.format'))}</label>
                 <select id="ec-format">
                   ${Object.entries(R().FORMATS)
         .map(([id, f]) => `<option value="${id}" ${id === cfg.format ? 'selected' : ''}>${esc(f.label)}</option>`)
@@ -231,7 +234,7 @@
                 </select>
               </div>
               <div class="field">
-                <label for="ec-location">Местоназначение</label>
+                <label for="ec-location">${esc(T('ex.f.location'))}</label>
                 <select id="ec-location">
                   ${Object.entries(R().LOCATIONS)
         .map(([id, l]) => `<option value="${id}" ${id === cfg.location ? 'selected' : ''}>${esc(l.label)}</option>`)
@@ -240,17 +243,17 @@
               </div>
             </div>
             <div class="field">
-              <label for="ec-case">Дело (за име на пакета)</label>
+              <label for="ec-case">${esc(T('ex.f.case'))}</label>
               <input id="ec-case" value="${esc(cfg.caseId)}" placeholder="CASE001" />
             </div>
           </div>
         </section>
 
         <section class="panel">
-          <div class="panel-head"><h2>Политика при запис</h2></div>
+          <div class="panel-head"><h2>${esc(T('ex.policy.title'))}</h2></div>
           <div class="panel-body">
             <div class="field">
-              <label>При съществуващ файл</label>
+              <label>${esc(T('ex.f.conflict'))}</label>
               <div class="checks">
                 ${Object.entries(R().ON_CONFLICT)
         .map(
@@ -264,29 +267,29 @@
             </div>
             <div class="checks u-mt">
               <label><input type="checkbox" id="ec-verify" ${cfg.verifySha256 ? 'checked' : ''} ${locked ? 'disabled' : ''
-      }/> Проверка на SHA-256 след запис</label>
-              <label><input type="checkbox" id="ec-readonly" ${cfg.readOnly ? 'checked' : ''}/> Read-only атрибут, когато се поддържа</label>
+      }/> ${esc(T('ex.verify'))}</label>
+              <label><input type="checkbox" id="ec-readonly" ${cfg.readOnly ? 'checked' : ''}/> ${esc(T('ex.readonly'))}</label>
             </div>
             ${locked
-        ? '<p class="hint">Режимът е доказателствен: проверката на SHA-256 е задължителна и не може да бъде изключена.</p>'
+        ? `<p class="hint">${esc(T('ex.policy.locked'))}</p>`
         : ''
       }
-            <p class="hint">Презаписът е изключен по подразбиране; за доказателствени архиви е забранен.</p>
+            <p class="hint">${esc(T('ex.policy.overwrite'))}</p>
           </div>
         </section>
       </div>
 
       <section class="panel u-mt">
         <div class="panel-head">
-          <h2>Пакет</h2>
-          <span class="badge ${check.ok ? 'ok' : 'err'}">${check.ok ? 'валидна конфигурация' : `${check.errors.length} грешки`}</span>
+          <h2>${esc(T('ex.panel.pkg'))}</h2>
+          <span class="badge ${check.ok ? 'ok' : 'err'}">${check.ok ? esc(T('ex.valid')) : esc(T('ex.errors', { n: check.errors.length }))}</span>
         </div>
         <div class="panel-body">
           <p class="hint summary-line" id="ec-summary">${esc(sum.text)}</p>
-          <pre class="tree" aria-label="Дърво на пакета">${esc(treeText(plan))}</pre>
-          <h4 class="u-mt">Файлове в пакета (${plan.entries.length})</h4>
+          <pre class="tree" aria-label="${esc(T('ex.tree'))}">${esc(treeText(plan))}</pre>
+          <h4 class="u-mt">${esc(T('ex.files', { n: plan.entries.length }))}</h4>
           <table class="grid">
-            <thead><tr><th>#</th><th>Относителен път</th><th>Тип</th><th>Категория</th></tr></thead>
+            <thead><tr><th>#</th><th>${esc(T('ex.th.path'))}</th><th>${esc(T('ex.th.kind'))}</th><th>${esc(T('ex.th.category'))}</th></tr></thead>
             <tbody>${plan.entries
         .map(
           (e, i) => `<tr><td>${i + 1}</td><td><code>${esc(e.path)}${e.kind === 'folder' ? '/' : ''}</code></td><td>${esc(
@@ -295,7 +298,7 @@
         )
         .join('')}</tbody>
           </table>
-          <p class="hint">PACKAGE_INDEX.json съдържа за всеки файл относителен път, размер, SHA-256, тип, източник и резултат от проверката.</p>
+          <p class="hint">${esc(T('ex.indexHint'))}</p>
           ${check.errors.length
         ? `<ul class="err-list">${check.errors.map((e) => `<li>${esc(e.message)}</li>`).join('')}</ul>`
         : ''
@@ -305,8 +308,8 @@
         : ''
       }
           <div class="u-row u-row-2 u-mt">
-            <button type="button" class="btn btn-primary" id="ec-copy">Копирай конфигурацията като JSON</button>
-            <button type="button" class="btn" id="ec-download">Свали export_config.json</button>
+            <button type="button" class="btn btn-primary" id="ec-copy">${esc(T('ex.copy'))}</button>
+            <button type="button" class="btn" id="ec-download">${esc(T('ex.downloadJson'))}</button>
           </div>
           <pre class="tree u-mt" id="ec-json">${esc(JSON.stringify({ config: cfg, package: plan.packageId, entries: plan.entries }, null, 2))}</pre>
         </div>
@@ -316,18 +319,16 @@
 
       <section class="panel u-mt">
         <div class="panel-head">
-          <h2>Правила и проверка от add-on-а</h2>
-          <span class="badge ${state.srv.rules ? 'ok' : 'demo'}">${state.srv.rules ? `схема ${esc(state.srv.rules.schema_version)}` : 'без връзка'}</span>
+          <h2>${esc(T('ex.rules.title'))}</h2>
+          <span class="badge ${state.srv.rules ? 'ok' : 'demo'}">${state.srv.rules ? esc(T('ex.rules.schema', { v: state.srv.rules.schema_version })) : esc(T('ex.rules.offline'))}</span>
         </div>
         <div class="panel-body">
-          <p class="hint">Правилата се четат от <code>GET /admin/api/v2/export/rules</code>, а проверката минава през
-            <code>POST /admin/api/v2/export/preflight</code> — тоест тук се вижда какво ще направи САМИЯТ add-on,
-            включително проверките на средата (права, свободно място, read-only корени), които браузърът не може да направи.</p>
+          <p class="hint">${T('ex.rules.hint')}</p>
           ${state.srv.rulesError ? `<ul class="err-list"><li>${esc(state.srv.rulesError)}</li></ul>` : ''}
           ${rulesSummaryHtml()}
           <div class="u-row u-row-2 u-mt">
             <button type="button" class="btn btn-primary" id="ec-preflight" ${connected() && !state.srv.busy ? '' : 'disabled'}>
-              ${state.srv.busy ? 'Проверка…' : 'Провери конфигурацията (preflight)'}
+              ${state.srv.busy ? esc(T('ex.preflight.busy')) : esc(T('ex.preflight.run'))}
             </button>
           </div>
           ${preflightHtml()}
@@ -335,18 +336,18 @@
       </section>
 
       <section class="panel u-mt">
-        <div class="panel-head"><h2>Enterprise опции (capabilities)</h2><span class="badge ${state.srv.rules ? 'ok' : 'demo'}">${state.srv.rules ? 'от add-on-а' : 'офлайн'}</span></div>
+        <div class="panel-head"><h2>${esc(T('ex.caps.title'))}</h2><span class="badge ${state.srv.rules ? 'ok' : 'demo'}">${state.srv.rules ? esc(T('ex.caps.fromServer')) : esc(T('ex.caps.offline'))}</span></div>
         <div class="panel-body">
           <div class="grid-2">
             ${(state.srv.rules && Array.isArray(state.srv.rules.capabilities) ? state.srv.rules.capabilities : R().capabilities())
         .map(
           (c) =>
-            `<div class="cap-row"><span>${esc(c.label)}</span><span class="state-chip ${c.implemented ? 'ok' : 'warn'}">${c.implemented ? 'готово' : 'планирано'
+            `<div class="cap-row"><span>${esc(c.label)}</span><span class="state-chip ${c.implemented ? 'ok' : 'warn'}">${c.implemented ? esc(T('ex.caps.ready')) : esc(T('ex.caps.planned'))
             }</span></div>`,
         )
         .join('')}
           </div>
-          <p class="hint">Capabilities не се показват като работещи преди реалната им имплементация; когато има връзка, списъкът идва от add-on-а.</p>
+          <p class="hint">${esc(T('ex.caps.hint'))}</p>
         </div>
       </section>`;
 
@@ -357,21 +358,21 @@
   function rulesSummaryHtml() {
     const rules = state.srv.rules;
     if (!rules) {
-      return '<p class="hint">Няма връзка с add-on-а — правилата не са заредени. По-долу виждаш само офлайн преглед по същите споделени правила.</p>';
+      return `<p class="hint">${esc(T('ex.rules.offlineBody'))}</p>`;
     }
     const profiles = rules.export_profiles && rules.export_profiles.profiles ? Object.keys(rules.export_profiles.profiles) : [];
     const impl = (rules.capabilities || []).filter((c) => c.implemented).length;
     const checks = rules.download_rules || {};
     return `
       <table class="grid">
-        <thead><tr><th>Правило</th><th>Стойност от add-on-а</th></tr></thead>
+        <thead><tr><th>${esc(T('ex.th.rule'))}</th><th>${esc(T('ex.th.value'))}</th></tr></thead>
         <tbody>
-          <tr><td>Схема</td><td><code>${esc(rules.schema_version)}</code></td></tr>
-          <tr><td>Профили за експорт</td><td>${profiles.length ? profiles.map((p) => `<code>${esc(p)}</code>`).join(' · ') : 'няма'}</td></tr>
-          <tr><td>Проверка на SHA-256</td><td>${checks.verify_sha256 ? 'задължителна според правилата' : 'по избор'}</td></tr>
-          <tr><td>При конфликт по подразбиране</td><td><code>${esc(checks.on_conflict || '—')}</code></td></tr>
-          <tr><td>Разрешени корени</td><td><code>${esc(((checks.storage || {}).allowed_roots || []).join(', ') || '—')}</code></td></tr>
-          <tr><td>Готови capabilities</td><td>${impl} от ${(rules.capabilities || []).length}</td></tr>
+          <tr><td>${esc(T('ex.rules.schemaLabel'))}</td><td><code>${esc(rules.schema_version)}</code></td></tr>
+          <tr><td>${esc(T('ex.rules.profiles'))}</td><td>${profiles.length ? profiles.map((p) => `<code>${esc(p)}</code>`).join(' · ') : esc(T('ex.none'))}</td></tr>
+          <tr><td>${esc(T('ex.rules.verify'))}</td><td>${checks.verify_sha256 ? esc(T('ex.rules.verifyMandatory')) : esc(T('ex.rules.verifyOptional'))}</td></tr>
+          <tr><td>${esc(T('ex.rules.conflict'))}</td><td><code>${esc(checks.on_conflict || '—')}</code></td></tr>
+          <tr><td>${esc(T('ex.rules.roots'))}</td><td><code>${esc(((checks.storage || {}).allowed_roots || []).join(', ') || '—')}</code></td></tr>
+          <tr><td>${esc(T('ex.rules.capsReady'))}</td><td>${esc(T('ex.rules.capsCount', { impl, total: (rules.capabilities || []).length }))}</td></tr>
         </tbody>
       </table>`;
   }
@@ -380,14 +381,16 @@
   function preflightHtml() {
     if (state.srv.preflightError) return `<ul class="err-list"><li>${esc(state.srv.preflightError)}</li></ul>`;
     const p = state.srv.preflight;
-    if (!p) return '<p class="hint">Preflight още не е пускан в тази сесия.</p>';
+    if (!p) return `<p class="hint">${esc(T('ex.preflight.none'))}</p>`;
     const failed = (p.preflight && p.preflight.checks ? p.preflight.checks : []).filter((c) => !c.ok);
     return `
-      <p class="hint summary-line">Пакет <code>${esc(p.packageId || '—')}</code> · ${p.entries ? p.entries.length : 0} записа · ${p.ok ? 'готово за експорт' : 'има пречки'}</p>
+      <p class="hint summary-line">${esc(
+        T('ex.preflight.head', { id: p.packageId || '—', n: p.entries ? p.entries.length : 0, state: p.ok ? T('ex.preflight.ready') : T('ex.preflight.blocked') }),
+      )}</p>
       ${p.summary ? `<p class="hint">${esc(p.summary)}</p>` : ''}
       ${failed.length
         ? `<ul class="err-list">${failed.map((c) => `<li><strong>${esc(c.id || '')}</strong> ${esc(c.detail || c.reason || '')}</li>`).join('')}</ul>`
-        : '<p class="hint">Всички проверки на средата минават.</p>'
+        : `<p class="hint">${esc(T('ex.preflight.allOk'))}</p>`
       }`;
   }
 
@@ -406,7 +409,7 @@
 
   /** Проверката минава през СЪРВЪРА: той вижда права, място и read-only корени. */
   async function runPreflight() {
-    if (!connected()) return toast('Preflight изисква връзка с add-on-а', 'err');
+    if (!connected()) return toast(T('ex.err.preflightOffline'), 'err');
     state.srv.busy = true;
     state.srv.preflightError = '';
     render();
@@ -419,7 +422,7 @@
     }
     state.srv.preflight = r.data;
     render();
-    toast(r.data.ok ? `Preflight OK · ${r.data.packageId}` : 'Preflight намери пречки', r.data.ok ? 'ok' : 'err');
+    toast(r.data.ok ? T('ex.preflight.ok', { id: r.data.packageId }) : T('ex.preflight.found'), r.data.ok ? 'ok' : 'err');
   }
 
   async function loadPackageContext() {
@@ -445,8 +448,8 @@
 
   async function buildPackage() {
     const p = state.pkg;
-    if (!connected()) return toast('Демо: пакетът се създава от add-on-а', '');
-    if (!p.portalId) return toast('Избери портал', 'err');
+    if (!connected()) return toast(T('ex.demo.buildShort'), '');
+    if (!p.portalId) return toast(T('ex.err.pickPortal'), 'err');
     p.error = '';
     // `sign`/`keyId` не се подават: add-on-ът прилага запазените настройки от „Настройки“.
     const body = { portalId: p.portalId, compression: p.compression };
@@ -463,7 +466,7 @@
     }
     p.last = r.data;
     p.generatedPassword = r.data.generatedPassword || '';
-    toast(`Пакет ${r.data.fileName} · ${r.data.files} файла`, 'ok');
+    toast(T('ex.pkg.built', { name: r.data.fileName, n: r.data.files }), 'ok');
     render();
     // Разделен пакет се тегли част по част: всяка част има собствен номер и име.
     if (r.data.hasSplit) {
@@ -497,7 +500,7 @@
           const r = await api('/admin/api/packages/settings', { method: 'PATCH', json: { rateKbps } });
           if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
           p.rateKbps = rateKbps;
-          toast(rateKbps ? `Ограничение: ${rateKbps} KB/s` : 'Ограничението е изключено', 'ok');
+          toast(rateKbps ? T('ex.rate.set', { n: rateKbps }) : T('ex.rate.off'), 'ok');
         });
       }
       if (q('#ec-pkg-parallel')) {
@@ -506,7 +509,7 @@
           const r = await api('/admin/api/packages/settings', { method: 'PATCH', json: { parallelChunks } });
           if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
           p.parallelChunks = parallelChunks;
-          toast(`Паралелни заявки: ${parallelChunks}`, 'ok');
+          toast(T('ex.parallel.set', { n: parallelChunks }), 'ok');
         });
       } q('#ec-pkg-build').addEventListener('click', () => buildPackage());
       q('#ec-pkg-zip').addEventListener('click', () => p.last && download(`${base()}/admin/api/packages/${p.last.id}/download`, p.last.fileName));
@@ -515,7 +518,7 @@
         if (!p.last) return;
         const r = await api(`/admin/api/packages/${p.last.id}/verify`, { method: 'POST', json: {} });
         if (!r.ok) return toast(r.error || `HTTP ${r.status}`, 'err');
-        toast(r.data.valid ? `Подписът е валиден · ${r.data.keyId}` : `Невалиден подпис: ${r.data.reason}`, r.data.valid ? 'ok' : 'err');
+        toast(r.data.valid ? T('ex.sign.ok', { id: r.data.keyId }) : T('ex.sign.bad', { reason: r.data.reason }), r.data.valid ? 'ok' : 'err');
       });
       if (connected() && !p.loaded) void loadPackageContext();
     }
@@ -583,13 +586,13 @@
       link.download = 'export_config.json';
       link.click();
       URL.revokeObjectURL(url);
-      toast('export_config.json е изтеглен', 'ok');
+      toast(T('ex.downloaded'), 'ok');
     });
     wirePackage();
   }
 
   function copyText(text) {
-    const done = () => toast('Конфигурацията е копирана в клипборда', 'ok');
+    const done = () => toast(T('ex.copied'), 'ok');
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done, () => legacyCopy(text, done));
       return;
@@ -609,7 +612,7 @@
       document.execCommand('copy');
       done();
     } catch {
-      toast('Копирането не е поддържано от тази среда', 'err');
+      toast(T('ex.copyUnsupported'), 'err');
     }
     area.remove();
   }

@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **412/412** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.210 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 651 файла · 117694 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 645 файла · 115735 реда · critical: 0 · high: 0 · medium: 1 · low: 203 — **има необяснени** · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 651 файла · 118021 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 645 файла · 116062 реда · critical: 0 · high: 0 · medium: 1 · low: 203 — **има необяснени** · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
@@ -33,6 +33,11 @@
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
 ## 3. Какво влезе във 0.69.210
+
+- **Export & Download Center говори три езика.** Режимите, политиката при запис, дървото на
+  пакета, панелът „Пакет и PGP подпис“, правилата от add-on-а, preflight резултатът и
+  capabilities минават през `T('ex.*')` — **107** нови ключа × BG/EN/DE (речникът става **735**
+  ключа на език). Ратчетът е свален: `export-center.js` 1 977 → **0**, общо **28 760 → 26 783**.
 
 - **Таблото и „Относно“ говорят три езика.** Списъкът с раздели, отчетите по всички портали и
   справочните полета минават през `T('dsh.*')` — **24** нови ключа × BG/EN/DE (речникът става

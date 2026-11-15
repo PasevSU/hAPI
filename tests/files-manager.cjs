@@ -346,7 +346,10 @@ assert.match(settingsSrc, /OpenPGP v\$\{/);
 const exportSrc = fs.readFileSync(require('node:path').join(__dirname, '..', 'hapi_enterprise', 'ui', 'export-center.js'), 'utf8');
 assert.doesNotMatch(exportSrc, /ec-pkg-sign|ec-pkg-key|Автоподписване с PGP/);
 assert.match(exportSrc, /ec-pkg-build/);
-assert.match(exportSrc, /Настройки → PGP ключ и автоподписване/);
+// Подсказката за PGP живее в речника (`ex.pkg.hint`), затова се проверява ключът в кода
+// И стойността в българския речник — правилото „тук не се пита за PGP“ не се губи от превод.
+assert.match(exportSrc, /T\('ex\.pkg\.hint'\)/);
+assert.match(require('../hapi_enterprise/ui/i18n.js').DICT.bg['ex.pkg.hint'], /Настройки → PGP ключ и автоподписване/);
 // Таймерът за освобождаване на blob адрес и тук е `unref`-нат — иначе 60 s държи процеса
 // буден, когато панелът се пуска в тест (същият капан като в files-manager.js).
 assert.match(exportSrc, /if \(timer && typeof timer\.unref === 'function'\) timer\.unref\(\);/);
