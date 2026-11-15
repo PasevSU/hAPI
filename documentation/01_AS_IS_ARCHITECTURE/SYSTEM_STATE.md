@@ -1,9 +1,9 @@
-# Състояние на системата и промени в 0.69.208
+# Състояние на системата и промени в 0.69.211
 
 > Живият документ за **„какво е системата днес“**, за разлика от нормативните документи в
 > `02_TO_BE_ARCHITECTURE/` (какво трябва да бъде). Обновява се при всяко издание, а числата се
 > ВЗИМАТ от скриптове и отчети, не се пишат на ръка. Всичко тук е измерено в работното дърво
-> на 0.69.208; при разминаване меродавни са `reports/RELEASE-STATUS.md`,
+> на 0.69.211; при разминаване меродавни са `reports/RELEASE-STATUS.md`,
 > `reports/test-matrix.json` и `documentation/01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md`.
 
 ## 1. Какво е системата
@@ -15,14 +15,14 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 
 | Показател | Стойност (измерено) |
 | --- | --- |
-| Версия | **0.69.208** (`hapi_enterprise/config.yaml`, огледала в 7 файла) |
-| Модули в add-on-а | **105** `.js` файла в `hapi_enterprise/` |
-| Изнесени HTTP компонента | **17** файла в `hapi_enterprise/routes/` |
+| Версия | **0.69.211** (`hapi_enterprise/config.yaml`, огледала в 8 файла) |
+| Модули в add-on-а | **109** `.js` файла в `hapi_enterprise/` |
+| Изнесени HTTP компонента | **18** файла в `hapi_enterprise/routes/` |
 | Модули на панела | **28** `.js` файла в `hapi_enterprise/ui/` |
-| Обявени endpoint-и | **245** реда в `API_ENDPOINT_REFERENCE.md` |
+| Обявени операции | **213** в `API_ENDPOINT_REFERENCE.md` |
 | `server.js` | **2720** реда (пор **2722**) |
-| Изнесени функции | **363** в 51 модула, **363** покрити с тест |
-| Тестове в дървото | **398** файла (`397` в матрикса + `release-status.cjs`) |
+| Изнесени функции | **369** в 52 модула, **369** покрити с тест |
+| Тестове в дървото | **414** файла (`413` в матрикса + `release-status.cjs`); `tests/helpers.cjs` не е тест |
 | Артефакт | `dist/` — точно **6** файла, `verify-release` **22/22** |
 
 ## 2. Какво се промени в 0.69.208
@@ -39,6 +39,10 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Дългът по езика (DEF-49) стана измерим по вид текст | `c896563` | 36 850 знака изглеждаха еднаква работа, а 387 от тях не се превеждат | `ui-i18n-ratchet.cjs` |
 | **Закон: менюто е на равни групи по смисъл** (3 × 6 секции) + прибиране при клик извън него | последният комит на изданието (виж `CHANGELOG.md`) | 18 чипа в един ред се чупеха на произволни редове, а „Журнал“ стоеше далеч от „Данни“ | `ui-nav-symmetry.cjs`, `ui-nav-outside-click.cjs`, законът `balanced-groups` |
 | **Мобилна кора на публичната страница (0.69.209)** — числа, статус на достъпа, лист за файл със сверка на отпечатъка, бърза лента | последният комит на изданието (виж `CHANGELOG.md`) | страницата се отваря ПЪРВО на телефон, а числата и статусът ѝ липсваха | `portal-mobile.cjs` |
+| **Образът е чист Alpine без npm (0.69.210)** — Node от официалния musl tarball, `--exclude='*/npm'` | `59a3406` | Docker Scout: 2 critical + 21 high, част от тях в пакети НА npm, който никога не се изпълнява | `docker-runtime.cjs`, `raspberrypi-compat.cjs`, `ha-support-matrix.cjs` §6, S04 на `verify-release` |
+| **Двата портала са обяснени (ADR-0027)** — динамичен `/p/<slug>` срещу статичен evidence-portal | `59a3406` | въпросът „защо има два портала“ нямаше писмен отговор | `documentation/03_ADR/ADR-0027-two-portals.md` |
+| **Папката на порталите е фиксирана (0.69.211)** — `/share/hapi/data/root_storage/<slug>`, панелът само я показва | `811e191` | свободното поле даваше начин порталът да сочи общия `/share` (чуждите папки) или папка, която никой не намира | `portal-storage-fixed.cjs`, `storage-roots.cjs`, `files-manager.cjs`, `portal-card-link.cjs` |
+| **Портал „само за преглед“ със свой QR (0.69.211)** — втори запис `portal-view.js`, `inline` файлове, без пакет | `811e191` | при създаване трябва да има и read-only изглед, който не може да изтече като ZIP | `portal-readonly.cjs`, `portal-storage.cjs` |
 
 Пълното описание „какво, защо и какво е измерено“ е в `CHANGELOG.md` и
 `documentation/07_RELEASE/RELEASE_0.69.208.md` (§6а.1–§6а.7).
@@ -51,6 +55,9 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Договор | Единственото място | Тест |
 | --- | --- | --- |
 | Логически корени `/share`, `/media`, `/config`, `/data` | `hapi_enterprise/paths.js` | `storage-roots.cjs` |
+| Корен на порталните папки (`/share/hapi/data/root_storage`) | `paths.portalRootLogical()` / `paths.portalRootFor(slug)`; `storage-preflight` подава ефективните `STORAGE_LOCATION`/`STORAGE_SUBDIRECTORY` в env | `portal-storage-fixed.cjs`, `storage-roots.cjs` |
+| Смяна на папката на портал | `PORTAL_STORAGE_ROOT_EDIT` (`HAPI_PORTAL_STORAGE_ROOT_EDIT=1`) — иначе `PATCH` е 403 | `portal-storage-fixed.cjs` |
+| Портал „само за преглед“ | `hapi_enterprise/portal-view.js` (втори запис, `inline` файлове, без пакет) | `portal-readonly.cjs` |
 | Сервирани UI файлове | `UI_FILES` в `server.js` (allowlist — нов файл иначе е 404) | `html-assets.cjs`, `docker-runtime.cjs` |
 | Етикети на полетата | `ui/field-labels.js` след всеки рендер | `ui-field-labels.cjs` |
 | Знания за грешките | `ui/debug-ledger.js` (`SOLUTIONS`) + речник `dbg.*` | `debug-ledger.cjs` |
@@ -113,16 +120,17 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
   **извън обхвата** по решение от 2026-11-15. Модулите със собствен речник (`app.js`) не се
   броят като дълг. Ръстът е заключен от ратчет.
 
-## 6. Измерени порти (0.69.210)
+## 6. Измерени порти (0.69.211)
 
 | Гейт | Команда | Резултат |
 | --- | --- | --- |
-| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **411/411**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
+| Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **413/413**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
 | Артефакт | `node scripts/verify-release.cjs` | **22/22** (с `--with-tests` — **23/23**), `dist/` 6 файла |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 412 теста в дървото |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 414 теста в дървото |
 | ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
-| Регресионни защити | `tests/regression-guards.cjs` | 54 защити · 76 теста · **53** котви |
-| Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 21 464 (таван 21 464) · 30 `t()` · 1 модул със собствен речник · 726 знака демо данни извън дълга |
+| Регресионни защити | `tests/regression-guards.cjs` | 54 затворени дефекта · 54 защити · 76 теста · **53** котви |
+| Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 27 модула · 21 312 (таван 21 464) · 30 `t()` · 1 модул със собствен речник · 726 знака демо данни извън дълга |
+| Речник на публичната страница | `tests/portal-i18n.cjs`, `tests/integration-portal-i18n.cjs` | BG/EN/DE с еднакъв набор; интеграцията ползва СЪЩИЯ файл; 23 знака в кода под таван 23 |
 | Одити | `logic-audit --gate` · `bad-code-scan --gate` | 0 · 0 |
 | Линт | `npx eslint . --max-warnings=0` | 0 |
 | Хигиена | `D:\share` / `C:\share` | не съществуват |
@@ -133,8 +141,8 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
    3 отворени дефекта от 57, 4 пропуснати функции, техническият дълг с числа и съзнателните
    „дупки“, които НЕ бива да се „поправят“. Пази го `tests/unfinished-register.cjs`: тестът пада,
    когато задача се затвори, за да се обнови документът, вместо да лъже.
-1. **Превод на 21 096 знака** интерфейсен текст — DEF-49, отделна задача. Таванът е 21 464 и
-   дългът е заключен (`ui-i18n-ratchet`). Report Studio е извън обхвата по решение,
+1. **Превод на интерфейсния текст** — DEF-49, отделна задача. Таванът е 21 464, измереното е
+   21 312 и дългът е заключен (`ui-i18n-ratchet`). Report Studio е извън обхвата по решение,
    демо данните (`data.js`) не са интерфейсен текст.
 2. **Котва за DEF-27** (сензорите се теглят веднъж): защитата проверява брой извиквания и
    няма устойчив низ — иска тест с брояч, не декоративна котва.
@@ -153,8 +161,12 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
    портал има QR за ВСЯКО ниво (портал, подпапки, файлове) в панела — всички водят до
    публичната страница (`tree/qr.svg?path=`, `tests/portal-qr-levels.cjs`); забранено остава
    само кодът да сочи към самата страница, която го показва.
-7. **Публикуване на 0.69.210** — таг `v0.69.210`, `scripts/publish-haoss.ps1 -Execute`,
-   проверка на SHA-256. Не е пускано: чака изрично решение (0.69.209 е публикуван и е Latest).
+7. **Публикуване на 0.69.211** — таг `v0.69.211`, `scripts/publish-haoss.ps1 -Execute`,
+   проверка на SHA-256. Не е пускано: чака изрична дума за публикуване (0.69.209 е публикуван и е Latest).
+8. **Спътникът „само за преглед“ не се показва различно в КАРТАТА на панела** — той е отделен
+   запис със собствен QR и заглавие с наставка „(преглед)“, но картата му изглежда като
+   обикновен портал. Отделна иконка/филтър е решение за следващо издание (`portal-readonly.cjs`
+   пази поведението на СТРАНИЦАТА: чип, бутон „Прегледай“, без пакет).
 8. **Скриптът на портала вече не пада на частична страница** (`setStatus` на липсващ `#status`
    хвърляше `TypeError: Cannot set properties of null`). Пази го `tests/portal-partial-page.cjs`;
    поправката е в двата варианта. Остава непокрит единствено случаят „страница без

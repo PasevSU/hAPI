@@ -89,6 +89,9 @@ const withAuth = (path) =>
 
 const MAX_LISTED = 500;
 let portal = null;
+// Портал „само за преглед“ (`readonly: true`): файловете се гледат, не се свалят и няма
+// пакет. Решението е на сървъра; тази отметка само казва на страницата да не лъже.
+let readonlyMode = false;
 let allFiles = [];
 // Режим „папка“ (`?folder=` в адреса или портал със собствена папка): показва
 // съдържанието на папка от портала.
@@ -317,11 +320,20 @@ async function sha256Hex(buffer) {
 
 /** Изтегляне: FREE → директно; KEY_REQUIRED → с ключ в X-File-Key. */
 async function downloadFile(file, key) {
+  const headers = {};
+  if (key) headers["X-File-Key"] = key;
+  const url = withAuth("/files/" + encodeURIComponent(file.id) + "/download");
+  // Порталът е САМО ЗА ПРЕГЛЕД (`readonly`): сървърът дава байтовете `inline`, затова тук
+  // няма blob и няма `download` — файлът се отваря в браузъра за четене. Политиката е на
+  // записа, не на страницата; това е само за да не лъже бутонът.
+  if (readonlyMode) {
+    setStatus(T("file.status.viewing", { name: file.name }));
+    if (typeof location.assign === "function") location.assign(url);
+    else if (window && typeof window.open === "function") window.open(url, "_blank", "noopener");
+    return;
+  }
   setStatus(T("file.status.downloading", { name: file.name }));
   try {
-    const headers = {};
-    if (key) headers["X-File-Key"] = key;
-    const url = withAuth("/files/" + encodeURIComponent(file.id) + "/download");
     const res = await fetch(url, { headers, referrerPolicy: "no-referrer" });
     if (res.status === 403) {
       setStatus(key ? T("file.status.badKey") : T("file.status.needKey"), "err");
@@ -827,7 +839,7 @@ function fileCard(file) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "btn btn-primary";
-    btn.append(icon("download"), document.createTextNode(T("file.download")));
+    btn.append(icon("download"), document.createTextNode(readonlyMode ? T("file.view") : T("file.download")));
     btn.addEventListener("click", () => downloadFile(file, ""));
     actions.append(btn);
   }
@@ -886,7 +898,7 @@ function folderCard(file) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "btn";
-  btn.textContent = T("file.download");
+  btn.textContent = readonlyMode ? T("file.view") : T("file.download");
   btn.addEventListener("click", () => void downloadByPath(file.path, file.name));
   actions.append(btn);
   li.append(actions);
@@ -895,9 +907,17 @@ function folderCard(file) {
 
 /** Изтегляне по път в папката: същият blob-подход, без изложен адрес за всеки файл. */
 async function downloadByPath(filePath, name) {
+  const url = withAuth("/tree/file?path=" + encodeURIComponent("/" + filePath));
+  // Само за преглед: отваря се в браузъра (сървърът отдава `inline`), без запис на диска.
+  if (readonlyMode) {
+    setStatus(T("file.status.viewing", { name }));
+    if (typeof location.assign === "function") location.assign(url);
+    else if (window && typeof window.open === "function") window.open(url, "_blank", "noopener");
+    return;
+  }
   setStatus(T("file.status.downloading", { name }));
   try {
-    const res = await fetch(withAuth("/tree/file?path=" + encodeURIComponent("/" + filePath)), {
+    const res = await fetch(url, {
       referrerPolicy: "no-referrer",
     });
     if (res.status === 404) {
@@ -1148,6 +1168,9 @@ function paintPortal(data) {
   }
 
   const badges = [];
+  // Състоянието „само за преглед“ се вижда В ЗАГЛАВИЕТО (чип), а не само в статуса долу:
+  // статусът се изтрива при прерисуване, а този чип остава до името на портала.
+  if (readonlyMode) badges.push([T("badge.readonly"), "chip-warn"]);
   if (data.visibility === "public") badges.push([T("badge.public"), "chip-ok"]);
   if (data.category) badges.push([data.category, ""]);
   if (data.flag && data.flag !== "none") {
@@ -1240,9 +1263,10 @@ function paintPortal(data) {
   }
 
   // PP-12: пакетът се предлага само когато има файлове без ключ и е включен в add-on-а.
+  // Порталът „само за преглед“ не го предлага изобщо — сървърът и без това отговаря 403.
   const pkg = data.package || {};
   const pkgBtn = $("package-btn");
-  if (pkg.enabled && Number(pkg.eligible) > 0 && urls.package) {
+  if (pkg.enabled && Number(pkg.eligible) > 0 && urls.package && !readonlyMode) {
     pkgBtn.hidden = false;
     pkgBtn.title = T("package.button") + " — " + pkg.eligible + " " + nounFor(pkg.eligible, prof.noun);
     pkgBtn.addEventListener("click", requestPackage);
@@ -1358,10 +1382,11 @@ async function loadQrInfo() {
     if (!portalRes.ok) throw new Error(T("error.portal"));
     if (!filesRes.ok) throw new Error(T("error.files"));
     portal = await portalRes.json();
+    readonlyMode = Boolean(portal && portal.readonly === true);
     // Портал „само за преглед“ (`readonly`, спътникът на нормалния портал): казва го ясно,
     // преди човек да е опитал да свали нещо. Файловете идват `inline` от сървъра, а пакетът
     // (ZIP) е отказан — това не е настройка на страницата, а политика на записа.
-    if (portal && portal.readonly) setStatus(T("portal.readonly.hint"));
+    if (readonlyMode) setStatus(T("portal.readonly.hint"));
     const listing = await filesRes.json();
     allFiles = Array.isArray(listing.files) ? listing.files : [];
     prof = buildProfile(allFiles, portal);

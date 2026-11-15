@@ -12,9 +12,47 @@
 //   5. без флага в тялото втори портал НЕ се създава (API-то не прави изненади).
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { startServer } = require('./lib/gui-harness.cjs');
+const vm = require('node:vm');
+const { startServer, waitFor } = require('./lib/gui-harness.cjs');
+const { createDocument } = require('./lib/dom-stub.cjs');
 const { stopChild } = require('./helpers.cjs');
 const portalView = require('../hapi_enterprise/portal-view');
+
+/** Монтира ЖИВАТА страница на портала в DOM (както я вижда посетителят с QR кода). */
+async function mountPage(base, portalId) {
+  const page = await (await fetch(`${base}/p/${portalId}`)).text();
+  const bodyHtml = page.slice(page.indexOf('<body>') + '<body>'.length, page.indexOf('</body>'));
+  const doc = createDocument({ lang: 'bg' });
+  doc.body.innerHTML = bodyHtml;
+  const pageUrl = `${base}/p/${portalId}`;
+  const location = {
+    protocol: 'http:', origin: base, host: '127.0.0.1', pathname: `/p/${portalId}`, search: '', hash: '',
+    href: pageUrl, assign: () => { }, toString: () => pageUrl,
+  };
+  const sandbox = {
+    document: doc,
+    location,
+    isSecureContext: true,
+    console,
+    setTimeout,
+    clearTimeout,
+    setInterval,
+    clearInterval,
+    URL,
+    TextEncoder,
+    TextDecoder,
+    Blob: class Blob { constructor(parts) { this.parts = parts; this.size = 0 } },
+    crypto: require('node:crypto').webcrypto,
+    navigator: { clipboard: { writeText: async () => { } } },
+    fetch: (url, init) => fetch(typeof url === 'string' && url.startsWith('/') ? base + url : url, init),
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(await (await fetch(`${base}/portal-i18n.js`)).text(), sandbox, { filename: 'portal-i18n.js' });
+  vm.runInContext(await (await fetch(`${base}/portal.js`)).text(), sandbox, { filename: 'portal.js' });
+  return { doc, location };
+}
 
 (async () => {
   const server = await startServer();
@@ -96,10 +134,24 @@ const portalView = require('../hapi_enterprise/portal-view');
     const ui = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'files-manager.js'), 'utf8');
     assert.match(ui, /name="readonly_view"[^>]*checked/, 'квадратчето „само за преглед“ е отметнато по подразбиране');
     assert.match(ui, /readonlyView: readonlyWanted/, 'панелът подава флага при създаване');
+
+    // ── 7. Живата страница на спътника: гледа се, не се сваля ────────────────
+    const viewPage = await mountPage(server.base, view.id);
+    await waitFor(() => /преглед/i.test(String(viewPage.doc.getElementById("badges").textContent || "")), { label: 'чипът „само за преглед“ в заглавието', timeout: 8000 });
+    assert.equal(viewPage.doc.getElementById("package-btn").hidden, true, 'спътникът НЕ предлага пакет (ZIP) в страницата');
+    const viewLabels = () => [...viewPage.doc.querySelectorAll("button")].filter((b) => !b.hidden).map((b) => String(b.textContent || "").trim());
+    // Списъкът с файловете идва след данните за портала — чакаме ИМЕННО бутона на файла.
+    await waitFor(() => viewLabels().some((t) => /Прегледай/i.test(t)), { label: 'бутонът „Прегледай“ на файла', timeout: 8000 });
+    assert.equal(viewLabels().some((t) => /Изтегли/i.test(t)), false, 'на страницата на спътника няма ВИДИМ бутон „Изтегли“: ' + viewLabels().join(' | '));
+
+    const mainPage = await mountPage(server.base, main.id);
+    const mainLabels = () => [...mainPage.doc.querySelectorAll("button")].filter((b) => !b.hidden).map((b) => String(b.textContent || "").trim());
+    await waitFor(() => mainLabels().some((t) => /Изтегли/i.test(t)), { label: 'бутонът „Изтегли“ на нормалния портал', timeout: 8000 });
+    assert.equal(/преглед/i.test(String(mainPage.doc.getElementById("badges").textContent || "")), false, 'нормалният портал НЕ носи чипа „само за преглед“');
   } finally {
     await stopChild(server.child);
     await server.stop();
   }
 
-  console.log('PASS portal-readonly: спътник със собствен QR и slug · същата папка · inline преглед срещу attachment · пакет 403 · без флаг няма втори портал');
+  console.log('PASS portal-readonly: спътник със собствен QR и slug · същата папка · inline преглед срещу attachment · пакет 403 · без флаг няма втори портал · страницата показва чип „само за преглед“, бутон „Прегледай“ и никакъв видим „Изтегли“');
 })();

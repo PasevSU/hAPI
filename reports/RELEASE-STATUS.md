@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | Тестове | `node scripts/test-matrix.cjs` | **414/414** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.211 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 654 файла · 119355 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 648 файла · 117393 реда · critical: 0 · high: 0 · medium: 0 · low: 203 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 654 файла · 119450 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 648 файла · 117479 реда · critical: 0 · high: 0 · medium: 0 · low: 203 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
