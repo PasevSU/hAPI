@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **142** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **143** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -105,6 +105,7 @@ _Генериран списък: **142** документа. Пише се от
 | `03_ADR/ADR-0024-unified-project-v6.md` | ADR-0024: Обединяване на всички идеи в един проект (v6.0) |
 | `03_ADR/ADR-0025-report-studio.md` | ADR-0025: Report Studio — manifest-driven отчети с RFC 3161 обхват |
 | `03_ADR/ADR-0026-public-gateway-and-digital-delivery.md` | ADR-0026 — Public API Gateway, файлово предоставяне и контрол на достъпа |
+| `03_ADR/ADR-0027-two-portals.md` | ADR-0027 — Два портала: динамичният (`portal/`) и статичният (`evidence-portal/`) |
 | `03_ADR/README.md` | ADR — Architecture Decision Records |
 | `04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md` | Одитни събития — каталог |
 | `04_FUNCTION_SPECIFICATIONS/DEBUG_OBJECTS.md` | Дебъгинг: разпознаване на обектите и прилагане на законите |

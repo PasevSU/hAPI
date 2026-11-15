@@ -53,3 +53,21 @@ released.
   local data directory (Windows).
 - Expose the add-on only through Home Assistant ingress, not directly to the internet.
 - Keep Node.js 22.13+ and Home Assistant Supervisor up to date.
+
+## Container image and vulnerability scanning
+
+Docker Scout reports findings for the published image. They come from two places, and the
+project treats them differently:
+
+| Source | Examples (measured 2026-11-15) | What the project does |
+| --- | --- | --- |
+| Packages bundled **with npm** in the official `node:*` image | `npm/tar 7.5.11` (2 critical), `npm/brace-expansion 2.0.2`, `npm/ip-address 10.1.0` | **Removed from the image entirely.** The add-on has zero runtime npm dependencies, so the base is plain `alpine:3.24` and Node comes from the official musl tarball unpacked with `--exclude='*/npm' --exclude='*/npx' --exclude='*/corepack'`. Deleting npm in a later layer is *not* enough: the files stay in the layer history and keep being reported. |
+| Alpine base packages | `alpine/zlib 1.3.2-r0` (1 critical, 1 high), `alpine/musl 1.2.6-r2` (high), `alpine/openssl 3.5.8-r0` (unscored) | Raised to the current fixes at build time (`apk upgrade --no-cache` is the first step). A rebuild picks up newer patches without a code change. |
+| The Node runtime itself | `node 22.23.2` (high, fixable) | Fixed by bumping `ARG NODE_VERSION` in `hapi_enterprise/Dockerfile`. The version is pinned on purpose — a floating tag would make the release non-reproducible. |
+
+What is **not** claimed: that the image has zero findings. A scanner will always report
+findings in the base distribution and in the runtime; the measurable commitment is that no
+package the add-on does not use travels with it, and that everything else is one pinned
+version bump away. `tests/docker-runtime.cjs`, `tests/raspberrypi-compat.cjs` and scenario
+S04 of `scripts/verify-release.cjs` fail if npm comes back into the image or if the base
+stops being a plain Alpine.

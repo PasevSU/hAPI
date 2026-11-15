@@ -6,6 +6,26 @@
 
 ## 0.69.210
 
+- **Docker: npm вече не влиза в образа, а базата е чист Alpine.** Docker Scout отчиташе
+  **2 critical + 21 high**, като 2 от critical и част от high бяха в пакетите НА npm
+  (`npm/tar 7.5.11`, `npm/brace-expansion 2.0.2`, `npm/ip-address 10.1.0`) — код, който
+  никога не се изпълнява в add-on-а (нула runtime зависимости). Дотук npm се триеше на
+  по-късен слой, което оставя следа в историята на образа и скенерът продължаваше да го
+  вижда. Сега базата е `alpine:3.24`, а Node идва от **официалния musl tarball** с
+  `--exclude='*/npm' --exclude='*/npx' --exclude='*/corepack'`: чуждите пакети не стигат до
+  образа. Архитектурата се избира по `apk --print-arch` (x86_64 → x64, aarch64 → arm64,
+  armv7 → armv7l), тоест един и същ Dockerfile се билдва за amd64, arm64 и armv7. Остават
+  само находки в базовите пакети на Alpine (zlib/musl/openssl) и в самия Node — те се
+  вдигат с `apk upgrade` и със смяна на `NODE_VERSION`; това е записано в `SECURITY.md`.
+  `tests/docker-runtime.cjs`, `tests/raspberrypi-compat.cjs`, `tests/ha-support-matrix.cjs`
+  и S04 на `verify-release` пазят новите правила.
+
+- **Обяснено е защо има два портала** (`documentation/03_ADR/ADR-0027-two-portals.md`):
+  `hapi_enterprise/portal/` е динамичната страница на add-on-а (живи данни, политика, парола
+  за заключен портал), а `hapi_enterprise/evidence-portal/` е статичният QR-скоупнат изглед,
+  който се публикува като файлове в `/share/hAPI/data/portal/` и работи без Node. ADR-ът
+  описва и защо сливане би било регресия в сигурността.
+
 - **Диагностиката (`debug-objects.js`) говори три езика, а демо данните вече не се броят за дълг.**
   Ролите на обектите, заглавията и текстовете на седемте закона и редовете на отчета минават
   през `T('dbg.*')` — **34** нови ключа × BG/EN/DE (речникът става **994** ключа на език).

@@ -226,8 +226,12 @@ check('HA-M12', 'манифест', 'blocker', 'options ↔ schema ↔ translati
 // ── Image / build ───────────────────────────────────────────────────────────
 check('HA-C01', 'образ', 'blocker', 'фиксиран Node + node:sqlite gate', () => {
   const from = (docker.match(/^FROM\s+(\S+)/m) || [])[1];
-  need(/^node:22\.\d+\.\d+-alpine/.test(from || ''), 'FROM не е фиксиран node:22-alpine');
-  need(!/apk add[^\n]*nodejs/.test(docker), 'Node се инсталира през apk');
+  // Базата е чист Alpine, а Node е ЗАКАЧЕН през ARG и идва от официалния musl tarball
+  // без npm/npx/corepack (npm носи 2 critical + high, които add-on-ът никога не изпълнява).
+  need(/^alpine:\d+\.\d+$/.test(from || ''), 'FROM не е чист alpine:x.y (без npm в образа)');
+  need(/^ARG NODE_VERSION=22\.\d+\.\d+$/m.test(docker), 'липсва закачена версия на Node (ARG NODE_VERSION=22.x.y)');
+  need(/musl\.tar\.xz/.test(docker), 'Node не идва от официалния musl tarball');
+  need(!/^FROM\s+node:/m.test(docker), 'Node не бива да идва от `node:*` образ (той носи npm)');
   need(/node:sqlite/.test(docker), 'липсва build gate за node:sqlite');
   return from;
 });

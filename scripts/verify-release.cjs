@@ -179,9 +179,12 @@ check('S03', 'Add-on: всички файлове за стартиране са
 // ── S04. Dockerfile покрива всички модули ───────────────────────────────────
 check('S04', 'Dockerfile: COPY покрива всички локални модули', () => {
   const docker = readText(path.join(addonDir, 'Dockerfile'));
-  assert(/^FROM\s+node:22\.\d+\.\d+-alpine/m.test(docker), 'FROM трябва да е фиксиран node:22.x-alpine');
-  assert(!/apk add[^\n]*nodejs/.test(docker), 'Node не се инсталира през apk — базата го носи');
-  assert(/node:sqlite/.test(docker), 'Dockerfile не проверява node:sqlite при build');
+  // Базата е чист Alpine, а Node идва от официалния musl tarball БЕЗ npm/npx/corepack:
+  // `node:*` образът носи npm, а Docker Scout отчита точно там 2 critical + high.
+  assert(/^FROM\s+alpine:\d+\.\d+$/m.test(docker), 'FROM трябва да е чист alpine:x.y (без npm в образа)');
+  assert(/^ARG NODE_VERSION=22\.\d+\.\d+$/m.test(docker), 'версията на Node трябва да е закачена (ARG NODE_VERSION=22.x.y)');
+  assert(/musl\.tar\.xz/.test(docker), 'Node трябва да идва от официалния musl tarball');
+  assert(/--exclude='\*\/npm'/.test(docker), 'npm трябва да е изключен още при разархивирането');
   assert(/^EXPOSE\s+.*8098/m.test(docker) && /8099/.test(docker), 'EXPOSE трябва да включва 8098 и 8099');
   assert(/^CMD\s+\["node",\s*"\/app\/start\.js"\]/m.test(docker), 'CMD трябва да стартира node /app/start.js');
   assert(/^COPY\s+fonts\s+\/app\/fonts\/$/m.test(docker), 'липсва COPY на шрифтовете');

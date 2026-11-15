@@ -168,13 +168,14 @@ assert.ok(vnum(floor) >= vnum(needed),
 const dockerfile = read(ADDON, 'Dockerfile');
 const from = (/^FROM\s+(\S+)/m.exec(dockerfile) || [])[1];
 assert.ok(from, 'Dockerfile има FROM');
-// Официалният `node:22-alpine` се публикува за тези платформи; `armv7` = linux/arm/v7.
-// Тагът е ЗАКАЧЕН (напр. `node:22.23.2-alpine3.24`) — това е нарочно: плаващ таг прави
-// изданието невъзпроизводимо. Проверява се семейството, не точният номер.
+// Базата е чист Alpine, а Node идва от официалния musl tarball за всяка обявена
+// архитектура (`apk --print-arch` → x64/arm64/armv7l). Тагът на Node е ЗАКАЧЕН
+// (`ARG NODE_VERSION=22.x.y`) — плаващ таг прави изданието невъзпроизводимо.
 const NODE_PLATFORMS = { amd64: 'linux/amd64', aarch64: 'linux/arm64', armv7: 'linux/arm/v7' };
-assert.match(from, /^node:22(\.\d+)*-(alpine|bookworm|bullseye)/, 'базовият образ е node 22 (многоархивен): ' + from);
+assert.match(from, /^alpine:\d+\.\d+$/, 'базовият образ е чист Alpine (без npm): ' + from);
+assert.match(dockerfile, /^ARG NODE_VERSION=22\./m, 'Node 22 е закачен през ARG');
 for (const arch of yamlBlock('arch')) {
-  assert.ok(NODE_PLATFORMS[arch], `\`arch: ${arch}\` няма съответствие в базовия образ — не се билдва`);
+  assert.ok(NODE_PLATFORMS[arch], `\`arch: ${arch}\` няма съответствие в Node tarball-а — не се билдва`);
 }
 
 // ── 7. Интеграцията: домейн, име, версия ──────────────────────────────────

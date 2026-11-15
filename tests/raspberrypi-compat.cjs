@@ -38,10 +38,16 @@ assert.match(archBlock[0], /armhf[\s\S]{0,60}Pi Zero/i, 'коментарът в
 const dockerfile = read('hapi_enterprise/Dockerfile');
 const from = /^FROM\s+(\S+)/m.exec(dockerfile);
 assert.ok(from, 'Dockerfile: липсва FROM');
-assert.match(from[1], /^node:22\.\d+\.\d+-alpine/, `очаквам официална node:22-alpine снимка, намерено ${from[1]}`);
+assert.match(from[1], /^alpine:\d+\.\d+$/, `очаквам чист Alpine като база (Node идва от официалния tarball), намерено ${from[1]}`);
+assert.match(dockerfile, /^ARG NODE_VERSION=22\.\d+\.\d+$/m, 'Node 22 е закачен през ARG (архитектурата се избира по време на build)');
 assert.ok(!/--platform=/.test(dockerfile), 'не се фиксира --platform (иначе снимката е само за една архитектура)');
 assert.ok(!/--platform=\S*arm64\/v8/.test(dockerfile), 'без arm64/v8 фиксация');
-assert.ok(!/^\s*RUN\s+.*\bapk\s+add\b/m.test(dockerfile), 'без apk пакети — те са архитектурно-зависими');
+// apk се ползва САМО за временния fetch-слой (curl/xz), който се маха в СЪЩИЯ RUN —
+// така в крайния образ не остават архитектурно-зависими пакети от нашия слой.
+for (const line of dockerfile.split('\n')) {
+  if (!/^\s*RUN\s+.*\bapk\s+add\b/.test(line)) continue;
+  assert.match(line, /--virtual \.fetch/, 'apk add е само за временния fetch-слой: ' + line.trim());
+}
 assert.ok(!/npm (install|ci)/.test(dockerfile), 'без npm install по време на билд');
 assert.match(dockerfile, /linux\/arm\/v7/, 'коментарът изброява поддържаните платформи');
 assert.match(dockerfile, /Multi-arch/i, 'Dockerfile документира multi-arch основанието');
