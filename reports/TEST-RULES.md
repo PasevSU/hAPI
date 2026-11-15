@@ -3,14 +3,14 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 403 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 406 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 182 |
-| портал | 40 |
+| портал | 42 |
 | GUI | 31 |
-| Home Assistant | 17 |
+| Home Assistant | 18 |
 | отчети | 16 |
 | PGP | 14 |
 | ядро | 12 |
@@ -228,7 +228,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (40)
+## портал (42)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -237,6 +237,7 @@
 | `portal-archive` | Portal archive | `tests/portal-archive.cjs` |
 | `portal-card-link` | Portal card link | `tests/portal-card-link.cjs` |
 | `portal-chain` | Portal chain | `tests/portal-chain.cjs` |
+| `portal-create-qr` | Portal create qr | `tests/portal-create-qr.cjs` |
 | `portal-file-page` | Portal file page | `tests/portal-file-page.cjs` |
 | `portal-folder` | Portal folder | `tests/portal-folder.cjs` |
 | `portal-folder-artifacts` | Portal folder artifacts | `tests/portal-folder-artifacts.cjs` |
@@ -271,6 +272,7 @@
 | `portal-skin` | Portal skin | `tests/portal-skin.cjs` |
 | `portal-tokens` | Portal tokens | `tests/portal-tokens.cjs` |
 | `portal-tree-all` | Portal tree all | `tests/portal-tree-all.cjs` |
+| `portal-upload-409` | Portal upload 409 | `tests/portal-upload-409.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
 ## GUI (31)
@@ -309,7 +311,7 @@
 | `ui-spacing` | Ui spacing | `tests/ui-spacing.cjs` |
 | `ui-version` | Ui version | `tests/ui-version.cjs` |
 
-## Home Assistant (17)
+## Home Assistant (18)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -324,6 +326,7 @@
 | `ha-integration-import` | Ha integration import | `tests/ha-integration-import.cjs` |
 | `ha-integration-proxy` | Ha integration proxy | `tests/ha-integration-proxy.cjs` |
 | `ha-integration-python` | Ha integration python | `tests/ha-integration-python.cjs` |
+| `ha-marketplace` | Ha marketplace | `tests/ha-marketplace.cjs` |
 | `ha-path-prefix` | Ha path prefix | `tests/ha-path-prefix.cjs` |
 | `ha-portal-folder-page` | Ha portal folder page | `tests/ha-portal-folder-page.cjs` |
 | `ha-range-bridge` | Ha range bridge | `tests/ha-range-bridge.cjs` |

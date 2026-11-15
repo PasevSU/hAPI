@@ -573,8 +573,10 @@ assert.match(src, /id="fm-file-input" class="u-hidden" aria-label="[^"]+" \/>/);
 assert.equal(/id="fm-file-input" class="u-hidden"[^>]*\bmultiple\b/.test(src), false, '„добави файл“ не е multiple');
 assert.match(src, /id="fm-file-input" class="u-hidden" aria-label="[^"]+" \/>[\s\S]*?id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple aria-label="[^"]+"/);
 assert.match(src, /Array\.from\(e\.target\.files \|\| \[\]\)\.slice\(0, 1\)/);
-assert.match(src, /Ще се качат \$\{files\.length\}/);
-assert.match(src, /async function uploadToStorage\(folderRel, fileList\)/);assert.match(src, /\/tree\/upload\?path=/);
+// Потвърждението за цяла папка брои файловете и пита — но текстът е в речника (BG/EN/DE),
+// за да не показва англичанин и немец българско изречение.
+assert.match(src, /T\('portal\.upload\.confirm', \{ n: files\.length/);
+assert.match(src, /async function uploadToStorage\(folderRel, fileList, opts\)/);assert.match(src, /\/tree\/upload\?path=/);
 assert.match(src, /webkitRelativePath/);
 // Освобождаването на blob адрес минава през `revokeLater`, който `unref`-ва таймера.
 // Без това 60 s таймер държеше процеса след последното твърдение и `gui-file-share`

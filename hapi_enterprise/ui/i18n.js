@@ -251,6 +251,21 @@
       'portal.reg.allLabel': 'регистрирай всички',
       'portal.files.hidden': 'скрит',
       'portal.files.hiddenTitle': 'Скрит файл: НЕ се вижда на страницата, към която води QR кодът. Отметни „обяви“, за да се появи.',
+      'portal.upload.overwrite': 'презапиши',
+      'portal.upload.overwriteTitle': 'Качвай и върху вече съществуващи файлове. Без отметка сървърът отговаря 409 и файлът се пропуска — нищо не се губи и нищо не се заменя.',
+      'portal.upload.mixed': 'Прикачени {done} · вече съществуват {skipped} · неуспешни {failed} · {reason}',
+      'portal.upload.exists': 'Прикачени {done} · вече съществуваха {skipped} (отметни „презапиши“, за да ги замениш)',
+      'portal.upload.allExists': 'Нищо не е качено: всичките {skipped} файла вече съществуват (отметни „презапиши“, за да ги замениш)',
+      'portal.upload.unreadable': 'браузърът не можа да прочете файла (преместен или само в облака?)',
+      'portal.upload.done': 'Прикачени {done} в {where}',
+      'portal.upload.folder': 'папка',
+      'portal.upload.confirm': 'Ще се качат {n} файла от папка „{folder}“ в {where}.\n\nПродължи?',
+      'portal.upload.demo': 'Демо: файловете се качват от add-on-а (свързан режим)',
+      'portal.create.private': 'частен — нужен е ключ или токен',
+      'portal.create.public': 'публичен — всеки с адреса',
+      'portal.create.visibilityHint': 'Публичният портал се отваря без ключ — точно това носи QR кодът. Частният иска издаден токен, затова кодът сам не стига.',
+      'portal.create.qrReady': 'Порталът е създаден: {slug} ({access}) · QR кодът е готов',
+      'portal.create.qrReadyFiles': 'Порталът е създаден: {slug} ({access}) · качени {added} файла от папката · QR кодът е готов',
       'portal.fileState.public': 'Публичен',
       'portal.fileState.key': 'Изисква ключ',
       'portal.fileState.hidden': 'Скрит',
@@ -488,6 +503,21 @@
       'portal.reg.allLabel': 'register all',
       'portal.files.hidden': 'hidden',
       'portal.files.hiddenTitle': 'Hidden file: it is NOT shown on the page the QR code leads to. Tick “announce” to publish it.',
+      'portal.upload.overwrite': 'overwrite',
+      'portal.upload.overwriteTitle': 'Also upload over files that already exist. Without this tick the server answers 409 and the file is skipped — nothing is lost and nothing is replaced.',
+      'portal.upload.mixed': 'Uploaded {done} · already exist {skipped} · failed {failed} · {reason}',
+      'portal.upload.exists': 'Uploaded {done} · {skipped} already existed (tick “overwrite” to replace them)',
+      'portal.upload.allExists': 'Nothing uploaded: all {skipped} files already exist (tick “overwrite” to replace them)',
+      'portal.upload.unreadable': 'the browser could not read the file (moved or cloud-only?)',
+      'portal.upload.done': 'Uploaded {done} to {where}',
+      'portal.upload.folder': 'folder',
+      'portal.upload.confirm': 'Uploading {n} files from folder “{folder}” to {where}.\n\nContinue?',
+      'portal.upload.demo': 'Demo: files are uploaded from the add-on (connected mode)',
+      'portal.create.private': 'private — a key or token is required',
+      'portal.create.public': 'public — anyone with the address',
+      'portal.create.visibilityHint': 'A public portal opens without a key — that is exactly what the QR code carries. A private one needs an issued token, so the code alone is not enough.',
+      'portal.create.qrReady': 'Portal created: {slug} ({access}) · the QR code is ready',
+      'portal.create.qrReadyFiles': 'Portal created: {slug} ({access}) · {added} files uploaded from the folder · the QR code is ready',
       'portal.fileState.public': 'Public',
       'portal.fileState.key': 'Key required',
       'portal.fileState.hidden': 'Hidden',
@@ -725,6 +755,21 @@
       'portal.reg.allLabel': 'alle registrieren',
       'portal.files.hidden': 'verborgen',
       'portal.files.hiddenTitle': 'Verborgene Datei: sie erscheint NICHT auf der Seite, zu der der QR-Code führt. „ankündigen“ anhaken, um sie zu veröffentlichen.',
+      'portal.upload.overwrite': 'überschreiben',
+      'portal.upload.overwriteTitle': 'Auch über bereits vorhandene Dateien hochladen. Ohne Haken antwortet der Server 409 und die Datei wird übersprungen — nichts geht verloren, nichts wird ersetzt.',
+      'portal.upload.mixed': 'Hochgeladen {done} · bereits vorhanden {skipped} · fehlgeschlagen {failed} · {reason}',
+      'portal.upload.exists': 'Hochgeladen {done} · {skipped} waren bereits vorhanden („überschreiben“ anhaken, um sie zu ersetzen)',
+      'portal.upload.allExists': 'Nichts hochgeladen: alle {skipped} Dateien sind bereits vorhanden („überschreiben“ anhaken, um sie zu ersetzen)',
+      'portal.upload.unreadable': 'der Browser konnte die Datei nicht lesen (verschoben oder nur in der Cloud?)',
+      'portal.upload.done': 'Hochgeladen: {done} nach {where}',
+      'portal.upload.folder': 'Ordner',
+      'portal.upload.confirm': '{n} Dateien aus dem Ordner „{folder}“ werden nach {where} hochgeladen.\n\nFortfahren?',
+      'portal.upload.demo': 'Demo: Dateien werden vom Add-on hochgeladen (verbundener Modus)',
+      'portal.create.private': 'privat — Schlüssel oder Token nötig',
+      'portal.create.public': 'öffentlich — jeder mit der Adresse',
+      'portal.create.visibilityHint': 'Ein öffentliches Portal öffnet sich ohne Schlüssel — genau das trägt der QR-Code. Ein privates braucht ein ausgegebenes Token, der Code allein reicht nicht.',
+      'portal.create.qrReady': 'Portal erstellt: {slug} ({access}) · der QR-Code ist fertig',
+      'portal.create.qrReadyFiles': 'Portal erstellt: {slug} ({access}) · {added} Dateien aus dem Ordner hochgeladen · der QR-Code ist fertig',
       'portal.fileState.public': 'Öffentlich',
       'portal.fileState.key': 'Schlüssel nötig',
       'portal.fileState.hidden': 'Verborgen',
@@ -747,12 +792,24 @@
     return 'bg';
   }
 
-  /** Текст по ключ; непознат ключ се вижда като ключ, а не като празно място. */
-  function t(key) {
+  /**
+   * Текст по ключ; непознат ключ се вижда като ключ, а не като празно място.
+   * `vars` замества `{име}` в текста — дотук подмяната ЛИПСВАШЕ и изречения като
+   * `Регистрирани {n} файла` стигаха до екрана с неразменени скоби, макар викащите
+   * места вече да подаваха стойности.
+   */
+  function t(key, vars) {
     const lang = currentLang();
-    if (DICT[lang] && DICT[lang][key] !== undefined) return DICT[lang][key];
-    if (DICT.bg[key] !== undefined) return DICT.bg[key];
-    return String(key);
+    const raw =
+      DICT[lang] && DICT[lang][key] !== undefined
+        ? DICT[lang][key]
+        : DICT.bg[key] !== undefined
+          ? DICT.bg[key]
+          : String(key);
+    if (!vars) return raw;
+    return String(raw).replace(/\{(\w+)\}/g, (all, name) =>
+      Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : all,
+    );
   }
 
   const API = { t, DICT, LANGS, getLang: currentLang, has: (key) => DICT.bg[key] !== undefined };

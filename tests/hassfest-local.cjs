@@ -26,10 +26,12 @@ const json = (file) => JSON.parse(read(file));
 
 // ── 1. Манифест ─────────────────────────────────────────────────────────────
 // Позволените ключове са тези, които hassfest приема за интеграция (не add-on манифест).
+// `categories` е в схемата от script/hassfest/manifest.py (`Optional("categories")`,
+// 1–3 стойности от официалния списък, напр. `energy` или `productivity_information.documents_photos`).
 const ALLOWED_KEYS = new Set([
   'domain', 'name', 'version', 'after_dependencies', 'codeowners', 'config_flow', 'dependencies',
   'documentation', 'integration_type', 'iot_class', 'issue_tracker', 'loggers', 'requirements',
-  'quality_scale', 'dhcp', 'ssdp', 'zeroconf', 'bluetooth', 'usb', 'mqtt', 'supported_brands',
+  'quality_scale', 'categories', 'dhcp', 'ssdp', 'zeroconf', 'bluetooth', 'usb', 'mqtt', 'supported_brands',
 ]);
 const IOT_CLASSES = new Set(['cloud_polling', 'cloud_push', 'local_polling', 'local_push', 'calculated']);
 const INTEGRATION_TYPES = new Set(['device', 'entity', 'hub', 'service', 'system', 'helper']);

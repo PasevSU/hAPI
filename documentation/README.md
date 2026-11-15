@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **139** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **141** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -50,6 +50,7 @@ _Генериран списък: **139** документа. Пише се от
 | `01_AS_IS_ARCHITECTURE/FUNCTION_CALL_GRAPH.md` | Function Call Graph — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/GUI_INVENTORY.md` | GUI Inventory — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/GUI_LAYOUT_AUDIT.md` | GUI: отстояния, подредба и симетрия — одит и договор |
+| `01_AS_IS_ARCHITECTURE/HA_COMPATIBILITY_2026-11.md` | Съвместимост с Home Assistant и с маркетплейса — 0.69.209 (измерено 2026-11-15) |
 | `01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md` | Known Defects — hAPI Enterprise |
 | `01_AS_IS_ARCHITECTURE/MODULE_CATALOG.md` | Module Catalog — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md` | Source Inventory — hAPI Enterprise (As-Is) |
@@ -138,6 +139,7 @@ _Генериран списък: **139** документа. Пише се от
 | `07_RELEASE/AUDIT_0.69.87.md` | Одит на постигнатото — 0.69.87 |
 | `07_RELEASE/AUDIT-PROTOCOL.md` | Протокол от одита и изданието |
 | `07_RELEASE/CRITICAL_ANALYSIS_0.69.208.md` | Критичен анализ на 0.69.208 и какво остава |
+| `07_RELEASE/CRITICAL_REVIEW_0.69.210.md` | Критичен анализ: имитиращи, дублирани и ненужни функции и опции — 0.69.210 |
 | `07_RELEASE/FEATURE_PARITY.md` | Паритет на функциите: `PasevSU/hAPI` ↔ това хранилище |
 | `07_RELEASE/LOGIC_AUDIT_0.69.209.md` | Логически одит на 0.69.209 — какво липсва, какво е остаряло, какво е премахнато |
 | `07_RELEASE/QUALIFICATION_PLAN.md` | Qualification Plan — hAPI Enterprise |

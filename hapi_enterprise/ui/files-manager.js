@@ -19,8 +19,8 @@
   // Текст по ключ: картите на портала минават през речника (BG/EN/DE), както Настройки —
   // иначе немският и английският потребител виждат български надписи в преведения панел.
   // Липсващ ключ връща самото име, за да се види веднага при разработка.
-  const T = (key) =>
-    typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key) : String(key);
+  const T = (key, vars) =>
+    typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key, vars) : String(key);
   const ACTIONS = [
     { id: 'preview', label: 'Преглед', icon: 'preview' },
     { id: 'download', label: 'Изтегли', icon: 'download' },
@@ -239,6 +239,9 @@
     api: {},
     selected: null,
     panel: 'actions',
+    // Кой QR поповер е отворен (`data-qr-pop`). След създаване на портал се вдига веднага —
+    // кодът е готов и е първото, което човек показва или печата.
+    qrOpen: null,
     query: '',
     type: 'all',
     access: 'all',
@@ -1131,6 +1134,10 @@
       json: {
         slug,
         title,
+        // Видимостта се решава ТУК — в същия запис. Дотук формата я имаше, но панелът я
+        // изпращаше с втори PATCH след създаването: два записа за едно решение и прозорец,
+        // в който порталът съществува частен, а вече е обявен за публичен.
+        visibility,
         description: field('description'),
         category: field('category'),
         subject: field('subject'),
@@ -1142,9 +1149,6 @@
       },
     });
     if (!created.ok) return toast(created.error, 'err');
-    if (visibility === 'public') {
-      await api(`/admin/api/portals/${created.data.id}`, { method: 'PATCH', json: { visibility } });
-    }
     const all = await api('/admin/api/portals');
     if (all.ok && all.data && Array.isArray(all.data.portals)) {
       state.portals = all.data.portals.map((p, i) => ({
@@ -1172,8 +1176,16 @@
     state.selected = null;
     const added = await uploadFolderFiles(foldered);
     await generateApiForPortal(portal());
+    // QR кодът се показва САМ: порталът е създаден с решена видимост, кодът вече съществува
+    // и е точно това, което човек ще покаже/отпечата. Без това се налагаше да се сети да
+    // натисне иконата QR в заглавния ред на картата.
+    state.qrOpen = created.data.id;
     toast(
-      `Порталът е създаден${added ? `, качени ${added} файла от папката` : ''}; API, openapi.json и qr.svg са генерирани`,
+      T(added ? 'portal.create.qrReadyFiles' : 'portal.create.qrReady', {
+        slug,
+        access: T(visibility === 'public' ? 'portal.create.public' : 'portal.create.private'),
+        added,
+      }),
       'ok',
     );
     render();
@@ -2011,7 +2023,7 @@
                       <button type="button" class="fm-ico-btn pf-qr-btn" data-qr-portal="${i}" aria-expanded="false" aria-controls="pf-qr-pop-${i}" title="${esc(T('portal.qr.button'))}" aria-label="${esc(T('portal.qr.button'))}">${ico('qr')}</button>
                     </div>
                   </div>
-                  <div class="pf-qr-pop" id="pf-qr-pop-${i}" data-qr-pop="${i}" hidden>
+                  <div class="pf-qr-pop" id="pf-qr-pop-${i}" data-qr-pop="${i}" ${state.qrOpen === x.id ? '' : 'hidden'}>
                     ${qrSvgMarkup
         ? `<a class="pf-qr-pop-link" href="${esc(qrUrl)}" target="_self" rel="noopener" title="${esc(T('portal.qr.button'))}">${qrSvgMarkup}</a>`
         : `<p class="hint">${esc(T('portal.qr.missing'))}</p>`
@@ -2188,7 +2200,11 @@
             <select name="flag">${FLAGS.map((f) => `<option value="${f.id}">${f.icon} ${esc(f.label)}</option>`).join('')}</select>
           </div>
           <div class="field"><label>Видимост</label>
-            <select name="visibility"><option value="private">private</option><option value="public">public</option></select>
+            <select name="visibility">
+              <option value="private">${esc(T('portal.create.private'))}</option>
+              <option value="public">${esc(T('portal.create.public'))}</option>
+            </select>
+            <small class="hint">${esc(T('portal.create.visibilityHint'))}</small>
           </div>
         </div>
         <div class="field"><label>${ico('person')} Контакт (от контактите или нов)</label>
@@ -2329,20 +2345,33 @@
     return toast(`${labels[name] || 'Флаг'}: ${value ? 'включено' : 'изключено'}`, 'ok');
   }
 
+  /** Избрана ли е отметката „презапиши съществуващите“ (по подразбиране — не). */
+  const overwriteChecked = () => {
+    const box = typeof document !== 'undefined' ? document.getElementById('fm-overwrite') : null;
+    return Boolean(box && box.checked);
+  };
+
   /**
    * Прикачва файлове в папката на портала (storage_root), като пази относителните
    * пътища на избраната папка (webkitRelativePath). Връща броя качени файлове.
+   *
+   * 409 от сървъра НЕ е повреда: той значи „файлът вече е там“ (или папката е заключена).
+   * Затова се брои отделно от истинските грешки — иначе повторното качване на същата папка
+   * изглежда като „неуспешни 200“ и човек търси дефект, който го няма. Замяна се иска
+   * изрично с отметката „презапиши“ (`overwrite=1`), а не се подразбира.
    */
-  async function uploadToStorage(folderRel, fileList) {
+  async function uploadToStorage(folderRel, fileList, opts) {
     const p = portal();
     const files = Array.from(fileList || []);
     if (!p || !files.length) return 0;
     if (!connected()) {
-      toast('Демо: файловете се качват от add-on-а (свързан режим)', 'err');
+      toast(T('portal.upload.demo'), 'err');
       return 0;
     }
+    const overwrite = Boolean(opts && opts.overwrite);
     const dirRel = String(folderRel || '').replace(/^\/+|\/+$/g, '');
     let done = 0;
+    const skipped = [];
     const failed = [];
     for (const file of files) {
       const structure = String(file.webkitRelativePath || '').replace(/\\/g, '/').replace(/^\/+/, '');
@@ -2351,18 +2380,26 @@
       const target = dirRel ? `${dirRel}/${rel}` : rel;
       // `mkdir=1` се праща САМО при избор на цяла папка: тогава се пази структурата ѝ.
       // Качване на файлове в избрана папка НЕ създава папки — липсваща е 404.
-      const r = await api(`${P()}/tree/upload?path=${encodeURIComponent('/' + target)}${structure ? '&mkdir=1' : ''}`, {
+      const r = await api(`${P()}/tree/upload?path=${encodeURIComponent('/' + target)}${structure ? '&mkdir=1' : ''}${overwrite ? '&overwrite=1' : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
         body: file,
       });
       if (r.ok) done += 1;
+      // `status === 0` = заявката не стигна до сървъра: браузърът не прочете файла.
+      else if (r.status === 0) failed.push(`${rel}: ${T('portal.upload.unreadable')}`);
+      else if (r.status === 409) skipped.push(`${rel}: ${r.error || 'HTTP 409'}`);
       else failed.push(`${rel}: ${r.error || `HTTP ${r.status}`}`);
     }
     await loadTree(true);
     render();
-    if (failed.length) toast(`Прикачени ${done}, неуспешни ${failed.length} · ${failed[0]}`, 'err');
-    else toast(`Прикачени ${done} ${done === 1 ? 'файл' : 'файла'} в ${treePath(dirRel)}`, 'ok');
+    if (failed.length) {
+      toast(T('portal.upload.mixed', { done, skipped: skipped.length, failed: failed.length, reason: failed[0] }), 'err');
+    } else if (skipped.length) {
+      toast(done ? T('portal.upload.exists', { done, skipped: skipped.length }) : T('portal.upload.allExists', { skipped: skipped.length }), done ? 'ok' : 'err');
+    } else {
+      toast(T('portal.upload.done', { done, where: treePath(dirRel) }), 'ok');
+    }
     return done;
   }
 
@@ -4025,7 +4062,7 @@
         // Прикачва се ТОЧНО един файл: изборът на много/цяла папка е другото копче
         // (`data-import-folder`), за да не качва „добави файл“ цяла директория.
         const files = Array.from(e.target.files || []).slice(0, 1);
-        if (files.length) void uploadToStorage(e.target.dataset.target || '', files);
+        if (files.length) void uploadToStorage(e.target.dataset.target || '', files, { overwrite: overwriteChecked() });
         e.target.value = '';
       });
     }
@@ -4035,12 +4072,12 @@
         e.target.value = '';
         if (!files.length) return;
         // Цяла папка се качва само след изрично потвърждение с броя файлове.
-        const first = String((files[0] && files[0].webkitRelativePath) || '').split('/')[0] || 'папка';
+        const first = String((files[0] && files[0].webkitRelativePath) || '').split('/')[0] || T('portal.upload.folder');
         const target = e.target.dataset.target || '';
         const ok = window.confirm(
-          `Ще се качат ${files.length} ${files.length === 1 ? 'файл' : 'файла'} от папка „${first}“ в ${treePath(target)}.\n\nПродължи?`,
+          T('portal.upload.confirm', { n: files.length, folder: first, where: treePath(target) }),
         );
-        if (ok) void uploadToStorage(target, files);
+        if (ok) void uploadToStorage(target, files, { overwrite: overwriteChecked() });
       });
     }
 

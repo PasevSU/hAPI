@@ -10,7 +10,7 @@
   const toast = (m, k) => window.HapiUI && window.HapiUI.toast(m, k);
   // Съдържанието на панела минава през общия речник (ui/i18n.js), за да не е „менюто
   // преведено, а екранът — не“ (BUG-11). Без речник пада на българския ключ.
-  const T = (key) => (window.HapiI18n ? window.HapiI18n.t(key) : String(key));
+  const T = (key, vars) => (window.HapiI18n ? window.HapiI18n.t(key, vars) : String(key));
 
   let host = null;
   const state = {

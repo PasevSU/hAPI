@@ -130,7 +130,7 @@
 
   /** Блок „Папки на портала“: икони в заглавната лента + скриващи се менюта. */
   function render(ctx) {
-    const { esc, state, ICON, ico, plural, fmtSize, treePath, connected } = ctx;
+    const { esc, state, ICON, ico, plural, fmtSize, treePath, connected, T } = ctx;
     const t = state.tree;
     const data = t.data && t.portalId === ctx.p.id ? t.data : null;
     const root = data && data.tree ? data.tree : null;
@@ -168,6 +168,9 @@
         </div>
         ${open ? `<div class="pf-block-body" id="pf-folders-body">
           <p class="hint">${status}</p>
+          <label class="fm-publish" title="${esc(T('portal.upload.overwriteTitle'))}"><input type="checkbox" id="fm-overwrite" /><span aria-hidden="true">${esc(
+        T('portal.upload.overwrite'),
+      )}</span></label>
           ${state.newFolder
           ? `<form class="pf-form u-mb" id="fm-new-folder-form">
                    <div class="field"><label>Име на новата папка (в <code>${esc(parent)}</code>)</label>

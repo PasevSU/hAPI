@@ -92,7 +92,9 @@ assert.match(qrPopRule, /top: calc\(2em \+ var\(--sp-4\)\)/, 'отстояние
 // получателя. Затова кодът е един: в главата на картата, обвит във връзка към портала.
 assert.ok(manager.includes('class="pf-qr-pop-link" href="${esc(qrUrl)}"'), 'кодът е връзка (`<a href>`) към портала');
 assert.match(manager, /const qrUrl = api \? api\.folderUrl \|\| api\.landing \|\| '' : ''/, 'адресът на кода е страницата на портала, не API-то');
-assert.ok(manager.includes('data-qr-pop="${i}" hidden'), 'кодът е скрит, докато не се поиска');
+// Кодът е скрит по подразбиране, но се отваря САМ след създаване на портал (`state.qrOpen`):
+// кодът е готов и е първото, което човек показва или печата — не чака клик.
+assert.ok(manager.includes('data-qr-pop="${i}" ${state.qrOpen === x.id ? \'\' : \'hidden\'}'), 'кодът е скрит, докато не се поиска (или докато не е току-що създаден)');
 for (const f of fs.readdirSync(path.join(root, 'hapi_enterprise', 'ui'))) {
   if (!f.endsWith('.js') || !/qrSvg\s*\(/.test(uiSrc(f))) continue;
   assert.ok(['files-manager.js'].includes(f), 'qrSvg се вика само за един код, а се среща и в ' + f);
