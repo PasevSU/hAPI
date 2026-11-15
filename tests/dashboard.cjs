@@ -47,7 +47,10 @@ assert.match(monitoring, /Authorization: 'Bearer '/, 'ползва админи�
 
 // 4. Без връзка не се показват числа — само обяснение къде се настройва.
 assert.match(monitoring, /offline: true/);
-assert.match(monitoring, /Свържи го от „Настройки“/);
+// Обяснението живее в речника (`mon.offline`), затова се проверява ключът в кода И стойността
+// в българския речник — правилото „без връзка се казва с изречение“ остава същото.
+assert.match(monitoring, /T\('mon\.offline'\)/);
+assert.match(require('../hapi_enterprise/ui/i18n.js').DICT.bg['mon.offline'], /Свържи го от „Настройки“/);
 assert.doesNotMatch(dashboard, /card\('Портали', '4'/, 'няма твърдо зададени стойности');
 
 // 5. Статусната лента казва истината за връзката, а не „ДЕМО данни“.

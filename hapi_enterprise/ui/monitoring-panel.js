@@ -17,6 +17,9 @@
 (function () {
   const esc = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Целият текст минава през речника (BG/EN/DE); липсващ ключ се вижда като ключа, не като български.
+  const T = (key, vars) =>
+    typeof window !== 'undefined' && window.HapiI18n ? window.HapiI18n.t(key, vars) : String(key);
   const base = () => (typeof window.hapiApiBase === 'function' ? window.hapiApiBase() : '').replace(/\/$/, '');
   const token = () => sessionStorage.getItem('hapiAdminToken') || '';
 
@@ -67,7 +70,7 @@
     if (!liveListEl) return;
     liveListEl.innerHTML = liveList.length
       ? liveList.map((item) => `<div class="fm-row"><span class="badge">${esc(item.event)}</span> <small class="hint">${esc(item.at)}</small></div>`).join('')
-      : '<p class="hint">Още нищо не е станало от отварянето на панела.</p>';
+      : `<p class="hint">${esc(T('mon.live.empty'))}</p>`;
   };
   // Билетът е ЕДНОКРАТЕН, затова автоматичното повторно свързване на `EventSource` е
   // безполезно: то чука на вече изразходван билет и получава 401. Същото важи и за `bye`
@@ -181,35 +184,34 @@
   async function mount(view) {
     view.innerHTML = `
       <div class="page-title">
-        <h1>Мониторинг</h1>
-        <p class="hint">Едно място за всичко, което add-on-ът мери: състояние, ресурси, хранилища,
-          посетители и живи събития. Другите страници не рисуват мониторинг.</p>
+        <h1>${esc(T('mon.title'))}</h1>
+        <p class="hint">${esc(T('mon.subtitle'))}</p>
       </div>
       <section class="panel">
-        <div class="panel-head"><h2>Състояние</h2></div>
+        <div class="panel-head"><h2>${esc(T('mon.section.state'))}</h2></div>
         <div class="panel-body">
           <div class="dash-grid" id="mon-cards"></div>
           <p class="hint" id="mon-hint"></p>
         </div>
       </section>
       <section class="panel">
-        <div class="panel-head"><h2>Ресурси и хранилище</h2></div>
+        <div class="panel-head"><h2>${esc(T('mon.section.res'))}</h2></div>
         <div class="panel-body" id="mon-res"></div>
       </section>
       <section class="panel">
         <div class="panel-head">
-          <h2>Посетители</h2>
+          <h2>${esc(T('mon.section.visitors'))}</h2>
           <div class="u-row u-row-2">
-            <select id="mon-portal" title="За кой портал да се покажат числата">
-              <option value="">всички портали</option>
+            <select id="mon-portal" title="${esc(T('mon.portal.title'))}">
+              <option value="">${esc(T('mon.portal.all'))}</option>
             </select>
-            <button type="button" class="btn btn-sm" id="mon-refresh">Обнови</button>
+            <button type="button" class="btn btn-sm" id="mon-refresh">${esc(T('mon.refresh'))}</button>
           </div>
         </div>
         <div class="panel-body" id="mon-visitors"></div>
       </section>
       <section class="panel">
-        <div class="panel-head"><h2>Живи събития</h2></div>
+        <div class="panel-head"><h2>${esc(T('mon.section.live'))}</h2></div>
         <div class="panel-body" id="mon-live"></div>
       </section>`;
 
@@ -237,11 +239,11 @@
     if (view.querySelector('#mon-cards') !== cards) return;
 
     if (portalsRes.offline) {
-      hint.textContent = 'Няма връзка с add-on-а. Свържи го от „Настройки“ (адрес и токен), за да видиш реалните числа.';
+      hint.textContent = T('mon.offline');
       cards.replaceChildren();
-      resBox.innerHTML = '<p class="hint">Диагностиката също иска връзка.</p>';
-      visitBox.innerHTML = '<p class="hint">Сензорите също искат връзка.</p>';
-      view.querySelector('#mon-live').innerHTML = '<p class="hint">Потокът не е отворен.</p>';
+      resBox.innerHTML = `<p class="hint">${esc(T('mon.offline.diag'))}</p>`;
+      visitBox.innerHTML = `<p class="hint">${esc(T('mon.offline.sensors'))}</p>`;
+      view.querySelector('#mon-live').innerHTML = `<p class="hint">${esc(T('mon.live.closed'))}</p>`;
       return;
     }
 
@@ -260,36 +262,36 @@
     const chain = (audit.ok && audit.data) || null;
 
     const healthLabel = guidance
-      ? { ok: 'здраво', warning: 'внимание', critical: 'критично', unknown: 'още не е измерено' }[guidance.status] || guidance.status
+      ? { ok: T('mon.health.ok'), warning: T('mon.health.warning'), critical: T('mon.health.critical'), unknown: T('mon.health.unknown') }[guidance.status] || guidance.status
       : '—';
     const healthHint = guidance && guidance.recommended
       ? guidance.recommended.reason || guidance.recommended.action
       : guidance
-        ? 'няма препоръчана проверка'
-        : 'сензорите не отговарят';
+        ? T('mon.health.noCheck')
+        : T('mon.health.noSensors');
 
     cards.innerHTML = [
-      card('Състояние', healthLabel, healthHint),
-      card('Портали', list.length ? String(list.length) : '0', publicPortals ? `${publicPortals} публични` : 'няма публични'),
-      card('Файлове в порталите', String(files), 'общо във всички портали'),
-      card('Задачи', jobState ? `${jobState.running || 0} активни` : '—', jobState ? `${jobState.queued || 0} в опашка` : 'няма данни'),
-      card('Заявки', observer ? String(observer.http ? observer.http.total : 0) : '—', observer ? 'от старта на add-on-а' : 'няма данни'),
-      card('Одитна верига', chain ? (chain.valid ? 'валидна' : 'нарушена') : '—', chain ? `${chain.records || 0} записа` : 'няма данни'),
-      card('Версия', String(window.HAPI_VERSION || '—'), 'hAPI Enterprise'),
+      card(T('mon.card.state'), healthLabel, healthHint),
+      card(T('mon.card.portals'), list.length ? String(list.length) : '0', publicPortals ? T('mon.card.publicCount', { n: publicPortals }) : T('mon.card.noPublic')),
+      card(T('mon.card.files'), String(files), T('mon.card.filesNote')),
+      card(T('mon.card.jobs'), jobState ? T('mon.card.active', { n: jobState.running || 0 }) : '—', jobState ? T('mon.card.queued', { n: jobState.queued || 0 }) : T('mon.card.noData')),
+      card(T('mon.card.requests'), observer ? String(observer.http ? observer.http.total : 0) : '—', observer ? T('mon.card.sinceStart') : T('mon.card.noData')),
+      card(T('mon.card.chain'), chain ? (chain.valid ? T('mon.card.chainValid') : T('mon.card.chainBroken')) : '—', chain ? T('mon.card.records', { n: chain.records || 0 }) : T('mon.card.noData')),
+      card(T('mon.card.version'), String(window.HAPI_VERSION || '—'), 'hAPI Enterprise'),
     ].join('');
 
     const problems = [];
-    if (!sensorRes.ok) problems.push('сензорите не отговарят');
-    if (!jobs.ok) problems.push('опашката не отговаря');
-    if (!audit.ok) problems.push('одитната проверка не отговаря');
-    if (chain && chain.valid === false) problems.push('одитната верига е нарушена');
+    if (!sensorRes.ok) problems.push(T('mon.health.noSensors'));
+    if (!jobs.ok) problems.push(T('mon.problem.jobs'));
+    if (!audit.ok) problems.push(T('mon.problem.audit'));
+    if (chain && chain.valid === false) problems.push(T('mon.problem.chain'));
     if (guidance && guidance.recommended) problems.push(guidance.recommended.action || guidance.recommended.id);
-    hint.textContent = problems.length ? 'Внимание: ' + problems.join(' · ') : '';
+    hint.textContent = problems.length ? T('mon.problem.prefix') + problems.join(' · ') : '';
 
     // ── Ресурси и структура ──────────────────────────────────────────────────
     const diag = diagnostics.ok && diagnostics.data ? diagnostics.data : null;
     if (!diag) {
-      resBox.innerHTML = '<p class="hint">Диагностиката не е достъпна с този токен — ресурсите се виждат в „Настройки → Диагностика“.</p>';
+      resBox.innerHTML = `<p class="hint">${esc(T('mon.res.noToken'))}</p>`;
     } else {
       const mb = (bytes) => (Number(bytes) / 1048576).toFixed(1) + ' MB';
       const storage = Array.isArray(diag.storage) ? diag.storage : [];
@@ -304,34 +306,34 @@
             `<tr><th>${esc(e.label)}</th><td><code>${esc(e.path)}</code>${
               e.checked
                 ? e.exists
-                  ? ' <span class="state-chip ok">има</span>'
-                  : ' <span class="state-chip err">липсва</span>'
-                : ' <span class="hint">за всеки портал</span>'
+                  ? ` <span class="state-chip ok">${esc(T('mon.res.exists'))}</span>`
+                  : ` <span class="state-chip err">${esc(T('mon.res.missing'))}</span>`
+                : ` <span class="hint">${esc(T('mon.res.perPortal'))}</span>`
             }<br/><small class="hint">${esc(e.note || '')}</small></td></tr>`,
         )
         .join('');
       const layoutRoutes = diag.layout && Array.isArray(diag.layout.routes) ? diag.layout.routes : [];
       resBox.innerHTML = `
         <div class="dash-grid">
-          ${card('Heap', mb(diag.runtime ? diag.runtime.heapUsedBytes : 0), 'от ' + mb(diag.runtime ? diag.runtime.heapTotalBytes : 0))}
-          ${card('Памет (RSS)', mb(diag.runtime ? diag.runtime.rssBytes : 0), diag.runtime ? 'Node ' + diag.runtime.node : '')}
-          ${card('Работи от', Math.floor((diag.uptimeSeconds || 0) / 60) + ' мин', diag.generatedAt ? 'към ' + String(diag.generatedAt).replace('T', ' ').slice(0, 16) : '')}
-          ${card('Изтегляния', String(traffic.activeDownloadStreams || 0) + ' / ' + String(traffic.effectiveDownloadStreams || 0), 'активни / ефективен лимит')}
-          ${card('Хранилища', okRoots + ' / ' + storage.length, badRoots.length ? 'липсва: ' + badRoots.join(', ') : 'всички достъпни и записваеми')}
-          ${card('Натоварване', load.level != null ? String(load.level) : '—', load.effective != null ? 'ефективен паралелизъм ' + load.effective : 'без данни')}
+          ${card('Heap', mb(diag.runtime ? diag.runtime.heapUsedBytes : 0), T('mon.res.heapOf', { total: mb(diag.runtime ? diag.runtime.heapTotalBytes : 0) }))}
+          ${card(T('mon.res.rss'), mb(diag.runtime ? diag.runtime.rssBytes : 0), diag.runtime ? 'Node ' + diag.runtime.node : '')}
+          ${card(T('mon.res.uptime'), T('mon.res.minutes', { n: Math.floor((diag.uptimeSeconds || 0) / 60) }), diag.generatedAt ? T('mon.res.at', { when: String(diag.generatedAt).replace('T', ' ').slice(0, 16) }) : '')}
+          ${card(T('mon.res.downloads'), String(traffic.activeDownloadStreams || 0) + ' / ' + String(traffic.effectiveDownloadStreams || 0), T('mon.res.streamsNote'))}
+          ${card(T('mon.res.storages'), okRoots + ' / ' + storage.length, badRoots.length ? T('mon.res.missingList', { list: badRoots.join(', ') }) : T('mon.res.allRoots'))}
+          ${card(T('mon.res.load'), load.level != null ? String(load.level) : '—', load.effective != null ? T('mon.res.effective', { n: load.effective }) : T('mon.card.noData'))}
         </div>
         ${
           layoutRows
-            ? `<details class="u-mt" data-acc><summary>Къде какво стои (структура на файловете)</summary>
+            ? `<details class="u-mt" data-acc><summary>${esc(T('mon.res.layout'))}</summary>
                   <table class="grid"><tbody>${layoutRows}</tbody></table>
-                  ${layoutRoutes.length ? `<p class="hint">Адреси: ${layoutRoutes.map((r) => `<code>${esc(r.url)}</code> — ${esc(r.serves)}`).join(' · ')}</p>` : ''}
+                  ${layoutRoutes.length ? `<p class="hint">${esc(T('mon.res.routes'))} ${layoutRoutes.map((r) => `<code>${esc(r.url)}</code> — ${esc(r.serves)}`).join(' · ')}</p>` : ''}
                 </details>`
             : ''
         }
         <div class="row-actions">
-          <button type="button" class="btn" data-goto="storage">Хранилища</button>
-          <button type="button" class="btn" data-goto="security">Сигурност</button>
-          <button type="button" class="btn" data-goto="backups">Резервни копия</button>
+          <button type="button" class="btn" data-goto="storage">${esc(T('mon.nav.storage'))}</button>
+          <button type="button" class="btn" data-goto="security">${esc(T('mon.nav.security'))}</button>
+          <button type="button" class="btn" data-goto="backups">${esc(T('mon.nav.backups'))}</button>
         </div>`;
       for (const button of resBox.querySelectorAll('button[data-goto]')) {
         button.addEventListener('click', () => {
@@ -343,7 +345,7 @@
     // ── Посетители: общо за инсталацията или за избрания портал ──────────────
     if (select) {
       select.innerHTML =
-        '<option value="">всички портали</option>' +
+        `<option value="">${esc(T('mon.portal.all'))}</option>` +
         list.map((p) => `<option value="${esc(p.id)}">${esc(p.title || p.slug || p.id)}</option>`).join('');
       select.addEventListener('change', () => {
         focus = select.value;
@@ -375,28 +377,30 @@
     function renderVisitors() {
       if (!visitBox) return;
       if (!monitor) {
-        visitBox.innerHTML = '<p class="hint">Сензорите за посетители не са достъпни с този токен.</p>';
+        visitBox.innerHTML = `<p class="hint">${esc(T('mon.vis.noToken'))}</p>`;
         return;
       }
       const m = monitor;
       const total = `
         <div class="dash-grid">
-          ${card('Уникални посетители', String(m.unique_visitors || 0), 'по хеш от IP + клиент')}
-          ${card('Посещения', String((m.totals && m.totals.visits) || 0), 'отваряния на портали')}
-          ${card('Изтегляния', String((m.totals && m.totals.downloads) || 0), (m.download_visitors || 0) + ' души са теглили')}
-          ${card('Отказани достъпи', String(m.denied_total || 0), 'виж причините долу')}
-          ${card('Държави', String(m.countries_known || 0), m.country_top ? 'най-много: ' + m.country_top : 'няма офлайн база')}
-          ${card('Админ. влизания', String(m.admin_logins || 0), 'успешни')}
+          ${card(T('mon.vis.unique'), String(m.unique_visitors || 0), T('mon.vis.uniqueNote'))}
+          ${card(T('mon.vis.visits'), String((m.totals && m.totals.visits) || 0), T('mon.vis.visitsNote'))}
+          ${card(T('mon.vis.downloads'), String((m.totals && m.totals.downloads) || 0), T('mon.vis.downloaders', { n: m.download_visitors || 0 }))}
+          ${card(T('mon.vis.denied'), String(m.denied_total || 0), T('mon.vis.deniedNote'))}
+          ${card(T('mon.vis.countries'), String(m.countries_known || 0), m.country_top ? T('mon.vis.topCountry', { c: m.country_top }) : T('mon.vis.noGeo'))}
+          ${card(T('mon.vis.logins'), String(m.admin_logins || 0), T('mon.vis.loginsNote'))}
         </div>
-        <p class="hint">Режим на IP: ${esc((m.privacy && m.privacy.ipMode) || 'hashed')} · срок на пазене: ${esc(
-          (m.privacy && m.privacy.retentionDays) || 0,
-        )} дни · външни заявки: не · офлайн база: ${
-          m.privacy && m.privacy.geoFile && m.privacy.geoFile.loaded ? esc(m.privacy.geoFile.ranges + ' диапазона') : 'няма'
-        }</p>`;
+        <p class="hint">${esc(
+          T('mon.vis.privacy', {
+            mode: (m.privacy && m.privacy.ipMode) || 'hashed',
+            days: (m.privacy && m.privacy.retentionDays) || 0,
+            geo: m.privacy && m.privacy.geoFile && m.privacy.geoFile.loaded ? T('mon.vis.ranges', { n: m.privacy.geoFile.ranges }) : T('mon.none'),
+          }),
+        )}</p>`;
 
       const reasons = Object.entries((m.denied && m.denied.reasons) || {});
       const reasonLine = reasons.length
-        ? `<p class="hint">Откази по причина: ${reasons.map(([k, v]) => esc(k) + ' — ' + esc(String(v))).join(' · ')}</p>`
+        ? `<p class="hint">${esc(T('mon.vis.reasons', { list: reasons.map(([k, v]) => k + ' — ' + String(v)).join(' · ') }))}</p>`
         : '';
 
       const focusPortal = focus ? portals.find((p) => p.id === focus) || null : null;
@@ -405,23 +409,23 @@
             const own = (m.portals || []).find((p) => p.id === focusPortal.id);
             const fileIds = new Set((focusPortal.files || []).map((f) => f.id));
             const ownFiles = (m.files || []).filter((f) => fileIds.has(f.id));
-            if (!own) return '<p class="hint">За този портал още няма наблюдение — никой не го е отварял.</p>';
+            if (!own) return `<p class="hint">${esc(T('mon.vis.emptyPortal'))}</p>`;
             return `
-              <h4>Този портал</h4>
+              <h4>${esc(T('mon.vis.thisPortal'))}</h4>
               <div class="dash-grid">
-                ${card('Посещения', String(own.visits || 0))}
-                ${card('Изтегляния', String(own.downloads || 0))}
-                ${card('Откази', String(own.denied || 0))}
-                ${card('Посетители', String(own.visitors || 0), 'уникални за портала')}
+                ${card(T('mon.vis.visits'), String(own.visits || 0))}
+                ${card(T('mon.vis.downloads'), String(own.downloads || 0))}
+                ${card(T('mon.vis.deniedShort'), String(own.denied || 0))}
+                ${card(T('mon.vis.visitors'), String(own.visitors || 0), T('mon.vis.uniquePortal'))}
               </div>
-              <h4>Откъде идват (този портал)</h4>
-              ${chips(own.geo && own.geo.countries, 'Няма локация — или няма офлайн база, или още няма посетители.')}
-              <h4>Клиенти и езици (този портал)</h4>
-              ${chips(own.browsers, 'Няма данни за клиента.')}
-              ${chips(own.languages, 'Няма данни за езика.')}
-              <h4>Файлове на този портал</h4>
+              <h4>${esc(T('mon.vis.geoPortal'))}</h4>
+              ${chips(own.geo && own.geo.countries, T('mon.vis.noGeoData'))}
+              <h4>${esc(T('mon.vis.clients'))}</h4>
+              ${chips(own.browsers, T('mon.vis.noClient'))}
+              ${chips(own.languages, T('mon.vis.noLang'))}
+              <h4>${esc(T('mon.vis.filesPortal'))}</h4>
               <table class="table" id="mon-files">
-                <thead><tr><th>Файл</th><th>Изтегляния</th><th>Посетители</th><th>Последно</th></tr></thead>
+                <thead><tr><th>${esc(T('mon.th.file'))}</th><th>${esc(T('mon.th.downloads'))}</th><th>${esc(T('mon.th.visitors'))}</th><th>${esc(T('mon.th.last'))}</th></tr></thead>
                 <tbody>${
                   ownFiles.length
                     ? ownFiles
@@ -432,14 +436,14 @@
                             )}</td><td>${esc(f.lastAt ? String(f.lastAt).slice(0, 16) : '—')}</td></tr>`,
                         )
                         .join('')
-                    : '<tr><td colspan="4" class="hint">Няма изтегляния на файлове от този портал.</td></tr>'
+                    : `<tr><td colspan="4" class="hint">${esc(T('mon.vis.noFilesPortal'))}</td></tr>`
                 }</tbody>
               </table>`;
           })()
         : `
-            <h4>Най-активни портали</h4>
+            <h4>${esc(T('mon.vis.topPortals'))}</h4>
             <table class="table" id="mon-portals">
-              <thead><tr><th>Портал</th><th>Посещения</th><th>Изтегляния</th><th>Откази</th><th>Посетители</th></tr></thead>
+              <thead><tr><th>${esc(T('mon.th.portal'))}</th><th>${esc(T('mon.th.visits'))}</th><th>${esc(T('mon.th.downloads'))}</th><th>${esc(T('mon.th.denied'))}</th><th>${esc(T('mon.th.visitors'))}</th></tr></thead>
               <tbody>${
                 (m.portals || []).length
                   ? (m.portals || [])
@@ -451,12 +455,12 @@
                           )}</td><td>${esc(String(p.denied || 0))}</td><td>${esc(String(p.visitors || 0))}</td></tr>`,
                       )
                       .join('')
-                  : '<tr><td colspan="5" class="hint">Още няма посетители.</td></tr>'
+                  : `<tr><td colspan="5" class="hint">${esc(T('mon.vis.noVisitors'))}</td></tr>`
               }</tbody>
             </table>
-            <h4>Какво се тегли (всички портали)</h4>
+            <h4>${esc(T('mon.vis.filesAll'))}</h4>
             <table class="table" id="mon-files">
-              <thead><tr><th>Файл</th><th>Изтегляния</th><th>Посетители</th><th>Последно</th></tr></thead>
+              <thead><tr><th>${esc(T('mon.th.file'))}</th><th>${esc(T('mon.th.downloads'))}</th><th>${esc(T('mon.th.visitors'))}</th><th>${esc(T('mon.th.last'))}</th></tr></thead>
               <tbody>${
                 (m.files || []).length
                   ? (m.files || [])
@@ -468,7 +472,7 @@
                           )}</td><td>${esc(f.lastAt ? String(f.lastAt).slice(0, 16) : '—')}</td></tr>`,
                       )
                       .join('')
-                  : '<tr><td colspan="4" class="hint">Няма изтегляния.</td></tr>'
+                  : `<tr><td colspan="4" class="hint">${esc(T('mon.vis.noFiles'))}</td></tr>`
               }</tbody>
             </table>`;
 
@@ -477,7 +481,7 @@
         reasonLine +
         focusBlock +
         `<div class="row-actions">
-          <button type="button" class="btn" data-nav="visitors">Виж всички</button>
+          <button type="button" class="btn" data-nav="visitors">${esc(T('mon.vis.seeAll'))}</button>
         </div>`;
       const go = visitBox.querySelector('button[data-nav="visitors"]');
       if (go) {
@@ -502,7 +506,7 @@
     // `startLive` вика `stopLive`, който пуска референцията към DOM — затова тя се слага
     // СЛЕД отварянето, иначе първото събитие би рисувало в `null`.
     liveListEl = liveBox;
-    if (!liveOn) liveBox.innerHTML = '<p class="hint">Потокът не е отворен: нужен е токен в сесията и HTTPS/Ingress.</p>';
+    if (!liveOn) liveBox.innerHTML = `<p class="hint">${esc(T('mon.live.closedHint'))}</p>`;
     else renderLive();
 
     // Аккордеонът се закача СЛЕД рисуването — иначе слушателите остават върху стария DOM.

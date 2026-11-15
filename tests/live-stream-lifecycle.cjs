@@ -67,8 +67,9 @@ const readUi = (name) => fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'ui'
   const panel = readUi('monitoring-panel.js');
   assert.match(panel, /typeof window\.EventSource !== 'function'/, 'липсващият EventSource се проверява');
   assert.match(panel, /return false/, 'без EventSource startLive връща false, вместо да хвърли');
-  // Без декоративна табелка състоянието се казва с ИЗРЕЧЕНИЕ (0.69.205).
-  assert.match(panel, /Потокът не е отворен/, 'панелът казва защо няма поток, вместо да мълчи');
+  // Без декоративна табелка състоянието се казва с ИЗРЕЧЕНИЕ (0.69.205); текстът е в речника.
+  assert.match(panel, /T\('mon\.live\.closedHint'\)/, 'панелът казва защо няма поток, вместо да мълчи');
+  assert.match(require('../hapi_enterprise/ui/i18n.js').DICT.bg['mon.live.closedHint'], /Потокът не е отворен/);
   ok('без EventSource: startLive → false и панелът казва защо няма поток');
 }
 
