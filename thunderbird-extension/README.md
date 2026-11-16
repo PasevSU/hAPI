@@ -80,14 +80,20 @@ because the requirement was that they always be produced:
 1. **The Subject always ends with `{{ PasevSU-WAR }}`**, appended with one space and only
    if absent — so a second `onBeforeSend` fire (Send Later, retry) cannot stack two
    markers. An empty Subject becomes the marker alone.
-2. **`X-PasevSU-WAR` carries the statement**: identity is proven only by an OpenPGP/MIME
-   signature (RFC 4880 and 3156) registered to `pasevdenislav@gmail.com`; a message
-   without that valid signature is not ours; forwarding, copying or redistribution is
-   strictly forbidden.
-3. **The same prohibition is repeated inside the message body**, as a constant
-   marker-delimited footer ending in `--- {{ PasevSU-WAR }} ---` (or a `div.pasevsu-war`
-   block for HTML composers). Headers are invisible to the recipient, and the request was
-   that the prohibition be explicitly stated *in the email*.
+2. **`X-PasevSU-WAR` carries the statement**, ASCII English, exactly this and nothing
+   else — 353 characters on one line:
+
+   ```
+   An email that does not carry the OpenPGP/MIME signed message (RFC 4880 and 3156) signature made with the PGP key registered to pasevdenislav@gmail.com is not ours. Only that signature proves our identity and preserves the integrity of the message. FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN AND IS STATED EXPLICITLY IN THE EMAIL BODY. {{ PasevSU-WAR }}
+   ```
+
+3. **The same prohibition is repeated inside the message body**, as a constant footer: a
+   blank line, the marker on its own line, the same two sentences, and the prohibition
+   (313 characters, or a `div.pasevsu-war` block with the same three sentences for HTML
+   composers). Headers are invisible to the recipient, and the request was that the
+   prohibition be explicitly stated *in the email*. The footer is
+   `\n\n{{ PasevSU-WAR }}\n…\n` and is the **exact suffix** of every body this add-on
+   sends.
 
 The header is `X-PasevSU-WAR` and not `PasevSU-WAR` because Thunderbird refuses any custom
 header name that does not begin with `X-` or `List-`, and a refused `setComposeDetails()`
@@ -96,11 +102,15 @@ header name that does not begin with `X-` or `List-`, and a refused `setComposeD
 
 The WAR text is phrased as a **requirement, not a claim**: this add-on does not sign.
 Thunderbird's own OpenPGP signs per identity, so a message can only be vouched for by the
-signature that identity attaches.
+signature that identity attaches. The sentence is negative ("an email that does **not**
+carry … is not ours") because a positive claim would be false whenever signing is off.
 
 `X-PasevSU-Body-SHA256` is the hash of the **authored** body, taken before the footer is
-appended; the footer is a constant that a verifier strips to reproduce the digest. The
-opt-in `[XXXXXXXX]` Subject tag is separate (off by default) and is spliced **before** the
+appended. To reproduce it, strip the footer with `body.endsWith(WAR_NOTICE_TEXT)` and cut
+exactly that many characters — never cut at the marker, because an authored body is
+allowed to contain the marker too. `psemp-gateway/PROTOCOL.md` §4a holds the same texts,
+and `test/extension-arming.cjs` fails if either engine's copy drifts. The opt-in
+`[XXXXXXXX]` Subject tag is separate (off by default) and is spliced **before** the
 marker, which stays last: `Case 2026 [34AEF2D1] {{ PasevSU-WAR }}`.
 
 ### Signed metadata, replay and the canary

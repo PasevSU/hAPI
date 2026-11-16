@@ -233,6 +233,67 @@ check('a re-fired beforeSend does not stack the marker or the notice', async () 
   );
 });
 
+check('the WAR texts are byte-identical in both engines', () => {
+  /*
+   * The twin rule was prose before this check: both engines CLAIMED to state the same
+   * thing, and had already drifted into three different wordings (plus a third in
+   * PROTOCOL.md). Identity only holds if it is compared, so read the extension's
+   * constants straight out of the source and compare them with the gateway's.
+   */
+  const start = CODE.indexOf('const WAR_MARKER');
+  const end = CODE.indexOf('function hexFromBuffer');
+  assert.ok(start >= 0 && end > start, 'the WAR constants must sit together, before the hashing helpers');
+
+  const names = [
+    'WAR_MARKER',
+    'WAR_SIGNER',
+    'WAR_STANDARD',
+    'WAR_HEADER_TEXT',
+    'WAR_NOTICE_TEXT',
+    'WAR_NOTICE_HTML',
+  ];
+  const probe = `${CODE.slice(start, end)}\n;({${names.join(', ')}})`;
+  const extension = vm.runInNewContext(probe, {}, { filename: 'background.js#war' });
+  const gateway = require('../api.js');
+
+  for (const name of names) {
+    assert.strictEqual(
+      extension[name],
+      gateway[name],
+      `${name} drifted between thunderbird-extension/background.js and psemp-gateway/api.js`
+    );
+  }
+
+  // Shape the bytes have to keep, independently of the wording.
+  const { WAR_MARKER, WAR_HEADER_TEXT, WAR_NOTICE_TEXT, WAR_NOTICE_HTML } = extension;
+  assert.strictEqual(WAR_HEADER_TEXT, WAR_HEADER_TEXT.trim(), 'the header value must not be padded');
+  assert.ok(!/[\r\n]/.test(WAR_HEADER_TEXT), 'the header value must be one line');
+  assert.ok(WAR_HEADER_TEXT.endsWith(WAR_MARKER), 'the header value must end with the marker');
+  assert.strictEqual(
+    WAR_NOTICE_TEXT.split(WAR_MARKER).length - 1,
+    1,
+    'the notice must carry the marker exactly once, so endsWith can strip it'
+  );
+  assert.ok(
+    WAR_NOTICE_TEXT.startsWith(`\n\n${WAR_MARKER}\n`) && WAR_NOTICE_TEXT.endsWith('\n'),
+    'the notice must be a self-delimiting block that begins after a blank line'
+  );
+  for (const [name, value, allowed] of [
+    ['WAR_HEADER_TEXT', WAR_HEADER_TEXT, '[^\\x20-\\x7E]'],
+    ['WAR_NOTICE_TEXT', WAR_NOTICE_TEXT, '[^\\x20-\\x7E\\n]'],
+    ['WAR_NOTICE_HTML', WAR_NOTICE_HTML, '[^\\x20-\\x7E\\n]'],
+  ]) {
+    assert.ok(
+      !new RegExp(allowed).test(value),
+      `${name} must stay ASCII; non-ASCII needs RFC 2047 encoding`
+    );
+  }
+  // The prohibition has to survive in all three places, not just in the one we test first.
+  assert.match(WAR_NOTICE_HTML, /FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN/);
+  assert.match(WAR_NOTICE_HTML, /pasevdenislav@gmail\.com/);
+  assert.match(WAR_NOTICE_HTML, /RFC 4880 and 3156/);
+});
+
 check('custom headers are the { name, value } objects Thunderbird accepts', async () => {
   // Regression: 0.69.225- pushed "Name: value" STRINGS. Thunderbird >= 100 types
   // ComposeDetails.customHeaders as `{ name, value }` objects, so the returned

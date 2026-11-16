@@ -214,20 +214,44 @@ requested in Bulgarian as: "в края на темата винаги да се
    The authored Subject is otherwise untouched; an empty Subject becomes the marker alone.
    This works because `onBeforeSend` may return a `subject` and Thunderbird re-reads
    `msgCompFields.subject` when it builds the message — measured in `MsgComposeCommands.js`.
-2. **`X-PasevSU-WAR` carries the statement**, ASCII English, in full:
+2. **`X-PasevSU-WAR` carries the statement**, ASCII English, in full — this is the exact
+   value, 353 characters on one line, and no other:
 
    ```
-   Identity is proven only by an OpenPGP/MIME signature (RFC 4880 and 3156) registered
-   to pasevdenislav@gmail.com. A message without that signature is not ours. Forwarding,
-   copying or redistribution is strictly forbidden. --- {{ PasevSU-WAR }}
+   An email that does not carry the OpenPGP/MIME signed message (RFC 4880 and 3156) signature made with the PGP key registered to pasevdenislav@gmail.com is not ours. Only that signature proves our identity and preserves the integrity of the message. FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN AND IS STATED EXPLICITLY IN THE EMAIL BODY. {{ PasevSU-WAR }}
    ```
 
    It is written as a **requirement, not a claim**: the extension cannot sign, so it must
    never assert that a signature is attached. Thunderbird's own OpenPGP signs per identity.
+   The sentence is negative on purpose ("an email that does **not** carry … is not ours"),
+   because that is what the request says and because a positive claim could be false.
 3. **The same prohibition is repeated in the message body**, because a header is invisible
-   to the recipient. It is a constant, marker-delimited plain-text footer (or a
-   `div.pasevsu-war` block for HTML composers) ending in `--- {{ PasevSU-WAR }} ---`, so a
-   verifier can strip it byte-for-byte and still reproduce `X-PasevSU-Body-SHA256`.
+   to the recipient. `WAR_NOTICE_TEXT` is appended verbatim and is exactly:
+
+   ```
+   <blank line>
+   <blank line>
+   {{ PasevSU-WAR }}
+   An email that does not carry the OpenPGP/MIME signed message (RFC 4880 and 3156) signature made with the PGP key registered to pasevdenislav@gmail.com is not ours.
+   Only that signature proves our identity and preserves the integrity of the message.
+   FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN.
+   ```
+
+   That is `\n\n{{ PasevSU-WAR }}\n` + sentence + `\n` + sentence + `\n` + prohibition +
+   `\n` — 313 characters, one marker, and a final newline. An HTML composer receives the
+   same three sentences inside `div.pasevsu-war[data-pasevsu-war="1"]` (`WAR_NOTICE_HTML`),
+   with the signer as a `mailto:` link: same wording, markup only.
+
+**Verifying the body digest, precisely.** Do **not** cut at the marker — an authored body
+may legitimately contain `{{ PasevSU-WAR }}` itself. Cut with an exact suffix test:
+
+```js
+const authored = body.endsWith(WAR_NOTICE_TEXT) ? body.slice(0, -WAR_NOTICE_TEXT.length) : body;
+// sha256(utf8(authored)) must equal X-PasevSU-Body-SHA256
+```
+
+`WAR_HEADER_TEXT`, `WAR_NOTICE_TEXT` and `WAR_NOTICE_HTML` are the same bytes in both
+engines, and `test/extension-arming.cjs` fails if they ever drift.
 
 **Why `X-PasevSU-WAR` and not `PasevSU-WAR`.** `ComposeDetails.customHeaders` accepts only
 names beginning `X-`/`List-`, plus `msip_labels`; anything else makes `setComposeDetails()`

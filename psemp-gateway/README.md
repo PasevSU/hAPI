@@ -161,17 +161,22 @@ the gateway writes the real `Message-ID:`; the extension cannot, because
 and a rejected `setComposeDetails()` aborts the send with no dialog at all. Hence
 the identical `X-PasevSU-Message-ID` twin.
 
-`PasevSU-WAR` follows the same twin rule for the same reason. The value states that
-identity is proven only by an **OpenPGP/MIME signature (RFC 4880 and 3156)** registered
-to `pasevdenislav@gmail.com`, that a copy without it is not ours, and that forwarding is
+`PasevSU-WAR` follows the same twin rule for the same reason. The value states the
+**negative**: an email that does not carry the OpenPGP/MIME signed message (RFC 4880 and
+3156) signature made with the PGP key registered to `pasevdenislav@gmail.com` is not ours,
+that only that signature proves identity and preserves integrity, and that forwarding is
 strictly forbidden. The extension writes `X-PasevSU-WAR`; the gateway also writes the bare
 `PasevSU-WAR:`. It is phrased as a **requirement, never a claim**, because neither engine
-signs — Thunderbird's own OpenPGP does, per identity.
+signs — Thunderbird's own OpenPGP does, per identity. `PROTOCOL.md` §4a quotes the exact
+353 characters; both engines produce the same bytes and
+`test/extension-arming.cjs` fails if they drift apart.
 
 Two more things happen on every message, and cannot be switched off: the Subject always
 ends with `{{ PasevSU-WAR }}` (appended once, after any opt-in `[XXXXXXXX]` tag), and the
-same prohibition is repeated in the body as a constant, marker-delimited footer so the
-recipient actually reads it. The body digest is taken **before** the footer is appended.
+same three sentences are repeated in the body as a constant footer
+(`\n\n{{ PasevSU-WAR }}\n…`, 313 characters) so the recipient actually reads it. The body
+digest is taken **before** the footer is appended, and a verifier reproduces it by cutting
+the exact suffix — `body.endsWith(WAR_NOTICE_TEXT)`, never at the marker.
 See [`PROTOCOL.md` §4a](PROTOCOL.md#4a-the-war-line-the-subject-marker-and-the-body-notice).
 
 ### Merkle algorithm

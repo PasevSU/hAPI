@@ -142,32 +142,43 @@ const WAR_SIGNER = 'pasevdenislav@gmail.com';
 /** Signature standard the marker refers to. */
 const WAR_STANDARD = 'OpenPGP/MIME signed message (RFC 4880 and 3156)';
 
+/*
+ * The three sentences below are the whole statement, and they are the CONTRACT.
+ * thunderbird-extension/background.js must produce byte-identical values for
+ * WAR_HEADER_TEXT, WAR_NOTICE_TEXT and WAR_NOTICE_HTML —
+ * test/extension-arming.cjs fails otherwise.
+ */
+const WAR_NO_SIGNATURE =
+  `An email that does not carry the ${WAR_STANDARD} signature made with the PGP `
+  + `key registered to ${WAR_SIGNER} is not ours.`;
+const WAR_PROOF =
+  'Only that signature proves our identity and preserves the integrity of the message.';
+const WAR_FORBIDDEN = 'FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN.';
+
 /** Value of `X-PasevSU-WAR` (and of the unprefixed twin). ASCII-only by contract. */
 const WAR_HEADER_TEXT =
-  `A message is ours only when it carries an OpenPGP signature registered to ${WAR_SIGNER} `
-  + `in the ${WAR_STANDARD} standard, which proves our identity and preserves the integrity `
-  + 'of the message. A copy without that valid signature is not ours and has no evidentiary value. '
-  + `FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY FORBIDDEN, AS STATED EXPLICITLY IN THE EMAIL ITSELF. ${WAR_MARKER}`;
+  `${WAR_NO_SIGNATURE} ${WAR_PROOF} FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN `
+  + `AND IS STATED EXPLICITLY IN THE EMAIL BODY. ${WAR_MARKER}`;
 
-/** Plain-text footer appended to every outgoing body. Constant text, so verifiable. */
+/**
+ * Exact suffix of every outgoing plain-text body.
+ *
+ * A verifier reproduces `X-PasevSU-Body-SHA256` by removing this whole constant with
+ * `endsWith`, never by searching for a substring — the marker alone is not a safe cut
+ * point, because an authored body is allowed to contain the marker too.
+ */
 const WAR_NOTICE_TEXT =
-  '\n\n---\n'
-  + `${WAR_MARKER}\n`
-  + `Identity and integrity: only an OpenPGP signature registered to ${WAR_SIGNER} `
-  + `(${WAR_STANDARD}) proves that this message comes from us and that its content was not altered. `
-  + 'A copy without that valid signature is not ours and has no evidentiary value.\n'
-  + 'FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY FORBIDDEN.\n';
+  `\n\n${WAR_MARKER}\n${WAR_NO_SIGNATURE}\n${WAR_PROOF}\n${WAR_FORBIDDEN}\n`;
 
-/** The same notice for an HTML composer. */
+/** The same wording for an HTML composer; markup only, never different claims. */
 const WAR_NOTICE_HTML =
-  '<div class="pasevsu-war" data-pasevsu-war="1" '
-  + 'style="margin-top:16px;padding-top:8px;border-top:1px solid #999;font-size:smaller">'
+  '<div class="pasevsu-war" data-pasevsu-war="1" style="margin-top:16px;'
+  + 'padding-top:8px;border-top:1px solid #999;font-size:smaller">'
   + `<p><strong>${WAR_MARKER}</strong></p>`
-  + `<p>Identity and integrity: only an OpenPGP signature registered to ${WAR_SIGNER} `
-  + `(${WAR_STANDARD}) proves that this message comes from us and that its content was not altered. `
-  + 'A copy without that valid signature is not ours and has no evidentiary value.</p>'
-  + '<p>FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY FORBIDDEN.</p>'
-  + '</div>';
+  + `<p>An email that does not carry the ${WAR_STANDARD} signature made with the `
+  + `PGP key registered to <a href="mailto:${WAR_SIGNER}">${WAR_SIGNER}</a> is not `
+  + `ours. ${WAR_PROOF}</p>`
+  + `<p><strong>${WAR_FORBIDDEN}</strong></p></div>`;
 
 /**
  * Make sure the Subject ends with {@link WAR_MARKER}.

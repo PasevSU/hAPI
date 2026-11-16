@@ -78,31 +78,44 @@ const MANIFEST_FILENAME = "PasevSU_Manifest.json";
 const WAR_MARKER = "{{ PasevSU-WAR }}";
 const WAR_SIGNER = "pasevdenislav@gmail.com";
 const WAR_STANDARD = "OpenPGP/MIME signed message (RFC 4880 and 3156)";
+
+/*
+ * The three sentences below are the whole statement, and they are the CONTRACT.
+ * psemp-gateway/api.js must produce byte-identical values for WAR_HEADER_TEXT,
+ * WAR_NOTICE_TEXT and WAR_NOTICE_HTML — tests/extension-arming.cjs fails otherwise.
+ * Keeping them as separate sentences means the plain-text notice and the HTML
+ * notice can never drift apart in wording, only in markup.
+ */
+const WAR_NO_SIGNATURE =
+  `An email that does not carry the ${WAR_STANDARD} signature made with the PGP ` +
+  `key registered to ${WAR_SIGNER} is not ours.`;
+const WAR_PROOF =
+  `Only that signature proves our identity and preserves the integrity of the message.`;
+const WAR_FORBIDDEN = `FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN.`;
+
+/* One line, no CR/LF, ASCII only: it has to survive every transport unchanged. */
 const WAR_HEADER_TEXT =
-  `Only the ${WAR_STANDARD} signature made with the PGP key registered to ` +
-  `${WAR_SIGNER} proves that this message comes from us, and only that signature ` +
-  `keeps the text and every attachment intact: a copy without a valid one is not ` +
-  `ours and has no evidentiary value. FORWARDING, QUOTING OR REDISTRIBUTING THIS ` +
-  `EMAIL IS STRICTLY FORBIDDEN AND IS STATED EXPLICITLY IN THE EMAIL ITSELF ` +
-  `${WAR_MARKER}`;
-const WAR_NOTICE_TEXT = [
-  "",
-  "",
-  `--- ${WAR_MARKER} ---`,
-  `Only the ${WAR_STANDARD} signature made with the PGP key registered to`,
-  `${WAR_SIGNER} proves that this message comes from us, and only that signature`,
-  `keeps this text and every attachment intact.`,
-  `FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY FORBIDDEN.`,
-].join("\n");
+  `${WAR_NO_SIGNATURE} ${WAR_PROOF} FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN ` +
+  `AND IS STATED EXPLICITLY IN THE EMAIL BODY. ${WAR_MARKER}`;
+
+/*
+ * Exact suffix of every outgoing plain-text body. A verifier reproduces
+ * X-PasevSU-Body-SHA256 by removing this whole constant with `endsWith`, never by
+ * searching for a substring — the marker alone is not a safe cut point, because an
+ * authored body is allowed to contain the marker too.
+ */
+const WAR_NOTICE_TEXT =
+  `\n\n${WAR_MARKER}\n${WAR_NO_SIGNATURE}\n${WAR_PROOF}\n${WAR_FORBIDDEN}\n`;
+
+/* Same wording, markup only: same signer as a mailto link, same prohibition. */
 const WAR_NOTICE_HTML =
-  `<div class="pasevsu-war" data-pasevsu-war="1" style="margin-top:1.5em;` +
-  `padding-top:.75em;border-top:1px solid #999;font-size:smaller">` +
-  `<p><strong>${WAR_MARKER}</strong> Only the ${WAR_STANDARD} signature made with ` +
-  `the PGP key registered to <a href="mailto:${WAR_SIGNER}">${WAR_SIGNER}</a> proves ` +
-  `that this message comes from us, and only that signature keeps this text and ` +
-  `every attachment intact.</p>` +
-  `<p><strong>FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY ` +
-  `FORBIDDEN.</strong></p></div>`;
+  `<div class="pasevsu-war" data-pasevsu-war="1" style="margin-top:16px;` +
+  `padding-top:8px;border-top:1px solid #999;font-size:smaller">` +
+  `<p><strong>${WAR_MARKER}</strong></p>` +
+  `<p>An email that does not carry the ${WAR_STANDARD} signature made with the ` +
+  `PGP key registered to <a href="mailto:${WAR_SIGNER}">${WAR_SIGNER}</a> is not ` +
+  `ours. ${WAR_PROOF}</p>` +
+  `<p><strong>${WAR_FORBIDDEN}</strong></p></div>`;
 
 function hexFromBuffer(buffer) {
   return Array.from(new Uint8Array(buffer))
