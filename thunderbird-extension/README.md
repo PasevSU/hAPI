@@ -72,6 +72,9 @@ The `PasevSU_Manifest.json` attachment contains:
 3. Click the **gear icon** and choose **Debug Add-ons**.
 4. Click **Load Temporary Add-on…**.
 5. Select `thunderbird-extension/manifest.json`.
+6. Copy [`user.js`](user.js) into your Thunderbird profile directory and restart,
+   so the header names are registered — see
+   [Registering the header names](#registering-the-header-names-in-thunderbird).
 
 The temporary add-on stays loaded until Thunderbird restarts. For permanent
 install, package the folder as a `.xpi` (zip) and install it, or submit to
@@ -122,18 +125,27 @@ single divergence across both halves.
   to fill in.
 - **No MD5 / SHA1** are used by design.
 
-## Optional: register header names in Thunderbird
+## Registering the header names in Thunderbird
 
-Thunderbird's compose editor may not show custom headers in the UI, but you can
-pre-register their names via `user.js`/Config Editor so they are recognized
-when displayed:
+Thunderbird will not compose or display a custom header unless its name is listed
+in the `mail.compose.other.header` preference. [`user.js`](user.js) ships that
+preference with **all eleven** names, in injection order:
 
-```
-user_pref(
-  "mail.compose.other.header",
-  "X-PasevSU-Version,X-PasevSU-Evidence-ID,X-PasevSU-Body-SHA256,X-PasevSU-Attachments-SHA256,X-PasevSU-Manifest-SHA256,X-PasevSU-Merkle-Root"
-);
-```
+1. Copy `thunderbird-extension/user.js` into your profile directory, e.g.
+   `%APPDATA%\Thunderbird\Profiles\l6o3xe0h.default-esr\user.js`.
+   To find it: **Help → Troubleshooting Information → Profile Directory → Open
+   Directory**.
+2. Restart Thunderbird.
 
-The extension injects the headers regardless of this preference; it only helps
-display/recognition in some views.
+`user.js` is re-applied at every startup and takes precedence over `prefs.js`, so
+this is the durable way to register the names; the same list can be pasted straight
+into **Settings → General → Config Editor** if you prefer to keep no extra file.
+
+The extension injects the headers through the Compose API either way — this
+preference only controls whether Thunderbird *recognises* the names when a message
+is reopened, forwarded, shown in the compose window, or read by another tool. Keep
+the list in sync with `HEADER_NAMES` in
+[`../psemp-gateway/api.js`](../psemp-gateway/api.js);
+`psemp-gateway/test/settings-parity.cjs` fails if a header is added to the code and
+not registered in `user.js`.
+

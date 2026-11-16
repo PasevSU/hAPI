@@ -157,6 +157,26 @@ async function main() {
     return 'gateway=PSEMP-Gateway, extension=Thunderbird';
   });
 
+  await check('extension-writes-every-header-name', () => {
+    const bg = fs.readFileSync(path.join(EXT, 'background.js'), 'utf8');
+    for (const name of Object.values(api.HEADER_NAMES)) {
+      assert.ok(bg.includes(name), `background.js must emit ${name}`);
+    }
+    return `${Object.keys(api.HEADER_NAMES).length} names`;
+  });
+
+  await check('userjs-registers-every-header', () => {
+    const text = fs.readFileSync(path.join(EXT, 'user.js'), 'utf8');
+    assert.match(text, /"mail\.compose\.other\.header"/, 'the pref is mail.compose.other.header');
+    const listed = [...text.matchAll(/"(X-PasevSU-[A-Za-z0-9-]+)"/g)].map((match) => match[1]);
+    assert.deepStrictEqual(
+      listed,
+      Object.values(api.HEADER_NAMES),
+      'user.js must register every header, in injection order',
+    );
+    return 'user.js matches HEADER_NAMES';
+  });
+
   const page = loadOptionsPage();
   page.handlers.get('document:DOMContentLoaded')();
   await settle(() => page.element('version').value !== '', 'the options page to load');
