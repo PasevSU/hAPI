@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **148** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **149** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -63,6 +63,7 @@ _Генериран списък: **148** документа. Пише се от
 | `02_TO_BE_ARCHITECTURE/CRYPTO_ENGINE.md` | Crypto Engine — hAPI Enterprise (To-Be) |
 | `02_TO_BE_ARCHITECTURE/DATA_MODEL.md` | Data Model — hAPI Enterprise (To-Be) |
 | `02_TO_BE_ARCHITECTURE/DEPLOYMENT_MODEL.md` | Модел на внедряване — add-on или Docker Compose |
+| `02_TO_BE_ARCHITECTURE/DOCS_AND_OPTIONS_STRUCTURE.md` | Структура на документацията и норми за глобалните опции |
 | `02_TO_BE_ARCHITECTURE/EVIDENCE_PORTAL_V1.2_REVIEW.md` | Преглед: `hapi-evidence-portal v1.2` (външен пакет) → какво от него вече е в hAPI |
 | `02_TO_BE_ARCHITECTURE/GUI_ARCHITECTURE.md` | GUI Architecture — hAPI Enterprise (To-Be) |
 | `02_TO_BE_ARCHITECTURE/INTEGRATION_CONTRACTS.md` | Integration Contracts — hAPI Enterprise (To-Be) |
