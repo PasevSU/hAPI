@@ -2,7 +2,7 @@
 /*
  * PSEMP shared-settings parity.
  *
- * The two halves of the framework must describe the same six settings or the user
+ * The two halves of the framework must describe the same eight settings or the user
  * ends up with a header claiming a framework the other half never wrote. The file
  * `psemp-gateway/settings.default.json` is the meeting point, so this test pins the
  * key set and the key ORDER across four places at once:
@@ -12,7 +12,7 @@
  *   thunderbird-extension/background.js DEFAULTS (what is actually written)
  *   thunderbird-extension/options.js    DEFAULTS (what the options page edits)
  *
- * Importing a settings file must copy the six keys but NOT `origin`: origin names
+ * Importing a settings file must copy the eight keys but NOT `origin`: origin names
  * the producer, so the extension always writes `Thunderbird` and the gateway always
  * writes `PSEMP-Gateway`. That single divergence is asserted, not ignored.
  *
@@ -29,7 +29,16 @@ const api = require('../api.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 const EXT = path.join(ROOT, 'thunderbird-extension');
-const KEYS = ['version', 'framework', 'origin', 'organization', 'pgpFingerprint', 'enableOts'];
+const KEYS = [
+  'version',
+  'framework',
+  'origin',
+  'organization',
+  'pgpFingerprint',
+  'enableOts',
+  'enableReceipt',
+  'receiptAddress',
+];
 
 const checks = [];
 async function check(name, fn) {
@@ -56,6 +65,7 @@ function loadOptionsPage() {
   const handlers = new Map();
   const elements = new Map();
   const writes = [];
+  const blobs = [];
   const stored = {};
 
   function element(id) {
@@ -94,7 +104,13 @@ function loadOptionsPage() {
       createElement: () => ({ href: '', download: '', click: () => {} }),
     },
     window: { setTimeout: () => 0 },
-    URL: { createObjectURL: () => 'blob:stub', revokeObjectURL: () => {} },
+    URL: {
+      createObjectURL: (blob) => {
+        blobs.push(blob);
+        return 'blob:stub';
+      },
+      revokeObjectURL: () => {},
+    },
     Blob: class Blob {
       constructor(parts) {
         this.parts = parts;
@@ -106,7 +122,7 @@ function loadOptionsPage() {
   const source = fs.readFileSync(path.join(EXT, 'options.js'), 'utf8');
   vm.runInNewContext(source, sandbox, { filename: 'options.js' });
 
-  return { handlers, element, writes, stored };
+  return { handlers, element, writes, stored, blobs };
 }
 
 async function settle(predicate, label) {
@@ -184,10 +200,12 @@ async function main() {
   await check('options-page-loads-stored-values', () => {
     assert.strictEqual(page.element('version').value, api.DEFAULTS.version);
     assert.strictEqual(page.element('enableOts').checked, api.DEFAULTS.enableOts);
+    assert.strictEqual(page.element('enableReceipt').checked, api.DEFAULTS.enableReceipt);
+    assert.strictEqual(page.element('receiptAddress').value, api.DEFAULTS.receiptAddress);
     return 'form reflects storage';
   });
 
-  await check('import-copies-the-six-keys-but-not-origin', async () => {
+  await check('import-copies-the-eight-keys-but-not-origin', async () => {
     const imported = {
       version: '2.5',
       framework: 'Forensic-Mail',
@@ -195,6 +213,8 @@ async function main() {
       organization: 'PasevSU',
       pgpFingerprint: 'a1b2 c3d4: e5f6',
       enableOts: false,
+      enableReceipt: false,
+      receiptAddress: '  receipts@example.org  ',
     };
     page.element('importFile').files = [{ text: async () => JSON.stringify(imported) }];
     page.handlers.get('importFile:change')({ target: page.element('importFile') });
@@ -205,8 +225,22 @@ async function main() {
     assert.strictEqual(written.version, '2.5');
     assert.strictEqual(written.pgpFingerprint, 'A1B2C3D4E5F6', 'the fingerprint is normalized on import');
     assert.strictEqual(written.enableOts, false);
+    assert.strictEqual(written.enableReceipt, false, 'the receipt switch travels with the settings file');
+    assert.strictEqual(written.receiptAddress, 'receipts@example.org', 'the address is trimmed');
     assert.strictEqual(page.element('version').value, '2.5', 'the form is refreshed after import');
     return 'origin stripped, fingerprint normalized';
+  });
+
+  await check('export-keeps-the-shared-key-order', async () => {
+    page.handlers.get('exportFile:click')();
+    await settle(() => page.blobs.length > 0, 'the export blob');
+    const text = page.blobs[page.blobs.length - 1].parts.join('');
+    const exported = JSON.parse(text);
+    assert.deepStrictEqual(Object.keys(exported), KEYS, 'exported key set/order');
+    assert.match(text, /\n$/, 'the exported file ends with a newline, like the one on disk');
+    assert.strictEqual(exported.enableReceipt, false, 'the export reflects the imported value');
+    assert.strictEqual(exported.origin, 'Thunderbird', 'origin stays the extension, never the file');
+    return Object.keys(exported).join(',');
   });
 
   await check('import-rejects-a-non-settings-file', async () => {

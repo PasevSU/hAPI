@@ -179,9 +179,13 @@ node psemp-gateway/cli.js verify message.eml.ots
 node psemp-gateway/cli.js upgrade message.eml.ots
 node psemp-gateway/cli.js sign message.eml --key ABCDEF
 node psemp-gateway/cli.js sign message.eml --force
+node psemp-gateway/cli.js sign message.eml --digest SHA384
 node psemp-gateway/cli.js verify-sig message.eml message.eml.asc
 node psemp-gateway/cli.js pgp-info message.eml
 node psemp-gateway/cli.js pgp-check message.eml --fingerprint ABCDEF
+node psemp-gateway/cli.js seal PasevSU_Manifest.json --body message.txt --attach report.pdf
+node psemp-gateway/cli.js seal PasevSU_Manifest.json --body message.txt `
+     --attach "report=report.pdf" --attach "photo=photo.jpg" --key ABCDEF
 ```
 
 `pgp-info` prints what `pgpInspectMessage()` found — format, issuer fingerprint,
@@ -193,6 +197,106 @@ signed it and exits non-zero on a mismatch.
 Every command prints JSON. Missing external tooling is reported as `pending`
 (OpenTimestamps) or `unavailable` (GnuPG) and exits zero; only real failures exit
 non-zero.
+
+### `seal` — the step that makes the manifest strong
+
+The extension can only compute SHA-256, so it writes `message_sha3_512`,
+`sha3_512` and `blake3` as `null`. `seal` is the gateway command that fills what it
+can and signs the result:
+
+```console
+$ node psemp-gateway/cli.js seal PasevSU_Manifest.json --body message.txt --attach report.pdf
+{
+  "ok": true,
+  "status": "sealed-partial",
+  "manifest": "…\\PasevSU_Manifest.json",
+  "evidenceId": "11111111-2222-4333-8444-555555555555",
+  "merkleRoot": "cac33879…",
+  "filled": ["message_sha3_512", "report.pdf:sha3_512"],
+  "confirmed": [],
+  "unsealedFiles": [],
+  "mismatches": [],
+  "signature": {
+    "status": "ok",
+    "signaturePath": "…\\PasevSU_Manifest.json.asc",
+    "executable": "C:\\Program Files\\GnuPG\\bin\\gpg.exe",
+    "digestRequested": "SHA512",
+    "digestAlgo": "SHA-512",
+    "digestId": 10,
+    "digestSource": "gpg --list-packets"
+  },
+  "timestamp": { "status": "pending", "reason": "calendar unreachable" },
+  "claimedManifestSha256": "cebb53d7…",
+  "sealedManifestSha256": "0bfe2c95…",
+  "changed": true,
+  "supersededProof": null,
+  "signaturePath": "…\\PasevSU_Manifest.json.asc",
+  "proofPath": null,
+  "artifacts": ["…\\PasevSU_Manifest.json", "…\\PasevSU_Manifest.json.asc"]
+}
+```
+
+`status` is `sealed` only when the manifest was both signed and stamped;
+anything less is `sealed-partial` and still exits zero, because the hash chain is
+complete either way. `changed` says whether the manifest file itself was
+rewritten — a second run over already-sealed bytes reports `false`, lists the
+slots under `confirmed` instead of `filled`, and verifies the existing signature
+rather than replacing it.
+
+`--attach` is repeatable and accepts either `path` (the basename is used) or
+`name=path`. `--no-sign` / `--no-ots` skip a step; `--digest` picks the signature
+digest; `--blake3` supplies a BLAKE3 value, since no BLAKE3 implementation is
+vendored here.
+
+Behaviour worth knowing:
+
+- **`filled` vs `confirmed`.** `filled` lists slots this run actually changed;
+  `confirmed` lists slots that already held the correct value. A second `seal`
+  over identical bytes is a no-op — `filled` is empty and the existing signature
+  is verified rather than replaced.
+- **The Merkle root never moves.** It is built from SHA-256 leaves and is already
+  published in the message headers. Sealing adds a second digest *beside* the
+  chain, never inside it, so a sealed manifest still matches the
+  `X-PasevSU-Merkle-Root` the recipient already holds.
+- **Mismatch means stop.** If the body or an attachment no longer hashes to the
+  value the manifest claims, `seal` returns `status: "mismatch"` and **leaves the
+  file untouched**. Bytes not supplied are reported in `unsealedFiles`, never
+  assumed correct.
+- **A stale `.ots` is moved aside, never overwritten.** Proofs are append-only, so
+  a superseded one becomes `*.superseded` and its path is reported in
+  `supersededProof`.
+- **Signing degrades loudly.** With no GnuPG the signature is reported
+  `unavailable` and the seal still succeeds; the exit code tells you the hash
+  chain was completed without the signature.
+
+#### The digest-name trap
+
+gpg spells digests **without a hyphen**: `SHA512`, `SHA384`, `SHA256`, `SHA224`,
+`SHA1`, `MD5`, `RIPEMD160`. `--digest-algo SHA-512` is rejected with
+`gpg: selected digest algorithm is invalid` (exit 2) — measured on gpg 2.5.24.
+That is a silent kill: the command fails, nothing is signed, and a caller that
+does not check the exit code reports success.
+
+Two guards, both in `api.js`:
+
+- `normalizeDigestAlgo()` accepts the hyphenated spelling and rewrites it to the
+  name gpg wants; it defaults to `SHA512`.
+- SHA3 is **refused** for signing (`UNSUPPORTED_DIGEST`) because OpenPGP has no
+  SHA3 signature packet. SHA3-512 belongs in the manifest as a content digest, not
+  in the signature packet. `SHA-512`, `SHA3-256`, `SHA3-512` and `SHAKE256` were
+  all measured to fail; `SHA512`–`MD5` all succeed, including under an ed25519
+  key, which signs with SHA-512.
+
+The digest reported back is read from the finished `.asc` with
+`gpg --batch --list-packets` (`digest algo (\d+)` → `DIGEST_NAMES`), so
+`digestAlgo` is what was **used**, not what was asked for, and
+`digestSource: "gpg --list-packets"` records where that came from.
+
+Also note: GnuPG on Windows installs to `C:\Program Files\GnuPG\bin\gpg.exe` and
+is **not** on `PATH` by default. The GnuPG status cache is keyed on `PATH` and
+`PATHEXT`, so a gateway started before GnuPG was installed stops saying
+"unavailable" as soon as the PATH is corrected — it is not memoised for the life
+of the process.
 
 ## Enabling the optional adapters
 
@@ -340,8 +444,10 @@ Search metadata rather than mail.
 ```console
 node psemp-gateway/test/self-test.cjs
 node psemp-gateway/test/settings-parity.cjs
+node psemp-gateway/test/locales.cjs
 node psemp-gateway/test/pgp-thunderbird.cjs
 node psemp-gateway/test/ots-runtime.cjs
+node psemp-gateway/test/seal.cjs
 node psemp-gateway/test/extension-arming.cjs
 node psemp-gateway/test/check-sent.cjs
 node psemp-gateway/test/verify-install.cjs
@@ -354,10 +460,34 @@ order-independence and empty-set behaviour; manifest serialisation and hash;
 header order, preservation and injection safety; adapter availability; the EML
 evidence pipeline; and an evidence round-trip that must reject a tampered body.
 
-`settings-parity.cjs` pins the six settings keys and their order across `api.js`,
-`settings.default.json`, `background.js` and `options.js`, then runs the options
-page script against a stub DOM to prove that importing a settings file copies the
-six keys, normalises the fingerprint, refreshes the form and never copies `origin`.
+`settings-parity.cjs` pins the eight settings keys and their order across `api.js`,
+`settings.default.json`, `background.js` and `options.js`, and pins that `user.js`
+registers every header name the extension writes. It then runs the options page
+script against a stub DOM to prove that importing a settings file copies the eight
+keys, normalises the fingerprint, refreshes the form and never copies `origin`.
+
+`locales.cjs` proves the three catalogues (`en`, `de`, `bg`) carry exactly the
+same key set, that no key is empty or untranslated, that the options page and
+manifest ask only for keys that exist, that no catalogue key is dead, that the
+markup of each hint survives translation, and — specifically — that German and
+Bulgarian carry the delivery-receipt feature. A half-translated panel fails here
+rather than in front of a recipient.
+
+`seal.cjs` covers the sealing step end to end: SHA3-512 slots filled without
+moving the Merkle root, a tampered SHA3 claim caught, a manifest describing other
+bytes refused, a tampered attachment refused, a second run over identical bytes
+proven a no-op (`filled` empty, slots under `confirmed`), a stale `.ots` moved
+aside rather than overwritten, unsupplied bytes reported instead of guessed, and
+a `Buffer` body accepted the way the CLI reads it.
+
+Three of its checks are about signing specifically, because "the signing level is
+weak" was the reported defect and it turned out gpg was never signing at all:
+the digest name is the one gpg accepts (the hyphenated `SHA-512` spelling is
+rejected by gpg, and `normalizeDigestAlgo()` must rewrite it), signing degrades
+loudly with an emptied `PATH`, and a real signature is produced from a throwaway
+`GNUPGHOME` with an ed25519 key, verified, and its digest **read back** from the
+`.asc`. That last check is the only one that proves a signature exists rather
+than that a command was constructed.
 
 `pgp-thunderbird.cjs` builds OpenPGP v4 signature packets by hand, so it needs no
 keyring and no GnuPG, and covers the packet parser, armour decoding, CRLF-split

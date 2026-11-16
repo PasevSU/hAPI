@@ -16,8 +16,9 @@
  * What it CANNOT do (documented, done by the SMTP gateway / CLI):
  *   - Real OpenPGP signatures (.asc) and OpenTimestamps (.ots) cannot be
  *     produced inside a MailExtension; X-PasevSU-OTS is a "pending" marker only.
+ *     `psemp-gateway seal` replaces that marker with a real .asc + .ots pair.
  *   - SHA3-512 and BLAKE3 are not available in Web Crypto; the manifest records
- *     "blake3": null so the gateway can fill it in.
+ *     "sha3_512": null and "blake3": null so the gateway can fill them in.
  */
 
 const DEFAULTS = {
@@ -29,6 +30,12 @@ const DEFAULTS = {
   // On by default: every message is marked for the gateway so nothing has to be
   // remembered per message. Untick it in the options page to stop marking.
   enableOts: true,
+  // Delivery receipt (MDN). On by default for the same reason — a receipt is asked
+  // for on every message instead of per message. The address is the identity the
+  // message is sent from; `receiptAddress` is only the fallback for when
+  // Thunderbird does not fill `details.from`.
+  enableReceipt: true,
+  receiptAddress: "",
 };
 
 const MANIFEST_FILENAME = "PasevSU_Manifest.json";
@@ -102,10 +109,12 @@ async function merkleRoot(hexLeaves) {
 
 async function computeAttachmentHashes(attachments) {
   const entries = [];
+  const failures = [];
   for (const att of attachments || []) {
+    const name = sanitizeHeaderValue((att && att.name) || "attachment");
     try {
       if (!att || typeof att.id !== "number") {
-        continue;
+        throw new Error("no attachment id");
       }
       const file = await browser.compose.getAttachmentFile(att.id);
       const buffer = await file.arrayBuffer();
@@ -113,15 +122,17 @@ async function computeAttachmentHashes(attachments) {
       const filename = sanitizeHeaderValue(att.name || file.name || "attachment");
       entries.push({ filename, sha256: hash });
     } catch (err) {
-      // One unreadable attachment must not abort the whole send.
-      console.warn(
-        "[PasevSU] skipped attachment (could not read/hash):",
-        att && att.name,
-        err
-      );
+      // One unreadable attachment must not abort the whole send — but it must not
+      // disappear from the evidence chain either: a file the user attached and the
+      // recipient receives, with no hash and no mention, is worse than an honest
+      // "this one could not be read". The failure is published in
+      // X-PasevSU-Attachments-Error and recorded for the options page.
+      const reason = sanitizeHeaderValue((err && err.message) || err);
+      failures.push({ filename: name, reason });
+      console.warn("[PasevSU] skipped attachment (could not read/hash):", name, err);
     }
   }
-  return entries;
+  return { entries, failures };
 }
 
 async function buildManifest(config, evidenceId, bodyHash, attachmentEntries, merkle) {
@@ -129,10 +140,15 @@ async function buildManifest(config, evidenceId, bodyHash, attachmentEntries, me
     framework: "PasevSU",
     version: sanitizeHeaderValue(config.version),
     message_sha256: bodyHash,
+    // Web Crypto has no SHA3-512, so the MailExtension cannot fill these in; the
+    // gateway (`psemp-gateway seal`) recomputes and seals them. The keys are always
+    // present so the manifest has one shape whichever component built it.
+    message_sha3_512: null,
     attachments: attachmentEntries.map((a) => ({
       filename: a.filename,
       sha256: a.sha256,
-      blake3: null, // not computable in a MailExtension; filled by the gateway
+      sha3_512: null, // gateway fills
+      blake3: null, // gateway fills
     })),
     merkle_root: merkle,
     timestamp: new Date().toISOString(),
@@ -152,7 +168,28 @@ function buildHeader(name, value) {
   return { name, value: sanitizeHeaderValue(value) };
 }
 
-function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, merkle, manifestHash) {
+// An MDN address may arrive as "Name <a@b>" or as { email } / { id }.
+function addressOf(value) {
+  if (!value) {
+    return "";
+  }
+  if (typeof value === "string") {
+    return sanitizeHeaderValue(value);
+  }
+  return sanitizeHeaderValue(value.email || value.id || "");
+}
+
+/*
+ * Where a delivery receipt should go: the identity the message is actually sent
+ * from wins, because that is the mailbox the recipient's client will answer. The
+ * configured `receiptAddress` is the fallback for a snapshot that has no `from`.
+ */
+function resolveReceiptAddress(config, details) {
+  return addressOf(details.from) || addressOf(config.receiptAddress);
+}
+
+function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, merkle, manifestHash, extra) {
+  const context = extra || {};
   const headers = [];
   headers.push(buildHeader("X-PasevSU-Version", config.version));
   headers.push(buildHeader("X-PasevSU-Framework", config.framework));
@@ -160,12 +197,38 @@ function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, merkle, m
   headers.push(buildHeader("X-PasevSU-Organization", config.organization));
   headers.push(buildHeader("X-PasevSU-Evidence-ID", evidenceId));
   headers.push(buildHeader("X-PasevSU-Body-SHA256", bodyHash));
+
+  // The count is always present, so "this message carried no files" is a signed
+  // claim rather than an absence. A reader who sees no attachment list and no
+  // count cannot tell an unfixed add-on from a message that genuinely had no
+  // files; with the count they can (reported defect: "the attachment hashes are
+  // missing" was unanswerable from the headers alone).
+  headers.push(buildHeader("X-PasevSU-Attachments-Count", String(attachmentEntries.length)));
+
   if (attachmentEntries.length > 0) {
     const list = attachmentEntries
       .map((a) => `${headerToken(a.filename)}=${a.sha256}`)
       .join(",");
     headers.push(buildHeader("X-PasevSU-Attachments-SHA256", list));
+    // One header per file as well: a long comma list is truncated or folded by
+    // some clients and mail gates, and a folded list loses its tail silently.
+    attachmentEntries.forEach((entry, index) => {
+      headers.push(
+        buildHeader(
+          `X-PasevSU-Attachment-${index + 1}`,
+          `${headerToken(entry.filename)}=${entry.sha256}`
+        )
+      );
+    });
+  } else if ((context.failures || []).length > 0) {
+    // Files were attached but none could be read. Say so instead of publishing a
+    // chain that looks complete.
+    const list = context.failures
+      .map((f) => `${headerToken(f.filename)}=${headerToken(f.reason)}`)
+      .join(",");
+    headers.push(buildHeader("X-PasevSU-Attachments-Error", list));
   }
+
   headers.push(buildHeader("X-PasevSU-Manifest-SHA256", manifestHash));
   headers.push(buildHeader("X-PasevSU-Merkle-Root", merkle));
   if (config.pgpFingerprint) {
@@ -179,6 +242,12 @@ function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, merkle, m
   if (config.enableOts) {
     // Marker only: real OpenTimestamps must be applied by the SMTP gateway / CLI.
     headers.push(buildHeader("X-PasevSU-OTS", "pending"));
+  }
+  if (config.enableReceipt && context.receiptTo) {
+    // Standard MDN request (RFC 8098) plus our own marker, so a recipient can tell
+    // a PasevSU message from any other message asking for a receipt.
+    headers.push(buildHeader("X-PasevSU-Receipt", "requested"));
+    headers.push(buildHeader("Disposition-Notification-To", context.receiptTo));
   }
   return headers;
 }
@@ -219,6 +288,19 @@ async function listComposeAttachments(tab, details) {
   } catch (err) {
     console.error("[PasevSU] could not enumerate attachments:", err);
   }
+  // Second ask: a fresh getComposeDetails() on the compose tab. listAttachments()
+  // is preferred because the send snapshot is stale, but if it is unavailable or
+  // throws, asking the tab again beats trusting the snapshot.
+  if (listed.length === 0 && tab && typeof tab.id === "number" && browser.compose.getComposeDetails) {
+    try {
+      const fresh = await browser.compose.getComposeDetails(tab.id);
+      if (fresh && Array.isArray(fresh.attachments) && fresh.attachments.length > 0) {
+        listed = fresh.attachments;
+      }
+    } catch (err) {
+      console.error("[PasevSU] could not re-read the compose tab:", err);
+    }
+  }
   const source = listed.length > 0 ? listed : Array.isArray(details.attachments) ? details.attachments : [];
   // Our own manifest is added on the way out; if onBeforeSend fires a second time
   // it must not be hashed as if the user had attached it.
@@ -238,7 +320,8 @@ async function handleBeforeSend(tab, details) {
     const bodyHash = await sha256Hex(new TextEncoder().encode(body));
 
     const existingAttachments = await listComposeAttachments(tab, details);
-    const attachmentEntries = await computeAttachmentHashes(existingAttachments);
+    const { entries: attachmentEntries, failures: attachmentFailures } =
+      await computeAttachmentHashes(existingAttachments);
 
     // Merkle leaves = body hash + each attachment hash.
     const leaves = [bodyHash, ...attachmentEntries.map((a) => a.sha256)];
@@ -276,13 +359,24 @@ async function handleBeforeSend(tab, details) {
       console.error("[PasevSU] manifest could not be attached:", err);
     }
 
+    // Where the delivery receipt goes. `enableReceipt` is on by default, so the only
+    // thing that can suppress the header is a message with no resolvable address.
+    // The stored value is a CODE ("no-address"), not a sentence: the options page
+    // owns the words and can show them in the user's language.
+    const receiptTo = config.enableReceipt ? resolveReceiptAddress(config, details) : "";
+    const receiptProblem = config.enableReceipt && !receiptTo ? "no-address" : null;
+    await Promise.resolve()
+      .then(() => browser.storage.local.set({ psempReceiptError: receiptProblem }))
+      .catch(() => {});
+
     const newHeaders = await buildHeaders(
       config,
       evidenceId,
       bodyHash,
       attachmentEntries,
       merkle,
-      manifestHash
+      manifestHash,
+      { failures: attachmentFailures, receiptTo: receiptTo }
     );
 
     // Append WITHOUT dropping any existing (foreign) entries.
@@ -307,6 +401,11 @@ async function handleBeforeSend(tab, details) {
             manifestSha256: manifestHash,
             merkleRoot: merkle,
             attachmentCount: attachmentEntries.length,
+            // filename=sha256 per file, so the options page can show exactly what
+            // went into the evidence chain without opening a mailbox.
+            attachments: attachmentEntries,
+            attachmentFailures,
+            receiptTo: receiptTo || null,
             // Names only: the values are already in the message being sent.
             headers: newHeaders.map((header) => header.name),
           },

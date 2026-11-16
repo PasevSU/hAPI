@@ -1,0 +1,163 @@
+{
+  "extName": {
+    "message": "PasevSU Forensic Mail"
+  },
+  "extDescription": {
+    "message": "Слага PasevSU форензични хедъри, SHA-256 верига от доказателства и PasevSU_Manifest.json на всяко изходящо писмо."
+  },
+  "optionsTitle": {
+    "message": "PasevSU Forensic Mail — настройки"
+  },
+  "optionsIntro": {
+    "message": "Тези стойности влизат във всяко изходящо писмо като X-PasevSU-* хедъри. Промените важат от следващото изпратено писмо."
+  },
+  "armedChecking": {
+    "message": "Проверява се дали фоновият скрипт е зареден…"
+  },
+  "armedOk": {
+    "message": "Зареден — фоновият скрипт стартира в $time$.",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "armedNoReport": {
+    "message": "НЕ е зареден — фоновият скрипт още не се е обадил. Рестартирайте Thunderbird."
+  },
+  "armedError": {
+    "message": "НЕ е зареден — $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "manifestError": {
+    "message": "Последно изпращане: манифестът НЕ можа да се прикачи — $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "lastSendSummary": {
+    "message": "Подпечатани писма: $count$. Последно: $when$, Evidence-ID $evidence$, прикачени файлове: $files$, хедъри: $headers$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "when": {
+        "content": "$2"
+      },
+      "evidence": {
+        "content": "$3"
+      },
+      "files": {
+        "content": "$4"
+      },
+      "headers": {
+        "content": "$5"
+      }
+    }
+  },
+  "lastSendNone": {
+    "message": "Подпечатани писма: 0 — още нито едно изходящо писмо не е минало през разширението. Изпратете едно и редът ще се обнови."
+  },
+  "attachmentHashes": {
+    "message": "Хешове на прикачените файлове в последното писмо:"
+  },
+  "attachmentFailures": {
+    "message": "Файлове, които не можаха да се прочетат (изброени в X-PasevSU-Attachments-Error): $list$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "receiptError": {
+    "message": "Няма адрес за разписка: хедърът за разписка се пише само когато е известен адресът на подателя или резервният адрес по-долу."
+  },
+  "labelVersion": {
+    "message": "Версия"
+  },
+  "labelFramework": {
+    "message": "Рамка"
+  },
+  "labelOrigin": {
+    "message": "Произход"
+  },
+  "labelOrganization": {
+    "message": "Организация"
+  },
+  "labelPgp": {
+    "message": "PGP отпечатък (ключът в Thunderbird)"
+  },
+  "pgpHint": {
+    "message": "напр. 3F2A9C… (празно = без хедър)"
+  },
+  "labelOts": {
+    "message": "Маркирай всяко писмо за OpenTimestamps (<code>X-PasevSU-OTS: pending</code>)"
+  },
+  "labelReceipt": {
+    "message": "Искай разписка при доставяне за всяко писмо (<code>Disposition-Notification-To</code>)"
+  },
+  "labelReceiptAddress": {
+    "message": "Резервен адрес за разписката"
+  },
+  "receiptAddressHint": {
+    "message": "ползва се само когато Thunderbird не подаде адреса на подателя"
+  },
+  "save": {
+    "message": "Запази"
+  },
+  "saved": {
+    "message": "Записано."
+  },
+  "sectionShared": {
+    "message": "Общ файл с настройки"
+  },
+  "sharedIntro": {
+    "message": "Гейтвеят държи същите ключове в <code>psemp-gateway/settings.default.json</code>. Импортирайте го тук, за да съвпадат двете половини по версия, рамка, организация и PGP отпечатък, и експортирайте текущите стойности обратно в него, когато ги промените."
+  },
+  "exportButton": {
+    "message": "Експорт на файла с настройки"
+  },
+  "exported": {
+    "message": "settings.default.json е експортиран"
+  },
+  "imported": {
+    "message": "Внесени $applied$ от $total$ ключа$extra$",
+    "placeholders": {
+      "applied": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "extra": {
+        "content": "$3"
+      }
+    }
+  },
+  "notSettingsFile": {
+    "message": "Това не е файл с настройки: $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "originNote": {
+    "message": "<code>origin</code> не се взима от файла: той назовава производителя, затова разширението винаги пише <code>Thunderbird</code>, а гейтвеят — <code>PSEMP-Gateway</code>. Това е единствената умишлена разлика между двете и тестът за паритет я пази."
+  },
+  "pgpNote": {
+    "message": "<strong>OpenPGP вече е настроен в Thunderbird.</strong> Сложете тук отпечатъка на ключа, с който акаунтът вече подписва (Настройки на акаунта → Шифроване от край до край → Мениджър на OpenPGP ключове → вашият ключ). MailExtension не може да чете ключодържателя на Thunderbird, затова този хедър е <em>твърдение</em>: единствената стойност, която получателят трябва да свери с подписа. <code>psemp-gateway pgp-check</code> сравнява твърдението с подписващия, намерен в доставеното писмо, и никога не слага втори подпис върху писмо, което Thunderbird вече е подписало. Thunderbird подписва PGP/MIME с <code>protected-headers=\"v1\"</code>, тоест <code>X-PasevSU-*</code> хедърите <em>се повтарят</em> в подписаната част и редакцията им чупи подписа — но при включено шифроване хедърите остават в явен вид, а текстът не."
+  },
+  "limitationsNote": {
+    "message": "Истински OpenPGP подписи (<code>.asc</code>) и OpenTimestamps (<code>.ots</code>) не могат да се създадат в Thunderbird MailExtension; хедърът <code>X-PasevSU-OTS</code> е маркер за SMTP гейтвея. С <code>node psemp-gateway/cli.js seal PasevSU_Manifest.json</code> маркерът става истински отделен подпис и времево доказателство. Маркерът се пише по подразбиране, за да не излезе писмо без печат — махнете отметката само ако умишлено не искате гейтвеят да подпечатва."
+  },
+  "receiptNote": {
+    "message": "Разписката е стандартна MDN (RFC 8098): получателят е <em>помолен</em>, не задължен, и повечето програми показват диалог. Собствената настройка на Thunderbird „Разписки при доставяне“ в настройките на акаунта също пита; ако се появят и двете, това е безвредно. Адресът е този, от който писмото се изпраща."
+  }
+}

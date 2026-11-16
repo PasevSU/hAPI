@@ -4,5 +4,7 @@
   "origin": "PSEMP-Gateway",
   "organization": "PasevSU",
   "pgpFingerprint": "",
-  "enableOts": true
+  "enableOts": true,
+  "enableReceipt": true,
+  "receiptAddress": ""
 }

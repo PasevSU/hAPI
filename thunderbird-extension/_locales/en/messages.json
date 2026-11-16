@@ -1,0 +1,163 @@
+{
+  "extName": {
+    "message": "PasevSU Forensic Mail"
+  },
+  "extDescription": {
+    "message": "Stamps every outgoing message with PasevSU forensic headers, a SHA-256 evidence chain and PasevSU_Manifest.json."
+  },
+  "optionsTitle": {
+    "message": "PasevSU Forensic Mail — Options"
+  },
+  "optionsIntro": {
+    "message": "These values are written into every outgoing email as X-PasevSU-* headers. Changes apply from the next message you send."
+  },
+  "armedChecking": {
+    "message": "Checking whether the background script is armed…"
+  },
+  "armedOk": {
+    "message": "Armed — background script loaded at $time$.",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "armedNoReport": {
+    "message": "Not armed — the background script has not reported yet. Restart Thunderbird."
+  },
+  "armedError": {
+    "message": "Not armed — $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "manifestError": {
+    "message": "Last send: the manifest could NOT be attached — $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "lastSendSummary": {
+    "message": "Stamped $count$ message(s). Last: $when$, Evidence-ID $evidence$, $files$ attachment(s), $headers$ headers.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "when": {
+        "content": "$2"
+      },
+      "evidence": {
+        "content": "$3"
+      },
+      "files": {
+        "content": "$4"
+      },
+      "headers": {
+        "content": "$5"
+      }
+    }
+  },
+  "lastSendNone": {
+    "message": "Stamped 0 messages — no outgoing message has been stamped yet. Send one and this line will update."
+  },
+  "attachmentHashes": {
+    "message": "Attachment hashes in the last message:"
+  },
+  "attachmentFailures": {
+    "message": "Attachments that could not be read (named in X-PasevSU-Attachments-Error): $list$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "receiptError": {
+    "message": "No receipt address: the receipt header is only written when the sending identity or the fallback address below is known."
+  },
+  "labelVersion": {
+    "message": "Version"
+  },
+  "labelFramework": {
+    "message": "Framework"
+  },
+  "labelOrigin": {
+    "message": "Origin"
+  },
+  "labelOrganization": {
+    "message": "Organization"
+  },
+  "labelPgp": {
+    "message": "PGP fingerprint (Thunderbird key)"
+  },
+  "pgpHint": {
+    "message": "e.g. 3F2A9C… (leave empty to omit the header)"
+  },
+  "labelOts": {
+    "message": "Mark every message for OpenTimestamps (<code>X-PasevSU-OTS: pending</code>)"
+  },
+  "labelReceipt": {
+    "message": "Request a delivery receipt on every message (<code>Disposition-Notification-To</code>)"
+  },
+  "labelReceiptAddress": {
+    "message": "Fallback receipt address"
+  },
+  "receiptAddressHint": {
+    "message": "only used when Thunderbird does not report the sending identity"
+  },
+  "save": {
+    "message": "Save"
+  },
+  "saved": {
+    "message": "Saved."
+  },
+  "sectionShared": {
+    "message": "Shared settings file"
+  },
+  "sharedIntro": {
+    "message": "The gateway keeps the same keys in <code>psemp-gateway/settings.default.json</code>. Import it here so both halves agree on version, framework, organization and PGP fingerprint, and export the current values back to that file when you change them."
+  },
+  "exportButton": {
+    "message": "Export settings file"
+  },
+  "exported": {
+    "message": "Exported settings.default.json"
+  },
+  "imported": {
+    "message": "Imported $applied$ of $total$ keys$extra$",
+    "placeholders": {
+      "applied": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "extra": {
+        "content": "$3"
+      }
+    }
+  },
+  "notSettingsFile": {
+    "message": "Not a settings file: $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "originNote": {
+    "message": "<code>origin</code> is not copied from the file: it names the producer, so the extension always writes <code>Thunderbird</code> and the gateway writes <code>PSEMP-Gateway</code>. That is the only intentional difference between the two, and the parity test asserts it."
+  },
+  "pgpNote": {
+    "message": "<strong>OpenPGP already configured in Thunderbird.</strong> Put the fingerprint of the key your account already signs with here (Account Settings → End-to-End Encryption → OpenPGP Key Manager → your key). A MailExtension cannot read Thunderbird's keyring, so this header is a <em>claim</em>: it is the one value a recipient has to check against the signature. <code>psemp-gateway pgp-check</code> compares the claim with the signer actually present in the delivered message, and it never adds a second signature to a message Thunderbird already signed. Thunderbird signs PGP/MIME with <code>protected-headers=\"v1\"</code>, so the <code>X-PasevSU-*</code> headers <em>are</em> repeated inside the signed part and editing one breaks the signature — but with encryption switched on the headers stay in the clear while the body does not."
+  },
+  "limitationsNote": {
+    "message": "Real OpenPGP signatures (<code>.asc</code>) and OpenTimestamps (<code>.ots</code>) cannot be produced inside a Thunderbird MailExtension; the <code>X-PasevSU-OTS</code> header is a marker for the SMTP gateway. Run <code>node psemp-gateway/cli.js seal PasevSU_Manifest.json</code> to turn the marker into a real detached signature and proof. The marker is written by default so no message is ever sent unstamped — untick the box only if you deliberately do not want the gateway to seal."
+  },
+  "receiptNote": {
+    "message": "The receipt request is standard MDN (RFC 8098): the recipient is <em>asked</em>, not obliged, and most clients show a dialog. Thunderbird's own <em>Return Receipts</em> setting in Account Settings asks as well; both may appear, which is harmless. The address is the identity the message is sent from."
+  }
+}

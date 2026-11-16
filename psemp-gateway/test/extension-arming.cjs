@@ -138,7 +138,8 @@ check('plain-text send gets the full header set in contract order', async () => 
   );
 
   const names = headerNames(result.details.customHeaders);
-  // No attachments and no fingerprint configured, so those two are omitted.
+  // No attachments and no fingerprint configured, so those are omitted; the count
+  // stays, because "0 files" is a claim and silence is not.
   assert.deepStrictEqual(names, [
     'X-PasevSU-Version',
     'X-PasevSU-Framework',
@@ -146,12 +147,14 @@ check('plain-text send gets the full header set in contract order', async () => 
     'X-PasevSU-Organization',
     'X-PasevSU-Evidence-ID',
     'X-PasevSU-Body-SHA256',
+    'X-PasevSU-Attachments-Count',
     'X-PasevSU-Manifest-SHA256',
     'X-PasevSU-Merkle-Root',
     'X-PasevSU-OTS',
   ]);
 
   const headers = headerMap(result.details.customHeaders);
+  assert.strictEqual(headers.get('X-PasevSU-Attachments-Count'), '0');
   assert.strictEqual(headers.get('X-PasevSU-Body-SHA256'), sha256Hex('Hello evidence'));
   assert.strictEqual(headers.get('X-PasevSU-Origin'), 'Thunderbird');
   assert.strictEqual(headers.get('X-PasevSU-Organization'), 'PasevSU');
@@ -246,8 +249,61 @@ check('attachments are hashed and the merkle root matches an independent tree', 
   const list = headers.get('X-PasevSU-Attachments-SHA256');
   assert.strictEqual(list, `a.txt=${sha256Hex(first)},b.bin=${sha256Hex(second)}`);
 
+  // Reported defect "the attachment hashes are missing": the comma list alone was
+  // too easy to lose. The count and one header per file make each file's hash
+  // readable on its own, and survive a client that folds or truncates the list.
+  assert.strictEqual(headers.get('X-PasevSU-Attachments-Count'), '2');
+  assert.strictEqual(headers.get('X-PasevSU-Attachment-1'), `a.txt=${sha256Hex(first)}`);
+  assert.strictEqual(headers.get('X-PasevSU-Attachment-2'), `b.bin=${sha256Hex(second)}`);
+  assert.strictEqual(
+    headers.get('X-PasevSU-Attachments-Error'),
+    undefined,
+    'a readable attachment must not also be reported as a failure'
+  );
+
   const expectedRoot = referenceMerkle([bodyHash, sha256Hex(first), sha256Hex(second)]);
   assert.strictEqual(headers.get('X-PasevSU-Merkle-Root'), expectedRoot);
+});
+
+check('an unreadable attachment is published as a failure, not as an empty chain', async () => {
+  // A file the user attached, that the recipient receives, and that no header
+  // mentions: the chain would look complete while covering nothing. Say it out loud.
+  const { listeners } = loadExtension({
+    attachments: { 8: { name: 'locked.pdf', bytes: Buffer.from('x'), throws: new Error('EPERM') } },
+  });
+
+  const details = {
+    isPlainText: true,
+    body: 'unreadable file',
+    attachments: [{ id: 8, name: 'locked.pdf' }],
+    customHeaders: [],
+  };
+  const { details: out } = await listeners[0]({}, details);
+  const headers = headerMap(out.customHeaders);
+
+  assert.strictEqual(headers.get('X-PasevSU-Attachments-Count'), '0');
+  assert.strictEqual(headers.get('X-PasevSU-Attachments-SHA256'), undefined);
+  assert.match(headers.get('X-PasevSU-Attachments-Error'), /^locked\.pdf=EPERM$/);
+});
+
+check('the manifest carries the SHA3-512 slots the gateway fills', async () => {
+  const bytes = Buffer.from('sealed later');
+  const { listeners, added } = loadExtension({
+    attachments: { 3: { name: 'c.txt', bytes } },
+    listed: [{ id: 3, name: 'c.txt' }],
+  });
+
+  const details = { isPlainText: true, body: 'plain', attachments: [], customHeaders: [] };
+  await listeners[0]({ id: 9 }, details);
+  const parsed = JSON.parse(await added[0].attachment.file.text());
+
+  // Web Crypto has no SHA3-512, so the key is present and null: the shape is the
+  // same whichever component built the manifest, and `psemp-gateway seal` can see
+  // exactly what it still has to compute.
+  assert.ok('message_sha3_512' in parsed, 'the manifest always has the SHA3-512 slot');
+  assert.strictEqual(parsed.message_sha3_512, null);
+  assert.ok('sha3_512' in parsed.attachments[0]);
+  assert.strictEqual(parsed.attachments[0].sha3_512, null);
 });
 
 check('the files are enumerated with listAttachments, not the send snapshot', async () => {
@@ -397,6 +453,80 @@ check('enableOts=false drops the marker header', async () => {
   const details = { isPlainText: true, body: 'no marker', attachments: [], customHeaders: [] };
   const { details: out } = await listeners[0]({}, details);
   assert.ok(!headerMap(out.customHeaders).has('X-PasevSU-OTS'));
+});
+
+check('a delivery receipt is requested by default, addressed to the sender', async () => {
+  // Reported defect "the delivery-receipt feature does not exist". Like every other
+  // header here it must be on without being asked for per message, so the default
+  // is enableReceipt: true and the address comes from the identity being sent from.
+  const { listeners, writes } = loadExtension();
+
+  const details = {
+    isPlainText: true,
+    body: 'please confirm receipt',
+    attachments: [],
+    customHeaders: [],
+    from: 'pasev@example.org',
+  };
+  const { details: out } = await listeners[0]({}, details);
+  const headers = headerMap(out.customHeaders);
+
+  assert.strictEqual(headers.get('X-PasevSU-Receipt'), 'requested');
+  assert.strictEqual(headers.get('Disposition-Notification-To'), 'pasev@example.org');
+  assert.strictEqual(writes.psempReceiptError, null, 'a working receipt leaves no problem behind');
+});
+
+check('the receipt falls back to the configured address and a Recipient object', async () => {
+  const { listeners } = loadExtension({ stored: { receiptAddress: 'fallback@example.org' } });
+
+  const withoutFrom = { isPlainText: true, body: 'a', attachments: [], customHeaders: [] };
+  const first = await listeners[0]({}, withoutFrom);
+  assert.strictEqual(
+    headerMap(first.details.customHeaders).get('Disposition-Notification-To'),
+    'fallback@example.org',
+    'a snapshot without `from` still gets a receipt, via the configured address'
+  );
+
+  const objectFrom = {
+    isPlainText: true,
+    body: 'b',
+    attachments: [],
+    customHeaders: [],
+    from: { email: 'object@example.org' },
+  };
+  const second = await listeners[0]({}, objectFrom);
+  assert.strictEqual(
+    headerMap(second.details.customHeaders).get('Disposition-Notification-To'),
+    'object@example.org'
+  );
+});
+
+check('no address means no receipt header, and the reason is recorded', async () => {
+  const { listeners, writes } = loadExtension();
+  const details = { isPlainText: true, body: 'nobody', attachments: [], customHeaders: [] };
+  const { details: out } = await listeners[0]({}, details);
+
+  const headers = headerMap(out.customHeaders);
+  assert.ok(!headers.has('Disposition-Notification-To'), 'a receipt with no address is not sent');
+  assert.ok(!headers.has('X-PasevSU-Receipt'));
+  // A code, not a sentence: the options page owns the words and translates them.
+  assert.strictEqual(writes.psempReceiptError, 'no-address');
+});
+
+check('enableReceipt=false drops both receipt headers', async () => {
+  const { listeners } = loadExtension({ stored: { enableReceipt: false } });
+  const details = {
+    isPlainText: true,
+    body: 'no receipt',
+    attachments: [],
+    customHeaders: [],
+    from: 'pasev@example.org',
+  };
+  const { details: out } = await listeners[0]({}, details);
+  const headers = headerMap(out.customHeaders);
+
+  assert.ok(!headers.has('Disposition-Notification-To'));
+  assert.ok(!headers.has('X-PasevSU-Receipt'));
 });
 
 check('the HTML body falls back to plainTextBody', async () => {

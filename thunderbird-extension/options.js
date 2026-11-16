@@ -10,6 +10,8 @@ const DEFAULTS = {
   organization: "PasevSU",
   pgpFingerprint: "",
   enableOts: true,
+  enableReceipt: true,
+  receiptAddress: "",
 };
 
 const FIELDS = {
@@ -19,7 +21,64 @@ const FIELDS = {
   organization: document.getElementById("organization"),
   pgpFingerprint: document.getElementById("pgpFingerprint"),
   enableOts: document.getElementById("enableOts"),
+  enableReceipt: document.getElementById("enableReceipt"),
+  receiptAddress: document.getElementById("receiptAddress"),
 };
+
+// English fallbacks: the page must stay readable when a catalogue entry is missing
+// or when this script runs outside Thunderbird (the tests drive it with a stub DOM).
+const FALLBACK = {
+  armedChecking: "Checking whether the background script is armed…",
+  armedOk: "Armed — background script loaded at $1.",
+  armedNoReport: "Not armed — the background script has not reported yet. Restart Thunderbird.",
+  armedError: "Not armed — $1",
+  manifestError: "Last send: the manifest could NOT be attached — $1",
+  lastSendSummary:
+    "Stamped $1 message(s). Last: $2, Evidence-ID $3, $4 attachment(s), $5 headers.",
+  lastSendNone:
+    "Stamped 0 messages — no outgoing message has been stamped yet. Send one and this line will update.",
+  attachmentHashes: "Attachment hashes of the last message:",
+  attachmentFailures: "Unreadable attachments (named in X-PasevSU-Attachments-Error): $1",
+  receiptError:
+    "No receipt address: the receipt header is only written when the sending identity or the fallback address below is known.",
+  save: "Save",
+  saved: "Saved.",
+  exported: "Exported settings.default.json",
+  imported: "Imported $1 of $2 keys$3",
+  notSettingsFile: "Not a settings file: $1",
+};
+
+const i18n = (browser && browser.i18n) || null;
+
+function t(key, substitutions) {
+  const subs = substitutions == null ? [] : [].concat(substitutions).map(String);
+  if (i18n && typeof i18n.getMessage === "function") {
+    const message = i18n.getMessage(key, subs);
+    if (message) return message;
+  }
+  const template = FALLBACK[key] || key;
+  return template.replace(/\$(\d)/g, (match, index) => {
+    const value = subs[Number(index) - 1];
+    return value == null ? match : value;
+  });
+}
+
+// Locale files carry markup (<code>, <strong>), so HTML keys are set as HTML. The
+// only values interpolated into them are ours, never message content.
+function applyI18n() {
+  if (typeof document.querySelectorAll !== "function" || !i18n) return;
+  const language = typeof i18n.getUILanguage === "function" ? i18n.getUILanguage() : "";
+  if (language) document.documentElement.lang = language;
+
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    const message = i18n.getMessage(node.dataset.i18n);
+    if (message) node.textContent = message;
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach((node) => {
+    const message = i18n.getMessage(node.dataset.i18nHtml);
+    if (message) node.innerHTML = message;
+  });
+}
 
 // Same rule as background.js: uppercase hex, no separators, so a fingerprint
 // pasted from Thunderbird's key properties is stored exactly as gpg prints it.
@@ -38,7 +97,24 @@ function setStatus(message) {
   }, 3000);
 }
 
+function renderLines(container, lines) {
+  if (!container) return;
+  const items = lines.filter(Boolean);
+  if (typeof container.replaceChildren === "function" && typeof document.createElement === "function") {
+    container.replaceChildren(
+      ...items.map((line) => {
+        const row = document.createElement("div");
+        row.textContent = line;
+        return row;
+      }),
+    );
+  } else {
+    container.textContent = items.join(" | ");
+  }
+}
+
 async function load() {
+  applyI18n();
   const stored = await browser.storage.local.get(DEFAULTS);
   const config = Object.assign({}, DEFAULTS, stored);
   FIELDS.version.value = config.version;
@@ -47,6 +123,8 @@ async function load() {
   FIELDS.organization.value = config.organization;
   FIELDS.pgpFingerprint.value = config.pgpFingerprint;
   FIELDS.enableOts.checked = Boolean(config.enableOts);
+  FIELDS.enableReceipt.checked = Boolean(config.enableReceipt);
+  FIELDS.receiptAddress.value = config.receiptAddress;
   await renderArmed();
 }
 
@@ -60,14 +138,17 @@ async function renderArmed() {
     psempManifestError: "",
     psempLastSend: null,
     psempSendCount: 0,
+    psempReceiptError: "",
   });
   const armed = document.getElementById("armed");
-  if (health.psempArmError) {
-    armed.textContent = `Not armed — ${health.psempArmError}`;
-  } else if (health.psempLastLoadedAt) {
-    armed.textContent = `Armed — background script loaded at ${health.psempLastLoadedAt}.`;
-  } else {
-    armed.textContent = "Not armed — the background script has not reported yet. Restart Thunderbird.";
+  if (armed) {
+    if (health.psempArmError) {
+      armed.textContent = t("armedError", health.psempArmError);
+    } else if (health.psempLastLoadedAt) {
+      armed.textContent = t("armedOk", health.psempLastLoadedAt);
+    } else {
+      armed.textContent = t("armedNoReport");
+    }
   }
 
   // The headers can be injected while the manifest attachment is refused, so this
@@ -75,26 +156,58 @@ async function renderArmed() {
   const manifest = document.getElementById("manifest");
   if (manifest) {
     manifest.textContent = health.psempManifestError
-      ? `Last send: the manifest could NOT be attached — ${health.psempManifestError}`
+      ? t("manifestError", health.psempManifestError)
       : "";
   }
+
+  const send = health.psempLastSend;
+  const count = Number(health.psempSendCount) || 0;
 
   // Proof that the extension stamped a message, independent of any Sent folder.
   const lastSend = document.getElementById("lastSend");
   if (lastSend) {
-    const send = health.psempLastSend;
-    const count = Number(health.psempSendCount) || 0;
     if (send && send.at) {
-      lastSend.textContent =
-        `Stamped ${count} message(s). Last: ${send.at}, ` +
-        `Evidence-ID ${send.evidenceId || "—"}, ` +
-        `${send.attachmentCount || 0} attachment(s), ` +
-        `${(send.headers || []).length} headers.`;
+      lastSend.textContent = t("lastSendSummary", [
+        count,
+        send.at,
+        send.evidenceId || "—",
+        send.attachmentCount || 0,
+        (send.headers || []).length,
+      ]);
     } else {
-      lastSend.textContent =
-        "Stamped 0 messages — no outgoing message has been stamped yet. " +
-        "Send one and this line will update.";
+      lastSend.textContent = t("lastSendNone");
     }
+  }
+
+  // The reported defect was "the attachment hashes are missing". They are shown
+  // here as name=hash, exactly as they were written into the header.
+  const hashesWrap = document.getElementById("attachHashesWrap");
+  const hashes = document.getElementById("attachHashes");
+  const entries = send && Array.isArray(send.attachments) ? send.attachments : [];
+  if (hashesWrap) {
+    if (entries.length > 0 && hashesWrap.classList) hashesWrap.classList.remove("hidden");
+    else if (hashesWrap.classList) hashesWrap.classList.add("hidden");
+  }
+  if (hashes) {
+    renderLines(
+      hashes,
+      entries.map((entry) => `${entry.filename}=${entry.sha256}`),
+    );
+  }
+
+  const failures = send && Array.isArray(send.attachmentFailures) ? send.attachmentFailures : [];
+  const failuresNode = document.getElementById("attachFailures");
+  if (failuresNode) {
+    failuresNode.textContent = failures.length
+      ? t("attachmentFailures", failures.map((f) => `${f.filename} (${f.reason})`).join(", "))
+      : "";
+  }
+
+  // The background script stores a CODE, not a sentence, so the wording stays in
+  // the locale files (the German page must not show an English reason).
+  const receiptProblem = document.getElementById("receiptProblem");
+  if (receiptProblem) {
+    receiptProblem.textContent = health.psempReceiptError ? t("receiptError") : "";
   }
 }
 
@@ -106,17 +219,20 @@ async function save() {
     organization: FIELDS.organization.value.trim() || DEFAULTS.organization,
     pgpFingerprint: normalizeFingerprint(FIELDS.pgpFingerprint.value),
     enableOts: FIELDS.enableOts.checked,
+    enableReceipt: FIELDS.enableReceipt.checked,
+    receiptAddress: FIELDS.receiptAddress.value.trim(),
   };
   await browser.storage.local.set(next);
   FIELDS.pgpFingerprint.value = next.pgpFingerprint;
-  setStatus("Saved.");
+  FIELDS.receiptAddress.value = next.receiptAddress;
+  setStatus(t("saved"));
 }
 
 document.addEventListener("DOMContentLoaded", load);
 document.getElementById("save").addEventListener("click", save);
 
 // ── Shared settings file ────────────────────────────────────────────────────────
-// `psemp-gateway/settings.default.json` carries the same six keys, so one file can
+// `psemp-gateway/settings.default.json` carries the same keys, so one file can
 // describe both halves. `origin` is the exception: it names the producer and must
 // stay `Thunderbird` here, otherwise the extension would claim to be the gateway.
 
@@ -132,6 +248,10 @@ function normalizeSettings(raw) {
   }
   if (source.pgpFingerprint != null) next.pgpFingerprint = normalizeFingerprint(source.pgpFingerprint);
   if (source.enableOts != null) next.enableOts = source.enableOts === true || source.enableOts === "true";
+  if (source.enableReceipt != null) {
+    next.enableReceipt = source.enableReceipt === true || source.enableReceipt === "true";
+  }
+  if (source.receiptAddress != null) next.receiptAddress = String(source.receiptAddress).trim();
   return next;
 }
 
@@ -140,7 +260,7 @@ async function importSettings(file) {
   try {
     parsed = JSON.parse(await file.text());
   } catch (error) {
-    setStatus(`Not a settings file: ${error.message}`);
+    setStatus(t("notSettingsFile", error.message));
     return;
   }
   const incoming = normalizeSettings(parsed);
@@ -151,7 +271,7 @@ async function importSettings(file) {
   await load();
   const applied = Object.keys(incoming).length;
   const extra = unknown.length ? ` (ignored: ${unknown.join(", ")})` : "";
-  setStatus(`Imported ${applied} of ${SHARED_KEYS.length} keys${extra}`);
+  setStatus(t("imported", [applied, SHARED_KEYS.length, extra]));
 }
 
 async function exportSettings() {
@@ -166,6 +286,8 @@ async function exportSettings() {
       organization: config.organization,
       pgpFingerprint: config.pgpFingerprint,
       enableOts: config.enableOts,
+      enableReceipt: config.enableReceipt,
+      receiptAddress: config.receiptAddress,
     },
     null,
     2,
@@ -175,7 +297,7 @@ async function exportSettings() {
   link.href = url;
   link.download = "settings.default.json";
   link.click();
-  setStatus("Exported settings.default.json");
+  setStatus(t("exported"));
 }
 
 document.getElementById("importFile").addEventListener("change", (event) => {

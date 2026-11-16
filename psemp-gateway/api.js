@@ -48,6 +48,12 @@ const DEFAULTS = Object.freeze({
   // On by default so the marker is written without any per-message decision; the
   // extension's options page can turn it off and that stored value wins.
   enableOts: true,
+  // Delivery receipt (MDN, RFC 8098). On by default for the same reason: asking for
+  // a receipt is the standard behaviour, not a per-message choice. The gateway uses
+  // the same switch and falls back to `receiptAddress` when the message carries no
+  // `From` it can answer to.
+  enableReceipt: true,
+  receiptAddress: '',
 });
 
 const SETTINGS_FILENAME = 'settings.default.json';
@@ -76,19 +82,26 @@ function loadSettings(file = SETTINGS_PATH) {
   return settings;
 }
 
-/** Header names, in injection order. `X-PasevSU-OTS` is a marker during compose. */const HEADER_NAMES = Object.freeze({
+/** Header names, in injection order. `X-PasevSU-OTS` is a marker during compose. */
+const HEADER_NAMES = Object.freeze({
   version: 'X-PasevSU-Version',
   framework: 'X-PasevSU-Framework',
   origin: 'X-PasevSU-Origin',
   organization: 'X-PasevSU-Organization',
   evidenceId: 'X-PasevSU-Evidence-ID',
   bodySha256: 'X-PasevSU-Body-SHA256',
+  attachmentsCount: 'X-PasevSU-Attachments-Count',
   attachmentsSha256: 'X-PasevSU-Attachments-SHA256',
+  attachmentsError: 'X-PasevSU-Attachments-Error',
   manifestSha256: 'X-PasevSU-Manifest-SHA256',
   merkleRoot: 'X-PasevSU-Merkle-Root',
   pgpFingerprint: 'X-PasevSU-PGP-Fingerprint',
   ots: 'X-PasevSU-OTS',
+  receipt: 'X-PasevSU-Receipt',
 });
+
+/** Standard MDN header (RFC 8098), sent with `X-PasevSU-Receipt: requested`. */
+const MDN_HEADER = 'Disposition-Notification-To';
 
 /* ------------------------------------------------------------------ *
  * Hashing
@@ -303,6 +316,7 @@ function resolveConfig(config) {
 function buildManifest({
   config,
   bodyHash,
+  bodySha3,
   attachmentEntries = [],
   merkle = '',
   evidenceId,
@@ -310,13 +324,18 @@ function buildManifest({
   blake3 = null,
 } = {}) {
   const resolved = resolveConfig(config);
+  // Key order is a contract: `thunderbird-extension/background.js` writes the same
+  // shape with SHA3-512/BLAKE3 left null, because Web Crypto cannot compute them.
+  // The gateway recomputes those slots here, so one manifest shape serves both.
   return {
     framework: FRAMEWORK,
     version: resolved.version,
     message_sha256: bodyHash,
+    message_sha3_512: bodySha3 === undefined ? null : bodySha3,
     attachments: attachmentEntries.map((entry) => ({
       filename: entry.filename,
       sha256: entry.sha256,
+      sha3_512: entry.sha3_512 === undefined ? null : entry.sha3_512,
       blake3: entry.blake3 === undefined ? blake3 : entry.blake3,
     })),
     merkle_root: merkle,
@@ -398,6 +417,10 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
   }
   const bodyText = typeof body === 'string' ? body : String(body == null ? '' : body);
   const bodyHash = sha256Hex(bodyText);
+  // SHA3-512 rides alongside SHA-256 as the second, stronger digest. It is not
+  // Merkle input (the extension computes the root and cannot produce SHA3), so it
+  // strengthens the record without changing the chain the extension already proved.
+  const bodySha3 = hashHex('sha3-512', bodyText);
 
   const entries = [];
   const skipped = [];
@@ -408,7 +431,8 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
       continue;
     }
     try {
-      entries.push({ filename, sha256: sha256Hex(attachment.data) });
+      const data = toBuffer(attachment.data);
+      entries.push({ filename, sha256: sha256Hex(data), sha3_512: hashHex('sha3-512', data) });
     } catch (error) {
       skipped.push({ filename, reason: error && error.message ? error.message : String(error) });
     }
@@ -421,6 +445,7 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
   const manifest = buildManifest({
     config: resolved,
     bodyHash,
+    bodySha3,
     attachmentEntries: entries,
     merkle,
     evidenceId: id,
@@ -442,6 +467,7 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
     config: resolved,
     evidenceId: id,
     bodySha256: bodyHash,
+    bodySha3_512: bodySha3,
     attachments: entries,
     skipped,
     merkleRoot: merkle,
@@ -455,6 +481,162 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
       return { name: line.slice(0, index).trim(), value: line.slice(index + 1).trim() };
     }),
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Sealing (the step a MailExtension cannot perform)
+ *
+ * A Thunderbird MailExtension can hash with Web Crypto and attach a manifest, but it
+ * cannot run `gpg` or `ots` and Web Crypto has no SHA3-512. `seal` closes that gap on
+ * the gateway side: it fills the slots the extension left null, then writes a real
+ * detached signature (`.asc`) and a real OpenTimestamps proof (`.ots`) over the
+ * SEALED text — not over the text the extension wrote.
+ *
+ * The Merkle root is deliberately NOT recomputed: it is built from SHA-256 leaves
+ * only, so filling SHA3-512 leaves the root in the message header valid. A stronger
+ * second digest must never invalidate the chain the recipient already has.
+ * ------------------------------------------------------------------ */
+
+/**
+ * Fill the SHA3-512 slots and attach signature + timestamp proofs.
+ *
+ * Refuses to seal when the supplied bytes do not match the manifest: sealing a
+ * manifest that describes different bytes would turn a mismatch into a certificate.
+ *
+ * @param {string} manifestPath The `PasevSU_Manifest.json` written by the extension.
+ * @param {{body?: string|Buffer, attachments?: Array<{filename: string, data?: *}>,
+ *          keyId?: string, sign?: boolean, stamp?: boolean, blake3?: string|null}} [options]
+ * @returns {Promise<object>} a report; tooling that is missing is reported, not thrown.
+ */
+async function sealManifest(manifestPath, options = {}) {
+  const target = path.resolve(manifestPath);
+  if (!fs.existsSync(target)) throw new Error(`Manifest not found: ${target}`);
+  const raw = fs.readFileSync(target, 'utf8');
+  let claimed;
+  try {
+    claimed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`${path.basename(target)} is not valid JSON: ${error.message}`);
+  }
+  if (!claimed || typeof claimed !== 'object' || !claimed.framework || !claimed.evidence_id) {
+    throw new Error(`${path.basename(target)} is not a PasevSU manifest (framework/evidence_id missing).`);
+  }
+
+  const report = {
+    ok: false,
+    status: 'mismatch',
+    manifest: target,
+    evidenceId: claimed.evidence_id,
+    merkleRoot: claimed.merkle_root,
+    filled: [],
+    confirmed: [],
+    unsealedFiles: [],
+    mismatches: [],
+    signature: null,
+    timestamp: null,
+    claimedManifestSha256: manifestSha256(raw),
+    sealedManifestSha256: '',
+  };
+
+  if (options.body !== undefined && options.body !== null) {
+    const actual = sha256Hex(options.body);
+    if (actual !== claimed.message_sha256) {
+      report.mismatches.push({
+        target: 'body',
+        claimed: claimed.message_sha256,
+        actual,
+        detail: 'The manifest describes different bytes. Refusing to seal it.',
+      });
+      return report;
+    }
+    const sha3 = hashHex('sha3-512', options.body);
+    if (claimed.message_sha3_512 === sha3) {
+      report.confirmed.push('message_sha3_512');
+    } else {
+      claimed.message_sha3_512 = sha3;
+      report.filled.push('message_sha3_512');
+    }
+  }
+
+  const supplied = new Map();
+  for (const attachment of options.attachments || []) {
+    if (!attachment || attachment.data === undefined || attachment.data === null) continue;
+    supplied.set(sanitizeHeaderValue(attachment.filename), attachment.data);
+  }
+
+  claimed.attachments = (Array.isArray(claimed.attachments) ? claimed.attachments : []).map((entry) => {
+    const name = sanitizeHeaderValue(entry && entry.filename);
+    const data = supplied.get(name);
+    if (data === undefined) {
+      report.unsealedFiles.push(name);
+      return entry;
+    }
+    const actual = sha256Hex(data);
+    if (actual !== entry.sha256) {
+      report.mismatches.push({ target: name, claimed: entry.sha256, actual });
+      return entry;
+    }
+    const sha3 = hashHex('sha3-512', data);
+    if (options.blake3) entry.blake3 = String(options.blake3);
+    if (entry.sha3_512 === sha3) {
+      report.confirmed.push(`${name}:sha3_512`);
+      return entry;
+    }
+    entry.sha3_512 = sha3;
+    report.filled.push(`${name}:sha3_512`);
+    return entry;
+  });
+
+  if (report.mismatches.length > 0) return report;
+
+  const sealedText = `${serializeManifest(claimed)}\n`;
+  const changed = sealedText !== raw;
+  if (changed) fs.writeFileSync(target, sealedText, 'utf8');
+  report.changed = changed;
+  report.sealedManifestSha256 = manifestSha256(sealedText);
+  report.status = 'sealed';
+
+  const signaturePath = `${target}.asc`;
+  const proofPath = `${target}.ots`;
+  // A proof written over the previous text describes a hash that no longer exists, so
+  // a re-seal must never leave it in place at the live path. The signature can simply be
+  // replaced (gpg --yes); the timestamp cannot, because a proof is append-only, so the
+  // superseded one is moved aside rather than destroyed.
+  let supersededProof = null;
+  if (changed && fs.existsSync(proofPath)) {
+    supersededProof = `${proofPath}.superseded`;
+    fs.renameSync(proofPath, supersededProof);
+  }
+  report.supersededProof = supersededProof;
+
+  if (options.sign === false) {
+    report.signature = { status: 'skipped', reason: 'DISABLED' };
+  } else if (!changed && fs.existsSync(signaturePath)) {
+    // Second run over identical bytes: prove the existing proof still holds.
+    const verified = pgpVerify(target, signaturePath);
+    report.signature = verified.verified
+      ? { status: 'ok', reason: 'ALREADY_SIGNED', signaturePath, verified: true, ...probeSignatureDigest(signaturePath) }
+      : { status: 'failed', reason: 'STALE_SIGNATURE', signaturePath, detail: verified.stderr, verified: false };
+  } else {
+    report.signature = pgpSign(target, { keyId: options.keyId, digestAlgo: options.digestAlgo });
+  }
+
+  if (options.stamp === false) {
+    report.timestamp = { status: 'skipped', reason: 'DISABLED' };
+  } else if (!changed && fs.existsSync(proofPath)) {
+    report.timestamp = { status: 'ok', reason: 'ALREADY_STAMPED', otsPath: proofPath };
+  } else {
+    report.timestamp = await otsStamp(target);
+  }
+
+  const signed = report.signature && report.signature.status === 'ok';
+  const stamped = report.timestamp && report.timestamp.status === 'ok';
+  report.ok = true;
+  report.status = signed && stamped ? 'sealed' : 'sealed-partial';
+  report.signaturePath = signed ? report.signature.signaturePath || signaturePath : null;
+  report.proofPath = stamped ? report.timestamp.otsPath || proofPath : null;
+  report.artifacts = [target, report.signaturePath, report.proofPath].filter(Boolean);
+  return report;
 }
 
 /**
@@ -509,6 +691,18 @@ function verifyEvidence(manifest, { body = '', attachments = [] } = {}) {
     detail: `manifest=${manifest.message_sha256} actual=${bodyHash}`,
   });
 
+  // SHA3-512 is optional (the extension leaves it null), but when a manifest claims
+  // it, the claim must match the bytes — a filled-in slot that is wrong is worse
+  // than an empty one.
+  if (typeof manifest.message_sha3_512 === 'string' && manifest.message_sha3_512) {
+    const actual = hashHex('sha3-512', typeof body === 'string' ? body : String(body == null ? '' : body));
+    checks.push({
+      name: 'body-sha3-512',
+      ok: actual === manifest.message_sha3_512,
+      detail: `manifest=${manifest.message_sha3_512} actual=${actual}`,
+    });
+  }
+
   const claimed = Array.isArray(manifest.attachments) ? manifest.attachments : [];
   const actualLeaves = [bodyHash];
   for (const entry of claimed) {
@@ -527,6 +721,14 @@ function verifyEvidence(manifest, { body = '', attachments = [] } = {}) {
       ok: actual === entry.sha256,
       detail: `manifest=${entry.sha256} actual=${actual}`,
     });
+    if (typeof entry.sha3_512 === 'string' && entry.sha3_512) {
+      const actualSha3 = hashHex('sha3-512', match.data);
+      checks.push({
+        name: `attachment-sha3:${entry.filename}`,
+        ok: actualSha3 === entry.sha3_512,
+        detail: `manifest=${entry.sha3_512} actual=${actualSha3}`,
+      });
+    }
   }
 
   // The root is recomputed from the bytes actually supplied, so a tampered body or
@@ -659,6 +861,7 @@ async function otsUpgrade(otsPath, options = {}) {
  * ------------------------------------------------------------------ */
 
 let gpgCache;
+let gpgCacheKey;
 
 function findExecutable(name) {
   const extensions = process.platform === 'win32' ? ['.exe', ''] : [''];
@@ -676,9 +879,22 @@ function findExecutable(name) {
   return null;
 }
 
+/**
+ * The environment the cached answer was computed from.
+ *
+ * A bare memo would pin the first answer for the life of the process, so a gateway
+ * that starts before GnuPG is installed would report GPG_NOT_FOUND forever, and a
+ * caller that extends PATH would still be told there is no gpg. Keying the cache on
+ * PATH keeps the saving without keeping the staleness.
+ */
+function pgpCacheKey() {
+  return `${process.env.PATH || ''}\u0000${process.env.PATHEXT || ''}`;
+}
+
 /** Detect a usable `gpg` binary. */
 function pgpStatus() {
-  if (gpgCache) return gpgCache;
+  const key = pgpCacheKey();
+  if (gpgCache && gpgCacheKey === key) return gpgCache;
   const executable = findExecutable('gpg') || findExecutable('gpg2');
   if (!executable) {
     gpgCache = {
@@ -687,6 +903,7 @@ function pgpStatus() {
       reason: 'GPG_NOT_FOUND',
       detail: 'No gpg/gpg2 binary on PATH. Install GnuPG or run OpenPGP.js after building packages/15-openpgpjs.',
     };
+    gpgCacheKey = key;
     return gpgCache;
   }
   const probe = spawnSync(executable, ['--version'], { encoding: 'utf8' });
@@ -696,6 +913,7 @@ function pgpStatus() {
     version: probe.status === 0 ? String(probe.stdout).split(/\r?\n/)[0] : null,
     reason: probe.status === 0 ? null : 'GPG_PROBE_FAILED',
   };
+  gpgCacheKey = key;
   return gpgCache;
 }
 
@@ -1057,15 +1275,85 @@ function pgpResolvedFingerprint(input) {
   return normalizeFingerprint(info.issuerFingerprint || info.issuerKeyId);
 }
 
+const DIGEST_NAMES = Object.freeze({
+  1: 'MD5',
+  2: 'SHA-1',
+  3: 'RIPEMD-160',
+  8: 'SHA-256',
+  9: 'SHA-384',
+  10: 'SHA-512',
+  11: 'SHA-224',
+});
+
+/**
+ * Read the digest algorithm gpg ACTUALLY used, rather than claiming one.
+ *
+ * Signing strength comes from the key and the digest gpg picks for it, so a report
+ * must state the digest found in the signature packet, never the one requested.
+ * A wrong name is not a stronger name: gpg answers `--digest-algo SHA-512` with
+ * "selected digest algorithm is invalid" (exit 2) because it spells digests without
+ * punctuation, and a failed sign leaves the manifest unsigned.
+ */
+function probeSignatureDigest(signaturePath) {
+  const listing = gpgRun(['--batch', '--list-packets', path.resolve(signaturePath)]);
+  if (listing.status !== 'ok') {
+    return { digestAlgo: null, digestSource: 'unavailable', digestDetail: listing.reason || listing.stderr };
+  }
+  const match = /digest algo (\d+)/.exec(listing.stdout);
+  if (!match) return { digestAlgo: null, digestSource: 'unparsed' };
+  const id = Number(match[1]);
+  return { digestAlgo: DIGEST_NAMES[id] || `alg-${id}`, digestId: id, digestSource: 'gpg --list-packets' };
+}
+
+/**
+ * gpg's own digest names, which carry no punctuation.
+ *
+ * Measured against gpg 2.5.24: SHA512, SHA384, SHA256, SHA224, SHA1, MD5 and
+ * RIPEMD160 sign; SHA-512 (hyphenated), SHA3-256, SHA3-512 and SHAKE256 are all
+ * rejected. SHA3 has no OpenPGP signature packet yet, so the manifest's SHA3-512
+ * rides alongside the signature as a second content digest instead of inside it.
+ */
+const GPG_DIGEST_ALGO = Object.freeze({
+  MD5: 'MD5',
+  SHA1: 'SHA1',
+  'SHA-1': 'SHA1',
+  RIPEMD160: 'RIPEMD160',
+  'RIPEMD-160': 'RIPEMD160',
+  SHA224: 'SHA224',
+  'SHA-224': 'SHA224',
+  SHA256: 'SHA256',
+  'SHA-256': 'SHA256',
+  SHA384: 'SHA384',
+  'SHA-384': 'SHA384',
+  SHA512: 'SHA512',
+  'SHA-512': 'SHA512',
+});
+
+/** `{ name }` for gpg, or `{ error }` when no signature packet can carry it. */
+function normalizeDigestAlgo(requested) {
+  if (requested === undefined || requested === null || requested === '') return { name: 'SHA512', requested: null };
+  const key = String(requested).trim().toUpperCase();
+  const name = GPG_DIGEST_ALGO[key];
+  if (!name) return { error: 'UNSUPPORTED_DIGEST', requested: String(requested) };
+  return { name, requested: String(requested) };
+}
+
 /**
  * Detached-sign a file. Writes `<file>.asc` next to it unless `outputPath` is given.
+ *
+ * The digest defaults to SHA-512, the strongest gpg can put in an OpenPGP signature
+ * today, spelled the way gpg accepts it. `digestAlgo` may override it with any name
+ * in GPG_DIGEST_ALGO; anything else is refused up front instead of failing in gpg.
+ * The returned `digestAlgo` is read back out of the signature, so it is the truth on
+ * the wire rather than an echo of the request.
  *
  * Refuses to sign something that already carries an OpenPGP signature: Thunderbird
  * signs with the key configured in the account, and a second signature stacked on
  * top makes both harder to verify. Pass `force: true` to sign regardless.
- * @returns {{status: string, signaturePath?: string, reason?: string}}
+ * @returns {{status: string, signaturePath?: string, digestAlgo?: string|null,
+ *   digestSource?: string, reason?: string}}
  */
-function pgpSign(file, { keyId, outputPath, armor = true, force = false } = {}) {
+function pgpSign(file, { keyId, outputPath, armor = true, force = false, digestAlgo } = {}) {
   const input = path.resolve(file);
   const existing = force ? null : detectPgpSignature({ path: input });
   if (existing && existing.signed) {
@@ -1080,16 +1368,34 @@ function pgpSign(file, { keyId, outputPath, armor = true, force = false } = {}) 
     };
   }
 
+  const digest = normalizeDigestAlgo(digestAlgo);
+  if (digest.error) {
+    return {
+      status: 'failed',
+      reason: digest.error,
+      detail:
+        `No OpenPGP signature packet can carry ${digest.requested}. ` +
+        `Supported: ${Object.keys(GPG_DIGEST_ALGO).filter((name) => !name.includes('-')).join(', ')}.`,
+    };
+  }
   const status = pgpStatus();
   if (!status.available) return { status: 'unavailable', reason: status.reason, detail: status.detail };
   const target = path.resolve(outputPath || `${input}.asc`);
   const args = ['--batch', '--yes', '--detach-sign'];
   if (armor) args.push('--armor');
+  args.push('--digest-algo', digest.name);
   if (keyId) args.push('--local-user', String(keyId));
   args.push('--output', target, input);
   const result = gpgRun(args);
   if (result.status !== 'ok') return result;
-  return { status: 'ok', signaturePath: target, executable: result.executable };
+  const probed = probeSignatureDigest(target);
+  return {
+    status: 'ok',
+    signaturePath: target,
+    executable: result.executable,
+    digestRequested: digest.requested || digest.name,
+    ...probed,
+  };
 }
 
 /** Verify a detached signature against its file. */
@@ -1234,15 +1540,28 @@ async function selfTest() {
     assert(evidence.attachments.length === 1, 'one readable attachment expected');
     assert(evidence.skipped.length === 1, 'unreadable attachment must be skipped, not fatal');
     assert(evidence.manifest.evidence_id === evidence.evidenceId, 'header and manifest Evidence-ID must match');
+    // The gateway computes the SHA3-512 slots a MailExtension cannot, so the contract
+    // is that both digest sets are present and both cover the same bytes.
+    assert(
+      evidence.manifest.message_sha3_512 === hashHex('sha3-512', 'Hello evidence'),
+      'the gateway must fill the body SHA3-512 slot'
+    );
+    assert(
+      evidence.manifest.attachments[0].sha3_512 === hashHex('sha3-512', 'attached bytes'),
+      'the gateway must fill the attachment SHA3-512 slot'
+    );
+    assert(evidence.manifest.attachments[0].blake3 === null, 'BLAKE3 stays null without an implementation');
     const expectedManifest = [
       '{',
       '  "framework": "PasevSU",',
       '  "version": "1.0",',
       `  "message_sha256": "${evidence.bodySha256}",`,
+      `  "message_sha3_512": "${evidence.manifest.message_sha3_512}",`,
       '  "attachments": [',
       '    {',
       '      "filename": "note.txt",',
       `      "sha256": "${evidence.attachments[0].sha256}",`,
+      `      "sha3_512": "${evidence.manifest.attachments[0].sha3_512}",`,
       '      "blake3": null',
       '    }',
       '  ],',
@@ -1335,6 +1654,7 @@ module.exports = {
   FRAMEWORK,
   SCHEMA_VERSION,
   HEADER_NAMES,
+  MDN_HEADER,
   MANIFEST_FILENAME,
   ALGORITHMS,
   PACKAGES_DIR,
@@ -1357,6 +1677,7 @@ module.exports = {
   buildHeaderLines,
   computeEvidence,
   applyToComposeDetails,
+  sealManifest,
   verifyManifest,
   verifyEvidence,
   // adapters
@@ -1368,6 +1689,8 @@ module.exports = {
   pgpStatus,
   pgpSign,
   pgpVerify,
+  probeSignatureDigest,
+  normalizeDigestAlgo,
   detectPgpSignature,
   extractPgpSignatureBlock,
   pgpInspectMessage,

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>PasevSU Forensic Mail — Options</title>
+    <title data-i18n="optionsTitle">PasevSU Forensic Mail — Options</title>
     <style>
       body {
         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -18,6 +18,11 @@
       }
       .field label {
         font-weight: 600;
+      }
+      .field small {
+        grid-column: 2;
+        color: #555;
+        margin-top: -0.4rem;
       }
       input[type="text"] {
         width: 100%;
@@ -37,100 +42,129 @@
         margin-left: 0.75rem;
         color: #146c43;
       }
+      h1 {
+        font-size: 1.75rem;
+      }
       h2 {
-        font-size: 1.05rem;
+        font-size: 1.35rem;
         margin-top: 2rem;
       }
       .note {
         color: #555;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         margin-top: 1.5rem;
+      }
+      #attachHashes {
+        font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+        font-size: 0.75rem;
+        word-break: break-all;
+      }
+      #attachHashes div {
+        margin-left: 1rem;
+      }
+      .hidden {
+        display: none;
       }
     </style>
   </head>
   <body>
-    <h1>PasevSU Forensic Mail — Options</h1>
-    <p>
+    <h1 data-i18n="optionsTitle">PasevSU Forensic Mail — Options</h1>
+    <p data-i18n-html="optionsIntro">
       These values are written into every outgoing email as
       <code>X-PasevSU-*</code> headers. Changes apply from the next message you send.
     </p>
 
-    <p class="note" id="armed">Checking whether the background script is armed…</p>
+    <p class="note" id="armed"></p>
     <p class="note" id="manifest"></p>
     <p class="note" id="lastSend"></p>
+    <p class="note" id="attachFailures"></p>
+    <p class="note" id="receiptProblem"></p>
+    <div class="note hidden" id="attachHashesWrap">
+      <span data-i18n="attachmentHashes">Attachment hashes of the last message:</span>
+      <div id="attachHashes"></div>
+    </div>
 
     <div class="field">
-      <label for="version">Version</label>
+      <label for="version" data-i18n="labelVersion">Version</label>
       <input type="text" id="version" />
     </div>
     <div class="field">
-      <label for="framework">Framework</label>
+      <label for="framework" data-i18n="labelFramework">Framework</label>
       <input type="text" id="framework" />
     </div>
     <div class="field">
-      <label for="origin">Origin</label>
+      <label for="origin" data-i18n="labelOrigin">Origin</label>
       <input type="text" id="origin" />
     </div>
     <div class="field">
-      <label for="organization">Organization</label>
+      <label for="organization" data-i18n="labelOrganization">Organization</label>
       <input type="text" id="organization" />
     </div>
     <div class="field">
-      <label for="pgpFingerprint">PGP Fingerprint (Thunderbird key)</label>
-      <input
-        type="text"
-        id="pgpFingerprint"
-        placeholder="e.g. 3F2A9C… (leave empty to omit the header)"
-      />
+      <label for="pgpFingerprint" data-i18n="labelPgp">PGP Fingerprint (Thunderbird key)</label>
+      <input type="text" id="pgpFingerprint" />
+      <small data-i18n="pgpHint">e.g. 3F2A9C… (leave empty to omit the header)</small>
     </div>
 
     <div class="checkbox-field">
       <input type="checkbox" id="enableOts" />
-      <label for="enableOts">Mark every message for OpenTimestamps (<code>X-PasevSU-OTS: pending</code>)</label>
+      <label for="enableOts" data-i18n-html="labelOts"
+        >Mark every message for OpenTimestamps (<code>X-PasevSU-OTS: pending</code>)</label
+      >
     </div>
 
-    <button id="save">Save</button>
+    <div class="checkbox-field">
+      <input type="checkbox" id="enableReceipt" />
+      <label for="enableReceipt" data-i18n-html="labelReceipt"
+        >Ask for a delivery receipt on every message
+        (<code>Disposition-Notification-To</code>)</label
+      >
+    </div>
+    <div class="field">
+      <label for="receiptAddress" data-i18n="labelReceiptAddress"
+        >Fallback receipt address</label
+      >
+      <input type="text" id="receiptAddress" />
+      <small data-i18n="receiptAddressHint"
+        >used only when Thunderbird does not report the sending identity</small
+      >
+    </div>
+
+    <button id="save" data-i18n="save">Save</button>
     <span id="status"></span>
 
-    <h2>Shared settings file</h2>
-    <p>
-      The gateway keeps the same six keys in
+    <h2 data-i18n="sectionShared">Shared settings file</h2>
+    <p data-i18n-html="sharedIntro">
+      The gateway keeps the same keys in
       <code>psemp-gateway/settings.default.json</code>. Import it here so both halves
       agree on version, framework, organization and PGP fingerprint, and export the
       current values back to that file when you change them.
     </p>
     <div class="checkbox-field">
       <input type="file" id="importFile" accept=".json,application/json" />
-      <button id="exportFile" type="button">Export settings file</button>
+      <button id="exportFile" type="button" data-i18n="exportButton">
+        Export settings file
+      </button>
     </div>
-    <p class="note">
+    <p class="note" data-i18n-html="originNote">
       <code>origin</code> is not copied from the file: it names the producer, so the
       extension always writes <code>Thunderbird</code> and the gateway writes
-      <code>PSEMP-Gateway</code>. That is the only intentional difference between the
-      two, and the parity test asserts it.
+      <code>PSEMP-Gateway</code>.
     </p>
 
-    <p class="note">
+    <p class="note" data-i18n-html="receiptNote">
+      The delivery receipt is a standard MDN (RFC 8098): the recipient is
+      <em>asked</em>, not required, and most clients show a dialog.
+    </p>
+
+    <p class="note" data-i18n-html="pgpNote">
       <strong>OpenPGP already configured in Thunderbird.</strong> Put the fingerprint
-      of the key your account already signs with here (Account Settings →
-      End-to-End Encryption → OpenPGP Key Manager → your key). A MailExtension
-      cannot read Thunderbird's keyring, so this header is a <em>claim</em>: it is
-      the one value a recipient has to check against the signature.
-      <code>psemp-gateway pgp-check</code> compares the claim with the signer
-      actually present in the delivered message, and it never adds a second
-      signature to a message Thunderbird already signed.
-      Thunderbird signs PGP/MIME with <code>protected-headers="v1"</code>, so the
-      <code>X-PasevSU-*</code> headers <em>are</em> repeated inside the signed part
-      and editing one breaks the signature — but with encryption switched on the
-      headers stay in the clear while the body does not.
+      of the key your account already signs with here.
     </p>
 
-    <p class="note">
+    <p class="note" data-i18n-html="limitationsNote">
       Real OpenPGP signatures (<code>.asc</code>) and OpenTimestamps
-      (<code>.ots</code>) cannot be produced inside a Thunderbird MailExtension;
-      the <code>X-PasevSU-OTS</code> header is a marker for the SMTP gateway.
-      The marker is written by default so no message is ever sent unstamped —
-      untick the box only if you deliberately do not want the gateway to stamp.
+      (<code>.ots</code>) cannot be produced inside a Thunderbird MailExtension.
     </p>
 
     <script src="options.js"></script>

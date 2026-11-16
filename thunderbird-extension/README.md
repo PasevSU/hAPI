@@ -50,11 +50,25 @@ Dynamic (computed per message):
 | --- | --- |
 | `X-PasevSU-Evidence-ID` | UUID v4 |
 | `X-PasevSU-Body-SHA256` | SHA-256 of the message body (always) |
+| `X-PasevSU-Attachments-Count` | number of attachments (always — `0` is a claim, not an absence) |
 | `X-PasevSU-Attachments-SHA256` | comma-separated `name=sha256` list (only when attachments exist) |
+| `X-PasevSU-Attachment-N` | one header per file, `name=sha256`, `N` from 1 (only when attachments exist) |
+| `X-PasevSU-Attachments-Error` | `name=reason` list — files were attached but none could be hashed |
 | `X-PasevSU-Manifest-SHA256` | SHA-256 of `PasevSU_Manifest.json` (always) |
 | `X-PasevSU-Merkle-Root` | hex Merkle root over body + attachment hashes (always) |
 | `X-PasevSU-PGP-Fingerprint` | `pgpFingerprint` option (omitted if empty) |
 | `X-PasevSU-OTS` | `pending` marker — **on by default**; untick `enableOts` to stop marking |
+| `X-PasevSU-Receipt` | `requested` — only when `enableReceipt` is on |
+| `Disposition-Notification-To` | `receiptAddress` (RFC 8098 MDN request), same condition |
+
+`name` is the attachment's filename with spaces and reserved characters replaced by
+`_` (see `headerToken()`), so the value stays a single ASCII token. The hash itself
+is always the 64-hex SHA-256 of the file's bytes.
+
+Every attachment gets **both** the aggregated list and its own numbered header,
+because a folded comma list loses its tail silently in some clients and mail gates.
+`X-PasevSU-Attachments-Count` is always written: without it, a reader cannot tell
+a message that carried no files from an add-on that failed to hash them.
 
 Thunderbird hands custom header names back in *Http-Header-Case*, so a reopened or
 received message can show `X-Pasevsu-Version` instead of `X-PasevSU-Version`. Field
@@ -68,14 +82,21 @@ The `PasevSU_Manifest.json` attachment contains:
   "framework": "PasevSU",
   "version": "1.0",
   "message_sha256": "...",
+  "message_sha3_512": null,
   "attachments": [
-    { "filename": "document.pdf", "sha256": "...", "blake3": null }
+    { "filename": "document.pdf", "sha256": "...", "sha3_512": null, "blake3": null }
   ],
   "merkle_root": "...",
   "timestamp": "...",
   "evidence_id": "..."
 }
 ```
+
+`message_sha3_512`, each `sha3_512` and every `blake3` are written as `null` by the
+extension, because Web Crypto has no SHA3-512 and BLAKE3 is not available inside a
+MailExtension. They are not decoration: the gateway's `seal` step (see
+[Signing strength](#signing-strength)) fills them in and signs the result. `null`
+therefore means "not computed yet" and must never be read as "verified".
 
 ## Install
 
@@ -241,6 +262,45 @@ transit. Two caveats belong here rather than in a footnote:
   header as "not configured", never as "unsigned" — the signature still names
   the key.
 
+## Delivery receipts
+
+Every message can request a standard delivery/read receipt — the RFC 8098 MDN
+(`Disposition-Notification-To`), which is what mail clients actually honour.
+It is **on by default** (`enableReceipt: true`), matching the rule that nothing
+has to be switched on per message.
+
+| Header | Written when |
+| --- | --- |
+| `Disposition-Notification-To` | `enableReceipt` is on **and** a sender address is known |
+| `X-PasevSU-Receipt: requested` | same condition — marks the request as ours |
+
+The address is the message's own `From:` identity, resolved from the compose
+details; only if Thunderbird reports no identity does the add-on fall back to
+the optional `receiptAddress` option. Nothing is written when both are empty, and
+the options page then shows a warning instead of silently producing a message
+that asks for no receipt.
+
+The request is standard, not coercive: the recipient's client **asks** them, and
+most clients show a dialog. Thunderbird's own per-account "Return Receipts"
+setting exists independently; if both prompt, that is harmless.
+
+### German and Bulgarian
+
+The options page and its hints are localised through `_locales/`:
+
+| Locale | File | Coverage |
+| --- | --- | --- |
+| English (default) | [`_locales/en/messages.json`](_locales/en/messages.json) | 36 keys |
+| German | [`_locales/de/messages.json`](_locales/de/messages.json) | 36 keys, mirrored |
+| Bulgarian | [`_locales/bg/messages.json`](_locales/bg/messages.json) | 36 keys, mirrored |
+
+German was the reported gap ("there is no delivery-receipt function in German"):
+the checkbox, the fallback-address field, its hint, the warning and the
+explanation paragraph all render in German on a German Thunderbird, including
+"Lesebestätigung" terminology. Every locale must carry **exactly** the same key
+set — `psemp-gateway/test/locales.cjs` fails on a missing, extra or empty key in
+any language, so a half-translated panel cannot ship.
+
 ## Limitations
 
 - **OpenPGP / OpenTimestamps.** A MailExtension has no Node, no `gpg` and no `ots`
@@ -254,8 +314,11 @@ transit. Two caveats belong here rather than in a footnote:
   `enableOts`; the server-side half lives in
   [`../psemp-gateway/`](../psemp-gateway/).
 - **SHA3-512 / BLAKE3.** Web Crypto exposes only SHA-1/256/384/512. The
-  extension uses SHA-256; `blake3` in the manifest is `null` for the gateway
-  to fill in.
+  extension uses SHA-256; `message_sha3_512`, each `sha3_512` and every `blake3`
+  are written as `null` for the gateway to fill in (see
+  [Signing strength](#signing-strength)). `null` means "not computed", never
+  "verified". No BLAKE3 implementation is vendored in this repo, so `blake3`
+  stays `null` unless a value is supplied with `--blake3`.
 - **No MD5 / SHA1** are used by design.
 - **The header shape is a contract.** `ComposeDetails.customHeaders` is an array
   of `{ name, value }` **objects** (Thunderbird ≥ 100), not `"Name: value"`
@@ -308,7 +371,7 @@ transit. Two caveats belong here rather than in a footnote:
 
 Thunderbird will not compose or display a custom header unless its name is listed
 in the `mail.compose.other.header` preference. [`user.js`](user.js) ships that
-preference with **all eleven** names, in injection order:
+preference with **all fourteen** names, in injection order:
 
 1. Copy `thunderbird-extension/user.js` into your profile directory, e.g.
    `%APPDATA%\Thunderbird\Profiles\l6o3xe0h.default-esr\user.js`.
@@ -327,4 +390,51 @@ the list in sync with `HEADER_NAMES` in
 [`../psemp-gateway/api.js`](../psemp-gateway/api.js);
 `psemp-gateway/test/settings-parity.cjs` fails if a header is added to the code and
 not registered in `user.js`.
+
+`X-PasevSU-Attachment-N` is the one header that cannot appear in the list: `N`
+is a number, so the name is only known per message. Thunderbird still transmits
+it; it simply will not be offered as a display column.
+
+## Signing strength
+
+The extension hashes with SHA-256 because that is all Web Crypto offers. SHA-256
+is not the ceiling of the scheme — it is the floor, chosen so the chain can be
+verified in any browser with no libraries. The stronger layer runs on the
+gateway, where real binaries exist:
+
+```powershell
+node psemp-gateway/cli.js seal PasevSU_Manifest.json `
+  --body message.txt --attach report=report.pdf
+```
+
+`seal` does four things the MailExtension cannot:
+
+| Step | What it produces | Why it is stronger |
+| --- | --- | --- |
+| SHA3-512 | fills `message_sha3_512` and per-file `sha3_512` | 512-bit second digest, independent of SHA-256 |
+| OpenPGP signature | `PasevSU_Manifest.json.asc` | binds the manifest to a private key |
+| OpenTimestamps | `PasevSU_Manifest.json.ots` | proves the hash existed at a point in time |
+| re-check | refuses to seal if any hash disagrees with the bytes | a tampered file cannot be blessed |
+
+Two properties matter more than the algorithm list:
+
+- **Sealing never moves the Merkle root.** The root is built from SHA-256 leaves
+  and is already published in the headers the recipient holds. A second digest
+  is added *beside* the chain, never inside it, so a sealed manifest still
+  matches the `X-PasevSU-Merkle-Root` in the message it belongs to.
+- **`seal` refuses rather than guesses.** If the body or an attachment no longer
+  hashes to the value the manifest claims, the command reports `mismatch` and
+  leaves the file untouched. A file with no bytes supplied is reported as
+  `unsealedFiles`, never assumed correct.
+
+The signature's digest is SHA-512 by default and is **read back** from the
+finished `.asc` with `gpg --list-packets`, so the reported `digestAlgo` is the
+one that was actually used rather than the one that was requested. Note that gpg
+spells digests without a hyphen (`SHA512`, not `SHA-512`); the gateway normalises
+the name and refuses SHA3 as a signature digest outright, because OpenPGP has no
+SHA3 signature packet — SHA3-512 belongs in the manifest, not in the packet.
+
+`PasevSU_Manifest.json.asc` and `.ots` are **not** attached by the extension. It
+cannot produce them; the gateway adds them at the SMTP hop.
+
 

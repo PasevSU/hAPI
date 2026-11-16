@@ -13,6 +13,7 @@
  *   node psemp-gateway/cli.js upgrade <file.ots>
  *   node psemp-gateway/cli.js sign <file> [--key <keyid>] [--out <file.asc>] [--force]
  *   node psemp-gateway/cli.js verify-sig <file> <file.asc>
+ *   node psemp-gateway/cli.js seal <manifest.json> [--body <file>] [--attach <name>=<file>]…
  *   node psemp-gateway/cli.js pgp-info <file>
  *   node psemp-gateway/cli.js pgp-check <file> [--fingerprint <hex>]
  *   node psemp-gateway/cli.js self-test
@@ -37,10 +38,18 @@ const USAGE = `PasevSU PSEMP gateway
   stamp <file> [--out proof.ots]        OpenTimestamps proof (degrades to pending)
   verify <proof.ots>                    verify an OpenTimestamps proof
   upgrade <proof.ots>                   upgrade a pending proof
-  sign <file> [--key id] [--out .asc] [--force]
+  sign <file> [--key id] [--out .asc] [--force] [--digest SHA512]
                                         detached OpenPGP signature (needs gpg; skipped
-                                        when the message is already signed)
+                                        when the message is already signed). SHA-512 is
+                                        the default digest; the report states the digest
+                                        read back out of the signature.
   verify-sig <file> <file.asc>          verify a detached OpenPGP signature
+  seal <manifest.json> [--body f] [--attach name=f]…
+                                        fill the SHA3-512 slots a MailExtension cannot
+                                        compute, then write <manifest>.asc (SHA-512
+                                        digest) and <manifest>.ots. Refuses to seal a
+                                        manifest whose claimed hashes do not match the
+                                        supplied bytes.
   pgp-info <file>                       who signed this message (Thunderbird's key)
   pgp-check <file> [--fingerprint hex]  compare the claim with the actual signer
   self-test                             known-answer vectors + parity checks`;
@@ -56,6 +65,17 @@ function parseOptions(argv) {
     }
     const key = token.slice(2);
     const next = argv[i + 1];
+    // `--attach` may repeat, one file (or name=file) per occurrence.
+    if (key === 'attach') {
+      if (!Array.isArray(options.attach)) options.attach = [];
+      if (next === undefined || next.startsWith('--')) {
+        options.attach.push(true);
+      } else {
+        options.attach.push(next);
+        i += 1;
+      }
+      continue;
+    }
     if (next === undefined || next.startsWith('--')) {
       options[key] = true;
     } else {
@@ -202,10 +222,41 @@ async function main(argv) {
         keyId: options.key && options.key !== true ? String(options.key) : undefined,
         outputPath: options.out && options.out !== true ? path.resolve(String(options.out)) : undefined,
         force: options.force === true,
+        digestAlgo: options.digest && options.digest !== true ? String(options.digest) : undefined,
       });
       emit(result);
       const failed = result.status === 'failed' || result.status === 'unavailable';
       if (failed) process.exitCode = 1;
+      return;
+    }
+
+    case 'seal': {
+      const [manifestFile] = rest;
+      const resolved = readFileOrFail(manifestFile, 'manifest');
+
+      const attachments = [];
+      for (const entry of [].concat(options.attach || [])) {
+        if (entry === true) throw new Error('--attach needs a file path, or name=path to rename it.');
+        const raw = String(entry);
+        const split = raw.indexOf('=');
+        const name = split === -1 ? path.basename(raw) : raw.slice(0, split);
+        const file = split === -1 ? raw : raw.slice(split + 1);
+        attachments.push({ filename: name, data: fs.readFileSync(readFileOrFail(file, '--attach')) });
+      }
+
+      const report = await api.sealManifest(resolved, {
+        body: options.body && options.body !== true
+          ? fs.readFileSync(readFileOrFail(options.body, '--body'))
+          : undefined,
+        attachments,
+        keyId: options.key && options.key !== true ? String(options.key) : undefined,
+        sign: options['no-sign'] !== true,
+        stamp: options['no-ots'] !== true,
+        blake3: options.blake3 && options.blake3 !== true ? String(options.blake3) : null,
+        digestAlgo: options.digest && options.digest !== true ? String(options.digest) : undefined,
+      });
+      emit(report);
+      if (!report.ok) process.exitCode = 1;
       return;
     }
 

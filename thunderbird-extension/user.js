@@ -29,11 +29,14 @@ user_pref(
     "X-PasevSU-Organization",
     "X-PasevSU-Evidence-ID",
     "X-PasevSU-Body-SHA256",
+    "X-PasevSU-Attachments-Count",
     "X-PasevSU-Attachments-SHA256",
+    "X-PasevSU-Attachments-Error",
     "X-PasevSU-Manifest-SHA256",
     "X-PasevSU-Merkle-Root",
     "X-PasevSU-PGP-Fingerprint",
     "X-PasevSU-OTS",
+    "X-PasevSU-Receipt",
   ].join(","),
 );
 
