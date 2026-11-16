@@ -31,6 +31,9 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
+          # Вендорнатите пакети (`psemp-gateway/packages/`) се сканират в своето хранилище —
+          # виж `.github/codeql/codeql-config.yml`, където е записано и защо.
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v4

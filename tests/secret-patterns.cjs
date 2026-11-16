@@ -44,6 +44,14 @@ const SAFE = [
   ['JWT само с header (тестов fixture)', ['eyJ', 'hbGciOiJIUzI1NiJ9'].join('')],
   ['изразът за PGP ключ като текст', ['логът пише BEGIN PGP', 'PRIVATE KEY BLOCK, но ключ няма'].join(' ')],
   ['обикновен токен в текста', 'ADMIN_TOKEN_REQUIRED'],
+  // Реален фалшив сигнал от 0.69.231: `packages/15-openpgpjs/src/encoding/armor.js` СГЛОБЯВА
+  // тези два реда, за да произведе armor. Между маркерите има код, не ключов материал.
+  ['код, който строи armor (вендорнат openpgpjs)', [
+    "result.push('-----BEGIN PGP PRIVATE KEY BLOCK-----\\n');",
+    'result.push(addheader(customComment, config));',
+    'result.push(encodeBase64(body));',
+    "result.push('-----END PGP PRIVATE KEY BLOCK-----\\n');",
+  ].join('\n')],
 ];
 for (const [label, sample] of SAFE) {
   for (const [pattern, name] of SECRETS) {
