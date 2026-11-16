@@ -27,7 +27,9 @@ On every send (`browser.compose.onBeforeSend`):
    through `addAttachment()`. If Thunderbird refuses it, the message still sends
    and the options page says so (`psempManifestError`).
 6. Appends all `X-PasevSU-*` headers to `details.customHeaders` **without**
-   dropping any existing headers.
+   dropping any existing headers. Each header is a `{ name, value }` **object**,
+   which is what Thunderbird ≥ 100 requires — see *The header shape is a
+   contract* under Limitations.
 7. Returns `{ details }` so the message is sent; on any error it still returns
    `{ details }` unchanged (never cancels, never throws).
 
@@ -218,6 +220,52 @@ the installed copy is not older than the source.
   extension uses SHA-256; `blake3` in the manifest is `null` for the gateway
   to fill in.
 - **No MD5 / SHA1** are used by design.
+- **The header shape is a contract.** `ComposeDetails.customHeaders` is an array
+  of `{ name, value }` **objects** (Thunderbird ≥ 100), not `"Name: value"`
+  strings. Returning a string fails schema validation inside the
+  `setComposeDetails()` that Thunderbird performs on the `details` an
+  `onBeforeSend` listener returns — and the failure is **silent**: no dialog, no
+  error, the compose window simply stays open and nothing is sent. Version 1.3
+  fixed exactly this (1.2 built strings, so every send was aborted even though
+  the listener had already computed and stored its Evidence-ID).
+  `background.js` therefore only ever builds headers through `buildHeader()`, and
+  a header name must begin `X-` and must not begin `X-Mozilla-`
+  (`psemp-gateway/test/extension-arming.cjs`, check *"custom headers are the
+  { name, value } objects Thunderbird accepts"*). The same listener must also
+  never emit a **duplicate** header name on a second fire, which is why
+  `mergeCustomHeaders()` replaces its own earlier copies while keeping foreign
+  ones.
+- **Return only the property that changed.** The `details` handed to
+  `onBeforeSend` is a `getComposeDetails()` snapshot, and returning it is
+  *functionally the same as calling `setComposeDetails(tabId, details)`* — so it
+  overwrites **every** property, including ones an add-on may not write:
+  `attachments[].size` is read-only, and `identityId`, `additionalFccFolder`,
+  `overrideDefaultFcc`, `overrideDefaultFccFolder` require the `accountsRead`
+  permission, which this add-on deliberately does not request. The write then
+  fails validation and Thunderbird aborts the send with **no dialog and no
+  error** — the composer just stays open. The API docs are explicit: "only
+  properties that are to be changed should be included". This was the second
+  silent-abort defect, independent of the header shape: 1.3 built objects
+  correctly but still returned the whole snapshot and still sent nothing. So
+  `background.js` returns `{ details: { customHeaders } }` on success and `{}`
+  on failure (`{}` = "no changes", message sends untouched) — never
+  `{ details }` and never `{ cancel: true }`. Guarded by
+  `psemp-gateway/test/extension-arming.cjs`, check *"a realistic compose
+  snapshot is never echoed back as the return value"*.
+- **Attachments are read with `listAttachments(tabId)`, never from `details`.**
+  `ComposeDetails.attachments` is documented *"Only used in the begin\*
+  functions. Attachments to add to the message."* — it is an input-only field,
+  so the `details` a listener receives (a `getComposeDetails()` snapshot)
+  reports an empty list while the message demonstrably carries files. Version
+  1.4 hashed nothing, emitted no `X-PasevSU-Attachments-SHA256`, and attached a
+  manifest with `"attachments": []` — every other check still passed, so the
+  sent file was simply outside the evidence chain (`check-sent` is what caught
+  it). The extension now asks `browser.compose.listAttachments(tab.id)`, keeps
+  the snapshot as a fallback, and filters out its own `PasevSU_Manifest.json`
+  so a second listener pass cannot hash the manifest it just added. Guarded by
+  the checks *"the files are enumerated with listAttachments, not the send
+  snapshot"* and *"this add-on's own manifest is not counted as a user
+  attachment"*.
 
 ## Registering the header names in Thunderbird
 

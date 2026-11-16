@@ -141,33 +141,88 @@ async function buildManifest(config, evidenceId, bodyHash, attachmentEntries, me
   return JSON.stringify(manifest, null, 2);
 }
 
-async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, merkle, manifestHash) {
+/*
+ * Thunderbird >= 100 types ComposeDetails.customHeaders as an array of
+ * `{ name, value }` objects, NOT as "Name: value" strings. Handing back a string
+ * makes setComposeDetails() fail schema validation, and the send is aborted with
+ * no dialog — the compose window simply stays open. So a header may only ever be
+ * produced through buildHeader().
+ */
+function buildHeader(name, value) {
+  return { name, value: sanitizeHeaderValue(value) };
+}
+
+function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, merkle, manifestHash) {
   const headers = [];
-  headers.push(`X-PasevSU-Version: ${sanitizeHeaderValue(config.version)}`);
-  headers.push(`X-PasevSU-Framework: ${sanitizeHeaderValue(config.framework)}`);
-  headers.push(`X-PasevSU-Origin: ${sanitizeHeaderValue(config.origin)}`);
-  headers.push(`X-PasevSU-Organization: ${sanitizeHeaderValue(config.organization)}`);
-  headers.push(`X-PasevSU-Evidence-ID: ${evidenceId}`);
-  headers.push(`X-PasevSU-Body-SHA256: ${bodyHash}`);
+  headers.push(buildHeader("X-PasevSU-Version", config.version));
+  headers.push(buildHeader("X-PasevSU-Framework", config.framework));
+  headers.push(buildHeader("X-PasevSU-Origin", config.origin));
+  headers.push(buildHeader("X-PasevSU-Organization", config.organization));
+  headers.push(buildHeader("X-PasevSU-Evidence-ID", evidenceId));
+  headers.push(buildHeader("X-PasevSU-Body-SHA256", bodyHash));
   if (attachmentEntries.length > 0) {
     const list = attachmentEntries
       .map((a) => `${headerToken(a.filename)}=${a.sha256}`)
       .join(",");
-    headers.push(`X-PasevSU-Attachments-SHA256: ${list}`);
+    headers.push(buildHeader("X-PasevSU-Attachments-SHA256", list));
   }
-  headers.push(`X-PasevSU-Manifest-SHA256: ${manifestHash}`);
-  headers.push(`X-PasevSU-Merkle-Root: ${merkle}`);
+  headers.push(buildHeader("X-PasevSU-Manifest-SHA256", manifestHash));
+  headers.push(buildHeader("X-PasevSU-Merkle-Root", merkle));
   if (config.pgpFingerprint) {
     // A claim: the MailExtension cannot read Thunderbird's own keyring, so this is
     // what the sender says Thunderbird signs with. `psemp-gateway pgp-check`
     // compares it with the signer actually found in the delivered message.
-    headers.push(`X-PasevSU-PGP-Fingerprint: ${normalizeFingerprint(config.pgpFingerprint)}`);
+    headers.push(
+      buildHeader("X-PasevSU-PGP-Fingerprint", normalizeFingerprint(config.pgpFingerprint))
+    );
   }
   if (config.enableOts) {
     // Marker only: real OpenTimestamps must be applied by the SMTP gateway / CLI.
-    headers.push("X-PasevSU-OTS: pending");
+    headers.push(buildHeader("X-PasevSU-OTS", "pending"));
   }
   return headers;
+}
+
+/*
+ * Append without dropping any existing entry. Only our OWN earlier copies are
+ * removed, so a listener that fires twice cannot produce a duplicated header
+ * (Thunderbird rejects duplicates, and that would abort the send again).
+ */
+function mergeCustomHeaders(existing, incoming) {
+  const ours = new Set(incoming.map((h) => h.name.toLowerCase()));
+  const kept = (existing || []).filter((entry) => {
+    const name = entry && typeof entry === "object" ? entry.name : String(entry).split(":")[0];
+    return !ours.has(String(name || "").trim().toLowerCase());
+  });
+  return [...kept, ...incoming];
+}
+
+/*
+ * The files the user attached. ComposeDetails.attachments is an INPUT-ONLY
+ * property — the docs say "Only used in the begin* functions. Attachments to add
+ * to the message." — so the `details` handed to onBeforeSend, itself a
+ * getComposeDetails() snapshot, reports an EMPTY list even when the message
+ * carries files. listAttachments() is the call that answers the question.
+ *
+ * Measured on a real send: with the snapshot alone the manifest named zero
+ * attachments, X-PasevSU-Attachments-SHA256 was never written, and every other
+ * check still passed — the file was in the message but outside the evidence
+ * chain. The snapshot stays as a fallback so the harness and older Thunderbird
+ * builds keep working.
+ */
+async function listComposeAttachments(tab, details) {
+  let listed = [];
+  try {
+    if (tab && typeof tab.id === "number" && browser.compose.listAttachments) {
+      listed = await browser.compose.listAttachments(tab.id);
+    }
+  } catch (err) {
+    console.error("[PasevSU] could not enumerate attachments:", err);
+  }
+  const source = listed.length > 0 ? listed : Array.isArray(details.attachments) ? details.attachments : [];
+  // Our own manifest is added on the way out; if onBeforeSend fires a second time
+  // it must not be hashed as if the user had attached it.
+  return source.filter((att) => att && att.name !== MANIFEST_FILENAME);
 }
 
 async function handleBeforeSend(tab, details) {
@@ -182,7 +237,7 @@ async function handleBeforeSend(tab, details) {
 
     const bodyHash = await sha256Hex(new TextEncoder().encode(body));
 
-    const existingAttachments = Array.isArray(details.attachments) ? details.attachments : [];
+    const existingAttachments = await listComposeAttachments(tab, details);
     const attachmentEntries = await computeAttachmentHashes(existingAttachments);
 
     // Merkle leaves = body hash + each attachment hash.
@@ -230,8 +285,8 @@ async function handleBeforeSend(tab, details) {
       manifestHash
     );
 
-    // Append WITHOUT dropping any existing entries.
-    details.customHeaders = [...(details.customHeaders || []), ...newHeaders];
+    // Append WITHOUT dropping any existing (foreign) entries.
+    const mergedHeaders = mergeCustomHeaders(details.customHeaders, newHeaders);
 
     // Breadcrumb: onBeforeSend having fired is not observable from the Sent folder
     // — Send Later keeps its own queue, an IMAP APPEND can fail, and a server-side
@@ -253,17 +308,28 @@ async function handleBeforeSend(tab, details) {
             merkleRoot: merkle,
             attachmentCount: attachmentEntries.length,
             // Names only: the values are already in the message being sent.
-            headers: newHeaders.map((header) => header.slice(0, header.indexOf(":"))),
+            headers: newHeaders.map((header) => header.name),
           },
         });
       })
       .catch(() => {});
 
-    return { details };
+    // Return ONLY the property that actually changed. The `details` we were handed
+    // is a getComposeDetails() snapshot, and returning it is a setComposeDetails()
+    // call that tries to write every property back — including read-only ones
+    // (attachments[].size, isModified) and permission-gated ones (identityId,
+    // additionalFccFolder, overrideDefaultFcc* need accountsRead, which this add-on
+    // does not request). That write fails schema validation, and Thunderbird aborts
+    // the send with no dialog and no error: the compose window simply stays open.
+    // The docs for setComposeDetails are explicit: "only properties that are to be
+    // changed should be included".
+    return { details: { customHeaders: mergedHeaders } };
   } catch (err) {
-    // Never throw: on any error the message still goes out, unchanged headers.
+    // Never throw and never cancel: on any error the message still goes out.
+    // `{}` means "no changes", which is the safe way to say "send it as it is" —
+    // echoing `details` back would abort the send (see above).
     console.error("[PasevSU] header injection failed; sending without PasevSU headers:", err);
-    return { details };
+    return {};
   }
 }
 

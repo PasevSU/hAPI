@@ -120,11 +120,21 @@ check('plain-text send gets the full header set in contract order', async () => 
 
   assert.ok(result && result.details, 'listener must return { details }');
   assert.ok(!result.cancel, 'listener must never cancel the send');
-  // The extension reassigns details.customHeaders from inside the vm, so both
-  // sides must be normalised out of that realm before deepStrictEqual.
+  // Returned details are applied as setComposeDetails(), and the docs say "only
+  // properties that are to be changed should be included". Echoing the whole
+  // getComposeDetails() snapshot back tries to write read-only properties
+  // (attachments[].size, isModified) and accountsRead-gated ones (identityId,
+  // additionalFccFolder, overrideDefaultFcc*), which this add-on does not request.
+  // That write fails validation and Thunderbird aborts the send with no dialog.
   assert.deepStrictEqual(
-    Array.from(result.details.customHeaders),
-    Array.from(details.customHeaders)
+    Array.from(Object.keys(result.details)),
+    ['customHeaders'],
+    'details must carry ONLY the property that changed'
+  );
+  assert.deepStrictEqual(
+    Array.from(details.customHeaders),
+    [],
+    'the caller\'s details object must not be mutated'
   );
 
   const names = headerNames(result.details.customHeaders);
@@ -147,6 +157,58 @@ check('plain-text send gets the full header set in contract order', async () => 
   assert.strictEqual(headers.get('X-PasevSU-Organization'), 'PasevSU');
   assert.strictEqual(headers.get('X-PasevSU-OTS'), 'pending');
   assert.match(headers.get('X-PasevSU-Evidence-ID'), /^[0-9a-f-]{36}$/);
+});
+
+check('custom headers are the { name, value } objects Thunderbird accepts', async () => {
+  // Regression: 0.69.225- pushed "Name: value" STRINGS. Thunderbird >= 100 types
+  // ComposeDetails.customHeaders as `{ name, value }` objects, so the returned
+  // details failed schema validation inside setComposeDetails() and the send was
+  // aborted with no dialog — the compose window just stayed open.
+  const { listeners } = loadExtension();
+  const details = {
+    to: ['a@example.com'],
+    subject: 'shape',
+    body: '<p>shape</p>',
+    plainTextBody: 'shape',
+    isPlainText: false,
+    attachments: [],
+    customHeaders: [{ name: 'X-Foreign', value: 'kept' }],
+  };
+
+  const result = await listeners[0]({}, details);
+  const entries = Array.from(result.details.customHeaders);
+
+  for (const entry of entries) {
+    assert.ok(
+      entry && typeof entry === 'object' && !Array.isArray(entry),
+      `customHeaders entry must be an object, got ${JSON.stringify(entry)}`
+    );
+    assert.strictEqual(typeof entry.name, 'string', 'header name must be a string');
+    assert.strictEqual(typeof entry.value, 'string', 'header value must be a string');
+    // Thunderbird's schema: must start with X-, and must not be X-Mozilla-*.
+    assert.match(entry.name, /^X-(?!Mozilla-)/i, `illegal header name: ${entry.name}`);
+    assert.doesNotMatch(
+      entry.value,
+      /[\r\n]/,
+      `header value must never inject a line: ${entry.name}`
+    );
+  }
+
+  // A foreign header survives untouched.
+  const foreign = entries.filter((entry) => entry.name === 'X-Foreign');
+  assert.strictEqual(foreign.length, 1, 'an existing custom header must not be dropped');
+  assert.strictEqual(foreign[0].value, 'kept');
+
+  // Thunderbird aborts the send when handed a duplicate name, so a second fire
+  // must not add a second copy of anything.
+  const twice = await listeners[0]({}, details);
+  const names = Array.from(twice.details.customHeaders, (entry) => String(entry.name).toLowerCase());
+  assert.deepStrictEqual(names, [...new Set(names)], 'a header was duplicated');
+  assert.strictEqual(
+    names.filter((name) => name === 'x-pasevsu-version').length,
+    1,
+    'X-PasevSU-Version duplicated on re-fire'
+  );
 });
 
 check('empty body still produces a well-formed hash and root', async () => {
@@ -186,6 +248,53 @@ check('attachments are hashed and the merkle root matches an independent tree', 
 
   const expectedRoot = referenceMerkle([bodyHash, sha256Hex(first), sha256Hex(second)]);
   assert.strictEqual(headers.get('X-PasevSU-Merkle-Root'), expectedRoot);
+});
+
+check('the files are enumerated with listAttachments, not the send snapshot', async () => {
+  const bytes = Buffer.from('attached proof file');
+  const { listeners, added, order } = loadExtension({
+    attachments: { 42: { name: 'proof.txt', bytes } },
+    // What Thunderbird actually reports at send time: the user attached a file, but
+    // the ComposeDetails snapshot says nothing about it.
+    listed: [{ id: 42, name: 'proof.txt', size: bytes.length }],
+  });
+
+  const details = { isPlainText: true, body: 'with attachment', attachments: [], customHeaders: [] };
+  const { details: out } = await listeners[0]({ id: 3 }, details);
+  const headers = headerMap(out.customHeaders);
+
+  assert.ok(order.includes('listAttachments'), 'the compose tab is asked for its files');
+  assert.strictEqual(
+    headers.get('X-PasevSU-Attachments-SHA256'),
+    `proof.txt=${sha256Hex(bytes)}`,
+    'an empty details.attachments must not erase a real attachment from the evidence chain'
+  );
+
+  const parsed = JSON.parse(await added[0].attachment.file.text());
+  assert.strictEqual(parsed.attachments.length, 1, 'the manifest lists the attached file');
+  assert.strictEqual(parsed.attachments[0].filename, 'proof.txt');
+  assert.strictEqual(parsed.attachments[0].sha256, sha256Hex(bytes));
+});
+
+check("this add-on's own manifest is not counted as a user attachment", async () => {
+  const bytes = Buffer.from('user file');
+  const { listeners, added } = loadExtension({
+    attachments: { 5: { name: 'doc.pdf', bytes } },
+    // A second onBeforeSend (or a retry) sees the manifest added a moment ago.
+    listed: [{ id: 5, name: 'doc.pdf' }, { id: 6, name: MANIFEST }],
+  });
+
+  const details = { isPlainText: true, body: 'second pass', attachments: [], customHeaders: [] };
+  const { details: out } = await listeners[0]({ id: 4 }, details);
+
+  const headers = headerMap(out.customHeaders);
+  assert.strictEqual(headers.get('X-PasevSU-Attachments-SHA256'), `doc.pdf=${sha256Hex(bytes)}`);
+  const parsed = JSON.parse(await added[0].attachment.file.text());
+  assert.deepStrictEqual(
+    parsed.attachments.map((a) => a.filename),
+    ['doc.pdf'],
+    'the manifest must not hash itself'
+  );
 });
 
 check('the manifest is attached with addAttachment and its own hash is published', async () => {
@@ -306,6 +415,47 @@ check('the HTML body falls back to plainTextBody', async () => {
   );
 });
 
+check('a realistic compose snapshot is never echoed back as the return value', async () => {
+  // This is the shape Thunderbird actually hands to onBeforeSend: a full
+  // getComposeDetails() snapshot. Returning it is functionally a
+  // setComposeDetails() write of every property, and the ones marked read-only or
+  // gated behind accountsRead make that write throw, which aborts the send with no
+  // dialog and no message — exactly the silent failure this check exists to stop.
+  const { listeners } = loadExtension();
+  const details = {
+    isPlainText: false,
+    body: '<p>snapshot</p>',
+    plainTextBody: 'snapshot',
+    subject: 'snapshot',
+    to: ['pasevdenislav@gmail.com'],
+    cc: [],
+    bcc: [],
+    from: { email: 'pasevdenislav@gmail.com' },
+    identityId: 'id8',
+    isModified: true,
+    deliveryFormat: 'auto',
+    deliveryStatusNotification: false,
+    attachVCard: false,
+    attachPublicPGPKey: false,
+    overrideDefaultFcc: false,
+    additionalFccFolder: '',
+    newsgroups: [],
+    followupTo: [],
+    customHeaders: [{ name: 'X-Foreign', value: 'kept' }],
+    attachments: [{ id: 1, name: 'doc.txt', size: 12 }],
+  };
+  const frozen = JSON.stringify(details);
+  const result = await listeners[0]({}, details);
+
+  assert.deepStrictEqual(Array.from(Object.keys(result.details)), [
+    'customHeaders',
+  ], 'nothing but customHeaders may be returned');
+  const names = headerNames(result.details.customHeaders);
+  assert.ok(names.includes('X-Foreign'), 'foreign headers must survive');
+  assert.ok(names.includes('X-PasevSU-Merkle-Root'), 'our headers must be added');
+  assert.strictEqual(JSON.stringify(details), frozen, 'the snapshot must not be mutated');
+});
+
 check('a storage failure still sends the message unmodified', async () => {
   const { listeners, errors } = loadExtension({ storageGetThrows: true });
   const details = {
@@ -315,9 +465,11 @@ check('a storage failure still sends the message unmodified', async () => {
     customHeaders: ['X-Existing: keep me'],
   };
   const result = await listeners[0]({}, details);
-  assert.ok(result && result.details, 'must still return { details }');
   assert.ok(!result.cancel, 'must never cancel');
-  assert.deepStrictEqual(result.details.customHeaders, ['X-Existing: keep me']);
+  // `{}` means "no changes" — the send proceeds. Echoing the snapshot back would
+  // abort it (see 'a realistic compose snapshot is never echoed back' above).
+  assert.deepStrictEqual(Array.from(Object.keys(result || {})), [], 'must return no changes at all');
+  assert.deepStrictEqual(Array.from(details.customHeaders), ['X-Existing: keep me']);
   assert.ok(errors.some((line) => /injection failed/.test(line)), 'the failure must be logged');
 });
 
@@ -329,7 +481,7 @@ check('a send records a breadcrumb proving the listener fired', async () => {
     attachments: [],
     customHeaders: [],
   };
-  await listeners[0]({}, details);
+  const result = await listeners[0]({}, details);
 
   // Without this record, "did the extension stamp anything?" could only be answered
   // by finding the message again in a Sent folder — which Send Later can bypass and
@@ -342,7 +494,7 @@ check('a send records a breadcrumb proving the listener fired', async () => {
   assert.match(record.evidenceId, /^[0-9a-f-]{36}$/);
   assert.match(record.at, /^\d{4}-\d\d-\d\dT/);
   assert.strictEqual(record.attachmentCount, 0);
-  assert.deepStrictEqual(Array.from(record.headers), headerNames(details.customHeaders));
+  assert.deepStrictEqual(Array.from(record.headers), headerNames(result.details.customHeaders));
   assert.strictEqual(writes.psempSendCount, 1);
 });
 
@@ -357,7 +509,8 @@ check('a failed scan leaves no breadcrumb claiming a stamped send', async () => 
   const { listeners, writes } = loadExtension({ storageGetThrows: true });
   const details = { isPlainText: true, body: 'x', attachments: [], customHeaders: [] };
   const result = await listeners[0]({}, details);
-  assert.ok(result && result.details, 'must still return { details }');
+  assert.ok(!result.cancel, 'must never cancel');
+  assert.deepStrictEqual(Array.from(Object.keys(result || {})), [], 'must return no changes at all');
   assert.strictEqual(writes.psempLastSend, undefined);
   assert.strictEqual(writes.psempSendCount, undefined);
 });

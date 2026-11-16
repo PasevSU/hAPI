@@ -28,7 +28,6 @@ const { defaultProfile } = require('./check-sent.cjs');
 const ROOT = path.join(__dirname, '..', '..');
 const EXTENSION = path.join(ROOT, 'thunderbird-extension');
 const GATEWAY = path.join(ROOT, 'psemp-gateway');
-const NAME = /X-PasevSU-[A-Za-z0-9-]+/g;
 
 const checks = [];
 let failed = 0;
@@ -48,12 +47,20 @@ function read(file) {
   return fs.readFileSync(file, 'utf8');
 }
 
-/** The names background.js pushes, in the order it pushes them. */
+/**
+ * The names background.js emits, in the order it emits them.
+ *
+ * Headers must be built through buildHeader(name, value): Thunderbird >= 100
+ * types customHeaders as `{ name, value }` objects, and a "Name: value" string
+ * aborts the send. Reading buildHeader() calls therefore also proves the shape.
+ */
 function emittedNames() {
+  const source = read(path.join(EXTENSION, 'background.js'));
   const seen = [];
-  for (const line of read(path.join(EXTENSION, 'background.js')).split('\n')) {
-    if (!/headers\.push\(/.test(line)) continue;
-    for (const name of line.match(NAME) || []) if (!seen.includes(name)) seen.push(name);
+  for (const match of source.matchAll(
+    /buildHeader\(\s*['"](X-PasevSU-[A-Za-z0-9-]+)['"]/g
+  )) {
+    if (!seen.includes(match[1])) seen.push(match[1]);
   }
   return seen;
 }

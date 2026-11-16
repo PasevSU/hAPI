@@ -84,5 +84,22 @@ export default [
     languageOptions: { globals: { ...globals.browser, ...globals.amd, ...globals.node, ...globals.commonjs } },
     rules: { 'no-redeclare': 'off', 'no-control-regex': 'off', 'no-unused-vars': 'off', 'no-useless-assignment': 'off' }
   },
+  // MailExtension-ите на Thunderbird не са нито Node, нито уеб страница: глобалът е
+  // `browser` (WebExtension API) плюс уеб платформата (`crypto.subtle`, `TextEncoder`,
+  // `File`). Без този блок `thunderbird-extension/background.js` даваше 11 фалшиви
+  // `no-undef` още преди този дефект, тоест папката никога не е била под lint.
+  {
+    files: ['thunderbird-extension/**/*.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: {
+        ...globals.webextensions,
+        ...globals.browser,
+        // `thunderbird-extension/user.js` е prefs файл: функцията я дава Thunderbird,
+        // не ECMAScript. Файлът не се изпълнява от Node, само се чете от профила.
+        user_pref: 'readonly'
+      }
+    }
+  },
   prettier
 ];

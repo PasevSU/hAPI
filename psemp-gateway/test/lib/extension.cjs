@@ -50,9 +50,9 @@ function referenceMerkle(hexLeaves) {
 /**
  * Load background.js into a fresh context.
  * @param {{stored?: object, attachments?: object, storageGetThrows?: boolean,
- *          addAttachmentThrows?: Error|null}} options
+ *          addAttachmentThrows?: Error|null, listed?: Array<object>|null}} options
  */
-function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false, addAttachmentThrows = null } = {}) {
+function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false, addAttachmentThrows = null, listed = null } = {}) {
   const order = [];
   const listeners = [];
   const writes = {};
@@ -83,6 +83,13 @@ function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false
         if (!entry) throw new Error(`no such attachment ${id}`);
         if (entry.throws) throw entry.throws;
         return new File([entry.bytes], entry.name);
+      },
+      // The only call that reports the files the message actually carries. The
+      // `details` a listener receives is a getComposeDetails() snapshot, whose
+      // attachments property is documented "Only used in the begin* functions".
+      async listAttachments(_tabId) {
+        order.push('listAttachments');
+        return listed ? listed.slice() : [];
       },
       // The only path Thunderbird honours for a new attachment during a send.
       async addAttachment(tabId, attachment) {
@@ -118,18 +125,32 @@ function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false
   return { order, listeners, writes, warnings, errors, added };
 }
 
+// Thunderbird >= 100 requires `{ name, value }` objects. Reading a string here
+// would hide exactly the defect that aborted every send (0.69.x, Thunderbird 160).
+function requireHeaderObject(entry) {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+    throw new TypeError(
+      `customHeaders entry must be { name, value }, got ${typeof entry}: ${JSON.stringify(entry)}`
+    );
+  }
+  if (typeof entry.name !== 'string' || typeof entry.value !== 'string') {
+    throw new TypeError(`customHeaders entry needs string name and value: ${JSON.stringify(entry)}`);
+  }
+  return entry;
+}
+
 function headerMap(customHeaders) {
   const map = new Map();
-  for (const line of customHeaders) {
-    const at = line.indexOf(':');
-    map.set(line.slice(0, at).trim(), line.slice(at + 1).trim());
+  for (const entry of customHeaders) {
+    const header = requireHeaderObject(entry);
+    map.set(header.name.trim(), header.value.trim());
   }
   return map;
 }
 
 function headerNames(customHeaders) {
   // Array.from strips the vm realm's Array prototype, which deepStrictEqual rejects.
-  return Array.from(customHeaders, (line) => line.slice(0, line.indexOf(':')).trim());
+  return Array.from(customHeaders, (entry) => requireHeaderObject(entry).name.trim());
 }
 
 module.exports = {
