@@ -39,6 +39,7 @@ psemp-gateway/
   test/settings-parity.cjs   the two halves must agree on the settings keys
   test/pgp-thunderbird.cjs   signer read from a Thunderbird signature, no gpg needed
   test/ots-runtime.cjs       the vendored OpenTimestamps bundle actually stamps
+  test/extension-arming.cjs  background.js arms itself, and injects, in a stub browser
 ```
 
 | Vendored group | Used for |
@@ -252,6 +253,7 @@ node psemp-gateway/test/self-test.cjs
 node psemp-gateway/test/settings-parity.cjs
 node psemp-gateway/test/pgp-thunderbird.cjs
 node psemp-gateway/test/ots-runtime.cjs
+node psemp-gateway/test/extension-arming.cjs
 ```
 
 `self-test.cjs` covers known-answer vectors for SHA-224/256/384/512, NIST
@@ -274,3 +276,11 @@ PGP/MIME messages, the signer-derived fingerprint header, the
 `ots-runtime.cjs` proves the vendored OpenTimestamps bundle loads and reaches the
 stamping stage; it accepts either an attested proof (a written `.ots`) or the
 explicit "no usable calendar attestation" error, and never a missing runtime.
+
+`extension-arming.cjs` runs `background.js` inside a `vm` with a stub `browser`
+object, the way Thunderbird runs it, and then drives the registered
+`onBeforeSend` listener. It fails if the listener is not armed at load, if the
+startup heartbeat is written after registration, if a failing attachment or a
+failing `storage.local.get` stops the send, or if `{ cancel: true }` ever comes
+back. Merkle roots are recomputed with `node:crypto` rather than Web Crypto, so
+the extension and the test cannot drift together.

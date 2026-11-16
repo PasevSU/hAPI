@@ -49,6 +49,11 @@ Dynamic (computed per message):
 | `X-PasevSU-PGP-Fingerprint` | `pgpFingerprint` option (omitted if empty) |
 | `X-PasevSU-OTS` | `pending` marker — **on by default**; untick `enableOts` to stop marking |
 
+Thunderbird hands custom header names back in *Http-Header-Case*, so a reopened or
+received message can show `X-Pasevsu-Version` instead of `X-PasevSU-Version`. Field
+names are case-insensitive (RFC 5322 §2.2), so verify them with a case-insensitive
+match rather than an exact string.
+
 The `PasevSU_Manifest.json` attachment contains:
 
 ```json
@@ -107,6 +112,45 @@ a broken file is reported and changes nothing.
 extension always writes `Thunderbird` and the gateway writes `PSEMP-Gateway`.
 `psemp-gateway/test/settings-parity.cjs` pins the key set, the key order and that
 single divergence across both halves.
+
+## Permanent install (side-load)
+
+A folder loaded through **Load Temporary Add-on…** disappears on every restart. To
+keep PSEMP active without re-loading it by hand, install it as a profile
+side-load: zip the four files (`manifest.json`, `background.js`, `options.html`,
+`options.js`) at the archive **root** into
+`pasevsu-forensic-headers@pasev.example.xpi` and place it in
+`<profile>\extensions\`.
+
+Thunderbird disables hand-placed add-ons by default. Add this to `user.js`
+alongside the header names, or the add-on registers as `userDisabled: true`:
+
+```js
+user_pref("extensions.autoDisableScopes", 0);
+```
+
+Only the **default** profile is scanned for side-loads, so confirm your profile is
+the one Thunderbird actually starts (`Help → Troubleshooting Information → Profile
+Directory`).
+
+## Checking that it is armed
+
+`active: true` in `extensions.json` does **not** prove the background script ran —
+that mistake cost a full debugging session: the add-on looked enabled while every
+message went out with no headers at all. Two signals are reliable:
+
+- **The options page.** It shows *Armed — background script loaded at …* once the
+  script has written its startup heartbeat to `browser.storage.local`. If it says
+  *Not armed*, the script did not start (or `compose.onBeforeSend` could not be
+  registered, in which case the error is shown); restart Thunderbird.
+- **Thunderbird's own record.** A loaded extension gets a UUID in the
+  `extensions.webextensions.uuids` preference. Dictionaries and language packs
+  never do, so a missing UUID on a `type: extension` add-on means it is not live.
+
+`psemp-gateway/test/extension-arming.cjs` runs `background.js` against a stub
+`browser` object and fails if the listener is not armed at load, if the heartbeat
+is written after registration, or if any error path stops returning `{ details }`
+(it must never `cancel` a send).
 
 ## Limitations
 

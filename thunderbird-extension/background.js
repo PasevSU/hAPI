@@ -170,7 +170,7 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
   return headers;
 }
 
-browser.compose.onBeforeSend.addListener(async (tab, details) => {
+async function handleBeforeSend(tab, details) {
   try {
     const config = Object.assign({}, DEFAULTS, await browser.storage.local.get(DEFAULTS));
 
@@ -226,4 +226,25 @@ browser.compose.onBeforeSend.addListener(async (tab, details) => {
     console.error("[PasevSU] header injection failed; sending without PasevSU headers:", err);
     return { details };
   }
-});
+}
+
+// --- Arm the extension -----------------------------------------------------
+// The heartbeat is written BEFORE the listener is registered, so that a failed
+// registration is distinguishable from a background script that never ran.
+try {
+  browser.storage.local
+    .set({ psempLastLoadedAt: new Date().toISOString() })
+    .catch(() => {});
+} catch (err) {
+  console.error("[PasevSU] heartbeat could not be written:", err);
+}
+
+try {
+  browser.compose.onBeforeSend.addListener(handleBeforeSend);
+} catch (err) {
+  // Recorded rather than swallowed: the options page surfaces psempArmError.
+  console.error("[PasevSU] could not arm onBeforeSend:", err);
+  Promise.resolve()
+    .then(() => browser.storage.local.set({ psempArmError: String((err && err.message) || err) }))
+    .catch(() => {});
+}

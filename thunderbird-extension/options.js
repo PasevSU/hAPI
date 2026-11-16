@@ -47,6 +47,21 @@ async function load() {
   FIELDS.organization.value = config.organization;
   FIELDS.pgpFingerprint.value = config.pgpFingerprint;
   FIELDS.enableOts.checked = Boolean(config.enableOts);
+  await renderArmed();
+}
+
+// Readiness comes from the background script itself: it writes a heartbeat as soon
+// as it loads, and records an error if it cannot register onBeforeSend.
+async function renderArmed() {
+  const health = await browser.storage.local.get({ psempLastLoadedAt: "", psempArmError: "" });
+  const armed = document.getElementById("armed");
+  if (health.psempArmError) {
+    armed.textContent = `Not armed — ${health.psempArmError}`;
+  } else if (health.psempLastLoadedAt) {
+    armed.textContent = `Armed — background script loaded at ${health.psempLastLoadedAt}.`;
+  } else {
+    armed.textContent = "Not armed — the background script has not reported yet. Restart Thunderbird.";
+  }
 }
 
 async function save() {
