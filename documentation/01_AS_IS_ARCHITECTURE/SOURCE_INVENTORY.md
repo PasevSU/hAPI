@@ -1,16 +1,16 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.226**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.227**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **128** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **45** инструмента · **432** теста.
+Общо: **129** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **45** инструмента · **433** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (128)
+### Backend модули (`hapi_enterprise/*.js`) (129)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -127,6 +127,7 @@
 | `hapi_enterprise/sqlite-store.js` | SQLite is the authoritative metadata store. The legacy JSON file is retained |
 | `hapi_enterprise/standalone.js` | hAPI Enterprise — edge/standalone runtime. |
 | `hapi_enterprise/start.js` | hAPI Enterprise — add-on entrypoint. |
+| `hapi_enterprise/static-etag.js` | ETag И 304 ЗА СТАТИКАТА (DEF-88, 0.69.227). |
 | `hapi_enterprise/storage-check.js` | Storage health checks: verifies that each configured storage location exists, is a |
 | `hapi_enterprise/storage-migrate.js` | !/usr/bin/env node |
 | `hapi_enterprise/storage-preflight.js` | Логическите корени идват от `paths.js` — един източник за целия проект (вж. `tests/storage-roots.cjs`). |

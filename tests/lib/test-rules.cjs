@@ -392,6 +392,7 @@ const RULES = [
   { id: "start-portal-open", area: "общо", title: "Start portal open", owner: "tests/start-portal-open.cjs" },
   { id: "start-token-required", area: "общо", title: "Start token required", owner: "tests/start-token-required.cjs" },
   { id: "static-cache", area: "общо", title: "Static cache", owner: "tests/static-cache.cjs" },
+  { id: "static-etag", area: "общо", title: "Static etag", owner: "tests/static-etag.cjs" },
   { id: "storage", area: "общо", title: "Storage", owner: "tests/storage.cjs" },
   { id: "storage-check", area: "съхранение", title: "Storage check", owner: "tests/storage-check.cjs" },
   { id: "storage-default-location", area: "съхранение", title: "Storage default location", owner: "tests/storage-default-location.cjs" },

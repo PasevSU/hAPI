@@ -123,11 +123,16 @@ function checkStaticSurfaces() {
   assert.deepEqual(withoutFrame.map((c) => c.file + '@' + c.start), [], 'HTML отговор без frame-ancestors — вграждането остава на подразбиране');
 
   // UI-ят на add-on-а (единственото място, което Home Assistant показва в панел)
-  // ЗАДЪЛЖИТЕЛНО е вградим от същия origin.
+  // ЗАДЪЛЖИТЕЛНО е вградим от същия origin. От 0.69.227 заглавките се строят ВЕДНЪЖ
+  // (обект `headers`, защото 200 и 304 носят едни и същи) — затова се търси или извикването
+  // с типа, или самият обект; и в двата случая политиката трябва да е същата.
+  const serverText = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'server.js'), 'utf8');
+  const uiObject = /const headers = \{ 'Content-Type': type,[^}]*\}/.exec(serverText);
   const ui = allCalls.filter((c) => /'Content-Type':\s*type/.test(c.text));
-  assert.equal(ui.length, 1, 'очаква се точно един сервиращ файл за UI_FILES, намерени: ' + ui.length);
-  assert.match(ui[0].csp, /frame-ancestors 'self'/, 'UI-ят на add-on-а трябва да е frame-ancestors \'self\' — иначе панелът е празен');
-  assert.equal(/frame-ancestors 'none'/.test(ui[0].csp), false, 'UI-ят не бива да е заключен срещу вграждане');
+  assert.equal(ui.length + (uiObject ? 1 : 0), 1, 'очаква се точно един сервиращ файл за UI_FILES, намерени: ' + ui.length);
+  const uiCsp = ui.length ? ui[0].csp : (/Content-Security-Policy': "([^"]*)"/.exec(uiObject[0]) || [])[1];
+  assert.match(uiCsp, /frame-ancestors 'self'/, 'UI-ят на add-on-а трябва да е frame-ancestors \'self\' — иначе панелът е празен');
+  assert.equal(/frame-ancestors 'none'/.test(uiCsp), false, 'UI-ят не бива да е заключен срещу вграждане');
 
   // Публичните страници на сървъра не се вграждат никъде.
   const pubNone = htmlCalls.filter((c) => /frame-ancestors 'none'/.test(c.csp)).length;

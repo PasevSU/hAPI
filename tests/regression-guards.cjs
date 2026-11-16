@@ -104,6 +104,7 @@ const GUARDS = {
   'DEF-85': ['addon-translations.cjs'], // опциите се превеждат на трите езика
   'DEF-86': ['evidence-portal-qr.cjs'], // копието на QR енкодера е точно копие
   'DEF-87': ['static-cache.cjs'], // статиката е immutable само с версия в адреса, нищо не е `public`
+  'DEF-88': ['static-etag.cjs'], // тялото живее в паметта, а ETag дава 304 без тяло
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -187,6 +188,7 @@ const ANCHORS = {
   'DEF-85': { file: 'addon-translations.cjs', contains: 'de.yaml' },
   'DEF-86': { file: 'evidence-portal-qr.cjs', contains: 'evidence-portal' },
   'DEF-87': { file: 'static-cache.cjs', contains: 'immutable' },
+  'DEF-88': { file: 'static-etag.cjs', contains: 'If-None-Match' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

@@ -16,11 +16,13 @@
 // версия (стар таб, ръчна заявка, тест) — получава `no-cache`, тоест пак не замръзва.
 const fs = require('node:fs');
 const path = require('node:path');
+const staticEtag = require('../static-etag'); // ETag/304 и тяло в паметта (DEF-88)
 
-/** Един и същ договор за заглавките: тип, кеш според версията, без отгатване на типа. */
-const headers = (type, versioned) => ({
+/** Един и същ договор за заглавките: тип, кеш според версията, етикет, без отгатване на типа. */
+const headers = (type, versioned, etag) => ({
   'Content-Type': type,
   'Cache-Control': versioned ? 'private, max-age=31536000, immutable' : 'no-cache',
+  ETag: etag,
   'X-Content-Type-Options': 'nosniff',
 });
 
@@ -49,12 +51,20 @@ function create(host) {
     // След страницата на портала: ако `portal.js` се поиска преди HTML-а, няма значение,
     // но редът пази четим ред на диспечера (страница → нейните ресурси).
     order: 20,
-    handle({ res, url, method }) {
+    handle({ req, res, url, method }) {
       if (method !== 'GET') return false;
       const asset = assets.get(url.pathname);
       if (!asset) return false;
-      res.writeHead(200, headers(asset.type, !!url.searchParams.get('v')));
-      res.end(typeof asset.body === 'function' ? asset.body() : asset.body);
+      // CSS-ът идва от кожата и може да се смени по време на работа — за него етикетът се смята
+      // от СЕРВИРАНОТО тяло при всяка заявка (иначе 304 щеше да заключи стар стил). За двата
+      // файла от диска етикетът се смята веднъж и остава.
+      const stable = typeof asset.body !== 'function';
+      const body = stable ? asset.body : asset.body();
+      const etag = stable ? (asset.etag ??= staticEtag.tagOf(body)) : staticEtag.tagOf(body);
+      const versioned = !!url.searchParams.get('v');
+      if (staticEtag.matches(req, etag)) { res.writeHead(304, headers(asset.type, versioned, etag)); res.end(); return true }
+      res.writeHead(200, headers(asset.type, versioned, etag));
+      res.end(body);
       return true;
     },
   };

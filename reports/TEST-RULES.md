@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 432 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 433 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 194 |
+| общо | 195 |
 | портал | 48 |
 | GUI | 36 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (194)
+## общо (195)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -224,6 +224,7 @@
 | `start-portal-open` | Start portal open | `tests/start-portal-open.cjs` |
 | `start-token-required` | Start token required | `tests/start-token-required.cjs` |
 | `static-cache` | Static cache | `tests/static-cache.cjs` |
+| `static-etag` | Static etag | `tests/static-etag.cjs` |
 | `storage` | Storage | `tests/storage.cjs` |
 | `store-accessors` | Store accessors | `tests/store-accessors.cjs` |
 | `store-migration` | Store migration | `tests/store-migration.cjs` |

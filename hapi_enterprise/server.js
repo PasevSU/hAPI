@@ -2,6 +2,7 @@
 const http = require('node:http'), fs = require('node:fs'), fsp = require('node:fs/promises'), path = require('node:path'), crypto = require('node:crypto');
 const paths = require('./paths'); // логически корени и имена на променливи — ЕДИН източник
 const pageVersion = require('./page-version'); // версия в адреса на статичните ресурси (DEF-87)
+const staticEtag = require('./static-etag'); // тяло в паметта + ETag/304 за статиката (DEF-88)
 const root = path.resolve(process.env.DATA_DIR || paths.LOGICAL_ROOTS.data), port = Number(process.env.PORT || 8099), adminToken = process.env.ADMIN_TOKEN;
 // Една жива инстанция на data директория (виж instance-lock.js). Попълва се в start().
 const instanceId = String(process.env.INSTANCE_ID || '').trim() || crypto.randomBytes(6).toString('hex');
@@ -1473,9 +1474,12 @@ async function handler(req, res) {
       // Версията в адреса е условието за дълъг кеш: `no-cache` иначе, за да не замръзне файл,
       // поискан без версия (стар таб, ръчна заявка, проверка).
       const cacheControl = isPage || !url.searchParams.get('v') ? 'no-cache' : UI_STATIC_CACHE;
-      res.writeHead(200, { 'Content-Type': type, 'Cache-Control': cacheControl, 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data: blob:; frame-src blob:; object-src blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'" /* INV-C2: панелът на HA е iframe към ingress адреса; 'none' даваше празен екран */ });
-      if (isPage) return res.end(pageVersion.versioned(fs.readFileSync(file, 'utf8'), addonVersion()));
-      return res.end(fs.readFileSync(file));
+      // Тялото се чете ВЕДНЪЖ (DEF-88): иначе 34 файла от диска при всяка заявка, а адрес без версия не може да се кешира.
+      const asset = staticEtag.load(file, isPage ? (html) => pageVersion.versioned(html, addonVersion()) : null);
+      const headers = { 'Content-Type': type, 'Cache-Control': cacheControl, ETag: asset.etag, 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Content-Security-Policy': "default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data: blob:; frame-src blob:; object-src blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'" /* INV-C2: панелът на HA е iframe към ingress адреса; 'none' даваше празен екран */ };
+      if (staticEtag.matches(req, asset.etag)) { res.writeHead(304, headers); return res.end() }
+      res.writeHead(200, headers);
+      return res.end(asset.body);
     }
     if (url.pathname === '/' && method === 'GET') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'" }); return res.end('<!doctype html><html lang="bg"><meta charset="utf-8"><title>hAPI Enterprise</title><style>body{font:16px system-ui;background:#101827;color:#fff;max-width:800px;margin:5rem auto;padding:1rem}code{color:#7dd3fc}</style><h1>hAPI Enterprise</h1><p>Публично API: <code>/api/v1/portals</code></p><p>Административните операции изискват Bearer токен.</p></html>') }
     // Isolated static HTML project hosting. Only folders inside DATA_DIR/html-projects

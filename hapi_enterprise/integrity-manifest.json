@@ -1,9 +1,9 @@
 {
-  "version": "0.69.226",
-  "generatedAt": "2026-11-16T00:24:55.695Z",
+  "version": "0.69.227",
+  "generatedAt": "2026-11-16T01:19:39.031Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
-    "server.js": "9426ddd0a90c5be4c1780c763ece46d1464adca5699fb3669b1a6c5a2bf931dd",
+    "server.js": "3d6f1f58f00a1c74c4bfb103e33699fef1489cda90d277da9524d7a068534eb7",
     "paths.js": "d0290da6b85956b34681e15f88db8fae918bc4330571a4e6ac8e5f4a3ce83ea0",
     "storage-preflight.js": "6eafb207ff1b346c54baa1c490bc92696d3f2322ff5fb679e62c3a06190a2c7a",
     "integrity.js": "dce32c184925fd46dff497f308975f78712be548b608c72e376ae84b46459764",
