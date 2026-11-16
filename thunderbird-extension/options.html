@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>PasevSU Forensic Mail — Options</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        margin: 1.5rem;
+        max-width: 40rem;
+      }
+      .field {
+        display: grid;
+        grid-template-columns: 12rem 1fr;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+      .field label {
+        font-weight: 600;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 0.3rem 0.4rem;
+      }
+      .checkbox-field {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 1rem 0;
+      }
+      button {
+        padding: 0.4rem 1rem;
+        cursor: pointer;
+      }
+      #status {
+        margin-left: 0.75rem;
+        color: #146c43;
+      }
+      .note {
+        color: #555;
+        font-size: 0.85rem;
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>PasevSU Forensic Mail — Options</h1>
+    <p>
+      These values are written into every outgoing email as
+      <code>X-PasevSU-*</code> headers. Changes apply from the next message you send.
+    </p>
+
+    <div class="field">
+      <label for="version">Version</label>
+      <input type="text" id="version" />
+    </div>
+    <div class="field">
+      <label for="framework">Framework</label>
+      <input type="text" id="framework" />
+    </div>
+    <div class="field">
+      <label for="origin">Origin</label>
+      <input type="text" id="origin" />
+    </div>
+    <div class="field">
+      <label for="organization">Organization</label>
+      <input type="text" id="organization" />
+    </div>
+    <div class="field">
+      <label for="pgpFingerprint">PGP Fingerprint</label>
+      <input type="text" id="pgpFingerprint" placeholder="leave empty to omit" />
+    </div>
+
+    <div class="checkbox-field">
+      <input type="checkbox" id="enableOts" />
+      <label for="enableOts">Enable OTS marker (X-PasevSU-OTS: pending)</label>
+    </div>
+
+    <button id="save">Save</button>
+    <span id="status"></span>
+
+    <p class="note">
+      Real OpenPGP signatures (<code>.asc</code>) and OpenTimestamps
+      (<code>.ots</code>) cannot be produced inside a Thunderbird MailExtension;
+      the <code>X-PasevSU-OTS</code> header is a marker for the SMTP gateway.
+    </p>
+
+    <script src="options.js"></script>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "manifest_version": 2,
+  "name": "PasevSU Forensic Mail Headers",
+  "version": "1.0",
+  "description": "Injects PasevSU forensic/cryptographic headers and a PasevSU_Manifest.json attachment into every outgoing email, automatically on send.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "pasevsu-forensic-headers@pasev.example",
+      "strict_min_version": "115.0"
+    }
+  },
+  "permissions": ["compose", "storage"],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  }
+}

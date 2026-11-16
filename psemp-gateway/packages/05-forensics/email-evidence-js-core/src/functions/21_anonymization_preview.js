@@ -1,0 +1,2 @@
+import { invariant } from '../core/utils.js';
+export function buildAnonymizationPreview(manifest,{entity_id,occurrences}){invariant(entity_id&&Array.isArray(occurrences),'entity_id and occurrences required');const m=structuredClone(manifest);m.anonymization.preview.push({entity_id,occurrences:occurrences.map(o=>({...o,status:o.status??'needs_review'})),counts:{total:occurrences.length,confirmed:occurrences.filter(o=>o.status==='confirmed').length,needs_review:occurrences.filter(o=>o.status!=='confirmed').length}});return m;}

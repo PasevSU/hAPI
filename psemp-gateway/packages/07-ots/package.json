@@ -1,0 +1,20 @@
+{
+  "name": "pasevsu-ots",
+  "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "bin": {
+    "pasevsu-ots": "./cli.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "opentimestamps": "0.4.6"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./manager": "./ots-manager.js",
+    "./queue": "./timestamp-queue.js"
+  }
+}

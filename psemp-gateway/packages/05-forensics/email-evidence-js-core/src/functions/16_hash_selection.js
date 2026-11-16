@@ -1,0 +1,3 @@
+import { bboxIntersection, bboxArea, invariant, normalizeBBox } from '../core/utils.js';
+export function selectTokens(tokens, selectionBBox,{minimumCoverage=0.8}={}) { const s=normalizeBBox(selectionBBox); return tokens.map(t=>{const i=bboxIntersection(t.bbox,s);const coverage=i?bboxArea(i)/(bboxArea(t.bbox)||1):0;return {...t,hash_selected:coverage>=minimumCoverage,selection_coverage:coverage,partial_intersection:coverage>0&&coverage<minimumCoverage};}); }
+export function recordHashSelection(manifest,selection){const m=structuredClone(manifest);invariant(selection.selection_id,'selection_id required');m.hash_selection.selections.push(selection);return m;}
