@@ -73,36 +73,73 @@ $extDir = Join-Path $Profile 'extensions'
 if (-not (Test-Path $extDir)) { New-Item -ItemType Directory -Path $extDir | Out-Null }
 $dest = Join-Path $extDir "$id.xpi"
 
-if (Get-Process thunderbird -ErrorAction SilentlyContinue) {
-  Write-Host ''
-  Write-Host 'Thunderbird is running. An installed .xpi is memory-mapped and cannot be' -ForegroundColor Yellow
-  Write-Host 'replaced while it runs. Close Thunderbird completely and run this again.' -ForegroundColor Yellow
-  Write-Host ''
-  Write-Host "  built for later: $xpi"
-  exit 2
-}
-
+$mapped = $false
 try {
-  Copy-Item $xpi $dest -Force
+  Copy-Item $xpi $dest -Force -ErrorAction Stop
 } catch {
-  throw "could not write $dest - is Thunderbird really closed? ($($_.Exception.Message))"
+  $mapped = $true
+  Write-Host ''
+  Write-Host 'Could not replace the installed .xpi: Thunderbird keeps it memory-mapped.' -ForegroundColor Yellow
+  Write-Host 'Close Thunderbird completely and run this again.' -ForegroundColor Yellow
+  Write-Host ('  reason: {0}' -f $_.Exception.Message) -ForegroundColor Yellow
 }
 
-$srcHash = (Get-FileHash $xpi -Algorithm SHA256).Hash.ToLower()
-$dstHash = (Get-FileHash $dest -Algorithm SHA256).Hash.ToLower()
-if ($srcHash -ne $dstHash) { throw "installed file does not match the build ($srcHash vs $dstHash)" }
+if (-not $mapped) {
+  $srcHash = (Get-FileHash $xpi -Algorithm SHA256).Hash.ToLower()
+  $dstHash = (Get-FileHash $dest -Algorithm SHA256).Hash.ToLower()
+  if ($srcHash -ne $dstHash) { throw "installed file does not match the build ($srcHash vs $dstHash)" }
+  Write-Host ('installed {0}' -f $dest)
+  Write-Host ('sha256    {0}' -f $dstHash)
+}
 
-Write-Host ('installed {0}' -f $dest)
-Write-Host ('sha256    {0}' -f $dstHash)
+# Thunderbird keeps only the custom headers whose names are registered in
+# mail.compose.other.header, and the message pane shows only the ones listed in
+# mailnews.headers.extraExpandedHeaders. A profile written by an older build
+# carries a shorter list, so both prefs are rebuilt from background.js here:
+# a new header is otherwise computed, passed to the send, and dropped on the wire.
+$bgPath = Join-Path $src 'background.js'
+$bgText = [IO.File]::ReadAllText($bgPath)
+$names = [regex]::Matches(
+  $bgText, "buildHeader\(\s*['`"](X-PasevSU-[A-Za-z0-9-]+)['`"]"
+) | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique
+if ($names.Count -eq 0) { throw "no X-PasevSU- header names found in $bgPath" }
 
 $userJs = Join-Path $Profile 'user.js'
-$present = if (Test-Path $userJs) { Get-Content $userJs -Raw } else { '' }
-if ($present -notmatch 'extensions\.autoDisableScopes') {
-  Write-Host ''
-  Write-Host "WARNING: $userJs does not set extensions.autoDisableScopes." -ForegroundColor Yellow
-  Write-Host 'A profile side-load is registered disabled without it. Append the shipped' -ForegroundColor Yellow
-  Write-Host 'thunderbird-extension/user.js to the profile copy (append, never replace).' -ForegroundColor Yellow
+$hadUserJs = Test-Path $userJs
+$text = if ($hadUserJs) { [IO.File]::ReadAllText($userJs) } else { '' }
+if ($hadUserJs) {
+  Copy-Item $userJs (Join-Path $Profile 'user.js.psemp-before-install') -Force
 }
 
+function Set-PrefLine([string]$body, [string]$key, [string]$line) {
+  $pattern = '(?m)^[ \t]*user_pref\("' + [regex]::Escape($key) + '",[^\r\n]*\);[ \t]*$'
+  if ([regex]::IsMatch($body, $pattern)) { return [regex]::Replace($body, $pattern, $line) }
+  return $body.TrimEnd() + "`n" + $line
+}
+
+$composeLine = 'user_pref("mail.compose.other.header", "' + ($names -join ',') + '");'
+$expandedLine = 'user_pref("mailnews.headers.extraExpandedHeaders", "' + (($names | ForEach-Object { $_.ToLower() }) -join ' ') + '");'
+$guardLines = @()
+if ($text -notmatch 'extensions\.autoDisableScopes') {
+  $guardLines += '// A profile side-load is registered disabled without this.'
+  $guardLines += 'user_pref("extensions.autoDisableScopes", 0);'
+}
+
+$text = Set-PrefLine $text 'mail.compose.other.header' $composeLine
+$text = Set-PrefLine $text 'mailnews.headers.extraExpandedHeaders' $expandedLine
+if ($guardLines.Count -gt 0) { $text = $text.TrimEnd() + "`n" + ($guardLines -join "`n") }
+
+$text = ($text -replace "`r`n", "`n") -replace "`r", "`n"
+$text = $text.TrimEnd()
+if (-not $text.EndsWith(';')) { $text += ';' }
+[IO.File]::WriteAllText($userJs, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+Write-Host ('user.js   {0} header names registered, LF, no BOM' -f $names.Count)
+
 Write-Host ''
+if ($mapped) {
+  Write-Host 'The prefs above are in place; only the .xpi swap is left.' -ForegroundColor Yellow
+  Write-Host 'Close Thunderbird and run this script once more.' -ForegroundColor Yellow
+  exit 2
+}
 Write-Host "Start Thunderbird, then open the add-on options page: it must say 'Armed'." -ForegroundColor Green

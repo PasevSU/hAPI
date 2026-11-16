@@ -284,9 +284,25 @@ powershell -ExecutionPolicy Bypass -File thunderbird-extension\tools\install.ps1
 
 Thunderbird **memory-maps** an installed `.xpi`, so it cannot be replaced while
 Thunderbird runs — Windows answers *"the requested operation cannot be performed on
-a file with a user-mapped section open"*. Close Thunderbird first; the script
-refuses and exits with code 2 otherwise. After the install the script also warns if
-the profile's `user.js` lacks the next pref.
+a file with a user-mapped section open"*. The script reports that and exits with code
+2; quit Thunderbird and run it again. Everything else it does is already in place at
+that point, so the second run only has to swap the file.
+
+The script also repairs the profile's `user.js`. Thunderbird sends only the custom
+headers whose names are registered in `mail.compose.other.header`, so a profile
+written by an earlier build drops every header added since — the extension computes
+them, hands them to the send, and they vanish on the wire. Both that pref and
+`mailnews.headers.extraExpandedHeaders` are therefore rebuilt from `background.js` on
+every run, and the previous file is kept as `user.js.psemp-before-install`.
+
+That repair is not a convenience. The add-on running in this profile was a hand-built
+prototype stamped `1.5` — a version that never existed in git — and its engine knew
+exactly eleven header names; the profile's `user.js` registered the same eleven. Every
+header added since, the WAR marker included, was therefore neither computed nor
+permitted onto the wire: a message sent from that profile carried nine (the eleven
+minus the two that are conditional) and no `{{ PasevSU-WAR }}` in the subject.
+`node psemp-gateway/tools/verify-install.cjs` prints *emitted*, *contract* and
+*profile* side by side and fails on any gap.
 
 Thunderbird disables hand-placed add-ons by default. [`user.js`](user.js) ships the
 pref that turns that off, so the add-on stays enabled across restarts:
