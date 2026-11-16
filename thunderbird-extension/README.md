@@ -566,6 +566,26 @@ any language, so a half-translated panel cannot ship.
   snapshot"* and *"this add-on's own manifest is not counted as a user
   attachment"*.
 
+### Techniques deliberately not implemented
+
+The protocol names twelve hardening techniques and records what happened to each in
+[`../psemp-gateway/PROTOCOL.md`](../psemp-gateway/PROTOCOL.md) §14. Two are declined
+outright, and the refusal is a decision rather than an omission:
+
+- **Decoy files** — several near-identical attachments where only one carries a signed
+  identifier. It traces a leak in media work, but in a legal evidence chain it means the
+  sender knowingly fabricates documents that sit beside the real ones and cannot be told
+  apart from them. The canary plus recipient binding gives the same traceability without
+  polluting the evidence set (PROTOCOL §10).
+- **Attachments inside an encrypted ZIP** — it adds nothing against a real attacker and
+  duplicates the confidentiality Thunderbird's own encryption already provides; it only
+  raises the cost for automated indexers. The sealed manifest is the part that has to
+  survive (PROTOCOL §14).
+
+A third is implemented but **off by default**: the `[XXXXXXXX]` Subject tag (§9), because
+silently mutating a Subject breaks threading and saved searches for every recipient. The
+WAR marker is the only thing always added to the Subject, and it is a marker, not a claim.
+
 ## Registering the header names in Thunderbird
 
 Thunderbird will not compose or display a custom header unless its name is listed

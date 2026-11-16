@@ -15,7 +15,7 @@
 | Един тест | `node tests/<име>.cjs` |
 | Отчет за изданието | `node scripts/release-status.cjs` + `node tests/release-status.cjs` |
 | Изграждане | `node scripts/build-release.cjs` → `node scripts/verify-release.cjs` → `node scripts/build-haoss.cjs` |
-| Линт | `npx eslint hapi_enterprise tests custom_components scripts --max-warnings=0` |
+| Линт | `npx eslint . --max-warnings=0` (цялото дърво — така го пуска `safe-release.cjs`; тесен списък оставя `psemp-gateway/` и `thunderbird-extension/` непроверени) |
 | Документи | `sync-addon-changelog` · `source-inventory` · `gen-test-rules` · `docs-index` · `docs-manual` · `api-reference` · `openapi-admin` · `error-codes` · `audit-events` |
 
 ## Твърди порти (чупят изданието)
