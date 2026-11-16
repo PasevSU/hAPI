@@ -15,6 +15,8 @@
  *   - a header written but never registered (the composer drops it silently);
  *   - an installed .xpi older than the source (the headers changed, the running
  *     code did not);
+ *   - an .xpi that is current while the client still runs the previous build (the
+ *     cache in extensions.json is only refreshed at start);
  *   - a profile with no user.js at all.
  *
  *   node psemp-gateway/test/verify-install.cjs
@@ -121,8 +123,21 @@ function xpiEntries({ backslash = false, withLocales = true, tamper = null } = {
  *
  * `registered` and `expanded` are the header lists the composer is told about;
  * `xpiAge` backdates the installed .xpi by that many milliseconds.
+ *
+ * `loadedVersion` is the version recorded in extensions.json - what the running
+ * client believes it loaded. `null` leaves the file out entirely (a profile
+ * Thunderbird never started), and `loadedRaw` writes it verbatim so a corrupt
+ * cache can be provoked.
  */
-function makeProfile({ registered, expanded, xpiAge = 0, withUserJs = true, xpi = {} } = {}) {
+function makeProfile({
+  registered,
+  expanded,
+  xpiAge = 0,
+  withUserJs = true,
+  xpi = {},
+  loadedVersion = MANIFEST.version,
+  loadedRaw = null,
+} = {}) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-install-'));
   const names = emittedNames();
   const toCompose = registered === undefined ? names : registered;
@@ -142,6 +157,12 @@ function makeProfile({ registered, expanded, xpiAge = 0, withUserJs = true, xpi 
   if (xpiAge > 0) {
     const when = new Date(Date.now() - xpiAge);
     fs.utimesSync(xpiPath, when, when);
+  }
+  if (loadedRaw !== null) {
+    fs.writeFileSync(path.join(profile, 'extensions.json'), loadedRaw);
+  } else if (loadedVersion !== null) {
+    const cache = { addons: [{ id: ID, version: loadedVersion, active: true, userDisabled: false }] };
+    fs.writeFileSync(path.join(profile, 'extensions.json'), `${JSON.stringify(cache, null, 2)}\n`);
   }
   return profile;
 }
@@ -270,6 +291,59 @@ checks.push({
       assert.match(text, /FAIL the archive carries the current source, not a previous build\s+background\.js/);
       assert.match(text, /RESULT: 1 FAILED/, `only the payload check may fail:\n${text}`);
       return 'exit 1';
+    } finally {
+      fs.rmSync(profile, { recursive: true, force: true });
+    }
+  },
+});
+
+checks.push({
+  name: 'a client still running a previous build is a failure',
+  fn() {
+    // The exact drift measured in the wild: a healthy .xpi on disk, a stale entry
+    // in the cache, and a fixed defect that stays broken because the client only
+    // re-reads an add-on at start.
+    const profile = makeProfile({ loadedVersion: '0.0.1' });
+    try {
+      const { code, text } = run(profile);
+      assert.strictEqual(code, 1, `a stale loaded version must fail, got exit ${code}:\n${text}`);
+      assert.match(text, new RegExp(`FAIL the running client has loaded ${MANIFEST.version.replace(/\./g, '\\.')}`));
+      assert.match(text, /loaded 0\.0\.1, on disk/);
+      assert.match(text, /quit and reopen Thunderbird/);
+      assert.match(text, /RESULT: 1 FAILED/, `only the version check may fail:\n${text}`);
+      return 'exit 1';
+    } finally {
+      fs.rmSync(profile, { recursive: true, force: true });
+    }
+  },
+});
+
+checks.push({
+  name: 'a profile Thunderbird never started is not judged on its cache',
+  fn() {
+    const profile = makeProfile({ loadedVersion: null });
+    try {
+      const { code, text } = run(profile);
+      assert.strictEqual(code, 0, `a missing extensions.json must not be a verdict, got exit ${code}:\n${text}`);
+      assert.match(text, /SKIP the running client has loaded/);
+      assert.match(text, /Thunderbird has not started with this profile/);
+      return 'exit 0, skipped';
+    } finally {
+      fs.rmSync(profile, { recursive: true, force: true });
+    }
+  },
+});
+
+checks.push({
+  name: 'a corrupt extensions.json is skipped, not a crash',
+  fn() {
+    const profile = makeProfile({ loadedRaw: '{ not json' });
+    try {
+      const { code, text } = run(profile);
+      assert.strictEqual(code, 0, `an unreadable cache must not fail the run, got exit ${code}:\n${text}`);
+      assert.match(text, /SKIP the running client has loaded/);
+      assert.match(text, /extensions\.json is not valid JSON/);
+      return 'exit 0, skipped';
     } finally {
       fs.rmSync(profile, { recursive: true, force: true });
     }

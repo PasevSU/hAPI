@@ -472,6 +472,23 @@ The stale-build check earns its place: the headers can change and be committed
 while Thunderbird keeps running the previous `.xpi`, and nothing else notices
 until a sent message comes back without them.
 
+A current `.xpi` is still only half the answer. Thunderbird reads an add-on once,
+at start, so the file can be right while the process in front of the user still
+executes the build before it. The checker therefore also compares the version
+packed inside the `.xpi` with the version recorded in the profile's
+`extensions.json` — the cache Thunderbird rewrites when it loads an add-on:
+
+```console
+FAIL the running client has loaded 1.8  loaded 1.7, on disk 1.8 - quit and reopen Thunderbird
+```
+
+That row is the difference between "the fix is on disk" and "the fix is running".
+It was added after a healthy 1.8 sat unused while a resident 1.7 kept blocking
+every send with a defect 1.8 had already removed — and every earlier check passed
+throughout. A missing or unreadable `extensions.json` is reported as `SKIP`
+rather than a failure: a profile Thunderbird has never started has no cache to
+compare, and guessing there would be worse than saying so.
+
 ## Verifying a sent message
 
 The chain above makes claims. `tools/check-sent.cjs` re-derives them from the
@@ -613,7 +630,10 @@ cannot silently mangle a body.
 
 `verify-install.cjs` provokes every failure the install checker claims to catch —
 a retired header name still registered, a written header never registered, an
-`.xpi` older than the source, a profile with no `user.js` — using throwaway
+`.xpi` older than the source, an `.xpi` that is current while `extensions.json`
+still names the previous build, a profile with no `user.js` — using throwaway
 profiles in `%TEMP%`, and requires a correctly wired profile to pass. Without
 that, a checker reporting success from three lists that happened to match would
-look exactly like a working install.
+look exactly like a working install. The two cache cases are provoked in both
+directions: a stale version fails, while a missing or corrupt `extensions.json`
+is skipped and still exits `0`, because neither can be read as evidence.

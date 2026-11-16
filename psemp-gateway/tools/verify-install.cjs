@@ -50,6 +50,42 @@ function read(file) {
 }
 
 /**
+ * The version Thunderbird actually loaded, from the profile's extensions.json.
+ *
+ * Being installed and being loaded are different facts and only the second one
+ * stamps a message. Thunderbird rewrites this cache when it starts, so a stale
+ * entry here means the client is still running the previous build even though a
+ * newer .xpi sits on disk. Reported as a state rather than a boolean because an
+ * absent cache is not a verdict: a profile that never started has nothing to say.
+ */
+function loadedAddonVersion(profile, id) {
+  const file = path.join(profile, 'extensions.json');
+  if (!fs.existsSync(file)) return { state: 'absent' };
+  let db;
+  try {
+    db = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return { state: 'unreadable' };
+  }
+  const addons = Array.isArray(db && db.addons) ? db.addons : [];
+  const addon = addons.find((entry) => entry && entry.id === id);
+  if (!addon || typeof addon.version !== 'string' || !addon.version) return { state: 'unknown' };
+  return { state: 'loaded', version: addon.version };
+}
+
+/** manifest.version as packed INSIDE the .xpi, not as it sits in the source tree. */
+function archiveManifestVersion(entries) {
+  if (!entries) return '';
+  const entry = entries.find((candidate) => candidate.name === 'manifest.json');
+  if (!entry) return '';
+  try {
+    return JSON.parse(entry.data.toString('utf8')).version || '';
+  } catch {
+    return '';
+  }
+}
+
+/**
  * The files inside a zip, read from its central directory, with contents inflated.
  *
  * Returns null when the archive cannot be walked, so a corrupt pack fails loudly
@@ -282,6 +318,32 @@ function main(argv, { log = console.log, error = console.error } = {}) {
           'Thunderbird deletes the add-on when __MSG_*__ cannot resolve',
         );
       }
+    }
+
+    // Every check above judges the FILE. None of them can see that the running
+    // client still executes the previous one: the .xpi is current, the source
+    // matches, the prefs are right, and the headers never change, because
+    // Thunderbird re-reads an add-on only at start. Measured once the hard way -
+    // a healthy 1.8 on disk while session 1.7 kept blocking every send with the
+    // defect 1.8 had already fixed. A version comparison is the only local proof
+    // that the fix is in memory, so the report must state it.
+    const loaded = loadedAddonVersion(profile, id);
+    const onDisk = archiveManifestVersion(entries) || manifest.version;
+    if (loaded.state === 'loaded') {
+      ok(
+        `the running client has loaded ${onDisk}`,
+        loaded.version === onDisk,
+        `loaded ${loaded.version}, on disk ${onDisk} - quit and reopen Thunderbird`,
+      );
+    } else {
+      skip(
+        `the running client has loaded ${onDisk}`,
+        loaded.state === 'absent'
+          ? 'no extensions.json - Thunderbird has not started with this profile'
+          : loaded.state === 'unreadable'
+            ? 'extensions.json is not valid JSON'
+            : `${id} is not in extensions.json yet`,
+      );
     }
   }
 

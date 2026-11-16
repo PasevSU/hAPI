@@ -735,3 +735,11 @@ Known, deliberate gaps. None of them silently weakens a message that was sealed.
 * **Does a mail signature survive a forwarding hop?** No. PSEMP verifies the copy as sent;
   a re-mailing by a third party is a new message and must be re-stamped, which is precisely
   what `Origin:` and `provenance` make visible.
+* **A deployed `.xpi` is not a running `.xpi`** — Thunderbird reads an add-on once, at start,
+  so the file on disk can be current while the process keeps executing the previous build.
+  Nothing on the wire reveals that, because the previous build simply writes the previous
+  headers — or, in the 1.8 case, blocked every send. `tools/verify-install.cjs` now compares
+  the version packed inside the `.xpi` with the one recorded in `extensions.json` and fails
+  with `loaded X, on disk Y - quit and reopen Thunderbird`. The restart itself stays a human
+  step: no API lets an add-on reload its own code, and nothing here may kill a mail client
+  that might hold an unsaved draft.
