@@ -37,6 +37,7 @@ const {
   MANIFEST_FILENAME: MANIFEST,
   sha256Hex,
   referenceMerkle,
+  addonVersion,
   loadExtension,
   headerMap,
   headerNames,
@@ -144,6 +145,7 @@ check('plain-text send gets the full header set in contract order', async () => 
   // stays, because "0 files" is a claim and silence is not.
   assert.deepStrictEqual(names, [
     'X-PasevSU-Version',
+    'X-PasevSU-Build',
     'X-PasevSU-Framework',
     'X-PasevSU-Origin',
     'X-PasevSU-Organization',
@@ -1049,6 +1051,46 @@ check('the message id is long, non-standard and per-message', async () => {
   assert.match(id, /^<PasevSU\.\d{14}\.[0-9a-f-]{36}\+[0-9a-f]{6}_[0-9a-f]{6}~[0-9a-f]{6}\.[0-9a-f]{6}@forensic\.evidence\.pasevsu>$/);
   assert.ok(id.length > 90, `expected a long message id, got ${id.length} chars`);
   assert.notStrictEqual(id, twice.get('X-PasevSU-Message-ID'), 'each send gets its own evidence id');
+});
+
+/*
+ * The recipient's only way to tell which build stamped a message. `Version` is the
+ * user-set config/format version (default "1.0" per the brief), so two very different
+ * builds both said "1.0" — exactly the confusion that made a stale prototype look
+ * current. `Build` comes from the manifest, so it cannot go stale by being forgotten.
+ */
+check('the build header reports the add-on version, not the config version', async () => {
+  const { listeners } = loadExtension();
+  const details = { isPlainText: true, body: 'body text', attachments: [], customHeaders: [] };
+  const headers = headerMap((await listeners[0]({}, details)).details.customHeaders);
+
+  const build = headers.get('X-PasevSU-Build');
+  assert.strictEqual(build, addonVersion(), 'Build must be the manifest version');
+  assert.strictEqual(
+    headers.get('X-PasevSU-Version'),
+    '1.0',
+    'Version stays the config/format version, independent of the build'
+  );
+  assert.notStrictEqual(build, headers.get('X-PasevSU-Version'), 'the two must be distinguishable');
+  return `build ${build}`;
+});
+
+/*
+ * A missing `runtime` must cost the Build header and nothing else. The send has to
+ * survive it: an environment without the API is the older stub, not a broken message.
+ */
+check('a missing runtime drops only the build header', async () => {
+  const { listeners } = loadExtension({ noRuntime: true });
+  const details = { isPlainText: true, body: 'body text', attachments: [], customHeaders: [] };
+  const result = await listeners[0]({}, details);
+
+  assert.ok(result && result.details, 'the listener must still return details');
+  assert.ok(!result.cancel, 'the send must not be cancelled');
+  const headers = headerMap(result.details.customHeaders);
+  assert.ok(!headers.has('X-PasevSU-Build'), 'no build header without a manifest');
+  assert.strictEqual(headers.get('X-PasevSU-Version'), '1.0', 'the rest is unaffected');
+  assert.ok(headers.has('X-PasevSU-Merkle-Root'), 'the evidence headers are still emitted');
+  return 'send unaffected';
 });
 
 /* --- runner --------------------------------------------------------------- */

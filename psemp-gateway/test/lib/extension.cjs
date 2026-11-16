@@ -29,6 +29,18 @@ const BARE_CODE = CODE.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/
 const HEX64 = /^[0-9a-f]{64}$/;
 const MANIFEST_FILENAME = 'PasevSU_Manifest.json';
 
+/**
+ * The add-on version from manifest.json — what `X-PasevSU-Build` must report.
+ * Read from the real file, not a literal: a stale copy would let the extension and
+ * the assertion drift apart while both stayed green.
+ */
+function addonVersion() {
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'thunderbird-extension', 'manifest.json'), 'utf8')
+  );
+  return manifest.version;
+}
+
 const sha256Hex = (data) => crypto.createHash('sha256').update(data).digest('hex');
 
 /** The Merkle rule from the spec, implemented without Web Crypto. */
@@ -52,7 +64,7 @@ function referenceMerkle(hexLeaves) {
  * @param {{stored?: object, attachments?: object, storageGetThrows?: boolean,
  *          addAttachmentThrows?: Error|null, listed?: Array<object>|null}} options
  */
-function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false, addAttachmentThrows = null, listed = null } = {}) {
+function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false, addAttachmentThrows = null, listed = null, noRuntime = false } = {}) {
   const order = [];
   const listeners = [];
   const writes = {};
@@ -61,6 +73,20 @@ function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false
   const added = [];
 
   const browser = {
+    // `runtime.getManifest()` is the only way an extension can name its own build.
+    // The stub originally omitted it, which is why nothing ever reported one: the
+    // code path was never exercised, so its absence looked like a design choice.
+    // `noRuntime` reproduces that older environment, to prove a send still works.
+    ...(noRuntime
+      ? {}
+      : {
+          runtime: {
+            getManifest() {
+              order.push('runtime.getManifest');
+              return { version: addonVersion() };
+            },
+          },
+        }),
     storage: {
       local: {
         async get(defaults) {
@@ -162,6 +188,7 @@ module.exports = {
   MANIFEST_FILENAME,
   sha256Hex,
   referenceMerkle,
+  addonVersion,
   loadExtension,
   headerMap,
   headerNames,

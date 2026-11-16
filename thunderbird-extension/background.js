@@ -522,6 +522,29 @@ function buildHeader(name, value) {
 }
 
 /*
+ * The add-on's own version, from its manifest.
+ *
+ * `X-PasevSU-Version` is the config/format version a user sets in the options page
+ * and it is deliberately independent (the brief fixes its default at "1.0"). That
+ * leaves a real gap: a recipient holding two messages from the same account could
+ * not tell a working build from the stale prototype, because both said "1.0". This
+ * reports the build that actually stamped the message.
+ *
+ * Empty when the runtime API is unavailable, in which case the header is omitted
+ * rather than sent blank — a bare "X-PasevSU-Build:" claims less than no header.
+ */
+function buildVersion() {
+  try {
+    const runtime = browser && browser.runtime;
+    const manifest = runtime && typeof runtime.getManifest === "function" ? runtime.getManifest() : null;
+    const version = manifest && typeof manifest.version === "string" ? manifest.version.trim() : "";
+    return /^[0-9A-Za-z][0-9A-Za-z.+_-]{0,31}$/.test(version) ? version : "";
+  } catch {
+    return "";
+  }
+}
+
+/*
  * The Subject always ends with the marker. Idempotent: onBeforeSend can fire more
  * than once for one message, and a stacked marker would be visible to the recipient.
  * Exactly one space before it and never a run of them — MsgComposeCommands collapses
@@ -588,6 +611,10 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
   const context = extra || {};
   const headers = [];
   headers.push(buildHeader("X-PasevSU-Version", config.version));
+  const build = buildVersion();
+  if (build) {
+    headers.push(buildHeader("X-PasevSU-Build", build));
+  }
   headers.push(buildHeader("X-PasevSU-Framework", config.framework));
   headers.push(buildHeader("X-PasevSU-Origin", config.origin));
   headers.push(buildHeader("X-PasevSU-Organization", config.organization));

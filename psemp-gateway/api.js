@@ -38,6 +38,22 @@ const MANIFEST_FILENAME = 'PasevSU_Manifest.json';
 const FRAMEWORK = 'PasevSU';
 const SCHEMA_VERSION = '1.0';
 
+/*
+ * The gateway's own build, reported separately from `X-PasevSU-Version`.
+ *
+ * `version` in the defaults is the config/format version a user sets, and the brief
+ * fixes its default at "1.0" — so on its own it cannot distinguish two builds of the
+ * same tooling. A recipient comparing two messages needs the build. Read from the
+ * package manifest; the fallback keeps a copied-single-file api.js loadable.
+ */
+const BUILD_VERSION = (() => {
+  try {
+    return require('./package.json').version;
+  } catch {
+    return '0.0.0';
+  }
+})();
+
 /** Defaults match thunderbird-extension/background.js, except `origin`. */
 const DEFAULTS = Object.freeze({
   version: '1.0',
@@ -86,6 +102,7 @@ function loadSettings(file = SETTINGS_PATH) {
 /** Header names, in injection order. `X-PasevSU-OTS` is a marker during compose. */
 const HEADER_NAMES = Object.freeze({
   version: 'X-PasevSU-Version',
+  build: 'X-PasevSU-Build',
   framework: 'X-PasevSU-Framework',
   origin: 'X-PasevSU-Origin',
   organization: 'X-PasevSU-Organization',
@@ -915,6 +932,7 @@ function buildHeaderLines({
   const resolved = resolveConfig(config);
   const lines = [];
   lines.push(`${HEADER_NAMES.version}: ${resolved.version}`);
+  lines.push(`${HEADER_NAMES.build}: ${BUILD_VERSION}`);
   lines.push(`${HEADER_NAMES.framework}: ${resolved.framework}`);
   lines.push(`${HEADER_NAMES.origin}: ${resolved.origin}`);
   lines.push(`${HEADER_NAMES.organization}: ${resolved.organization}`);
@@ -2504,7 +2522,24 @@ async function selfTest() {
     const names = evidence.headers.map((header) => header.name);
     assert(names.includes('X-PasevSU-OTS'), 'enableOts must add the pending marker');
     assert(names.includes('X-PasevSU-PGP-Fingerprint'), 'non-empty fingerprint must be emitted');
-    assert(evidence.headers[7].name === 'X-PasevSU-Body-SHA256', 'header order changed');
+    // Build sits at #2, so everything after it shifts by one. Pin the exact prefix
+    // rather than one magic index: the order IS the cross-engine contract. The
+    // gateway adds the real (unprefixed) PasevSU-WAR field, so it appears here too.
+    assert(
+      JSON.stringify(names.slice(0, 9)) ===
+        JSON.stringify([
+          'X-PasevSU-Version',
+          'X-PasevSU-Build',
+          'X-PasevSU-Framework',
+          'X-PasevSU-Origin',
+          'X-PasevSU-Organization',
+          'PasevSU-WAR',
+          'X-PasevSU-WAR',
+          'X-PasevSU-Evidence-ID',
+          'X-PasevSU-Body-SHA256',
+        ]),
+      'header order changed'
+    );
     return `${names.length} headers`;
   });
 

@@ -24,6 +24,7 @@ user_pref(
   "mail.compose.other.header",
   [
     "X-PasevSU-Version",
+    "X-PasevSU-Build",
     "X-PasevSU-Framework",
     "X-PasevSU-Origin",
     "X-PasevSU-Organization",
