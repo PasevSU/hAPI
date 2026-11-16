@@ -26,6 +26,8 @@
 
 const assert = require('node:assert');
 const vm = require('node:vm');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   SOURCE,
@@ -292,6 +294,63 @@ check('the WAR texts are byte-identical in both engines', () => {
   assert.match(WAR_NOTICE_HTML, /FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN/);
   assert.match(WAR_NOTICE_HTML, /pasevdenislav@gmail\.com/);
   assert.match(WAR_NOTICE_HTML, /RFC 4880 and 3156/);
+});
+
+check('the documentation quotes the canonical WAR bytes and nothing retired', () => {
+  /*
+   * The drift did not stop at the two engines: PROTOCOL.md described a THIRD wording
+   * that neither of them emitted, so a verifier reading only the spec would compute a
+   * footer that never existed. A spec that paraphrases is worse than no spec, so the
+   * two documents that quote the value are held to the exact bytes, and the phrasings
+   * this change retired are refused everywhere.
+   */
+  const root = path.join(__dirname, '..', '..');
+  const gateway = require('../api.js');
+  const deindent = (text) => text.replace(/^[ \t]+/gm, '');
+
+  for (const relative of ['psemp-gateway/PROTOCOL.md', 'thunderbird-extension/README.md']) {
+    const text = deindent(fs.readFileSync(path.join(root, relative), 'utf8'));
+    assert.ok(
+      text.includes(gateway.WAR_HEADER_TEXT),
+      `${relative} must quote WAR_HEADER_TEXT exactly, not a paraphrase`
+    );
+    // The notice minus its two leading blank lines, which the docs spell out as
+    // "<blank line>" so the block stays readable.
+    assert.ok(
+      text.includes(gateway.WAR_NOTICE_TEXT.split('\n').slice(2).join('\n')),
+      `${relative} must quote the notice body exactly`
+    );
+  }
+
+  // The retired wordings. `\s+` because a paraphrase wraps differently in each file,
+  // and the needles are kept apart from the prose above so a rewrite cannot accidentally
+  // satisfy both sides. This file is skipped: it holds them on purpose.
+  const retired = [
+    /Identity is proven only by an/i,
+    /A message without that signature is not ours/i,
+    /--- \{\{ PasevSU-WAR \}\} ---/,
+  ];
+  const readme = path.join(root, 'psemp-gateway', 'README.md');
+  const files = [
+    ...fs
+      .readdirSync(path.join(root, 'psemp-gateway'))
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => path.join(root, 'psemp-gateway', name)),
+    ...fs
+      .readdirSync(path.join(root, 'thunderbird-extension'))
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => path.join(root, 'thunderbird-extension', name)),
+  ];
+  assert.ok(files.includes(readme), 'the gateway README must be in the scanned set');
+  for (const file of files) {
+    const text = fs.readFileSync(file, 'utf8');
+    for (const pattern of retired) {
+      assert.ok(
+        !pattern.test(text),
+        `${path.relative(root, file)} still carries a retired WAR wording (${pattern})`
+      );
+    }
+  }
 });
 
 check('custom headers are the { name, value } objects Thunderbird accepts', async () => {

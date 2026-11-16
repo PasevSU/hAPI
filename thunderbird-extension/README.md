@@ -88,12 +88,23 @@ because the requirement was that they always be produced:
    ```
 
 3. **The same prohibition is repeated inside the message body**, as a constant footer: a
-   blank line, the marker on its own line, the same two sentences, and the prohibition
-   (313 characters, or a `div.pasevsu-war` block with the same three sentences for HTML
-   composers). Headers are invisible to the recipient, and the request was that the
-   prohibition be explicitly stated *in the email*. The footer is
-   `\n\n{{ PasevSU-WAR }}\n…\n` and is the **exact suffix** of every body this add-on
-   sends.
+   blank line, the marker on its own line, the same two sentences, and the prohibition —
+   313 characters, one marker, final newline:
+
+   ```
+   <blank line>
+   <blank line>
+   {{ PasevSU-WAR }}
+   An email that does not carry the OpenPGP/MIME signed message (RFC 4880 and 3156) signature made with the PGP key registered to pasevdenislav@gmail.com is not ours.
+   Only that signature proves our identity and preserves the integrity of the message.
+   FORWARDING THIS EMAIL IS STRICTLY FORBIDDEN.
+   ```
+
+   An HTML composer receives the same three sentences in
+   `div.pasevsu-war[data-pasevsu-war="1"]` with the signer as a `mailto:` link — same
+   wording, markup only. Headers are invisible to the recipient, and the request was that
+   the prohibition be explicitly stated *in the email*, so this is the **exact suffix** of
+   every body the add-on sends.
 
 The header is `X-PasevSU-WAR` and not `PasevSU-WAR` because Thunderbird refuses any custom
 header name that does not begin with `X-` or `List-`, and a refused `setComposeDetails()`
