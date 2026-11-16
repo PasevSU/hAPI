@@ -19,7 +19,6 @@ const { lineFor } = require('./docs-class.cjs');
 const ROOT = path.join(__dirname, '..');
 const ADDON = path.join(ROOT, 'hapi_enterprise');
 const OUT = path.join(ROOT, 'documentation', '02_TO_BE_ARCHITECTURE', 'OPTIONS_REFERENCE.md');
-const TRANSLATIONS = ['bg', 'en', 'de'];
 
 // Преименуванията между ключ на опция и име на променлива. Всяко е дълг: правилото е
 // `UPPER(key)`, а изключение се допуска само с причина (O-03 от плана).
@@ -69,17 +68,16 @@ function readTranslations(text) {
   const lines = text.split('\n');
   let inside = false;
   let key = null;
-  let field = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (/^configuration:\s*$/.test(line)) { inside = true; continue; }
     if (!inside) continue;
     if (/^\S/.test(line) && !/^#/.test(line)) { inside = false; continue; }
     const keyMatch = /^ {2}([A-Za-z0-9_]+):\s*$/.exec(line);
-    if (keyMatch) { key = keyMatch[1]; field = null; continue; }
+    if (keyMatch) { key = keyMatch[1]; continue; }
     const fieldMatch = /^ {4}(name|description):\s*(.*)$/.exec(line);
     if (!fieldMatch || !key) continue;
-    field = fieldMatch[1];
+    const field = fieldMatch[1];
     const raw = fieldMatch[2].trim();
     if (/^[>|]-?$/.test(raw)) {
       // Блок: следващите по-дълбоко отстъпени редове са стойността. Отстъпът е 5+ интервала
