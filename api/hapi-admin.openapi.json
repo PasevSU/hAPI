@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "hAPI Enterprise — административно API",
-    "version": "0.69.228",
+    "version": "0.69.230",
     "description": "Договорът за административното API. Токенът се подава като `Authorization: Bearer <token>`, а зад Home Assistant Ingress самоличността идва от Supervisor (`X-Remote-User-*`). Правата се решават по роля (RBAC) за всеки маршрут — виж `x-hapi-capability`. Маршрут без RBAC (например входът през Ingress) носи `x-hapi-access` с причината."
   },
   "servers": [
@@ -9053,6 +9053,145 @@
             }
           }
         }
+      }
+    },
+    "/admin/api/portals/{portalId}/links": {
+      "get": {
+        "summary": "Връзките за QR (без хеша на паролата)",
+        "operationId": "get_portals_portalId_links",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ]
+      },
+      "post": {
+        "summary": "Нова връзка: срок, само за четене, парола",
+        "operationId": "post_portals_portalId_links",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ],
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/api/portals/{portalId}/links/{linkId}": {
+      "delete": {
+        "summary": "Изтрива връзка за QR",
+        "operationId": "delete_portals_portalId_links_linkId",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: linkId"
+          }
+        ]
       }
     },
     "/admin/api/portals/archive": {

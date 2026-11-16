@@ -251,6 +251,10 @@ function mountUi(server, { lang = 'bg', modules = [], csp = true } = {}) {
   // проверява „демо“ състояние, което в браузъра не съществува.
   if (!modules.includes('links.js')) run('links.js', path.join(root, 'hapi_enterprise'));
   if (!modules.includes('api-base.js')) run('api-base.js', uiDir);
+  // Глобалното QR студио (`ui/qr-studio.js`) се зарежда ПРЕДИ панелите — както в
+  // `ui/index.html`. Без него брошката QR не отваря нищо и тестът би проверявал
+  // състояние, което в браузъра не съществува.
+  if (!modules.includes('qr-studio.js')) run('qr-studio.js', uiDir);
   for (const file of modules) run(file, uiDir);
   return {
     sandbox,

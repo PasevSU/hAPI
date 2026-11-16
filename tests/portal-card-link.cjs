@@ -61,7 +61,7 @@ const headMain = manager.indexOf('class="pf-portal-head-main"');
 const headActions = manager.indexOf('class="pf-portal-head-actions"');
 assert.ok(headMain > 0, 'главата на картата има контейнер с име и табелки');
 assert.ok(headActions > headMain, 'действията са в СВОЙ контейнер след името');
-const actions = manager.slice(headActions, manager.indexOf('class="pf-qr-pop"'));
+const actions = manager.slice(headActions, manager.indexOf('<hr class="u-divider"'));
 assert.ok(actions.length > 200, 'контейнерът с действията е наличен');
 for (const attr of ['data-pkg-portal', 'data-report-portal', 'data-report-recursive', 'data-qr-portal']) {
   assert.ok(actions.includes(attr), `${attr} е в ОБЩИЯ ред на действията, не на отделен ред`);
@@ -75,32 +75,36 @@ assert.ok(
 assert.match(css, /\.pf-portal-head \{[\s\S]{0,200}align-items: center/, 'заглавният ред подравнява по вертикала (име и бутони на равно)');
 assert.match(css, /\.pf-portal-head-actions \{[\s\S]{0,160}margin-left: auto/, 'действията са притиснати вдясно');
 assert.match(css, /\.pf-portal-head \.pf-qr-btn \{[\s\S]{0,120}color: var\(--accent\)/, 'QR бутонът е откроен');
-assert.match(css, /\.pf-qr-pop \{[\s\S]{0,200}position: absolute/, 'кодът излиза като панелче');
-assert.match(css, /\.pf-qr-pop \{[\s\S]{0,200}right: var\(--sp-4\)/, 'панелчето е ВДЯСНО (кодът е от дясно на информацията)');
-// Отстоянието е ИЗВЕДЕНО, не магическо число: `top: 38px` падаше при смяна на шрифта и не
-// казваше от какво идва. Редът на заглавната част е висок 2em (иконите в него са 2em), затова
-// панелът започва точно под него плюс стъпката на разредката. Мутация проверява това правило:
-// `top: 38px` НЕ се хващаше от нито един тест до 0.69.204.
-const qrPopStart = css.indexOf('.pf-qr-pop {');
-const qrPopRule = css.slice(qrPopStart, css.indexOf('}', qrPopStart) + 1);
-assert.equal(/top:\s*-?\d+(\.\d+)?(px|em|rem)\b/.test(qrPopRule), false, 'панелчето не се позиционира с магическо число: ' + qrPopRule.replace(/\s+/g, ' '));
-assert.match(qrPopRule, /top: calc\(2em \+ var\(--sp-4\)\)/, 'отстоянието е производно от реда на заглавната част и от стъпката на разредката');
 
-// ── 3. QR кодът е ЕДИН и е връзка към ПУБЛИЧНИЯ портал ─────────────────────
-// Дотук всеки файл и всяка папка рисуваха свой код с друг адрес (подписан за един час или
-// администраторски, който иска вход) — при 30 файла това бяха 30 кода, повечето мъртви за
-// получателя. Затова кодът е един: в главата на картата, обвит във връзка към портала.
-assert.ok(manager.includes('class="pf-qr-pop-link" href="${esc(qrUrl)}"'), 'кодът е връзка (`<a href>`) към портала');
-assert.match(manager, /const qrUrl = api \? api\.folderUrl \|\| api\.landing \|\| '' : ''/, 'адресът на кода е страницата на портала, не API-то');
-// Кодът е скрит по подразбиране, но се отваря САМ след създаване на портал (`state.qrOpen`):
-// кодът е готов и е първото, което човек показва или печата — не чака клик.
-assert.ok(manager.includes('data-qr-pop="${i}" ${state.qrOpen === x.id ? \'\' : \'hidden\'}'), 'кодът е скрит, докато не се поиска (или докато не е току-що създаден)');
-for (const f of fs.readdirSync(path.join(root, 'hapi_enterprise', 'ui'))) {
-  if (!f.endsWith('.js') || !/qrSvg\s*\(/.test(uiSrc(f))) continue;
-  assert.ok(['files-manager.js'].includes(f), 'qrSvg се вика само за един код, а се среща и в ' + f);
+// ── 2г. Кодът е в ИЗПЪКНАЛА рамка с ЛИНК в долния ръб (0.69.229) ─────────
+// Изискване на собственика: кодът да е в професионална рамка, която „изпъква“, а адресът да е
+// изписан от долния ѝ край — така разпечатан или сниман, кодът носи и адреса си.
+const cssText = css.replace(/\s+/g, ' ');
+assert.match(cssText, /\.qs-frame \{[^}]*border: 2px solid var\(--line-strong\)/, 'рамката на кода е с плътна граница');
+assert.match(cssText, /\.qs-frame \{[^}]*box-shadow:[^}]*0 14px 34px/, 'рамката изпъква (сянка)');
+assert.match(cssText, /\.qs-corner \{/, 'рамката има ъгълчета');
+assert.match(cssText, /\.qs-caption \{[^}]*border-radius: 0 0 var\(--radius\) var\(--radius\)/, 'линкът е залепен за долния ръб на рамката');
+assert.match(cssText, /\.qs-caption-url \{/, 'адресът се изписва в долния ръб');
+
+// ── 2д. Прозорецът има ЧЕТИРИ раздела и те са отделни функции ────────────
+const studio = uiSrc('qr-studio.js');
+for (const tab of ['plain', 'readonly', 'temp', 'levels']) {
+  assert.ok(studio.includes("'" + tab + "'"), 'разделът ' + tab + ' е обявен');
 }
-assert.equal(/data-file-qr/.test(manager), false, 'файлът няма собствен QR код');
-assert.equal(/data-folder-qr/.test(manager + uiSrc('portal-folders.js')), false, 'папката няма собствен QR код');
+for (const fn of ['tabPlain', 'tabReadonly', 'tabTemp', 'tabLevels']) {
+  assert.match(studio, new RegExp('function ' + fn + '\\('), 'разделът ' + fn + ' съществува');
+}
+assert.match(studio, /function figure\(url, label, opts\)/, 'рамката с код и линк е ЕДНА за навсякъде');
+assert.match(studio, /qs-caption-url/, 'адресът е част от фигурата, не отделен ред');
+assert.match(studio, /data-qs-copy=/, 'всеки адрес има „Копирай“');
+assert.match(studio, /data-qs-download=/, 'кодът се изтегля като SVG');
+assert.match(studio, /qr\.toPortal/, 'има вход „Към публичния портал“');
+assert.match(studio, /data-qs-opt="readOnly"|data-qs-opt="password"|data-qs-opt="ttl"/, 'временният раздел има чекбоксове за режим, парола и валидност');
+assert.match(studio, /window\.HapiQrStudio = API/, 'студиото е ГЛОБАЛНО — един обект за всички панели');
+
+// ── 3. Кодът е ЕДИН на портал и се строи от едно място ──────────────────
+assert.match(manager, /function openQrStudio\(x\)/, 'кодът се отваря от една функция');
+assert.match(manager, /qrSvg,/, 'построителят на SVG се подава на студиото');
 assert.equal(/window\.open/.test(manager), false, 'панелът не отваря нов таб');
 assert.equal(/в нов таб/i.test(panel), false, 'подсказките не обещават нов таб');
 
@@ -160,76 +164,53 @@ assert.match(
       return rawFetch(url, init);
     };
     const host = ui.container();
-    // Ловим слушателите на документа: `wire()` се вика след ВСЯКО рисуване, затова без
-    // предпазител след десет пре-рисувания висят десет еднакви слушателя.
-    const qrListeners = () => {
+    // Слушателите на документа вече не се броят за поповера: прозорецът на студиото закача
+    // своите на СВОЯТА кутия и се затваря сам. Остава проверката, че пре-рисуването не
+    // добавя документни слушатели (иначе след десет обновявания висят десет еднакви).
+    const docListeners = () => {
       const map = ui.window.document.listeners;
-      const out = [];
-      if (!map || typeof map.forEach !== 'function') return out;
-      map.forEach((fns, type) => {
-        for (const fn of fns || []) if (String(fn).includes('closeQrPops')) out.push(type);
+      let n = 0;
+      if (!map || typeof map.forEach !== 'function') return n;
+      map.forEach((fns) => {
+        n += (fns || []).length;
       });
-      return out;
+      return n;
     };
     ui.window.FilesManagerPanel.state.openPortal = portalId;
     ui.window.FilesManagerPanel.state.panel = 'actions';
     ui.window.FilesManagerPanel.mount(host);
     await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът в главата на картата' });
-    // ── 7а. Слушателят е на ДОКУМЕНТА и е закачен точно веднъж ─────────────
-    const boundFirst = qrListeners().slice().sort();
-    assert.deepEqual(boundFirst, ['click', 'keydown'], 'Escape и клик извън кода слушат документа: ' + JSON.stringify(boundFirst));
-
+    const listenersAfterOpen = docListeners();
     // ── 6. Блокът „Достъп и QR код“ ГО НЯМА на екрана ───────────────────────
     assert.equal(host.textContent.includes('Достъп и QR код'), false, 'блокът не се рисува');
     for (const id of ['pf-open-portal', 'pf-refresh-access', 'pf-qr-download', 'pf-qr-print', 'pf-open-folder', 'pf-portal-qr']) {
       assert.equal(host.querySelector('#' + id), null, `на екрана няма #${id}`);
     }
 
-    // ── 7. QR кодът е бутон горе вдясно и се отваря с едно натискане ─────────
+    // ── 7. QR бутонът отваря ГЛОБАЛНОТО студио (едно за всички нива) ───────
     const btn = host.querySelector('[data-qr-portal]');
-    assert.equal(btn.getAttribute('aria-expanded'), 'false', 'кодът е скрит в начало');
-    assert.ok(host.querySelector('[data-qr-pop]'), 'панелчето с кода съществува');
-    assert.equal(host.querySelector('[data-qr-pop]').hidden, true, 'панелчето е скрито');
+    assert.equal(btn.getAttribute('aria-haspopup'), 'dialog', 'бутонът обявява, че отваря прозорец');
+    assert.equal(host.querySelector('[data-qr-pop]'), null, 'поповерът е премахнат — кодът е в прозореца');
     btn.click();
-    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === false, { label: 'показания QR код' });
-    assert.equal(btn.getAttribute('aria-expanded'), 'true', 'бутонът отчита, че кодът е отворен');
+    const studio = await waitFor(() => ui.window.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
+    assert.equal(studio.hidden, false, 'щракването отваря студиото');
+    assert.equal(studio.querySelectorAll('[data-qs-tab]').length, 4, 'прозорецът има ЧЕТИРИ раздела');
+    await waitFor(() => studio.querySelector('.qs-frame svg'), { label: 'кода в рамката' });
+    assert.match(studio.querySelector('.qs-caption-url').textContent, /\/p\/|file\.html/, 'адресът е изписан под кода');
+    assert.ok(studio.querySelector('[data-qs-copy]'), 'до адреса има „Копирай“');
+    assert.ok(studio.querySelector('[data-qs-download]'), 'има „Изтегли SVG“');
 
-    // ── 8. Кодът е връзка към ПУБЛИЧНИЯ портал ──────────────────────────────
-    const link = host.querySelector('.pf-qr-pop-link');
-    assert.ok(link, 'кодът е обвит във връзка');
-    const href = String(link.getAttribute('href'));
-    assert.match(href, /\/p\/[0-9a-f]{16,}/, 'връзката сочи страницата на портала: ' + href);
-    assert.match(href, /expires=/, 'частният портал носи подписан достъп: ' + href);
-    assert.ok(link.querySelector('svg'), 'QR кодът е нарисуван');
-    assert.equal(host.querySelector('#pf-link-url'), null, 'в картата няма поле с адрес');
-    assert.equal(host.querySelector('#pf-copy-portal'), null, 'в картата няма „Копирай адреса“');
-    assert.equal(host.querySelector('#pf-dl-api'), null, 'в картата няма „Свали api.json“');
-    const ready = await fetch(href);
-    assert.equal(ready.status, 200, 'адресът от кода се отваря: ' + ready.status);
-    assert.match(await ready.text(), /portal\.js/, 'това е страницата на портала, не JSON');
+    // ── 7б. Разделите сменят СЪДЪРЖАНИЕТО, а не само етикета ───────────────
+    studio.querySelector('[data-qs-tab="temp"]').click();
+    await waitFor(() => studio.querySelector('[data-qs-temp]'), { label: 'временния раздел' });
+    for (const opt of ['readOnly', 'password', 'ttl']) {
+      assert.ok(studio.querySelector(`[data-qs-opt="${opt}"]`), `временният раздел има чекбокс за ${opt}`);
+    }
 
-    // ── 9. Второ натискане скрива кода ─────────────────────────────────────
-    btn.click();
-    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === true, { label: 'скрития QR код' });
-    assert.equal(btn.getAttribute('aria-expanded'), 'false', 'бутонът отчита, че кодът е скрит');
-
-    // ── 9б. Escape и клик извън кода също го затварят ─────────────────────
-    // Дотук кодът се затваряше само с бутона си. Клавиатурният потребител оставаше с
-    // отворено панелче, докато не намери бутона отново, а клик върху картата не го скриваше.
-    // Двете се проверяват тук, защото са поведение — не присъствие на атрибут.
-    btn.click();
-    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === false, { label: 'отворения QR код' });
+    // ── 9б. Затварянето връща фокуса на бутона ─────────────────────────────
+    studio.querySelector('#qs-close').click();
+    assert.equal(studio.hidden, true, 'бутонът „Затвори“ скрива прозореца');
     assert.equal(typeof btn.focus, 'function', 'бутонът може да поеме фокуса обратно');
-    ui.window.document.dispatchEvent({ type: 'keydown', key: 'Escape' });
-    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === true, { label: 'затворения от Escape код' });
-    assert.equal(btn.getAttribute('aria-expanded'), 'false', 'Escape връща aria-expanded на false');
-    assert.equal(ui.window.document.activeElement, btn, 'Escape връща фокуса на бутона, а не го оставя върху скрит елемент');
-
-    btn.click();
-    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === false, { label: 'пак отворения QR код' });
-    ui.window.document.dispatchEvent({ type: 'click', target: host });
-    await waitFor(() => host.querySelector('[data-qr-pop]').hidden === true, { label: 'затворения при клик извън кода' });
-    assert.equal(btn.getAttribute('aria-expanded'), 'false', 'клик извън кода също връща aria-expanded на false');
 
     // ── 10. Сензорите НЕ се теглят от този панел, а настройките се запазват ──
     const monitorCalls = calls.filter((c) => c.endsWith('/admin/api/sensors'));
@@ -252,9 +233,9 @@ assert.match(
     await waitFor(() => ui.toasts.some((t) => /обновен/i.test(t.message)), { label: 'съобщението след запис' });
     const saved = await server.api('/admin/api/portals/' + portalId);
     assert.equal(saved.data.title, 'Портал с код (обновен)', 'заглавието стигна до сървъра');
-    // Записът пре-рисува картата (тоест `wire()` пак е минал) — броят на слушателите трябва
-    // да е СЪЩИЯТ. Без предпазителя този ред расте с всяко действие.
-    assert.deepEqual(qrListeners().slice().sort(), boundFirst, 'слушателят не се закача втори път при пре-рисуване: ' + JSON.stringify(qrListeners()));
+    // Записът пре-рисува картата (тоест `wire()` пак е минал) — броят на документните
+    // слушатели трябва да е СЪЩИЯТ.
+    assert.equal(docListeners(), listenersAfterOpen, 'пре-рисуването не добавя документни слушатели');
     host.remove();
   } finally {
     await stopChild(server.child);

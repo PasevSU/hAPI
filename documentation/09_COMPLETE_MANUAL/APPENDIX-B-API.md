@@ -6,12 +6,12 @@
 > **не се редактира на ръка**. Всеки маршрут носи своята способност (виж
 > `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` за пълния договор).
 
-Общо: **220** маршрута в **2** групи.
+Общо: **223** маршрута в **2** групи.
 
 | Група | Маршрути |
 | --- | --- |
 | `/PATCH` | 1 |
-| `/admin/api` | 219 |
+| `/admin/api` | 222 |
 
 ## /PATCH
 
@@ -239,6 +239,9 @@
 | POST | `/admin/api/portals/{portalId}/qr/{qrId}/restore` | Връща състоянието от архива (първо архивира текущото) |
 | GET | `/admin/api/portals/{portalId}/qr/{qrId}/archive` | Сваляне на архивния файл на конкретен QR |
 | POST | `/admin/api/portals/{portalId}/close` | Закрива портала: данните влизат в архив за съхранение (183 дни) |
+| GET | `/admin/api/portals/{portalId}/links` | Връзките за QR (без хеша на паролата) |
+| POST | `/admin/api/portals/{portalId}/links` | Нова връзка: срок, само за четене, парола |
+| DELETE | `/admin/api/portals/{portalId}/links/{linkId}` | Изтрива връзка за QR |
 | GET | `/admin/api/portals/archive` | Затворените портали с оставащи дни до изтриване |
 | POST | `/admin/api/portals/archive/{portalId}/restore` | Връща закрит портал от архива с файловете и адреса му |
 | GET | `/admin/api/openapi.json` | Тази спецификация |

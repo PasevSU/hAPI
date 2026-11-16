@@ -1,9 +1,9 @@
 {
-  "version": "0.69.228",
-  "generatedAt": "2026-11-16T08:32:35.543Z",
+  "version": "0.69.230",
+  "generatedAt": "2026-11-16T12:12:57.172Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
-    "server.js": "3d6f1f58f00a1c74c4bfb103e33699fef1489cda90d277da9524d7a068534eb7",
+    "server.js": "b13e35161a88401324618e0391606b9b6964886287358f7df52ce1ba98a94324",
     "paths.js": "d0290da6b85956b34681e15f88db8fae918bc4330571a4e6ac8e5f4a3ce83ea0",
     "storage-preflight.js": "6eafb207ff1b346c54baa1c490bc92696d3f2322ff5fb679e62c3a06190a2c7a",
     "integrity.js": "dce32c184925fd46dff497f308975f78712be548b608c72e376ae84b46459764",
@@ -11,12 +11,12 @@
     "core_module/qr.js": "1e7ec4b8bcb1fb2f7b44bef581df665849e4c2711a430487012414468b1f0b3c",
     "core_module/address.js": "5ad702b658d5507654bb0a2cc35610976b5950ffa52d55732dc6dd68a2962652",
     "core_module/api-docs.js": "a44f90d61bfa18d15579aefd833b29f434c157c4df6e4254e4dee6fe8c66f50b",
-    "ui/index.html": "a5acf44a8465d93387e0706d8aa73905a8c52e076de655d980aa85e0d2048df4",
+    "ui/index.html": "2b57cde5cbb2d4f3adee6bd7ea7294adafd6bd1309f9b5883cf36a09feaf5073",
     "ui/app.js": "f17a9569b53c80dc0edf971052ce2adbaa9748b913995c412fd60d6c3d2e8354",
     "ui/settings-panel.js": "5c717a4c7c8f1dd467e962ad7866f60cb4d20f74eba928f56474d840b2d0ae19",
     "ui/field-labels.js": "efd27ab8208417f711fc1a9c36180639f5096b5baa75edcb061793971dadb43d",
     "ui/debug-objects.js": "5b5089867c0fd97d46a932f3a51cd7e6f0d0e40b3ef823cef5ec31ff87a75735",
     "ui/debug-ledger.js": "8aba4c478b3543c4a34cbc769c9a69c02f4a1936813f8eac22f7375f258967e5",
-    "ui/i18n.js": "2eaea765562903cf4142a99a8dd794406590fbc1901942600a448220b4a7ecb0"
+    "ui/i18n.js": "6623e9f1b7cb9a9c37be7be7d38220f8fde6982cffb937f6c656e64bfab88bfd"
   }
 }

@@ -12,6 +12,7 @@
 //   • трите кода са РАЗЛИЧНИ помежду си (различен адрес → различен код);
 //   • сървърът строи SVG-то със същия построител (`qr-svg.js`), не с втори.
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 const { startServer, mountUi, waitFor, expandPortalBlocks } = require('./lib/gui-harness.cjs');
 const qrSvgLib = require(path.join(__dirname, '..', 'hapi_enterprise', 'qr-svg.js'));
@@ -92,29 +93,35 @@ const PANEL_MODULES = [
     // Порталът от горните стъпки има файл в корена и папка с файл; отваряме блока „Папки
     // на портала“ и искаме ред за ВСЯКО ниво, чието изображение идва от сървъра.
     const ui = mountUi(server, { modules: PANEL_MODULES });
-    const host = ui.container();
-    ui.window.FilesManagerPanel.state.openPortal = id;
-    ui.window.FilesManagerPanel.mount(host);
-    await expandPortalBlocks(host, { block: 'folders' });
-    const rows = await waitFor(
-      () => {
-        const found = [...host.querySelectorAll('[data-qr-level]')];
-        return found.length >= 3 ? found : null;
-      },
-      { label: 'QR редове за всяко ниво', timeout: 15000 },
-    );
-    const rels = rows.map((r) => r.getAttribute('data-qr-level'));
-    assert.ok(rels.includes(''), 'има код за целия портал (коренът): ' + rels.join(' | '));
-    assert.ok(rels.includes('Dogovori'), 'има код за подпапка: ' + rels.join(' | '));
-    assert.ok(rels.some((r) => r.startsWith('koren')), 'има код за файл: ' + rels.join(' | '));
-    for (const row of rows) {
-      const img = row.querySelector('img');
-      assert.ok(img, 'редът има изображение: ' + row.getAttribute('data-qr-level'));
-      assert.match(img.getAttribute('src'), /\/tree\/qr\.svg\?path=/, 'изображението идва от сървъра: ' + img.getAttribute('src'));
-      assert.equal(/admin\/api/.test(img.getAttribute('src')), false, 'кодът не сочи към административния API');
-    }
-
-    console.log('PASS portal-qr-levels: код за корен, папка и файл · различни адреси · публичната страница, не API · скрито → 404 · общ корен → 403 · панелът ги рисува сам');
+  const host = ui.container();
+  ui.window.FilesManagerPanel.state.openPortal = id;
+  ui.window.FilesManagerPanel.mount(host);
+  await expandPortalBlocks(host, { block: 'folders' });
+  // 0.69.229: нивата НЕ се рисуват в блока с папките — те са в глобалното QR студио, което
+  // отваря брошката в главата на картата. Искаме ред за ВСЯКО ниво: корен, подпапка и файл.
+  const qrBtn = await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът на картата', timeout: 15000 });
+  qrBtn.click();
+  const studio = await waitFor(() => ui.window.document.getElementById('qs-modal'), { label: 'прозореца на студиото', timeout: 15000 });
+  studio.querySelector('[data-qs-tab="levels"]').click();
+  const rows = await waitFor(
+    () => {
+      const found = [...studio.querySelectorAll('[data-qs-level]')];
+      return found.length >= 3 ? found : null;
+    },
+    { label: 'QR редове за всяко ниво', timeout: 15000 },
+  );
+  assert.ok(rows.length >= 3, 'има ред за всяко ниво: ' + rows.length);
+  // Всяко ниво носи ГОТОВ публичен адрес, а не администраторски път.
+  const captions = rows.map((r) => String((r.querySelector('.qs-caption-url') || {}).textContent || '').trim());
+  assert.ok(captions.every((c) => /\/p\/|file\.html/.test(c)), 'всяко ниво носи публичен адрес: ' + captions.join(' | '));
+  assert.equal(captions.some((c) => /admin\/api/.test(c)), false, 'нивата не сочат към административния API');
+  assert.equal(new Set(captions).size >= 3, true, 'трите нива имат РАЗЛИЧНИ адреси');
+  assert.ok(captions.some((c) => c.includes('folder=')), 'адресът на папката носи ?folder=');
+  // Сървърният договор остава: кодът за всяко ниво се дава от tree/qr.svg с подписа.
+  const manager = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'files-manager.js'), 'utf8');
+  assert.match(manager, /\/tree\/qr\.svg\?\$\{qs\}/, 'кодът на ниво идва от сървъра (tree/qr.svg)');
+  assert.match(manager, /const own = accessOf\(p\)\.query/, 'подписът влиза в адреса на кода');
+  console.log('PASS portal-qr-levels: код за корен, папка и файл · различни адреси · публичната страница, не API · скрито → 404 · общ корен → 403 · панелът ги рисува сам');
   } finally {
     await server.stop();
   }

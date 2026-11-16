@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 441 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 442 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 201 |
+| общо | 202 |
 | портал | 48 |
 | GUI | 36 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (201)
+## общо (202)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -184,6 +184,7 @@
 | `qr-dispatch` | Qr dispatch | `tests/qr-dispatch.cjs` |
 | `qr-leads-to-folder` | Qr leads to folder | `tests/qr-leads-to-folder.cjs` |
 | `qr-rollback` | Qr rollback | `tests/qr-rollback.cjs` |
+| `qr-share-links` | Qr share links | `tests/qr-share-links.cjs` |
 | `raspberrypi-compat` | Raspberrypi compat | `tests/raspberrypi-compat.cjs` |
 | `rate-limit` | Rate limit | `tests/rate-limit.cjs` |
 | `rbac` | Rbac | `tests/rbac.cjs` |

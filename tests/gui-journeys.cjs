@@ -634,8 +634,10 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       // Проверява се, че ТОЗИ адрес се отваря и е човешката страница, а не JSON.
       const qrBtn = await waitFor(() => app.$('[data-qr-portal]'), { label: 'QR бутонът на портала', timeout: BUDGET });
       qrBtn.click();
-      const qrLink = await waitFor(() => app.$('.pf-qr-pop-link'), { label: 'връзката върху QR кода', timeout: BUDGET });
-      const url = String(qrLink.getAttribute('href') || '');
+      // 0.69.229: адресът е изписан под кода в QR студиото (част от рамката).
+      const studio = await waitFor(() => app.$('#qs-modal'), { label: 'прозореца на QR студиото', timeout: BUDGET });
+      const caption = await waitFor(() => studio.querySelector('.qs-caption-url'), { label: 'адреса под кода', timeout: BUDGET });
+      const url = String(caption.textContent || '').trim();
       assert.match(url, /\/p\/[0-9a-zA-Z-]+/, 'адресът е човешката страница на портала: ' + url);
       // Едно отваряне на вече показания адрес — каквото прави човек, като го натисне.
       const opened = await app.openLink(url);
@@ -1761,7 +1763,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       app.clearToasts();
       qrBtn.click();
       const pop = await waitFor(() => {
-        const node = app.$('.pf-qr-pop');
+        const node = app.$('#qs-modal');
         return node && node.hidden === false ? node : null;
       }, { label: 'показания QR код', timeout: BUDGET });
       await settle('кодът на екрана');
@@ -1773,7 +1775,8 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
         [],
         'показването на кода не променя нищо на сървъра: ' + fresh.map((r) => r.method + ' ' + r.url).join(' · '),
       );
-      assert.ok(pop.querySelector('.pf-qr-pop-link'), 'кодът е връзка към портала');
+      assert.ok(pop.querySelector('.qs-frame svg'), 'кодът е нарисуван в рамката');
+      assert.ok(pop.querySelector('[data-qs-copy]'), 'адресът има „Копирай“');
       assert.equal(app.$('[data-qr-portal]').getAttribute('data-qr-portal'), openedId, 'панелът остава на СЪЩИЯ портал');
       assert.ok(app.$('[data-close-portal]'), 'порталът е отворен в същия раздел (има „← Списък с портали“)');
       assert.ok(!app.toast() || app.toast().kind !== 'err', 'показването мина без грешка: ' + (app.toast() ? app.toast().message : '—'));

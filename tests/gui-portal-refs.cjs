@@ -42,8 +42,11 @@ assert.equal(/Препратките са копирани/.test(manager), false
 // щракване. Блокът е махнат: кодът е бутон в главата на картата, а самият код е връзка
 // (`<a href>`) към същия адрес — тоест входът е един и работи и с клавиатура.
 assert.match(manager, /data-qr-portal="\$\{i\}"/, 'картата има бутон за QR кода');
-assert.match(manager, /class="pf-qr-pop-link" href="\$\{esc\(qrUrl\)\}"/, 'кодът е връзка към портала');
-assert.match(manager, /const qrUrl = api \? api\.folderUrl \|\| api\.landing \|\| '' : ''/, 'връзката носи адреса на портала');
+  // 0.69.229: входът към портала вече е В ПРОЗОРЕЦА (раздел „Обикновен“ — истинска връзка
+  // „Към публичния портал“), а бутонът отваря него. Кодът вече не е обвит във връзка.
+  assert.match(manager, /openQrStudio\(target\)/, 'бутонът отваря QR студиото');
+  assert.match(manager, /function qrStudioLevels\(x\)/, 'нивата носят готовите адреси на договора');
+  assert.equal(/const qrUrl = api \? api\.folderUrl/.test(manager), false, 'адресът вече не се строи в картата');
 assert.equal(/id="pf-open-portal"/.test(panel + manager), false, 'отделният бутон „Отвори портала“ е махнат (входът е един)');
 assert.equal(/id="pf-portal-qr"/.test(panel + manager), false, 'старият QR блок е махнат');
 assert.equal(/window\.location\.href = url/.test(manager), false, 'няма ръчно пренасочване — връзката върши това');

@@ -167,32 +167,11 @@
           )} · ${plural(data.fileCount, T('noun.file.one'), T('noun.file.many'))} · ${fmtSize(data.bytes || 0)}${data.truncated ? esc(T('pf.truncated')) : ''
           }${data.exists === false ? ' · <strong>' + esc(T('pf.onDisk.missing').trim()) + '</strong>' : ''}`
           : T('pf.notLoaded');
-    // QR за ВСЯКО ниво на портала: коренът, всяка папка (и подпапка) и всеки файл. Дървото
-    // вече е заредено в паметта, затова кодовете се появяват САМИ — без отделно действие.
-    // Изображенията идват от сървъра (`tree/qr.svg?path=`), не се строят на ръка в панела.
-    const qrRows = [];
-    if (connected() && root && typeof ctx.qrLevel === 'function') {
-      qrRows.push({ rel: '', label: T('portal.qr.mapRoot') });
-      const walk = (node) => {
-        for (const sub of node.folders || []) {
-          qrRows.push({ rel: sub.path, label: treePath(sub.path) });
-          walk(sub);
-        }
-        for (const file of node.files || []) qrRows.push({ rel: file.path, label: file.name });
-      };
-      walk(root);
-    }
-    const qrMap = qrRows.length
-      ? `<div class="pf-qr-map"><h6>${ico('qr')} ${esc(T('portal.qr.map'))}</h6><div class="pf-qr-grid">${qrRows
-        .slice(0, 200)
-        .map(
-          (row) =>
-            `<div class="pf-qr-cell" data-qr-level="${esc(row.rel)}"><img class="pf-qr-mini" src="${esc(ctx.qrLevel(row.rel))}" alt="${esc(
-              T('portal.qr.mapAlt', { name: row.label }),
-            )}" loading="lazy" /><span>${esc(row.label)}</span></div>`,
-        )
-        .join('')}</div><p class="hint">${esc(T('portal.qr.mapHint'))}</p></div>`
-      : '';
+    // QR кодът за всяко ниво (корен, папка, файл) вече НЕ е отделна мрежа в този блок: той
+    // живее в ГЛОБАЛНОТО QR студио (`qr-studio.js`), което се отваря от брошката в главата на
+    // портала — заедно с обикновения код, „само за преглед“ и временната връзка. Тук остава
+    // само дървото: едно място за едно нещо (`ctx.qrLevel` се ползва от прозореца, не от блока).
+    const qrMap = '';
     return `
       <section class="pf-block ${open ? '' : 'pf-collapsed'}" data-block="folders">
         <div class="pf-block-head">

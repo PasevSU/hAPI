@@ -1782,97 +1782,321 @@ input[type="radio"] {
   flex: 0 0 auto;
 }
 
-/* QR кодът се пуска с бутона горе вдясно и излиза ВДЯСНО, като панелче над съдържанието
-   (изискване: кодът е от дясно на информацията). Самият код е връзка към публичния портал. */
-/* Не магическо число: редът на заглавната част е висок 2em (иконите в него са 2em), затова
-   панелчето започва точно под него. Дотук стоеше `38px` и при смяна на шрифта увисваше. */
-.pf-qr-pop {
-  position: absolute;
-  top: calc(2em + var(--sp-4));
-  right: var(--sp-4);
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-5);
-  max-width: min(240px, calc(100% - 16px));
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: #fff;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+/* QR СТУДИО — един глобален прозорец за кода на всяко ниво (0.69.229).
+   Вместо панелче до брошката: четири раздела, а кодът е в ИЗПЪКНАЛА рамка с ъгълчета и с
+   ЛИНКА, изписан в долния ръб — така разпечатан или сниман, кодът носи и адреса си. */
+.qs-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: rgba(4, 10, 18, 0.62);
 }
 
-.pf-qr-pop[hidden] {
+.qs-backdrop[hidden] {
   display: none;
 }
 
-.pf-qr-pop-link {
+.qs-window {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.qs-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.qs-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-14-5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qs-head-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.qs-level-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-12-5);
+}
+
+.qs-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.qs-tab {
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-12-5);
+  cursor: pointer;
+}
+
+.qs-tab-on,
+.qs-tab[aria-selected='true'] {
+  border-color: var(--line);
+  background: var(--panel);
+  font-weight: 600;
+}
+
+.qs-body {
+  overflow: auto;
+  padding: var(--sp-4);
+}
+
+.qs-note {
   display: block;
-  width: 180px;
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-12-5);
+}
+
+.qs-note-err {
+  color: #ff8a8a;
+}
+
+.qs-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Изпъкналата рамка: двойна граница, вътрешна сянка и четири ъгълчета. */
+.qs-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qs-frame {
+  position: relative;
+  padding: var(--sp-4);
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: inset 0 0 0 var(--sp-1) rgba(15, 23, 42, 0.06), 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.qs-frame::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--sp-1) * -1);
+  border: 1px solid var(--accent);
+  border-radius: calc(var(--radius) + var(--sp-1));
+  pointer-events: none;
+}
+
+.qs-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--accent);
+}
+
+.qs-corner-tl {
+  top: calc(var(--sp-1) * -1);
+  left: calc(var(--sp-1) * -1);
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: var(--radius-sm);
+}
+
+.qs-tr {
+  top: calc(var(--sp-1) * -1);
+  right: calc(var(--sp-1) * -1);
+  border-left: 0;
+  border-bottom: 0;
+  border-top-right-radius: var(--radius-sm);
+}
+
+.qs-bl {
+  bottom: calc(var(--sp-1) * -1);
+  left: calc(var(--sp-1) * -1);
+  border-right: 0;
+  border-top: 0;
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.qs-br {
+  right: calc(var(--sp-1) * -1);
+  bottom: calc(var(--sp-1) * -1);
+  border-left: 0;
+  border-top: 0;
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.qs-code {
+  width: 220px;
   max-width: 100%;
 }
 
-.pf-qr-pop-link svg {
+.qs-code svg {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.pf-qr-pop-note {
-  margin: 0;
-  font-size: var(--fs-12-5);
-  line-height: 1.35;
-  text-align: center;
-  color: #22303f;
-}
-
-/* QR карта: код за всяко ниво (портал, подпапки, файлове) — малки изображения в решетка,
-   защото човекът ги сравнява наведнъж, а не отваря по един. */
-.pf-qr-map {
-  margin: var(--sp-3) 0 0;
-}
-
-.pf-qr-map h6 {
-  margin: 0 0 var(--sp-2);
-  font-size: var(--fs-12-5);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.pf-qr-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--per-row-chips), minmax(0, 1fr));
-  gap: var(--grid-gap);
-}
-
-.pf-qr-cell {
+/* Линкът е ЧАСТ ОТ КОДА: стои в долния ръб на рамката. */
+.qs-caption {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-1);
-  min-width: 0;
-  padding: var(--sp-2);
-  border: var(--sp-1) solid rgba(148, 163, 184, 0.35);
-  border-radius: var(--radius-md);
-  background: #fff;
-}
-
-.pf-qr-mini {
-  display: block;
-  width: 100%;
-  max-width: 120px;
-  height: auto;
-}
-
-.pf-qr-cell span {
-  overflow: hidden;
   max-width: 100%;
+  margin-top: calc(var(--sp-1) * -1);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: #fff;
+  color: #22303f;
+}
+
+.qs-caption-label {
   font-size: var(--fs-12-5);
-  text-align: center;
+  font-weight: 600;
+}
+
+.qs-caption-url {
+  overflow: hidden;
+  max-width: 34rem;
+  font-family: monospace;
+  font-size: var(--fs-12-5);
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #22303f;
+  direction: ltr;
+}
+
+.qs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-buttons, var(--sp-2));
+  justify-content: center;
+}
+
+.qs-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.qs-link-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) minmax(0, 1fr) auto auto;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.qs-link-label {
+  font-size: var(--fs-12-5);
+  color: var(--muted);
+}
+
+.qs-link-value {
+  overflow: hidden;
+  font-size: var(--fs-12-5);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+.qs-temp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: flex-end;
+}
+
+.qs-check {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-12-5);
+}
+
+.qs-pw,
+.qs-ttl {
+  min-width: 12rem;
+}
+
+.qs-levels-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--per-row-chips, 3), minmax(0, 1fr));
+  gap: var(--grid-gap);
+}
+
+.qs-level {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.qs-level-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+.qs-level .qs-frame {
+  padding: var(--sp-2);
+  box-shadow: none;
+}
+
+.qs-level .qs-code {
+  width: 96px;
+}
+
+.qs-level .qs-frame::before,
+.qs-level .qs-corner {
+  display: none;
+}
+
+.qs-level .qs-caption {
+  margin-top: var(--sp-1);
+  border: 0;
+  background: transparent;
+}
+
+.qs-clip {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  opacity: 0;
 }
 
 .pf-portal-head>* {

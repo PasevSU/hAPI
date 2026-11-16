@@ -49,9 +49,10 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
     openCard.click();
     const qrBtn = await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът на портала' });
     qrBtn.click();
-    const qrLink = await waitFor(() => host.querySelector('.pf-qr-pop-link'), { label: 'връзката върху QR кода' });
+    const studio = await waitFor(() => ui.window.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
+    const qrLink = await waitFor(() => studio.querySelector('.qs-caption-url'), { label: 'адреса под кода' });
     assert.ok(
-      String(qrLink.getAttribute('href') || '').startsWith(PUBLIC_BASE),
+      String(qrLink.textContent || '').trim().startsWith(PUBLIC_BASE),
       'QR кодът ПОКАЗВА публичния адрес (той се сканира и се дава на получателя)',
     );
     // Менюто на ПАПКАТА (единственото останало меню с адрес) носи същия публичен адрес.
