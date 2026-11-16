@@ -282,3 +282,17 @@ node tests\option-spec.cjs     # дескрипторът и config.yaml са е
 node tests\option-coverage.cjs # всяка опция има читател, всеки env е обявен
 node tests\option-effects.cjs  # всяка опция има доказателство
 ```
+
+## 12. Статус (към 0.69.228, в ход)
+
+| Батч | Състояние | Доказателство |
+| --- | --- | --- |
+| **D1** | ✔ готов | `scripts/docs-class.cjs` + `tests/docs-class.cjs`; всеки документ носи ред за клас |
+| **D2** | ✔ готов | 14 исторически документа в `07_RELEASE/archive/0.69/`; 6 живи връзки поправени; `doc-citations` не проверява `archive/` |
+| **D3** | ✔ готов | `scripts/options-reference.cjs` → `OPTIONS_REFERENCE.md` (44 опции, 5 преименувания) + `tests/options-reference.cjs`; генераторът и класовете влизат в `safe-release` преди матрицата |
+| **D4** | ☐ остава | архив на затворените дефекти + `docs-size` |
+| **O1–O4** | ☐ остава | дескриптор `option-spec.js`, генериране на `schema:`/`OPTION_ENV`, `option-coverage`, `option-effects` |
+
+Забележка към D3: `start.js` още мапва опциите в четири стила (това е O2). Дотогава
+`OPTIONS_REFERENCE.md` е **документът на дълга** — всяко преименуване е изброено с причина, за да
+може O3 да провери, че всяка опция има читател.
