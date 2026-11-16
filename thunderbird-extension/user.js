@@ -27,6 +27,7 @@ user_pref(
     "X-PasevSU-Framework",
     "X-PasevSU-Origin",
     "X-PasevSU-Organization",
+    "X-PasevSU-WAR",
     "X-PasevSU-Evidence-ID",
     "X-PasevSU-Body-SHA256",
     "X-PasevSU-Attachments-Count",

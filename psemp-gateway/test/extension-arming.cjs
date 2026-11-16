@@ -128,8 +128,8 @@ check('plain-text send gets the full header set in contract order', async () => 
   // That write fails validation and Thunderbird aborts the send with no dialog.
   assert.deepStrictEqual(
     Array.from(Object.keys(result.details)),
-    ['customHeaders'],
-    'details must carry ONLY the property that changed'
+    ['customHeaders', 'subject', 'body'],
+    'details must carry ONLY the writable properties that changed'
   );
   assert.deepStrictEqual(
     Array.from(details.customHeaders),
@@ -145,6 +145,7 @@ check('plain-text send gets the full header set in contract order', async () => 
     'X-PasevSU-Framework',
     'X-PasevSU-Origin',
     'X-PasevSU-Organization',
+    'X-PasevSU-WAR',
     'X-PasevSU-Evidence-ID',
     'X-PasevSU-Body-SHA256',
     'X-PasevSU-Attachments-Count',
@@ -170,6 +171,66 @@ check('plain-text send gets the full header set in contract order', async () => 
   assert.strictEqual(headers.get('X-PasevSU-Organization'), 'PasevSU');
   assert.strictEqual(headers.get('X-PasevSU-OTS'), 'pending');
   assert.match(headers.get('X-PasevSU-Evidence-ID'), /^[0-9a-f-]{36}$/);
+
+  /*
+   * "винаги да се вписва": the war marker is not a setting. It closes the Subject,
+   * it closes the body, and X-PasevSU-WAR restates what it points at. The value is a
+   * REQUIREMENT — only a signature from the named address proves the message — never
+   * a claim that this add-on signed anything (Thunderbird's OpenPGP does that).
+   */
+  const war = headers.get('X-PasevSU-WAR');
+  assert.match(war, /pasevdenislav@gmail\.com/, 'the war header must name the signer');
+  assert.match(war, /RFC 4880 and 3156/, 'the war header must name the signature standard');
+  assert.match(war, /FORBIDDEN/, 'the war header must state the forwarding prohibition');
+  assert.strictEqual(
+    result.details.subject,
+    '{{ PasevSU-WAR }}',
+    'an empty authored Subject must become just the marker'
+  );
+  assert.ok(
+    result.details.body.startsWith('Hello evidence'),
+    'the authored body must be preserved verbatim, with the notice appended after it'
+  );
+  assert.ok(
+    result.details.body.includes('{{ PasevSU-WAR }}'),
+    'the prohibition must be stated inside the email itself, not only in the headers'
+  );
+  // The digest identifies what the sender WROTE, so appending the notice must not move it.
+  assert.strictEqual(
+    headers.get('X-PasevSU-Body-SHA256'),
+    sha256Hex('Hello evidence'),
+    'the body digest must be taken before the notice is appended'
+  );
+});
+
+check('a re-fired beforeSend does not stack the marker or the notice', async () => {
+  // Thunderbird may fire onBeforeSend more than once for one message (re-open, Send
+  // Later, retry). Two markers or two footers would be visible to the recipient, so
+  // both appends are guarded by the marker itself.
+  const { listeners } = loadExtension();
+  const details = {
+    isPlainText: true,
+    subject: 'Case 2026',
+    body: 'authored',
+    attachments: [],
+    customHeaders: [],
+  };
+  const first = await listeners[0]({}, details);
+  const second = await listeners[0]({}, first.details);
+
+  assert.strictEqual(
+    Object.prototype.hasOwnProperty.call(second.details, 'body'),
+    false,
+    'a body that already carries the notice must come back untouched'
+  );
+  const finalSubject = second.details.subject ?? first.details.subject ?? details.subject;
+  assert.strictEqual(finalSubject, 'Case 2026 {{ PasevSU-WAR }}');
+  assert.strictEqual(finalSubject.split('{{ PasevSU-WAR }}').length - 1, 1);
+  assert.strictEqual(
+    headerNames(second.details.customHeaders).filter((name) => name === 'X-PasevSU-WAR').length,
+    1,
+    'our own headers are stripped and re-added, never duplicated'
+  );
 });
 
 check('custom headers are the { name, value } objects Thunderbird accepts', async () => {
@@ -617,7 +678,14 @@ check('a realistic compose snapshot is never echoed back as the return value', a
 
   assert.deepStrictEqual(Array.from(Object.keys(result.details)), [
     'customHeaders',
-  ], 'nothing but customHeaders may be returned');
+    'subject',
+    'body',
+  ], 'nothing but the writable properties that change may be returned');
+  assert.strictEqual(
+    result.details.subject,
+    `snapshot {{ PasevSU-WAR }}`,
+    'the marker must be appended to the authored Subject with exactly one space'
+  );
   const names = headerNames(result.details.customHeaders);
   assert.ok(names.includes('X-Foreign'), 'foreign headers must survive');
   assert.ok(names.includes('X-PasevSU-Merkle-Root'), 'our headers must be added');
@@ -705,6 +773,7 @@ check('every header name is a syntactically valid field name', () => {
     'X-PasevSU-Framework',
     'X-PasevSU-Origin',
     'X-PasevSU-Organization',
+    'X-PasevSU-WAR',
     'X-PasevSU-Evidence-ID',
     'X-PasevSU-Body-SHA256',
     'X-PasevSU-Attachments-SHA256',

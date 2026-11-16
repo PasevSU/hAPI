@@ -88,6 +88,7 @@ const HEADER_NAMES = Object.freeze({
   framework: 'X-PasevSU-Framework',
   origin: 'X-PasevSU-Origin',
   organization: 'X-PasevSU-Organization',
+  war: 'X-PasevSU-WAR',
   evidenceId: 'X-PasevSU-Evidence-ID',
   bodySha256: 'X-PasevSU-Body-SHA256',
   attachmentsCount: 'X-PasevSU-Attachments-Count',
@@ -112,6 +113,114 @@ const HEADER_NAMES = Object.freeze({
 
 /** Standard MDN header (RFC 8098), sent with `X-PasevSU-Receipt: requested`. */
 const MDN_HEADER = 'Disposition-Notification-To';
+
+/* ------------------------------------------------------------------ *
+ * The war marker — mandatory on every message
+ *
+ * `{{ PasevSU-WAR }}` closes the Subject, the same marker closes a plain-text
+ * notice in the body, and `X-PasevSU-WAR` restates what the marker points at:
+ * which signature proves the sender, and that forwarding is forbidden.
+ *
+ * Two carriers are platform-bound. Thunderbird's Compose API refuses any custom
+ * header name that does not start with `X-`/`List-`, and a rejected
+ * `setComposeDetails()` aborts the send, so the MailExtension ships
+ * `X-PasevSU-WAR`. A field may only be claimed by a sender that writes raw SMTP —
+ * this gateway — which therefore emits both `PasevSU-WAR:` and the `X-` twin,
+ * exactly as it already does for `Message-ID`.
+ *
+ * The text is a requirement, not a claim: the extension does not sign anything
+ * (Thunderbird's built-in OpenPGP does, per identity), so it names the signature
+ * that proves the message instead of asserting that one is attached.
+ * ------------------------------------------------------------------ */
+
+/** Subject suffix and body sentinel. Never configurable — see PROTOCOL.md §4a. */
+const WAR_MARKER = '{{ PasevSU-WAR }}';
+
+/** Address whose registered OpenPGP key is the only accepted proof of origin. */
+const WAR_SIGNER = 'pasevdenislav@gmail.com';
+
+/** Signature standard the marker refers to. */
+const WAR_STANDARD = 'OpenPGP/MIME signed message (RFC 4880 and 3156)';
+
+/** Value of `X-PasevSU-WAR` (and of the unprefixed twin). ASCII-only by contract. */
+const WAR_HEADER_TEXT =
+  `A message is ours only when it carries an OpenPGP signature registered to ${WAR_SIGNER} `
+  + `in the ${WAR_STANDARD} standard, which proves our identity and preserves the integrity `
+  + 'of the message. A copy without that valid signature is not ours and has no evidentiary value. '
+  + `FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY FORBIDDEN, AS STATED EXPLICITLY IN THE EMAIL ITSELF. ${WAR_MARKER}`;
+
+/** Plain-text footer appended to every outgoing body. Constant text, so verifiable. */
+const WAR_NOTICE_TEXT =
+  '\n\n---\n'
+  + `${WAR_MARKER}\n`
+  + `Identity and integrity: only an OpenPGP signature registered to ${WAR_SIGNER} `
+  + `(${WAR_STANDARD}) proves that this message comes from us and that its content was not altered. `
+  + 'A copy without that valid signature is not ours and has no evidentiary value.\n'
+  + 'FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY FORBIDDEN.\n';
+
+/** The same notice for an HTML composer. */
+const WAR_NOTICE_HTML =
+  '<div class="pasevsu-war" data-pasevsu-war="1" '
+  + 'style="margin-top:16px;padding-top:8px;border-top:1px solid #999;font-size:smaller">'
+  + `<p><strong>${WAR_MARKER}</strong></p>`
+  + `<p>Identity and integrity: only an OpenPGP signature registered to ${WAR_SIGNER} `
+  + `(${WAR_STANDARD}) proves that this message comes from us and that its content was not altered. `
+  + 'A copy without that valid signature is not ours and has no evidentiary value.</p>'
+  + '<p>FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY FORBIDDEN.</p>'
+  + '</div>';
+
+/**
+ * Make sure the Subject ends with {@link WAR_MARKER}.
+ *
+ * Idempotent: Thunderbird can fire `onBeforeSend` more than once for one message,
+ * and two markers would be visible to the recipient. The trailing whitespace of the
+ * authored Subject is trimmed first because the compose code collapses runs of
+ * 74+ whitespace characters on the way out.
+ *
+ * @param {string} subject
+ * @returns {string}
+ */
+function appendWarMarker(subject) {
+  const current = typeof subject === 'string' ? subject : '';
+  if (current.includes(WAR_MARKER)) return current;
+  const trimmed = current.replace(/\s+$/, '');
+  return trimmed ? `${trimmed} ${WAR_MARKER}` : WAR_MARKER;
+}
+
+/**
+ * Pick the body field an outgoing notice may be written into.
+ *
+ * Thunderbird deletes whichever property does not match the compose format before
+ * applying the change (`delete details.body` for a text composer,
+ * `delete details.plainTextBody` for an HTML one), so writing into the wrong field
+ * means the notice silently never lands in the message.
+ *
+ * @param {{isPlainText?: boolean, body?: string, plainTextBody?: string}} details
+ * @returns {'body'|'plainTextBody'|''}
+ */
+function warBodyField(details) {
+  const order = details.isPlainText === true ? ['plainTextBody', 'body'] : ['body', 'plainTextBody'];
+  return order.find((field) => typeof details[field] === 'string') || '';
+}
+
+/**
+ * Append the notice, or `null` when the body already carries it.
+ *
+ * The marker is the sentinel — it is always part of the notice — so a second pass
+ * returns `null` instead of stacking a second footer. Which flavour to append follows
+ * `isPlainText`/the field rather than the field alone: a plain-text composer must
+ * never receive HTML tags in its text.
+ *
+ * @param {{isPlainText?: boolean, body?: string, plainTextBody?: string}} details
+ * @param {'body'|'plainTextBody'} field
+ * @returns {string|null}
+ */
+function withWarNotice(details, field) {
+  const value = details[field];
+  if (typeof value !== 'string' || value.includes(WAR_MARKER)) return null;
+  const plain = details.isPlainText === true || field === 'plainTextBody';
+  return plain ? `${value}${WAR_NOTICE_TEXT}` : `${value}${WAR_NOTICE_HTML}`;
+}
 
 /* ------------------------------------------------------------------ *
  * Hashing
@@ -796,6 +905,10 @@ function buildHeaderLines({
   lines.push(`${HEADER_NAMES.framework}: ${resolved.framework}`);
   lines.push(`${HEADER_NAMES.origin}: ${resolved.origin}`);
   lines.push(`${HEADER_NAMES.organization}: ${resolved.organization}`);
+  // The war line sits with the identity block, not at the end: it is part of who
+  // sent the message. Both spellings, same twin rule as Message-ID below.
+  lines.push(`PasevSU-WAR: ${WAR_HEADER_TEXT}`);
+  lines.push(`${HEADER_NAMES.war}: ${WAR_HEADER_TEXT}`);
   lines.push(`${HEADER_NAMES.evidenceId}: ${sanitizeHeaderValue(evidenceId)}`);
   lines.push(`${HEADER_NAMES.bodySha256}: ${bodyHash}`);
   if (attachmentEntries.length > 0) {
@@ -1184,7 +1297,7 @@ function applyToComposeDetails(details, options = {}) {
     // Metadata travels into `signed_headers` so the digest covers Subject/From/To/Date
     // and the Message-ID as well as the body — a signature over the body alone would
     // let a recipient re-send it under a new subject.
-    subject: source.subject,
+    subject: appendWarMarker(source.subject),
     from: source.from,
     to: source.to || source.recipients,
     date: source.date,
@@ -1193,8 +1306,19 @@ function applyToComposeDetails(details, options = {}) {
     sequence: options.sequence,
   });
   source.customHeaders = [...(source.customHeaders || []), ...evidence.headerLines];
+  /*
+   * Mandatory on every message: the Subject ends with the marker and the body carries
+   * the notice. Both are idempotent, so a second pass over the same details adds
+   * nothing. The marker is applied here (not after the opt-in tag) because it must
+   * remain the last thing on the Subject line.
+   */
+  source.subject = appendWarMarker(source.subject);
+  const warField = warBodyField(source);
+  const warBody = warField ? withWarNotice(source, warField) : null;
+  if (warBody !== null) source[warField] = warBody;
   // Opt-in only: rewriting the Subject is visible to every recipient and breaks mail
   // threading, so the tag is never applied unless asked for explicitly (PROTOCOL.md §9).
+  // It is inserted BEFORE the marker for the same reason stated above.
   if (options.tagSubject) {
     source.subject = tagSubject(source.subject, evidence.bodySha256);
   }
@@ -1203,13 +1327,16 @@ function applyToComposeDetails(details, options = {}) {
 
 /**
  * Add the short digest tag to a Subject line, e.g. `Case 2026 [34AEF2D1]`.
- * Idempotent: running it twice does not stack tags.
+ * Idempotent: running it twice does not stack tags, and the tag never lands after
+ * the mandatory {@link WAR_MARKER} — the marker stays last.
  */
 function tagSubject(subject, digest, length = 8) {
   const tag = `[${String(digest || '').slice(0, length).toUpperCase()}]`;
   const text = sanitizeHeaderValue(subject);
   if (!tag || tag === '[]') return text;
-  return text.includes(tag) ? text : `${text} ${tag}`.trim();
+  if (text.includes(tag)) return text;
+  if (text.includes(WAR_MARKER)) return text.replace(WAR_MARKER, `${tag} ${WAR_MARKER}`);
+  return `${text} ${tag}`.trim();
 }
 
 /* ------------------------------------------------------------------ *
@@ -2361,8 +2488,50 @@ async function selfTest() {
     const names = evidence.headers.map((header) => header.name);
     assert(names.includes('X-PasevSU-OTS'), 'enableOts must add the pending marker');
     assert(names.includes('X-PasevSU-PGP-Fingerprint'), 'non-empty fingerprint must be emitted');
-    assert(evidence.headers[5].name === 'X-PasevSU-Body-SHA256', 'header order changed');
+    assert(evidence.headers[7].name === 'X-PasevSU-Body-SHA256', 'header order changed');
     return `${names.length} headers`;
+  });
+
+  record('war-marker-and-notice', () => {
+    // "винаги да се вписва": the Subject marker and the body notice are unconditional,
+    // and both are idempotent because onBeforeSend can fire more than once.
+    const { details } = applyToComposeDetails(
+      { subject: 'Case 2026', body: 'plain body', isPlainText: true, plainTextBody: 'plain body', customHeaders: [] },
+      { config: { enableOts: false } }
+    );
+    const marked = `Case 2026 ${WAR_MARKER}`;
+    assert(details.subject === marked, `Subject must end with the marker: ${details.subject}`);
+    // A plain-text composer gets the text notice in its text field — never HTML tags.
+    assert(details.plainTextBody.endsWith(WAR_NOTICE_TEXT), 'the notice must close the plain-text body');
+    assert(!details.plainTextBody.includes('<div'), 'a plain-text body must not receive HTML');
+    assert(
+      details.plainTextBody.split(WAR_MARKER).length - 1 === 1,
+      'the marker must appear exactly once in a plain-text body (inside the notice)'
+    );
+    assert(
+      details.customHeaders.filter((line) => line.startsWith(`${HEADER_NAMES.war}:`)).length === 1,
+      'exactly one war header per message'
+    );
+    const again = applyToComposeDetails(details, { config: { enableOts: false } });
+    assert(again.details.subject === marked, 'a second pass must not stack markers');
+    assert(again.details.plainTextBody === details.plainTextBody, 'a second pass must not stack notices');
+    // The opt-in tag must never land after the marker.
+    const tagged = applyToComposeDetails(
+      { subject: 'Case', body: 'b', isPlainText: true },
+      { config: { enableOts: false }, tagSubject: true }
+    );
+    assert(tagged.details.subject.endsWith(WAR_MARKER), 'the marker must stay last after the opt-in tag');
+    // Raw SMTP can carry the real field; the X- twin must accompany it.
+    const lines = buildHeaderLines({ config: {}, evidenceId: '11111111-2222-4333-8444-555555555555' });
+    assert(lines.some((line) => line.startsWith('PasevSU-WAR: ')), 'the gateway must emit the unprefixed field');
+    assert(
+      lines.some((line) => line.startsWith(`${HEADER_NAMES.war}: `)),
+      'the gateway must also emit the X- twin the extension ships'
+    );
+    for (const line of lines) {
+      assert(!/[^\x20-\x7E]/.test(line), `war headers must stay ASCII to survive every transport: ${line}`);
+    }
+    return `${WAR_SIGNER} / ${WAR_STANDARD}`;
   });
 
   record('headers-preserve-existing', () => {
@@ -2501,6 +2670,15 @@ module.exports = {
   HEADER_NAMES,
   MDN_HEADER,
   MANIFEST_FILENAME,
+  WAR_MARKER,
+  WAR_SIGNER,
+  WAR_STANDARD,
+  WAR_HEADER_TEXT,
+  WAR_NOTICE_TEXT,
+  WAR_NOTICE_HTML,
+  appendWarMarker,
+  warBodyField,
+  withWarNotice,
   ALGORITHMS,
   PACKAGES_DIR,
   SETTINGS_PATH,

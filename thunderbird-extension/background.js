@@ -57,6 +57,53 @@ const DEFAULTS = {
 
 const MANIFEST_FILENAME = "PasevSU_Manifest.json";
 
+/*
+ * The war notice — mandatory on EVERY message, never a per-message choice. Three
+ * places carry it, and all three are unconditional:
+ *   1. the Subject always ends with WAR_MARKER,
+ *   2. the body always ends with the notice that speaks the prohibition out loud,
+ *   3. the header always explains what the marker means.
+ *
+ * The header is `X-PasevSU-WAR` and not `PasevSU-WAR` because Thunderbird's
+ * ComposeDetails.customHeaders rejects a name that does not start with "X-" or
+ * "List-", and a rejected setComposeDetails() aborts the send with no dialog at all.
+ * psemp-gateway speaks raw SMTP, so it writes the unprefixed `PasevSU-WAR:` as well —
+ * the same twin arrangement `Message-ID` already has.
+ *
+ * The wording is a REQUIREMENT, not a claim that a signature exists: this add-on
+ * cannot sign, Thunderbird's built-in OpenPGP does that per identity. Saying "this
+ * message is signed" would be false whenever the sender has signing switched off,
+ * and a forensic header that can be false is worth nothing.
+ */
+const WAR_MARKER = "{{ PasevSU-WAR }}";
+const WAR_SIGNER = "pasevdenislav@gmail.com";
+const WAR_STANDARD = "OpenPGP/MIME signed message (RFC 4880 and 3156)";
+const WAR_HEADER_TEXT =
+  `Only the ${WAR_STANDARD} signature made with the PGP key registered to ` +
+  `${WAR_SIGNER} proves that this message comes from us, and only that signature ` +
+  `keeps the text and every attachment intact: a copy without a valid one is not ` +
+  `ours and has no evidentiary value. FORWARDING, QUOTING OR REDISTRIBUTING THIS ` +
+  `EMAIL IS STRICTLY FORBIDDEN AND IS STATED EXPLICITLY IN THE EMAIL ITSELF ` +
+  `${WAR_MARKER}`;
+const WAR_NOTICE_TEXT = [
+  "",
+  "",
+  `--- ${WAR_MARKER} ---`,
+  `Only the ${WAR_STANDARD} signature made with the PGP key registered to`,
+  `${WAR_SIGNER} proves that this message comes from us, and only that signature`,
+  `keeps this text and every attachment intact.`,
+  `FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY FORBIDDEN.`,
+].join("\n");
+const WAR_NOTICE_HTML =
+  `<div class="pasevsu-war" data-pasevsu-war="1" style="margin-top:1.5em;` +
+  `padding-top:.75em;border-top:1px solid #999;font-size:smaller">` +
+  `<p><strong>${WAR_MARKER}</strong> Only the ${WAR_STANDARD} signature made with ` +
+  `the PGP key registered to <a href="mailto:${WAR_SIGNER}">${WAR_SIGNER}</a> proves ` +
+  `that this message comes from us, and only that signature keeps this text and ` +
+  `every attachment intact.</p>` +
+  `<p><strong>FORWARDING, QUOTING OR REDISTRIBUTING THIS EMAIL IS STRICTLY ` +
+  `FORBIDDEN.</strong></p></div>`;
+
 function hexFromBuffer(buffer) {
   return Array.from(new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -460,6 +507,49 @@ function buildHeader(name, value) {
   return { name, value: sanitizeHeaderValue(value) };
 }
 
+/*
+ * The Subject always ends with the marker. Idempotent: onBeforeSend can fire more
+ * than once for one message, and a stacked marker would be visible to the recipient.
+ * Exactly one space before it and never a run of them — MsgComposeCommands collapses
+ * runs of 74+ whitespace characters while it normalises the Subject on the way out.
+ */
+function appendWarMarker(subject) {
+  const current = typeof subject === "string" ? subject : "";
+  if (current.includes(WAR_MARKER)) {
+    return current;
+  }
+  const trimmed = current.replace(/\s+$/, "");
+  return trimmed ? `${trimmed} ${WAR_MARKER}` : WAR_MARKER;
+}
+
+/*
+ * Which body field an outgoing notice may be written into. Thunderbird deletes the
+ * property that does not match the compose format before applying the change
+ * (`delete details.body` for a text composer, `delete details.plainTextBody` for an
+ * HTML one — ext-compose.js), so writing into the wrong field means the notice is
+ * silently dropped and the header's claim that the prohibition is stated in the
+ * email would be a lie.
+ */
+function warBodyField(details) {
+  const order = details.isPlainText === true ? ["plainTextBody", "body"] : ["body", "plainTextBody"];
+  return order.find((field) => typeof details[field] === "string") || "";
+}
+
+/*
+ * Append the notice, or return null when the body already carries it. The marker is
+ * the sentinel — it is always part of the notice — so a second pass returns null
+ * instead of stacking a second footer. The flavour follows isPlainText/the field:
+ * a plain-text composer must never receive HTML tags in its text.
+ */
+function withWarNotice(details, field) {
+  const value = details[field];
+  if (typeof value !== "string" || value.includes(WAR_MARKER)) {
+    return null;
+  }
+  const plain = details.isPlainText === true || field === "plainTextBody";
+  return plain ? `${value}${WAR_NOTICE_TEXT}` : `${value}${WAR_NOTICE_HTML}`;
+}
+
 // An MDN address may arrive as "Name <a@b>" or as { email } / { id }.
 function addressOf(value) {
   if (!value) {
@@ -487,6 +577,9 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
   headers.push(buildHeader("X-PasevSU-Framework", config.framework));
   headers.push(buildHeader("X-PasevSU-Origin", config.origin));
   headers.push(buildHeader("X-PasevSU-Organization", config.organization));
+  // Mandatory identity + no-forwarding statement. Always present, never a setting:
+  // "винаги да се вписва" — a message without it is not a PasevSU message.
+  headers.push(buildHeader("X-PasevSU-WAR", WAR_HEADER_TEXT));
   headers.push(buildHeader("X-PasevSU-Evidence-ID", evidenceId));
   headers.push(buildHeader("X-PasevSU-Body-SHA256", bodyHash));
 
@@ -657,6 +750,19 @@ async function handleBeforeSend(tab, details) {
 
     const bodyHash = await sha256Hex(new TextEncoder().encode(body));
 
+    /*
+     * The war notice is appended AFTER the digest is taken, so
+     * X-PasevSU-Body-SHA256 keeps meaning "the body the sender wrote" and a fixed,
+     * generated footer can never move the evidence chain. The notice itself is
+     * constant text delimited by the marker, so a verifier removes it before
+     * recomputing the digest. The Subject marker, in contrast, IS part of the signed
+     * metadata below: it travels on the wire, so `headers_sha256` must cover it or
+     * every delivered message would look tampered.
+     */
+    const warSubject = appendWarMarker(details.subject);
+    const warField = warBodyField(details);
+    const warBody = warField ? withWarNotice(details, warField) : null;
+
     const existingAttachments = await listComposeAttachments(tab, details);
     const { entries: attachmentEntries, failures: attachmentFailures } =
       await computeAttachmentHashes(existingAttachments);
@@ -697,7 +803,7 @@ async function handleBeforeSend(tab, details) {
       nonce,
     });
     const signedHeaders = await buildSignedHeaders({
-      subject: details.subject,
+      subject: warSubject,
       from: details.from,
       to: details.to || details.recipients,
       date: details.date,
@@ -808,7 +914,16 @@ async function handleBeforeSend(tab, details) {
     // the send with no dialog and no error: the compose window simply stays open.
     // The docs for setComposeDetails are explicit: "only properties that are to be
     // changed should be included".
-    return { details: { customHeaders: mergedHeaders } };
+    // The Subject and the body are returned for the same reason: `subject` is a
+    // writable ComposeDetails property (SetComposeDetails assigns gMsgCompose
+    // .compFields.subject, and GenericSendMessage re-reads it after the beforesend
+    // event, so the marker really reaches the wire), and the notice goes into the one
+    // body property the compose format keeps. Nothing else is returned — see below.
+    const changed = { customHeaders: mergedHeaders, subject: warSubject };
+    if (warBody !== null) {
+      changed[warField] = warBody;
+    }
+    return { details: changed };
   } catch (err) {
     // Never throw and never cancel: on any error the message still goes out.
     // `{}` means "no changes", which is the safe way to say "send it as it is" —

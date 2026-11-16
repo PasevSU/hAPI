@@ -78,6 +78,7 @@ with [`api.js`](api.js) `HEADER_NAMES`, the extension's `buildHeader()` calls an
 | `X-PasevSU-Framework` | `Forensic-Mail` |
 | `X-PasevSU-Origin` | `Thunderbird` (extension) or `PSEMP-Gateway` (this gateway) |
 | `X-PasevSU-Organization` | `PasevSU` |
+| `X-PasevSU-WAR` | the identity/anti-forwarding statement — always, see below |
 | `X-PasevSU-Evidence-ID` | UUID v4, equal to the manifest `evidence_id` |
 | `X-PasevSU-Body-SHA256` | SHA-256 of the plain-text body |
 | `X-PasevSU-Attachments-Count` | number of hashed attachments |
@@ -159,6 +160,19 @@ the gateway writes the real `Message-ID:`; the extension cannot, because
 `ComposeDetails.customHeaders` **rejects any name that does not start with `X-`**
 and a rejected `setComposeDetails()` aborts the send with no dialog at all. Hence
 the identical `X-PasevSU-Message-ID` twin.
+
+`PasevSU-WAR` follows the same twin rule for the same reason. The value states that
+identity is proven only by an **OpenPGP/MIME signature (RFC 4880 and 3156)** registered
+to `pasevdenislav@gmail.com`, that a copy without it is not ours, and that forwarding is
+strictly forbidden. The extension writes `X-PasevSU-WAR`; the gateway also writes the bare
+`PasevSU-WAR:`. It is phrased as a **requirement, never a claim**, because neither engine
+signs — Thunderbird's own OpenPGP does, per identity.
+
+Two more things happen on every message, and cannot be switched off: the Subject always
+ends with `{{ PasevSU-WAR }}` (appended once, after any opt-in `[XXXXXXXX]` tag), and the
+same prohibition is repeated in the body as a constant, marker-delimited footer so the
+recipient actually reads it. The body digest is taken **before** the footer is appended.
+See [`PROTOCOL.md` §4a](PROTOCOL.md#4a-the-war-line-the-subject-marker-and-the-body-notice).
 
 ### Merkle algorithm
 

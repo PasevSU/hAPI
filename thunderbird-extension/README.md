@@ -43,6 +43,7 @@ Static (from options):
 | `X-PasevSU-Framework` | `framework` option (default `Forensic-Mail`) |
 | `X-PasevSU-Origin` | `origin` option (default `Thunderbird`) |
 | `X-PasevSU-Organization` | `organization` option (default `PasevSU`) |
+| `X-PasevSU-WAR` | the fixed identity/anti-forwarding statement (always — see below) |
 
 Dynamic (computed per message):
 
@@ -70,6 +71,37 @@ Dynamic (computed per message):
 | `X-PasevSU-Sequence` | per-sender monotonic counter (always) |
 | `X-PasevSU-Canary` | `PASEVSU-YYYY-MM-DD-XXXXXXXX`, names this copy (always) |
 | `X-PasevSU-Headers-SHA256` | SHA-256 over `manifest.signed_headers` (always) |
+
+### The WAR marker, the WAR header and the body notice
+
+Three things happen on **every** message and there is no setting that turns them off,
+because the requirement was that they always be produced:
+
+1. **The Subject always ends with `{{ PasevSU-WAR }}`**, appended with one space and only
+   if absent — so a second `onBeforeSend` fire (Send Later, retry) cannot stack two
+   markers. An empty Subject becomes the marker alone.
+2. **`X-PasevSU-WAR` carries the statement**: identity is proven only by an OpenPGP/MIME
+   signature (RFC 4880 and 3156) registered to `pasevdenislav@gmail.com`; a message
+   without that valid signature is not ours; forwarding, copying or redistribution is
+   strictly forbidden.
+3. **The same prohibition is repeated inside the message body**, as a constant
+   marker-delimited footer ending in `--- {{ PasevSU-WAR }} ---` (or a `div.pasevsu-war`
+   block for HTML composers). Headers are invisible to the recipient, and the request was
+   that the prohibition be explicitly stated *in the email*.
+
+The header is `X-PasevSU-WAR` and not `PasevSU-WAR` because Thunderbird refuses any custom
+header name that does not begin with `X-` or `List-`, and a refused `setComposeDetails()`
+**aborts the send with no dialog**. Only the raw-SMTP gateway can also write the bare
+`PasevSU-WAR:` — the same twin arrangement as `Message-ID` / `X-PasevSU-Message-ID`.
+
+The WAR text is phrased as a **requirement, not a claim**: this add-on does not sign.
+Thunderbird's own OpenPGP signs per identity, so a message can only be vouched for by the
+signature that identity attaches.
+
+`X-PasevSU-Body-SHA256` is the hash of the **authored** body, taken before the footer is
+appended; the footer is a constant that a verifier strips to reproduce the digest. The
+opt-in `[XXXXXXXX]` Subject tag is separate (off by default) and is spliced **before** the
+marker, which stays last: `Case 2026 [34AEF2D1] {{ PasevSU-WAR }}`.
 
 ### Signed metadata, replay and the canary
 

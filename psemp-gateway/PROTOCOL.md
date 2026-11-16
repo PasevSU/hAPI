@@ -75,7 +75,7 @@ do.
    │  │      ↓                                                     │  │
    │  │ manifest builder PasevSU_Manifest.json → its SHA-256       │  │
    │  │      ↓                                                     │  │
-   │  │ header builder   24 × X-PasevSU-* lines                    │  │
+   │  │ header builder   25 × X-PasevSU-* lines                    │  │
    │  └────────────────────────────────────────────────────────────┘  │
    │      ↓  returns { details } — the send proceeds                   │
    └──────────────────────────────────────────────────────────────────┘
@@ -156,27 +156,29 @@ Example values below are real output from
 | 2 | `X-PasevSU-Framework` | `Forensic-Mail` | always |
 | 3 | `X-PasevSU-Origin` | `Thunderbird` / `PSEMP-Gateway` | always |
 | 4 | `X-PasevSU-Organization` | `PasevSU` | always |
-| 5 | `X-PasevSU-Evidence-ID` | `ev-8f14e45fceea167a` | always |
-| 6 | `X-PasevSU-Body-SHA256` | `4121f576…885d5955` | always |
-| 7 | `X-PasevSU-Attachments-Count` | `2` | always (`0` when none) |
-| 8 | `X-PasevSU-Attachments-SHA256` | `report.pdf=4de6b94f…,stmt.txt=066167e6…` | when attachments exist |
-| 9 | `X-PasevSU-Attachments-Error` | `photo.jpg=UNREADABLE` | only when one could not be read |
-| 10 | `X-PasevSU-Manifest-SHA256` | `49ba81a1…397e287` | always |
-| 11 | `X-PasevSU-Merkle-Root` | `95a9269a…abd9ea2` | always |
-| 12 | `X-PasevSU-PGP-Fingerprint` | `A1B2…5678` | when configured |
-| 13 | `X-PasevSU-OTS` | `pending` | only when `enableOts` |
-| 14 | `X-PasevSU-Receipt` | `requested` | only when `enableReceipt` |
-| 15 | `X-PasevSU-Message-ID` | `<PasevSU.20261116140000.ev-…@forensic.evidence.pasevsu>` | always |
-| 16 | `X-PasevSU-Sha256` | `body - 4121…,report.pdf - 4de6…,stmt.txt - 0661…,timestep - 2026-11-16T14:00:00.000Z` | always |
-| 17 | `X-PasevSU-Cripto-Engine` | `9572595485317120971519535` | always |
-| 18 | `X-PasevSU-Cripto-title` | `gcm1.fJrzS3nqWX5dErhA.UnuTZ…` | always |
-| 19 | `X-PasevSU-Created` | `2026-11-16T14:00:00.000Z` | always |
-| 20 | `X-PasevSU-Expires` | `2026-11-16T15:00:00.000Z` | always |
-| 21 | `X-PasevSU-Nonce` | `f47ac10b58cc43728e19d1b7f3c5a2e6` | always |
-| 22 | `X-PasevSU-Sequence` | `42` | always |
-| 23 | `X-PasevSU-Canary` | `PASEVSU-2026-11-16-38F47C99` | always |
-| 24 | `X-PasevSU-Headers-SHA256` | `617cef0d…88c7ff` | always |
-| — | `Message-ID` | same value as #15 | gateway only (§3.1) |
+| 5 | `X-PasevSU-WAR` | see §4a | always |
+| 6 | `X-PasevSU-Evidence-ID` | `ev-8f14e45fceea167a` | always |
+| 7 | `X-PasevSU-Body-SHA256` | `4121f576…885d5955` | always |
+| 8 | `X-PasevSU-Attachments-Count` | `2` | always (`0` when none) |
+| 9 | `X-PasevSU-Attachments-SHA256` | `report.pdf=4de6b94f…,stmt.txt=066167e6…` | when attachments exist |
+| 10 | `X-PasevSU-Attachments-Error` | `photo.jpg=UNREADABLE` | only when one could not be read |
+| 11 | `X-PasevSU-Manifest-SHA256` | `49ba81a1…397e287` | always |
+| 12 | `X-PasevSU-Merkle-Root` | `95a9269a…abd9ea2` | always |
+| 13 | `X-PasevSU-PGP-Fingerprint` | `A1B2…5678` | when configured |
+| 14 | `X-PasevSU-OTS` | `pending` | only when `enableOts` |
+| 15 | `X-PasevSU-Receipt` | `requested` | only when `enableReceipt` |
+| 16 | `X-PasevSU-Message-ID` | `<PasevSU.20261116140000.ev-…@forensic.evidence.pasevsu>` | always |
+| 17 | `X-PasevSU-Sha256` | `body - 4121…,report.pdf - 4de6…,stmt.txt - 0661…,timestep - 2026-11-16T14:00:00.000Z` | always |
+| 18 | `X-PasevSU-Cripto-Engine` | `9572595485317120971519535` | always |
+| 19 | `X-PasevSU-Cripto-title` | `gcm1.fJrzS3nqWX5dErhA.UnuTZ…` | always |
+| 20 | `X-PasevSU-Created` | `2026-11-16T14:00:00.000Z` | always |
+| 21 | `X-PasevSU-Expires` | `2026-11-16T15:00:00.000Z` | always |
+| 22 | `X-PasevSU-Nonce` | `f47ac10b58cc43728e19d1b7f3c5a2e6` | always |
+| 23 | `X-PasevSU-Sequence` | `42` | always |
+| 24 | `X-PasevSU-Canary` | `PASEVSU-2026-11-16-38F47C99` | always |
+| 25 | `X-PasevSU-Headers-SHA256` | `617cef0d…88c7ff` | always |
+| — | `Message-ID` | same value as #16 | gateway only (§3.1) |
+| — | `PasevSU-WAR` | same value as #5 | gateway only (§4a) |
 | — | `Disposition-Notification-To` | the receipt address | only when `enableReceipt` |
 
 Rules that fall out of the table:
@@ -197,6 +199,51 @@ Rules that fall out of the table:
 * **Headers are appended, never replaced.** `details.customHeaders` is
   `[...(details.customHeaders || []), ...newLines]`; a second `onBeforeSend` fire filters
   out our own names first so a message never carries a header twice.
+
+---
+
+## 4a. The WAR line, the Subject marker, and the body notice
+
+Three things happen on **every** message, with no setting to turn them off. They were
+requested in Bulgarian as: "в края на темата винаги да се вписва `{{ PasevSU-WAR }}`… а в
+хедъра PasevSU-WAR… ПРЕПРАЩАНЕТО НА ТОЗИ ИМЕЙЛ Е СТРОГО ЗАБРАНЕНО И ИЗРИЧНО ПОСОЧЕНО В
+ИМЕЙЛА".
+
+1. **The Subject ends with `{{ PasevSU-WAR }}`.** Appended with exactly one space, only if
+   absent, so a second `onBeforeSend` fire (Send Later, retry, re-open) cannot stack two.
+   The authored Subject is otherwise untouched; an empty Subject becomes the marker alone.
+   This works because `onBeforeSend` may return a `subject` and Thunderbird re-reads
+   `msgCompFields.subject` when it builds the message — measured in `MsgComposeCommands.js`.
+2. **`X-PasevSU-WAR` carries the statement**, ASCII English, in full:
+
+   ```
+   Identity is proven only by an OpenPGP/MIME signature (RFC 4880 and 3156) registered
+   to pasevdenislav@gmail.com. A message without that signature is not ours. Forwarding,
+   copying or redistribution is strictly forbidden. --- {{ PasevSU-WAR }}
+   ```
+
+   It is written as a **requirement, not a claim**: the extension cannot sign, so it must
+   never assert that a signature is attached. Thunderbird's own OpenPGP signs per identity.
+3. **The same prohibition is repeated in the message body**, because a header is invisible
+   to the recipient. It is a constant, marker-delimited plain-text footer (or a
+   `div.pasevsu-war` block for HTML composers) ending in `--- {{ PasevSU-WAR }} ---`, so a
+   verifier can strip it byte-for-byte and still reproduce `X-PasevSU-Body-SHA256`.
+
+**Why `X-PasevSU-WAR` and not `PasevSU-WAR`.** `ComposeDetails.customHeaders` accepts only
+names beginning `X-`/`List-`, plus `msip_labels`; anything else makes `setComposeDetails()`
+throw, and Thunderbird then aborts the send **with no dialog** (a silent data-loss class of
+bug). Only the gateway, which writes raw SMTP, can emit the unprefixed `PasevSU-WAR:` — the
+same asymmetry as `Message-ID` / `X-PasevSU-Message-ID`. Both engines therefore emit the
+`X-` form, and the gateway additionally emits the bare twin.
+
+**The body hash covers the authored body, not the notice.** The digest is taken before the
+footer is appended and is a field name (`X-PasevSU-Body-SHA256`), so the ordering is
+recoverable. `X-PasevSU-Headers-SHA256` is computed over the already-marked Subject, which
+stops the mandated marker from ever looking like tampering.
+
+**Not the same thing as §9.** §9's `[XXXXXXXX]` Subject tag is **opt-in** and sits *before*
+the marker (`Case 2026 [34AEF2] {{ PasevSU-WAR }}`); the marker itself is unconditional and
+always last.
 
 ---
 
@@ -395,6 +442,15 @@ Rewriting a Subject is visible to every recipient, defeats saved searches, and b
 threading for everyone on the thread. A protocol that silently mutates the user's Subject
 line would be reverted by the user, and rightly so. The header block (§7) carries the same
 information without changing anything the recipient sees.
+
+It is also distinct from the **mandatory** `{{ PasevSU-WAR }}` marker of §4a: that marker is
+a fixed literal required on every message and always occupies the end of the Subject, while
+the tag is a per-message digest prefix that is only injected on request. When both apply the
+tag is spliced in **before** the marker, never after it:
+
+```text
+Subject: Case 2026-001 [34AEF2D1] {{ PasevSU-WAR }}
+```
 
 ---
 
