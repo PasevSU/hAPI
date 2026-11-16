@@ -48,6 +48,31 @@ function read(file) {
 }
 
 /**
+ * File names stored in a zip, read from its central directory.
+ *
+ * Returns null when the archive cannot be walked, so a corrupt pack fails loudly
+ * instead of passing as "no backslashed entries found".
+ */
+function zipEntryNames(zip) {
+  const EOCD = Buffer.from([0x50, 0x4b, 0x05, 0x06]);
+  const eocdAt = zip.lastIndexOf(EOCD);
+  if (eocdAt < 0) return null;
+  const count = zip.readUInt16LE(eocdAt + 10);
+  let at = zip.readUInt32LE(eocdAt + 16);
+  const names = [];
+  for (let i = 0; i < count; i += 1) {
+    if (at + 46 > zip.length || zip.readUInt32LE(at) !== 0x02014b50) return null;
+    const nameLength = zip.readUInt16LE(at + 28);
+    names.push(zip.slice(at + 46, at + 46 + nameLength).toString('utf8'));
+    at += 46 + nameLength + zip.readUInt16LE(at + 30) + zip.readUInt16LE(at + 32);
+  }
+  return names;
+}
+
+/** Files the running extension needs; all of them must be inside the archive. */
+const requiredEntries = ['manifest.json', 'background.js', 'options.html', 'options.js'];
+
+/**
  * The names background.js emits, in the order it emits them.
  *
  * Headers must be built through buildHeader(name, value): Thunderbird >= 100
@@ -175,6 +200,31 @@ function main(argv, { log = console.log, error = console.error } = {}) {
       fs.statSync(xpi).mtimeMs >= fs.statSync(path.join(EXTENSION, 'background.js')).mtimeMs,
       'rebuild with thunderbird-extension/tools/install.ps1 if this fails',
     );
+
+    // Thunderbird deletes a side-loaded .xpi it cannot parse, leaving no trace in
+    // extensions.json - the add-on just vanishes on the next start. Two packing
+    // faults caused exactly that: nested entries written with Windows separators
+    // ("_locales\en\messages.json"), and a manifest that declares default_locale
+    // while the _locales tree is left out of the archive.
+    const entries = zipEntryNames(zip);
+    ok('the installed .xpi has a readable file list', entries !== null);
+    if (entries) {
+      const backslashed = entries.filter((name) => name.includes('\\'));
+      ok('no archive entry uses a backslash', backslashed.length === 0, backslashed.join(', ') || 'none');
+      const missing = requiredEntries.filter((name) => !entries.includes(name));
+      ok(
+        `the archive carries every required file (${requiredEntries.length})`,
+        missing.length === 0,
+        missing.join(', ') || 'none',
+      );
+      if (manifest.default_locale) {
+        ok(
+          `the archive carries the default_locale tree (${manifest.default_locale})`,
+          entries.includes(`_locales/${manifest.default_locale}/messages.json`),
+          'Thunderbird deletes the add-on when __MSG_*__ cannot resolve',
+        );
+      }
+    }
   }
 
   log('');

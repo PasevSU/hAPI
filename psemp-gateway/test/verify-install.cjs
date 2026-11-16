@@ -33,13 +33,96 @@ const ROOT = path.join(__dirname, '..', '..');
 const ID = JSON.parse(fs.readFileSync(path.join(ROOT, 'thunderbird-extension', 'manifest.json'), 'utf8'))
   .browser_specific_settings.gecko.id;
 
+const CRC_TABLE = (() => {
+  const table = new Int32Array(256);
+  for (let i = 0; i < 256; i += 1) {
+    let c = i;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[i] = c;
+  }
+  return table;
+})();
+
+function crc32(buf) {
+  let c = -1;
+  for (let i = 0; i < buf.length; i += 1) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ -1) >>> 0;
+}
+
+/**
+ * A stored (uncompressed) zip holding `entries`, so the fixture is a real archive
+ * and the verifier's central-directory reader has something honest to walk.
+ */
+function zipBytes(entries) {
+  const parts = [];
+  const central = [];
+  let offset = 0;
+  for (const { name, data } of entries) {
+    const nameBuf = Buffer.from(name, 'utf8');
+    const body = Buffer.isBuffer(data) ? data : Buffer.from(data, 'utf8');
+    const crc = crc32(body);
+
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(0x0800, 6);
+    local.writeUInt32LE(crc, 14);
+    local.writeUInt32LE(body.length, 18);
+    local.writeUInt32LE(body.length, 22);
+    local.writeUInt16LE(nameBuf.length, 26);
+    parts.push(local, nameBuf, body);
+
+    const header = Buffer.alloc(46);
+    header.writeUInt32LE(0x02014b50, 0);
+    header.writeUInt16LE(20, 4);
+    header.writeUInt16LE(20, 6);
+    header.writeUInt16LE(0x0800, 8);
+    header.writeUInt32LE(crc, 16);
+    header.writeUInt32LE(body.length, 20);
+    header.writeUInt32LE(body.length, 24);
+    header.writeUInt16LE(nameBuf.length, 28);
+    header.writeUInt32LE(offset, 42);
+    central.push(header, nameBuf);
+
+    offset += local.length + nameBuf.length + body.length;
+  }
+  const directory = Buffer.concat(central);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(entries.length, 8);
+  eocd.writeUInt16LE(entries.length, 10);
+  eocd.writeUInt32LE(directory.length, 12);
+  eocd.writeUInt32LE(offset, 16);
+  return Buffer.concat([...parts, directory, eocd]);
+}
+
+const MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, 'thunderbird-extension', 'manifest.json'), 'utf8'));
+
+/**
+ * The archive the installer is supposed to produce. `backslash` recreates the
+ * Windows-separator packing fault, `withLocales: false` the missing
+ * default_locale tree.
+ */
+function xpiEntries({ backslash = false, withLocales = true } = {}) {
+  const sep = backslash ? '\\' : '/';
+  const entries = ['manifest.json', 'background.js', 'options.html', 'options.js']
+    .map((name) => ({ name, data: 'fixture' }));
+  if (withLocales) {
+    entries.push({
+      name: `_locales${sep}${MANIFEST.default_locale}${sep}messages.json`,
+      data: 'fixture',
+    });
+  }
+  return entries;
+}
+
 /**
  * Build a profile that should pass, then optionally break one thing.
  *
  * `registered` and `expanded` are the header lists the composer is told about;
  * `xpiAge` backdates the installed .xpi by that many milliseconds.
  */
-function makeProfile({ registered, expanded, xpiAge = 0, withUserJs = true } = {}) {
+function makeProfile({ registered, expanded, xpiAge = 0, withUserJs = true, xpi = {} } = {}) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-install-'));
   const names = emittedNames();
   const toCompose = registered === undefined ? names : registered;
@@ -54,11 +137,11 @@ function makeProfile({ registered, expanded, xpiAge = 0, withUserJs = true } = {
   if (withUserJs) fs.writeFileSync(path.join(profile, 'user.js'), `${lines.join('\n')}\n`);
 
   fs.mkdirSync(path.join(profile, 'extensions'), { recursive: true });
-  const xpi = path.join(profile, 'extensions', `${ID}.xpi`);
-  fs.writeFileSync(xpi, Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+  const xpiPath = path.join(profile, 'extensions', `${ID}.xpi`);
+  fs.writeFileSync(xpiPath, zipBytes(xpiEntries(xpi)));
   if (xpiAge > 0) {
     const when = new Date(Date.now() - xpiAge);
-    fs.utimesSync(xpi, when, when);
+    fs.utimesSync(xpiPath, when, when);
   }
   return profile;
 }
@@ -139,6 +222,36 @@ checks.push({
       assert.strictEqual(code, 1, `a stale build must fail, got exit ${code}:\n${text}`);
       assert.match(text, /FAIL the installed \.xpi is at least as new as background\.js/);
       assert.match(text, /rebuild with thunderbird-extension\/tools\/install\.ps1/);
+      return 'exit 1';
+    } finally {
+      fs.rmSync(profile, { recursive: true, force: true });
+    }
+  },
+});
+
+checks.push({
+  name: 'an .xpi whose entries use Windows separators is a failure',
+  fn() {
+    const profile = makeProfile({ xpi: { backslash: true } });
+    try {
+      const { code, text } = run(profile);
+      assert.strictEqual(code, 1, `backslash entries must fail, got exit ${code}:\n${text}`);
+      assert.match(text, /FAIL no archive entry uses a backslash/);
+      return 'exit 1';
+    } finally {
+      fs.rmSync(profile, { recursive: true, force: true });
+    }
+  },
+});
+
+checks.push({
+  name: 'an .xpi that leaves out the default_locale tree is a failure',
+  fn() {
+    const profile = makeProfile({ xpi: { withLocales: false } });
+    try {
+      const { code, text } = run(profile);
+      assert.strictEqual(code, 1, `a missing _locales tree must fail, got exit ${code}:\n${text}`);
+      assert.match(text, /FAIL the archive carries the default_locale tree/);
       return 'exit 1';
     } finally {
       fs.rmSync(profile, { recursive: true, force: true });

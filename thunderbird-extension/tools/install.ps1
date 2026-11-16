@@ -20,6 +20,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $src = Split-Path -Parent $PSScriptRoot
@@ -33,19 +34,48 @@ foreach ($f in $files) {
   if (-not (Test-Path (Join-Path $src $f))) { throw "missing $f in $src" }
 }
 
-# Package: the four files at the archive root, byte-for-byte (no rewriting).
+# manifest.json uses __MSG_extName__ / __MSG_extDescription__ with default_locale,
+# so the archive MUST carry the _locales tree. Without it the placeholders cannot be
+# resolved, Thunderbird rejects the manifest and deletes the side-loaded .xpi on the
+# next start (observed 2026-11-16: the add-on simply disappeared from extensions.json).
+$locales = $null
+if ($manifest.default_locale) {
+  $locales = Join-Path $src '_locales'
+  $defaultMessages = Join-Path $locales "$($manifest.default_locale)\messages.json"
+  if (-not (Test-Path $defaultMessages)) {
+    throw "manifest declares default_locale '$($manifest.default_locale)' but $defaultMessages is missing"
+  }
+}
+
+# Package: the files at the archive root byte-for-byte (no rewriting), plus _locales.
 $xpi = Join-Path ([System.IO.Path]::GetTempPath()) "$id-$version.xpi"
 if (Test-Path $xpi) { Remove-Item $xpi -Force }
 $stage = Join-Path ([System.IO.Path]::GetTempPath()) ('psemp-stage-' + [guid]::NewGuid().ToString('n'))
 New-Item -ItemType Directory -Path $stage | Out-Null
 try {
   foreach ($f in $files) { Copy-Item (Join-Path $src $f) (Join-Path $stage $f) }
-  [System.IO.Compression.ZipFile]::CreateFromDirectory(
-    $stage, $xpi, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+  if ($locales) { Copy-Item -Recurse -Force $locales (Join-Path $stage '_locales') }
+  $packed = @(Get-ChildItem $stage -Recurse -File).Count
+  # ZipFile.CreateFromDirectory writes Windows separators into nested entry names on
+  # .NET Framework ("_locales\bg\messages.json"). Gecko cannot resolve that, so the
+  # manifest's default_locale fails and Thunderbird silently deletes the add-on.
+  # Entries are therefore written by hand with forward slashes.
+  $archive = [System.IO.Compression.ZipFile]::Open($xpi, [System.IO.Compression.ZipArchiveMode]::Create)
+  try {
+    Get-ChildItem $stage -Recurse -File | ForEach-Object {
+      $rel = $_.FullName.Substring($stage.Length + 1).Replace('\', '/')
+      $entry = $archive.CreateEntry($rel, [System.IO.Compression.CompressionLevel]::Optimal)
+      $out = $entry.Open()
+      try {
+        $in = [System.IO.File]::OpenRead($_.FullName)
+        try { $in.CopyTo($out) } finally { $in.Dispose() }
+      } finally { $out.Dispose() }
+    }
+  } finally { $archive.Dispose() }
 } finally {
   Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
 }
-Write-Host ('built  {0} ({1} bytes, {2} files, version {3})' -f $xpi, (Get-Item $xpi).Length, $files.Count, $version)
+Write-Host ('built  {0} ({1} bytes, {2} files, version {3})' -f $xpi, (Get-Item $xpi).Length, $packed, $version)
 
 if ($BuildOnly) { return }
 

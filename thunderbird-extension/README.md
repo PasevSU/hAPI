@@ -270,10 +270,11 @@ single divergence across both halves.
 
 A folder loaded through **Load Temporary Add-on…** disappears on every restart. To
 keep PSEMP active without re-loading it by hand, install it as a profile
-side-load: zip the four files (`manifest.json`, `background.js`, `options.html`,
-`options.js`) at the archive **root** into
+side-load: zip `manifest.json`, `background.js`, `options.html`, `options.js` and the
+whole `_locales` tree at the archive **root** into
 `pasevsu-forensic-headers@pasev.example.xpi` and place it in
-`<profile>\extensions\`.
+`<profile>\extensions\`. Entry names must use **forward slashes** even on Windows —
+see [Why the archive has to be packed this way](#why-the-archive-has-to-be-packed-this-way).
 
 [`tools/install.ps1`](tools/install.ps1) does exactly that, finds the profile, and
 verifies the installed file's SHA-256 against the build:
@@ -287,6 +288,31 @@ Thunderbird runs — Windows answers *"the requested operation cannot be perform
 a file with a user-mapped section open"*. The script reports that and exits with code
 2; quit Thunderbird and run it again. Everything else it does is already in place at
 that point, so the second run only has to swap the file.
+
+### Why the archive has to be packed this way
+
+A side-loaded `.xpi` that Thunderbird cannot parse is **deleted without a trace**. It
+is not disabled and it is not flagged; the file disappears from
+`extensions\` and the add-on disappears from `extensions.json`, so the only symptom
+is that the add-on count drops by one and no headers are produced. Two packing
+faults each caused exactly that here, and both were silent:
+
+| Fault | What Thunderbird sees | Why it is fatal |
+| --- | --- | --- |
+| `_locales` left out of the archive | `__MSG_extName__` in `manifest.json` with `default_locale: "en"` and no `_locales/en/messages.json` | The manifest cannot be resolved, so the add-on is rejected at load |
+| Nested entries stored as `_locales\en\messages.json` | A file name containing a backslash | Gecko resolves archive paths with `/`; the locale tree is invisible even though the bytes are present |
+
+The second one survives the obvious fix — adding `_locales` to the file list is not
+enough if the archiver writes Windows separators. `Compress-Archive` and
+`[IO.Compression.ZipFile]::CreateFromDirectory` both do. `install.ps1` now writes
+each entry itself with `ZipArchive.CreateEntry`, replacing `\` with `/`, and refuses
+to build at all when `default_locale` names a tree that is not in the stage folder.
+
+[`psemp-gateway/tools/verify-install.cjs`](../../psemp-gateway/tools/verify-install.cjs)
+guards this from outside: it walks the installed archive's central directory and
+fails on an unreadable file list, on any backslashed entry, on a missing required
+file, and on a missing `default_locale` tree. Its own test proves the guards fire
+against a deliberately mis-packed fixture.
 
 The script also repairs the profile's `user.js`. Thunderbird sends only the custom
 headers whose names are registered in `mail.compose.other.header`, so a profile
@@ -330,6 +356,15 @@ message went out with no headers at all. Two signals are reliable:
   `extensions.webextensions.uuids` preference. Dictionaries and language packs
   never do, so a missing UUID on a `type: extension` add-on means it is not live.
 
+Do not try to confirm the heartbeat by grepping the profile: `browser.storage.local`
+is IndexedDB, and both the key (`psempLastLoadedAt`) and its value are written in a
+compressed binary encoding, so a text search over `storage\default\moz-extension+++*`
+finds nothing even when the record is there and fresh. Read the value instead — the
+extension's directory under `storage\default\` (named by the UUID above, suffixed
+`^userContextId=4294967295`) holds `idb\*.sqlite`, and the record's timestamp
+advances on **every** Thunderbird start. That timestamp moving forward across a
+restart is the proof that the add-on arms itself, with no per-message opt-in.
+
 `psemp-gateway/test/extension-arming.cjs` runs `background.js` against a stub
 `browser` object and fails if the listener is not armed at load, if the heartbeat
 is written after registration, or if any error path stops returning `{ details }`
@@ -363,8 +398,10 @@ node psemp-gateway/tools/verify-install.cjs
 ```
 
 It exits `0` only when the names `background.js` writes, the gateway's
-`HEADER_NAMES` and the profile's `mail.compose.other.header` agree in order, and
-the installed copy is not older than the source.
+`HEADER_NAMES` and the profile's `mail.compose.other.header` agree in order, the
+installed copy is not older than the source, and the archive itself is loadable
+(readable file list, no backslashed entries, every required file present, the
+`default_locale` tree present).
 
 ## What a recipient can verify
 
