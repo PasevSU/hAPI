@@ -103,6 +103,10 @@ const TEST_ONLY = new Map([
   ['plugins/ocr.js', 'примерен плъгин: зарежда се от plugins.js'],
   ['plugins/renderer.js', 'примерен плъгин: зарежда се от plugins.js'],
   ['plugins/storage.js', 'примерен плъгин: зарежда се от plugins.js'],
+  // Дескрипторът на опциите е ИЗТОЧНИК ЗА ДОКУМЕНТАЦИЯ и за гейта `option-spec`, не за
+  // сървъра: сървърът чете стойностите от `process.env`, а не от описанието им. Затова не
+  // влиза в образа (`Dockerfile`), а се ползва от `scripts/options-reference.cjs` и тестовете.
+  ['option-spec.js', 'дескриптор на опциите: ползва се от scripts/options-reference.cjs и tests/option-spec.cjs'],
 ]);
 
 const classified = [];

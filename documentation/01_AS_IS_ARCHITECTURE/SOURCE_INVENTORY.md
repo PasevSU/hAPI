@@ -7,12 +7,12 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **129** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **47** инструмента · **435** теста.
+Общо: **130** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **47** инструмента · **437** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (129)
+### Backend модули (`hapi_enterprise/*.js`) (130)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -69,6 +69,7 @@
 | `hapi_enterprise/observer.js` | Наблюдение (сензори) без зависимости: комуникация, файлове, извиквания, изтегляния, |
 | `hapi_enterprise/oidc.js` | OIDC вход (authorization code + PKCE, S256) — без външни зависимости. |
 | `hapi_enterprise/ooxml.js` | Minimal dependency-free ZIP writer/reader and OOXML (docx/xlsx) helpers. |
+| `hapi_enterprise/option-spec.js` | ДЕСКРИПТОР НА ГЛОБАЛНИТЕ ОПЦИИ — ЕДНО МЯСТО ЗА ЕДНА ОПЦИЯ (O-01 от |
 | `hapi_enterprise/package-crypto.js` | Криптиран контейнер за експортен пакет (hapiPKG1). |
 | `hapi_enterprise/packager.js` | Пакетиране на портал (или избрани файлове) в ZIP с манифест, хешове и |
 | `hapi_enterprise/page-version.js` | ВЕРСИЯ В АДРЕСА НА СТАТИЧНИТЕ РЕСУРСИ НА HTML СТРАНИЦА (DEF-87). |

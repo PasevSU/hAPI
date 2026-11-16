@@ -15,20 +15,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { lineFor } = require('./docs-class.cjs');
+const { OPTIONS: SPEC, RENAMED } = require('../hapi_enterprise/option-spec.js');
 
 const ROOT = path.join(__dirname, '..');
 const ADDON = path.join(ROOT, 'hapi_enterprise');
 const OUT = path.join(ROOT, 'documentation', '02_TO_BE_ARCHITECTURE', 'OPTIONS_REFERENCE.md');
-
-// Преименуванията между ключ на опция и име на променлива. Всяко е дълг: правилото е
-// `UPPER(key)`, а изключение се допуска само с причина (O-03 от плана).
-const ALIASES = {
-  token: { env: 'ADMIN_TOKEN', why: 'вътрешен мастер ключ: различен живот от опцията, не се показва' },
-  backup_folder: { env: 'BACKUP_DIR', why: 'историческо име, пазено за съвместимост' },
-  public_domain: { env: 'PUBLIC_BASE_URL', why: 'минава през валидация и нормализация' },
-  config_dir: { env: 'HAPI_CONFIG_DIR', why: 'вътрешно име с префикс HAPI_' },
-  visitor_geoip_path: { env: 'GEOIP_DB_PATH', why: 'модулът е споделен с edge режима' },
-};
 
 /** Секция от `config.yaml` (същият прост подход като в `scripts/settings-defaults.cjs`). */
 function section(text, name) {
@@ -123,7 +114,10 @@ function describeType(raw) {
   return optional ? text + ', по избор' : text + ', **задължителна**';
 }
 
-const envOf = (key) => (ALIASES[key] ? ALIASES[key].env : key.toUpperCase());
+const envOf = (key) => {
+  const found = SPEC.find((o) => o.key === key);
+  return found ? found.env : key.toUpperCase();
+};
 
 function compose({ options, schema, translations, version }) {
   const rows = [];
@@ -134,7 +128,7 @@ function compose({ options, schema, translations, version }) {
     const tr = translations.get ? translations.get(key) : translations[key];
     if (!tr || !tr.name || !tr.description) throw new Error('преводът липсва за опцията ' + key + ' (name и description са задължителни)');
     const env = envOf(key);
-    const alias = ALIASES[key];
+    const alias = RENAMED[key];
     const secret = /password/.test(type);
     rows.push(`| \`${key}\` | \`${env}\`${alias ? ' †' : ''} | ${describeType(type)} | \`${value === '' ? '""' : value}\` | ${secret ? 'да' : '—'} |`);
     blocks.push(
@@ -142,7 +136,7 @@ function compose({ options, schema, translations, version }) {
         `### \`${key}\``,
         '',
         `- **Тип:** ${describeType(type)} · **По подразбиране:** \`${value === '' ? '""' : value}\``,
-        `- **Променлива:** \`${env}\`${alias ? ' — **преименувана** (' + alias.why + ')' : ' (по правилото `UPPER(ключ)`)'}`,
+        `- **Променлива:** \`${env}\`${alias ? ' — **преименувана** (' + alias + ')' : ' (по правилото `UPPER(ключ)`)'}`,
         `- **Име в картата на add-on-а:** ${tr.name}`,
         `- **Описание:** ${tr.description}`,
         secret ? '- **Тайна:** да — не се логва, не се връща от `api-info`, не влиза в диагностичния пакет' : null,
@@ -150,8 +144,8 @@ function compose({ options, schema, translations, version }) {
       ].filter((line) => line !== null).join('\n'),
     );
   }
-  const aliases = Object.entries(ALIASES)
-    .map(([key, a]) => `| \`${key}\` | \`${a.env}\` | ${a.why} |`)
+  const aliases = Object.keys(RENAMED)
+    .map((key) => `| \`${key}\` | \`${envOf(key)}\` | ${RENAMED[key]} |`)
     .join('\n');
 
   return [
@@ -215,13 +209,13 @@ function main() {
       console.error('options-reference: документът е остарял — пусни `node scripts/options-reference.cjs`');
       process.exit(1);
     }
-    console.log(`options-reference: актуален (${options.length} опции · ${Object.keys(ALIASES).length} преименувания)`);
+    console.log(`options-reference: актуален (${options.length} опции · ${Object.keys(RENAMED).length} преименувания)`);
     return;
   }
   fs.writeFileSync(OUT, text, 'utf8');
-  console.log(`options-reference: записан ${path.relative(ROOT, OUT)} (${options.length} опции · ${Object.keys(ALIASES).length} преименувания)`);
+  console.log(`options-reference: записан ${path.relative(ROOT, OUT)} (${options.length} опции · ${Object.keys(RENAMED).length} преименувания)`);
 }
 
-module.exports = { readOptions, readSchema, readTranslations, describeType, compose, envOf, ALIASES, OUT };
+module.exports = { readOptions, readSchema, readTranslations, describeType, compose, envOf, RENAMED, OUT };
 
 if (require.main === module) main();

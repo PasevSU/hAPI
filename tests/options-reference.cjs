@@ -19,7 +19,8 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const SCRIPT = path.join(ROOT, 'scripts', 'options-reference.cjs');
-const { readOptions, readSchema, readTranslations, compose, envOf, ALIASES, OUT } = require(SCRIPT);
+const { readOptions, readSchema, readTranslations, compose, envOf, OUT } = require(SCRIPT);
+const { RENAMED } = require(path.join(ROOT, 'hapi_enterprise', 'option-spec.js'));
 const { lineFor } = require(path.join(ROOT, 'scripts', 'docs-class.cjs'));
 
 // ── 1. Документът е точно изходът на генератора ──────────────────────────────
@@ -50,10 +51,10 @@ assert.match(describeType('list(classic|modern)'), /classic · modern/, 'сто�
 assert.match(describeType('bool'), /задължителна/, 'без `?` опцията е задължителна');
 
 // ── 4. Преименуванията са записани, а не скрити ──────────────────────────────
-assert.equal(ALIASES.backup_folder.env, 'BACKUP_DIR', 'историческото преименуване е в таблицата');
-assert.equal(envOf('backup_folder'), 'BACKUP_DIR', 'името на променливата идва от таблицата');
+assert.ok('backup_folder' in RENAMED, 'историческото преименуване е в таблицата на дескриптора');
+assert.equal(envOf('backup_folder'), 'BACKUP_DIR', 'името на променливата идва от дескриптора');
 assert.equal(envOf('portal_skin'), 'PORTAL_SKIN', 'по подразбиране името е UPPER(ключ)');
-assert.ok(Object.keys(ALIASES).length <= 6, 'изключенията са малко и всяко има причина: ' + Object.keys(ALIASES).length);
+assert.ok(Object.keys(RENAMED).length <= 6, 'изключенията са малко и всяко има причина: ' + Object.keys(RENAMED).length);
 assert.ok(doc.includes('## 3. Преименувания'), 'таблицата е и в документа, не само в кода');
 
 // ── 5. Липсващ превод е ГРЕШКА, не празно място ──────────────────────────────
@@ -68,6 +69,6 @@ assert.throws(
 );
 
 console.log(
-  `PASS options-reference: ${options.length} опции · ${Object.keys(ALIASES).length} преименувания · ` +
+  `PASS options-reference: ${options.length} опции · ${Object.keys(RENAMED).length} преименувания · ` +
     'документът е точно изходът на генератора · липсващ превод = грешка',
 );

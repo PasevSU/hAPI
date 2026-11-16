@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 435 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 437 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 196 |
+| общо | 197 |
 | портал | 48 |
 | GUI | 36 |
 | Home Assistant | 18 |
@@ -16,9 +16,9 @@
 | ядро | 13 |
 | съхранение | 8 |
 | издаване | 7 |
+| документация | 6 |
 | оракул | 6 |
 | тайни връзки | 6 |
-| документация | 5 |
 | пакети | 5 |
 | споделени данни | 5 |
 | HTML | 4 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (196)
+## общо (197)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -159,6 +159,7 @@
 | `office-processing` | Office processing | `tests/office-processing.cjs` |
 | `oidc-login` | Oidc login | `tests/oidc-login.cjs` |
 | `openapi-admin` | Openapi admin | `tests/openapi-admin.cjs` |
+| `option-spec` | Option spec | `tests/option-spec.cjs` |
 | `options-reference` | Options reference | `tests/options-reference.cjs` |
 | `packaged-docs` | Packaged docs | `tests/packaged-docs.cjs` |
 | `packager` | Packager | `tests/packager.cjs` |
@@ -442,6 +443,17 @@
 | `release-tooling` | Release tooling | `tests/release-tooling.cjs` |
 | `release-workflow-assets` | Release workflow assets | `tests/release-workflow-assets.cjs` |
 
+## документация (6)
+
+| Правило | Заглавие | Файл |
+| --- | --- | --- |
+| `doc-citations` | Doc citations | `tests/doc-citations.cjs` |
+| `docs-class` | Docs class | `tests/docs-class.cjs` |
+| `docs-consistency` | Docs consistency | `tests/docs-consistency.cjs` |
+| `docs-index` | Docs index | `tests/docs-index.cjs` |
+| `docs-manual` | Docs manual | `tests/docs-manual.cjs` |
+| `docs-size` | Docs size | `tests/docs-size.cjs` |
+
 ## оракул (6)
 
 | Правило | Заглавие | Файл |
@@ -463,16 +475,6 @@
 | `secret-panel` | Secret panel | `tests/secret-panel.cjs` |
 | `secret-patterns` | Secret patterns | `tests/secret-patterns.cjs` |
 | `secret-sweep` | Secret sweep | `tests/secret-sweep.cjs` |
-
-## документация (5)
-
-| Правило | Заглавие | Файл |
-| --- | --- | --- |
-| `doc-citations` | Doc citations | `tests/doc-citations.cjs` |
-| `docs-class` | Docs class | `tests/docs-class.cjs` |
-| `docs-consistency` | Docs consistency | `tests/docs-consistency.cjs` |
-| `docs-index` | Docs index | `tests/docs-index.cjs` |
-| `docs-manual` | Docs manual | `tests/docs-manual.cjs` |
 
 ## пакети (5)
 

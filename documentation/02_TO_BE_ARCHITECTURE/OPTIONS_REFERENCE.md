@@ -192,7 +192,7 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 ### `public_domain`
 
 - **Тип:** низ, по избор · **По подразбиране:** `""`
-- **Променлива:** `PUBLIC_BASE_URL` — **преименувана** (минава през валидация и нормализация)
+- **Променлива:** `PUBLIC_BASE_URL` — **преименувана** (минава през валидация и нормализация към PUBLIC_BASE_URL)
 - **Име в картата на add-on-а:** Публичен домейн
 - **Описание:** Външно име, използвано в QR кодовете и адресите на порталите, например pasev.asuscomm.com.
 
@@ -380,7 +380,7 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 | --- | --- | --- |
 | `token` | `ADMIN_TOKEN` | вътрешен мастер ключ: различен живот от опцията, не се показва |
 | `backup_folder` | `BACKUP_DIR` | историческо име, пазено за съвместимост |
-| `public_domain` | `PUBLIC_BASE_URL` | минава през валидация и нормализация |
+| `public_domain` | `PUBLIC_BASE_URL` | минава през валидация и нормализация към PUBLIC_BASE_URL |
 | `config_dir` | `HAPI_CONFIG_DIR` | вътрешно име с префикс HAPI_ |
 | `visitor_geoip_path` | `GEOIP_DB_PATH` | модулът е споделен с edge режима |
 
