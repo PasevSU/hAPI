@@ -303,6 +303,7 @@ const RULES = [
   { id: "preview-unsafe-types", area: "общо", title: "Preview unsafe types", owner: "tests/preview-unsafe-types.cjs" },
   { id: "problem", area: "общо", title: "Problem", owner: "tests/problem.cjs" },
   { id: "process-guards", area: "общо", title: "Process guards", owner: "tests/process-guards.cjs" },
+  { id: "psemp-suites", area: "общо", title: "Psemp suites", owner: "tests/psemp-suites.cjs" },
   { id: "public-gateway", area: "публичен API", title: "Public gateway", owner: "tests/public-gateway.cjs" },
   { id: "public-package", area: "публичен API", title: "Public package", owner: "tests/public-package.cjs" },
   { id: "public-rate-limit", area: "публичен API", title: "Public rate limit", owner: "tests/public-rate-limit.cjs" },

@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 442 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 443 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 202 |
+| общо | 203 |
 | портал | 48 |
 | GUI | 36 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (202)
+## общо (203)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -180,6 +180,7 @@
 | `preview-unsafe-types` | Preview unsafe types | `tests/preview-unsafe-types.cjs` |
 | `problem` | Problem | `tests/problem.cjs` |
 | `process-guards` | Process guards | `tests/process-guards.cjs` |
+| `psemp-suites` | Psemp suites | `tests/psemp-suites.cjs` |
 | `publish-script` | Publish script | `tests/publish-script.cjs` |
 | `qr-dispatch` | Qr dispatch | `tests/qr-dispatch.cjs` |
 | `qr-leads-to-folder` | Qr leads to folder | `tests/qr-leads-to-folder.cjs` |
