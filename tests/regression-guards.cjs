@@ -112,6 +112,7 @@ const GUARDS = {
   'DEF-93': ['thunderbird-contract.cjs', 'psemp-suites.cjs'], // разписката е `returnReceipt`, не забранена заглавка
   'DEF-94': ['thunderbird-contract.cjs'], // зареденото add-on се сверява със сорса по хеш и версия
   'DEF-95': ['thunderbird-header-budget.cjs', 'psemp-suites.cjs'], // дълга заглавка се раздробява, а проверяващият я сглобява
+  'DEF-96': ['psemp-suites.cjs'], // проверяващият преизчислява крипто-заглавките, не им вярва на формата
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -203,6 +204,7 @@ const ANCHORS = {
   'DEF-93': { file: 'thunderbird-contract.cjs', contains: 'sanitizeCustomHeaderName' },
   'DEF-94': { file: 'thunderbird-contract.cjs', contains: 'loadedAddonVersion' },
   'DEF-95': { file: 'thunderbird-header-budget.cjs', contains: 'RFC_LIMIT' },
+  'DEF-96': { file: 'psemp-suites.cjs', contains: 'a tampered digest row is caught by re-deriving the block' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

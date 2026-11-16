@@ -47,6 +47,36 @@ for (const name of suites) {
     `серията ${name} не е отчетена като минала`);
 }
 
+// 1б. Проверяващият ВЪЗСТАНОВЯВА крипто-заглавките, вместо да им вярва на формата (DEF-96).
+// `all.cjs` отчита само по ред на файл, затова серията се пуска отделно: 64 hex знака и 25
+// цифри изглеждат еднакво добре и когато са измислени, тоест стойността трябва да бъде
+// ПРЕИЗЧИСЛЕНА. Две неща го пазят: истинско писмо дава поне 25 проверки (проверка по форма
+// дава 19), а всяка от петте подправки трябва да бъде хваната ИМЕННО от преизчисляването.
+const checkSent = spawnSync(process.execPath, [path.join(SUITEDIR, 'check-sent.cjs')], {
+  cwd: ROOT,
+  encoding: 'utf8',
+  maxBuffer: 64 * 1024 * 1024,
+});
+assert.equal(checkSent.status, 0, 'серията check-sent не минава:\n' + checkSent.stdout + checkSent.stderr);
+const genuine = checkSent.stdout.match(/passes every check \((\d+) checks/);
+assert.ok(genuine, 'отчетът не казва колко проверки е направил по истинско писмо');
+assert.ok(
+  Number(genuine[1]) >= 25,
+  `истинско писмо дава ${genuine[1]} проверки, а преизчисляването на крипто-заглавките иска поне 25`
+);
+for (const name of [
+  'a tampered digest row is caught by re-deriving the block',
+  'a tampered engine code no longer matches the evidence',
+  'a flipped ciphertext byte fails the GCM tag',
+  'a tampered Headers-SHA256 does not seal the signed record',
+  'a tampered Subject is caught by the signed record',
+]) {
+  assert.ok(
+    checkSent.stdout.includes(name),
+    `проверката „${name}“ липсва в отчета — подправка пак минава за истинско писмо`
+  );
+}
+
 // 2. Червена серия се вижда като червена, с изхода си, и пускът пада.
 const mixed = tmp('mixed');
 try {

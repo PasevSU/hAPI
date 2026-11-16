@@ -509,6 +509,27 @@ recomputes the Merkle root. It reuses `api.js` (`sha256Hex`, `verifyManifest`,
 `verifyEvidence`) rather than re-implementing the hashes, so a disagreement means
 the message and the code disagree, not that two implementations drifted.
 
+That reuse goes further than the hashes. A header whose only test is its *shape* —
+64 hex characters, 25 digits, something that looks like a ciphertext — passes whether
+or not it was ever computed, which is exactly how a forged layer 1 would verify as OK.
+So the tool also **rebuilds** each crypto header from the manifest with the same
+`api.js` functions the emitter was written against, and compares:
+
+| Header | Rebuilt with | What a forgery breaks |
+| --- | --- | --- |
+| `X-PasevSU-Sha256` | `buildDigestBlock` | one changed hash row |
+| `X-PasevSU-Cripto-Engine` | `cryptoEngineCode` | one changed digit |
+| `X-PasevSU-Cripto-title` | `decryptDigestBlock` | the GCM tag, then the plaintext comparison |
+| `X-PasevSU-Attachments-SHA256` | the file rows of the rebuilt block | one `name=hash` pair |
+| `X-PasevSU-Headers-SHA256` | `sha256(JSON(signed_headers))` | one character of the seal |
+
+The `Subject`, the `Message-ID` and the attachment set are checked against the signed
+record inside the manifest, so metadata cannot be swapped after signing. `from`, `to`
+and `date` are sealed by `headers_sha256` but are **not** compared with the live
+envelope: a local Sent copy does not carry the envelope the message was delivered
+with, and inventing one would be a check that cannot fail for the right reason.
+`psemp-gateway/PROTOCOL.md` §13.1 lists the same table with those limits stated.
+
 ### Which mailbox is "Sent"
 
 By the folder's own name, in the languages Thunderbird translates it into:

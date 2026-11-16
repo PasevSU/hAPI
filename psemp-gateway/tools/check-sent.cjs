@@ -28,7 +28,15 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { StringDecoder } = require('node:string_decoder');
-const { sha256Hex, verifyManifest, verifyEvidence } = require('../api.js');
+const {
+  sha256Hex,
+  verifyManifest,
+  verifyEvidence,
+  buildDigestBlock,
+  parseBlock,
+  cryptoEngineCode,
+  decryptDigestBlock,
+} = require('../api.js');
 
 const MANIFEST = 'PasevSU_Manifest.json';
 
@@ -118,6 +126,21 @@ function decodeEncodedWords(value) {
   return value.replace(/=\?UTF-8\?B\?([A-Za-z0-9+/=]+)\?=/gi, (whole, base64) =>
     Buffer.from(base64, 'base64').toString('utf8')
   );
+}
+
+/**
+ * A subject compared for MEANING, not for rendering.
+ *
+ * Thunderbird rewrites `Subject` on send: it re-folds long lines and re-encodes non-ASCII
+ * as RFC 2047, and the WAR marker sits behind `{{ }}` where an editor may add a space. A
+ * byte comparison would therefore report the client's formatting as tampering. Collapsing
+ * whitespace keeps the check honest — different words, a dropped marker or a swapped case
+ * id still fails — without a false alarm on the first real message.
+ */
+function subjectKey(value) {
+  return String(value == null ? '' : value)
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
@@ -285,9 +308,6 @@ function inspectMessage(text) {
   const listed = listedRaw || '';
   if (Number.isInteger(declaredChunks) && declaredChunks > 0 && listedRaw === null) {
     add('Attachments-SHA256 header reassembles from its chunks', false, 'a chunk is missing');
-  } else if (claimed.length) {
-    const names = claimed.map((entry) => entry.filename).join(',');
-    add('Attachments-SHA256 header lists every manifest attachment', listed.split(',').length === claimed.length, names);
   }
 
   // Every attachment the manifest lists must be present with the claimed bytes.
@@ -311,6 +331,142 @@ function inspectMessage(text) {
     // Signature and timestamp sidecars describe the manifest; they are not payload.
     if (/\.(asc|ots)$/i.test(name)) continue;
     add(`attachment ${name} is in the manifest`, listedNames.has(name), listedNames.has(name) ? '' : 'not listed');
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAYER 1, RE-DERIVED.
+  //
+  // Everything above treats the crypto headers as opaque strings: `X-PasevSU-Sha256`
+  // could name a different file, `Cripto-Engine` could be any 25 digits, and
+  // `Cripto-title` could be a ciphertext from another message. The composer exports
+  // the exact functions that BUILT them, so the strongest available check is to
+  // rebuild each one from the manifest and compare — a forgery that changes one
+  // digit or one hash row no longer verifies.
+  // ---------------------------------------------------------------------------
+  const created = headerGetJoined(headers, 'X-PasevSU-Created') || '';
+  const engine = headerGetJoined(headers, 'X-PasevSU-Cripto-Engine') || '';
+  const bodyHash = headerGetJoined(headers, 'X-PasevSU-Body-SHA256') || '';
+
+  const expectedEngine = cryptoEngineCode({ merkleRoot: merkle, bodySha256: bodyHash });
+  add(
+    'Cripto-Engine is the code this evidence derives',
+    engine === expectedEngine,
+    engine ? `wire=${engine} derived=${expectedEngine}` : 'absent'
+  );
+
+  // The digest block is a contract: the body, then every manifest attachment in
+  // order, then the timestamp. Rebuilding it catches a swapped hash, a dropped
+  // file, a renamed row and a shifted timestamp in a single comparison.
+  const expectedRows = buildDigestBlock({
+    bodySha256: bodyHash,
+    attachmentEntries: claimed,
+    timestamp: created,
+  });
+  const wireRows = parseBlock(headerGetJoined(headers, 'X-PasevSU-Sha256'));
+  const rowDiff = [];
+  if (wireRows.length !== expectedRows.length) {
+    rowDiff.push(`${wireRows.length} rows, expected ${expectedRows.length}`);
+  }
+  for (let index = 0; index < Math.max(wireRows.length, expectedRows.length); index += 1) {
+    if (wireRows[index] !== expectedRows[index]) {
+      rowDiff.push(
+        `row ${index + 1}: wire=${wireRows[index] || 'absent'} expected=${expectedRows[index] || 'absent'}`
+      );
+    }
+  }
+  add(
+    'Sha256 block re-derives from the manifest',
+    rowDiff.length === 0,
+    rowDiff.length ? rowDiff.slice(0, 3).join('; ') : `${expectedRows.length} rows`
+  );
+
+  add(
+    'Body-SHA256 is the manifest message hash',
+    manifest.message_sha256 === bodyHash,
+    bodyHash ? `header=${bodyHash} manifest=${manifest.message_sha256}` : 'absent'
+  );
+
+  // The list header restates the same name/hash pairs, so it is compared on CONTENT, not
+  // on count: a message can carry a correct digest block and a tampered `name=hash` list,
+  // and the row comparison above would not notice. The expected pairs are derived from
+  // the rebuilt rows, so `headerToken`'s escaping is applied exactly once, by the composer.
+  if (claimed.length) {
+    const expectedList = expectedRows
+      .slice(1, -1)
+      .map((row) => {
+        const cut = row.lastIndexOf(' - ');
+        return `${row.slice(0, cut)}=${row.slice(cut + 3)}`;
+      })
+      .join(',');
+    add(
+      'Attachments-SHA256 lists the same pairs as the digest block',
+      listed === expectedList,
+      listed === expectedList
+        ? `${claimed.length} files`
+        : `wire=${listed.slice(0, 96)}… expected=${expectedList.slice(0, 96)}…`
+    );
+  }
+
+  // The encrypted title must decrypt under the engine code and hold exactly the block
+  // above. GCM's authentication tag is why a single flipped byte fails here rather
+  // than passing as "some ciphertext".
+  const titleToken = headerGetJoined(headers, 'X-PasevSU-Cripto-title') || '';
+  let titleRows = null;
+  try {
+    titleRows = decryptDigestBlock(engine, titleToken, { merkleRoot: merkle });
+    add('Cripto-title decrypts under the engine', true, `${titleToken.length} chars`);
+  } catch (err) {
+    add('Cripto-title decrypts under the engine', false, String(err.message));
+  }
+  if (titleRows) {
+    add(
+      'Cripto-title holds the same block as Sha256',
+      titleRows.join('\n') === expectedRows.join('\n'),
+      titleRows.length === expectedRows.length
+        ? `${titleRows.length} rows`
+        : `${titleRows.length} rows, expected ${expectedRows.length}`
+    );
+  }
+
+  // Metadata digest. `verifyEvidence` checks the record against itself, so an edited
+  // `signed_headers` block cannot verify even when every byte still matches; passing the
+  // live Message-ID additionally proves the record describes THIS message's envelope.
+  // `from`, `to` and `date` stay inside the hash but are not compared to the wire:
+  // Thunderbird rewrites `Date` on send, so a mismatch there would report its formatting
+  // rather than tampering. The Subject is compared separately below, normalised on BOTH
+  // sides — `verifyEvidence` compares it raw, which would fail on a re-folded line.
+  const wireMessageId = headerGetJoined(headers, 'X-PasevSU-Message-ID') || '';
+  const wireSubject = subjectKey(decodeEncodedWords(headerGet(headers, 'Subject') || ''));
+  const signedChecks = verifyEvidence(manifest, { messageId: wireMessageId }).checks;
+  for (const check of signedChecks) {
+    if (check.name === 'headers-sha256') add('signed header record hashes to its own seal', check.ok, check.detail);
+    if (check.name === 'headers-match-message') {
+      add('signed record binds this Message-ID and attachment set', check.ok, check.detail);
+    }
+  }
+  const signedRecord = manifest.signed_headers && typeof manifest.signed_headers === 'object' ? manifest.signed_headers : null;
+  if (signedRecord) {
+    const signedSubject = subjectKey(decodeEncodedWords(String(signedRecord.subject == null ? '' : signedRecord.subject)));
+    if (!wireSubject) {
+      // The gateway writes custom headers only; `Subject` is the message envelope, so a
+      // message built for a test has none. Absent is not tampered — the comparison simply
+      // cannot be made, and saying so is more honest than a green tick it did not earn.
+      add('signed record binds this Subject', true, 'no Subject on the wire, not compared');
+    } else {
+      add(
+        'signed record binds this Subject',
+        signedSubject === wireSubject,
+        signedSubject === wireSubject ? wireSubject : `manifest=${signedSubject} wire=${wireSubject}`
+      );
+    }
+  }
+  const wireHeadersHash = headerGetJoined(headers, 'X-PasevSU-Headers-SHA256') || '';
+  if (signedRecord && signedRecord.headers_sha256) {
+    add(
+      'Headers-SHA256 header states the manifest seal',
+      wireHeadersHash === signedRecord.headers_sha256,
+      wireHeadersHash ? `wire=${wireHeadersHash} manifest=${signedRecord.headers_sha256}` : 'absent'
+    );
   }
 
   // The body is informational, never a failure: the extension hashes the compose

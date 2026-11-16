@@ -38,8 +38,15 @@ const {
   streamMessages,
   newestSent,
 } = require('../tools/check-sent.cjs');
+const { appendWarMarker } = require('../api.js');
 
 const MANIFEST = MANIFEST_FILENAME;
+
+// A real message leaves the compose window with the WAR marker on its Subject, because
+// the extension returns `subject: warSubject` from onBeforeSend. The fixtures carry it
+// too — otherwise they would model a message the add-on cannot produce, and the check
+// that binds Subject to the signed record would never be exercised.
+const WAR_SUBJECT = appendWarMarker('evidence test');
 
 /* --- build a message from the extension's own output ----------------------- */
 
@@ -52,7 +59,7 @@ const MANIFEST = MANIFEST_FILENAME;
  * to the extension are integers here too — a string id is not something Thunderbird
  * produces, and the extension skips it.
  */
-async function runExtension({ body = 'Forensic body', files = [] } = {}) {
+async function runExtension({ body = 'Forensic body', files = [], subject = 'evidence test' } = {}) {
   const attachments = {};
   files.forEach((file, index) => {
     attachments[index + 1] = { name: file.name, bytes: file.bytes };
@@ -65,6 +72,7 @@ async function runExtension({ body = 'Forensic body', files = [] } = {}) {
   const details = {
     isPlainText: true,
     body,
+    subject,
     attachments: files.map((file, index) => ({ id: index + 1, name: file.name })),
     customHeaders: [],
   };
@@ -85,9 +93,17 @@ function base64Lines(buffer) {
  * Assemble a MIME message. `parts` are extra body parts; the manifest is added
  * unless `includeManifest` is false, which is how a dropped manifest is simulated.
  */
-function buildMessage({ headers, manifestBytes, body = 'Forensic body', attachmentParts = [], includeManifest = true, recase = false }) {
+function buildMessage({
+  headers,
+  manifestBytes,
+  body = 'Forensic body',
+  attachmentParts = [],
+  includeManifest = true,
+  recase = false,
+  subject = WAR_SUBJECT,
+}) {
   const boundary = 'psemp-test-boundary';
-  const lines = ['From: sender@example.test', 'To: recipient@example.test', 'Subject: evidence test', 'MIME-Version: 1.0'];
+  const lines = ['From: sender@example.test', 'To: recipient@example.test', `Subject: ${subject}`, 'MIME-Version: 1.0'];
 
   for (const [name, value] of headers) {
     // Thunderbird hands custom header names back in Http-Header-Case; the checker
@@ -210,6 +226,95 @@ check('a message with no evidence headers fails rather than passing vacuously', 
   return 'absence of evidence is not evidence';
 });
 
+/**
+ * Rewrite one custom header before the message is assembled, the way an attacker with
+ * access to the sending host — or a mail server that rewrites headers — could.
+ */
+function tamper(headers, name, transform) {
+  return Array.from(headers, ([key, value]) =>
+    key.toLowerCase() === name.toLowerCase() ? [key, transform(value)] : [key, value]
+  );
+}
+
+/* --- layer 1: the crypto headers are re-derived, not trusted ---------------- */
+
+check('a tampered digest row is caught by re-deriving the block', async () => {
+  const files = [{ name: 'notes.txt', bytes: Buffer.from('attachment body') }];
+  const { headers, manifestBytes } = await runExtension({ files });
+  const honest = sha256Hex(files[0].bytes);
+  const forged = 'f'.repeat(64);
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-Sha256', (value) => value.split(honest).join(forged)),
+    manifestBytes,
+    attachmentParts: files,
+  });
+  assert.ok(message.includes(forged), 'the fixture must actually carry the forged row');
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('Sha256 block re-derives from the manifest'),
+    `forged digest row must fail: ${failing(result).join(', ') || 'nothing failed'}`
+  );
+  return 'forged row rejected';
+});
+
+check('a tampered engine code no longer matches the evidence', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-Cripto-Engine', (value) => (value[0] === '0' ? '1' : '0') + value.slice(1)),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('Cripto-Engine is the code this evidence derives'),
+    'one changed digit must break the derivation'
+  );
+  return 'forged engine code rejected';
+});
+
+check('a flipped ciphertext byte fails the GCM tag', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-Cripto-title', (value) => {
+      const segments = value.split('.');
+      const body = segments[3] || '';
+      segments[3] = (body[0] === 'A' ? 'B' : 'A') + body.slice(1);
+      return segments.join('.');
+    }),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('Cripto-title decrypts under the engine'),
+    'the authentication tag must reject the edit'
+  );
+  return 'tampered ciphertext rejected';
+});
+
+check('a tampered Headers-SHA256 does not seal the signed record', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-Headers-SHA256', (value) => (value[0] === 'a' ? 'b' : 'a') + value.slice(1)),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('Headers-SHA256 header states the manifest seal'),
+    'the seal on the wire must equal the one the manifest declares'
+  );
+  return 'tampered metadata seal rejected';
+});
+
+check('a tampered Subject is caught by the signed record', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({ headers, manifestBytes, subject: 'a different case {{ PasevSU-WAR }}' });
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('signed record binds this Subject'),
+    `a swapped subject must fail: ${failing(result).join(', ') || 'nothing failed'}`
+  );
+  return 'swapped subject rejected';
+});
+
 check('header names are matched case-insensitively', async () => {
   const { headers, manifestBytes } = await runExtension();
   // Every name and value rewritten the way Thunderbird returns them.
@@ -225,7 +330,7 @@ check('a quoted-printable body part is decoded before it is compared', async () 
   const boundary = 'qp-boundary';
   const message = [
     'From: a@example.test',
-    'Subject: qp',
+    `Subject: ${WAR_SUBJECT}`,
     ...Array.from(headers, ([name, value]) => `${name}: ${value}`),
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
     '',

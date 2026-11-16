@@ -758,6 +758,38 @@ Steps 1–3 need nothing but `sha256sum` and a text editor. Steps 4–5 need `gp
 Step 7 needs a store. `psemp-gateway` automates all seven in `verifyEvidence()`; individual
 checks report separately so a partial failure is diagnosable rather than a single red mark.
 
+### 13.1 What a verifier re-derives, and what it must take on trust
+
+Reading a header is not verification. A string that merely *looks* like a hash, a 25-digit
+code and a ciphertext would pass any check that only tests its shape, and a forged layer 1
+would report OK. So `tools/check-sent` does not describe the headers, it **rebuilds** them:
+it imports the same composer functions the emitter was written against and compares the
+result with what arrived on the wire.
+
+| Value | Re-derived from | A forgery that changes… |
+| --- | --- | --- |
+| `X-PasevSU-Sha256` block | `buildDigestBlock(bodySha256, attachments, created)` | one hash row fails |
+| `X-PasevSU-Cripto-Engine` | `cryptoEngineCode({merkleRoot, bodySha256})` | one digit fails |
+| `X-PasevSU-Cripto-title` | `decryptDigestBlock(engine, token, {merkleRoot})` | one ciphertext byte fails the GCM tag, and the plaintext must equal the digest block |
+| `X-PasevSU-Attachments-SHA256` | the file rows of the rebuilt block | one `name=hash` pair fails |
+| `X-PasevSU-Headers-SHA256` | `sha256(JSON(signed_headers))` | one character of the seal fails |
+| `Subject`, `Message-ID`, attachment set | `signed_headers` inside the manifest | a swapped Subject or a removed file fails |
+
+The `Subject` is compared after decoding RFC 2047 words and collapsing whitespace, because a
+mailbox may re-fold it; meaning is compared, not rendering.
+
+What it **cannot** do, and does not pretend to:
+
+- `from`, `to` and `date` are covered by `headers_sha256` (so altering them breaks the seal)
+  but are not compared with the live envelope, because the envelope a message arrives with
+  is not in the local Sent copy. Step 6 above is a recipient-side check.
+- Layer 1 is a **commitment, not a signature** (§8.1): its key is derived from public
+  material so that any verifier can reproduce it. It proves the headers and the manifest
+  agree with each other, nothing about who sent them. Only layer 2 — Thunderbird's own
+  OpenPGP signature over the message — carries an identity.
+- `X-PasevSU-PGP-Fingerprint` is a *claim* until `gpg --verify` compares it with the real
+  signer. `check-sent` cannot run that comparison; `pgp-check` can, given the signed file.
+
 ---
 
 ## 14. Technique ledger
