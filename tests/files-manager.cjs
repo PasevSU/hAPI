@@ -76,18 +76,16 @@ assert.match(src, /fm-detail/); assert.match(src, /Контролен панел
 assert.match(src, /createPortal/);
 assert.match(src, /generateApi/);
 assert.match(src, /qrSvg/);
-// QR кодът в картата кодира СТРАНИЦАТА на портала (`api.folderUrl` — тя отваря папката му,
-// иначе `api.landing`, по id), а не адреса на SVG изображението: сканиран, той трябва да
-// отвори портала с файловете му, а не `/api/v1/p/<slug>/qr.svg`.
-assert.match(src, /const qrUrl = api \? api\.folderUrl \|\| api\.landing/);
-assert.match(src, /qrSvg\(qrUrl\)/);
-assert.equal(/qrSvg\(api\.qrUrl\)/.test(src), false, 'QR кодът не бива да кодира адреса на SVG-то');
-// 0.69.199: панелът НЕ изрежда технически адреси и НЕ рисува кода в контролния панел —
-// кодът е в главата на картата и е връзка към портала.
-assert.match(src, /class="pf-qr-pop-link"/, 'QR кодът се показва като връзка с изображение');
-// 0.69.179: кодът е ЕДИН — на портала. Файлът и папката нямат собствен код (иначе при 30
-// файла човек вижда 30 кода, а файловият носи подписан адрес с живот един час).
-assert.equal(/data-file-qr/.test(src), false, 'файлът няма собствен QR код');
+// QR кодът вече НЕ е поповер в картата: брошката отваря ГЛОБАЛНОТО QR студио
+// (`ui/qr-studio.js`), което строи кода на всяко ниво от готовите адреси на договора.
+assert.match(src, /function qrStudioLevels\(x\)/, 'нивата за студиото се строят на едно място');
+assert.match(src, /function openQrStudio\(x\)/, 'брошката отваря едно глобално студио');
+assert.match(src, /createLink: \(lv, opts\) => createShareLink\(x, lv, opts\)/, 'временните връзки минават през студиото');
+assert.match(src, /api\/portals\/\$\{encodeURIComponent\(x\.id\)\}\/links/, 'връзката се издава от административния API');
+assert.equal(/data-qr-pop|pf-qr-pop-link/.test(src), false, 'поповерът е премахнат — кодът е в прозореца');
+// 0.69.179: файлът няма отделен собствен код в КАРТАТА (иначе при 30 файла човек вижда 30 кода);
+// в студиото нивата се избират едно по едно.
+assert.equal(/data-file-qr/.test(src), false, 'файлът няма собствен QR код в картата');
 assert.equal(/qrMarkup/.test(src), false, 'няма отделно рисуване на код за файл');
 assert.equal(/<dt>QR изображение<\/dt>/.test(src), false, 'адресът на SVG-то не е ред в панела');
 // Частен портал: адресите носят ПОДПИСАН достъп — без него връщат 404 (portal-access.js).
@@ -399,7 +397,11 @@ assert.match(src, /function wireMenus/);
 // код е връзка (`<a href>`) към публичния портал. Дотук тук стоеше отделен блок „Достъп и
 // QR код“ с пет бутона и двойно щракване върху кода; блокът е махнат заедно с тях.
 assert.match(src, /data-qr-portal="\$\{i\}"/, 'главата на картата има QR бутон');
-assert.match(src, /class="pf-qr-pop-link" href="\$\{esc\(qrUrl\)\}"/, 'кодът е връзка към публичния портал');
+  // 0.69.229: бутонът отваря ГЛОБАЛНОТО QR студио (един прозорец за всички нива), а входът
+  // към публичния портал живее в него като истинска връзка — не като код с `href` върху себе си.
+  assert.match(src, /data-qr-portal="\$\{i\}" aria-haspopup="dialog"/, 'бутонът обявява, че отваря прозорец');
+  assert.match(src, /openQrStudio\(target\)/, 'щракването отваря студиото за ТОЗИ портал');
+  assert.match(src, /function openQrStudio/, 'студиото се отваря от една функция');
 assert.equal(/id="pf-open-portal"/.test(src), false, 'отделният бутон „Отвори портала“ е махнат');
 // Надписът вече е в речника (BG/EN/DE) — затова се проверява ключът И българската стойност.
 const dict = require(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'i18n.js')).DICT;

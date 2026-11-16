@@ -107,6 +107,7 @@ const GUARDS = {
   'DEF-88': ['static-etag.cjs'], // тялото живее в паметта, а ETag дава 304 без тяло
   'DEF-89': ['option-secrets.cjs'], // тайните опции се прикриват в лога и по име на променлива
   'DEF-90': ['option-effects.cjs'], // опция „само при първи старт“ не се описва като мъртва
+  'DEF-91': ['folder-delete.cjs', 'portal-card-link.cjs'], // кодът на ниво носи подписа, иначе е счупена картинка
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -143,7 +144,7 @@ const ANCHORS = {
   'DEF-30': { file: 'portal-page-render.cjs', contains: 'посетител' },
   'DEF-31': { file: 'portal-qr-levels.cjs', contains: 'ПУБЛИЧНАТА страница, не API-то' },
   'DEF-32': { file: 'portal-tokens.cjs', contains: 'еднократ' },
-  'DEF-33': { file: 'portal-card-link.cjs', contains: 'landing' },
+  'DEF-33': { file: 'portal-card-link.cjs', contains: 'openQrStudio' },
   'DEF-34': { file: 'portal-page.cjs', contains: 'qr-panel' },
   'DEF-35': { file: 'signed-url-restart.cjs', contains: 'restart' },
   'DEF-36': { file: 'gui-sections.cjs', contains: 'data-action' },
@@ -172,7 +173,7 @@ const ANCHORS = {
   'DEF-60': { file: 'render-sinks-global.cjs', contains: 'SAFE_FRAME' },
   'DEF-61': { file: 'addon-image-pipeline.cjs', contains: 'branches: [main]' },
   'DEF-62': { file: 'ui-inline-style-csp.cjs', contains: '::-webkit-progress-value' },
-  'DEF-63': { file: 'gui-portal-create-contract.cjs', contains: 'pf-qr-pop-links' },
+  'DEF-63': { file: 'gui-portal-create-contract.cjs', contains: 'qs-link-row' },
   'DEF-64': { file: 'server-modules.cjs', contains: 'server_module' },
   'DEF-70': { file: 'portal-creation-contract.cjs', contains: 'sigOf' },
   'DEF-65': { file: 'logic-audit-fresh.cjs', contains: 'if (save || gate)' },
@@ -193,6 +194,7 @@ const ANCHORS = {
   'DEF-88': { file: 'static-etag.cjs', contains: 'If-None-Match' },
   'DEF-89': { file: 'option-secrets.cjs', contains: 'тайна опция не се прикрива в лога' },
   'DEF-90': { file: 'option-effects.cjs', contains: 'не твърди, че кодът не го чете' },
+  'DEF-91': { file: 'folder-delete.cjs', contains: 'подписът влиза и в адреса на кода' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

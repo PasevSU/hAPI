@@ -123,9 +123,14 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       openCard.click();
       const qrBtn = await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът на портала' });
       qrBtn.click();
-      const qrLink = await waitFor(() => host.querySelector('.pf-qr-pop-link'), { label: 'връзката върху QR кода' });
-      const signed = String(qrLink.getAttribute('href') || '');
+      // 0.69.229: кодът е в ГЛОБАЛНОТО студио; подписаният адрес стои като текст в рамката
+      // и в реда „Публичен портал“ (с копче за копиране), а не като `href` върху картинката.
+      const studio = await waitFor(() => w.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
+      const caption = await waitFor(() => studio.querySelector('.qs-caption-url'), { label: 'адреса под кода' });
+      const signed = String(caption.textContent || '');
       assert.match(signed, /\?expires=\d+&sig=[a-f0-9]{64}$/, 'адресът на частен портал носи подпис: ' + signed);
+      const copyBtn = studio.querySelector('[data-qs-copy]');
+      assert.ok(copyBtn, 'адресът има „Копирай“');
       const ok = await fetch(signed);
       await ok.text();
       assert.equal(ok.status, 200, 'подписаният адрес от панела се отваря');

@@ -243,9 +243,9 @@
     contracts: {},
     selected: null,
     panel: 'actions',
-    // Кой QR поповер е отворен (`data-qr-pop`). След създаване на портал се вдига веднага —
-    // кодът е готов и е първото, което човек показва или печата.
-    qrOpen: null,
+    // След създаване на портал QR студиото се отваря само: кодът е първото, което човек
+    // показва или печата, и дотук поповерът се вдигаше наготово — сега същото, но с четирите
+    // раздела на глобалния прозорец.
     query: '',
     type: 'all',
     access: 'all',
@@ -1029,19 +1029,89 @@
   }
 
   /**
-   * Трите адреса от договора, показани до QR кода: порталът (човешката страница), API-то и
-   * — когато е поискан — адресът на прегледа. Те съществуват ОЩЕ при създаването, дори когато
-   * порталът е още празен; затова тук няма условие „има ли файлове“.
+   * Нивата за QR студиото: порталът, всяка папка и всеки файл от ЗАРЕДЕНОТО дърво.
+   * Нивото носи готовите адреси (страница · API · изтегляне · само за преглед), за да не
+   * строи прозорецът нищо сам — иначе адресите щяха да се разминат с тези на сървъра.
    */
-  function contractLinks(x) {
-    const c = state.contracts[x.id];
-    if (!c) return '';
-    const row = (label, url, cls) =>
-      // Без отваряне в нов таб: панелът живее в iframe през Home Assistant Ingress и нов
-      // таб излиза извън него (това е договор на панела — пази го `tests/files-manager.cjs`).
-      `<a class="pf-qr-pop-link-txt ${cls || ''}" href="${esc(url)}" rel="noopener">${esc(label)}</a>`;
-    const view = c.readOnly && c.readOnly.page ? row(T('portal.contract.preview'), c.readOnly.page) : '';
-    return `<p class="pf-qr-pop-links">${row(T('portal.contract.page'), c.page)}${row(T('portal.contract.api'), c.api)}${view}</p>`;
+  function qrStudioLevels(x) {
+    const c = state.contracts[x.id] || {};
+    const q = (x && x.accessQuery) || '';
+    const withQ = (u) => (typeof u === 'string' && u && q ? u + (u.includes('?') ? '&' + q.slice(1) : q) : u);
+    const root = linkBase();
+    const levels = [
+      {
+        rel: '',
+        label: T('qr.level.portal'),
+        page: withQ(c.page || `${root}/p/${encodeURIComponent(x.id)}`),
+        api: withQ(c.api || ''),
+        download: '',
+        readOnly: c.readOnly && c.readOnly.page ? withQ(c.readOnly.page) : '',
+        short: T('qr.level.portalShort'),
+      },
+    ];
+    const tree = state.tree && state.tree.portalId === x.id ? (state.tree.data && state.tree.data.tree) || null : null;
+    if (!tree) return levels;
+    const folderPage = (rel) => withQ(`${root}/p/${encodeURIComponent(x.id)}?folder=${encodeURIComponent('/' + rel)}`);
+    const filePage = (rel) =>
+      withQ(`${root}/file.html:${encodeURIComponent(x.slug)}/${rel.split('/').map(encodeURIComponent).join('/')}`);
+    const walk = (node) => {
+      for (const sub of node.folders || []) {
+        levels.push({ rel: sub.path, label: treePath(sub.path), page: folderPage(sub.path), api: '', download: '', readOnly: '', short: sub.name });
+        walk(sub);
+      }
+      for (const file of node.files || []) {
+        levels.push({
+          rel: file.path,
+          label: file.name,
+          page: filePage(file.path),
+          api: '',
+          download: withQ(file.url || ''),
+          readOnly: '',
+          short: file.name,
+        });
+      }
+    };
+    walk(tree);
+    return levels;
+  }
+
+  /** Временна връзка през административния API (срок · само за четене · парола). */
+  async function createShareLink(x, lv, opts) {
+    const o = opts || {};
+    const body = { readOnly: o.readOnly === true };
+    if (o.ttlSeconds) body.ttlSeconds = Number(o.ttlSeconds);
+    if (o.password) body.password = String(o.password);
+    const r = await api(`/admin/api/portals/${encodeURIComponent(x.id)}/links`, { method: 'POST', json: body });
+    if (!r.ok || !r.data || !r.data.link) throw new Error((r.data && r.data.error) || T('qr.temp.failed'));
+    const link = r.data.link;
+    // Адресът се строи от базата на панела: `/x/<id>` е публичен път на СЪЩИЯ сървър.
+    return {
+      url: `${base()}${link.url}`,
+      expiresAt: link.expiresAt,
+      readOnly: link.readOnly,
+      hasPassword: link.hasPassword,
+      level: lv && lv.label,
+    };
+  }
+
+  /**
+   * Отваря ГЛОБАЛНОТО QR студио (`ui/qr-studio.js`) за портала. Едно място за всички нива:
+   * обикновен код · само за преглед · временна връзка с парола и срок · списък на папки и файлове.
+   */
+  function openQrStudio(x) {
+    const studio = window.HapiQrStudio;
+    if (!studio || typeof studio.open !== 'function') {
+      toast(T('qr.missing'), 'err');
+      return false;
+    }
+    const levels = qrStudioLevels(x);
+    return studio.open({
+      title: x.title || x.slug,
+      levels,
+      index: 0,
+      qrSvg,
+      createLink: (lv, opts) => createShareLink(x, lv, opts),
+    });
   }
 
   function generateApi(p, quiet, access) {
@@ -1238,9 +1308,10 @@
     const added = await uploadFolderFiles(foldered);
     await generateApiForPortal(portal());
     // QR кодът се показва САМ: порталът е създаден с решена видимост, кодът вече съществува
-    // и е точно това, което човек ще покаже/отпечата. Без това се налагаше да се сети да
-    // натисне иконата QR в заглавния ред на картата.
-    state.qrOpen = created.data.id;
+    // и е точно това, което човек ще покаже/отпечата. Отваря се ГЛОБАЛНОТО студио — същият
+    // прозорец, който брошката в главата на картата отваря по-късно.
+    const fresh = portal();
+    if (fresh) openQrStudio(fresh);
     toast(
       T(added ? 'portal.create.qrReadyFiles' : 'portal.create.qrReady', {
         slug,
@@ -2056,10 +2127,6 @@
     const api = state.api[x.id];
     const ctc = contactOf(x.contactId);
     const kase = caseOf(x.caseId);
-    // Адресът, който носи QR кодът: страницата на портала с папката (`?folder=`), а не
-    // SVG-то. Същият адрес стои и като `href` на кода, за да води към ПУБЛИЧНИЯ портал.
-    const qrUrl = api ? api.folderUrl || api.landing || '' : '';
-    const qrSvgMarkup = qrUrl ? qrSvg(qrUrl) : '';
     return `<article class="pf-portal ${single ? 'pf-open pf-single' : ''}" data-portal="${i}">
                   <div class="pf-portal-head">
                     <div class="pf-portal-head-main">
@@ -2087,16 +2154,10 @@
       )})" aria-label="Изтегли пакета">${ICON.download}</button>
                       <button type="button" class="fm-ico-btn pf-report-btn" data-report-portal="${i}" title="Отчет за портала (с всички регистрирани файлове)" aria-label="Отчет за портала">${ico('note')}</button>
                       <button type="button" class="fm-ico-btn pf-report-btn" data-report-recursive="${i}" title="Рекурсивен отчет за портала (с папките от хранилището)" aria-label="Рекурсивен отчет за портала">${ICON.folder}</button>
-                      <button type="button" class="fm-ico-btn pf-qr-btn" data-qr-portal="${i}" aria-expanded="false" aria-controls="pf-qr-pop-${i}" title="${esc(T('portal.qr.button'))}" aria-label="${esc(T('portal.qr.button'))}">${ico('qr')}</button>
+                      <button type="button" class="fm-ico-btn pf-qr-btn" data-qr-portal="${i}" aria-haspopup="dialog" title="${esc(
+        T('portal.qr.button'),
+      )}" aria-label="${esc(T('portal.qr.button'))}">${ico('qr')}</button>
                     </div>
-                  </div>
-                  <div class="pf-qr-pop" id="pf-qr-pop-${i}" data-qr-pop="${i}" ${state.qrOpen === x.id ? '' : 'hidden'}>
-                    ${qrSvgMarkup
-        ? `<a class="pf-qr-pop-link" href="${esc(qrUrl)}" target="_self" rel="noopener" title="${esc(T('portal.qr.button'))}">${qrSvgMarkup}</a>`
-        : `<p class="hint">${esc(T('portal.qr.missing'))}</p>`
-      }
-                    <p class="pf-qr-pop-note">${esc(T('portal.qr.note'))}</p>
-                    ${contractLinks(x)}
                   </div>
                   <hr class="u-divider" />
                   <p class="fm-file-sub">${ICON.topic} категория: <code>${esc(
@@ -2641,8 +2702,13 @@
       actionsPane,
       // Адресът на QR за ВСЕКИ възел (портал, папка, файл): сървърът строи SVG-то, панелът
       // само сочи към него. Така кодът в панела е същият, който вижда посетителят.
-      qrLevel: (rel) =>
-        `${base()}/api/v1/p/${encodeURIComponent(p.id)}/tree/qr.svg?path=${encodeURIComponent('/' + String(rel || ''))}`,
+      // ПОДПИСЪТ СЕ ДОБАВЯ: за частен портал `/api/v1/p/...` без `?expires=&sig=` дава 404 и
+      // дотук точно това чупеше изображенията („счупена картинка“ вместо код).
+      qrLevel: (rel) => {
+        const own = accessOf(p).query || '';
+        const qs = 'path=' + encodeURIComponent('/' + String(rel || '')) + (own ? '&' + own.slice(1) : '');
+        return `${linkBase()}/api/v1/p/${encodeURIComponent(p.id)}/tree/qr.svg?${qs}`;
+      },
       // Списъкът с действия се ползва и от изскачащото меню ⚙ на файла.
       ACTIONS: ACTIONS.concat(EXTRA_ACTIONS),
       contactSelect,
@@ -3728,47 +3794,17 @@
         });
       });
     }
-    // QR кодът е БУТОН в главата на картата (горе вдясно) и се показва/скрива с него.
-    // Самият код е връзка към ПУБЛИЧНИЯ портал (`href`), тоест входът е един и води там,
-    // където трябва — в портала, а не към API-то.
+    // QR кодът е БУТОН в главата на картата (горе вдясно, до другите брошки) и отваря
+    // ГЛОБАЛНОТО QR студио: един прозорец с четири раздела, който важи за всяко ниво —
+    // портала, всяка папка и всеки файл. Дотук тук имаше поповер с един код и отделна
+    // мрежа „QR за всяко ниво“ в блока с папките; двете казваха едно и също по два начина.
     host.querySelectorAll('[data-qr-portal]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const pop = host.querySelector(`[data-qr-pop="${btn.dataset.qrPortal}"]`);
-        if (!pop) return;
-        pop.hidden = !pop.hidden;
-        btn.setAttribute('aria-expanded', String(!pop.hidden));
+        const i = Number(btn.dataset.qrPortal);
+        const target = state.portals[i];
+        if (target) openQrStudio(target);
       });
     });
-    // Затваря отворените панелчета. С `returnFocus` фокусът се връща на бутона: Escape е
-    // клавиатурно действие и без това фокусът остава върху скрит елемент (невидим за човека,
-    // но не и за Tab).
-    const closeQrPops = (returnFocus) => {
-      if (!host) return;
-      host.querySelectorAll('[data-qr-pop]').forEach((pop) => {
-        if (pop.hidden) return;
-        pop.hidden = true;
-        const btn = host.querySelector(`[data-qr-portal="${pop.dataset.qrPop}"]`);
-        if (!btn) return;
-        btn.setAttribute('aria-expanded', 'false');
-        if (returnFocus && typeof btn.focus === 'function') btn.focus();
-      });
-    };
-    // Escape и клик извън кода. Слушателят е на ДОКУМЕНТА, а `wire()` се вика след всяко
-    // рисуване — затова се закача ВЕДНЪЖ (иначе след десет пре-рисувания има десет слушателя,
-    // които въртят едно и също и броят на извикванията расте).
-    if (!wire.qrCloseBound) {
-      wire.qrCloseBound = true;
-      document.addEventListener('keydown', (e) => {
-        if (!e || e.key !== 'Escape') return;
-        closeQrPops(true);
-      });
-      document.addEventListener('click', (e) => {
-        const t = e && e.target;
-        const inside = t && typeof t.closest === 'function' && (t.closest('[data-qr-pop]') || t.closest('[data-qr-portal]'));
-        if (inside) return;
-        closeQrPops(false);
-      });
-    }
     if (q('#pf-settings')) {
       q('#pf-settings').addEventListener('submit', (e) => {
         e.preventDefault();

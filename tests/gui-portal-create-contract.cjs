@@ -58,15 +58,13 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
     assert.equal(toast.kind, 'ok', 'порталът се създава: ' + toast.message);
 
     // ── Договорът е на екрана, преди да има и един файл ──────────────────────
+    // 0.69.229: адресите живеят в QR студиото — по един ред на адрес (`.qs-link-row`), всеки с
+    // копче за копиране. След създаване студиото се отваря само, затова четем от него.
     const links = () =>
-      Array.from(app.document.querySelectorAll('.pf-qr-pop'))
-        .filter((block) => !block.hasAttribute('hidden'))
-        .flatMap((block) =>
-          Array.from(block.querySelectorAll('.pf-qr-pop-links a')).map((a) => ({
-            href: a.getAttribute('href') || '',
-            label: text(a),
-          })),
-        );
+      Array.from(app.document.querySelectorAll('#qs-modal .qs-link-row')).map((row) => ({
+        href: (row.querySelector('.qs-link-value') || { textContent: '' }).textContent.trim(),
+        label: text(row.querySelector('.qs-link-label')),
+      }));
     const shown = await waitFor(() => {
       const found = links();
       return found.length >= 3 ? found : null;
@@ -84,11 +82,11 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
     assert.match(preview.href, /\/p\//, 'прегледът е страница, не API: ' + preview.href);
     assert.notEqual(page.href, preview.href, 'прегледът е СВОЯ страница, не същата като портала');
 
-    // QR кодът в същия блок сочи ЧОВЕШКАТА страница, не JSON-а.
-    const pop = Array.from(app.document.querySelectorAll('.pf-qr-pop')).find((block) => !block.hasAttribute('hidden'));
-    const qrLink = pop && pop.querySelector('.pf-qr-pop-link');
-    assert.ok(qrLink, 'QR кодът е нарисуван в блока');
-    assert.equal(qrLink.getAttribute('href'), page.href, 'QR кодът сочи страницата на портала');
+// QR кодът в същия прозорец сочи ЧОВЕШКАТА страница, не JSON-а: рамката носи кода, а
+  // адресът е изписан под него — същата стойност, която стои и в реда „Публичен портал“.
+  const qrSvg = app.document.querySelector('#qs-modal .qs-frame svg');
+  assert.ok(qrSvg, 'QR кодът е нарисуван в рамката');
+  assert.equal(shown.find((l) => /\/p\//.test(l.href) && !/\/api\//.test(l.href)).href, page.href, 'QR кодът сочи страницата на портала');
 
     // ── И трите водят до жива страница, макар порталът да е ПРАЗЕН ───────────
     for (const item of [['портал', page], ['преглед', preview], ['API', api]]) {

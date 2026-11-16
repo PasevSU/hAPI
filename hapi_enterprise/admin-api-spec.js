@@ -298,6 +298,11 @@ const ROUTES = [
   ['GET', '/admin/api/portals/{portalId}/qr/{qrId}/archive', 'Сваляне на архивния файл на конкретен QR', 'portals', 'portals'],
   // Закриване на портал (0.69.151): данните отиват в архив за съхранение и се пазят 6 месеца.
   ['POST', '/admin/api/portals/{portalId}/close', 'Закрива портала: данните влизат в архив за съхранение (183 дни)', 'portals', 'portals'],
+  // Връзки за QR студиото (0.69.229): временна · само за четене · с парола. Записът живее в
+  // портала (`links[]`), а публичният адрес `/x/<id>` само пренасочва към подписания достъп.
+  ['GET', '/admin/api/portals/{portalId}/links', 'Връзките за QR (без хеша на паролата)', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/links', 'Нова връзка: срок, само за четене, парола', 'portals', 'portals'],
+  ['DELETE', '/admin/api/portals/{portalId}/links/{linkId}', 'Изтрива връзка за QR', 'portals', 'portals'],
   ['GET', '/admin/api/portals/archive', 'Затворените портали с оставащи дни до изтриване', 'portals', 'portals'],
   ['POST', '/admin/api/portals/archive/{portalId}/restore', 'Връща закрит портал от архива с файловете и адреса му', 'portals', 'portals'],
 

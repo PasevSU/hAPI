@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "hAPI Enterprise — административно API 0.69.228",
+    "name": "hAPI Enterprise — административно API 0.69.229",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Генериран от `hapi_enterprise/admin-api-spec.js` (node scripts/openapi-admin.cjs). Не се редактира на ръка."
   },
@@ -2485,6 +2485,88 @@
               ]
             },
             "description": "Закрива портала: данните влизат в архив за съхранение (183 дни)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Връзките за QR (без хеша на паролата)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/links",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "links"
+              ]
+            },
+            "description": "Връзките за QR (без хеша на паролата)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Нова връзка: срок, само за четене, парола",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/links",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "links"
+              ]
+            },
+            "description": "Нова връзка: срок, само за четене, парола\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтрива връзка за QR",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/links/{linkId}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "links",
+                "{{linkId}}"
+              ]
+            },
+            "description": "Изтрива връзка за QR\n\nПраво (RBAC): `portals`"
           },
           "response": []
         },

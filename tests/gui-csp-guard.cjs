@@ -71,8 +71,9 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
     openCard.click();
     const qrBtn = await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът на портала' });
     qrBtn.click();
-    const qrLink = await waitFor(() => host.querySelector('.pf-qr-pop-link'), { label: 'връзката върху QR кода' });
-    const qrUrl = String(qrLink.getAttribute('href') || '');
+    const studio = await waitFor(() => ui.window.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
+    const caption = await waitFor(() => studio.querySelector('.qs-caption-url'), { label: 'адреса под кода' });
+    const qrUrl = String(caption.textContent || '').trim();
     assert.ok(qrUrl.startsWith(PUBLIC_BASE), 'QR кодът носи публичния адрес: ' + qrUrl);
     // Менюто на ПАПКАТА показва същия публичен адрес, а заявката отива на произхода на
     // панела — точно това пази `sameOrigin()`.

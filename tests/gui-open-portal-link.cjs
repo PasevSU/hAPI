@@ -46,11 +46,14 @@ const PANEL_MODULES = [
 
     const qrBtn = await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът в главата на картата' });
     qrBtn.click();
-    const qrLink = await waitFor(() => host.querySelector('.pf-qr-pop-link'), { label: 'връзката върху QR кода' });
+    // 0.69.229: адресът се чете от РАМКАТА в QR студиото (раздел „Обикновен“) — той е част от
+    // фигурата и е изписан под кода, а не е `href` върху самата картинка.
+    const studio = await waitFor(() => ui.window.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
+    const caption = await waitFor(() => studio.querySelector('.qs-caption-url'), { label: 'адреса под кода' });
 
-    // ── 2. Адресът идва от ГУИ-ТО — от самата връзка върху QR кода ────────────
-    const link = String(qrLink.getAttribute('href') || '').trim();
-    assert.ok(link, 'QR кодът е връзка с адрес');
+    // ── 2. Адресът идва от ГУИ-ТО — от рамката на кода ───────────────────────
+    const link = String(caption.textContent || '').trim();
+    assert.ok(link, 'адресът е изписан под кода');
     assert.match(link, /\/p\/[0-9a-f]{16,}/, 'адресът е на портала: ' + link);
     assert.equal(/:8099|:18099/.test(link), false, 'адресът не носи служебен порт: ' + link);
 

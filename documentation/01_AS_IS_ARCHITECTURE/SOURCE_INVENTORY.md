@@ -1,13 +1,13 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.228
+> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.229
 
-> **Генериран документ.** Версия на кода: **0.69.228**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.229**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **130** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **48** инструмента · **441** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
+Общо: **130** backend модула · **20** HTTP компонента · **30** UI модула · **9** Python модула · **48** инструмента · **442** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
 ### Backend модули (`hapi_enterprise/*.js`) (130)
 
@@ -144,7 +144,7 @@
 | `hapi_enterprise/worm.js` | WORM ЗА ОСНОВНОТО ХРАНИЛИЩЕ — файл, който е влязъл в доказателство, не се презаписва |
 | `hapi_enterprise/x509.js` | Минимален X.509 (self-signed) — за подписване на отчети и за устройствени сертификати. |
 
-### HTTP компоненти (`hapi_enterprise/routes/*.js`) (19)
+### HTTP компоненти (`hapi_enterprise/routes/*.js`) (20)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -159,6 +159,7 @@
 | `hapi_enterprise/routes/oidc.js` | OIDC вход — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/pgp-keyring.js` | PGP ключохранилище — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/portal-archive.js` | ЗАКРИВАНЕ НА ПОРТАЛ (архив за съхранение, 6 месеца преди окончателно изтриване). |
+| `hapi_enterprise/routes/portal-links.js` | ВРЪЗКИ ЗА QR СТУДИОТО — временна, само за четене и с парола (0.69.229). |
 | `hapi_enterprise/routes/portal-page.js` | Публичната страница на портала — ЕДИН адрес, на адреса на add-on-а (и през Home Assistant). |
 | `hapi_enterprise/routes/portal-qr.js` | Логическите корени (`/share`, `/media`) се разпознават през ЕДИН модул — `paths.js`. |
 | `hapi_enterprise/routes/portal-storage.js` | Изтегляне на файл ОТ ПАПКАТА на портала (публичен вход през портала, не отделен адрес). |
@@ -168,7 +169,7 @@
 | `hapi_enterprise/routes/upload-sessions.js` | Качване на файл в папката на портала — НА СЕСИИ, с проверка по хеш и без пипане на датите (0.69.214). |
 | `hapi_enterprise/routes/webhooks.js` | Webhooks с HMAC — административен компонент на HTTP слоя (F4-7). |
 
-### Интерфейс (`hapi_enterprise/ui/*.js`) (29)
+### Интерфейс (`hapi_enterprise/ui/*.js`) (30)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -193,6 +194,7 @@
 | `hapi_enterprise/ui/portal-folders.js` | Контейнер „Папки на портала“ — експлорер на storage_root: скриващи се менюта. |
 | `hapi_enterprise/ui/portals.js` | Панел „Портали & API“ (Фаза 8 / API-01…03): генериране на публично API, |
 | `hapi_enterprise/ui/public-gateway.js` | Public Gateway & Access (PG-2) — два канала, портални политики и Public Access Test. |
+| `hapi_enterprise/ui/qr-studio.js` | QR СТУДИО — ЕДНО ГЛОБАЛНО МЯСТО ЗА ВСЯКА QR ОПЕРАЦИЯ (0.69.229). |
 | `hapi_enterprise/ui/report-objects.js` | Регистър на обектите за Report Studio (Фаза 11 / обектна библиотека). |
 | `hapi_enterprise/ui/report-scope.js` | Обхвати на отчетите — ЕДНО място, за да не се разминават отчетите по местата, от |
 | `hapi_enterprise/ui/report-sign.js` | Клиент за detached CMS (PKCS#7) подпис на отчет — това, което панелът вика. |

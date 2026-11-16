@@ -1,6 +1,6 @@
 # Donor Comparison — hAPI Enterprise
 
-> **Клас:** исторически · **Замразен към:** 0.69.228
+> **Клас:** исторически · **Замразен към:** 0.69.229
 
 > Compares candidate "donor" sources (legacy locations) to decide migration order.
 

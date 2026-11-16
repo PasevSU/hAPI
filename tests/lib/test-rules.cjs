@@ -311,6 +311,7 @@ const RULES = [
   { id: "qr-dispatch", area: "общо", title: "Qr dispatch", owner: "tests/qr-dispatch.cjs" },
   { id: "qr-leads-to-folder", area: "общо", title: "Qr leads to folder", owner: "tests/qr-leads-to-folder.cjs" },
   { id: "qr-rollback", area: "общо", title: "Qr rollback", owner: "tests/qr-rollback.cjs" },
+  { id: "qr-share-links", area: "общо", title: "Qr share links", owner: "tests/qr-share-links.cjs" },
   { id: "raspberrypi-compat", area: "общо", title: "Raspberrypi compat", owner: "tests/raspberrypi-compat.cjs" },
   { id: "rate-limit", area: "общо", title: "Rate limit", owner: "tests/rate-limit.cjs" },
   { id: "rbac", area: "общо", title: "Rbac", owner: "tests/rbac.cjs" },

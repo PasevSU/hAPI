@@ -123,12 +123,18 @@ const root = path.join(__dirname, '..');
     // QR кодове — порталът, всяка подпапка и всеки файл — и те се строят от СЪРВЪРА, от
     // публичната страница. Старото правило („един код на портал“, DEF-31) е отменено.
     assert.match(filesUi, /qrLevel: \(rel\) =>/, 'панелът има един вход за QR на ниво');
-    assert.match(filesUi, /\/tree\/qr\.svg\?path=/, 'кодът на ниво идва от сървъра (`tree/qr.svg?path=`)');
+    assert.match(filesUi, /\/tree\/qr\.svg\?\$\{qs\}/, 'кодът на ниво идва от сървъра (`tree/qr.svg?path=…` + подпис)');
+    // Частен портал: без подписания достъп адресът на кода връща 404 и кодът излиза
+    // „счупена картинка“ — точно това видя собственикът (0.69.229).
+    assert.match(filesUi, /const own = accessOf\(p\)\.query \|\| ''/, 'подписът влиза и в адреса на кода');
     assert.equal(/qrLevel:[\s\S]{0,160}admin\/api/.test(filesUi), false, 'кодът на ниво НЕ сочи към административния API');
-    assert.match(foldersUi, /data-qr-level="\$\{esc\(row\.rel\)\}"/, 'панелът рисува ред за всяко ниво');
-    assert.match(foldersUi, /ctx\.qrLevel\(row\.rel\)/, 'изображението идва от сървърния адрес, не се строи на ръка');
-    // Самата рисунка на порталния код е в картата на портала и строи адреса на СТРАНИЦАТА, не на SVG-то.
-    assert.match(ui('files-manager.js'), /qrSvg\(qrUrl\)/, 'кодът на портала се строи от адреса на страницата');
+    // 0.69.229: мрежата „QR за всяко ниво“ вече НЕ се рисува в блока с папките — нивата са в
+    // ГЛОБАЛНОТО студио (един прозорец за портал, папка и файл).
+    assert.equal(/data-qr-level=/.test(foldersUi), false, 'блокът с папките не рисува QR мрежа');
+    assert.equal(/ctx\.qrLevel\(row\.rel\)/.test(foldersUi), false, 'изображението не се строи в блока');
+    assert.match(ui('files-manager.js'), /function qrStudioLevels\(x\)/, 'нивата се строят за студиото');
+    // Самата рисунка на кода е в студиото и строи адреса на СТРАНИЦАТА, не на SVG-то.
+    assert.match(ui('files-manager.js'), /qrSvg,/, 'построителят на SVG се подава на студиото');
     assert.match(filesUi, /data-folder-delete/, 'изтриването на папка е вързано към бутон');
     assert.match(filesUi, /async function deleteFolder\(rel\)/);
     assert.match(filesUi, /r\.status === 409/, 'непразна папка пита втори път (409)');

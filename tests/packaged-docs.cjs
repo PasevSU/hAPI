@@ -49,7 +49,7 @@ const UI_DOC = path.join(uiDir, 'README.md');
 const tokensOf = (text, withData) => {
   const out = [];
   for (const span of text.matchAll(/`([^`]+)`/g)) {
-    const re = withData ? /(?:^|[\s[.>+])((?:pf|data)-[a-z0-9-]+)/g : /(?:^|[\s[.>+])(pf-[a-z0-9-]+)/g;
+    const re = withData ? /(?:^|[\s[.>+])((?:pf|qs|data)-[a-z0-9-]+)/g : /(?:^|[\s[.>+])((?:pf|qs)-[a-z0-9-]+)/g;
     for (const m of span[1].matchAll(re)) out.push(m[1]);
   }
   return out;
@@ -85,7 +85,10 @@ assert.ok(checked >= 10, 'проверени са поне 10 селектора
 const uiDoc = fs.readFileSync(UI_DOC, 'utf8');
 const uiTokens = new Set(tokensOf(uiDoc, true));
 assert.ok(uiTokens.has('data-qr-portal'), 'ui/README.md описва QR бутона, който кодът има (`data-qr-portal`), а споменава: ' + [...uiTokens].join(', '));
-assert.ok(uiTokens.has('pf-qr-pop-link'), 'ui/README.md казва, че кодът е връзка (`pf-qr-pop-link`)');
+// 0.69.229: кодът вече е в глобалния прозорец — описанието трябва да сочи раздела и рамката,
+// а не стария поповер.
+assert.ok(uiTokens.has('data-qs-tab'), 'ui/README.md описва разделите на QR студиото (`data-qs-tab`)');
+assert.ok(uiTokens.has('qs-caption-url'), 'ui/README.md казва, че адресът е изписан под кода (`qs-caption-url`)');
 // …и не обещава отделен блок, който е махнат, освен ако не пише, че е махнат.
 for (const para of uiDoc.split(/\n\s*\n/)) {
   if (!para.includes('Достъп и QR код')) continue;
