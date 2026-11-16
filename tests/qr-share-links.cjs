@@ -25,7 +25,7 @@ const { stopChild } = require('./helpers.cjs');
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const text = await res.text();
-    let data = null;
+    let data;
     try {
       data = JSON.parse(text);
     } catch {

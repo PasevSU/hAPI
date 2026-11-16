@@ -145,7 +145,7 @@ button{margin-top:.9rem;width:100%;padding:.6rem;border-radius:8px;border:0;back
     return entry.count > 10;
   }
 
-  async function handle({ req, res, url, parts, method }) {
+  async function handle({ req, res, url: _url, parts, method }) {
     // ── Публичен вход: /x/<id> ────────────────────────────────────────────
     if (parts[0] === 'x' && parts.length === 2) {
       const linkId = parts[1];

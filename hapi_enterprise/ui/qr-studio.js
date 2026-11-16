@@ -291,7 +291,7 @@
         (lv, i) => `<button type="button" class="qs-level ${i === state.index ? 'qs-level-on' : ''}" data-qs-level="${i}" ${
           i === state.index ? 'aria-current="true"' : ''
         }>
-                    ${figure(lv.page, lv.label, { short: lv.short || lv.label })}
+                    ${figure(lv.page, lv.label)}
                   </button>`,
       )
       .join('')}
