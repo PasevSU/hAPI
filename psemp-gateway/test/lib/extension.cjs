@@ -69,7 +69,10 @@ function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false
           return Object.assign({}, defaults, stored);
         },
         async set(values) {
-          writes[Object.keys(values)[0]] = values[Object.keys(values)[0]];
+          // `order` keeps the historical first-key shape so existing assertions stay
+          // meaningful, but every key is recorded: a single set() can carry several
+          // (the send breadcrumb writes a counter and the record together).
+          Object.assign(writes, values);
           order.push(`storage.set:${Object.keys(values)[0]}`);
         },
       },

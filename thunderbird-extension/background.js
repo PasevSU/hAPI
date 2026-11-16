@@ -233,6 +233,32 @@ async function handleBeforeSend(tab, details) {
     // Append WITHOUT dropping any existing entries.
     details.customHeaders = [...(details.customHeaders || []), ...newHeaders];
 
+    // Breadcrumb: onBeforeSend having fired is not observable from the Sent folder
+    // — Send Later keeps its own queue, an IMAP APPEND can fail, and a server-side
+    // Sent copy may never reach local disk. Recording the send here means "did the
+    // extension stamp this message?" is answerable without hunting through mbox
+    // files. Best effort: the write is trivial and a storage failure is swallowed,
+    // so it can never fail or cancel the send.
+    await Promise.resolve()
+      .then(async () => {
+        const previous = await browser.storage.local.get({ psempSendCount: 0 });
+        const count = Number(previous.psempSendCount) || 0;
+        await browser.storage.local.set({
+          psempSendCount: count + 1,
+          psempLastSend: {
+            at: new Date().toISOString(),
+            evidenceId,
+            bodySha256: bodyHash,
+            manifestSha256: manifestHash,
+            merkleRoot: merkle,
+            attachmentCount: attachmentEntries.length,
+            // Names only: the values are already in the message being sent.
+            headers: newHeaders.map((header) => header.slice(0, header.indexOf(":"))),
+          },
+        });
+      })
+      .catch(() => {});
+
     return { details };
   } catch (err) {
     // Never throw: on any error the message still goes out, unchanged headers.

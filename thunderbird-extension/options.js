@@ -58,6 +58,8 @@ async function renderArmed() {
     psempLastLoadedAt: "",
     psempArmError: "",
     psempManifestError: "",
+    psempLastSend: null,
+    psempSendCount: 0,
   });
   const armed = document.getElementById("armed");
   if (health.psempArmError) {
@@ -75,6 +77,24 @@ async function renderArmed() {
     manifest.textContent = health.psempManifestError
       ? `Last send: the manifest could NOT be attached — ${health.psempManifestError}`
       : "";
+  }
+
+  // Proof that the extension stamped a message, independent of any Sent folder.
+  const lastSend = document.getElementById("lastSend");
+  if (lastSend) {
+    const send = health.psempLastSend;
+    const count = Number(health.psempSendCount) || 0;
+    if (send && send.at) {
+      lastSend.textContent =
+        `Stamped ${count} message(s). Last: ${send.at}, ` +
+        `Evidence-ID ${send.evidenceId || "—"}, ` +
+        `${send.attachmentCount || 0} attachment(s), ` +
+        `${(send.headers || []).length} headers.`;
+    } else {
+      lastSend.textContent =
+        "Stamped 0 messages — no outgoing message has been stamped yet. " +
+        "Send one and this line will update.";
+    }
   }
 }
 

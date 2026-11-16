@@ -321,6 +321,47 @@ check('a storage failure still sends the message unmodified', async () => {
   assert.ok(errors.some((line) => /injection failed/.test(line)), 'the failure must be logged');
 });
 
+check('a send records a breadcrumb proving the listener fired', async () => {
+  const { listeners, writes } = loadExtension();
+  const details = {
+    isPlainText: true,
+    body: 'breadcrumb',
+    attachments: [],
+    customHeaders: [],
+  };
+  await listeners[0]({}, details);
+
+  // Without this record, "did the extension stamp anything?" could only be answered
+  // by finding the message again in a Sent folder — which Send Later can bypass and
+  // an IMAP server may never write to local disk.
+  const record = writes.psempLastSend;
+  assert.ok(record, 'psempLastSend must be written on every send');
+  assert.strictEqual(record.bodySha256, sha256Hex('breadcrumb'));
+  assert.strictEqual(record.merkleRoot, referenceMerkle([sha256Hex('breadcrumb')]));
+  assert.match(record.manifestSha256, HEX64);
+  assert.match(record.evidenceId, /^[0-9a-f-]{36}$/);
+  assert.match(record.at, /^\d{4}-\d\d-\d\dT/);
+  assert.strictEqual(record.attachmentCount, 0);
+  assert.deepStrictEqual(Array.from(record.headers), headerNames(details.customHeaders));
+  assert.strictEqual(writes.psempSendCount, 1);
+});
+
+check('the send counter increments instead of restarting at one', async () => {
+  const { listeners, writes } = loadExtension({ stored: { psempSendCount: 41 } });
+  const details = { isPlainText: true, body: 'again', attachments: [], customHeaders: [] };
+  await listeners[0]({}, details);
+  assert.strictEqual(writes.psempSendCount, 42);
+});
+
+check('a failed scan leaves no breadcrumb claiming a stamped send', async () => {
+  const { listeners, writes } = loadExtension({ storageGetThrows: true });
+  const details = { isPlainText: true, body: 'x', attachments: [], customHeaders: [] };
+  const result = await listeners[0]({}, details);
+  assert.ok(result && result.details, 'must still return { details }');
+  assert.strictEqual(writes.psempLastSend, undefined);
+  assert.strictEqual(writes.psempSendCount, undefined);
+});
+
 check('background.js stays a pure MailExtension (no Node, no remote code)', () => {
   assert.ok(!/\brequire\s*\(/.test(BARE_CODE), 'require() is not available in a MailExtension');
   assert.ok(!/\bimport\s+.*\bfrom\b/.test(BARE_CODE), 'no ES module imports');

@@ -171,6 +171,26 @@ message went out with no headers at all. Two signals are reliable:
 is written after registration, or if any error path stops returning `{ details }`
 (it must never `cancel` a send).
 
+### Proving a message was actually stamped
+
+Being armed says the listener is registered; it says nothing about whether a send
+ever reached it. The options page therefore also shows a **stamped counter** —
+`Stamped N message(s). Last: …` — fed by two `browser.storage.local` keys the
+listener writes on every send, after the headers are built and before the message
+is released:
+
+| Key | Contents |
+| --- | --- |
+| `psempSendCount` | integer, incremented per stamped send |
+| `psempLastSend` | `at` (ISO time), `evidenceId`, `bodySha256`, `manifestSha256`, `merkleRoot`, `attachmentCount`, `headers` (header **names** only) |
+
+`Stamped 0 messages — no outgoing message has been stamped yet` is the definitive
+answer to "did it fire?", and it cannot be faked by a Sent folder that never hit
+local disk, by *Send Later* keeping the message in its own queue, or by an identity
+whose FCC target is a server-side folder. The write is best-effort: a storage
+failure is swallowed so it can never block a send, and the record is not written
+at all when the header injection itself fails.
+
 To check the whole profile rather than one signal — including whether the
 installed `.xpi` is the build you think it is — run:
 
