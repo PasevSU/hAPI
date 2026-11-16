@@ -282,9 +282,9 @@ The chain above makes claims. `tools/check-sent.cjs` re-derives them from the
 bytes that actually travelled, so a header is never trusted on its own:
 
 ```console
-node psemp-gateway/tools/check-sent.cjs                    # newest message in the newest Sent mailbox
-node psemp-gateway/tools/check-sent.cjs --all              # every message in it
-node psemp-gateway/tools/check-sent.cjs --only 3           # message 3, as the report numbers them
+node psemp-gateway/tools/check-sent.cjs                    # the newest sent message in the profile
+node psemp-gateway/tools/check-sent.cjs --all              # every message in every Sent mailbox
+node psemp-gateway/tools/check-sent.cjs --only 3           # message 3 of the first mailbox, as numbered
 node psemp-gateway/tools/check-sent.cjs mail.eml           # one file
 node psemp-gateway/tools/check-sent.cjs "C:\...\l6o3xe0h.default-esr"   # a profile directory
 ```
@@ -294,6 +294,24 @@ quoted-printable and base64 parts, re-hashes the body and every attachment, and
 recomputes the Merkle root. It reuses `api.js` (`sha256Hex`, `verifyManifest`,
 `verifyEvidence`) rather than re-implementing the hashes, so a disagreement means
 the message and the code disagree, not that two implementations drifted.
+
+### Which mailbox is "Sent"
+
+By the folder's own name, in the languages Thunderbird translates it into:
+`Sent`, `Изпратени`, `Gesendet`, `Отправленные` and the rest of the list in
+`isSentName()`. Matching only the English word is a real defect that shipped
+once: this profile is Bulgarian, its live outbox is `[Gmail].sbd\Изпратени`
+(2.3 GB), and the English-only walk confidently reported on an Outlook `Sent`
+that had not been written since 5 November.
+
+Among the matches, the message with the newest `Date` header wins — not the
+newest file modification time. The most recently *touched* Sent folder here holds
+a single message from 2022, so mtime points at the wrong mailbox as soon as
+Thunderbird refreshes an index.
+
+Mailboxes are read from the tail (`lastMessages`) or streamed (`streamMessages`),
+never loaded whole: a 2.3 GB mbox cannot be returned as a Node string at all, and
+the newest message is by definition the last one.
 
 Exit code 0 means every claim held. A failure prints which claim broke:
 
@@ -314,7 +332,8 @@ sidecar, and `.dat`/`.mab`/`.sqlite`/`.json` are address books and databases. An
 account that has `Sent.msf` but no `Sent` has simply never written a local copy;
 that is not a defect and the tool does not report it. `chrome_debugger_profile`
 is a nested profile created by the Debug Add-ons page and holds a copy of the
-same mail, so it is excluded as well.
+same mail, so it is excluded as well, and so is `.mozmsgs`, which holds Windows
+Search metadata rather than mail.
 
 ## Tests
 
@@ -363,6 +382,12 @@ it. It proves the verifier is not vacuous: a dropped manifest, an altered
 attachment, an unlisted attachment and a message with no headers at all must all
 be reported. It also pins the profile file filter, because treating `Sent.msf` or
 a `.wdseml` cache as mail would produce a confident verdict about the wrong file.
+The same class of mistake is pinned twice more: a `Изпратени` mailbox has to be
+found with no English `Sent` anywhere in the profile, and the newest message has
+to be chosen by its `Date` header even when a different mailbox was touched more
+recently. `lastMessages` and `streamMessages` are checked against the in-memory
+split at a 7-byte chunk size, so a multi-byte character split across chunks
+cannot silently mangle a body.
 
 `verify-install.cjs` provokes every failure the install checker claims to catch —
 a retired header name still registered, a written header never registered, an

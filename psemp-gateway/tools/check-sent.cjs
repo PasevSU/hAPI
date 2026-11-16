@@ -27,6 +27,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { StringDecoder } = require('node:string_decoder');
 const { sha256Hex, verifyManifest, verifyEvidence } = require('../api.js');
 
 const MANIFEST = 'PasevSU_Manifest.json';
@@ -262,6 +263,60 @@ function inspectMessage(text) {
   return { checks, ok: checks.every((check) => check.ok), manifest };
 }
 
+/**
+ * Thunderbird names the folder that receives copies of sent messages after the
+ * UI language, and Gmail prefixes its own copy with "[Gmail]/". Matching only
+ * the English "Sent" is how the first end-to-end check managed to report on an
+ * Outlook mailbox last written on 11-05 while the live one was "Изпратени".
+ * Compared by basename, case-insensitively.
+ */
+const SENT_NAMES = [
+  'sent',
+  'sent mail',
+  'sent items',
+  'sent messages',
+  'изпратени',
+  'изходящи',
+  'gesendet',
+  'gesendete objekte',
+  'envoyés',
+  'éléments envoyés',
+  'enviados',
+  'elementos enviados',
+  'posta inviata',
+  'inviati',
+  'отправленные',
+  'надіслані',
+  'послато',
+  'надіслані листи',
+  'wysłane',
+  'verzonden',
+  'enviadas',
+  'odeslaná pošta',
+  'odoslané správy',
+  'poslano',
+  'gönderilmiş öğeler',
+  'gönderilenler',
+  'trimise',
+  'απεσταλμένα',
+  'elküldött',
+  'skickat',
+  'sendt',
+  'lähetetyt',
+  '送信済み',
+  '已发送',
+  '寄件備份',
+  '보낸편지함',
+  'נשלחו',
+  'المرسلة',
+  'ارسال شده',
+];
+
+function isSentName(fileName) {
+  const base = path.basename(fileName).replace(/\.(msf|wdseml)$/i, '').trim().toLowerCase();
+  return SENT_NAMES.includes(base);
+}
+
 /** Sent mbox files in a Thunderbird profile, newest first. */
 function sentFiles(profile) {
   const roots = [path.join(profile, 'Mail'), path.join(profile, 'ImapMail')].filter((dir) => fs.existsSync(dir));
@@ -280,10 +335,12 @@ function sentFiles(profile) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
+        // ".mozmsgs" holds Windows Search metadata, never mail.
+        if (entry.name === '.mozmsgs') continue;
         walk(full, depth + 1);
         continue;
       }
-      if (!(/^sent/i.test(entry.name) || /^sent/i.test(path.basename(dir)))) continue;
+      if (!isSentName(entry.name)) continue;
       // ".msf" is Thunderbird's MIME summary index and ".wdseml" is a Windows Search
       // sidecar: neither is the message, and both would be reported as mail with no
       // headers at all.
@@ -298,6 +355,138 @@ function sentFiles(profile) {
 
   for (const dir of roots) walk(dir, 0);
   return found.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+}
+
+/** Bytes [from, to) of a file, decoded once so no character is split. */
+function readRange(file, from, to) {
+  const size = to - from;
+  if (size <= 0) return '';
+  const fd = fs.openSync(file, 'r');
+  const buf = Buffer.allocUnsafe(size);
+  try {
+    fs.readSync(fd, buf, 0, size, from);
+  } finally {
+    fs.closeSync(fd);
+  }
+  return buf.toString('utf8');
+}
+
+/**
+ * Walk an mbox one message at a time instead of holding it in memory. A real
+ * profile here has a 2.3 GB Sent mailbox, which `readFileSync` cannot return as
+ * a string at all.
+ */
+function* streamMessages(file, chunkSize = 1 << 20) {
+  const fd = fs.openSync(file, 'r');
+  const decoder = new StringDecoder('utf8');
+  const buf = Buffer.allocUnsafe(chunkSize);
+  let carry = '';
+  let current = null;
+  let started = false;
+  let mbox = true;
+
+  const takeLine = function* (line) {
+    if (!started) {
+      started = true;
+      mbox = line.startsWith('From ');
+      current = mbox ? '' : line;
+      return;
+    }
+    if (mbox && line.startsWith('From ')) {
+      if (current !== null) yield current;
+      current = '';
+      return;
+    }
+    current = (current === null ? '' : current) + line;
+  };
+
+  try {
+    for (;;) {
+      const bytesRead = fs.readSync(fd, buf, 0, chunkSize, null);
+      carry += bytesRead === 0 ? decoder.end() : decoder.write(buf.subarray(0, bytesRead));
+      let at;
+      while ((at = carry.indexOf('\n')) !== -1) {
+        const line = carry.slice(0, at + 1);
+        carry = carry.slice(at + 1);
+        yield* takeLine(line);
+      }
+      if (bytesRead === 0) break;
+    }
+    if (carry) yield* takeLine(carry);
+    if (current) yield current;
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+/**
+ * The last `count` messages of an mbox, read from the tail. A sent copy is
+ * appended, so the newest message is the last one, and finding it costs a scan
+ * of the tail rather than of the whole mailbox.
+ */
+function lastMessages(file, count, chunkSize = 1 << 20) {
+  const size = fs.statSync(file).size;
+  if (size === 0) return [];
+
+  const fd = fs.openSync(file, 'r');
+  const buf = Buffer.allocUnsafe(chunkSize);
+  const starts = [];
+  let pos = size;
+  try {
+    while (pos > 0 && starts.length <= count) {
+      const span = Math.min(chunkSize, pos);
+      pos -= span;
+      fs.readSync(fd, buf, 0, span, pos);
+      // latin1 is one byte per character, so string offsets stay byte offsets.
+      const text = buf.subarray(0, span).toString('latin1');
+      for (let at = text.lastIndexOf('From '); at !== -1; at = text.lastIndexOf('From ', at - 1)) {
+        if (at === 0 || text[at - 1] === '\n') {
+          starts.push(pos + at);
+          if (starts.length > count) break;
+        }
+        if (at === 0) break;
+      }
+    }
+  } finally {
+    fs.closeSync(fd);
+  }
+
+  if (!starts.length) {
+    // Not an mbox: a single .eml, and the whole file is the message.
+    return [readRange(file, 0, size)];
+  }
+
+  starts.sort((a, b) => a - b);
+  return splitMessages(readRange(file, starts[Math.max(0, starts.length - count)], size));
+}
+
+/**
+ * The newest sent message in a profile, by the message's own Date header.
+ * Choosing the mailbox by file mtime is not the same thing: in this profile the
+ * most recently touched Sent folder holds a single message from 2022, while the
+ * real outbox is a 2.3 GB mailbox whose last message is days older than that
+ * folder's mtime.
+ */
+function newestSent(sources) {
+  const candidates = [];
+  for (const source of sources) {
+    let message = null;
+    let mtime = 0;
+    try {
+      const newest = lastMessages(source, 1);
+      message = newest[newest.length - 1] || null;
+      mtime = fs.statSync(source).mtimeMs;
+    } catch {
+      message = null;
+    }
+    if (!message) continue;
+    const date = headerGet(parseMessage(message).headers, 'Date');
+    const at = date ? Date.parse(date) : NaN;
+    candidates.push({ source, message, at: Number.isNaN(at) ? -Infinity : at, mtime });
+  }
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => b.at - a.at || b.mtime - a.mtime);
+  return candidates[0];
 }
 
 function defaultProfile() {
@@ -371,26 +560,49 @@ function main(argv) {
     }
   }
 
-  // A message number refers to one mailbox, so only the first one is read.
-  if (!all) sources = sources.slice(0, 1);
+  // A message number refers to one mailbox, so --only reads only the first one.
+  if (only !== null) sources = sources.slice(0, 1);
 
   let failures = 0;
   let inspected = 0;
-  for (const source of sources) {
-    const messages = splitMessages(fs.readFileSync(source, 'utf8'));
-    if (only !== null && only > messages.length) {
-      console.error(`${source} holds ${messages.length} message(s), so --only ${only} does not exist.`);
+  const check = (source, label, message) => {
+    const subject = headerGet(parseMessage(message).headers, 'Subject') || '(no subject)';
+    const result = inspectMessage(message);
+    // The mailbox is named, not just a basename: a profile has several Sent boxes.
+    report(`${source}${label}  ${subject}`, result);
+    inspected += 1;
+    if (!result.ok) failures += 1;
+  };
+
+  if (!all && only === null) {
+    const newest = newestSent(sources);
+    if (!newest) {
+      console.error('No readable message in any Sent mailbox.');
       return 2;
     }
-    const chosen = all ? messages : only === null ? messages.slice(-1) : [messages[only - 1]];
-    const first = all ? 1 : only === null ? messages.length : only;
-    for (const [offset, message] of chosen.entries()) {
-      const subject = headerGet(parseMessage(message).headers, 'Subject') || '(no subject)';
-      const result = inspectMessage(message);
-      // The mailbox is named, not just a basename: a profile has several Sent boxes.
-      report(`${source} #${first + offset} of ${messages.length}  ${subject}`, result);
-      inspected++;
-      if (!result.ok) failures++;
+    const date = headerGet(parseMessage(newest.message).headers, 'Date');
+    check(newest.source, date ? ` (newest, ${date})` : ' (newest)', newest.message);
+  } else {
+    for (const source of sources) {
+      // Streaming keeps memory flat, so a 2.3 GB Sent mailbox is readable; --only
+      // holds the whole mailbox count back until the end for the "of N" in its label.
+      let index = 0;
+      let chosen = null;
+      for (const message of streamMessages(source)) {
+        index += 1;
+        if (only !== null) {
+          if (index === only) chosen = message;
+          continue;
+        }
+        check(source, ` #${index}`, message);
+      }
+      if (only !== null) {
+        if (chosen === null) {
+          console.error(`${source} holds ${index} message(s), so --only ${only} does not exist.`);
+          return 2;
+        }
+        check(source, ` #${only} of ${index}`, chosen);
+      }
     }
   }
 
@@ -406,6 +618,10 @@ module.exports = {
   partName,
   headerGet,
   sentFiles,
+  isSentName,
+  lastMessages,
+  streamMessages,
+  newestSent,
   defaultProfile,
 };
 

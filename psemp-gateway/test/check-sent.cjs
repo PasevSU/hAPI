@@ -29,7 +29,15 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { loadExtension, headerMap, sha256Hex, MANIFEST_FILENAME } = require('./lib/extension.cjs');
-const { inspectMessage, splitMessages, sentFiles } = require('../tools/check-sent.cjs');
+const {
+  inspectMessage,
+  splitMessages,
+  sentFiles,
+  isSentName,
+  lastMessages,
+  streamMessages,
+  newestSent,
+} = require('../tools/check-sent.cjs');
 
 const MANIFEST = MANIFEST_FILENAME;
 
@@ -307,7 +315,138 @@ check("the add-on's own nested debug profile is not scanned twice", () => {
   }
 });
 
+check('a localised Sent mailbox is found without any English "Sent"', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-sent-'));
+  try {
+    // Gmail under a Bulgarian UI: the folder is "Изпратени" under "[Gmail].sbd".
+    const acct = path.join(profile, 'ImapMail', 'imap.gmail.com', '[Gmail].sbd');
+    fs.mkdirSync(acct, { recursive: true });
+    fs.writeFileSync(path.join(acct, 'Изпратени'), 'From a@b Mon Jan 01 00:00:00 2026\nSubject: изпратено\n\nbody\n');
+    fs.writeFileSync(path.join(acct, 'Изпратени.msf'), 'summary index');
+    fs.writeFileSync(path.join(acct, 'Чернови'), 'From a@b Mon Jan 01 00:00:00 2026\nSubject: draft\n\nbody\n');
+
+    const found = sentFiles(profile);
+    assert.strictEqual(found.length, 1, `expected one mailbox, got ${found.map((f) => path.basename(f)).join(', ')}`);
+    assert.strictEqual(path.basename(found[0]), 'Изпратени');
+    return 'Изпратени picked, Чернови left alone';
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+check('the most recently written Sent mailbox wins', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-sent-'));
+  try {
+    const stale = path.join(profile, 'ImapMail', 'outlook.example.test');
+    const live = path.join(profile, 'ImapMail', 'imap.gmail.com', '[Gmail].sbd');
+    fs.mkdirSync(stale, { recursive: true });
+    fs.mkdirSync(live, { recursive: true });
+    const body = 'From a@b Mon Jan 01 00:00:00 2026\nSubject: x\n\nbody\n';
+    fs.writeFileSync(path.join(stale, 'Sent'), body);
+    fs.writeFileSync(path.join(live, 'Изпратени'), body);
+    fs.utimesSync(path.join(stale, 'Sent'), new Date('2026-11-05T12:00:00Z'), new Date('2026-11-05T12:00:00Z'));
+
+    const found = sentFiles(profile);
+    assert.strictEqual(found.length, 2, `both boxes are candidates, got ${found.length}`);
+    assert.strictEqual(path.basename(found[0]), 'Изпратени', 'the box written today must be checked first');
+    assert.strictEqual(path.basename(found[1]), 'Sent');
+    return 'newest mailbox first';
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+check('the newest message is read from the tail, not from the whole mailbox', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-mbox-'));
+  try {
+    const file = path.join(dir, 'Изпратени');
+    const messages = [];
+    for (let i = 1; i <= 40; i += 1) {
+      messages.push(`From a@b Mon Jan 01 00:00:00 2026\nSubject: message ${i}\n\nтяло ${i}\n`);
+    }
+    fs.writeFileSync(file, messages.join(''));
+
+    const newest = lastMessages(file, 1);
+    assert.strictEqual(newest.length, 1, `expected one message, got ${newest.length}`);
+    assert.match(newest[0], /Subject: message 40\n/);
+    assert.match(newest[0], /тяло 40/, 'a multi-byte body must survive the tail read');
+
+    // Two boundaries are needed before the tail read can stop, so ask for three.
+    const three = lastMessages(file, 3);
+    assert.strictEqual(three.length, 3, `expected three messages, got ${three.length}`);
+    assert.deepStrictEqual(
+      three.map((message) => /Subject: (.*)/.exec(message)[1]),
+      ['message 38', 'message 39', 'message 40']
+    );
+    return 'tail read returns the last messages intact';
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+check('a mailbox is streamed without holding it in memory', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-mbox-'));
+  try {
+    const file = path.join(dir, 'Sent');
+    const messages = [];
+    for (let i = 1; i <= 12; i += 1) {
+      messages.push(`From a@b Mon Jan 01 00:00:00 2026\nSubject: m${i}\n\nПривет ${i}\n`);
+    }
+    const mbox = messages.join('');
+    fs.writeFileSync(file, mbox);
+
+    // A chunk smaller than one header line forces boundaries inside multi-byte characters.
+    const streamed = [...streamMessages(file, 7)];
+    assert.strictEqual(streamed.length, 12, `streamed ${streamed.length} of 12 messages`);
+    assert.deepStrictEqual(streamed, splitMessages(mbox), 'streaming must agree with the in-memory split');
+    assert.match(streamed[11], /Привет 12/, 'characters split across chunks must be rejoined');
+    return '12 messages, chunk size 7 bytes, nothing mangled';
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+check('English and localised Sent names are recognised, unrelated ones are not', () => {
+  for (const name of ['Sent', 'Sent.msf', 'Изпратени', 'Изпратени.msf', '[Gmail]/Изпратени', 'Gesendet', 'Отправленные']) {
+    assert.ok(isSentName(name), `${name} should be a Sent mailbox`);
+  }
+  for (const name of ['Inbox', 'Чернови', 'Кошче', 'Изходящи.msf.tmp', 'SentX', 'Чернови']) {
+    assert.ok(!isSentName(name), `${name} should not be a Sent mailbox`);
+  }
+  return '7 recognised, 5 rejected';
+});
+
+check('the newest sent message wins on its own Date, not the mailbox mtime', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-sent-'));
+  try {
+    // A freshly touched folder holding one old message, and an untouched folder
+    // holding a newer one — exactly the shape of the real profile that misled the
+    // first end-to-end check.
+    const touched = path.join(profile, 'ImapMail', 'imap.gmail.com');
+    const stale = path.join(profile, 'ImapMail', 'imap.gmail-2.com', '[Gmail].sbd');
+    fs.mkdirSync(touched, { recursive: true });
+    fs.mkdirSync(stale, { recursive: true });
+    fs.writeFileSync(
+      path.join(touched, 'Изпратени'),
+      'From a@b Mon Jan 01 00:00:00 2026\nDate: Sun, 20 Nov 2022 17:06:50 +0100\nSubject: ancient\n\nbody\n'
+    );
+    fs.writeFileSync(
+      path.join(stale, 'Изпратени'),
+      'From a@b Mon Jan 01 00:00:00 2026\nDate: Fri, 6 Nov 2026 10:41:15 +0100\nSubject: latest\n\nbody\n'
+    );
+    fs.utimesSync(path.join(stale, 'Изпратени'), new Date('2026-11-06T09:41:00Z'), new Date('2026-11-06T09:41:00Z'));
+
+    const newest = newestSent(sentFiles(profile));
+    assert.ok(newest, 'a newest message must be found');
+    assert.match(newest.message, /Subject: latest/, 'the Date header decides, not the fresh mtime');
+    return 'newest by Date, not by file mtime';
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
 /* --- runner --------------------------------------------------------------- */
+
 (async () => {
   let failed = 0;
   console.log(path.basename(__filename));
