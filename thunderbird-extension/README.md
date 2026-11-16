@@ -204,6 +204,43 @@ It exits `0` only when the names `background.js` writes, the gateway's
 `HEADER_NAMES` and the profile's `mail.compose.other.header` agree in order, and
 the installed copy is not older than the source.
 
+## What a recipient can verify
+
+Every claim in the chain was re-checked against the raw source of a real sent
+message (`PSEMP-E2E-15a`), not against the tools that produced it:
+
+| Claim | Verdict |
+| --- | --- |
+| PGP/MIME signature is cryptographically valid | **Good signature** — `gpg --verify` exit `0`, RSA `4A1C1F8772D3B31927D96FAEB6A3C1BAFE614496` (primary `CB506C11850F99BBBBA54D09C6A8787C1FA6C393`), made 2026-11-16 13:36:54 |
+| The `X-PasevSU-*` headers are covered by that signature | **Yes** — `protected-headers="v1"` repeats all ten headers inside the signed `multipart/mixed` part, so altering one breaks the signature |
+| Attachment digest re-derives from the attachment bytes | **Yes** — `66ecf532…` in header, manifest and file |
+| `X-PasevSU-Manifest-SHA256` matches the attached manifest | **Yes** — `800ad425…` |
+| Merkle root re-derives from the recorded leaves | **Yes** — `9622207f…` |
+| `X-PasevSU-Body-SHA256` re-derives from the sent body | **No** — see below |
+
+A recipient with a stock `gpg` can therefore verify the signature, the
+attachments and the manifest, and can prove the headers were not altered in
+transit. Two caveats belong here rather than in a footnote:
+
+- **`X-PasevSU-Body-SHA256` is a fingerprint of the composer buffer, not of the
+  wire bytes.** Thunderbird derives the `text/plain` part from
+  `ComposeDetails.plainTextBody` at send time: it prepends a CRLF, appends the
+  `-- ` signature block and adds `format=flowed` trailing spaces. A hundred
+  candidate transforms of the sent part (whole part, signature-stripped,
+  CRLF/LF, whitespace cross-products, unstuffing, the `text/html` part) produce
+  no match for the recorded digest, so a recipient cannot recompute the body
+  hash. It still binds the composer's view of the text, and the PGP signature
+  covers the body itself — but the header must not be read as a byte-exact
+  proof of the bytes that arrived.
+- **`X-PasevSU-PGP-Fingerprint` is omitted while `pgpFingerprint` is unset, and
+  a MailExtension cannot read Thunderbird's OpenPGP key.** The header appears by
+  contract only after the value is typed into the options page once. The sample
+  message carries no fingerprint header for exactly that reason
+  (`browser-extension-data/pasevsu-forensic-headers@pasev.example` does not
+  exist, i.e. `storage.local` was never written). Read a missing fingerprint
+  header as "not configured", never as "unsigned" — the signature still names
+  the key.
+
 ## Limitations
 
 - **OpenPGP / OpenTimestamps.** A MailExtension has no Node, no `gpg` and no `ots`

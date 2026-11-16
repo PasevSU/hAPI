@@ -114,13 +114,15 @@
       <strong>OpenPGP already configured in Thunderbird.</strong> Put the fingerprint
       of the key your account already signs with here (Account Settings →
       End-to-End Encryption → OpenPGP Key Manager → your key). A MailExtension
-      cannot read Thunderbird's keyring, so this header is a <em>claim</em>: the
-      headers are added outside the signed MIME part and are not covered by
-      Thunderbird's signature. <code>psemp-gateway pgp-check</code> compares the
-      claim with the signer actually present in the delivered message, and it never
-      adds a second signature to a message Thunderbird already signed.
-      Bear in mind that with encryption switched on the
-      <code>X-PasevSU-*</code> headers stay in the clear while the body does not.
+      cannot read Thunderbird's keyring, so this header is a <em>claim</em>: it is
+      the one value a recipient has to check against the signature.
+      <code>psemp-gateway pgp-check</code> compares the claim with the signer
+      actually present in the delivered message, and it never adds a second
+      signature to a message Thunderbird already signed.
+      Thunderbird signs PGP/MIME with <code>protected-headers="v1"</code>, so the
+      <code>X-PasevSU-*</code> headers <em>are</em> repeated inside the signed part
+      and editing one breaks the signature — but with encryption switched on the
+      headers stay in the clear while the body does not.
     </p>
 
     <p class="note">
