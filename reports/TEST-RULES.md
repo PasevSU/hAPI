@@ -3,23 +3,24 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 421 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 432 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 188 |
-| портал | 47 |
-| GUI | 34 |
+| общо | 194 |
+| портал | 48 |
+| GUI | 36 |
 | Home Assistant | 18 |
 | отчети | 16 |
 | PGP | 14 |
-| ядро | 12 |
+| ядро | 13 |
 | съхранение | 8 |
 | издаване | 7 |
 | оракул | 6 |
 | тайни връзки | 6 |
 | пакети | 5 |
 | споделени данни | 5 |
+| HTML | 4 |
 | SQLite | 4 |
 | TSA | 4 |
 | backup | 4 |
@@ -28,7 +29,6 @@
 | правила | 4 |
 | публичен API | 4 |
 | сигурност | 4 |
-| HTML | 3 |
 | грешки | 3 |
 | огледало | 3 |
 | одит | 3 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (188)
+## общо (194)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -49,6 +49,7 @@
 | `addon-changelog` | Addon changelog | `tests/addon-changelog.cjs` |
 | `addon-config` | Addon config | `tests/addon-config.cjs` |
 | `addon-defaults-startup` | Addon defaults startup | `tests/addon-defaults-startup.cjs` |
+| `addon-image-pipeline` | Addon image pipeline | `tests/addon-image-pipeline.cjs` |
 | `addon-options-wired` | Addon options wired | `tests/addon-options-wired.cjs` |
 | `addon-translations` | Addon translations | `tests/addon-translations.cjs` |
 | `analysis-claims` | Analysis claims | `tests/analysis-claims.cjs` |
@@ -99,6 +100,7 @@
 | `evidence-portal` | Evidence portal | `tests/evidence-portal.cjs` |
 | `evidence-portal-info-qr` | Evidence portal info qr | `tests/evidence-portal-info-qr.cjs` |
 | `evidence-portal-publish` | Evidence portal publish | `tests/evidence-portal-publish.cjs` |
+| `evidence-portal-qr` | Evidence portal qr | `tests/evidence-portal-qr.cjs` |
 | `evidence-portal-render` | Evidence portal render | `tests/evidence-portal-render.cjs` |
 | `evidence-portal-root` | Evidence portal root | `tests/evidence-portal-root.cjs` |
 | `export-config` | Export config | `tests/export-config.cjs` |
@@ -146,9 +148,11 @@
 | `load-control` | Load control | `tests/load-control.cjs` |
 | `logger` | Logger | `tests/logger.cjs` |
 | `logic-audit` | Logic audit | `tests/logic-audit.cjs` |
+| `logic-audit-fresh` | Logic audit fresh | `tests/logic-audit-fresh.cjs` |
 | `logic-boundaries` | Logic boundaries | `tests/logic-boundaries.cjs` |
 | `logs-api` | Logs api | `tests/logs-api.cjs` |
 | `manifest-schema` | Manifest schema | `tests/manifest-schema.cjs` |
+| `matrix-freshness` | Matrix freshness | `tests/matrix-freshness.cjs` |
 | `network-storage` | Network storage | `tests/network-storage.cjs` |
 | `no-stubs` | No stubs | `tests/no-stubs.cjs` |
 | `node-runtime-gate` | Node runtime gate | `tests/node-runtime-gate.cjs` |
@@ -203,6 +207,7 @@
 | `send` | Send | `tests/send.cjs` |
 | `sensors` | Sensors | `tests/sensors.cjs` |
 | `sensors-telemetry` | Sensors telemetry | `tests/sensors-telemetry.cjs` |
+| `server-modules` | Server modules | `tests/server-modules.cjs` |
 | `server-structure` | Server structure | `tests/server-structure.cjs` |
 | `settings-defaults` | Settings defaults | `tests/settings-defaults.cjs` |
 | `settings-policies` | Settings policies | `tests/settings-policies.cjs` |
@@ -218,6 +223,7 @@
 | `start-entrypoint` | Start entrypoint | `tests/start-entrypoint.cjs` |
 | `start-portal-open` | Start portal open | `tests/start-portal-open.cjs` |
 | `start-token-required` | Start token required | `tests/start-token-required.cjs` |
+| `static-cache` | Static cache | `tests/static-cache.cjs` |
 | `storage` | Storage | `tests/storage.cjs` |
 | `store-accessors` | Store accessors | `tests/store-accessors.cjs` |
 | `store-migration` | Store migration | `tests/store-migration.cjs` |
@@ -234,7 +240,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (47)
+## портал (48)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -244,6 +250,7 @@
 | `portal-card-link` | Portal card link | `tests/portal-card-link.cjs` |
 | `portal-chain` | Portal chain | `tests/portal-chain.cjs` |
 | `portal-create-qr` | Portal create qr | `tests/portal-create-qr.cjs` |
+| `portal-creation-contract` | Portal creation contract | `tests/portal-creation-contract.cjs` |
 | `portal-file-page` | Portal file page | `tests/portal-file-page.cjs` |
 | `portal-folder` | Portal folder | `tests/portal-folder.cjs` |
 | `portal-folder-artifacts` | Portal folder artifacts | `tests/portal-folder-artifacts.cjs` |
@@ -286,7 +293,7 @@
 | `portal-upload-409` | Portal upload 409 | `tests/portal-upload-409.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (34)
+## GUI (36)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -301,6 +308,7 @@
 | `gui-open-portal-link` | Gui open portal link | `tests/gui-open-portal-link.cjs` |
 | `gui-package` | Gui package | `tests/gui-package.cjs` |
 | `gui-panels` | Gui panels | `tests/gui-panels.cjs` |
+| `gui-portal-create-contract` | Gui portal create contract | `tests/gui-portal-create-contract.cjs` |
 | `gui-portal-refs` | Gui portal refs | `tests/gui-portal-refs.cjs` |
 | `gui-portal-token` | Gui portal token | `tests/gui-portal-token.cjs` |
 | `gui-sections` | Gui sections | `tests/gui-sections.cjs` |
@@ -316,6 +324,7 @@
 | `ui-i18n` | Ui i18n | `tests/ui-i18n.cjs` |
 | `ui-i18n-ratchet` | Ui i18n ratchet | `tests/ui-i18n-ratchet.cjs` |
 | `ui-icons` | Ui icons | `tests/ui-icons.cjs` |
+| `ui-inline-style-csp` | Ui inline style csp | `tests/ui-inline-style-csp.cjs` |
 | `ui-nav-outside-click` | Ui nav outside click | `tests/ui-nav-outside-click.cjs` |
 | `ui-nav-symmetry` | Ui nav symmetry | `tests/ui-nav-symmetry.cjs` |
 | `ui-navigation` | Ui navigation | `tests/ui-navigation.cjs` |
@@ -388,7 +397,7 @@
 | `pgp-v6` | Pgp v6 | `tests/pgp-v6.cjs` |
 | `pgp-workdir-encryption` | Pgp workdir encryption | `tests/pgp-workdir-encryption.cjs` |
 
-## ядро (12)
+## ядро (13)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -396,6 +405,7 @@
 | `core-container` | Core container | `tests/core-container.cjs` |
 | `core-groups` | Core groups | `tests/core-groups.cjs` |
 | `core-migration` | Core migration | `tests/core-migration.cjs` |
+| `core-modules` | Core modules | `tests/core-modules.cjs` |
 | `core-orphan` | Core orphan | `tests/core-orphan.cjs` |
 | `core-plugins` | Core plugins | `tests/core-plugins.cjs` |
 | `core-profiles` | Core profiles | `tests/core-profiles.cjs` |
@@ -472,6 +482,15 @@
 | `shared-data-lock` | Shared data lock | `tests/shared-data-lock.cjs` |
 | `shared-data-processes` | Shared data processes | `tests/shared-data-processes.cjs` |
 
+## HTML (4)
+
+| Правило | Заглавие | Файл |
+| --- | --- | --- |
+| `html-assets` | Html assets | `tests/html-assets.cjs` |
+| `html-headers` | Html headers | `tests/html-headers.cjs` |
+| `html-projects` | Html projects | `tests/html-projects.cjs` |
+| `html-publish` | Html publish | `tests/html-publish.cjs` |
+
 ## SQLite (4)
 
 | Правило | Заглавие | Файл |
@@ -543,14 +562,6 @@
 | `blackbox-security` | Blackbox security | `tests/blackbox-security.cjs` |
 | `whitebox-invariants` | Whitebox invariants | `tests/whitebox-invariants.cjs` |
 | `whitebox-security` | Whitebox security | `tests/whitebox-security.cjs` |
-
-## HTML (3)
-
-| Правило | Заглавие | Файл |
-| --- | --- | --- |
-| `html-assets` | Html assets | `tests/html-assets.cjs` |
-| `html-projects` | Html projects | `tests/html-projects.cjs` |
-| `html-publish` | Html publish | `tests/html-publish.cjs` |
 
 ## грешки (3)
 

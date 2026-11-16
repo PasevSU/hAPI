@@ -10,7 +10,8 @@
 
 | Какво | Команда |
 | --- | --- |
-| Пълен тестов пакет | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` |
+| Пълен тестов пакет | `node scripts/safe-release.cjs` (генератори → build → verify → матрица → отчет → скенери → lint) |
+| Бърза проверка | `node scripts/safe-release.cjs --fast` (същото без матрицата) |
 | Един тест | `node tests/<име>.cjs` |
 | Отчет за изданието | `node scripts/release-status.cjs` + `node tests/release-status.cjs` |
 | Изграждане | `node scripts/build-release.cjs` → `node scripts/verify-release.cjs` → `node scripts/build-haoss.cjs` |
@@ -19,17 +20,35 @@
 
 ## Твърди порти (чупят изданието)
 
-- `server.js` ≤ **2722** реда (днес **2715** — 7 реда до портата) → нов код отива в
-  `hapi_enterprise/routes/*.js`.
+- `server.js` ≤ **2722** реда (днес **2703**) → нов сегмент влиза като файл в
+  `hapi_enterprise/server_module/` (зарежда се автоматично, без вписване) или в
+  `hapi_enterprise/routes/*.js`, ако е част от HTTP договора.
 - Всички текстови файлове са **LF**; един CRLF чупи S08/S22.
 - `dist/` съдържа точно 6 файла; `verify-release` трябва да е **22/22** (S20 е само с `--with-tests`).
-- `release-status` иска зелен матрикс и **412** теста в дървото.
+- `release-status` иска зелен матрикс и **431** теста в дървото.
 - `tests/known-defects.cjs`: затворен ред сочи съществуващ `.js`/`.cjs`, заглавието носи текущата версия.
 - `ui-version`, `addon-changelog`, `docs-index`, `scenario-matrix`, `ui-css-split` — виж `tests/`.
 
 ## Карта на кода
 
 - `hapi_enterprise/server.js` — HTTP диспечер и админ API; не расте (бюджет на редовете).
+- `hapi_enterprise/server_module/` — сегменти, които `server.js` зарежда ВСИЧКИ по име
+  (`server-modules.js`), без твърдо вписан списък: `portal-landing.js` (публичната страница
+  `/p/<id>`). Договор: `module.exports.create = (host) => ({ name?, order?, handle(ctx) })`;
+  `handle` връща `true`, когато е приключил заявката. Счупен файл тук = грешка при старт.
+  Тест: `tests/server-modules.cjs`. Плюс ред в `COPY server_module /app/server_module/` —
+  иначе `docker-runtime` пада.
+- `hapi_enterprise/core.js` — глобалните функции, които се ползват многократно (QR, адреси,
+  API документ); зарежда ВСИЧКИ `core_module/*.js` по име, същият договор като
+  `server-module.js`, но `create(deps, api) => ({ name?, fn })`, а `core.api.<име>` е замразен.
+  Първият аргумент е това, което `server.js` подава, вторият — ЖИВИЯТ обект на слоя, за да
+  ползва един модул друг. Днес: `qr` (SVG) · `address` (договор · `attach` · `landingPath`) ·
+  `api-docs` (`spec` · `record` · `registry`). Никой не вика `qr-svg`/`portal-links`/`api-spec`
+  напряко. Тест: `tests/core-modules.cjs`. Нова функция → файл в `core_module/`
+  (+ ред в `COPY core_module`) и ред в `CRITICAL` на `integrity.js`.
+- `hapi_enterprise/module-folder.js` — ЕДНОТО правило за име на файл в динамична папка
+  (`ELIGIBLE`, невалидно име = грешка при старт, празна папка = грешка). Ползват го и
+  `server-modules.js`, и `core.js`, за да не се разминат двете копия.
 - `hapi_enterprise/routes/` — извадени договори: `folders.js` (дърво на папките), `file-transfer.js`,
   `portal-qr.js`, `portal-storage.js`, `portal-tokens.js`, `portal-archive.js`, `reports.js`, `webhooks.js`.
 - `hapi_enterprise/ui/` — панелът: `files-manager.js` (оркестратор), `portal-control.js`
@@ -60,12 +79,52 @@
 ## Капани
 
 - PowerShell мачка backtick и `\u` в `node -e` → пиши временен `.cjs` в `reports/` и го трий.
+- **`require` кешира по ПЪТ, не по съдържание.** Тест, който пренаписва същия файл в същата
+  временна папка и чака друг резултат, получава ПЪРВИЯ модул (така `server-modules.cjs`
+  изглеждаше счупен, а кодът беше верен). Всяка проба → собствена папка или собствено име.
 - `Add-Content` и here-strings дават CRLF → нормализирай с node преди `build-release`.
 - Форматер, който маха интервала около `>` в CSS, чупи exact-string тестове (затова `.vscode/settings.json`
   изключва format on save).
 - Тестовете оставят папки в `%TEMP%`; матрицата вече ги чисти сама след серията.
 - Браузърните инструменти не стигат до `127.0.0.1` → ползвай `gui-harness`, не Playwright.
 - `--only` не пише `reports/test-matrix.json` (пази пълния отчет за `release-status`).
+- **Версия без таг = издание без образ.** Версията в `config.yaml` се вдига преди тага, а
+  `addon-image.yml` строи образа по версията от манифеста. Затова този workflow се пуска и на
+  `push` към `main`, не само на таг `v*`: без това Home Assistant показва обновяване и дава
+  `[404] manifest unknown` (точно това стана с 0.69.215, която остана в `main` без таг).
+  Името остава конвенцията на HA `ghcr.io/pasevsu/{arch}-addon-hapi_enterprise`; единно
+  многоархитектурно име би искало manifest list, какъвто workflow-ът не строи.
+  Тест: `tests/addon-image-pipeline.cjs` (+ котва в `regression-guards.cjs`, DEF-61).
+- **Базовият образ на Dockerfile е `alpine:major.minor`, без кръпка.** `FROM alpine:3.24.5`
+  (опит от 0.69.222) дава 4 червени теста при зелен код — `docker-runtime`, `ha-compatibility`,
+  `ha-support-matrix`, `raspberrypi-compat` искат точно `/^alpine:\d+\.\d+$/` — и събаря
+  `verify-release` S04. Кръпките влизат през `apk upgrade --no-cache --available`, не през тага;
+  затова тагът не се пипа, когато излезе нов patch на Alpine.
+- **Матрицата носи отпечатък на дървото (0.69.224).** `test-matrix.json` пази `treeHash`
+  (sha256 по СЪДЪРЖАНИЕТО на `hapi_enterprise/`, `tests/`, `scripts/`, без `reports/`, `dist/`,
+  `release/`), а `release-status` сравнява с днешния и казва „остаряло“, ако се разминават.
+  Затова: генераторите (`gen-test-rules`, `docs-index`, `integrity-manifest`, `build-release`)
+  се пускат ПРЕДИ матрицата — иначе тя описва старо дърво. Bootstrap редът е
+  `--skip=matrix-freshness,release-status` → `release-status` → пълна серия.
+- **Тест, който казва SKIP, не е минал.** `test-matrix.cjs` разпознава `SKIP`/`SKIPPED` в
+  изхода, брои теста отделно (`skippedByEnv`) и `release-status` го изброява с ⊘ — иначе
+  „100% успех“ включваше проверки, които не са се случили.
+- **Матрицата не се пуска през терминала на агента.** Инструментът я мести във фонов режим и
+  после убива процесите `node` с контролно събитие → дете умира с `exit=3221225786`
+  (0xC000013A) по средата на списъка, а `reports/test-matrix.json` остава от ПРЕДИШНИЯ пуск.
+  `Invoke-CimMethod Win32_Process Create` НЕ помага (проверено 2026-11-15: същият `exit`).
+  Работещият начин е планирана задача — тя има собствена конзола и не получава `Ctrl+C`:
+  `Register-ScheduledTask -TaskName hapi-matrix -Action (New-ScheduledTaskAction -Execute cmd.exe -Argument '/c node scripts\test-matrix.cjs --skip=release-status --attempts=1 > D:\hAPI\reports\m.out.log 2>&1' -WorkingDirectory D:\hAPI) -Force; Start-ScheduledTask hapi-matrix`,
+  после чакай реда `резултат:` в лога (извеждай по ред на всеки 5 s, иначе и този чакащ процес
+  бива преместен във фон), накрая `Unregister-ScheduledTask hapi-matrix`.
+- **След промяна в кода матрицата се пуска ДВА пъти.** `matrix-freshness` сравнява
+  `treeHash` в `reports/test-matrix.json` с днешния: първият пуск записва новия отпечатък,
+  вторият го чете и минава. Това е нормалният път, не флейк — не „поправяй“ теста. Копието,
+  което той строи за проверката на броя, е зелено ПО СТРОЕЖ (`passed` се смята от броя
+  тестове), иначе един чужд провал заключваше матрицата в цикъл (0.69.226).
+- **Последният ключ в `manifest.json` е без запетая.** Интеграционният манифест завършва с
+  `"version": "X"` и `}`; редакция, която добави запетая, чупи `build-release` с
+  `JSON.parse` грешка, преди който и да е тест да каже какво е станало.
 - **Таймер, който държи процеса.** `setTimeout(() => URL.revokeObjectURL(...), 60000)` в панела
   не пуска Node да излезе след последното твърдение: `gui-file-share` става 62 s вместо 2 s,
   `gui-journeys` 112 s вместо 20 s, матрицата — 490 s вместо 338 s (и `J53` флейква по 45 s).
@@ -111,6 +170,14 @@
   `tests/ui-nav-symmetry.cjs`, а живият екран — законът `balanced-groups` (с решение в
   `debug-ledger.js`). Отвореното меню се прибира само при клик извън него и при `Escape`
   (`tests/ui-nav-outside-click.cjs`).
+- **Кешът на статиката е версия в адреса, не `no-store`.** `/ui/*`, `/portal.css`, `/portal.js`,
+  `/portal-i18n.js` се дават `private, max-age=31536000, immutable` само когато адресът носи
+  `?v=<версия>`, иначе `no-cache`. Версията се слага в HTML-а при СЕРВИРАНЕ (`uiIndexHtml` в
+  `server.js`, `.replace` в `portal-landing.js`), не във файловете на диска — иначе `html-assets`
+  и проверката за съществуващи файлове гледат друга истина. Нов статичен адрес → `?v=` в HTML-а
+  и ред в `tests/static-cache.cjs`; `no-store` на статика и `public, max-age` на миниатюри са
+  забранени (DEF-87: 34 файла / 1044 KB при всяко зареждане, а `public` миниатюра от заключен
+  портал можеше да остане в прокси на доставчика).
 - **Нов UI файл не се сервира сам.** `UI_FILES` в `server.js` е allowlist: без ред там
   `/ui/<нов>.js` връща **404** и падат `ingress-panel-load`, `panel-framing`, `report-api`,
   `file-placement` (+ `html-assets`, `docker-runtime` за списъка). Плюс ред в `CEILING` на

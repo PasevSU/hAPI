@@ -29,7 +29,10 @@ const opt = (name, def) => {
 };
 const verbose = opt('verbose', 'false') === 'true';
 const attempts = Math.max(1, Number(opt('attempts', '5')) || 5);
+// Отпечатъкът на дървото (0.69.224) — `release-status` го сравнява, за да не мине стара серия.
+const { fingerprint } = require('./tree-fingerprint.cjs');
 const perTestTimeout = Math.max(1000, Number(opt('timeout', '180000')) || 180000);
+
 const only = String(opt('only', '')).trim().toLowerCase();
 // `--skip` съществува за точно един случай: `tests/release-status.cjs` чете
 // `reports/test-matrix.json`, който САМАТА серия пише едва накрая. Когато се добави нов
@@ -128,8 +131,15 @@ function runSuite(files, env) {
     const timedOut = res.error && res.error.code === 'ETIMEDOUT';
     const ok = !timedOut && res.status === 0;
     const output = `${res.stdout || ''}${res.stderr || ''}`.trim();
-    results.push({ file, ok, ms, exit: res.status, timedOut, output });
-    if (ok && !verbose) {
+    // Тест, който сам казва „SKIP“, не е проверил нищо: липсва инструмент (gpg, pwsh),
+    // артефакт (release/haoss) или език. Дотук такъв тест се броеше за МИНАЛ и отчетът
+    // казваше „100% успех“, макар част от проверките да не са се случили (0.69.224).
+    const skippedByEnv = ok && /(^|\n)\s*[\w.-]+ SKIP(PED)?[: (]/.test(output);
+    results.push({ file, ok, skipped: skippedByEnv, ms, exit: res.status, timedOut, output });
+    if (skippedByEnv) {
+      const lastLine = output.split('\n').filter(Boolean).pop() || 'SKIP';
+      process.stdout.write(`  ⊘ ${file} (${ms}ms) ${lastLine.slice(0, 110)}\n`);
+    } else if (ok && !verbose) {
       const lastLine = output.split('\n').filter(Boolean).pop() || 'PASS';
       process.stdout.write(`  ✔ ${file} (${ms}ms) ${lastLine.slice(0, 110)}\n`);
     } else if (!ok) {
@@ -219,6 +229,9 @@ function main() {
 
   const history = [];
   const startedAll = Date.now();
+  // Отпечатъкът се ВЗИМА ПРЕДИ серията: той описва кода, който тя провери. Ако след това
+  // някой пипне дървото, `release-status` вижда разминаване и не нарича отчета „зелен“ (0.69.224).
+  const tree = fingerprint();
   for (let attempt = 1; attempt <= attempts; attempt++) {
     process.stdout.write(`\n─── Опит ${attempt}/${attempts} (всички тестове от начало) ───\n`);
     const run = runSuite(files, env);
@@ -240,6 +253,8 @@ function main() {
   const summary = summarize(history, files);
   const failed = summary.filter((s) => !s.ok);
   const flaky = summary.filter((s) => s.flaky);
+  const lastRun = history[history.length - 1].results;
+  const envSkipped = lastRun.filter((r) => r.skipped).map((r) => r.file);
   const totalMs = Date.now() - startedAll;
   // При --only отчетът НЕ се пише: това е частична серия, а `reports/test-matrix.json`
   // трябва да продължи да описва ПЪЛНИЯ набор — иначе `tests/release-status.cjs` пада,
@@ -251,14 +266,17 @@ function main() {
   }
   writeReport({
     generatedAt: new Date().toISOString(),
+    treeHash: tree.hash,
+    treeFiles: tree.files,
     attemptsUsed: history.length,
     attemptsAllowed: attempts,
     totalMs,
     files: files.length,
-    passed: files.length - failed.length,
+    passed: files.length - failed.length - envSkipped.length,
     failed: failed.map((f) => f.file),
     flaky: flaky.map((f) => f.file),
     skipped,
+    skippedByEnv: envSkipped,
     perTest: summary,
   });
 
@@ -282,8 +300,14 @@ function main() {
     process.stdout.write('    → поправи причината; пакетът не отчита успех при остатъчни грешки.\n');
     return 1;
   }
+  if (envSkipped.length) {
+    process.stdout.write(
+      `    ⊘ ${envSkipped.length} теста НЕ провериха нищо (липсва инструмент/артефакт): ${envSkipped.join(', ')}` +
+      ' — вдигни средата, ако този пуск трябва да брои за пълен\n',
+    );
+  }
   process.stdout.write(
-    `    ✔ 100% успех: ${files.length}/${files.length} теста за ${(totalMs / 1000).toFixed(1)}s ` +
+    `    ✔ 100% успех: ${files.length - envSkipped.length}/${files.length} теста за ${(totalMs / 1000).toFixed(1)}s ` +
     `(${history.length} ${history.length === 1 ? 'опит' : 'опита'})\n`,
   );
   process.stdout.write('    отчет: reports/test-matrix.json\n');

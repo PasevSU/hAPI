@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.216
+# Състояние на изданието — hAPI Enterprise 0.69.226
 
-Версия: **0.69.216** · клон `main`
+Версия: **0.69.226** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,42 +14,51 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **421/421** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.216 — отпечатъците се сверяват от `verify-release.cjs` |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 663 файла · 121551 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 657 файла · 119580 реда · critical: 0 · high: 0 · medium: 0 · low: 210 — чисто · изключения: 23/23 (0 мъртви) |
+| Тестове | `node scripts/test-matrix.cjs` | **432/432** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.226 — отпечатъците се сверяват от `verify-release.cjs` |
+| Линт | `npx eslint . --max-warnings=0` | `npx eslint . --max-warnings=0` → 0 · потиснати **217** находки в 135 файла (най-много `no-empty` 93) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 687 файла · 124050 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 681 файла · 122088 реда · critical: 0 · high: 0 · medium: 0 · low: 210 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 421 правила (= тестови файлове), 48 маршрута, 27 RBAC способности, 44 опции |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 432 правила (= тестови файлове), 45 маршрута, 27 RBAC способности, 44 опции |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.216.tar.gz` | add-on архив (213 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.216.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.216.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.226.tar.gz` | add-on архив (224 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.226.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.226.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.216
+## 3. Какво влезе във 0.69.226
 
-- **Прегледът вече не рисува документи, които изпълняват скрипт (DEF-60).** Намерено при
-  сегментирания анализ на кода: `preview()` слагаше blob адрес в `<iframe>` за всеки тип,
-  различен от текст. Blob адресът наследява произхода на панела — качен **SVG** (или HTML)
-  със `<script>` вътре се изпълнява в същия произход и стига до `sessionStorage` с
-  администраторския токен. Сървърът също сервираше `image/svg+xml` **inline без политика**.
-  Сега: панелът рисува в iframe само `application/pdf` и `image/(png|jpeg|gif|webp)`
-  (`SAFE_FRAME`), за останалите показва причина и предлага изтегляне; inline SVG носи
-  `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:;
-  frame-ancestors 'self'`; името в `Content-Disposition` на пакета с отчет мина на RFC 5987
-  (`filename*=UTF-8''…`), защото сурово име в заглавка е Latin-1 и чупи връзката при кирилица.
-- **Глобални тестери за класа, а не за случая.** `tests/render-sinks-global.cjs` минава през
-  целия интерфейс и публичните страници и отказва: blob→iframe без бял списък, поле от данни
-  в `innerHTML` без `esc(`, име на файл в `Content-Disposition` без процентно кодиране,
-  `<script` през `innerHTML`, inline SVG без CSP. `tests/preview-unsafe-types.cjs` доказва
-  поправката на живо: SVG със `<script>` → CSP без `script-src`, PNG → inline както преди,
-  панелът → без iframe, със съобщение и изтегляне.
+- **Статиката спря да се тегли наново при всяко отваряне (DEF-87).** Измерено преди промяната:
+  панелът искаше **34 файла / 1044 KB** при всяко зареждане, порталът — **150 KB**, защото
+  всичките **46** отговора бяха `no-store` (`fs.readFileSync` при всяка заявка). Причината за
+  `no-store` беше вярна (след обновяване на add-on-а стар речник замръзва), решението — грешно.
+- **Кешът вече е обвързан с версия в адреса.** `/ui/*`, `/portal.css`, `/portal.js`,
+  `/portal-i18n.js` се дават с `private, max-age=31536000, immutable`, когато адресът носи
+  `?v=<версия>`, и с `no-cache`, когато не носи (стар таб, ръчна заявка) — тоест нито замръзва
+  речник, нито се хвърля кешът. Версията се слага в HTML при сервиране от **`page-version.js`**
+  (`versioned(html, version)` — подменя само относителните `src`/`href`) в `server.js` и в
+  `server_module/portal-landing.js`; файловете на диска не се пипат. Входната страница остава
+  `no-cache` — тя е единственият адрес без версия.
+- **Миниатюрите вече не са `public`.** Бяха `public, max-age=3600`, тоест споделен прокси на
+  доставчика можеше да пази картинка от **заключен** портал; сега са `private, max-age=3600`.
+- **Тестът пази двете половини на договора заедно:** `static-cache.cjs` (§1 кеш с/без версия ·
+  §2 входът носи версия за всеки ресурс и тялото е същото като на диска, нищо повече · §3
+  порталът · §4 нито един `public` в `server.js` и `server_module/`). „Кеш без версия“ и
+  „версия без кеш“ падат и двете.
+- **Затворен и капанът в самия контрол.** `matrix-freshness.cjs` строеше „зеленото“ си копие от
+  `passed` на ПРЕДНИЯ пуск: щом предният пуск не е зелен (примерно защото този тест е паднал),
+  редът излизаше „429/432“ и проверката за брой падаше — тестът за свежест падаше заради чужд
+  провал, а не заради свежест, и матрицата се заключваше в цикъл. Сега копието е зелено по
+  строеж (`passed` се смята от БРОЯ ТЕСТОВЕ).
+- **Регистърът:** 87 реда, **80 затворени**, **6 отворени** (DEF-01 приет; DEF-06, DEF-49,
+  DEF-66, DEF-67, DEF-69) — всеки с причина.
 
 ## 4. Как се проверява наново
 

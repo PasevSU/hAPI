@@ -117,3 +117,11 @@ jobs:
             --platform linux/amd64,linux/arm64,linux/arm/v7 \
             --output type=oci,dest=/tmp/hapi-enterprise-image.tar \
             hapi_enterprise
+
+      # 0.69.224: образът не само се СТРОИ, а се и ИЗПЪЛНЯВА. Дотук липсващ `COPY` или
+      # счупен `require` минаваше зелено и се виждаше чак в Home Assistant (класът на
+      # `[404] manifest unknown`). Стъпката стартира контейнера и вдига глобалния слой.
+      - name: The image really runs (amd64)
+        run: |
+          docker buildx build --platform linux/amd64 --load -t hapi-enterprise:ci hapi_enterprise
+          docker run --rm --entrypoint node hapi-enterprise:ci -e "const core = require('/app/core').load({ dir: '/app/core_module', deps: { links: require('/app/links') } }); const svg = core.api.qr.svg('ci'); if (!svg.startsWith('<svg')) throw new Error('qr broken'); console.log('boot-ok ' + core.names.join(','))"

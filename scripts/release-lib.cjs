@@ -24,7 +24,11 @@ const PRODUCT = 'hAPI Enterprise';
 // Никога не влизат в изданието: кешове, локално състояние и тайни.
 const SKIP_DIRS = new Set(['__pycache__', 'node_modules', '.git', '.pytest_cache', '.mypy_cache', '.idea', '.vscode']);
 const SKIP_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini', 'Desktop.ini', 'options.json', 'admin-token', '.env']);
-const SKIP_EXT = new Set(['.pyc', '.pyo', '.tmp', '.log', '.swp', '.bak']);
+// Архивните разширения (`.7z`, `.zip`) не са източник: те са локални сборки, които `.gitignore`
+// покрива. Дотук разчитахме САМО на git, за да не влязат — и когато `git ls-files` не отговори
+// навреме, `hapi_enterprise/generator.7z` влизаше в tar-а и S08 падаше („224 срещу 223“).
+// Сега класът е изключен и без git.
+const SKIP_EXT = new Set(['.pyc', '.pyo', '.tmp', '.log', '.swp', '.bak', '.7z', '.zip']);
 
 const SEMVER = /^(\d+)\.(\d+)\.(\d+)$/;
 
@@ -125,6 +129,12 @@ function walk(dirAbs, prefix, out = []) {
  *
  * Без git (или извън хранилище) списъкът е празен — тогава поведението е старото и
  * `git ls-files` не е задължителен за строежа.
+ *
+ * 0.69.225 — FAIL-CLOSED, а не тихо празно множество. Измерено: в `hapi_enterprise/` лежеше
+ * локалният `generator.7z` (git го игнорира). Когато `git` върнеше грешка (заключен индекс,
+ * бавен диск), тази функция връщаше празно множество, `build-release` включваше файла в
+ * tar-а, а `verify-release` S08 падаше с „архивът има 224 файла, дървото 223“ — тоест сборката
+ * можеше да публикува локален файл. Сега грешка на git СПИРА строежа с ясна причина.
  */
 function ignoredPaths(root = ROOT) {
   const res = spawnSync('git', ['ls-files', '--others', '--ignored', '--exclude-standard', '-z'], {
@@ -132,8 +142,15 @@ function ignoredPaths(root = ROOT) {
     encoding: 'utf8',
     maxBuffer: 8 * 1024 * 1024,
   });
-  if (res.status !== 0 || !res.stdout) return new Set();
-  return new Set(res.stdout.split('\0').filter(Boolean).map(posix));
+  if (res.error && res.error.code === 'ENOENT') return new Set(); // git липсва — извън хранилище
+  if (res.status !== 0) {
+    throw new Error(
+      'release-lib: `git ls-files --others --ignored` се провали (' +
+        String((res.stderr || '').trim() || res.status) +
+        ') — не може да се разбере кои файлове не влизат в изданието',
+    );
+  }
+  return new Set(String(res.stdout || '').split('\0').filter(Boolean).map(posix));
 }
 
 /** `walk` без игнорираните от git файлове — това е списъкът, който влиза в изданието. */

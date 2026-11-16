@@ -292,6 +292,27 @@ input[type="radio"] {
   border-radius: 3px;
 }
 
+/* Логото в прегледа: височината е в КЛАС, не в `style="max-height:80px"` — панелът се
+   сервира с `style-src 'self'`, тоест вграденият стил се блокира (DEF-62). */
+.pv-logo {
+  height: auto;
+  border: 0;
+}
+
+.pv-logo img {
+  display: block;
+  max-height: 80px;
+  max-width: var(--w-100);
+  object-fit: contain;
+}
+
+/* Колоните в прегледа: равни дялове, без `style="flex:1"` (същата причина, DEF-62). */
+.pv-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--sp-6);
+}
+
 .two-col {
   display: grid;
   grid-template-columns: 1fr;
@@ -3593,11 +3614,35 @@ body.up-locked {
   overflow: hidden;
 }
 
-.up-bar-fill {
+/* Напредъкът е `<progress value>`, не вграден стил: панелът се сервира с
+   `style-src 'self'`, тоест `style="width:…"` се блокира и лентата остава празна
+   (DEF-62). Тук се рисуват и двата рендиращи пътя — WebKit/Blink и Gecko. */
+.up-bar-progress {
   display: block;
-  height: 100%;
+  width: var(--w-100);
+  height: 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.up-bar-progress::-webkit-progress-bar {
+  background: transparent;
+  border-radius: var(--radius-sm);
+}
+
+.up-bar-progress::-webkit-progress-value {
   background: var(--accent);
-  transition: width 120ms linear;
+  border-radius: var(--radius-sm);
+  transition: inline-size 120ms linear;
+}
+
+.up-bar-progress::-moz-progress-bar {
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+  transition: inline-size 120ms linear;
 }
 
 .up-list {

@@ -16,7 +16,16 @@ name: Add-on image
 # анонимно. Проверката е в `scripts/check-addon-image.ps1`.
 on:
   push:
+    # Тагът е изданието: той пуска образа за точно тази версия.
     tags: ['v*']
+    # И всеки push към `main`, защото версията в `config.yaml` се вдига ПРЕДИ тага.
+    # Без този ред има прозорец (и цяло издание, ако тагът се забрави), в който store-ът на
+    # Home Assistant вижда „0.69.215“ в `config.yaml`, а образът с този таг още не съществува:
+    # Supervisor дава `404 manifest unknown` и обновяването е невъзможно. Измерено при
+    # 0.69.215 — версията беше качена в `main` без таг, а `docker manifest inspect` върна
+    # `manifest unknown`. Образът се строи от СЪЩИЯ файл и носи версията от `config.yaml`,
+    # затова повторното пускане е безопасно (същият таг се презаписва).
+    branches: [main]
   workflow_dispatch:
 
 permissions:

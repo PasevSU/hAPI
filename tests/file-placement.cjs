@@ -39,7 +39,19 @@ assert.deepEqual(broken, [], 'require към несъществуващ файл
 // Кой какво зарежда: транзитивно от истинските входни точки. `standalone.js` е входната
 // точка за разработка (пуска сървъра извън Home Assistant) и нарочно НЕ влиза в образа,
 // затова за проверката на Dockerfile се ползват само `start.js` и `server.js`.
-const ENTRY = ['start.js', 'standalone.js', 'server.js'].map((f) => path.join(ADDON, f));
+//
+// ДИНАМИЧНО ЗАРЕЖДАНИ: `server-modules.js` чете ЦЯЛАТА папка `server_module/*.js` по име, а
+// `core.js` — `core_module/*.js`, затова статичният граф на `require` не ги вижда. Те НЕ се
+// изключват от графа (иначе модулите, които те самите искат — напр. `portal-links.js` —
+// изглеждат мъртви): влизат като входни точки. Че файловете НАИСТИНА се зареждат, пазят
+// `tests/server-modules.cjs` и `tests/core-modules.cjs`.
+const DYNAMIC_DIRS = ['server_module', 'core_module'];
+const dynamicFiles = DYNAMIC_DIRS.flatMap((name) => {
+  const dir = path.join(ADDON, name);
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).filter((f) => f.endsWith('.js')).map((f) => path.join(dir, f));
+});
+const ENTRY = [...['start.js', 'standalone.js', 'server.js'].map((f) => path.join(ADDON, f)), ...dynamicFiles];
 const reach = (entries) => {
   const seen = new Set();
   const pending = [...entries];
@@ -55,7 +67,7 @@ const reach = (entries) => {
   return seen;
 };
 const loaded = reach(ENTRY);
-const prodModules = reach(['start.js', 'server.js'].map((f) => path.join(ADDON, f)));
+const prodModules = reach(['start.js', 'server.js'].map((f) => path.join(ADDON, f)).concat(dynamicFiles));
 
 // Сервирани на браузъра: това са файловете, които `index.html` иска с `<script src>`, плюс
 // целите папки на публичните страници. Извеждат се от самата страница, не се изброяват тук.
@@ -98,6 +110,7 @@ for (const file of addonJs) {
   const abs = path.resolve(file);
   const name = rel(ADDON, file);
   if (loaded.has(abs) || browser.has(abs) || TEST_ONLY.has(name)) continue;
+  if (DYNAMIC_DIRS.some((dir) => name.startsWith(dir + '/'))) continue;
   classified.push(name);
 }
 assert.deepEqual(
@@ -109,6 +122,24 @@ assert.deepEqual(
 // Обратното: изброен като „само за тестове“ файл, който вече е зареден, е мъртъв запис.
 for (const name of TEST_ONLY.keys()) {
   assert.ok(exists(path.join(ADDON, name)), 'TEST_ONLY изброява липсващ файл: ' + name);
+}
+
+// DEF-71: компонентите се зареждат динамично, но САМИЩЕ им `require`-и трябва да сочат
+// съществуващи файлове — иначе `server.js` стартира и пада при първата заявка към компонента
+// (в контейнера, където никой не гледа). Обхождат се и `../` (компонент → модул в корена).
+for (const name of DYNAMIC_DIRS) {
+  const dir = path.join(ADDON, name);
+  if (!fs.existsSync(dir)) continue;
+  for (const entry of fs.readdirSync(dir).filter((f) => f.endsWith('.js'))) {
+    const text = read(path.join(dir, entry));
+    for (const m of text.matchAll(/require\('(\.[^']+)'\)/g)) {
+      const target = path.resolve(dir, m[1]);
+      const resolved = [target, target + '.js', path.join(target, 'index.js')].find(
+        (p) => fs.existsSync(p) && fs.statSync(p).isFile(),
+      );
+      assert.ok(resolved, `${name}/${entry} изисква „${m[1]}“, което не съществува`);
+    }
+  }
 }
 
 // Данните, които кодът чете по име: шрифтове, правила, преводи, плъгини, демо данни.
@@ -234,6 +265,13 @@ assert.ok(ccFiles.includes('portal.css'), 'интеграцията има porta
     }
     for (const dir of ['ui', 'portal', 'fonts', 'rules', 'routes', 'evidence-portal', 'generator', 'config.yaml']) {
       assert.ok(copied.has(dir), 'Dockerfile не копира ' + dir + ' — в образа щеше да липсва');
+    }
+    // ДИНАМИЧНИТЕ папки влизат с отделен `COPY <папка> /app/<папка>/` и НЕ минават през
+    // проверката по-долу (тя гледа само корена и `routes/`). Без този ред двете папки бяха
+    // непроверени: изтрит `COPY core_module …` оставяше всички тестове зелени, а образът
+    // падаше при старт с „core: липсва папката“. Проверено на 2026-11-15 с проба.
+    for (const dir of DYNAMIC_DIRS) {
+      assert.ok(copied.has(dir), 'Dockerfile не копира папката ' + dir + '/ — зареждащият модул я иска при старт');
     }
     // Двете папки, които НЕ влизат в образа, трябва да са изключени НАРОЧНО: Supervisor чете
     // `translations/` от папката на add-on-а (не от образа), а `plugins/` са примери за тестове.

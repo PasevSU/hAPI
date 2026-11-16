@@ -1,10 +1,10 @@
 {
   "generatedFor": "hapi_enterprise",
-  "total": 419,
-  "tested": 394,
+  "total": 420,
+  "tested": 395,
   "untested": 25,
-  "fnTotal": 369,
-  "fnTested": 369,
+  "fnTotal": 370,
+  "fnTested": 370,
   "modules": [
     {
       "module": "hapi_enterprise/api-registry.js",
@@ -1801,6 +1801,16 @@
         },
         {
           "name": "verifyTicket",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/server-modules.js",
+      "functions": [
+        {
+          "name": "handle",
           "kind": "функция",
           "tested": true
         }

@@ -86,6 +86,13 @@ const { startServer, mountUi, waitFor } = require('./lib/gui-harness.cjs');
     assert.ok(bar, 'има лента за напредък');
     assert.equal(bar.getAttribute('aria-valuemin'), '0');
     assert.equal(bar.getAttribute('aria-valuemax'), '100');
+    // ── 1б. Напредъкът е АТРИБУТ, не вграден стил (DEF-62) ───────────────────
+    // Панелът се сервира с `style-src 'self'`; живата конзола на потребителя в Home
+    // Assistant показа блокиран `style="width:…"`, тоест лентата оставаше празна.
+    assert.equal(ui.document.body.querySelectorAll('[style]').length, 0, 'в прозореца няма нито един атрибут style — CSP го блокира');
+    assert.equal(bar.tagName.toLowerCase(), 'progress', 'лентата е <progress>, а не span с width: ' + bar.tagName);
+    assert.equal(bar.getAttribute('max'), '100', '<progress max> е 100');
+    assert.equal(Number(bar.getAttribute('value')), Number(bar.getAttribute('aria-valuenow')), 'стойността на лентата и aria-valuenow са едно и също число');
 
     // ── 2. Краят: 100 %, хеш и „готово“ ───────────────────────────────────────
     await waitFor(() => progress.view().items[0].status === 'done', { label: 'края на качването', timeout: 20000 });

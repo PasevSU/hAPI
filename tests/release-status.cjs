@@ -38,12 +38,19 @@ try {
   assert.match(actual, new RegExp('^# Състояние на изданието — hAPI Enterprise ' + version.replace(/\./g, '\\.') + '$', 'm'), 'заглавието носи текущата версия');
   assert.ok(actual.includes(`**${testFiles}/${testFiles}**`), 'броят тестове идва от дървото: ' + testFiles);
   const skipped = Array.isArray(matrix.skipped) ? matrix.skipped.length : 0;
+  const envSkipped = Array.isArray(matrix.skippedByEnv) ? matrix.skippedByEnv.length : 0;
   assert.equal(
-    matrix.passed + skipped,
+    matrix.passed + skipped + envSkipped,
     testFiles,
-    'последното пускане е покрило всички тестове (' + matrix.passed + ' минали + ' + skipped + ' пропуснати от ' + testFiles + ')',
+    'последното пускане е покрило всички тестове (' + matrix.passed + ' минали + ' + skipped + ' от филтър + ' + envSkipped + ' без среда от ' + testFiles + ')',
   );
   assert.deepEqual(matrix.failed || [], [], 'последното пускане е зелено — иначе отчетът не бива да казва „минават“');
+  // Свежест (0.69.224): отчетът носи отпечатъка на дървото, което е проверил, и той трябва да е
+  // същият, който дава скриптът днес — иначе матрицата е от преди промяна в кода.
+  const { fingerprint } = require('../scripts/tree-fingerprint.cjs');
+  assert.ok(matrix.treeHash, 'матрицата носи отпечатък на дървото (treeHash)');
+  assert.equal(matrix.treeHash, fingerprint().hash, 'отпечатъкът в матрицата е от ТОВА дърво — пусни я пак, ако е стар');
+  assert.equal(envSkipped, 0, 'в готовото издание нито един тест не е пропуснат по липса на среда: ' + JSON.stringify(matrix.skippedByEnv || []));
   assert.equal(/\*\*\d+\/undefined\*\*|\[object Object\]/.test(actual), false, 'няма счупени интерполации');
   // Остаряла версия се търси само в заглавната част и таблиците: в §3 стои текстът на
   // CHANGELOG, който по право споменава стари версии.

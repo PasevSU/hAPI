@@ -30,6 +30,12 @@ const CRITICAL = [
   'paths.js',
   'storage-preflight.js',
   'integrity.js',
+  // Глобалният слой (0.69.224): през него минават ВСЕКИ QR код и ВСЕКИ публичен адрес.
+  // Подмяната му не се вижда от тестовете на инсталацията — затова влиза в сверката.
+  'core.js',
+  'core_module/qr.js',
+  'core_module/address.js',
+  'core_module/api-docs.js',
   'ui/index.html',
   'ui/app.js',
   'ui/settings-panel.js',

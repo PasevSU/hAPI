@@ -1,0 +1,245 @@
+configuration:
+  # Nichts im Code liest diese beiden Optionen. Bisher versprach die Beschreibung einen
+  # Konsolen-Login, den es nicht gibt — man legte ein Passwort im Klartext ohne Nutzen ab.
+  username:
+    name: Konsolen-Benutzername (unbenutzt — leer lassen)
+    description: Nur für alte Konfigurationen. Kein Code liest ihn; die Anmeldung läuft über die Home-Assistant-Identität (user_roles / group_roles).
+  password:
+    name: Konsolen-Passwort (unbenutzt — leer lassen)
+    description: Nur für alte Konfigurationen. Kein Code liest es. Hier kein echtes Passwort hinterlegen.
+  token:
+    name: Admin-Token (erforderlich)
+    description: >-
+      Beim Start erforderlich, mindestens 24 Zeichen, kein Platzhalter und kein Wiederholungsmuster.
+      Ohne ihn startet das Add-on nicht (ADMIN_TOKEN_REQUIRED) und erzeugt auch keinen eigenen.
+      In secrets.yaml heißt der Wert hapi_token — Home Assistant ersetzt !secret in Add-on-Optionen
+      jedoch nicht, daher den Wert hier direkt eintragen.
+      Keinen Long-Lived-Access-Token von Home Assistant wiederverwenden: der öffnet die gesamte
+      HA-API, ein gestohlener hAPI-Token wäre also ein gestohlenes Home Assistant. Das Protokoll
+      warnt mit ADMIN_TOKEN_LOOKS_LIKE_HA_LLAT, wenn diese Form erkannt wird.
+  pgp_path_public:
+    name: Pfad zum öffentlichen PGP-Schlüssel (optional)
+    description: >-
+      Vollständiger Pfad im Container, z. B. /homeassistant/_openpgpV6/public.asc. Optional:
+      bleibt er leer (oder fehlt die Datei), startet das Add-on normal und PGP bleibt nicht verfügbar.
+  pgp_path_secret:
+    name: Pfad zum geheimen PGP-Schlüssel (optional)
+    description: >-
+      Vollständiger Pfad zum passphrase-geschützten geheimen Schlüssel, z. B.
+      /homeassistant/_openpgpV6/secret.asc (private.asc funktioniert auch). Nötig zum Lesen
+      verschlüsselter Pfade und zum Entschlüsseln des Arbeitsordners.
+  pgp_path_pass:
+    name: Pfad zur PGP-Passphrase-Datei (optional)
+    description: >-
+      Vollständiger Pfad zur Datei mit HAPI_PGP_KEY_PASS=..., z. B. /homeassistant/_openpgpV6/.env.
+      Auf .env zeigen, nie auf .env.example (die Vorlage hat einen leeren Wert).
+  pgp_key_pass:
+    name: PGP-Passphrase (optional)
+    description: >-
+      Die Passphrase selbst, gespeichert in /data/options.json. Hat Vorrang vor pgp_path_pass.
+      Wird nie protokolliert und nie von der API zurückgegeben.
+  pgp_encrypt_paths:
+    name: Interne Dateipfade verschlüsseln
+    description: >-
+      Speichert storagePathEnc (PGP-verschlüsselt) statt des Klartextpfads in db.json.
+      Erfordert einen geladenen Schlüssel: ohne ihn startet das Add-on weiter und protokolliert
+      pgp.encryption.without-key, aber die erste Verschlüsselung scheitert mit
+      PGP_SECRET_KEY_REQUIRED (503) — nichts sieht verschlüsselt aus, was es nicht ist.
+      Zustand sichtbar unter GET /admin/api/pgp/keyring.
+  pgp_encrypt_workdir:
+    name: Arbeitsordner des Portals verschlüsseln
+    description: >-
+      Verschlüsselt die Dateiinhalte im Arbeitsordner des Portals (AES-256-GCM mit einem pro
+      Datei erzeugten, per PGP verpackten Schlüssel). Erfordert einen geladenen Schlüssel.
+      Ohne Schlüssel und Passphrase sind die Dateien nicht lesbar.
+  db_name:
+    name: Datenbankname (unbenutzt — leer lassen)
+    description: Nur für alte Konfigurationen. Kein Code liest ihn: die Datenbank ist `hapi.sqlite` in /data, und das erste Portal übernimmt den in der Konsole vergebenen Namen. Eine Änderung benennt nichts um.
+  memory_limit_mb:
+    name: Node-Heap-Limit (MB)
+    description: >-
+      1024 als Standard, der gegen die laufende Installation geprüfte Wert. 0 belässt es beim
+      Node.js-Standard (etwa die Hälfte des Container-Speichers); 256-384 ist der sichere
+      Bereich auf einem Raspberry Pi. Der Wert wird als --max-old-space-size übergeben.
+  storage_mirror:
+    name: Zweite Kopie der Dateien (Ordner oder s3)
+    description: >-
+      Ein Ordner (in /share, /media oder /config) oder eine Adresse
+      `s3://bucket/prefix?endpoint=…&region=…&lock=days`. Jeder Upload wird auch dorthin
+      geschrieben, zurückgelesen und per SHA-256 durch POST /admin/api/storage/mirror/verify
+      verglichen; eine fehlende oder beschädigte Seite wird wiederhergestellt (`repair`). Mit
+      `lock=days` werden die S3-Objekte gesperrt (Object Lock COMPLIANCE) und sind während der
+      Frist nicht löschbar.
+  s3_access_key:
+    name: S3-Zugriffsschlüssel (nur s3-Spiegel)
+    description: >-
+      Erforderlich, wenn `storage_mirror` `s3://…` ist. Ohne ihn wird das s3-Ziel beim Start
+      abgelehnt, statt stillschweigend nirgendwo zu schreiben.
+  s3_secret_key:
+    name: S3-Geheimschlüssel (nur s3-Spiegel)
+    description: >-
+      Gehört zum Zugriffsschlüssel. Wird nie protokolliert und ist nie Teil der Spiegeladresse.
+  backup_mirror:
+    name: Spiegelordner für Sicherungen
+    description: >-
+      Optionaler zweiter Ort für die Datenbanksicherungen (in /share, /media oder /config).
+      Jede Kopie wird per SHA-256 geprüft; eine nicht passende Kopie wird gelöscht, damit ein
+      beschädigter Spiegel nie wie eine gültige Sicherung aussieht.
+  backup_folder:
+    name: Sicherungsordner
+    description: Ordner für geplante Sicherungen. Ein relativer Pfad wird in /share aufgelöst.
+  db_id:
+    name: Datenbank-ID
+    description: Kennung für zusammengesetzte DOCFLOW-Schlüssel.
+  profiles:
+    name: Konfigurationsprofile
+    description: JSON-Objekt oder Pfad mit Portal-, Ordner- und Felddefinitionen.
+  public_domain:
+    name: Öffentliche Domain
+    description: >-
+      Externer Hostname für QR-Codes und Portallinks, zum Beispiel pasev.asuscomm.com.
+  public_gateway:
+    name: Öffentliches API-Gateway
+    description: >-
+      In dieser Distribution standardmäßig aktiv (Container-Port 8088 in config.yaml NICHT
+      veröffentlicht, daher nur über einen Reverse Proxy auf demselben Host erreichbar).
+  public_same_origin:
+    name: URLs gleicher Herkunft
+    description: >-
+      Standardmäßig aktiv: relative URLs, weil die API auf Host und Port von Home Assistant
+      antwortet. Aus bedeutet absolute URLs mit CORS.
+  user_roles:
+    name: Benutzerrollen
+    description: >-
+      Optionale JSON-Zuordnung von Home-Assistant-Identität zu Rolle. Der Schlüssel wird gegen
+      `X-Remote-User-Name`, dann `X-Remote-User-Id`, dann `X-Remote-User-Display-Name` geprüft.
+      Admin ist der Standard für jeden Ingress-Benutzer; hier also nur herabstufen, z. B.
+      {"guest": "viewer"}. Rollen: `admin`, `operator`, `viewer` und die Gerichtsrollen
+      `judge`, `prosecutor`, `clerk`, `expert`. Gerichtsrollen LESEN nur Beweise und die
+      Beweiskette; Ausnahme ist `expert`, der eine Stellungnahme abgeben darf. Eine unbekannte
+      Rolle wird abgelehnt, damit ein Tippfehler keinen Zugang gewährt. In dieser Distribution
+      ist die Zuordnung vorbelegt (Installationsbenutzer → `admin`) — damit wird das Add-on getestet.
+  group_roles:
+    name: Gruppenrollen
+    description: >-
+      Optionale JSON-Zuordnung von Gruppenname zu Rolle für einen Reverse Proxy, der
+      `X-Remote-Groups` setzt. Home Assistant selbst sendet keine Gruppeninformationen, daher
+      bleibt dies in einer reinen Add-on-Installation leer.
+  storage_location:
+    name: Speicherort
+    description: >-
+      Wo Dokumente und Datenbank liegen. `addon_config` (Standard) ist der eigene Ordner des
+      Add-ons (/config im Container) und in Supervisor-Snapshots enthalten; `share` ist der
+      gemeinsame Home-Assistant-Ordner (über Samba sichtbar); `media` der andere gemeinsame Ordner.
+  storage_subdirectory:
+    name: Unterordner im Speicherort
+    description: >-
+      Unterordner im gewählten Speicherort; standardmäßig `hapi_enterprise`, also
+      `/config/hapi_enterprise` beim Standard `addon_config`. Bis zu drei Ebenen sind erlaubt
+      (z. B. `documents/hapi/data`). Lagen die Daten vor dem Update im alten Ordner, nutzt das
+      Add-on ihn weiter und protokolliert STORAGE_LEGACY_LOCATION statt mit leerer Datenbank zu starten.
+  storage_mode:
+    name: Speichermodus
+    description: >-
+      local nutzt den eingebundenen Ordner direkt; ha_network erfordert eine aktive
+      Netzwerkspeicher-Einbindung von Home Assistant.
+  storage_mount_name:
+    name: Name des Netzwerkspeichers
+    description: Name der Netzwerkspeicher-Einbindung von Home Assistant (nur für ha_network).
+  min_free_mb:
+    name: Mindestens freier Platz (MB)
+    description: >-
+      1000 als Standard. Reicht der freie Platz am Speicherort nicht, scheitert der Start,
+      damit eine volle Platte die Prüfspur nicht still beschädigen kann.
+  log_level:
+    name: Protokollstufe
+    description: >-
+      error, warn, info, debug oder trace. debug schreibt eine Zeile pro HTTP-Anfrage; trace ist
+      für sehr ausführliche Diagnosen reserviert. Dateien landen in logs/ im Add-on-Ordner.
+  config_dir:
+    name: Regelordner
+    description: >-
+      Ordner mit den Regeldateien für Zugriff und Export. Leer lassen, um /config/rules zu nutzen,
+      wohin beim ersten Start die mitgelieferten Vorgaben kopiert und dort bearbeitet werden können.
+  evidence_portal_deploy:
+    name: QR-Beweisportal veröffentlichen
+    description: >-
+      Kopiert das Evidence-View-Portal nach `www/hapi/data` in der Home-Assistant-Konfiguration —
+      `/config/www/hapi/data` aus Sicht von Home Assistant, `/homeassistant/www/hapi/data` im
+      Add-on-Container —, damit HA es unter /local/hapi/data/portal.html ausliefert. Der
+      Konfigurationsordner wird an `configuration.yaml` erkannt; `EVIDENCE_PORTAL_ROOT` nur setzen,
+      um woanders zu veröffentlichen. Das Portal liest seine Daten aus einer Evidence-API und
+      stellt selbst keine Dateien bereit.
+  tsa_enabled:
+    name: RFC-3161-Zeitstempel
+    description: >-
+      In dieser Distribution standardmäßig aktiv. Ohne Internet scheitert die Anfrage geschlossen
+      (Breaker) und blockiert den Start NICHT. Aus bedeutet: die Zeitstempel-Endpunkte antworten
+      409 und es entstehen keine Token; nichts wird vorgetäuscht.
+  tsa_start_url:
+    name: START-TSA-URL
+    description: >-
+      Zeitstempel-Dienst für die START-Grenze (Standard DFN). Muss eine http(s)-URL sein; das
+      Antwort-Token wird als .tsr-Datei im Speicherordner abgelegt.
+  tsa_stop_url:
+    name: STOP-TSA-URL
+    description: >-
+      Zeitstempel-Dienst für die STOP-Grenze (Standard DigiCert). STOP stempelt den
+      Abschluss-Digest: SHA-256 des START-Digests und den Fingerabdruck des START-Tokens.
+  sign_packages:
+    name: Exportpakete signieren
+    description: >-
+      Jedes Exportpaket (.zip) standardmäßig mit dem gewählten OpenPGP-Schlüssel signieren.
+      Zuvor muss in der Konsole ein Schlüssel hinterlegt werden (Einstellungen -> PGP-Schlüssel).
+  signing_key:
+    name: Signaturschlüssel
+    description: >-
+      Fingerabdruck oder Schlüssel-ID des OpenPGP-Schlüssels zum Signieren von Paketen und
+      Belegen. Leer lassen, um den in der Konsole gewählten Schlüssel zu nutzen.
+  encrypt_files:
+    name: Gespeicherte Dateien verschlüsseln
+    description: >-
+      Neue Uploads standardmäßig im Ruhezustand verschlüsseln (AES-256-GCM mit dem Admin-Schlüssel).
+      Ein ausdrücklicher X-File-Encrypt-Header hat pro Upload weiterhin Vorrang.
+  portal_folder_copy:
+    name: Angehängte Dateien in den Portalordner kopieren
+    description: >-
+      Standardmäßig aus: eine an ein Portal angehängte Datei bleibt in den Add-on-Daten und
+      erzeugt KEINEN Ordner in /share. Einschalten, um zusätzlich eine Kopie mit dem
+      Originalnamen im Portalordner (storage_root) abzulegen. Dateien in /share werden über das
+      Panel der Portalordner hochgeladen, wo der Ordner selbst gewählt wird.
+  portal_skin:
+    name: Erscheinungsbild des öffentlichen Portals
+    description: >-
+      classic — der bewährte Stil (Standard, es ändert sich nichts). modern — der zweite Stil:
+      glasige Karten, große Typografie, Pill-Buttons und ein Kartenraster für Dateien. Beide
+      nutzen dasselbe HTML — nur das Stylesheet hinter dem QR-Code ändert sich.
+  tls_cert:
+    name: TLS-Zertifikat
+    description: >-
+      Pfad zu einem PEM-Zertifikat (in /config, /ssl oder /share). Zusammen mit dem Schlüssel
+      bedient das Add-on seine eigenen Listener über HTTPS.
+  tls_key:
+    name: Privater TLS-Schlüssel
+    description: >-
+      Pfad zum passenden privaten PEM-Schlüssel. Beide Optionen müssen auf lesbare Dateien
+      zeigen, sonst verweigert das Add-on den Start.
+  visitor_ip_mode:
+    name: Sensoren · IP-Modus
+    description: >-
+      Was von einer Besucheradresse bleibt: hashed (unumkehrbarer Hash, Standard), masked
+      (Netz/16) oder full (die vollständige Adresse — personenbezogene Daten). Leer bedeutet
+      Standard. Derselbe Wert ist in der Konsole einstellbar: Einstellungen → Sensoren.
+  visitor_retention_days:
+    name: Sensoren · Lebensdauer der Einträge (Tage)
+    description: >-
+      Wie viele Tage Besuche aufbewahrt werden, bevor sie gelöscht werden. 0 oder leer bedeutet
+      Standard (90 Tage). Der Wert ist auch in der Konsole änderbar.
+  visitor_geoip_path:
+    name: Sensoren · Geo-Datenbankdatei
+    description: >-
+      Absoluter Pfad zu einer MMDB-Datei (GeoIP) für das Besucherland. Leer bedeutet keine
+      Geo-Datenbank: Länder bleiben unbekannt und die anderen Sensoren arbeiten weiter.
+network:
+  8099/tcp: Interne API
+  8088/tcp: Öffentliches API-Gateway

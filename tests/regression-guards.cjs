@@ -80,6 +80,30 @@ const GUARDS = {
   'DEF-58': ['release-archive-ignored.cjs'], // архивът на изданието не взима игнорирани локални файлове
   'DEF-59': ['upload-sessions.cjs', 'gui-upload-progress.cjs', 'gui-upload-resume.cjs', 'gui-upload-folder.cjs'], // качването е сесия със сверка по хеш, а не една заявка
   'DEF-60': ['preview-unsafe-types.cjs', 'render-sinks-global.cjs'], // прегледът не рисува документи, които изпълняват скрипт
+  'DEF-61': ['addon-image-pipeline.cjs'], // версията в config.yaml има образ — workflow-ът се пуска и на main
+  'DEF-62': ['ui-inline-style-csp.cjs', 'gui-upload-progress.cjs'], // вграденият стил се блокира от style-src 'self'
+  'DEF-63': ['portal-creation-contract.cjs', 'gui-portal-create-contract.cjs'], // договорът за адресите се издава при създаването
+  'DEF-64': ['server-modules.cjs'], // server.js зарежда всички компоненти от server_module/
+  'DEF-70': ['portal-creation-contract.cjs'], // договорът за прегледа носи СВОЙ подпис (частен портал)
+  'DEF-68': ['server-modules.cjs', 'server-structure.cjs'], // бюджетът е облекчен: статичните файлове излязоха в компонент
+  'DEF-71': ['docker-runtime.cjs', 'file-placement.cjs'], // динамичната папка влиза в проверките за образа и за require
+  'DEF-72': ['server-modules.cjs'], // невалидно име в server_module/ спира старта
+  'DEF-73': ['server-modules.cjs'], // компонент не поема /admin/api
+  'DEF-74': ['core-modules.cjs'], // глобалните функции се зареждат по име и никой не заобикаля слоя
+  'DEF-75': ['file-placement.cjs'], // динамичната папка трябва да има свой COPY ред в образа
+  'DEF-65': ['logic-audit-fresh.cjs'], // отчетът на логическия одит се пише от гейта и не изостава
+  'DEF-76': ['matrix-freshness.cjs', 'release-status.cjs'], // матрицата носи отпечатък и не се приема стара
+  'DEF-77': ['addon-image-pipeline.cjs'], // CI ИЗПЪЛНЯВА образа, не само го строи
+  'DEF-78': ['core-modules.cjs'], // API документът е глобална функция, един построител
+  'DEF-79': ['server-modules.cjs', 'core-modules.cjs', 'docker-runtime.cjs'], // едно правило за име на файл
+  'DEF-80': ['integrity-startup.cjs'], // глобалният слой е в сверката за цялост
+  'DEF-81': ['core-modules.cjs'], // qrRender е задължителен и няма резервен път
+  'DEF-82': ['matrix-freshness.cjs', 'release-status.cjs'], // SKIP не се брои за успех
+  'DEF-83': ['core-modules.cjs'], // landingPath се ползва, не е мъртъв код
+  'DEF-84': ['html-headers.cjs'], // всеки HTML отговор носи Referrer-Policy
+  'DEF-85': ['addon-translations.cjs'], // опциите се превеждат на трите езика
+  'DEF-86': ['evidence-portal-qr.cjs'], // копието на QR енкодера е точно копие
+  'DEF-87': ['static-cache.cjs'], // статиката е immutable само с версия в адреса, нищо не е `public`
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -143,6 +167,26 @@ const ANCHORS = {
   'DEF-58': { file: 'release-archive-ignored.cjs', contains: 'нито един не влиза в изданието' },
   'DEF-59': { file: 'upload-sessions.cjs', contains: 'X-Chunk-Sha256' },
   'DEF-60': { file: 'render-sinks-global.cjs', contains: 'SAFE_FRAME' },
+  'DEF-61': { file: 'addon-image-pipeline.cjs', contains: 'branches: [main]' },
+  'DEF-62': { file: 'ui-inline-style-csp.cjs', contains: '::-webkit-progress-value' },
+  'DEF-63': { file: 'gui-portal-create-contract.cjs', contains: 'pf-qr-pop-links' },
+  'DEF-64': { file: 'server-modules.cjs', contains: 'server_module' },
+  'DEF-70': { file: 'portal-creation-contract.cjs', contains: 'sigOf' },
+  'DEF-65': { file: 'logic-audit-fresh.cjs', contains: 'if (save || gate)' },
+  'DEF-74': { file: 'core-modules.cjs', contains: 'core_module' },
+  'DEF-75': { file: 'file-placement.cjs', contains: 'Dockerfile не копира папката' },
+  'DEF-76': { file: 'matrix-freshness.cjs', contains: 'treeHash' },
+  'DEF-77': { file: 'addon-image-pipeline.cjs', contains: 'docker run --rm' },
+  'DEF-78': { file: 'core-modules.cjs', contains: 'api-docs' },
+  'DEF-79': { file: 'core-modules.cjs', contains: 'module-folder' },
+  'DEF-80': { file: 'integrity-startup.cjs', contains: 'core_module/qr.js' },
+  'DEF-81': { file: 'core-modules.cjs', contains: 'qrRender' },
+  'DEF-82': { file: 'matrix-freshness.cjs', contains: 'skippedByEnv' },
+  'DEF-83': { file: 'core-modules.cjs', contains: 'landingPath(' },
+  'DEF-84': { file: 'html-headers.cjs', contains: 'Referrer-Policy: no-referrer' },
+  'DEF-85': { file: 'addon-translations.cjs', contains: 'de.yaml' },
+  'DEF-86': { file: 'evidence-portal-qr.cjs', contains: 'evidence-portal' },
+  'DEF-87': { file: 'static-cache.cjs', contains: 'immutable' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */
@@ -187,14 +231,19 @@ for (const [id, files] of Object.entries(GUARDS)) {
 assert.deepEqual(broken, [], 'защитите сочат тестове, които не съществуват или не се пускат:\n  ' + broken.join('\n  '));
 
 // 3. Защитата наистина проверява нещо.
+// Приемат се и трите работещи форми на проверка: `assert.` (метод), `assert(` (самият
+// `node:assert` е извикваем) и собствени хвърлящи помощници (`need(`, `check(`). Дотук се
+// търсеше само `assert.` — затова `ha-compatibility.cjs` (33 проверки през `need`) и
+// `policy-gui.cjs` (`assert(...)`) бяха „празни обвивки“ по определение и не можеха да пазят
+// нито един дефект, макар да проверяват. Формата на проверката не е свойството, което пази.
 const hollow = [];
 for (const [id, files] of Object.entries(GUARDS)) {
   for (const file of files) {
     const code = fs.readFileSync(path.join(TESTS, file), 'utf8');
-    if (!/assert\./.test(code)) hollow.push(`${id} → ${file}`);
+    if (!/assert[.(]|\bneed\(|\bcheck\(/.test(code)) hollow.push(`${id} → ${file}`);
   }
 }
-assert.deepEqual(hollow, [], 'тези защити нямат нито едно `assert` (празна обвивка): ' + hollow.join(', '));
+assert.deepEqual(hollow, [], 'тези защити нямат нито една проверка (`assert`, `need` или `check`): ' + hollow.join(', '));
 
 // 4. Котвите: конкретният текст е на място.
 for (const [id, anchor] of Object.entries(ANCHORS)) {

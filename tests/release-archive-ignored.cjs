@@ -23,23 +23,33 @@ const ROOT = path.join(__dirname, '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-ignored-'));
 try {
   fs.mkdirSync(path.join(tmp, 'mod'));
-  fs.writeFileSync(path.join(tmp, '.gitignore'), '*.7z\n');
+  fs.writeFileSync(path.join(tmp, '.gitignore'), '*.local\n');
   fs.writeFileSync(path.join(tmp, 'mod', 'a.js'), 'module.exports = 1;\n');
-  fs.writeFileSync(path.join(tmp, 'mod', 'x.7z'), 'ignored binary\n');
+  fs.writeFileSync(path.join(tmp, 'mod', 'x.local'), 'ignored binary\n');
 
   const git = spawnSync('git', ['init', '-q'], { cwd: tmp, encoding: 'utf8' });
   assert.equal(git.status, 0, 'git init минава: ' + (git.stderr || git.error));
 
   const ignored = lib.ignoredPaths(tmp);
-  assert.ok(ignored.has('mod/x.7z'), 'git казва, че mod/x.7z е игнориран: ' + [...ignored]);
+  assert.ok(ignored.has('mod/x.local'), 'git казва, че mod/x.local е игнориран: ' + [...ignored]);
 
   const entries = lib.archiveEntries(tmp, path.join(tmp, 'mod'), 'mod').map((e) => e.path);
   assert.deepEqual(entries, ['mod/a.js'], 'в изданието влиза само проследяемият файл: ' + entries.join(', '));
 
   // Обратното също се проверява: `walk` (суровото обхождане) файла ГО вижда. Иначе тестът
-  // щеше да минава и ако някой просто беше спрял да обхожда папката.
+  // щеше да минава и ако някой просто беше спрял да обхожда папката. Разширението е `.local`,
+  // а не `.7z`, защото `.7z`/`.zip` се изключват и по разширение (второто правило, §1б).
   const raw = lib.walk(path.join(tmp, 'mod'), 'mod').map((e) => e.path);
-  assert.deepEqual(raw, ['mod/a.js', 'mod/x.7z'], 'суровото обхождане вижда и игнорирания файл: ' + raw.join(', '));
+  assert.deepEqual(raw, ['mod/a.js', 'mod/x.local'], 'суровото обхождане вижда и игнорирания файл: ' + raw.join(', '));
+
+  // ── 1б. Локалните архиви не влизат и БЕЗ git (0.69.225) ────────────────────
+  // Причина: `hapi_enterprise/generator.7z` (24 KB, игнориран) влизаше в tar-а, когато
+  // `git ls-files` не отговореше навреме — S08 падаше с „224 срещу 223“. Затова класът е
+  // изключен и по разширение, независимо от git.
+  fs.writeFileSync(path.join(tmp, 'mod', 'y.7z'), 'local archive\n');
+  fs.writeFileSync(path.join(tmp, 'mod', 'z.zip'), 'local zip\n');
+  const withArchives = lib.walk(path.join(tmp, 'mod'), 'mod').map((e) => e.path);
+  assert.deepEqual(withArchives, ['mod/a.js', 'mod/x.local'], 'локалните .7z/.zip не влизат в изданието дори без git: ' + withArchives.join(', '));
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
 }

@@ -1,16 +1,16 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Генериран документ.** Версия на кода: **0.69.216**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.226**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **118** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **42** инструмента · **421** теста.
+Общо: **128** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **45** инструмента · **432** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (118)
+### Backend модули (`hapi_enterprise/*.js`) (128)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -26,7 +26,11 @@
 | `hapi_enterprise/config-profiles.js` | Named configuration profiles. Each profile is a validated, atomically persisted |
 | `hapi_enterprise/container.js` | DI контейнер (Фаза 2.1, P1/P2). Лениво инстанцира сингълтони; поддържа |
 | `hapi_enterprise/content-id.js` | Идентичност на СЪДЪРЖАНИЕТО (`content_id`) — §11 и §12 от HAPI-ARCH-API-001. |
+| `hapi_enterprise/core_module/address.js` | ГЛОБАЛНА ФУНКЦИЯ „address“ — договорът за адресите на портала, файловете и прегледа. |
+| `hapi_enterprise/core_module/api-docs.js` | ГЛОБАЛНА ФУНКЦИЯ „api-docs“ — API документът на портала (OpenAPI + api/<slug>/). |
+| `hapi_enterprise/core_module/qr.js` | ГЛОБАЛНА ФУНКЦИЯ „qr“ — единственото място, което прави QR код. |
 | `hapi_enterprise/core-store.js` | Core hierarchical store (DOCFLOW Phases 1). Own SQLite file, additive to the legacy |
+| `hapi_enterprise/core.js` | ГЛОБАЛНИТЕ ФУНКЦИИ НА СЪРВЪРА — ВСИЧКИ ФАЙЛОВЕ ОТ `core_module/` БЕЗ ТВЪРДО ВПИСАН СПИСЪК. |
 | `hapi_enterprise/crypto-options.js` | Крипто опции на add-on-а: env (от start.js) има приоритет, после options.json, после |
 | `hapi_enterprise/decision-sensors.js` | От измерване към РЕШЕНИЕ: кой компонент, какъв проблем, от кога и какво да проверим. |
 | `hapi_enterprise/directory.js` | Variables registry + contact directory with domain rules, auto-fill and a conflict queue. |
@@ -58,12 +62,14 @@
 | `hapi_enterprise/logger.js` | Structured debug logging for the add-on. |
 | `hapi_enterprise/migration-bridge.js` | Phase 1.5 migration bridge: legacy (directory, portals, cabinet) -> DOCFLOW core. |
 | `hapi_enterprise/mirror-target.js` | Цел на огледалото (0.69.87, стъпка M3 от `READY_MADE_COMPONENTS.md` §2.5). |
+| `hapi_enterprise/module-folder.js` | ЕДНА ПАПКА КОМПОНЕНТИ — ЕДНО ПРАВИЛО ЗА ИМЕНА (0.69.224). |
 | `hapi_enterprise/notify.js` | DOCFLOW Phase 4.4 — QR/линк dispatch чрез Home Assistant notify.* услуги. |
 | `hapi_enterprise/observer.js` | Наблюдение (сензори) без зависимости: комуникация, файлове, извиквания, изтегляния, |
 | `hapi_enterprise/oidc.js` | OIDC вход (authorization code + PKCE, S256) — без външни зависимости. |
 | `hapi_enterprise/ooxml.js` | Minimal dependency-free ZIP writer/reader and OOXML (docx/xlsx) helpers. |
 | `hapi_enterprise/package-crypto.js` | Криптиран контейнер за експортен пакет (hapiPKG1). |
 | `hapi_enterprise/packager.js` | Пакетиране на портал (или избрани файлове) в ZIP с манифест, хешове и |
+| `hapi_enterprise/page-version.js` | ВЕРСИЯ В АДРЕСА НА СТАТИЧНИТЕ РЕСУРСИ НА HTML СТРАНИЦА (DEF-87). |
 | `hapi_enterprise/path-crypto.js` | Ключохранилище на PGP (бач B2 от `PLAN-0.69.67-LINKS-AND-FILES.md`). |
 | `hapi_enterprise/paths.js` | ЛОГИЧЕСКИТЕ КОРЕНИ НА ХРАНИЛИЩЕТО — ЕДНО МЯСТО ЗА ЦЕЛИЯ ПРОЕКТ. |
 | `hapi_enterprise/pdf-writer.js` | Dependency-free PDF writer with embedded TrueType fonts (Unicode incl. Cyrillic). |
@@ -77,6 +83,7 @@
 | `hapi_enterprise/portal-access.js` | Подписан достъп до ЦЕЛИЯ портал: `<адрес>?expires=<unix>&sig=<hmac>`. |
 | `hapi_enterprise/portal-folder.js` | Папка на портала в хранилището: РЕАЛНИТЕ файлове, с истинските им имена. |
 | `hapi_enterprise/portal-integrity.js` | Целостта на ФИЗИЧЕСКИТЕ архиви (правило `ARCHIVE_NOT_TAMPERED`). |
+| `hapi_enterprise/portal-links.js` | ДОГОВОРЪТ „АДРЕСИ ЗА ПОРТАЛА, ФАЙЛОВЕТЕ И ПРЕГЛЕДА — ОЩЕ ПРИ СЪЗДАВАНЕТО“ (0.69.219). |
 | `hapi_enterprise/portal-policy.js` | ЕДНА политика за достъп до портал (Stage D): идентичност → портал → ресурс → действие. |
 | `hapi_enterprise/portal-qr.js` | QR ревизии, манифести и ФИЗИЧЕСКИ архиви за един портал. |
 | `hapi_enterprise/portal-skin.js` | КОЖА НА ПУБЛИЧНАТА СТРАНИЦА НА ПОРТАЛА (`portal_skin`, env `PORTAL_SKIN`) — отделен модул, |
@@ -108,6 +115,9 @@
 | `hapi_enterprise/secret-page.js` | Страница за преглед на тайна връзка. ЦЯЛАТА информация е във фрагмента на адреса |
 | `hapi_enterprise/secret-view.js` | Преглед на тайна връзка — страната на БРАУЗЪРА (модел като scrt.link v2). |
 | `hapi_enterprise/send.js` | „Бърз линк“ (Send-lite): еднократен/срочен/безсрочен публичен достъп до ЕДИН файл, |
+| `hapi_enterprise/server_module/portal-assets.js` | СТАТИЧНИТЕ ФАЙЛОВЕ НА ПУБЛИЧНАТА СТРАНИЦА — `/portal.js`, `/portal-i18n.js`, `/portal.css` |
+| `hapi_enterprise/server_module/portal-landing.js` | ПУБЛИЧНАТА СТРАНИЦА НА ПОРТАЛА — `/p/<id>[/]` (0.69.220). |
+| `hapi_enterprise/server-modules.js` | ВСИЧКИ ФАЙЛОВЕ ОТ `server_module/` СА КОМПОНЕНТИ — БЕЗ ТВЪРДО ВПИСАН СПИСЪК (0.69.220). |
 | `hapi_enterprise/server.js` | Една жива инстанция на data директория (виж instance-lock.js). Попълва се в start(). |
 | `hapi_enterprise/share-links.js` | Share links за портал: NFC/QR таг за Home Assistant Companion + universal link. |
 | `hapi_enterprise/shared-data.js` | ЕДНИ И СЪЩИ ДАННИ — ОТ РАЗЛИЧНИ ПРОЦЕСИ (многослоен цикъл върху един източник на истина). |
@@ -205,7 +215,7 @@
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (42)
+### Инструменти (`scripts/*.cjs`) (45)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -213,6 +223,7 @@
 | `scripts/artifact-smoke.cjs` | Проверка на САМОТО ИЗДАНИЕ, не на работното дърво: разопакова `dist/hapi_enterprise-<в>.tar.gz` |
 | `scripts/audit-events.cjs` | КАТАЛОГ НА ОДИТНИТЕ СЪБИТИЯ — ГЕНЕРИРАН ОТ КОДА. |
 | `scripts/audit-gui-compat.cjs` | Двустепенна проверка: ПЪРВО целият GUI, и само при 100 % успех — съвместимостта на пакета. |
+| `scripts/audit-html-headers.cjs` | ВСЕКИ HTML ОТГОВОР НОСИ ПЪЛНИЯ НАБОР ЗАГЛАВКИ — ЕДНО МЯСТО, КОЕТО ГО ПРОВЕРЯВА (0.69.225). |
 | `scripts/bad-code-scan.cjs` | Сегментен скан за лош код. |
 | `scripts/build-haoss.cjs` | Builds a standalone, HACS-compatible integration repository in release/haoss. |
 | `scripts/build-release.cjs` | Строи изданието за Home Assistant в `dist/`: |
@@ -243,6 +254,7 @@
 | `scripts/release-status.cjs` | Генерира `reports/RELEASE-STATUS.md` от РЕАЛНИТЕ артефакти, вместо да се пише на ръка. |
 | `scripts/resume-package.cjs` | Възобновяване на прекъснат трансфер на експортен пакет (или който и да е файл с Range). |
 | `scripts/run-tests.cjs` | Пълен пакет: пуска всеки тест във файл последователно и обобщава. |
+| `scripts/safe-release.cjs` | ЕДНА КОМАНДА ЗА ЦЕЛИЯ БЕЗОПАСЕН ПЪТ ДО ИЗДАНИЕ (0.69.225). |
 | `scripts/script-audit.cjs` | ОБХОД НА СКРИПТОВИТЕ ФАЙЛОВЕ — търси фалшиви функции, мъртъв код, счупена логика и |
 | `scripts/secret-patterns.cjs` | Общи правила за тайни, ползвани от одита (pre-push-audit) и от експорта за публикуване |
 | `scripts/settings-defaults.cjs` | Генерира таблицата „Настройки по подразбиране“ от `config.yaml` и преводите, вместо |
@@ -250,4 +262,5 @@
 | `scripts/split-styles.cjs` | РАЗДЕЛЯ `ui/styles.css` на ЧЕТИРИТЕ файла от дизайн системата (план 18 §7): tokens, layout, |
 | `scripts/sync-addon-changelog.cjs` | Supervisor показва changelog само ако до `config.yaml` на add-on-а има `CHANGELOG.md`. |
 | `scripts/test-matrix.cjs` | Цялостен тестов пакет: изпълнява ВСИЧКИ тестове от `tests/` и при каквато и да е |
+| `scripts/tree-fingerprint.cjs` | ОТПЕЧАТЪК НА ДЪРВОТО — за да не може остаряла матрица да мине за зелена (0.69.224). |
 | `scripts/verify-release.cjs` | Проверка на изданието за Home Assistant — всички сценарии на едно място. |

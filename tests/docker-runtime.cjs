@@ -53,11 +53,21 @@ assert.match(docker, /^COPY\s+ui\s+\/app\/ui\/\s*$/m, 'Dockerfile копира u
 // трябва да са в COPY — иначе add-on-ът стартира с MODULE_NOT_FOUND.
 const seen = new Set();
 const queue = [path.join(root, 'server.js')];
+// DEF-71: `server-modules.js` зарежда ЦЯЛАТА папка `server_module/` по време на изпълнение,
+// тоест статичният граф от `server.js` не ги вижда. Затова всяка компонента е СЕМЕ на обхождането,
+// а `require('../x')` от компонента се проверява като `x.js` — иначе първият компонент, който
+// поиска локален модул, ще падне с MODULE_NOT_FOUND само в контейнера.
+// Същото важи за глобалните функции: `core.js` чете ЦЯЛАТА папка `core_module/`.
+for (const dirName of ['server_module', 'core_module']) {
+  const moduleDir = path.join(root, dirName);
+  if (!fs.existsSync(moduleDir)) continue;
+  for (const name of fs.readdirSync(moduleDir).filter((n) => n.endsWith('.js'))) queue.push(path.join(moduleDir, name));
+}
 while (queue.length) {
   const file = queue.pop();
   let text;
   try { text = fs.readFileSync(file, 'utf8') } catch { continue }
-  for (const m of text.matchAll(/require\('\.\/([a-z0-9-]+)(?:\.js)?'\)/g)) {
+  for (const m of text.matchAll(/require\('(?:\.\/|\.\.\/)([a-z0-9-]+)(?:\.js)?'\)/g)) {
     const name = m[1] + '.js';
     if (seen.has(name)) continue;
     seen.add(name);

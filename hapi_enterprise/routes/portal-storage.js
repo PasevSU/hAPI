@@ -19,6 +19,14 @@
 // този компонент (и е приключена).
 function create(deps) {
   const { fail, audit, policy, resolvePortal, portalRoot, portalAbs, folderMetaOf, fileMode, links, baseUrl, htmlEsc, qr, portalAccess, requirePortalToken, archiveRoot, db } = deps;
+  // Глобалната функция за QR идва от `core.api.qr` (server.js я подава като `qrRender`).
+  // Договорът е ЗАДЪЛЖИТЕЛЕН: без него изходът е счупен и трябва да се види при сглобяване,
+  // а не като празен QR в браузъра. Името е `qrRender` (рисуване), за да не се бърка с
+  // `qr` (регистърът на печатите) и с полето `qrSvg` в JSON отговорите.
+  if (!deps.qrRender || typeof deps.qrRender.svg !== 'function') {
+    throw new Error('routes/portal-storage: липсва qrRender.svg (глобалната функция core.api.qr)');
+  }
+  const qrRender = deps.qrRender;
   const fsp = require('node:fs/promises');
   const fs = require('node:fs');
   const path = require('node:path');
@@ -364,7 +372,7 @@ function create(deps) {
       ? `${base}/file.html:${portal.slug}/${rel.split('/').map(encodeURIComponent).join('/')}`
       : links.joinQuery(base + links.portalLandingPath(portal), links.portalFolderQuery(rel), access);
     res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
-    res.end(require('../qr-svg').svg(target));
+    res.end(qrRender.svg(target));
     return true;
   }
 

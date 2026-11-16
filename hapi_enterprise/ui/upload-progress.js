@@ -96,14 +96,17 @@
 
     function shell() {
       const t = totals();
+      // Лентата е `<progress>`, а НЕ span с вграден `width`: панелът се сервира с
+      // `Content-Security-Policy: style-src 'self'` (server.js), тоест всеки вграден стил се
+      // блокира и лентата остава празна — точно това видя потребителят в Home Assistant
+      // (DEF-62). `<progress value>` носи напредъка в АТРИБУТ, не в стил, и работи при
+      // всяко CSP; затова и `aria-valuenow` се обновява от същия атрибут.
       return `<div class="up-dialog" role="dialog" aria-modal="true" aria-labelledby="up-title" aria-describedby="up-summary">
         <h3 id="up-title">${esc(T('up.title'))}</h3>
         <p id="up-summary" class="up-summary">${esc(
           T('up.summary', { files: state.items.length, size: fmt(t.size), percent: String(t.percent) }),
         )}</p>
-        <div class="up-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${BAR_HIGH}" aria-valuenow="${t.percent}" aria-label="${esc(T('up.progressLabel'))}">
-          <span class="up-bar-fill" style="width:${t.percent}%"></span>
-        </div>
+        <div class="up-bar"><progress class="up-bar-progress" role="progressbar" max="${BAR_HIGH}" value="${t.percent}" aria-valuemin="0" aria-valuemax="${BAR_HIGH}" aria-valuenow="${t.percent}" aria-label="${esc(T('up.progressLabel'))}">${t.percent}%</progress></div>
         <ul class="up-list">${state.items.map((it) => row(it)).join('')}</ul>
         <div class="up-actions">
           <button type="button" data-up="pause">${esc(T('up.pause'))}</button>

@@ -63,7 +63,13 @@ const readTranslation = (file) => {
   return entries;
 };
 
-const translations = { bg: readTranslation('bg.yaml'), en: readTranslation('en.yaml') };
+// Трите езика на интерфейса (BG/EN/DE) се изискват и за опциите на add-on-а: до 0.69.224
+// `de.yaml` липсваше, а тестът изброяваше само два езика — тоест липсата не се виждаше.
+const translations = {
+  bg: readTranslation('bg.yaml'),
+  en: readTranslation('en.yaml'),
+  de: readTranslation('de.yaml'),
+};
 const knownOptions = new Set([...options, ...schema]);
 
 const problems = [];
@@ -85,11 +91,18 @@ for (const [lang, entries] of Object.entries(translations)) {
   if (orphan.length) problems.push(`${lang}: превод за несъществуваща опция → ${orphan.join(', ')}`);
 }
 
-// 4. Двата езика покриват едно и също множество.
-const onlyOneLanguage = options.filter((option) => translations.bg.has(option) !== translations.en.has(option));
-if (onlyOneLanguage.length) problems.push(`само на един език → ${onlyOneLanguage.join(', ')}`);
+// 4. Всички езици покриват ЕДНО И СЪЩО множество (днес: три).
+const langs = Object.keys(translations);
+for (const option of options) {
+  const have = langs.filter((lang) => translations[lang].has(option));
+  if (have.length !== langs.length) problems.push(`опция „${option}“ липсва на: ${langs.filter((l) => !translations[l].has(option)).join(', ')}`);
+}
+for (const lang of langs) {
+  const sameCount = translations[lang].size === options.length;
+  if (!sameCount) problems.push(`${lang}: ${translations[lang].size} записа за ${options.length} опции`);
+}
 
 assert.deepEqual(problems, [], 'преводите на опциите не бива да се разминават с config.yaml');
 
 const pairs = Object.values(translations).reduce((sum, entries) => sum + [...entries.values()].reduce((s, f) => s + f.size, 0), 0);
-console.log(`addon-translations: ${options.length} опции · bg ${translations.bg.size} · en ${translations.en.size} · ${pairs} полета — наред`);
+console.log(`addon-translations: ${options.length} опции · ${langs.map((l) => `${l} ${translations[l].size}`).join(' · ')} · ${pairs} полета — наред`);

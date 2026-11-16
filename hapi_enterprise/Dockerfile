@@ -23,6 +23,11 @@
 ARG NODE_VERSION=22.23.2
 FROM node:${NODE_VERSION}-alpine AS node
 
+# Тагът е САМО `major.minor` (`alpine:3.24`), без кръпка. Четири порти го изискват точно
+# така — `tests/docker-runtime.cjs`, `tests/ha-compatibility.cjs`, `tests/ha-support-matrix.cjs`,
+# `tests/raspberrypi-compat.cjs` (`/^alpine:\d+\.\d+$/`) — защото кръпката се вдига от
+# `apk upgrade --available` по-долу, а не от тага. Опитът от 0.69.222 с `alpine:3.24.5`
+# даде 4 червени теста и паднал `verify-release` S04 при зелен код.
 FROM alpine:3.24
 
 # 1. Пакетите на Alpine се вдигат до актуалните поправки. `--available` не е украса: без
@@ -54,7 +59,7 @@ WORKDIR /app
 # съзнателно (сигурност пред пълна възпроизводимост) и е записано в CHANGELOG.
 # Всички локални модули, които server.js изисква (пряко или през друг модул).
 # tests/docker-runtime.cjs проверява списъка срещу реалните require-и.
-COPY integrity.js api-registry.js api-spec.js api-version.js audit-chain.js cabinet.js cases.js cms-sign.js config-profiles.js container.js core-store.js crypto-options.js directory.js download-access.js download-stream.js error-log.js event-bus.js export-manager.js export-rules.js file-crypto.js gateway-api.js generator.js instance-lock.js interpolate.js job-manager.js links.js load-control.js logger.js migration-bridge.js mirror-target.js notify.js observer.js ooxml.js package-crypto.js packager.js path-crypto.js paths.js pdf-writer.js pgp.js plugins.js portal-folder.js portal-access.js public-route-allowlist.js portal-policy.js portal-term.js portal-qr.js portal-view.js portal-integrity.js portal-skin.js pgp-tools.js pgp-sign.js content-id.js oidc.js decision-sensors.js layout.js preview.js process-guards.js public-gateway.js public-package.js qr-svg.js qrcode.js rbac.js readiness.js registry.js report-manifest.js report-package.js report-render.js report-stamp.js repository.js retention.js runtime-config.js secret-lock.js secret-links.js secret-page.js secret-view.js send.js server.js share-links.js shared-data.js signer.js sqlite-repository.js sqlite-store.js start.js storage-check.js storage-migrate.js storage-preflight.js storage-tree.js throttle.js tsa-client.js versioning.js virtual-storage.js visitor-intel.js workdir-crypto.js workdir-io.js workdir-migrate.js evidence-portal.js x509.js site-csp.js admin-api-spec.js problem.js idempotency.js respond.js webhooks.js event-stream.js worm.js exif.js forensic.js case-access.js /app/
+COPY integrity.js api-registry.js api-spec.js api-version.js audit-chain.js cabinet.js cases.js cms-sign.js config-profiles.js container.js core.js core-store.js crypto-options.js directory.js download-access.js download-stream.js error-log.js event-bus.js export-manager.js export-rules.js file-crypto.js gateway-api.js generator.js instance-lock.js interpolate.js job-manager.js links.js load-control.js logger.js migration-bridge.js mirror-target.js module-folder.js notify.js observer.js ooxml.js package-crypto.js packager.js page-version.js path-crypto.js paths.js pdf-writer.js pgp.js plugins.js portal-folder.js portal-access.js public-route-allowlist.js portal-policy.js portal-term.js portal-qr.js portal-view.js portal-links.js portal-integrity.js portal-skin.js pgp-tools.js pgp-sign.js content-id.js oidc.js decision-sensors.js layout.js preview.js process-guards.js public-gateway.js public-package.js qr-svg.js qrcode.js rbac.js readiness.js registry.js report-manifest.js report-package.js report-render.js report-stamp.js repository.js retention.js runtime-config.js secret-lock.js secret-links.js secret-page.js secret-view.js send.js server.js server-modules.js share-links.js shared-data.js signer.js sqlite-repository.js sqlite-store.js start.js storage-check.js storage-migrate.js storage-preflight.js storage-tree.js throttle.js tsa-client.js versioning.js virtual-storage.js visitor-intel.js workdir-crypto.js workdir-io.js workdir-migrate.js evidence-portal.js x509.js site-csp.js admin-api-spec.js problem.js idempotency.js respond.js webhooks.js event-stream.js worm.js exif.js forensic.js case-access.js /app/
 # Целият публичен портал (страница, скрипт, стилове, речник) живее в своя папка —
 # така се сменя дизайнът и опциите, без да се пипа останалият код на add-on-а.
 COPY portal /app/portal/
@@ -74,6 +79,11 @@ COPY ui /app/ui/
 # HTTP компонентите (routes/*.js): всеки поема свой дял от API-то, за да не расте
 # `server.js` като монолит. Без този ред сървърът не стартира (MODULE_NOT_FOUND).
 COPY routes /app/routes/
+# Компонентите на сървъра (`server_module/*.js`): зареждат се ВСИЧКИ по име, без твърдо
+# вписан списък (server-modules.js). Липсва ли папката, стартът спира с ясна грешка, а не
+# с 404 на публичната страница.
+COPY server_module /app/server_module/
+COPY core_module /app/core_module/
 # Evidence View порталът (QR): копира се в <HA config>/www/hapi/data при старт.
 COPY evidence-portal /app/evidence-portal/
 # PasevSU Document Generator (статика, сервира се на /generator/).

@@ -23,6 +23,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { fingerprint } = require('./tree-fingerprint.cjs');
 
 const root = path.join(__dirname, '..');
 const TARGET = path.join(root, 'reports', 'RELEASE-STATUS.md');
@@ -64,12 +65,24 @@ const testFiles = fs.readdirSync(path.join(root, 'tests')).filter((f) => /\.cjs$
 // пуска, който го създава. Брои се като покритие, но „минават“ се твърди само ако няма
 // провали и passed + skipped покрива целия набор. Затова в готовото издание `skipped` е празно.
 const matrixSkipped = matrix && Array.isArray(matrix.skipped) ? matrix.skipped.length : 0;
-const covered = matrix ? Number(matrix.passed || 0) + matrixSkipped : 0;
-const testsGreen = Boolean(matrix && (matrix.failed || []).length === 0 && covered === testFiles);
+// Тестовете, които сами са казали SKIP (липсва gpg/pwsh/артефакт), също не са „минали“ —
+// от 0.69.224 се броят отделно и се ИЗБРОЯВАТ в реда, вместо да се сливат в 100% успех.
+const envSkipped = matrix && Array.isArray(matrix.skippedByEnv) ? matrix.skippedByEnv : [];
+const covered = matrix ? Number(matrix.passed || 0) + matrixSkipped + envSkipped.length : 0;
+// Свежест: отчетът трябва да е пуснат върху ТОВА дърво. Иначе зелен отчет от преди поправка
+// се броеше за доказателство — точно класът DEF-58/DEF-65, но за матрицата (0.69.224).
+const currentHash = fingerprint().hash;
+const matrixFresh = Boolean(matrix && matrix.treeHash && matrix.treeHash === currentHash);
+const testsGreen = Boolean(matrix && (matrix.failed || []).length === 0 && covered === testFiles && matrixFresh);
+const skipNote = envSkipped.length
+  ? ` · ⊘ ${envSkipped.length} не провериха нищо (${envSkipped.join(', ')})`
+  : '';
 const testRow = matrix
   ? testsGreen
-    ? `**${testFiles}/${testFiles}** — всички тестове от \`tests/\` минават`
-    : `**${matrix.passed}/${testFiles}** — последното пускане НЕ е зелено, виж \`reports/test-matrix.json\``
+    ? `**${testFiles}/${testFiles}** — всички тестове от \`tests/\` минават${skipNote}`
+    : matrixFresh
+      ? `**${matrix.passed}/${testFiles}** — последното пускане НЕ е зелено, виж \`reports/test-matrix.json\`${skipNote}`
+      : `**остаряло** — матрицата е от преди промяна в кода (отпечатък \`${String(matrix.treeHash || 'няма').slice(0, 12)}\`, днес \`${currentHash.slice(0, 12)}\`); пусни я пак`
   : 'няма отчет — пусни `node scripts/test-matrix.cjs`';
 
 // ── 2. Издание ────────────────────────────────────────────────────────────────
@@ -107,6 +120,27 @@ const entry = changelogSection(version);
 const rows = [];
 rows.push(['Тестове', '`node scripts/test-matrix.cjs`', testRow]);
 rows.push(['Издание', '`node scripts/build-release.cjs` + `verify-release.cjs`', releaseRow]);
+// Линтът се ОТЧИТА с потисканията, не само с кода на `eslint` (0.69.224). Дотук редът
+// „eslint 0“ се четеше като „няма находки“, а те са стотици — просто приети в
+// `eslint-suppressions.json`. Числото тук прави дълга видим и не му позволява да расте тихо.
+const suppressions = exists('eslint-suppressions.json') ? readJson('eslint-suppressions.json') : null;
+const lintRow = (() => {
+  if (!suppressions) return 'няма `eslint-suppressions.json`';
+  let total = 0;
+  const files = Object.keys(suppressions);
+  const byRule = {};
+  for (const one of Object.values(suppressions)) {
+    for (const [rule, info] of Object.entries(one || {})) {
+      const n = Number(info && info.count) || 0;
+      total += n;
+      byRule[rule] = (byRule[rule] || 0) + n;
+    }
+  }
+  const top = Object.entries(byRule).sort((a, b) => b[1] - a[1])[0];
+  return `\`npx eslint . --max-warnings=0\` → 0 · потиснати **${total}** находки в ${files.length} файла` +
+    (top ? ` (най-много \`${top[0]}\` ${top[1]})` : '');
+})();
+rows.push(['Линт', '`npx eslint . --max-warnings=0`', lintRow]);
 rows.push([
   'Логически одит',
   '`node scripts/logic-audit.cjs --gate`',

@@ -29,7 +29,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **144** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **147** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -55,7 +55,7 @@ _Генериран списък: **144** документа. Пише се от
 | `01_AS_IS_ARCHITECTURE/MODULE_CATALOG.md` | Module Catalog — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md` | Source Inventory — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/STORAGE_LAYOUT.md` | Къде какво стои — структура на файловете |
-| `01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md` | Състояние на системата и промени в 0.69.213 |
+| `01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md` | Състояние на системата и промени в 0.69.226 |
 | `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` | hAPI ENTERPRISE — API Architecture & Runtime Logic Specification |
 | `02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md` | API Endpoint Reference |
 | `02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md` | Architecture Compliance Matrix |
@@ -141,8 +141,11 @@ _Генериран списък: **144** документа. Пише се от
 | `07_RELEASE/AUDIT-PROTOCOL.md` | Протокол от одита и изданието |
 | `07_RELEASE/CRITICAL_ANALYSIS_0.69.208.md` | Критичен анализ на 0.69.208 и какво остава |
 | `07_RELEASE/CRITICAL_REVIEW_0.69.210.md` | Критичен анализ: имитиращи, дублирани и ненужни функции и опции — 0.69.210 |
+| `07_RELEASE/CRITICAL_REVIEW_0.69.220.md` | Критичен анализ — проблеми и пропуски (0.69.220 → 0.69.221) |
 | `07_RELEASE/FEATURE_PARITY.md` | Паритет на функциите: `PasevSU/hAPI` ↔ това хранилище |
 | `07_RELEASE/LOGIC_AUDIT_0.69.209.md` | Логически одит на 0.69.209 — какво липсва, какво е остаряло, какво е премахнато |
+| `07_RELEASE/PLAN_NEXT_0.69.225.md` | План за следващите промени — 0.69.225 и след нея |
+| `07_RELEASE/PLAN_TOGETHER_0.69.226.md` | План за прилагане — „заедно с 0.69.225“, с пряко документиране на кода |
 | `07_RELEASE/QUALIFICATION_PLAN.md` | Qualification Plan — hAPI Enterprise |
 | `07_RELEASE/RELEASE_0.69.204.md` | Издание 0.69.204 — мутационен одит на собствените твърдения |
 | `07_RELEASE/RELEASE_0.69.205.md` | Издание 0.69.205 — правила за интерфейса: идеи, причини, резултати |

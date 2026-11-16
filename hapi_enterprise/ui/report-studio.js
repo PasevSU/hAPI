@@ -1124,7 +1124,7 @@
           return previewSection(
             block.label || 'Лого',
             src
-              ? `<div class="pv-img"><img alt="лого" style="max-height:80px" src="${esc(src)}" /></div>`
+              ? `<div class="pv-img pv-logo"><img alt="лого" src="${esc(src)}" /></div>`
               : `<div class="pv-note">няма вградено изображение — в PDF-а пише „няма вградено изображение“</div>`,
           );
         }
@@ -1141,11 +1141,8 @@
           const cols = block.columns || [];
           return previewSection(
             block.label || 'Колони',
-            `<div class="u-row" style="gap:12px">${cols
-              .map(
-                (c) =>
-                  `<div style="flex:1"><b>${esc(c.title || '')}</b><div>${esc(c.text || '')}</div></div>`,
-              )
+            `<div class="pv-cols">${cols
+              .map((c) => `<div><b>${esc(c.title || '')}</b><div>${esc(c.text || '')}</div></div>`)
               .join('')}</div>`,
           );
         }

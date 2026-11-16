@@ -9,7 +9,14 @@
 //   node scripts/logic-audit.cjs            # кратък отчет
 //   node scripts/logic-audit.cjs --verbose  # с всеки ред
 //   node scripts/logic-audit.cjs --json     # машинно четим
-//   node scripts/logic-audit.cjs --gate     # код 1 при critical/high без обосновка
+//   node scripts/logic-audit.cjs --gate     # код 1 при critical/high без обосновка; ПИШЕ отчета
+//
+// Защо гейтът ПИШЕ: до 0.69.220 отчётът в `reports/` се обновяваше само с `--save`, а
+// `release-status` и портите викат само `--gate`. Документът замръзна на 2026-10-25 („482
+// файла · 82 177 реда“), докато гейтът в същия момент сканираше 664 файла · 121 639 реда —
+// тоест публикуваният отчет твърдеше нещо невярно за самия себе си, а никой не го виждаше.
+// Гейт, който проверява бройки, но оставя стария файл, произвежда точно този клас дефект
+// (същият като DEF-58 при архива). Затова `--gate` и `--save` правят едно и също.
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -318,7 +325,9 @@ if (require.main === module) {
   const open = findings.filter((f) => !isAllowed(f));
   const bySev = (sev) => open.filter((f) => f.sev === sev);
 
-  if (save) {
+  // `--gate` пише отчета по СЪЩАТА причина, по която го пише `--save`: гейт, който е минал,
+  // но е оставил стар документ, издава документ, който лъже (вж. бележката в главата на файла).
+  if (save || gate) {
     const outDir = path.join(ROOT, 'reports');
     fs.mkdirSync(outDir, { recursive: true });
     const counts = {};

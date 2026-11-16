@@ -13,6 +13,13 @@
 // този компонент (и е приключена), и `false`, когато трябва да я поеме следващият.
 function create(deps) {
   const { json, fail, parse, audit, adminGate, store, policy, resolvePortal, baseUrl, portalPath, randomToken, publish } = deps;
+  // Глобалната функция за QR (`core.api.qr`) — подава я `server.js` като `qrRender`;
+  // ЗАДЪЛЖИТЕЛНА е, за да не се рисува с втори построител. Името не е `qrSvg`, защото в
+  // отговора на този маршрут има ПОЛЕ `qrSvg` (готовият код) — две значения в едно име се бъркат.
+  if (!deps.qrRender || typeof deps.qrRender.svg !== 'function') {
+    throw new Error('routes/portal-tokens: липсва qrRender.svg (глобалната функция core.api.qr)');
+  }
+  const qrRender = deps.qrRender;
 
   const MIN_TTL_SECONDS = 60;
   const MAX_TTL_SECONDS = 366 * 24 * 3600;
@@ -58,7 +65,7 @@ function create(deps) {
    * САМО веднъж и не се пази — QR трябва да се роди в същия отговор.
    */
   function qrFor(url) {
-    return require('../qr-svg').svg(url);
+    return qrRender.svg(url);
   }
 
   /**

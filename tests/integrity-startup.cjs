@@ -25,6 +25,11 @@ const ADDON = path.join(ROOT, 'hapi_enterprise');
   for (const rel of integrity.CRITICAL) {
     assert.ok(fs.existsSync(path.join(ADDON, rel)), 'критичният файл ' + rel + ' съществува');
   }
+  // DEF-80: глобалният слой е в сверката, не само интерфейсът. През него минават всеки QR и
+  // всеки публичен адрес — подмяната му трябва да се види при старт, не при оплакване.
+  for (const rel of ['core.js', 'core_module/qr.js', 'core_module/address.js', 'core_module/api-docs.js']) {
+    assert.ok(integrity.CRITICAL.includes(rel), 'CRITICAL пази глобалната функция: ' + rel);
+  }
 }
 
 // ── 2. Здравото дърво минава ────────────────────────────────────────────────

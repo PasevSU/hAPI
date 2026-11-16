@@ -237,6 +237,10 @@
     openPortal: null,
     newPortal: false,
     api: {},
+    // Договорът за адресите, както го дава СЪРВЪРЪТ (`portal-links.js`): страница, API,
+    // QR за всяко ниво, преглед. Пази се по id, за да се показва веднага след създаването —
+    // без втора заявка и без панелът да си измисля адреси по свое правило.
+    contracts: {},
     selected: null,
     panel: 'actions',
     // Кой QR поповер е отворен (`data-qr-pop`). След създаване на портал се вдига веднага —
@@ -1007,6 +1011,39 @@
    */
   const accessOf = (p) => ({ query: (p && p.accessQuery) || '', expires: (p && p.accessExpires) || null });
 
+  /**
+   * Запомня договора за адресите, издаден от сървъра (страница · API · QR · преглед).
+   * Панелът НЕ строи тези адреси сам: едно място (`hapi_enterprise/portal-links.js`), за да
+   * не се разминават панелът и публичната страница. Спътникът „само за преглед“ влиза под
+   * СВОЯ идентификатор, за да го намира картата му.
+   */
+  function rememberContract(id, contract) {
+    if (!id || !contract || typeof contract !== 'object') return;
+    // Обединяване, не презаписване: `api-info` и отговорът на създаването описват СЪЩИЯ
+    // портал, но вторият носи и спътника „само за преглед“. Ако по-бедният отговор затрие
+    // по-богатия, адресът на прегледа изчезва от екрана, макар да съществува.
+    const prev = state.contracts[id];
+    const merged = prev && prev.readOnly && !contract.readOnly ? { ...contract, readOnly: prev.readOnly } : contract;
+    state.contracts[id] = merged;
+    if (merged.readOnly && merged.readOnly.id) state.contracts[merged.readOnly.id] = merged.readOnly;
+  }
+
+  /**
+   * Трите адреса от договора, показани до QR кода: порталът (човешката страница), API-то и
+   * — когато е поискан — адресът на прегледа. Те съществуват ОЩЕ при създаването, дори когато
+   * порталът е още празен; затова тук няма условие „има ли файлове“.
+   */
+  function contractLinks(x) {
+    const c = state.contracts[x.id];
+    if (!c) return '';
+    const row = (label, url, cls) =>
+      // Без отваряне в нов таб: панелът живее в iframe през Home Assistant Ingress и нов
+      // таб излиза извън него (това е договор на панела — пази го `tests/files-manager.cjs`).
+      `<a class="pf-qr-pop-link-txt ${cls || ''}" href="${esc(url)}" rel="noopener">${esc(label)}</a>`;
+    const view = c.readOnly && c.readOnly.page ? row(T('portal.contract.preview'), c.readOnly.page) : '';
+    return `<p class="pf-qr-pop-links">${row(T('portal.contract.page'), c.page)}${row(T('portal.contract.api'), c.api)}${view}</p>`;
+  }
+
   function generateApi(p, quiet, access) {
     const spec = window.HapiApiSpec;
     if (!spec) {
@@ -1063,6 +1100,7 @@
     // Частен портал: сървърът дава подписан достъп, който се слага в показаните адреси.
     const info = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/api-info`);
     const access = info.ok && info.data ? { query: info.data.accessQuery || '', expires: info.data.accessExpires || null } : null;
+    if (info.ok && info.data && info.data.contract) rememberContract(p.id, info.data.contract);
     generateApi(p, true, access);
     if (!r.ok) toast(r.error || T('fm.apiNotSaved'), 'err');
     else toast(T('fm.apiWritten'), 'ok');
@@ -1169,6 +1207,9 @@
       },
     });
     if (!created.ok) return toast(created.error, 'err');
+    // Договорът идва ЗАЕДНО със създаването: страница, API, QR за всяко ниво и преглед са
+    // налице, преди да е публикуван и един файл (искане на собственика, 0.69.219).
+    rememberContract(created.data.id, created.data.contract);
     const all = await api('/admin/api/portals');
     if (all.ok && all.data && Array.isArray(all.data.portals)) {
       state.portals = all.data.portals.map((p, i) => ({
@@ -2055,6 +2096,7 @@
         : `<p class="hint">${esc(T('portal.qr.missing'))}</p>`
       }
                     <p class="pf-qr-pop-note">${esc(T('portal.qr.note'))}</p>
+                    ${contractLinks(x)}
                   </div>
                   <hr class="u-divider" />
                   <p class="fm-file-sub">${ICON.topic} категория: <code>${esc(

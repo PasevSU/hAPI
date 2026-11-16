@@ -36,11 +36,19 @@ assert.ok(htmls.length >= 5, `намерени са само ${htmls.length} HTM
 // Кодът на сървъра, за да се свери, че абсолютните пътища са обявени маршрути, и за да се знае
 // кои имена сервира allowlist-ът (`UI_FILES`).
 const serverSources = [path.join(root, 'hapi_enterprise', 'server.js')];
-for (const dir of ['routes']) {
+// От 0.69.220 част от маршрутите живеят в компоненти, които `server.js` зарежда по папка
+// (`server_module/*.js`). Проверката трябва да гледа и тях — иначе работещ маршрут се обявява
+// за необявен само защото е преместен (точно това стана с `/portal.css` и `/portal-i18n.js`).
+for (const dir of ['routes', 'server_module']) {
   const full = path.join(root, 'hapi_enterprise', dir);
   if (fs.existsSync(full)) for (const name of fs.readdirSync(full)) if (/\.js$/.test(name)) serverSources.push(path.join(full, name));
 }
 const serverText = serverSources.filter((f) => fs.existsSync(f)).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+// Само компонентите от `server_module/`: там маршрутите са в таблица, а не в `if`-ве.
+const componentText = serverSources
+  .filter((f) => f.includes(`${path.sep}server_module${path.sep}`) && fs.existsSync(f))
+  .map((f) => fs.readFileSync(f, 'utf8'))
+  .join('\n');
 
 // ── Allowlist-ът на сървъра — преди проверката на страниците ────────────────
 // `UI_FILES` в `server.js` изброява какво сървърът сервира на `/ui/`, `/hapi_enterprise/` и
@@ -88,8 +96,13 @@ for (const file of htmls) {
       // стига, защото същият път се среща и в генериран HTML.
       const asset = path.join(root, 'hapi_enterprise', 'portal', clean.replace(/^\//, ''));
       if (!fs.existsSync(asset)) problems.push(`${rel} → ${clean} (няма такъв файл в hapi_enterprise/portal/)`);
-      else if (!new RegExp(`url\\.pathname\\s*===\\s*['"]${clean.replace(/[/.]/g, '\\$&')}['"]`).test(serverText)) {
-        problems.push(`${rel} → ${clean} (файлът е там, но маршрутът не е обявен в кода)`);
+      else {
+        // Маршрутът е обявен ИЛИ с изрична проверка (`url.pathname === '/portal.css'`), ИЛИ
+        // като литерал в компонент от `server_module/` (таблицата на `portal-assets.js`). Двете
+        // форми са равностойни: важното е пътят да е записан в КОД, а не само в HTML-а.
+        const declaredByIf = new RegExp(`url\\.pathname\\s*===\\s*['"]${clean.replace(/[/.]/g, '\\$&')}['"]`).test(serverText);
+        const declaredByTable = new RegExp(`['"]${clean.replace(/[/.]/g, '\\$&')}['"]`).test(componentText);
+        if (!declaredByIf && !declaredByTable) problems.push(`${rel} → ${clean} (файлът е там, но маршрутът не е обявен в кода)`);
       }
       continue;
     }
