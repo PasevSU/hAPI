@@ -18,8 +18,9 @@ manifest produced here verifies a manifest produced there, and vice versa.
 | Merkle root | yes | yes |
 | `PasevSU_Manifest.json` + its SHA-256 | yes | yes |
 | NIST SHA3-512, RIPEMD-160, Keccak-512 | no | yes |
-| Real OpenPGP detached signature (`.asc`) | no | yes (`gpg`) or OpenPGP.js after a build |
-| Real OpenTimestamps proof (`.ots`) | no — writes `pending` | yes when npm `opentimestamps` is installed |
+| Real OpenPGP detached signature (`.asc`) | no | yes, with a `gpg` binary on `PATH` |
+| Read the signer out of Thunderbird's own signature | no | yes — pure-Node packet parser, no `gpg` needed |
+| Real OpenTimestamps proof (`.ots`) | no — writes `pending` | yes, from the vendored browser bundle, no npm install |
 | BLAKE3 | no | not bundled (Web Crypto and the vendored groups have none) |
 
 The extension therefore writes `X-PasevSU-OTS: pending` as a **marker only**, and
@@ -32,8 +33,12 @@ fabricates a signature or a timestamp.
 psemp-gateway/
   api.js                     one Node API — hashing, Merkle, manifest, headers, adapters
   cli.js                     thin CLI over api.js
+  settings.default.json      the six shared settings, also importable by the extension
   packages/                  vendored, dependency-closed code (see below)
   test/self-test.cjs         known-answer vectors + round-trip verification
+  test/settings-parity.cjs   the two halves must agree on the settings keys
+  test/pgp-thunderbird.cjs   signer read from a Thunderbird signature, no gpg needed
+  test/ots-runtime.cjs       the vendored OpenTimestamps bundle actually stamps
 ```
 
 | Vendored group | Used for |
@@ -133,10 +138,24 @@ psemp.otsStatus();             // { available, reason } — never throws
 await psemp.otsStamp('msg.eml');
 await psemp.otsVerify('msg.eml.ots');
 psemp.pgpStatus();             // { available, executable, version }
+psemp.pgpInspectMessage('msg.eml');   // { signed, format, issuerFingerprint, signerSource }
+psemp.pgpResolvedFingerprint('msg.eml');  // signer, or '' when unsigned
+psemp.pgpCrossCheck('msg.eml', { fingerprint: 'ABC…' });
 psemp.pgpSign('msg.eml', { keyId: 'ABCDEF' });
 psemp.pgpVerify('msg.eml', 'msg.eml.asc');
 await psemp.emailEvidence(emlBytes, { filename: 'msg.eml' });
 ```
+
+`computeEvidence({ … , signature })` fills an empty `pgpFingerprint` from the
+signer found in `signature`, so a message Thunderbird already signed gets the
+right `X-PasevSU-PGP-Fingerprint` without the sender typing the key. The
+fingerprint is a header claim only — it is not in the manifest, so the value of
+`X-PasevSU-Manifest-SHA256` never moves because of it, and an explicit
+`config.pgpFingerprint` always wins over the detected one.
+
+`pgpSign()` refuses to stack a second signature on a message that already carries
+one (`status: 'skipped'`, `reason: 'ALREADY_SIGNED'`). Pass `{ force: true }` to
+sign anyway.
 
 An unreadable attachment never aborts the run: it is reported in
 `evidence.skipped` and left out of the Merkle set, which is exactly what the
@@ -154,8 +173,17 @@ node psemp-gateway/cli.js stamp message.eml
 node psemp-gateway/cli.js verify message.eml.ots
 node psemp-gateway/cli.js upgrade message.eml.ots
 node psemp-gateway/cli.js sign message.eml --key ABCDEF
+node psemp-gateway/cli.js sign message.eml --force
 node psemp-gateway/cli.js verify-sig message.eml message.eml.asc
+node psemp-gateway/cli.js pgp-info message.eml
+node psemp-gateway/cli.js pgp-check message.eml --fingerprint ABCDEF
 ```
+
+`pgp-info` prints what `pgpInspectMessage()` found — format, issuer fingerprint,
+issuer key ID and where the signer came from (`signature-packet` when it was read
+out of the message, `gpg` when GnuPG had to be consulted). `pgp-check` compares the
+`X-PasevSU-PGP-Fingerprint` claim on a delivered message with the key that actually
+signed it and exits non-zero on a mismatch.
 
 Every command prints JSON. Missing external tooling is reported as `pending`
 (OpenTimestamps) or `unavailable` (GnuPG) and exits zero; only real failures exit
@@ -165,15 +193,38 @@ non-zero.
 
 Neither step is required for the hash/manifest path.
 
-- **OpenTimestamps** — install the npm package `opentimestamps` (version `0.4.6`,
-  as pinned by `packages/07-ots/package.json`) so it resolves from
-  `psemp-gateway/packages/07-ots/`. Until then `otsStatus()` reports
-  `OTS_RUNTIME_MISSING` and `X-PasevSU-OTS` stays `pending`.
-  `otsSidecar()` — the `<file>.sha256` sidecar helper — has no such dependency
-  and works immediately.
-- **OpenPGP** — the vendored `15-openpgpjs` is TypeScript source without a build
-  output, so the adapter prefers a real `gpg`/`gpg2` binary on `PATH`. If GnuPG
-  is absent, `pgpStatus()` reports `GPG_NOT_FOUND` and no signature is claimed.
+- **OpenTimestamps — works as vendored.** `07-ots/opentimestamps.min.js` is the
+  upstream **browser** bundle, so `require()` alone returns `{}`; `ots-manager.js`
+  therefore prefers npm `opentimestamps` and falls back to loading the bundle with
+  minimal `window`/`self`/`navigator`/`document` shims and reading its API off
+  `window.OpenTimestamps`. No install step. `otsStatus()` reports
+  `{ available: true, vendored: true }` on that path, and a stamp contacts the
+  public calendars directly from Node.
+  `otsSidecar()` — the `<file>.sha256` sidecar helper — never had a dependency.
+- **OpenPGP — a `gpg`/`gpg2` binary on `PATH` is needed to *create* a signature.**
+  The vendored `15-openpgpjs` is TypeScript source without a build output and its
+  npm dependencies are absent, so it cannot be used as shipped. Reading an existing
+  signature needs nothing: `pgpInspectMessage()` parses the OpenPGP packets itself
+  (`armorPayloadToBytes` → `readPgpPackets` → `parseSignatureSubpackets`), so the
+  signer of a message Thunderbird signed is available on a machine with no GnuPG.
+  If GnuPG is absent, `pgpStatus()` reports `GPG_NOT_FOUND` and no signature is claimed.
+
+## Shared settings
+
+`settings.default.json` holds the six keys both halves use — `version`,
+`framework`, `origin`, `organization`, `pgpFingerprint`, `enableOts`. The
+extension's options page can import this file and export back to it, so a single
+file describes the framework everywhere.
+
+`resolveConfig()` merges `DEFAULTS` < `loadSettings()` < the caller's `config`, in
+that order — the file overrides the built-in defaults, and an explicit `config`
+argument overrides both. A missing or malformed settings file silently falls back
+to `DEFAULTS`: settings must never be able to fail a send.
+
+`origin` is deliberately **not** shared: it names the producer, so the extension
+always writes `Thunderbird` and the gateway writes `PSEMP-Gateway`. That is the
+only intentional difference in the header set, and `test/settings-parity.cjs`
+asserts it together with the key set and key order in all four places.
 
 ## Full chain
 
@@ -194,15 +245,32 @@ default and only controls whether the `pending` marker is written, so the gatewa
 knows to stamp the message; turn it off in the extension options only if you
 deliberately want messages left unstamped.
 
-## Self-test
+## Tests
 
 ```console
 node psemp-gateway/test/self-test.cjs
+node psemp-gateway/test/settings-parity.cjs
+node psemp-gateway/test/pgp-thunderbird.cjs
+node psemp-gateway/test/ots-runtime.cjs
 ```
 
-Covers known-answer vectors for SHA-224/256/384/512, NIST SHA3-512, RIPEMD-160
-and Keccak-512; agreement between the vendored CryptoJS group and `node:crypto`
-for SHA-224/256/384/512; Merkle single-leaf, order-independence and empty-set
-behaviour; manifest serialisation and hash; header order, preservation and
-injection safety; adapter availability; the EML evidence pipeline; and an
-evidence round-trip that must reject a tampered body.
+`self-test.cjs` covers known-answer vectors for SHA-224/256/384/512, NIST
+SHA3-512, RIPEMD-160 and Keccak-512; agreement between the vendored CryptoJS
+group and `node:crypto` for SHA-224/256/384/512; Merkle single-leaf,
+order-independence and empty-set behaviour; manifest serialisation and hash;
+header order, preservation and injection safety; adapter availability; the EML
+evidence pipeline; and an evidence round-trip that must reject a tampered body.
+
+`settings-parity.cjs` pins the six settings keys and their order across `api.js`,
+`settings.default.json`, `background.js` and `options.js`, then runs the options
+page script against a stub DOM to prove that importing a settings file copies the
+six keys, normalises the fingerprint, refreshes the form and never copies `origin`.
+
+`pgp-thunderbird.cjs` builds OpenPGP v4 signature packets by hand, so it needs no
+keyring and no GnuPG, and covers the packet parser, armour decoding, CRLF-split
+PGP/MIME messages, the signer-derived fingerprint header, the
+`ALREADY_SIGNED` guard and `--force`.
+
+`ots-runtime.cjs` proves the vendored OpenTimestamps bundle loads and reaches the
+stamping stage; it accepts either an attested proof (a written `.ots`) or the
+explicit "no usable calendar attestation" error, and never a missing runtime.

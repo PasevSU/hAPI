@@ -11,10 +11,39 @@ function runtime() {
     return require(OTS_PACKAGE);
   } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND' && error.message.includes(`'${OTS_PACKAGE}'`)) {
-      throw new Error('OpenTimestamps runtime is missing. Install the package dependencies first.', { cause: error });
+      return vendoredRuntime();
     }
     throw error;
   }
+}
+
+/*
+ * The bundle shipped beside this file is the BROWSER build. It probes `window` while
+ * loading (its HTTP layer is request/bluebird/cookies) and registers the API on
+ * `window.OpenTimestamps`, so the UMD `module.exports` comes back empty. Give it the
+ * browser globals it looks for — only when absent, never overwriting — then read the
+ * API back off `window`. The shims stay in place because the HTTP layer may probe
+ * them lazily, long after load.
+ */
+function vendoredRuntime() {
+  const globals = globalThis;
+  const shim = (name, value) => {
+    if (typeof globals[name] === 'undefined') globals[name] = value;
+  };
+  shim('window', globals);
+  shim('self', globals);
+  shim('navigator', { userAgent: 'node' });
+  shim('document', { createElement: () => ({}) });
+
+  const bundled = require('./opentimestamps.min.js');
+  const candidate = bundled && bundled.Ops ? bundled : globals.window && globals.window.OpenTimestamps;
+  if (!candidate || !candidate.Ops || !candidate.DetachedTimestampFile) {
+    throw new Error(
+      'Vendored OpenTimestamps bundle (opentimestamps.min.js) did not expose an API; ' +
+        'install the npm package "opentimestamps" instead.'
+    );
+  }
+  return candidate;
 }
 
 function timestampOptions(options = {}) {

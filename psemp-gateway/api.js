@@ -27,6 +27,7 @@
 
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { spawnSync } = require('node:child_process');
@@ -49,8 +50,33 @@ const DEFAULTS = Object.freeze({
   enableOts: true,
 });
 
-/** Header names, in injection order. `X-PasevSU-OTS` is a marker during compose. */
-const HEADER_NAMES = Object.freeze({
+const SETTINGS_FILENAME = 'settings.default.json';
+const SETTINGS_PATH = path.join(__dirname, SETTINGS_FILENAME);
+let settingsCache = null;
+
+/**
+ * Shared defaults, read from `settings.default.json` beside this file.
+ *
+ * The same six keys are mirrored in the Thunderbird extension, so keeping them in a
+ * data file lets the two halves be diffed instead of hand-synchronised. A missing or
+ * malformed file falls back to `DEFAULTS` — settings must never fail a send.
+ * @param {string} [file] override, mainly for tests
+ */
+function loadSettings(file = SETTINGS_PATH) {
+  if (file === SETTINGS_PATH && settingsCache) return settingsCache;
+  let parsed = {};
+  try {
+    parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    parsed = {};
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) parsed = {};
+  const settings = Object.freeze(Object.assign({}, parsed));
+  if (file === SETTINGS_PATH) settingsCache = settings;
+  return settings;
+}
+
+/** Header names, in injection order. `X-PasevSU-OTS` is a marker during compose. */const HEADER_NAMES = Object.freeze({
   version: 'X-PasevSU-Version',
   framework: 'X-PasevSU-Framework',
   origin: 'X-PasevSU-Origin',
@@ -255,12 +281,12 @@ function headerToken(value) {
 
 /** Normalise caller-supplied config over {@link DEFAULTS}. */
 function resolveConfig(config) {
-  const merged = Object.assign({}, DEFAULTS, config || {});
+  const merged = Object.assign({}, DEFAULTS, loadSettings(), config || {});
   merged.version = sanitizeHeaderValue(merged.version) || DEFAULTS.version;
   merged.framework = sanitizeHeaderValue(merged.framework) || DEFAULTS.framework;
   merged.origin = sanitizeHeaderValue(merged.origin) || DEFAULTS.origin;
   merged.organization = sanitizeHeaderValue(merged.organization) || DEFAULTS.organization;
-  merged.pgpFingerprint = sanitizeHeaderValue(merged.pgpFingerprint);
+  merged.pgpFingerprint = normalizeFingerprint(merged.pgpFingerprint);
   merged.enableOts = merged.enableOts === true || merged.enableOts === 'true';
   return merged;
 }
@@ -358,10 +384,18 @@ function buildHeaderLines({
  * is reported in `skipped` and never aborts the run.
  *
  * @param {{body?: string, attachments?: Array<{name?: string, data?: *, error?: string}>,
- *          config?: object, evidenceId?: string, timestamp?: string}} input
+ *          config?: object, evidenceId?: string, timestamp?: string,
+ *          signature?: string|Buffer|{path: string}}} input
+ *        `signature` is the raw message that carries the OpenPGP signature Thunderbird
+ *        applied. When `config.pgpFingerprint` is empty it fills the claim from the
+ *        signer the message actually proves, so an empty option still yields a
+ *        verifiable header instead of none.
  */
-function computeEvidence({ body = '', attachments = [], config, evidenceId, timestamp } = {}) {
+function computeEvidence({ body = '', attachments = [], config, evidenceId, timestamp, signature } = {}) {
   const resolved = resolveConfig(config);
+  if (!resolved.pgpFingerprint && signature != null) {
+    resolved.pgpFingerprint = pgpResolvedFingerprint(signature);
+  }
   const bodyText = typeof body === 'string' ? body : String(body == null ? '' : body);
   const bodyHash = sha256Hex(bodyText);
 
@@ -545,12 +579,21 @@ function otsStatus() {
     const entry = otsRequire.resolve('opentimestamps');
     return { available: true, entry, reason: null };
   } catch (error) {
-    return {
-      available: false,
-      entry: null,
-      reason: 'OTS_RUNTIME_MISSING',
-      detail: 'npm package "opentimestamps" is not installed for psemp-gateway/packages/07-ots.',
-    };
+    // The self-contained UMD bundle shipped beside ots-manager.js is a complete
+    // runtime (v0.4.9), so a missing npm package is not a limitation.
+    try {
+      const entry = otsRequire.resolve('./opentimestamps.min.js');
+      return { available: true, entry, reason: null, vendored: true };
+    } catch (inner) {
+      return {
+        available: false,
+        entry: null,
+        reason: 'OTS_RUNTIME_MISSING',
+        detail:
+          'Neither the npm package "opentimestamps" nor the vendored opentimestamps.min.js ' +
+          'is present in psemp-gateway/packages/07-ots.',
+      };
+    }
   }
 }
 
@@ -605,6 +648,14 @@ async function otsUpgrade(otsPath, options = {}) {
  * OpenPGP.js is vendored as TypeScript source and needs a build step, so the
  * gateway shells out to a real gpg binary when one is present and reports
  * "unavailable" otherwise. It never fabricates a signature.
+ *
+ * Thunderbird signs with the key configured in its own account settings. A
+ * MailExtension cannot read that keyring — there is no WebExtension API for the
+ * configured fingerprint — so `X-PasevSU-PGP-Fingerprint` is a CLAIM made by the
+ * sender and the headers stay outside the signed MIME entity. The helpers below
+ * close that gap on the receiving side: `pgpInspectMessage` reports who actually
+ * signed, `pgpCrossCheck` compares that with the claim, and `pgpSign` refuses to
+ * add a second signature to a message Thunderbird already signed.
  * ------------------------------------------------------------------ */
 
 let gpgCache;
@@ -661,14 +712,376 @@ function gpgRun(args) {
   };
 }
 
+const PGP_MARKERS = Object.freeze({
+  clearsigned: '-----BEGIN PGP SIGNED MESSAGE-----',
+  signature: '-----BEGIN PGP SIGNATURE-----',
+  signatureEnd: '-----END PGP SIGNATURE-----',
+});
+
+/** Message text or bytes, or `{ path }` to read a file from disk. */
+function toEvidenceBuffer(input) {
+  if (input && typeof input === 'object' && !Buffer.isBuffer(input) && typeof input.path === 'string') {
+    return fs.readFileSync(input.path);
+  }
+  return Buffer.from(toBuffer(input));
+}
+
+/**
+ * Find the OpenPGP signature a mail client (usually Thunderbird) already applied.
+ * Pure text inspection, so it works with no gpg binary present.
+ *
+ * Formats: `pgp-mime` (multipart/signed + application/pgp-signature),
+ * `inline` (clearsigned), `armored-only` (a detached block pasted in the body).
+ */
+function detectPgpSignature(input) {
+  const text = toEvidenceBuffer(input).toString('latin1');
+  const multipartSigned = /content-type:\s*multipart\/signed/i.test(text);
+  const signaturePart = /content-type:\s*application\/pgp-signature/i.test(text);
+  const clearsigned = text.includes(PGP_MARKERS.clearsigned);
+  const armored = text.includes(PGP_MARKERS.signature);
+
+  let format = null;
+  if (multipartSigned && signaturePart) format = 'pgp-mime';
+  else if (clearsigned) format = 'inline';
+  else if (armored) format = 'armored-only';
+
+  return {
+    signed: format !== null,
+    format,
+    multipartSigned,
+    signaturePart,
+    clearsigned,
+    armored,
+  };
+}
+
+/** Cut the armored signature block, or base64-decode the PGP/MIME signature part. */
+function extractPgpSignatureBlock(input) {
+  const text = toEvidenceBuffer(input).toString('latin1');
+  const start = text.indexOf(PGP_MARKERS.signature);
+  if (start !== -1) {
+    const end = text.indexOf(PGP_MARKERS.signatureEnd, start);
+    const slice = end === -1 ? text.slice(start) : text.slice(start, end + PGP_MARKERS.signatureEnd.length);
+    return { kind: 'armored', data: `${slice}\n` };
+  }
+
+  const partAt = text.search(/content-type:\s*application\/pgp-signature/i);
+  if (partAt === -1) return null;
+  // Real messages end their headers with CRLF; a bare "\n\n" search misses them.
+  const separator = /\r?\n\r?\n/g;
+  separator.lastIndex = partAt;
+  const match = separator.exec(text);
+  if (!match) return null;
+  const remainder = text.slice(match.index + match[0].length);
+  const boundaryAt = remainder.search(/^--/m);
+  const body = (boundaryAt === -1 ? remainder : remainder.slice(0, boundaryAt)).replace(/\s+/g, '');
+  if (!body) return null;
+  const decoded = Buffer.from(body, 'base64');
+  if (!decoded.length) return null;
+  return { kind: 'binary', data: decoded };
+}
+
+/** Base64 payload of an armored block, minus the header, the CRC line and the footer. */
+function armorPayloadToBytes(armored) {
+  const text = String(armored);
+  const start = text.indexOf(PGP_MARKERS.signature);
+  const from = start === -1 ? 0 : start + PGP_MARKERS.signature.length;
+  const end = text.indexOf(PGP_MARKERS.signatureEnd, from);
+  const body = text.slice(from, end === -1 ? undefined : end);
+  const base64 = body
+    .split(/\r?\n/)
+    .filter((line) => line && !line.startsWith('=') && !/^[A-Za-z-]+:/.test(line))
+    .join('');
+  return Buffer.from(base64, 'base64');
+}
+
+/** Split an OpenPGP message into packets, old and new format headers both accepted. */
+function readPgpPackets(bytes) {
+  const packets = [];
+  let offset = 0;
+  while (offset < bytes.length) {
+    const header = bytes[offset];
+    if (!(header & 0x80)) break;
+    let tag;
+    let length;
+    let cursor;
+    if (header & 0x40) {
+      tag = header & 0x3f;
+      cursor = offset + 1;
+      if (cursor >= bytes.length) break;
+      const first = bytes[cursor];
+      cursor += 1;
+      if (first < 192) {
+        length = first;
+      } else if (first < 224) {
+        if (cursor >= bytes.length) break;
+        length = ((first - 192) << 8) + bytes[cursor] + 192;
+        cursor += 1;
+      } else if (first === 255) {
+        if (cursor + 4 > bytes.length) break;
+        length = bytes.readUInt32BE(cursor);
+        cursor += 4;
+      } else {
+        // Partial body lengths only appear on large literal data, never on a signature.
+        break;
+      }
+    } else {
+      tag = (header >> 2) & 0x0f;
+      const lengthType = header & 0x03;
+      cursor = offset + 1;
+      if (lengthType === 0) {
+        if (cursor >= bytes.length) break;
+        length = bytes[cursor];
+        cursor += 1;
+      } else if (lengthType === 1) {
+        if (cursor + 2 > bytes.length) break;
+        length = bytes.readUInt16BE(cursor);
+        cursor += 2;
+      } else if (lengthType === 2) {
+        if (cursor + 4 > bytes.length) break;
+        length = bytes.readUInt32BE(cursor);
+        cursor += 4;
+      } else {
+        length = bytes.length - cursor;
+      }
+    }
+    if (cursor + length > bytes.length) break;
+    packets.push({ tag, body: bytes.subarray(cursor, cursor + length) });
+    offset = cursor + length;
+  }
+  return packets;
+}
+
+/** Issuer key ID (type 16) and issuer fingerprint (type 33) live in the subpackets. */
+function parseSignatureSubpackets(bytes, start, end) {
+  const found = { issuerFingerprint: null, issuerKeyId: null };
+  let offset = start;
+  while (offset < end && offset < bytes.length) {
+    const first = bytes[offset];
+    let length;
+    let cursor = offset + 1;
+    if (first < 192) {
+      length = first;
+    } else if (first < 255) {
+      if (cursor >= bytes.length) break;
+      length = ((first - 192) << 8) + bytes[cursor] + 192;
+      cursor += 1;
+    } else {
+      if (cursor + 4 > bytes.length) break;
+      length = bytes.readUInt32BE(cursor);
+      cursor += 4;
+    }
+    if (!length || cursor + length > bytes.length || cursor + length > end) break;
+    const type = bytes[cursor] & 0x7f;
+    const body = bytes.subarray(cursor + 1, cursor + length);
+    if (type === 33 && body.length >= 21) {
+      found.issuerFingerprint = body.subarray(1).toString('hex').toUpperCase();
+    } else if (type === 16 && body.length >= 8) {
+      found.issuerKeyId = body.subarray(0, 8).toString('hex').toUpperCase();
+    }
+    offset = cursor + length;
+  }
+  return found;
+}
+
+/**
+ * Read the signer straight out of an OpenPGP signature packet.
+ *
+ * This is the reason a fingerprint is available on a machine where Thunderbird
+ * signs outgoing mail but no gpg binary is installed: the issuer fingerprint and
+ * key ID are plain subpacket fields, not something that needs a keyring.
+ * @param {Buffer|string} signatureData raw signature bytes, or an armored block
+ */
+function parseOpenPgpSignatures(signatureData) {
+  const bytes = Buffer.isBuffer(signatureData) ? signatureData : armorPayloadToBytes(signatureData);
+  const signatures = [];
+  for (const packet of readPgpPackets(bytes)) {
+    if (packet.tag !== 2) continue;
+    const body = packet.body;
+    const version = body[0];
+    const signature = { version, sigType: null, issuerFingerprint: null, issuerKeyId: null };
+    if (version === 3) {
+      if (body.length >= 15) {
+        signature.sigType = body[2];
+        signature.issuerKeyId = body.subarray(7, 15).toString('hex').toUpperCase();
+      }
+    } else if (version === 4 || version === 5) {
+      if (body.length >= 6) {
+        signature.sigType = body[1];
+        signature.pubAlg = body[2];
+        signature.hashAlg = body[3];
+        const hashedLength = body.readUInt16BE(4);
+        const hashedStart = 6;
+        const hashedEnd = hashedStart + hashedLength;
+        if (hashedEnd + 2 <= body.length) {
+          Object.assign(signature, parseSignatureSubpackets(body, hashedStart, hashedEnd));
+          const unhashedLength = body.readUInt16BE(hashedEnd);
+          const unhashedStart = hashedEnd + 2;
+          const unhashedEnd = Math.min(body.length, unhashedStart + unhashedLength);
+          const unhashed = parseSignatureSubpackets(body, unhashedStart, unhashedEnd);
+          signature.issuerFingerprint = signature.issuerFingerprint || unhashed.issuerFingerprint;
+          signature.issuerKeyId = signature.issuerKeyId || unhashed.issuerKeyId;
+        }
+      }
+    }
+    signatures.push(signature);
+  }
+  return signatures;
+}
+
+/**
+ * Report the signer of a message Thunderbird signed. The issuer fingerprint comes
+ * out of the signature packet itself; gpg is only consulted when the packet does
+ * not carry one. A fingerprint is never guessed.
+ */
+function pgpInspectMessage(input) {
+  const detection = detectPgpSignature(input);
+  const base = { ...detection, issuerFingerprint: null, issuerKeyId: null, signerSource: null, reason: null };
+  if (!detection.signed) return { ...base, reason: 'NO_SIGNATURE' };
+
+  const block = extractPgpSignatureBlock(input);
+  if (!block) return { ...base, reason: 'SIGNATURE_BLOCK_UNREADABLE' };
+
+  // Preferred: read the issuer out of the signature packet. No subprocess, no temp
+  // files, and it works on a machine that has Thunderbird but no gpg binary.
+  const signatures = parseOpenPgpSignatures(block.data);
+  const signer = signatures.find((entry) => entry.issuerFingerprint || entry.issuerKeyId);
+  if (signer) {
+    return {
+      ...base,
+      issuerFingerprint: signer.issuerFingerprint,
+      issuerKeyId: signer.issuerKeyId,
+      signerSource: 'signature-packet',
+      reason: null,
+    };
+  }
+
+  const status = pgpStatus();
+  if (!status.available) {
+    return {
+      ...base,
+      reason: signatures.length ? 'NO_ISSUER_IN_SIGNATURE' : status.reason,
+      detail: signatures.length ? 'the signature packet carries no issuer subpacket' : status.detail,
+    };
+  }
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-pgp-'));
+  try {
+    const file = path.join(dir, block.kind === 'armored' ? 'signature.asc' : 'signature.pgp');
+    fs.writeFileSync(file, block.data);
+    const result = gpgRun(['--batch', '--list-packets', file]);
+    if (result.status !== 'ok') {
+      return { ...base, reason: 'GPG_LIST_PACKETS_FAILED', detail: result.stderr || result.status };
+    }
+    const fingerprint = /issuer fpr v\d+\s+([0-9A-Fa-f]+)/.exec(result.stdout);
+    const keyId = /issuer key ID\s+([0-9A-Fa-f]+)/.exec(result.stdout);
+    return {
+      ...base,
+      issuerFingerprint: fingerprint ? fingerprint[1].toUpperCase() : null,
+      issuerKeyId: keyId ? keyId[1].toUpperCase() : null,
+      signerSource: 'gpg --list-packets',
+      reason: fingerprint || keyId ? null : 'NO_ISSUER_IN_SIGNATURE',
+    };
+  } finally {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true });
+    } catch (error) {
+      // A leftover temp directory is not worth failing a verification for.
+    }
+  }
+}
+
+/** `0x` prefix, spaces and colons are all noise when comparing fingerprints. */
+function normalizeFingerprint(value) {
+  return String(value == null ? '' : value)
+    .replace(/[\s:]/g, '')
+    .replace(/^0x/i, '')
+    .toUpperCase();
+}
+
+/**
+ * Compare the `X-PasevSU-PGP-Fingerprint` claim with the signer Thunderbird
+ * actually used. A short key ID matches the tail of the full fingerprint, which
+ * is the same rule gpg itself uses to display keys.
+ */
+function pgpCrossCheck(input, { fingerprint = '', keyId = '' } = {}) {
+  const info = pgpInspectMessage(input);
+  const checks = [
+    {
+      name: 'signature-present',
+      ok: info.signed,
+      detail: info.signed ? info.format : 'no OpenPGP signature found in the message',
+    },
+  ];
+  if (!info.signed) return { ok: false, checks, info };
+
+  const claimed = normalizeFingerprint(fingerprint || keyId);
+  const detected = normalizeFingerprint(info.issuerFingerprint || info.issuerKeyId);
+
+  if (!detected) {
+    checks.push({
+      name: 'fingerprint-verifiable',
+      ok: false,
+      detail: `signature present but the signer is not readable (${info.reason || 'UNKNOWN'})`,
+    });
+  } else if (!claimed) {
+    checks.push({
+      name: 'fingerprint-claimed',
+      ok: false,
+      detail: `no X-PasevSU-PGP-Fingerprint claim to compare; signer is ${detected}`,
+    });
+  } else {
+    const match = detected === claimed || detected.endsWith(claimed) || claimed.endsWith(detected);
+    checks.push({
+      name: 'fingerprint-match',
+      ok: match,
+      detail: `claim=${claimed} signer=${detected}`,
+    });
+  }
+
+  return { ok: checks.every((check) => check.ok), checks, info };
+}
+
+/**
+ * The fingerprint to emit when the sender left `pgpFingerprint` empty.
+ *
+ * Thunderbird signs outgoing mail with the key configured in the account, and a
+ * MailExtension cannot read that keyring — no WebExtension API exposes it. So the
+ * only trustworthy source is the signature on the delivered message: this reads the
+ * issuer straight out of the OpenPGP packet instead of trusting a claim.
+ * @returns {string} normalised fingerprint, or '' when nothing is readable.
+ */
+function pgpResolvedFingerprint(input) {
+  const info = pgpInspectMessage(input);
+  if (!info.signed) return '';
+  return normalizeFingerprint(info.issuerFingerprint || info.issuerKeyId);
+}
+
 /**
  * Detached-sign a file. Writes `<file>.asc` next to it unless `outputPath` is given.
+ *
+ * Refuses to sign something that already carries an OpenPGP signature: Thunderbird
+ * signs with the key configured in the account, and a second signature stacked on
+ * top makes both harder to verify. Pass `force: true` to sign regardless.
  * @returns {{status: string, signaturePath?: string, reason?: string}}
  */
-function pgpSign(file, { keyId, outputPath, armor = true } = {}) {
+function pgpSign(file, { keyId, outputPath, armor = true, force = false } = {}) {
+  const input = path.resolve(file);
+  const existing = force ? null : detectPgpSignature({ path: input });
+  if (existing && existing.signed) {
+    return {
+      status: 'skipped',
+      reason: 'ALREADY_SIGNED',
+      format: existing.format,
+      input,
+      detail:
+        'The message already carries an OpenPGP signature, normally the one Thunderbird added. ' +
+        'Signing again would stack a second signature; pass force:true to sign anyway.',
+    };
+  }
+
   const status = pgpStatus();
   if (!status.available) return { status: 'unavailable', reason: status.reason, detail: status.detail };
-  const input = path.resolve(file);
   const target = path.resolve(outputPath || `${input}.asc`);
   const args = ['--batch', '--yes', '--detach-sign'];
   if (armor) args.push('--armor');
@@ -925,6 +1338,8 @@ module.exports = {
   MANIFEST_FILENAME,
   ALGORITHMS,
   PACKAGES_DIR,
+  SETTINGS_PATH,
+  loadSettings,
   VECTORS,
   // hashing
   sha256Hex,
@@ -953,6 +1368,13 @@ module.exports = {
   pgpStatus,
   pgpSign,
   pgpVerify,
+  detectPgpSignature,
+  extractPgpSignatureBlock,
+  pgpInspectMessage,
+  parseOpenPgpSignatures,
+  pgpCrossCheck,
+  pgpResolvedFingerprint,
+  normalizeFingerprint,
   emailEvidence,
   // diagnostics
   selfTest,

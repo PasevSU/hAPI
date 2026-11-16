@@ -66,6 +66,15 @@ function headerToken(value) {
   return sanitizeHeaderValue(value).replace(/[,=]/g, "_");
 }
 
+// gpg prints fingerprints as uppercase hex with no separators, so a fingerprint
+// copied out of Thunderbird's key properties still compares equal.
+function normalizeFingerprint(value) {
+  return String(value == null ? "" : value)
+    .replace(/[\s:]/g, "")
+    .replace(/^0x/i, "")
+    .toUpperCase();
+}
+
 /*
  * Merkle root over a list of hex-encoded leaf digests.
  *  1. Sort the hex strings ascending.
@@ -149,7 +158,10 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
   headers.push(`X-PasevSU-Manifest-SHA256: ${manifestHash}`);
   headers.push(`X-PasevSU-Merkle-Root: ${merkle}`);
   if (config.pgpFingerprint) {
-    headers.push(`X-PasevSU-PGP-Fingerprint: ${sanitizeHeaderValue(config.pgpFingerprint)}`);
+    // A claim: the MailExtension cannot read Thunderbird's own keyring, so this is
+    // what the sender says Thunderbird signs with. `psemp-gateway pgp-check`
+    // compares it with the signer actually found in the delivered message.
+    headers.push(`X-PasevSU-PGP-Fingerprint: ${normalizeFingerprint(config.pgpFingerprint)}`);
   }
   if (config.enableOts) {
     // Marker only: real OpenTimestamps must be applied by the SMTP gateway / CLI.

@@ -11,8 +11,10 @@
  *   node psemp-gateway/cli.js stamp <file> [--out <file.ots>]
  *   node psemp-gateway/cli.js verify <file.ots>
  *   node psemp-gateway/cli.js upgrade <file.ots>
- *   node psemp-gateway/cli.js sign <file> [--key <keyid>] [--out <file.asc>]
+ *   node psemp-gateway/cli.js sign <file> [--key <keyid>] [--out <file.asc>] [--force]
  *   node psemp-gateway/cli.js verify-sig <file> <file.asc>
+ *   node psemp-gateway/cli.js pgp-info <file>
+ *   node psemp-gateway/cli.js pgp-check <file> [--fingerprint <hex>]
  *   node psemp-gateway/cli.js self-test
  *
  * Every command prints JSON and exits non-zero only on a real failure. Missing
@@ -35,8 +37,12 @@ const USAGE = `PasevSU PSEMP gateway
   stamp <file> [--out proof.ots]        OpenTimestamps proof (degrades to pending)
   verify <proof.ots>                    verify an OpenTimestamps proof
   upgrade <proof.ots>                   upgrade a pending proof
-  sign <file> [--key id] [--out .asc]   detached OpenPGP signature (needs gpg)
+  sign <file> [--key id] [--out .asc] [--force]
+                                        detached OpenPGP signature (needs gpg; skipped
+                                        when the message is already signed)
   verify-sig <file> <file.asc>          verify a detached OpenPGP signature
+  pgp-info <file>                       who signed this message (Thunderbird's key)
+  pgp-check <file> [--fingerprint hex]  compare the claim with the actual signer
   self-test                             known-answer vectors + parity checks`;
 
 function parseOptions(argv) {
@@ -192,12 +198,14 @@ async function main(argv) {
     case 'sign': {
       const [file] = rest;
       const resolved = readFileOrFail(file, 'file');
-      emit(
-        api.pgpSign(resolved, {
-          keyId: options.key && options.key !== true ? String(options.key) : undefined,
-          outputPath: options.out && options.out !== true ? path.resolve(String(options.out)) : undefined,
-        })
-      );
+      const result = api.pgpSign(resolved, {
+        keyId: options.key && options.key !== true ? String(options.key) : undefined,
+        outputPath: options.out && options.out !== true ? path.resolve(String(options.out)) : undefined,
+        force: options.force === true,
+      });
+      emit(result);
+      const failed = result.status === 'failed' || result.status === 'unavailable';
+      if (failed) process.exitCode = 1;
       return;
     }
 
@@ -206,6 +214,25 @@ async function main(argv) {
       const resolvedFile = readFileOrFail(file, 'file');
       const resolvedSignature = readFileOrFail(signature, 'signature');
       emit(api.pgpVerify(resolvedFile, resolvedSignature));
+      return;
+    }
+
+    case 'pgp-info': {
+      const [file] = rest;
+      const resolved = readFileOrFail(file, 'file');
+      emit(api.pgpInspectMessage({ path: resolved }));
+      return;
+    }
+
+    case 'pgp-check': {
+      const [file] = rest;
+      const resolved = readFileOrFail(file, 'file');
+      const result = api.pgpCrossCheck(
+        { path: resolved },
+        { fingerprint: options.fingerprint && options.fingerprint !== true ? String(options.fingerprint) : '' }
+      );
+      emit(result);
+      if (!result.ok) process.exitCode = 1;
       return;
     }
 

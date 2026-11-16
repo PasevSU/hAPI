@@ -80,15 +80,43 @@ addons.thunderbird.net with a signed build.
 Configure the static values via the extension's **Options** page (or
 Thunderbird → Add-ons → this extension → Preferences).
 
+## Shared settings file
+
+The options page keeps six keys in `browser.storage.local`:
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `version` | `1.0` | `X-PasevSU-Version` |
+| `framework` | `Forensic-Mail` | `X-PasevSU-Framework` |
+| `origin` | `Thunderbird` | `X-PasevSU-Origin` |
+| `organization` | `PasevSU` | `X-PasevSU-Organization` |
+| `pgpFingerprint` | empty | `X-PasevSU-PGP-Fingerprint`, omitted while empty |
+| `enableOts` | `true` | writes the `X-PasevSU-OTS: pending` marker |
+
+The gateway keeps the same keys in
+[`../psemp-gateway/settings.default.json`](../psemp-gateway/settings.default.json),
+so one file can describe both halves. Use **Import settings file** on the options
+page to load it and **Export settings file** to write it back. Importing copies the
+six keys, normalises a pasted fingerprint to uppercase hex, and refreshes the form;
+a broken file is reported and changes nothing.
+
+`origin` is the one key import deliberately ignores: it names the producer, so the
+extension always writes `Thunderbird` and the gateway writes `PSEMP-Gateway`.
+`psemp-gateway/test/settings-parity.cjs` pins the key set, the key order and that
+single divergence across both halves.
+
 ## Limitations
 
-- **OpenPGP / OpenTimestamps.** Real PGP signatures (`.asc`) and OpenTimestamps
-  (`.ots`) cannot be generated inside a MailExtension (no Node, no `gpg`/`ots`
-  binaries). `X-PasevSU-OTS: pending` is a marker; the SMTP gateway / CLI must
-  stamp the manifest. (`gpg --armor --detach-sign PasevSU_Manifest.json`,
-  `ots stamp PasevSU_Manifest.json`.) The marker is written **by default** on
-  every message, so nothing is ever sent unstamped unless you untick
-  `enableOts`; the server-side half lives in [`../psemp-gateway/`](../psemp-gateway/).
+- **OpenPGP / OpenTimestamps.** A MailExtension has no Node, no `gpg` and no `ots`
+  binary, so real PGP signatures (`.asc`) and OpenTimestamps (`.ots`) cannot be
+  generated here. `X-PasevSU-OTS: pending` is a marker for the SMTP gateway / CLI,
+  which does have both: it stamps the manifest from a vendored OpenTimestamps
+  bundle with no install step, and it reads the signer out of the signature
+  Thunderbird already applied, so the `X-PasevSU-PGP-Fingerprint` claim can be
+  checked against the key that actually signed. The marker is written **by
+  default** on every message, so nothing is ever sent unstamped unless you untick
+  `enableOts`; the server-side half lives in
+  [`../psemp-gateway/`](../psemp-gateway/).
 - **SHA3-512 / BLAKE3.** Web Crypto exposes only SHA-1/256/384/512. The
   extension uses SHA-256; `blake3` in the manifest is `null` for the gateway
   to fill in.

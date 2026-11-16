@@ -37,6 +37,10 @@
         margin-left: 0.75rem;
         color: #146c43;
       }
+      h2 {
+        font-size: 1.05rem;
+        margin-top: 2rem;
+      }
       .note {
         color: #555;
         font-size: 0.85rem;
@@ -68,8 +72,12 @@
       <input type="text" id="organization" />
     </div>
     <div class="field">
-      <label for="pgpFingerprint">PGP Fingerprint</label>
-      <input type="text" id="pgpFingerprint" placeholder="leave empty to omit" />
+      <label for="pgpFingerprint">PGP Fingerprint (Thunderbird key)</label>
+      <input
+        type="text"
+        id="pgpFingerprint"
+        placeholder="e.g. 3F2A9C… (leave empty to omit the header)"
+      />
     </div>
 
     <div class="checkbox-field">
@@ -79,6 +87,37 @@
 
     <button id="save">Save</button>
     <span id="status"></span>
+
+    <h2>Shared settings file</h2>
+    <p>
+      The gateway keeps the same six keys in
+      <code>psemp-gateway/settings.default.json</code>. Import it here so both halves
+      agree on version, framework, organization and PGP fingerprint, and export the
+      current values back to that file when you change them.
+    </p>
+    <div class="checkbox-field">
+      <input type="file" id="importFile" accept=".json,application/json" />
+      <button id="exportFile" type="button">Export settings file</button>
+    </div>
+    <p class="note">
+      <code>origin</code> is not copied from the file: it names the producer, so the
+      extension always writes <code>Thunderbird</code> and the gateway writes
+      <code>PSEMP-Gateway</code>. That is the only intentional difference between the
+      two, and the parity test asserts it.
+    </p>
+
+    <p class="note">
+      <strong>OpenPGP already configured in Thunderbird.</strong> Put the fingerprint
+      of the key your account already signs with here (Account Settings →
+      End-to-End Encryption → OpenPGP Key Manager → your key). A MailExtension
+      cannot read Thunderbird's keyring, so this header is a <em>claim</em>: the
+      headers are added outside the signed MIME part and are not covered by
+      Thunderbird's signature. <code>psemp-gateway pgp-check</code> compares the
+      claim with the signer actually present in the delivered message, and it never
+      adds a second signature to a message Thunderbird already signed.
+      Bear in mind that with encryption switched on the
+      <code>X-PasevSU-*</code> headers stay in the clear while the body does not.
+    </p>
 
     <p class="note">
       Real OpenPGP signatures (<code>.asc</code>) and OpenTimestamps

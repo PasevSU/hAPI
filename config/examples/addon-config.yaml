@@ -25,3 +25,18 @@ options:
   public_domain: ""
   public_gateway: false
   public_same_origin: true
+
+# Forensics of outgoing mail is NOT an add-on option, защото не се чете от
+# add-on-а. Настройките на PasevSU Forensic Mail Framework (PSEMP) живеят на едно
+# място — psemp-gateway/settings.default.json — и се споделят от двете половини:
+#
+#   version          X-PasevSU-Version
+#   framework        X-PasevSU-Framework      (Forensic-Mail)
+#   origin           X-PasevSU-Origin         (Thunderbird | PSEMP-Gateway)
+#   organization     X-PasevSU-Organization   (PasevSU)
+#   pgpFingerprint   X-PasevSU-PGP-Fingerprint (празно = хедърът се пропуска)
+#   enableOts        X-PasevSU-OTS             (по подразбиране true → "pending")
+#
+# Thunderbird разширението (thunderbird-extension/) импортира същия файл от
+# страницата си с настройки и записва обратно. origin НЕ се копира — той назовава
+# производителя. Тест: psemp-gateway/test/settings-parity.cjs.

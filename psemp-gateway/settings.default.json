@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "framework": "Forensic-Mail",
+  "origin": "PSEMP-Gateway",
+  "organization": "PasevSU",
+  "pgpFingerprint": "",
+  "enableOts": true
+}
