@@ -101,17 +101,46 @@ const { stopChild } = require('./helpers.cjs');
     const badPass = await api(`/admin/api/portals/${portalId}/links`, 'POST', { password: 'ab' });
     assert.equal(badPass.status, 400, 'къса парола се отказва: ' + badPass.status);
 
-    // ── 5. Списък и изтриване ─────────────────────────────────────────────
+    // ── 5. Нивото влиза във връзката: папка и файл водят до СВОИТЕ адреси ──
+    // Код, издаден за папка, не бива да отваря корена „ей така“ — иначе „временен QR за папката“
+    // е просто втори код на портала.
+    const put = async (p, bytes) => {
+      const res = await fetch(base + p, { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: bytes });
+      return res.status;
+    };
+    assert.equal(
+      await put(`/admin/api/portals/${portalId}/tree/upload?path=${encodeURIComponent('/Dogovori/vatreshno.txt')}&mkdir=1`, 'abc'),
+      201,
+      'файлът се качва',
+    );
+    const folderLink = await api(`/admin/api/portals/${portalId}/links`, 'POST', { ttlSeconds: 600, rel: 'Dogovori', kind: 'folder' });
+    assert.equal(folderLink.status, 201, 'връзката за папка се създава');
+    assert.equal(folderLink.data.link.rel, 'Dogovori', 'нивото се пази във връзката');
+    const folderHop = await open(folderLink.data.link.url);
+    assert.equal(folderHop.status, 302, 'връзката за папка пренасочва');
+    const folderTarget = String(folderHop.headers.get('location') || '');
+    assert.match(folderTarget, /\/p\/[^?]+\?folder=%2FDogovori&expires=/, 'води към папката с подпис: ' + folderTarget);
+    const fileLink = await api(`/admin/api/portals/${portalId}/links`, 'POST', { ttlSeconds: 600, rel: 'Dogovori/vatreshno.txt', kind: 'file' });
+    assert.equal(fileLink.status, 201, 'връзката за файл се създава');
+    const fileHop = await open(fileLink.data.link.url);
+    assert.equal(fileHop.status, 302, 'връзката за файл пренасочва');
+    const fileTarget = String(fileHop.headers.get('location') || '');
+    assert.match(fileTarget, /\/file\.html:qr-links\/Dogovori\/vatreshno\.txt\?expires=/, 'води към страницата на файла: ' + fileTarget);
+    // Опасен път се отказва: `..` не излиза от папката на портала.
+    const badRel = await api(`/admin/api/portals/${portalId}/links`, 'POST', { rel: '../../etc/passwd', kind: 'file' });
+    assert.equal(badRel.status, 400, 'път с „..“ се отказва: ' + badRel.status);
+
+    // ── 6. Списък и изтриване ─────────────────────────────────────────────
     const list = await api(`/admin/api/portals/${portalId}/links`);
     assert.equal(list.status, 200, 'списъкът се дава');
-    assert.equal(list.data.links.length, 5, 'петте връзки са в списъка: ' + list.data.links.length);
+    assert.equal(list.data.links.length, 7, 'седемте връзки са в списъка: ' + list.data.links.length);
     assert.equal(list.data.links.some((l) => l.passwordHash || l.hash), false, 'списъкът не носи хешове');
     const del = await api(`/admin/api/portals/${portalId}/links/${link.id}`, 'DELETE');
     assert.equal(del.status, 200, 'връзката се трие');
     const gone = await open(link.url);
     assert.equal(gone.status, 404, 'изтритата връзка е 404: ' + gone.status);
 
-    // ── 6. Изтекла връзка: 410 и ясно съобщение ───────────────────────────
+    // ── 7. Изтекла връзка: 410 и ясно съобщение ───────────────────────────
     // Срокът не се чака в тест — модулът се вика с портал, чиято връзка вече е изтекла.
     const route = require(path.join(__dirname, '..', 'hapi_enterprise', 'routes', 'portal-links.js'));
     const expiredPortal = {
@@ -154,8 +183,8 @@ const { stopChild } = require('./helpers.cjs');
   } finally {
     await stopChild(server.child);
   }
-  console.log('PASS qr-share-links: временна връзка · само за четене към спътника · парола (форма, 401, 302) · срок в границите · списък и триене · изтекла = 410');
-})().catch((err) => {
-  console.error('FAIL qr-share-links: ' + (err && err.message));
-  process.exit(1);
-});
+  console.log(
+    'PASS qr-share-links: временна връзка · само за четене към спътника · парола (401, 302) · ' +
+      'срок в границите · ниво папка/файл · „..“ се отказва · списък и триене · изтекла = 410',
+  );
+})();

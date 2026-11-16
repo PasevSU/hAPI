@@ -1041,6 +1041,7 @@
     const levels = [
       {
         rel: '',
+        kind: 'portal',
         label: T('qr.level.portal'),
         page: withQ(c.page || `${root}/p/${encodeURIComponent(x.id)}`),
         api: withQ(c.api || ''),
@@ -1056,12 +1057,22 @@
       withQ(`${root}/file.html:${encodeURIComponent(x.slug)}/${rel.split('/').map(encodeURIComponent).join('/')}`);
     const walk = (node) => {
       for (const sub of node.folders || []) {
-        levels.push({ rel: sub.path, label: treePath(sub.path), page: folderPage(sub.path), api: '', download: '', readOnly: '', short: sub.name });
+        levels.push({
+          rel: sub.path,
+          kind: 'folder',
+          label: treePath(sub.path),
+          page: folderPage(sub.path),
+          api: '',
+          download: '',
+          readOnly: '',
+          short: sub.name,
+        });
         walk(sub);
       }
       for (const file of node.files || []) {
         levels.push({
           rel: file.path,
+          kind: 'file',
           label: file.name,
           page: filePage(file.path),
           api: '',
@@ -1075,12 +1086,18 @@
     return levels;
   }
 
-  /** Временна връзка през административния API (срок · само за четене · парола). */
+  /** Временна връзка през административния API (срок · само за четене · парола · НИВО). */
   async function createShareLink(x, lv, opts) {
     const o = opts || {};
     const body = { readOnly: o.readOnly === true };
     if (o.ttlSeconds) body.ttlSeconds = Number(o.ttlSeconds);
     if (o.password) body.password = String(o.password);
+    // Нивото влиза във връзката: код, издаден за папка или файл, трябва да води точно там,
+    // а не в корена на портала.
+    if (lv && lv.rel) {
+      body.rel = String(lv.rel);
+      body.kind = lv.kind === 'file' ? 'file' : 'folder';
+    }
     const r = await api(`/admin/api/portals/${encodeURIComponent(x.id)}/links`, { method: 'POST', json: body });
     if (!r.ok || !r.data || !r.data.link) throw new Error((r.data && r.data.error) || T('qr.temp.failed'));
     const link = r.data.link;

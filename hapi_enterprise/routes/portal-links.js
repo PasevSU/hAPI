@@ -59,6 +59,8 @@ function create(deps) {
     createdAt: link.createdAt,
     expiresAt: link.expiresAt,
     readOnly: link.readOnly === true,
+    rel: link.rel || '',
+    kind: link.kind || 'portal',
     hasPassword: Boolean(link.passwordHash),
     uses: Number(link.uses) || 0,
     lastUsedAt: link.lastUsedAt || null,
@@ -67,12 +69,37 @@ function create(deps) {
 
   const findPortalOf = (linkId) => (portals() || []).find((p) => Array.isArray(p.links) && p.links.some((l) => l.id === linkId)) || null;
 
-  /** Подписаният адрес, към който връзката пренасочва. */
+  /** Пътят на нивото: без водещи наклонени черти, без `..`, с разумен таван. */
+  function safeRel(value) {
+    const rel = text(value).replace(/^\/+/, '').trim();
+    if (!rel) return '';
+    if (rel.length > 400) return null;
+    // Керълни знаци не се допускат: пътят влиза в адрес и в HTML.
+    for (const ch of rel) {
+      const code = ch.codePointAt(0);
+      if (code < 0x20 || code === 0x7f) return null;
+    }
+    if (rel.split('/').some((part) => part === '..' || part === '.')) return null;
+    return rel;
+  }
+
+  /**
+   * Подписаният адрес, към който връзката пренасочва. Нивото се пази във връзката:
+   * порталът (корен) · папка (`?folder=`) · файл (`/file.html:<slug>/<rel>`) — тоест кодът,
+   * издаден за папка, не отваря корена „ей така“.
+   */
   function targetUrl(req, link) {
     const portal = resolvePortal(link.portalId);
     if (!portal) return '';
     const access = portalAccess.issue(portal.signingSecret || fallbackSecret, portal.id, { ttl: MAX_TTL_SECONDS, hasQuery: false });
-    return `${baseUrl(req)}/p/${encodeURIComponent(portal.id)}${access.query}`;
+    const base = baseUrl(req);
+    const rel = safeRel(link.rel);
+    if (rel === null) return '';
+    if (!rel) return `${base}/p/${encodeURIComponent(portal.id)}${access.query}`;
+    const segments = rel.split('/').map(encodeURIComponent).join('/');
+    if (link.kind === 'file') return `${base}/file.html:${encodeURIComponent(portal.slug)}/${segments}${access.query}`;
+    // За папка подписът върви след `?folder=` — `joinQuery` не е налично тук, затова `&`.
+    return `${base}/p/${encodeURIComponent(portal.id)}?folder=${encodeURIComponent('/' + rel)}${access.query.replace('?', '&')}`;
   }
 
   /** Минимална страница за паролата. Без външни ресурси и без скриптове (CSP). */
@@ -275,10 +302,19 @@ button{margin-top:.9rem;width:100%;padding:.6rem;border-radius:8px;border:0;back
         fail(res, 409, `Таван ${MAX_LINKS_PER_PORTAL} връзки на портал — изтрий старите`);
         return true;
       }
+      // Нивото: коренът на портала · папка · файл. От него зависи къде води кодът.
+      const rel = safeRel(body.rel);
+      if (rel === null) {
+        fail(res, 400, 'Невалиден път за връзката');
+        return true;
+      }
+      const kind = rel ? (text(body.kind) === 'file' ? 'file' : 'folder') : 'portal';
       const link = {
         id: newId(),
         portalId: target.id,
         readOnly,
+        rel,
+        kind,
         expiresAt: new Date(nowMs() + ttl * 1000).toISOString(),
         passwordHash: password ? portalTerm.hashPassword(password) : null,
         createdAt: new Date().toISOString(),
@@ -289,7 +325,7 @@ button{margin-top:.9rem;width:100%;padding:.6rem;border-radius:8px;border:0;back
         portal.links = [...(Array.isArray(portal.links) ? portal.links : []), link];
         return true;
       });
-      void audit('portal.link.create', { portalId: portal.id, linkId: link.id, readOnly, hasPassword: Boolean(password), ttl });
+      void audit('portal.link.create', { portalId: portal.id, linkId: link.id, readOnly, rel, kind, hasPassword: Boolean(password), ttl });
       return json(res, 201, { ok: true, link: adminView(link) }), true;
     }
 

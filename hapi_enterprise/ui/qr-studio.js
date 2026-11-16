@@ -226,6 +226,9 @@
     const t = state.temp;
     const result = state.result;
     return `<div class="qs-panel">
+        <p class="hint">${esc(
+          T('qr.temp.level', 'Връзката важи за избраното ниво: {level}', { level: lv.label }),
+        )}</p>
         <form class="qs-temp" data-qs-temp>
           <label class="qs-check"><input type="checkbox" data-qs-opt="readOnly" ${t.readOnly ? 'checked' : ''} ${
       lv.readOnly ? '' : 'disabled'
