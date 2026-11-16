@@ -60,6 +60,46 @@ Dynamic (computed per message):
 | `X-PasevSU-OTS` | `pending` marker — **on by default**; untick `enableOts` to stop marking |
 | `X-PasevSU-Receipt` | `requested` — only when `enableReceipt` is on |
 | `Disposition-Notification-To` | `receiptAddress` (RFC 8098 MDN request), same condition |
+| `X-PasevSU-Message-ID` | long `<…@forensic.evidence.pasevsu>` Message-ID (always) |
+| `X-PasevSU-Sha256` | the readable digest block: `body - …`, one `name - …` per file, `timestep - …` |
+| `X-PasevSU-Cripto-Engine` | 25-digit code derived from the seal |
+| `X-PasevSU-Cripto-title` | the same block, AES-256-GCM encrypted under that code |
+
+### The digest block
+
+`X-PasevSU-Sha256` gathers the digests into one value, in this order:
+
+```
+body - 1c4ef564075a26102c66f80f34142b3fabdfee3af8cf95903f3d328ff3f54427
+document.pdf - 5f1a…  index,odd.txt - d3dc…  timestep - 2026-11-16T14:00:49.056Z
+```
+
+Rows are separated by `,`, not by RFC 5322 folding: Thunderbird hands
+`customHeaders` back as single-line values and rewrites `[\r\n]+` to a space, so a
+folded block would be silently flattened. A `,` or `=` inside a file name is
+replaced by `_` (see `headerToken()`), so the row count is always
+`1 + files + 1`. `timestep` is the exact instant written into the manifest's
+`timestamp`, so the header and the seal can never describe different moments.
+
+`X-PasevSU-Cripto-Engine` is **derived, never random**:
+`SHA-256("PasevSU-Cripto-Engine:v1|<merkle-root>|<body-sha256>")`, first 24 hex
+digits, reduced modulo 10²⁵, zero-padded to 25 digits. A recipient can therefore
+recompute it from the Merkle root they already hold, and `psemp-gateway` computes
+the same value independently — `test/extension-arming.cjs` fails if the two ever
+disagree.
+
+`X-PasevSU-Cripto-title` is the block encrypted with AES-256-GCM under a key and IV
+derived from that code, wire format `gcm1.<iv>.<tag>.<ciphertext>` in base64url.
+This is **not secrecy against the recipient** — the code travels in the same
+message — it keeps file names and digests out of plaintext header scanners while
+staying recoverable. A wrong code fails the GCM tag check instead of returning
+plausible garbage.
+
+`Message-ID` is written by `psemp-gateway` (raw SMTP may set any legal field). This
+extension emits the `X-PasevSU-Message-ID` twin instead, because Thunderbird's
+`ComposeDetails.customHeaders` **rejects any name that does not start with `X-`**,
+and a rejected `setComposeDetails()` aborts the send with no dialog at all — the
+compose window just stays open. Both values are identical.
 
 `name` is the attachment's filename with spaces and reserved characters replaced by
 `_` (see `headerToken()`), so the value stays a single ASCII token. The hash itself

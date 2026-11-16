@@ -151,6 +151,10 @@ check('plain-text send gets the full header set in contract order', async () => 
     'X-PasevSU-Manifest-SHA256',
     'X-PasevSU-Merkle-Root',
     'X-PasevSU-OTS',
+    'X-PasevSU-Message-ID',
+    'X-PasevSU-Sha256',
+    'X-PasevSU-Cripto-Engine',
+    'X-PasevSU-Cripto-title',
   ]);
 
   const headers = headerMap(result.details.customHeaders);
@@ -674,11 +678,122 @@ check('every header name is a syntactically valid field name', () => {
     'X-PasevSU-Merkle-Root',
     'X-PasevSU-PGP-Fingerprint',
     'X-PasevSU-OTS',
+    'X-PasevSU-Message-ID',
+    'X-PasevSU-Sha256',
+    'X-PasevSU-Cripto-Engine',
+    'X-PasevSU-Cripto-title',
   ];
   for (const name of names) {
     assert.match(name, fieldName, `${name} is not a valid field name`);
     assert.ok(CODE.includes(name), `${name} is not written by background.js`);
   }
+});
+
+check('the digest block lists body, every file and the timestep in one value', async () => {
+  const first = Buffer.from('first attachment bytes');
+  const second = Buffer.from('second attachment bytes');
+  const { listeners, added } = loadExtension({
+    attachments: {
+      7: { name: 'a.txt', bytes: first },
+      9: { name: 'b.bin', bytes: second },
+    },
+  });
+
+  const details = {
+    isPlainText: true,
+    body: 'body text',
+    attachments: [
+      { id: 7, name: 'a.txt' },
+      { id: 9, name: 'b.bin' },
+    ],
+    customHeaders: [],
+  };
+  const { details: out } = await listeners[0]({}, details);
+  const headers = headerMap(out.customHeaders);
+
+  const block = headers.get('X-PasevSU-Sha256');
+  assert.strictEqual(typeof block, 'string', 'X-PasevSU-Sha256 must be emitted');
+  const rows = block.split(',');
+
+  // The requested shape, in this order: body, one row per file, then the timestep.
+  assert.strictEqual(rows[0], `body - ${sha256Hex('body text')}`);
+  assert.strictEqual(rows[1], `a.txt - ${sha256Hex(first)}`);
+  assert.strictEqual(rows[2], `b.bin - ${sha256Hex(second)}`);
+  assert.strictEqual(rows.length, 4, 'exactly body + 2 files + timestep');
+  assert.match(rows[3], /^timestep - \d{4}-\d{2}-\d{2}T[\d:.]+Z$/, 'last row is the timestep');
+
+  // The stamp is not decoration: it must be the same instant written into the
+  // manifest, otherwise the seal and the header describe different messages.
+  const manifestFile = added.find((entry) => entry.attachment.file.name === MANIFEST);
+  assert.ok(manifestFile, 'the manifest must still be attached');
+  const manifest = JSON.parse(await manifestFile.attachment.file.text());
+  assert.strictEqual(rows[3], `timestep - ${manifest.timestamp}`);
+});
+
+check('the crypto engine code is 25 digits and opens the encrypted title', async () => {
+  const first = Buffer.from('first attachment bytes');
+  const { listeners } = loadExtension({
+    attachments: { 7: { name: 'index,odd.txt', bytes: first } },
+  });
+
+  const details = {
+    isPlainText: true,
+    body: 'body text',
+    attachments: [{ id: 7, name: 'index,odd.txt' }],
+    customHeaders: [],
+  };
+  const { details: out } = await listeners[0]({}, details);
+  const headers = headerMap(out.customHeaders);
+
+  const engine = headers.get('X-PasevSU-Cripto-Engine');
+  assert.match(engine, /^[0-9]{25}$/, 'the engine code is 25 digits');
+
+  const merkle = headers.get('X-PasevSU-Merkle-Root');
+  const plain = headers.get('X-PasevSU-Sha256');
+  const title = headers.get('X-PasevSU-Cripto-title');
+  assert.match(title, /^gcm1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+
+  // Parity with the gateway, not a round-trip against itself: the code and the
+  // ciphertext are produced by api.js and must match what the extension emitted.
+  // Two independent implementations agreeing is the point of a derived code.
+  const gateway = require('../api.js');
+  assert.strictEqual(
+    gateway.cryptoEngineCode({ merkleRoot: merkle, bodySha256: sha256Hex('body text') }),
+    engine,
+    'the extension and the gateway derived different engine codes'
+  );
+  assert.deepStrictEqual(
+    Array.from(gateway.decryptDigestBlock(engine, title, { merkleRoot: merkle })),
+    plain.split(','),
+    'the encrypted title does not open to the readable block'
+  );
+
+  // A wrong code must not silently return the plaintext.
+  const wrong = engine === '0000000000000000000000000' ? '1111111111111111111111111' : '0000000000000000000000000';
+  assert.throws(
+    () => gateway.decryptDigestBlock(wrong, title, { merkleRoot: merkle }),
+    /./,
+    'a foreign code must not open the title'
+  );
+
+  // A file name that contains the row separator is escaped, so the block still
+  // parses into the documented number of rows.
+  assert.match(plain, /index_odd\.txt - /, 'a comma in a file name must not split the row');
+});
+
+check('the message id is long, non-standard and per-message', async () => {
+  const { listeners } = loadExtension();
+  const details = { isPlainText: true, body: 'body text', attachments: [], customHeaders: [] };
+  const once = headerMap((await listeners[0]({}, details)).details.customHeaders);
+  const twice = headerMap((await listeners[0]({}, details)).details.customHeaders);
+
+  const id = once.get('X-PasevSU-Message-ID');
+  // X- prefixed: ComposeDetails.customHeaders rejects any other name, and a
+  // rejected setComposeDetails() aborts the send with no dialog.
+  assert.ok(!once.has('Message-ID'), 'a bare Message-ID would abort the send');
+  assert.match(id, /^<PasevSU\.\d{14}\.[0-9a-f-]{36}\+[0-9a-f]{6}_[0-9a-f]{6}~[0-9a-f]{6}\.[0-9a-f]{6}@forensic\.evidence\.pasevsu>$/);
+  assert.ok(id.length > 90, `expected a long message id, got ${id.length} chars`);
+  assert.notStrictEqual(id, twice.get('X-PasevSU-Message-ID'), 'each send gets its own evidence id');
 });
 
 /* --- runner --------------------------------------------------------------- */

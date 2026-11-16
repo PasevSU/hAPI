@@ -37,6 +37,10 @@ user_pref(
     "X-PasevSU-PGP-Fingerprint",
     "X-PasevSU-OTS",
     "X-PasevSU-Receipt",
+    "X-PasevSU-Message-ID",
+    "X-PasevSU-Sha256",
+    "X-PasevSU-Cripto-Engine",
+    "X-PasevSU-Cripto-title",
   ].join(","),
 );
 

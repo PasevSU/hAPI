@@ -107,6 +107,126 @@ async function merkleRoot(hexLeaves) {
   return level[0];
 }
 
+/*
+ * Crypto engine + digest block.
+ *
+ * Two headers make the evidence self-describing without the manifest:
+ *   X-PasevSU-Sha256        one row per digested object: body, every file, timestamp
+ *   X-PasevSU-Cripto-Engine the 25-digit key that encrypts those rows
+ *   X-PasevSU-Cripto-title  the same rows, AES-256-GCM encrypted under that key
+ *
+ * The code is DERIVED from the evidence, never random: the gateway must arrive at the
+ * same number, and a recipient must be able to recompute it from the Merkle root they
+ * already hold. Web Crypto has no big-integer API, so the reduction uses BigInt, which
+ * Thunderbird ESR 115 supports.
+ */
+const ENGINE_LABEL = "PasevSU-Cripto-Engine:v1";
+const CRYPTO_TITLE_LABEL = "PasevSU-Cripto-title:v1";
+const ENGINE_DIGITS = 25;
+
+async function sha256Bytes(text) {
+  return new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))
+  );
+}
+
+async function cryptoEngineCode(merkleRootHex, bodyHashHex) {
+  const seed = await sha256Hex(
+    new TextEncoder().encode(`${ENGINE_LABEL}|${merkleRootHex}|${bodyHashHex}`)
+  );
+  // 96 bits (24 hex chars) reduced mod 10^25 always lands inside 25 digits.
+  const value = BigInt(`0x${seed.slice(0, 24)}`) % 10n ** BigInt(ENGINE_DIGITS);
+  return value.toString().padStart(ENGINE_DIGITS, "0");
+}
+
+function buildDigestBlock(bodyHash, attachmentEntries, timestamp) {
+  const rows = [`body - ${bodyHash}`];
+  for (const entry of attachmentEntries) {
+    rows.push(`${headerToken(entry.filename)} - ${entry.sha256}`);
+  }
+  rows.push(`timestep - ${timestamp}`);
+  return rows;
+}
+
+/*
+ * Rows are joined with "," and stay on ONE line: customHeaders carries
+ * `{ name, value }` and every value goes through sanitizeHeaderValue(), which strips
+ * CR/LF. `headerToken` already escapes "," and "=" out of file names, so the rows stay
+ * unambiguous — the same convention X-PasevSU-Attachments-SHA256 uses.
+ */
+function joinBlock(rows) {
+  return rows.join(",");
+}
+
+// Inverse of joinBlock, for readers that want the rows back.
+function parseBlock(value) {
+  return String(value == null ? "" : value)
+    .split(",")
+    .map((row) => row.trim())
+    .filter(Boolean);
+}
+
+const B64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+// Padding-free base64url, written out rather than delegating to btoa(): the manual
+// form needs no host global, so the same code runs in Thunderbird and in the vm
+// harness, and it matches Node's Buffer#toString("base64url") byte for byte.
+function base64UrlFromBytes(bytes) {
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i];
+    const b1 = i + 1 < bytes.length ? bytes[i + 1] : 0;
+    const b2 = i + 2 < bytes.length ? bytes[i + 2] : 0;
+    const triple = (b0 << 16) | (b1 << 8) | b2;
+    out += B64URL_ALPHABET[(triple >> 18) & 63];
+    out += B64URL_ALPHABET[(triple >> 12) & 63];
+    if (i + 1 < bytes.length) out += B64URL_ALPHABET[(triple >> 6) & 63];
+    if (i + 2 < bytes.length) out += B64URL_ALPHABET[triple & 63];
+  }
+  return out;
+}
+
+/*
+ * AES-256-GCM under the engine code. Deterministic (the IV is derived, not random) so
+ * the gateway produces byte-identical output for the same evidence and so the same
+ * message seals the same way twice. Web Crypto returns ciphertext||tag; the tag is
+ * split off to match the Node implementation in psemp-gateway/api.js.
+ */
+async function encryptDigestBlock(code, rows, merkleRootHex) {
+  const keyBytes = await sha256Bytes(`${CRYPTO_TITLE_LABEL}|key|${code}`);
+  const iv = (await sha256Bytes(`${CRYPTO_TITLE_LABEL}|iv|${code}|${merkleRootHex}`)).slice(0, 12);
+  const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, [
+    "encrypt",
+  ]);
+  const sealed = new Uint8Array(
+    await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv, tagLength: 128 },
+      key,
+      new TextEncoder().encode(rows.join("\n"))
+    )
+  );
+  const tag = sealed.slice(sealed.length - 16);
+  const body = sealed.slice(0, sealed.length - 16);
+  return `gcm1.${base64UrlFromBytes(iv)}.${base64UrlFromBytes(tag)}.${base64UrlFromBytes(body)}`;
+}
+
+/*
+ * A long Message-ID with non-standard (but RFC 5322 dot-atom legal) characters
+ * `+ _ ~`, so a PasevSU message is trivially recognisable in any mail store.
+ */
+async function buildMessageId(evidenceId, timestamp) {
+  const stamp = String(timestamp || "")
+    .replace(/[^0-9]/g, "")
+    .slice(0, 14)
+    .padEnd(14, "0");
+  const seed = await sha256Hex(
+    new TextEncoder().encode(`${ENGINE_LABEL}|msgid|${evidenceId}|${stamp}`)
+  );
+  const slug = (offset, length) => seed.slice(offset, offset + length);
+  const local = `PasevSU.${stamp}.${evidenceId}+${slug(8, 6)}_${slug(14, 6)}~${slug(20, 6)}.${slug(26, 6)}`;
+  return `<${local}@forensic.evidence.pasevsu>`;
+}
+
 async function computeAttachmentHashes(attachments) {
   const entries = [];
   const failures = [];
@@ -135,7 +255,7 @@ async function computeAttachmentHashes(attachments) {
   return { entries, failures };
 }
 
-async function buildManifest(config, evidenceId, bodyHash, attachmentEntries, merkle) {
+async function buildManifest(config, evidenceId, bodyHash, attachmentEntries, merkle, timestamp) {
   const manifest = {
     framework: "PasevSU",
     version: sanitizeHeaderValue(config.version),
@@ -151,7 +271,7 @@ async function buildManifest(config, evidenceId, bodyHash, attachmentEntries, me
       blake3: null, // gateway fills
     })),
     merkle_root: merkle,
-    timestamp: new Date().toISOString(),
+    timestamp: timestamp || new Date().toISOString(),
     evidence_id: evidenceId,
   };
   return JSON.stringify(manifest, null, 2);
@@ -188,7 +308,7 @@ function resolveReceiptAddress(config, details) {
   return addressOf(details.from) || addressOf(config.receiptAddress);
 }
 
-function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, merkle, manifestHash, extra) {
+async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, merkle, manifestHash, extra) {
   const context = extra || {};
   const headers = [];
   headers.push(buildHeader("X-PasevSU-Version", config.version));
@@ -249,6 +369,27 @@ function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, merkle, m
     headers.push(buildHeader("X-PasevSU-Receipt", "requested"));
     headers.push(buildHeader("Disposition-Notification-To", context.receiptTo));
   }
+
+  /*
+   * Appended, never interleaved: the established header order above is a contract
+   * that options.js, the README table and psemp-gateway test against.
+   *
+   * Two copies of the same digest block are emitted on purpose. `X-PasevSU-Sha256`
+   * is the readable one; `X-PasevSU-Cripto-title` is the same rows encrypted under
+   * the 25-digit engine code, so file names and digests stay out of plaintext header
+   * scanners while remaining recoverable by anyone who holds the message.
+   */
+  const timestamp = context.timestamp || new Date().toISOString();
+  const block = buildDigestBlock(bodyHash, attachmentEntries, timestamp);
+  const engine = await cryptoEngineCode(merkle, bodyHash);
+  // X- prefixed on purpose: Thunderbird's ComposeDetails.customHeaders rejects a
+  // name that does not start with "X-", and a rejected setComposeDetails() aborts
+  // the send with no dialog at all. The real `Message-ID:` field is written by
+  // psemp-gateway, which speaks raw SMTP and may set any legal field name.
+  headers.push(buildHeader("X-PasevSU-Message-ID", await buildMessageId(evidenceId, timestamp)));
+  headers.push(buildHeader("X-PasevSU-Sha256", joinBlock(block)));
+  headers.push(buildHeader("X-PasevSU-Cripto-Engine", engine));
+  headers.push(buildHeader("X-PasevSU-Cripto-title", await encryptDigestBlock(engine, block, merkle)));
   return headers;
 }
 
@@ -328,12 +469,16 @@ async function handleBeforeSend(tab, details) {
     const merkle = await merkleRoot(leaves);
 
     const evidenceId = uuidV4();
+    // One timestamp for the manifest AND the header block, so `timestep` in the
+    // digest block and `timestamp` in PasevSU_Manifest.json always agree.
+    const stamp = new Date().toISOString();
     const manifestText = await buildManifest(
       config,
       evidenceId,
       bodyHash,
       attachmentEntries,
-      merkle
+      merkle,
+      stamp
     );
     const manifestHash = await sha256Hex(new TextEncoder().encode(manifestText));
 
@@ -376,7 +521,7 @@ async function handleBeforeSend(tab, details) {
       attachmentEntries,
       merkle,
       manifestHash,
-      { failures: attachmentFailures, receiptTo: receiptTo }
+      { failures: attachmentFailures, receiptTo: receiptTo, timestamp: stamp }
     );
 
     // Append WITHOUT dropping any existing (foreign) entries.

@@ -98,6 +98,10 @@ const HEADER_NAMES = Object.freeze({
   pgpFingerprint: 'X-PasevSU-PGP-Fingerprint',
   ots: 'X-PasevSU-OTS',
   receipt: 'X-PasevSU-Receipt',
+  messageId: 'X-PasevSU-Message-ID',
+  sha256Block: 'X-PasevSU-Sha256',
+  criptoEngine: 'X-PasevSU-Cripto-Engine',
+  criptoTitle: 'X-PasevSU-Cripto-title',
 });
 
 /** Standard MDN header (RFC 8098), sent with `X-PasevSU-Receipt: requested`. */
@@ -355,6 +359,109 @@ function manifestSha256(manifestText) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Crypto engine and the digest block
+ *
+ * A MailExtension cannot read `gpg` or `ots`, but it CAN compute two extra headers that
+ * make the evidence self-describing in the header slice alone: one folded block that
+ * names every digested byte, and a keyed copy of that same block.
+ *
+ * The 25-digit engine code is DERIVED, never random: the extension and the gateway must
+ * arrive at the same number from the same evidence, and a recipient must be able to
+ * recompute it from the Merkle root they already have.
+ * ------------------------------------------------------------------ */
+
+const ENGINE_LABEL = 'PasevSU-Cripto-Engine:v1';
+const CRYPTO_TITLE_LABEL = 'PasevSU-Cripto-title:v1';
+const ENGINE_DIGITS = 25;
+
+/** Derive the 25-digit crypto-engine code from the evidence. */
+function cryptoEngineCode({ merkleRoot = '', bodySha256 = '' } = {}) {
+  const seed = sha256Hex(`${ENGINE_LABEL}|${merkleRoot}|${bodySha256}`);
+  // 96 bits (24 hex chars) reduced mod 10^25 always lands inside 25 digits.
+  const value = BigInt(`0x${seed.slice(0, 24)}`) % 10n ** BigInt(ENGINE_DIGITS);
+  return value.toString().padStart(ENGINE_DIGITS, '0');
+}
+
+/**
+ * The block the `X-PasevSU-Sha256` header carries: the body, EVERY attachment, then the
+ * timestamp. Order is a contract — the encrypted title is built from exactly this text.
+ */
+function buildDigestBlock({ bodySha256 = '', attachmentEntries = [], timestamp = '' } = {}) {
+  const rows = [`body - ${bodySha256}`];
+  for (const entry of attachmentEntries) {
+    rows.push(`${headerToken(entry.filename)} - ${entry.sha256}`);
+  }
+  rows.push(`timestep - ${timestamp}`);
+  return rows;
+}
+
+/**
+ * Join block rows into ONE header value.
+ *
+ * Single line is a hard contract, not a shortcut: Thunderbird's `customHeaders` carries
+ * `Name: value` strings and the `header-injection-safety` self-test rejects CR/LF, so a
+ * literal folded block would be undefined behaviour. `,` is the row separator the
+ * `X-PasevSU-Attachments-SHA256` list already uses, and `headerToken` escapes `,` and `=`
+ * out of file names, so the rows stay unambiguous.
+ */
+function joinBlock(rows) {
+  return rows.join(',');
+}
+
+/** Inverse of {@link joinBlock}. */
+function parseBlock(value) {
+  return String(value == null ? '' : value)
+    .split(',')
+    .map((row) => row.trim())
+    .filter(Boolean);
+}
+
+function keyFromCode(label, code) {
+  return Buffer.from(sha256Hex(`${label}|key|${code}`), 'hex');
+}
+
+function ivFromCode(label, code, merkleRoot) {
+  return Buffer.from(sha256Hex(`${label}|iv|${code}|${merkleRoot}`), 'hex').subarray(0, 12);
+}
+
+/**
+ * Encrypt the digest block with the engine code (AES-256-GCM).
+ *
+ * The code travels in the message, so this is not secrecy against the recipient — it
+ * keeps file names and digests out of plaintext header scanners while staying
+ * recoverable by anyone who holds the message. Deterministic, so both engines agree.
+ */
+function encryptDigestBlock(code, rows, { merkleRoot = '' } = {}) {
+  const cipher = crypto.createCipheriv('aes-256-gcm', keyFromCode(CRYPTO_TITLE_LABEL, code), ivFromCode(CRYPTO_TITLE_LABEL, code, merkleRoot));
+  const body = Buffer.concat([cipher.update(rows.join('\n'), 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  const b64u = (buffer) => Buffer.from(buffer).toString('base64url');
+  return `gcm1.${b64u(ivFromCode(CRYPTO_TITLE_LABEL, code, merkleRoot))}.${b64u(tag)}.${b64u(body)}`;
+}
+
+/** Reverse {@link encryptDigestBlock}. Throws on a wrong code or a tampered token. */
+function decryptDigestBlock(code, token, { merkleRoot = '' } = {}) {
+  const parts = String(token == null ? '' : token).split('.');
+  if (parts.length !== 4 || parts[0] !== 'gcm1') throw new Error('not a PasevSU gcm1 title');
+  const decoder = crypto.createDecipheriv('aes-256-gcm', keyFromCode(CRYPTO_TITLE_LABEL, code), Buffer.from(parts[1], 'base64url'));
+  decoder.setAuthTag(Buffer.from(parts[2], 'base64url'));
+  const body = Buffer.concat([decoder.update(Buffer.from(parts[3], 'base64url')), decoder.final()]);
+  return String(body).split('\n');
+}
+
+/**
+ * A long Message-ID carrying non-standard (but RFC 5322 dot-atom legal) characters
+ * `+ _ ~`, so a PasevSU message is trivially recognisable in any mail store.
+ */
+function buildMessageId({ evidenceId = '', timestamp = '' } = {}) {
+  const stamp = String(timestamp || '').replace(/[^0-9]/g, '').slice(0, 14).padEnd(14, '0');
+  const seed = sha256Hex(`${ENGINE_LABEL}|msgid|${evidenceId}|${stamp}`);
+  const slug = (offset, length) => seed.slice(offset, offset + length);
+  const local = `PasevSU.${stamp}.${evidenceId || slug(0, 8)}+${slug(8, 6)}_${slug(14, 6)}~${slug(20, 6)}.${slug(26, 6)}`;
+  return `<${local}@forensic.evidence.pasevsu>`;
+}
+
+/* ------------------------------------------------------------------ *
  * Header construction
  * ------------------------------------------------------------------ */
 
@@ -369,6 +476,7 @@ function buildHeaderLines({
   attachmentEntries = [],
   merkle = '',
   manifestHash = '',
+  timestamp = '',
 } = {}) {
   const resolved = resolveConfig(config);
   const lines = [];
@@ -393,6 +501,20 @@ function buildHeaderLines({
     // Marker only. Real proofs are written by stamp() further down the chain.
     lines.push(`${HEADER_NAMES.ots}: pending`);
   }
+  // Appended (never interleaved) so the established header order above stays a contract.
+  const stamp = timestamp || new Date().toISOString();
+  const messageId = buildMessageId({ evidenceId, timestamp: stamp });
+  // The gateway speaks raw SMTP, so it can write the real field as well. The
+  // extension cannot: Thunderbird's ComposeDetails.customHeaders rejects any name
+  // that does not start with X-, and a rejected setComposeDetails() aborts the send
+  // with no dialog. So both engines emit the X- twin, and only this one promotes it.
+  lines.push(`Message-ID: ${messageId}`);
+  lines.push(`${HEADER_NAMES.messageId}: ${messageId}`);
+  const block = buildDigestBlock({ bodySha256: bodyHash, attachmentEntries, timestamp: stamp });
+  lines.push(`${HEADER_NAMES.sha256Block}: ${joinBlock(block)}`);
+  const engine = cryptoEngineCode({ merkleRoot: merkle, bodySha256: bodyHash });
+  lines.push(`${HEADER_NAMES.criptoEngine}: ${engine}`);
+  lines.push(`${HEADER_NAMES.criptoTitle}: ${encryptDigestBlock(engine, block, { merkleRoot: merkle })}`);
   return lines;
 }
 
@@ -442,6 +564,7 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
   const merkle = merkleRoot(leaves);
 
   const id = sanitizeHeaderValue(evidenceId) || crypto.randomUUID();
+  const stamp = timestamp || new Date().toISOString();
   const manifest = buildManifest({
     config: resolved,
     bodyHash,
@@ -449,7 +572,7 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
     attachmentEntries: entries,
     merkle,
     evidenceId: id,
-    timestamp,
+    timestamp: stamp,
   });
   const manifestText = serializeManifest(manifest);
   const manifestHash = manifestSha256(manifestText);
@@ -461,15 +584,20 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
     attachmentEntries: entries,
     merkle,
     manifestHash,
+    timestamp: stamp,
   });
+  const digestBlock = buildDigestBlock({ bodySha256: bodyHash, attachmentEntries: entries, timestamp: stamp });
 
   return {
     config: resolved,
     evidenceId: id,
+    timestamp: stamp,
     bodySha256: bodyHash,
     bodySha3_512: bodySha3,
     attachments: entries,
     skipped,
+    digestBlock,
+    cryptoEngine: cryptoEngineCode({ merkleRoot: merkle, bodySha256: bodyHash }),
     merkleRoot: merkle,
     manifest,
     manifestText,
@@ -1602,6 +1730,65 @@ async function selfTest() {
     }
   });
 
+  record('digest-block-and-crypto-engine', () => {
+    // The requested shape: one readable block with the body digest, one row per
+    // file and the instant the seal was taken, plus the same block encrypted under
+    // a 25-digit code derived from the seal itself.
+    const evidence = computeEvidence({
+      body: 'Hello evidence',
+      attachments: [
+        { name: 'note.txt', data: Buffer.from('attached bytes', 'utf8') },
+        { name: 'index,odd.txt', data: Buffer.from('odd bytes', 'utf8') },
+      ],
+      config: { version: '1.0' },
+      evidenceId: '11111111-2222-4333-8444-555555555555',
+      timestamp: '2026-01-01T00:00:00.000Z',
+    });
+    const byName = new Map(evidence.headers.map((header) => [header.name, header.value]));
+
+    const block = byName.get(HEADER_NAMES.sha256Block);
+    assert(typeof block === 'string', 'the readable block must be emitted');
+    const rows = block.split(',');
+    assert(rows.length === 4, `expected body + 2 files + timestep, got ${rows.length} rows`);
+    assert(rows[0] === `body - ${evidence.bodySha256}`, 'the first row must be the body digest');
+    assert(rows[1] === `note.txt - ${evidence.attachments[0].sha256}`, 'one row per readable file');
+    // A comma in a file name is escaped, otherwise the row count lies.
+    assert(
+      rows[2] === `index_odd.txt - ${evidence.attachments[1].sha256}`,
+      'a comma in a file name must not split the row'
+    );
+    assert(rows[3] === 'timestep - 2026-01-01T00:00:00.000Z', 'the last row must be the timestep');
+
+    const engine = byName.get(HEADER_NAMES.criptoEngine);
+    assert(/^[0-9]{25}$/.test(engine), `engine code must be 25 digits: ${engine}`);
+    assert(
+      engine === cryptoEngineCode({ merkleRoot: evidence.merkleRoot, bodySha256: evidence.bodySha256 }),
+      'a recipient must be able to derive the code from the seal they already hold'
+    );
+
+    const title = byName.get(HEADER_NAMES.criptoTitle);
+    assert(/^gcm1\./.test(title), 'the encrypted title must use the gcm1 wire format');
+    assert(
+      decryptDigestBlock(engine, title, { merkleRoot: evidence.merkleRoot }).join(',') === block,
+      'the title must open to exactly the readable block'
+    );
+    const wrong = engine === '0000000000000000000000000' ? '1111111111111111111111111' : '0000000000000000000000000';
+    let refused = false;
+    try {
+      decryptDigestBlock(wrong, title, { merkleRoot: evidence.merkleRoot });
+    } catch (_error) {
+      refused = true;
+    }
+    assert(refused, 'a foreign code must not open the title');
+
+    // Raw SMTP allows the real field; the X- twin is what a MailExtension can emit.
+    const messageId = byName.get('Message-ID');
+    assert(messageId === byName.get(HEADER_NAMES.messageId), 'the real and X- Message-ID must agree');
+    assert(messageId.length > 90, `message id must be long, got ${messageId.length}`);
+    assert(/[+_~]/.test(messageId), 'message id must carry non-standard characters');
+    return `engine ${engine}`;
+  });
+
   record('ots-adapter', () => {
     const status = otsStatus();
     assert(typeof status.available === 'boolean', 'otsStatus must report availability');
@@ -1675,6 +1862,13 @@ module.exports = {
   serializeManifest,
   manifestSha256,
   buildHeaderLines,
+  buildDigestBlock,
+  buildMessageId,
+  cryptoEngineCode,
+  encryptDigestBlock,
+  decryptDigestBlock,
+  joinBlock,
+  parseBlock,
   computeEvidence,
   applyToComposeDetails,
   sealManifest,

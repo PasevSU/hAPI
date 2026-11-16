@@ -83,10 +83,47 @@ Written on every outgoing message, in this order:
 | `X-PasevSU-Merkle-Root` | Merkle root over body hash + attachment hashes |
 | `X-PasevSU-PGP-Fingerprint` | configured fingerprint — omitted when empty |
 | `X-PasevSU-OTS` | `pending` — **on by default**; turn off to stop marking |
+| `Message-ID` | long `<PasevSU.…@forensic.evidence.pasevsu>` id — gateway only |
+| `X-PasevSU-Message-ID` | the same id, `X-` twin — the extension emits this one |
+| `X-PasevSU-Sha256` | digest block: `body - …`, one `name - …` per file, `timestep - …` |
+| `X-PasevSU-Cripto-Engine` | 25-digit code derived from the seal |
+| `X-PasevSU-Cripto-title` | the same block, AES-256-GCM encrypted under that code |
 
 Newlines are stripped from every configured value, `,` and `=` are neutralised in
 the attachment header tokens, and existing `customHeaders` are always preserved
 (new lines are appended, never substituted).
+
+### The digest block and the crypto engine
+
+`X-PasevSU-Sha256` puts the whole digest set in one value, rows separated by `,`
+(never RFC 5322 folding — Thunderbird collapses `[\r\n]+` to a space, so a folded
+block would arrive flattened):
+
+```
+body - 1c4e…  document.pdf - 5f1a…  index,odd.txt - d3dc…  timestep - 2026-11-16T14:00:49.056Z
+```
+
+`timestep` is the same instant written into the manifest `timestamp`, so header and
+seal cannot describe different moments. `headerToken()` maps `,` and `=` in a file
+name to `_`, so the row count is always `1 + files + 1`.
+
+`X-PasevSU-Cripto-Engine` is **derived, never random**:
+`SHA-256("PasevSU-Cripto-Engine:v1|<merkle-root>|<body-sha256>")`, first 24 hex
+digits as a `BigInt`, modulo 10²⁵, zero-padded to 25 digits. The recipient can
+recompute it from the Merkle root they already hold, and
+`test/extension-arming.cjs` proves the gateway and the extension agree.
+
+`X-PasevSU-Cripto-title` is the block under AES-256-GCM with a key and IV derived
+from that code, wire format `gcm1.<iv>.<tag>.<ct>` in base64url. It is **not
+secrecy against the recipient** (the code travels in the same message): it keeps
+file names and digests out of plaintext header scanners while staying recoverable.
+A wrong code fails the GCM tag check rather than returning plausible garbage.
+
+`Message-ID` is emitted twice on purpose. Raw SMTP may set any legal field name, so
+the gateway writes the real `Message-ID:`; the extension cannot, because
+`ComposeDetails.customHeaders` **rejects any name that does not start with `X-`**
+and a rejected `setComposeDetails()` aborts the send with no dialog at all. Hence
+the identical `X-PasevSU-Message-ID` twin.
 
 ### Merkle algorithm
 
