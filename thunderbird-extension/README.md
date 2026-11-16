@@ -171,6 +171,17 @@ message went out with no headers at all. Two signals are reliable:
 is written after registration, or if any error path stops returning `{ details }`
 (it must never `cancel` a send).
 
+To check the whole profile rather than one signal — including whether the
+installed `.xpi` is the build you think it is — run:
+
+```console
+node psemp-gateway/tools/verify-install.cjs
+```
+
+It exits `0` only when the names `background.js` writes, the gateway's
+`HEADER_NAMES` and the profile's `mail.compose.other.header` agree in order, and
+the installed copy is not older than the source.
+
 ## Limitations
 
 - **OpenPGP / OpenTimestamps.** A MailExtension has no Node, no `gpg` and no `ots`

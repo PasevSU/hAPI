@@ -35,11 +35,15 @@ psemp-gateway/
   cli.js                     thin CLI over api.js
   settings.default.json      the six shared settings, also importable by the extension
   packages/                  vendored, dependency-closed code (see below)
+  tools/check-sent.cjs       re-derives every claim from the bytes that travelled
+  tools/verify-install.cjs   the profile is wired up and running the current build
   test/self-test.cjs         known-answer vectors + round-trip verification
   test/settings-parity.cjs   the two halves must agree on the settings keys
   test/pgp-thunderbird.cjs   signer read from a Thunderbird signature, no gpg needed
   test/ots-runtime.cjs       the vendored OpenTimestamps bundle actually stamps
   test/extension-arming.cjs  background.js arms itself, and injects, in a stub browser
+  test/check-sent.cjs        the verifier rejects what it must reject
+  test/verify-install.cjs    the install checker notices a broken profile
 ```
 
 | Vendored group | Used for |
@@ -246,6 +250,32 @@ default and only controls whether the `pending` marker is written, so the gatewa
 knows to stamp the message; turn it off in the extension options only if you
 deliberately want messages left unstamped.
 
+## Verifying the install
+
+A sent message is the final proof, but it is a slow way to find out that the
+add-on was never armed. `tools/verify-install.cjs` reads the Thunderbird profile
+and answers the question directly:
+
+```console
+node psemp-gateway/tools/verify-install.cjs
+node psemp-gateway/tools/verify-install.cjs "C:\...\Profiles\l6o3xe0h.default-esr"
+```
+
+It compares three lists that have to agree, in order: the names `background.js`
+actually pushes, `HEADER_NAMES` in `api.js`, and `mail.compose.other.header` in
+the profile's `user.js`. It also checks that nothing stale is registered, that
+`mailnews.headers.extraExpandedHeaders` covers every name, that the side-load
+prefs are present, that `user.js` is still LF-only and ends with `;`, that no
+original pref was lost, and that the installed `.xpi` is not older than the
+source it was built from.
+
+Exit codes: `0` everything holds, `1` a check failed, `2` there is no profile or
+no `user.js` to judge — that is an answer about the machine, not about the mail.
+
+The stale-build check earns its place: the headers can change and be committed
+while Thunderbird keeps running the previous `.xpi`, and nothing else notices
+until a sent message comes back without them.
+
 ## Verifying a sent message
 
 The chain above makes claims. `tools/check-sent.cjs` re-derives them from the
@@ -295,6 +325,7 @@ node psemp-gateway/test/pgp-thunderbird.cjs
 node psemp-gateway/test/ots-runtime.cjs
 node psemp-gateway/test/extension-arming.cjs
 node psemp-gateway/test/check-sent.cjs
+node psemp-gateway/test/verify-install.cjs
 ```
 
 `self-test.cjs` covers known-answer vectors for SHA-224/256/384/512, NIST
@@ -332,3 +363,10 @@ it. It proves the verifier is not vacuous: a dropped manifest, an altered
 attachment, an unlisted attachment and a message with no headers at all must all
 be reported. It also pins the profile file filter, because treating `Sent.msf` or
 a `.wdseml` cache as mail would produce a confident verdict about the wrong file.
+
+`verify-install.cjs` provokes every failure the install checker claims to catch —
+a retired header name still registered, a written header never registered, an
+`.xpi` older than the source, a profile with no `user.js` — using throwaway
+profiles in `%TEMP%`, and requires a correctly wired profile to pass. Without
+that, a checker reporting success from three lists that happened to match would
+look exactly like a working install.
