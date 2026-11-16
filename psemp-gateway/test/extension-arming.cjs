@@ -702,7 +702,7 @@ check('the case label rides along, and an empty one leaves no header', async () 
   assert.strictEqual(headerMap(out.customHeaders).get('X-PasevSU-Case-ID'), 'CASE-2026-001');
 });
 
-check('a delivery receipt is requested by default, addressed to the sender', async () => {
+check('a delivery receipt is requested by default, through the native field', async () => {
   // Reported defect "the delivery-receipt feature does not exist". Like every other
   // header here it must be on without being asked for per message, so the default
   // is enableReceipt: true and the address comes from the identity being sent from.
@@ -719,17 +719,26 @@ check('a delivery receipt is requested by default, addressed to the sender', asy
   const headers = headerMap(out.customHeaders);
 
   assert.strictEqual(headers.get('X-PasevSU-Receipt'), 'requested');
-  assert.strictEqual(headers.get('Disposition-Notification-To'), 'pasev@example.org');
+  // The request itself is Thunderbird's own `Disposition-Notification-To`, added when
+  // ComposeDetails.returnReceipt is true. Putting that name in customHeaders is rejected
+  // by the platform and silently kills the send, so it must never appear there.
+  assert.strictEqual(out.returnReceipt, true, 'the receipt must be requested natively');
+  assert.ok(
+    !headers.has('Disposition-Notification-To'),
+    'a standard field must never be placed in customHeaders'
+  );
+  assert.strictEqual(writes.psempLastSend.receiptTo, 'pasev@example.org');
   assert.strictEqual(writes.psempReceiptError, null, 'a working receipt leaves no problem behind');
 });
 
 check('the receipt falls back to the configured address and a Recipient object', async () => {
-  const { listeners } = loadExtension({ stored: { receiptAddress: 'fallback@example.org' } });
+  const { listeners, writes } = loadExtension({ stored: { receiptAddress: 'fallback@example.org' } });
 
   const withoutFrom = { isPlainText: true, body: 'a', attachments: [], customHeaders: [] };
   const first = await listeners[0]({}, withoutFrom);
+  assert.strictEqual(first.details.returnReceipt, true);
   assert.strictEqual(
-    headerMap(first.details.customHeaders).get('Disposition-Notification-To'),
+    writes.psempLastSend.receiptTo,
     'fallback@example.org',
     'a snapshot without `from` still gets a receipt, via the configured address'
   );
@@ -742,13 +751,11 @@ check('the receipt falls back to the configured address and a Recipient object',
     from: { email: 'object@example.org' },
   };
   const second = await listeners[0]({}, objectFrom);
-  assert.strictEqual(
-    headerMap(second.details.customHeaders).get('Disposition-Notification-To'),
-    'object@example.org'
-  );
+  assert.strictEqual(second.details.returnReceipt, true);
+  assert.strictEqual(writes.psempLastSend.receiptTo, 'object@example.org');
 });
 
-check('no address means no receipt header, and the reason is recorded', async () => {
+check('no address means no receipt request, and the reason is recorded', async () => {
   const { listeners, writes } = loadExtension();
   const details = { isPlainText: true, body: 'nobody', attachments: [], customHeaders: [] };
   const { details: out } = await listeners[0]({}, details);
@@ -756,11 +763,13 @@ check('no address means no receipt header, and the reason is recorded', async ()
   const headers = headerMap(out.customHeaders);
   assert.ok(!headers.has('Disposition-Notification-To'), 'a receipt with no address is not sent');
   assert.ok(!headers.has('X-PasevSU-Receipt'));
+  assert.strictEqual(out.returnReceipt, undefined, 'no address must not request a receipt natively');
+  assert.strictEqual(writes.psempLastSend.receiptTo, null);
   // A code, not a sentence: the options page owns the words and translates them.
   assert.strictEqual(writes.psempReceiptError, 'no-address');
 });
 
-check('enableReceipt=false drops both receipt headers', async () => {
+check('enableReceipt=false drops the receipt request entirely', async () => {
   const { listeners } = loadExtension({ stored: { enableReceipt: false } });
   const details = {
     isPlainText: true,
@@ -774,6 +783,7 @@ check('enableReceipt=false drops both receipt headers', async () => {
 
   assert.ok(!headers.has('Disposition-Notification-To'));
   assert.ok(!headers.has('X-PasevSU-Receipt'));
+  assert.strictEqual(out.returnReceipt, undefined);
 });
 
 check('the HTML body falls back to plainTextBody', async () => {
@@ -827,6 +837,9 @@ check('a realistic compose snapshot is never echoed back as the return value', a
   assert.deepStrictEqual(Array.from(Object.keys(result.details)), [
     'customHeaders',
     'subject',
+    // The receipt request is a native boolean, not a header: `Disposition-Notification-To`
+    // is not an admissible custom header name and writing it there kills the send.
+    'returnReceipt',
     'body',
   ], 'nothing but the writable properties that change may be returned');
   assert.strictEqual(

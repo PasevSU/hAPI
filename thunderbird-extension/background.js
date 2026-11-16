@@ -522,6 +522,70 @@ function buildHeader(name, value) {
 }
 
 /*
+ * The ONLY names Thunderbird accepts in ComposeDetails.customHeaders.
+ *
+ * This mirrors sanitizeCustomHeaderName() in Thunderbird's parent/ext-compose.js: a
+ * name must start with "X-" (but not "X-Mozilla-"), or with "List-", or be one of
+ * ALLOWED_CUSTOM_HEADER_NAMES (currently just "msip_labels"). Any other name makes
+ * setComposeDetails() throw ExtensionError("Invalid custom header: ..."), and in the
+ * onBeforeSend path that throw is NOT caught — the send promise is neither resolved
+ * nor rejected, so the message silently never leaves and no dialog appears.
+ *
+ * Consequence: a standard field such as Disposition-Notification-To CANNOT be emitted
+ * here, however correct it looks. The receipt is requested through the native
+ * `returnReceipt` boolean, which is the documented way to add that exact header.
+ * Test: psemp-gateway/test/custom-header-names.cjs.
+ */
+const ALLOWED_CUSTOM_HEADER_NAMES = ["msip_labels"];
+
+function isAllowedCustomHeaderName(name) {
+  const sanitized = String(name || "")
+    .toLowerCase()
+    .trim();
+  if (!sanitized) {
+    return false;
+  }
+  if (sanitized.startsWith("x-") && !sanitized.startsWith("x-mozilla-")) {
+    return true;
+  }
+  return (
+    sanitized.startsWith("list-") || ALLOWED_CUSTOM_HEADER_NAMES.includes(sanitized)
+  );
+}
+
+/*
+ * Last line of defence before the headers go back to Thunderbird: a name the platform
+ * would reject is dropped and recorded instead of aborting the send. This is why a
+ * future standard header can never turn into a message that does not leave the Outbox.
+ */
+async function enforceAllowedCustomHeaders(headers) {
+  const kept = [];
+  const dropped = [];
+  for (const header of headers || []) {
+    // Two shapes reach this point: the { name, value } object this add-on produces and
+    // a legacy "Name: value" string inherited from an older caller. mergeCustomHeaders
+    // preserves both, so the name has to be read from both here as well.
+    const name =
+      header && typeof header === "object" ? header.name : String(header || "").split(":")[0];
+    if (isAllowedCustomHeaderName(name)) {
+      kept.push(header);
+    } else {
+      dropped.push(String(name || "").trim());
+    }
+  }
+  if (dropped.length > 0) {
+    await Promise.resolve()
+      .then(() => browser.storage.local.set({ psempRejectedHeaders: dropped }))
+      .catch(() => {});
+    console.error(
+      "[PasevSU] dropped custom header names Thunderbird would reject:",
+      dropped.join(", ")
+    );
+  }
+  return kept;
+}
+
+/*
  * The add-on's own version, from its manifest.
  *
  * `X-PasevSU-Version` is the config/format version a user sets in the options page
@@ -675,10 +739,11 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
     headers.push(buildHeader("X-PasevSU-OTS", "pending"));
   }
   if (config.enableReceipt && context.receiptTo) {
-    // Standard MDN request (RFC 8098) plus our own marker, so a recipient can tell
-    // a PasevSU message from any other message asking for a receipt.
+    // Our marker only. The actual request is the standard `Disposition-Notification-To`
+    // field, and Thunderbird writes it itself when ComposeDetails.returnReceipt is true
+    // (see handleBeforeSend). It cannot be written through customHeaders: the name is
+    // rejected by the platform and the message would never be sent at all.
     headers.push(buildHeader("X-PasevSU-Receipt", "requested"));
-    headers.push(buildHeader("Disposition-Notification-To", context.receiptTo));
   }
 
   /*
@@ -965,7 +1030,16 @@ async function handleBeforeSend(tab, details) {
     // .compFields.subject, and GenericSendMessage re-reads it after the beforesend
     // event, so the marker really reaches the wire), and the notice goes into the one
     // body property the compose format keeps. Nothing else is returned — see below.
-    const changed = { customHeaders: mergedHeaders, subject: warSubject };
+    const changed = {
+      customHeaders: await enforceAllowedCustomHeaders(mergedHeaders),
+      subject: warSubject,
+    };
+    if (receiptTo) {
+      // Native RFC 8098 request: with this boolean set, Thunderbird adds the standard
+      // `Disposition-Notification-To` field to the outgoing message itself. It cannot be
+      // set through customHeaders — that name is rejected and the send never happens.
+      changed.returnReceipt = true;
+    }
     if (warBody !== null) {
       changed[warField] = warBody;
     }

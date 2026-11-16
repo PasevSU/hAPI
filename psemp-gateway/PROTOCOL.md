@@ -112,15 +112,21 @@ A MailExtension is not a browser extension with extra powers; it is a browser ex
 with *fewer* ones. Five limits shape the contract, and each one is visible in the design:
 
 1. **`X-` prefix only.** `ComposeDetails.customHeaders` rejects any field name that does
-   not start with `X-` (and rejects `X-Mozilla-*`). A real `Message-ID:` therefore cannot
-   be written by the extension. PSEMP sets `X-PasevSU-Message-ID` as the twin and puts
-   the same value in `manifest.provenance.message_id`; only a raw-SMTP gateway writes
-   the real header. `Disposition-Notification-To` (RFC 8098 MDN) is a deliberate legacy
-   exception sent alongside `X-PasevSU-Receipt`.
+   not start with `X-`, `List-` or the one allowed literal (`msip_labels`), and rejects
+   `X-Mozilla-*`. A real `Message-ID:` therefore cannot be written by the extension.
+   PSEMP sets `X-PasevSU-Message-ID` as the twin and puts the same value in
+   `manifest.provenance.message_id`; only a raw-SMTP gateway writes the real header.
+   The delivery receipt (`Disposition-Notification-To`, RFC 8098 MDN) is **not** written
+   as a custom header either: the extension sets the native `returnReceipt` boolean and
+   Thunderbird adds that field itself, alongside `X-PasevSU-Receipt`.
 2. **A rejected `setComposeDetails()` aborts the send silently.** No dialog, no console
-   error the user notices — the compose window simply stays open. Every header value is
-   therefore sanitised (`[\r\n]+` → space) and every header name is from the fixed
-   allowlist in §4. `test/extension-arming.cjs` asserts each name is a legal field name.
+   error the user notices — the compose window simply stays open, and in the
+   `onBeforeSend` path the throw is not caught at all, so the send promise is never
+   settled. Every header value is therefore sanitised (`[\r\n]+` → space) and every
+   header name is from the fixed allowlist in §4 — plus `enforceAllowedCustomHeaders()`
+   drops anything inadmissible as a last line of defence.
+   `test/custom-header-names.cjs` pins the rule against both the source and the live
+   listener; `test/extension-arming.cjs` asserts each name is a legal field name.
 3. **No `gpg`, no `ots`, no subprocesses.** OpenPGP signing and OpenTimestamps cannot run
    inside a MailExtension. The extension writes `X-PasevSU-OTS: pending` as a **marker**
    and never fabricates a proof.
@@ -153,7 +159,7 @@ Example values below are real output from
 | # | Header | Example | Present |
 | --- | --- | --- | --- |
 | 1 | `X-PasevSU-Version` | `1.1` | always |
-| 2 | `X-PasevSU-Build` | `1.7` | always — the emitting build's own version |
+| 2 | `X-PasevSU-Build` | `1.8` | always — the emitting build's own version |
 | 3 | `X-PasevSU-Framework` | `Forensic-Mail` | always |
 | 4 | `X-PasevSU-Origin` | `Thunderbird` / `PSEMP-Gateway` | always |
 | 5 | `X-PasevSU-Organization` | `PasevSU` | always |
@@ -181,7 +187,7 @@ Example values below are real output from
 | 27 | `X-PasevSU-Headers-SHA256` | `617cef0d…88c7ff` | always |
 | — | `Message-ID` | same value as #18 | gateway only (§3.1) |
 | — | `PasevSU-WAR` | same value as #6 | gateway only (§4a) |
-| — | `Disposition-Notification-To` | the receipt address | only when `enableReceipt` |
+| — | `Disposition-Notification-To` | the receipt address | only when `enableReceipt` — written by **Thunderbird**, via `returnReceipt`, never by the extension |
 
 Rules that fall out of the table:
 

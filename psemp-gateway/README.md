@@ -100,7 +100,7 @@ with [`api.js`](api.js) `HEADER_NAMES`, the extension's `buildHeader()` calls an
 | `X-PasevSU-Sequence` | per-sender monotonic counter |
 | `X-PasevSU-Canary` | `PASEVSU-YYYY-MM-DD-XXXXXXXX`, names this copy |
 | `X-PasevSU-Headers-SHA256` | SHA-256 over `manifest.signed_headers` |
-| `Disposition-Notification-To` | the receipt address — only when `enableReceipt` is on |
+| `Disposition-Notification-To` | the receipt address — only when `enableReceipt` is on; requested by **Thunderbird** via `returnReceipt`, because a MailExtension may not write that name into `customHeaders` |
 
 Every header except the four conditional ones (`-Attachments-Error`, `-Receipt`,
 `-PGP-Fingerprint` when unset, `-Attachments-SHA256` with no files) is emitted on

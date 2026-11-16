@@ -106,7 +106,7 @@
     "message": "Mark every message for OpenTimestamps (<code>X-PasevSU-OTS: pending</code>)"
   },
   "labelReceipt": {
-    "message": "Request a delivery receipt on every message (<code>Disposition-Notification-To</code>)"
+    "message": "Request a delivery receipt on every message (Thunderbird adds <code>Disposition-Notification-To</code>)"
   },
   "labelReceiptAddress": {
     "message": "Fallback receipt address"

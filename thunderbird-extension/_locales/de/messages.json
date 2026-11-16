@@ -106,7 +106,7 @@
     "message": "Jede Nachricht für OpenTimestamps markieren (<code>X-PasevSU-OTS: pending</code>)"
   },
   "labelReceipt": {
-    "message": "Für jede Nachricht eine Lesebestätigung anfordern (<code>Disposition-Notification-To</code>)"
+    "message": "Für jede Nachricht eine Lesebestätigung anfordern (Thunderbird fügt <code>Disposition-Notification-To</code> hinzu)"
   },
   "labelReceiptAddress": {
     "message": "Ausweichadresse für die Lesebestätigung"

@@ -106,7 +106,7 @@
     "message": "Маркирай всяко писмо за OpenTimestamps (<code>X-PasevSU-OTS: pending</code>)"
   },
   "labelReceipt": {
-    "message": "Искай разписка при доставяне за всяко писмо (<code>Disposition-Notification-To</code>)"
+    "message": "Искай разписка при доставяне за всяко писмо (Thunderbird добавя <code>Disposition-Notification-To</code>)"
   },
   "labelReceiptAddress": {
     "message": "Резервен адрес за разписката"

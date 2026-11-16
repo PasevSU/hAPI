@@ -40,7 +40,7 @@ Static (from options):
 | Header | Value |
 | --- | --- |
 | `X-PasevSU-Version` | `version` option (default `1.0`) |
-| `X-PasevSU-Build` | the installed add-on's own version, read from `manifest.json` (currently `1.7`) |
+| `X-PasevSU-Build` | the installed add-on's own version, read from `manifest.json` (currently `1.8`) |
 | `X-PasevSU-Framework` | `framework` option (default `Forensic-Mail`) |
 | `X-PasevSU-Origin` | `origin` option (default `Thunderbird`) |
 | `X-PasevSU-Organization` | `organization` option (default `PasevSU`) |
@@ -62,7 +62,6 @@ Dynamic (computed per message):
 | `X-PasevSU-PGP-Fingerprint` | `pgpFingerprint` option (omitted if empty) |
 | `X-PasevSU-OTS` | `pending` marker — **on by default**; untick `enableOts` to stop marking |
 | `X-PasevSU-Receipt` | `requested` — only when `enableReceipt` is on |
-| `Disposition-Notification-To` | `receiptAddress` (RFC 8098 MDN request), same condition |
 | `X-PasevSU-Message-ID` | long `<…@forensic.evidence.pasevsu>` Message-ID (always) |
 | `X-PasevSU-Sha256` | the readable digest block: `body - …`, one `name - …` per file, `timestep - …` |
 | `X-PasevSU-Cripto-Engine` | 25-digit code derived from the seal |
@@ -448,10 +447,10 @@ transit. Two caveats belong here rather than in a footnote:
 - **`X-PasevSU-Version` is the config/format version, not the build.** It defaults
   to `1.0` and is typed by the user, so two very different builds can both say
   `1.0` — which is how a stale prototype went unnoticed. `X-PasevSU-Build` names
-  the add-on version that actually stamped the message (`1.7` today) and is read
+  the add-on version that actually stamped the message (`1.8` today) and is read
   from `manifest.json` at send time, so it cannot go stale by being forgotten.
   Compare messages by `Build`; read `Version` as "which settings format". A
-  message with no `Build` header came from a build older than 1.7.
+  message with no `Build` header came from a build older than 1.8.
 
 ## Delivery receipts
 
@@ -460,9 +459,18 @@ Every message can request a standard delivery/read receipt — the RFC 8098 MDN
 It is **on by default** (`enableReceipt: true`), matching the rule that nothing
 has to be switched on per message.
 
-| Header | Written when |
+The request is made through Thunderbird itself, not by writing the field: the
+add-on sets the native `returnReceipt` boolean on the message and Thunderbird adds
+`Disposition-Notification-To`. This is not a stylistic choice. A MailExtension may
+only put names starting with `X-` or `List-` into `customHeaders`; any other name
+makes the platform reject the details, and because that rejection happens inside
+the send path it is not caught — the message would silently never leave and no
+dialog would explain it. `psemp-gateway/test/custom-header-names.cjs` enforces the
+rule against both the source and the live listener.
+
+| Field / header | Written when |
 | --- | --- |
-| `Disposition-Notification-To` | `enableReceipt` is on **and** a sender address is known |
+| `returnReceipt` (native compose field → `Disposition-Notification-To`) | `enableReceipt` is on **and** a sender address is known |
 | `X-PasevSU-Receipt: requested` | same condition — marks the request as ours |
 
 The address is the message's own `From:` identity, resolved from the compose
