@@ -348,6 +348,8 @@
       lockedBy: f.lockedBy || '',
       notes: f.notes || '',
       accessMode: f.accessMode || 'FREE',
+      // Пътят в папката на портала: нужен е на QR студиото, за да отвори кода на ТОЗИ файл.
+      storagePath: String(f.storagePath || '').replace(/^\/+/, ''),
       listed: f.listed !== false,
       encrypted: Boolean(f.encrypted),
       topic: f.topic || '',
@@ -1114,20 +1116,36 @@
   /**
    * Отваря ГЛОБАЛНОТО QR студио (`ui/qr-studio.js`) за портала. Едно място за всички нива:
    * обикновен код · само за преглед · временна връзка с парола и срок · списък на папки и файлове.
+   * `rel` отваря прозореца НАПРАВО на това ниво — така брошката до папка или файл води там,
+   * за където е натисната, а не в корена на портала.
    */
-  function openQrStudio(x) {
+  function openQrStudio(x, rel) {
     const studio = window.HapiQrStudio;
     if (!studio || typeof studio.open !== 'function') {
       toast(T('qr.missing'), 'err');
       return false;
     }
     const levels = qrStudioLevels(x);
+    const wanted = String(rel == null ? '' : rel);
+    const found = wanted ? levels.findIndex((l) => l.rel === wanted) : 0;
     return studio.open({
       title: x.title || x.slug,
       levels,
-      index: 0,
+      index: found >= 0 ? found : 0,
       qrSvg,
       createLink: (lv, opts) => createShareLink(x, lv, opts),
+      // Списък и отмяна на издадените връзки — без тях „временен“ код не може да се спре.
+      listLinks: async () => {
+        const r = await api(`/admin/api/portals/${encodeURIComponent(x.id)}/links`);
+        return r.ok && r.data && Array.isArray(r.data.links) ? r.data.links : [];
+      },
+      revokeLink: async (linkId) => {
+        const r = await api(`/admin/api/portals/${encodeURIComponent(x.id)}/links/${encodeURIComponent(linkId)}`, {
+          method: 'DELETE',
+        });
+        if (!r.ok) throw new Error((r.data && r.data.error) || T('qr.issued.revokeFailed'));
+        return true;
+      },
     });
   }
 
@@ -4202,6 +4220,23 @@
     host.querySelectorAll('[data-folder-pkg]').forEach((el) =>
       el.addEventListener('click', () => void packageFolder(el.dataset.folderPkg || '')),
     );
+    // QR за ТАЗИ папка: отваря студиото направо на нивото на папката (един и същ прозорец
+    // за портала, папките и файловете — различно е само кое ниво е избрано отначало).
+    host.querySelectorAll('[data-folder-qr]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const target = portal();
+        if (target) openQrStudio(target, el.dataset.folderQr || '');
+      });
+    });
+    // QR за ТОЗИ файл — същият прозорец, отворен направо на нивото на файла. Събитието не
+    // се „покачва“ към реда на файла: иначе щракването би отворило и панела на файла.
+    host.querySelectorAll('[data-file-qr]').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        const target = portal();
+        if (target) openQrStudio(target, el.dataset.fileQr || '');
+      });
+    });
     // Изтриване на папка: пита веднъж; ако не е празна, сървърът отговаря 409 с броя
     // файлове и чак тогава се пита за рекурсивно изтриване (без „тихо“ триене).
     host.querySelectorAll('[data-folder-delete]').forEach((el) =>

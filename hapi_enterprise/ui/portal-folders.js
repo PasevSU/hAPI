@@ -55,6 +55,9 @@
           <button type="button" class="fm-ico-btn" data-folder-pkg="${esc(key)}" title="${esc(
         T('pf.package', { path }),
       )}">${ICON.download}</button>
+          <button type="button" class="fm-ico-btn" data-folder-qr="${esc(key)}" title="${esc(T('qr.perLevel'))}" aria-label="${esc(
+        T('qr.perLevelAlt', { name: key || T('pf.root') }),
+      )}">${ico('qr')}</button>
           <button type="button" class="fm-ico-btn" data-folder="${esc(key)}" title="${esc(
         open ? T('pf.subs.collapse') : T('pf.subs.expand'),
       )}">${ico(open ? 'chevronDown' : 'chevronRight')}</button>

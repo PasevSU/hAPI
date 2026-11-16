@@ -77,6 +77,14 @@
         ? esc(T('pfl.lock.on.title', { by: x.lockedBy ? ` (${x.lockedBy})` : '' }))
         : esc(T('pfl.lock.off.title'))
       }">${x.locked ? ICON.locked : ICON.unlocked}</button>
+                             ${/* QR за ТОЗИ файл: отваря глобалното студио направо на неговото ниво.
+                                  Без записан път кодът за файл не съществува — тогава бутонът липсва. */ ''}
+                             ${x.storagePath
+        ? `<button type="button" class="fm-ico-btn" data-file-qr="${esc(x.storagePath)}" title="${esc(
+            T('qr.perLevel'),
+          )}" aria-label="${esc(T('qr.perLevelAlt', { name: x.name }))}">${ico('qr')}</button>`
+        : ''
+      }
                              <button type="button" class="fm-ico-btn fm-opts ${gear ? 'on' : ''}" data-file-gear="${esc(
         x.id,
       )}" title="${esc(T('pfl.gear.title'))}" aria-label="${esc(

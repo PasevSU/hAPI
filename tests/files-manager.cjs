@@ -79,13 +79,14 @@ assert.match(src, /qrSvg/);
 // QR кодът вече НЕ е поповер в картата: брошката отваря ГЛОБАЛНОТО QR студио
 // (`ui/qr-studio.js`), което строи кода на всяко ниво от готовите адреси на договора.
 assert.match(src, /function qrStudioLevels\(x\)/, 'нивата за студиото се строят на едно място');
-assert.match(src, /function openQrStudio\(x\)/, 'брошката отваря едно глобално студио');
+assert.match(src, /function openQrStudio\(x, rel\)/, 'брошката отваря едно глобално студио');
 assert.match(src, /createLink: \(lv, opts\) => createShareLink\(x, lv, opts\)/, 'временните връзки минават през студиото');
 assert.match(src, /api\/portals\/\$\{encodeURIComponent\(x\.id\)\}\/links/, 'връзката се издава от административния API');
 assert.equal(/data-qr-pop|pf-qr-pop-link/.test(src), false, 'поповерът е премахнат — кодът е в прозореца');
-// 0.69.179: файлът няма отделен собствен код в КАРТАТА (иначе при 30 файла човек вижда 30 кода);
-// в студиото нивата се избират едно по едно.
-assert.equal(/data-file-qr/.test(src), false, 'файлът няма собствен QR код в картата');
+  // 0.69.179: картата НЕ рисува 30 кода за 30 файла. 0.69.231: файлът има БУТОН, който отваря
+  // студиото на неговото ниво — един прозорец, не 30 картинки.
+  assert.match(src, /data-file-qr/, 'файлът има вход към QR студиото на своето ниво');
+  assert.equal(/qs-frame/.test(src), false, 'картата не рисува кодове — рисува ги прозорецът');
 assert.equal(/qrMarkup/.test(src), false, 'няма отделно рисуване на код за файл');
 assert.equal(/<dt>QR изображение<\/dt>/.test(src), false, 'адресът на SVG-то не е ред в панела');
 // Частен портал: адресите носят ПОДПИСАН достъп — без него връщат 404 (portal-access.js).
@@ -559,7 +560,8 @@ assert.match(src, /const treePath = \(rel\) => `\/\$\{String\(rel \|\| ''\)/);
 assert.match(src, /state\.tree\.open = state\.tree\.open === rel \? null : rel;/);
 assert.equal(/state\.tree\.open\.(add|delete|has)\(/.test(src), false, 'няма много отворени папки (Set)');
 assert.equal(/allFolderPaths|data-tree-toggle|fm-tree-expand|fm-tree-filter/.test(src), false, 'няма мъртви манипулатори');
-assert.equal(/data-folder-qr/.test(src), false, 'менюто на папките няма собствен QR код — кодът е един, на портала');
+  // 0.69.231: папката има БУТОН за код на своето ниво — отваря същото глобално студио.
+  assert.match(src, /data-folder-qr/, 'папката има вход към QR студиото на своето ниво');
 assert.match(src, /#fm-tree-refresh/);
 // CSS за папките: редове, отстъп по дълбочина и табелки с еднакъв размер.
 assert.match(css, /\.fm-folders \{ display: flex; flex-direction: column/);

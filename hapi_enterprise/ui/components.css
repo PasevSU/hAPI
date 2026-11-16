@@ -2099,6 +2099,55 @@ input[type="radio"] {
   opacity: 0;
 }
 
+/* Издадените временни връзки: списък с ниво, срок, признаци и отмяна. */
+.qs-issued {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line);
+}
+
+.qs-issued-title {
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-12-5);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.qs-issued-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  list-style: none;
+}
+
+.qs-issued-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) minmax(0, 1fr) auto auto auto;
+  gap: var(--sp-2);
+  align-items: center;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-12-5);
+}
+
+.qs-issued-dead {
+  opacity: 0.6;
+}
+
+.qs-issued-level {
+  font-weight: 600;
+}
+
+.qs-issued-until,
+.qs-issued-uses {
+  color: var(--muted);
+}
+
+.qs-issued-del {
+  justify-self: end;
+}
+
 .pf-portal-head>* {
   min-width: 0;
   max-width: 100%;

@@ -103,7 +103,11 @@ assert.match(studio, /data-qs-opt="readOnly"|data-qs-opt="password"|data-qs-opt=
 assert.match(studio, /window\.HapiQrStudio = API/, 'студиото е ГЛОБАЛНО — един обект за всички панели');
 
 // ── 3. Кодът е ЕДИН на портал и се строи от едно място ──────────────────
-assert.match(manager, /function openQrStudio\(x\)/, 'кодът се отваря от една функция');
+// 0.69.231: същата функция приема и ниво (`rel`), за да отваря студиото направо на папка/файл.
+assert.match(manager, /function openQrStudio\(x, rel\)/, 'кодът се отваря от една функция');
+assert.match(manager, /levels\.findIndex\(\(l\) => l\.rel === wanted\)/, 'нивото се избира по пътя си');
+assert.match(manager, /data-folder-qr/, 'всяка папка има вход към студиото');
+assert.match(manager, /data-file-qr/, 'всеки файл има вход към студиото');
 assert.match(manager, /qrSvg,/, 'построителят на SVG се подава на студиото');
 assert.equal(/window\.open/.test(manager), false, 'панелът не отваря нов таб');
 assert.equal(/в нов таб/i.test(panel), false, 'подсказките не обещават нов таб');
@@ -206,6 +210,20 @@ assert.match(
     for (const opt of ['readOnly', 'password', 'ttl']) {
       assert.ok(studio.querySelector(`[data-qs-opt="${opt}"]`), `временният раздел има чекбокс за ${opt}`);
     }
+
+    // ── 7в. Генериране на временна връзка и ОТМЯНАТА ѝ ─────────────────────
+    // Временното, което не може да се спре, не е временно: затова списъкът с издадени връзки
+    // е част от същия раздел, а „Изтрий“ я маха от сървъра веднага.
+    studio.querySelector('[data-qs-temp] button[type="submit"]').click();
+    const revoke = await waitFor(() => studio.querySelector('[data-qs-revoke]'), {
+      label: 'издадената връзка в списъка',
+      timeout: 15000,
+    });
+    assert.ok(revoke, 'след генериране връзката влиза в списъка с издадени');
+    assert.equal(studio.querySelectorAll('.qs-issued-row').length, 1, 'списъкът показва точно една връзка');
+    revoke.click();
+    await waitFor(() => !studio.querySelector('[data-qs-revoke]'), { label: 'изтритата връзка', timeout: 15000 });
+    assert.equal(studio.querySelectorAll('.qs-issued-row').length, 0, 'след „Изтрий“ списъкът е празен');
 
     // ── 9б. Затварянето връща фокуса на бутона ─────────────────────────────
     studio.querySelector('#qs-close').click();

@@ -39,6 +39,7 @@
     tab: 'plain',
     temp: { readOnly: false, password: false, ttl: 3600, passwordValue: '' },
     result: null,
+    links: [],
     busy: false,
     error: '',
     modal: null,
@@ -277,6 +278,46 @@
            </div>`
         : ''
     }
+        ${issuedList()}
+      </div>`;
+  }
+
+  /**
+   * Издадените връзки: списък с ниво, срок, признаци и „Изтрий“. Без него „временен“ код не
+   * може да бъде отменен — а временното, което не се спира, не е временно.
+   */
+  function issuedList() {
+    const spec = state.spec;
+    if (!spec || typeof spec.revokeLink !== 'function') return '';
+    const links = state.links || [];
+    if (!links.length) return '';
+    const levelOf = (link) => {
+      const found = (spec.levels || []).find((l) => (l.rel || '') === (link.rel || ''));
+      return found ? found.label : link.rel || T('qr.level.portal');
+    };
+    return `<div class="qs-issued">
+        <h4 class="qs-issued-title">${esc(T('qr.issued.title', 'Издадени връзки'))}</h4>
+        <ul class="qs-issued-list">
+          ${links
+      .map(
+        (link) => `<li class="qs-issued-row ${link.expired ? 'qs-issued-dead' : ''}" data-qs-link="${esc(link.id)}">
+              <span class="qs-issued-level">${esc(levelOf(link))}</span>
+              <span class="qs-issued-until">${esc(
+          link.expired
+            ? T('qr.issued.expired', 'изтекла')
+            : T('qr.temp.until', 'Валидна до {at}', { at: String(link.expiresAt || '').replace('T', ' ').slice(0, 16) }),
+        )}</span>
+              <span class="qs-issued-flags">${
+          link.readOnly ? `<span class="chip">${esc(T('qr.readOnlyShort', 'само за преглед'))}</span>` : ''
+        }${link.hasPassword ? `<span class="chip">${esc(T('qr.temp.password', 'С парола'))}</span>` : ''}</span>
+              <span class="qs-issued-uses">${esc(T('qr.issued.uses', 'отворена {n} пъти', { n: link.uses || 0 }))}</span>
+              <button type="button" class="btn btn-sm qs-issued-del" data-qs-revoke="${esc(link.id)}">${esc(
+          T('qr.issued.revoke', 'Изтрий'),
+        )}</button>
+            </li>`,
+      )
+      .join('')}
+        </ul>
       </div>`;
   }
 
@@ -350,6 +391,7 @@
       state.result = null;
       state.error = '';
       paint();
+      if (state.tab === 'temp') void loadLinks();
     });
     box.querySelector('#qs-level-select').addEventListener('change', (e) => {
       state.index = Number(e.target.value) || 0;
@@ -417,6 +459,9 @@
         paint();
       });
     }
+    for (const btn of box.querySelectorAll('[data-qs-revoke]')) {
+      btn.addEventListener('click', () => void revokeLink(btn.dataset.qsRevoke));
+    }
     const form = box.querySelector('[data-qs-temp]');
     if (form) {
       form.addEventListener('submit', submitTemp);
@@ -462,6 +507,39 @@
       state.busy = false;
       paint();
     }
+    await loadLinks();
+  }
+
+  /** Списъкът с издадени връзки — само ако панелът го е дал (`listLinks`). */
+  async function loadLinks() {
+    const spec = state.spec;
+    if (!spec || typeof spec.listLinks !== 'function') return;
+    try {
+      const links = await spec.listLinks();
+      state.links = Array.isArray(links) ? links : [];
+    } catch {
+      state.links = [];
+    }
+    paint();
+  }
+
+  /** Отмяна на издадена връзка: кодът спира да работи веднага (404). */
+  async function revokeLink(linkId) {
+    const spec = state.spec;
+    if (!spec || typeof spec.revokeLink !== 'function' || !linkId) return;
+    const ask = T('qr.issued.confirm', 'Да изтрия ли тази връзка? Кодът ще спре да работи веднага.');
+    try {
+      if (typeof window !== 'undefined' && typeof window.confirm === 'function' && !window.confirm(ask)) return;
+    } catch {
+      /* липсващ `confirm` (стар браузър): питаем не блокира отмяната */
+    }
+    try {
+      await spec.revokeLink(linkId);
+      notify(T('qr.issued.revoked', 'Връзката е изтрита'));
+    } catch (err) {
+      notify((err && err.message) || T('qr.issued.revokeFailed', 'Връзката не беше изтрита'), true);
+    }
+    await loadLinks();
   }
 
   function open(spec) {
@@ -471,6 +549,7 @@
     state.tab = spec.tab && TABS.some(([id]) => id === spec.tab) ? spec.tab : 'plain';
     state.temp = { readOnly: false, password: false, ttl: 3600, passwordValue: '' };
     state.result = null;
+    state.links = [];
     state.error = '';
     state.busy = false;
     const box = ensureModal();
