@@ -36,7 +36,13 @@ const CEILING = {
   '08_USER_GUIDES/public-gateway-setup.md': 372,
 };
 
-const linesOf = (rel) => fs.readFileSync(path.join(DOCS, rel), 'utf8').split('\n').length;
+const linesOf = (rel) => {
+  const text = fs.readFileSync(path.join(DOCS, rel), 'utf8');
+  // Броят се РЕДОВЕТЕ на файла, а не сегментите от `split('\n')`: файл, който завършва с нов ред,
+  // дава един сегмент повече и таванът би паднал на реален документ, който не е пораснал.
+  const parts = text.split('\n');
+  return text.endsWith('\n') ? parts.length - 1 : parts.length;
+};
 
 const problems = [];
 for (const rel of documents()) {

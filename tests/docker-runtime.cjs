@@ -112,6 +112,10 @@ const NOT_REQUIRED_BY_DESIGN = new Map([
   ['event-bus.js', 'Фаза 2.2 scaffolding — никой не го require-ва'],
   ['plugins.js', 'Фаза 2.4 scaffolding — никой не го require-ва'],
   ['sqlite-repository.js', 'Фаза 2.3 scaffolding — никой не го require-ва'],
+  // Дескрипторът на опциите е източник за документацията (`OPTIONS_REFERENCE.md`) и за гейта
+  // `option-spec`; сървърът чете стойностите от `process.env`, а не от описанието им. Стои в
+  // образа, за да може HA-C04 („всички top-level модули се копират“) да остане без изключения.
+  ['option-spec.js', 'описание на опциите: ползва се от scripts/options-reference.cjs и tests/option-spec.cjs'],
 ]);
 const copyJs = [...copied].filter((n) => n.endsWith('.js'));
 const unwired = copyJs.filter((name) => !requiredAnywhere.has(name) && !NOT_REQUIRED_BY_DESIGN.has(name));
