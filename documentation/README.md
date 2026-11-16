@@ -31,7 +31,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **149** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **150** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -72,6 +72,7 @@ _Генериран списък: **149** документа. Пише се от
 | `02_TO_BE_ARCHITECTURE/KEY_MANAGEMENT.md` | Key Management — hAPI Enterprise (To-Be) |
 | `02_TO_BE_ARCHITECTURE/LINK_AND_STORAGE_CONTRACT.md` | Договор за адресите и за директорията (LINK & STORAGE CONTRACT) |
 | `02_TO_BE_ARCHITECTURE/OIDC_LOGIN.md` | OIDC вход (Pocket ID, Keycloak, Authentik…) — как се включва |
+| `02_TO_BE_ARCHITECTURE/OPTIONS_REFERENCE.md` | Справочник на глобалните опции |
 | `02_TO_BE_ARCHITECTURE/PGP_KEYRING_AND_WORK_FOLDER.md` | PGP ключове и криптиране на работната папка |
 | `02_TO_BE_ARCHITECTURE/README.md` | 02 · Архитектура „как трябва да бъде“ — индекс |
 | `02_TO_BE_ARCHITECTURE/READY_MADE_COMPONENTS.md` | Готови решения — оценка и място в архитектурата |

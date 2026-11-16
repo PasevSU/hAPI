@@ -7,7 +7,7 @@
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **129** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **46** инструмента · **434** теста.
+Общо: **129** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **47** инструмента · **434** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -218,7 +218,7 @@
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (46)
+### Инструменти (`scripts/*.cjs`) (47)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -251,6 +251,7 @@
 | `scripts/logic-audit.cjs` | Логически одит — търси подозрителна ЛОГИКА, не синтаксис. |
 | `scripts/manifest-schema.cjs` | `config/schemas/manifest.schema.json` — ГЕНЕРИРАН ОТ КОДА. |
 | `scripts/openapi-admin.cjs` | МАШИННО ЧЕТИМИЯТ ДОГОВОР ЗА АДМИНИСТРАТИВНОТО API — като ФАЙЛ, а не само като код. |
+| `scripts/options-reference.cjs` | СПРАВОЧНИК НА ГЛОБАЛНИТЕ ОПЦИИ — ГЕНЕРИРАН (D3 от `DOCS_AND_OPTIONS_STRUCTURE.md` §5, §9). |
 | `scripts/pre-push-audit.cjs` | Одит преди качване в GitHub: какво влиза в хранилището и няма ли тайни/едри файлове. |
 | `scripts/release-audit.cjs` | Одит на всички издания: какво е имало и вече го няма. |
 | `scripts/release-lib.cjs` | Помощни функции за изданието на hAPI Enterprise. |

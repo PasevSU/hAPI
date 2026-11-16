@@ -208,6 +208,7 @@ const RULES = [
   { id: "office-processing", area: "общо", title: "Office processing", owner: "tests/office-processing.cjs" },
   { id: "oidc-login", area: "общо", title: "Oidc login", owner: "tests/oidc-login.cjs" },
   { id: "openapi-admin", area: "общо", title: "Openapi admin", owner: "tests/openapi-admin.cjs" },
+  { id: "options-reference", area: "общо", title: "Options reference", owner: "tests/options-reference.cjs" },
   { id: "oracle-digest-chain", area: "оракул", title: "Oracle digest chain", owner: "tests/oracle-digest-chain.cjs" },
   { id: "oracle-interpolate", area: "оракул", title: "Oracle interpolate", owner: "tests/oracle-interpolate.cjs" },
   { id: "oracle-lifecycle", area: "оракул", title: "Oracle lifecycle", owner: "tests/oracle-lifecycle.cjs" },
