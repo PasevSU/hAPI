@@ -211,5 +211,5 @@ npx eslint . --max-warnings=0
   графът на модулите.
 - [`../02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md`](../02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md) —
   нормативното „какво трябва да бъде“ и съответствието.
-- [`../07_RELEASE/RELEASE_0.69.208.md`](../07_RELEASE/RELEASE_0.69.208.md) — бележките за изданието.
+- [`../07_RELEASE/archive/0.69/RELEASE_0.69.208.md`](../07_RELEASE/archive/0.69/RELEASE_0.69.208.md) — бележките за изданието.
 - [`../../CHANGELOG.md`](../../CHANGELOG.md) — промените в ред за четене.

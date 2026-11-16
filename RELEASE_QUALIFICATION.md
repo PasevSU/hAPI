@@ -16,7 +16,7 @@
 `?token=`), `aria-controls` по превключвателите на блоковете, 49 литерални отстояния и 6
 радиуса минават през скалата, ръстът на езиковия дълг е заключен (DEF-49 остава отворен).
 Подробното описание с идеи, причини и измервания е в
-[`documentation/07_RELEASE/RELEASE_0.69.206.md`](documentation/07_RELEASE/RELEASE_0.69.206.md).
+[`documentation/07_RELEASE/archive/0.69/RELEASE_0.69.206.md`](documentation/07_RELEASE/archive/0.69/RELEASE_0.69.206.md).
 
 Гейтове: виж `reports/RELEASE-STATUS.md` (генерира се с изданието).
 
@@ -26,7 +26,7 @@
 сгъваемите блокове, без декоративни табелки; два намерени дефекта (мъртви бутони при
 сгъване, 60 s таймер, който не пуска процеса). Подробното описание с идеи, причини и
 измервания е в
-[`documentation/07_RELEASE/RELEASE_0.69.205.md`](documentation/07_RELEASE/RELEASE_0.69.205.md).
+[`documentation/07_RELEASE/archive/0.69/RELEASE_0.69.205.md`](documentation/07_RELEASE/archive/0.69/RELEASE_0.69.205.md).
 
 Гейтове: матрица **383/383** (1 опит) — **338 s**, повторена преди комита за **364.9 s** ·
 `verify-release` **22/22**, а с `--with-tests` (S20 пуска целия пакет) — **23/23** ·
@@ -38,9 +38,9 @@ GUI 33/33 · съвместимост 28/28 · `eslint` 0 · `logic-audit` и `b
 друг портал; повторена заявка с `Idempotency-Key` не изпълнява действието втори път; данните
 по подразбиране са в `/share/hapi/data`; огледалото може да е S3 обект с Object Lock.
 Подробното описание е в
-[`documentation/07_RELEASE/RELEASE_0.69.87.md`](documentation/07_RELEASE/RELEASE_0.69.87.md), а
+[`documentation/07_RELEASE/archive/0.69/RELEASE_0.69.87.md`](documentation/07_RELEASE/archive/0.69/RELEASE_0.69.87.md), а
 проследимостта и честният списък с недоказаното — в
-[`documentation/07_RELEASE/AUDIT_0.69.87.md`](documentation/07_RELEASE/AUDIT_0.69.87.md).
+[`documentation/07_RELEASE/archive/0.69/AUDIT_0.69.87.md`](documentation/07_RELEASE/archive/0.69/AUDIT_0.69.87.md).
 
 ### Проверени локални гейтове
 

@@ -113,4 +113,4 @@ QR ревизия файловете от манифеста се заключв
 2. Актуалният статус се поддържа на две места: `reports/RELEASE-STATUS.md` (генериран) и
    `ARCHITECTURE_COMPLIANCE_MATRIX.md` §5 (ръчно, но проверяван от `tests/scenario-matrix.cjs`).
 3. Всяко ново издание получава документ в `07_RELEASE/` — както
-   [`RELEASE_0.69.87.md`](../07_RELEASE/RELEASE_0.69.87.md).
+   [`RELEASE_0.69.87.md`](../07_RELEASE/archive/0.69/RELEASE_0.69.87.md).

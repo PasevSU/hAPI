@@ -141,27 +141,27 @@ _Генериран списък: **149** документа. Пише се от
 | `06_TESTING/SECURITY_TESTS.md` | Security Tests — hAPI Enterprise |
 | `06_TESTING/TEST_CASE_CATALOG.md` | Test Case Catalog — hAPI Enterprise |
 | `07_RELEASE/ANALYSIS_CONSOLIDATION_0.69.227.md` | Задълбочен анализ: осъвършенстване · обединяване · автоматизиране (0.69.227) |
-| `07_RELEASE/AUDIT_0.69.87.md` | Одит на постигнатото — 0.69.87 |
+| `07_RELEASE/archive/0.69/AUDIT_0.69.87.md` | Одит на постигнатото — 0.69.87 |
+| `07_RELEASE/archive/0.69/CRITICAL_ANALYSIS_0.69.208.md` | Критичен анализ на 0.69.208 и какво остава |
+| `07_RELEASE/archive/0.69/CRITICAL_REVIEW_0.69.210.md` | Критичен анализ: имитиращи, дублирани и ненужни функции и опции — 0.69.210 |
+| `07_RELEASE/archive/0.69/CRITICAL_REVIEW_0.69.220.md` | Критичен анализ — проблеми и пропуски (0.69.220 → 0.69.221) |
+| `07_RELEASE/archive/0.69/LOGIC_AUDIT_0.69.209.md` | Логически одит на 0.69.209 — какво липсва, какво е остаряло, какво е премахнато |
+| `07_RELEASE/archive/0.69/PLAN_NEXT_0.69.225.md` | План за следващите промени — 0.69.225 и след нея |
+| `07_RELEASE/archive/0.69/PLAN_TOGETHER_0.69.226.md` | План за прилагане — „заедно с 0.69.225“, с пряко документиране на кода |
+| `07_RELEASE/archive/0.69/RELEASE_0.69.204.md` | Издание 0.69.204 — мутационен одит на собствените твърдения |
+| `07_RELEASE/archive/0.69/RELEASE_0.69.205.md` | Издание 0.69.205 — правила за интерфейса: идеи, причини, резултати |
+| `07_RELEASE/archive/0.69/RELEASE_0.69.206.md` | Издание 0.69.206 — „бакуп и поправки по одита“ |
+| `07_RELEASE/archive/0.69/RELEASE_0.69.207.md` | Издание 0.69.207 — повторен критичен анализ: регресията в живия поток |
+| `07_RELEASE/archive/0.69/RELEASE_0.69.208.md` | Издание 0.69.208 — остатъкът от списъка: отстоянията минават през скалата |
+| `07_RELEASE/archive/0.69/RELEASE_0.69.87.md` | Издание 0.69.87 — какво влезе, защо и как е проверено |
+| `07_RELEASE/archive/0.69/UNFINISHED_TASKS_0.69.210.md` | Неизпълнени задачи — критичен анализ (0.69.210, измерено 2026-11-15) |
 | `07_RELEASE/AUDIT-PROTOCOL.md` | Протокол от одита и изданието |
-| `07_RELEASE/CRITICAL_ANALYSIS_0.69.208.md` | Критичен анализ на 0.69.208 и какво остава |
-| `07_RELEASE/CRITICAL_REVIEW_0.69.210.md` | Критичен анализ: имитиращи, дублирани и ненужни функции и опции — 0.69.210 |
-| `07_RELEASE/CRITICAL_REVIEW_0.69.220.md` | Критичен анализ — проблеми и пропуски (0.69.220 → 0.69.221) |
 | `07_RELEASE/FEATURE_PARITY.md` | Паритет на функциите: `PasevSU/hAPI` ↔ това хранилище |
-| `07_RELEASE/LOGIC_AUDIT_0.69.209.md` | Логически одит на 0.69.209 — какво липсва, какво е остаряло, какво е премахнато |
-| `07_RELEASE/PLAN_NEXT_0.69.225.md` | План за следващите промени — 0.69.225 и след нея |
-| `07_RELEASE/PLAN_TOGETHER_0.69.226.md` | План за прилагане — „заедно с 0.69.225“, с пряко документиране на кода |
 | `07_RELEASE/QUALIFICATION_PLAN.md` | Qualification Plan — hAPI Enterprise |
-| `07_RELEASE/RELEASE_0.69.204.md` | Издание 0.69.204 — мутационен одит на собствените твърдения |
-| `07_RELEASE/RELEASE_0.69.205.md` | Издание 0.69.205 — правила за интерфейса: идеи, причини, резултати |
-| `07_RELEASE/RELEASE_0.69.206.md` | Издание 0.69.206 — „бакуп и поправки по одита“ |
-| `07_RELEASE/RELEASE_0.69.207.md` | Издание 0.69.207 — повторен критичен анализ: регресията в живия поток |
-| `07_RELEASE/RELEASE_0.69.208.md` | Издание 0.69.208 — остатъкът от списъка: отстоянията минават през скалата |
-| `07_RELEASE/RELEASE_0.69.87.md` | Издание 0.69.87 — какво влезе, защо и как е проверено |
 | `07_RELEASE/RELEASE_BUILD.md` | Изграждане и проверка на издание (Home Assistant) |
 | `07_RELEASE/RELEASE_CHECKLIST.md` | Release Checklist — hAPI Enterprise |
 | `07_RELEASE/RELEASE_CRITERIA.md` | Release Criteria — hAPI Enterprise |
 | `07_RELEASE/RELEASE_DECISION.md` | Release Decision — hAPI Enterprise |
-| `07_RELEASE/UNFINISHED_TASKS_0.69.210.md` | Неизпълнени задачи — критичен анализ (0.69.210, измерено 2026-11-15) |
 | `07_RELEASE/UNFINISHED_TASKS_0.69.211.md` | Неизпълнени задачи — критичен анализ (0.69.211, допълнен при 0.69.212–0.69.214; измерено 2026-11-15) |
 | `07_RELEASE/UPDATE_PATH_AUDIT.md` | Защо обновяването не стига до Home Assistant — одит на пътя на изданието |
 | `08_USER_GUIDES/admin-token.md` | Администраторски токен — какъв да бъде и защо |
