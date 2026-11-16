@@ -14,21 +14,21 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **434/434** — всички тестове от `tests/` минават |
+| Тестове | `node scripts/test-matrix.cjs` | **437/437** — всички тестове от `tests/` минават |
 | Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.227 — отпечатъците се сверяват от `verify-release.cjs` |
 | Линт | `npx eslint . --max-warnings=0` | `npx eslint . --max-warnings=0` → 0 · потиснати **217** находки в 135 файла (най-много `no-empty` 93) |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 691 файла · 124469 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 685 файла · 122507 реда · critical: 0 · high: 0 · medium: 0 · low: 210 — чисто · изключения: 23/23 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 696 файла · 125019 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 690 файла · 123057 реда · critical: 0 · high: 0 · medium: 0 · low: 210 — чисто · изключения: 23/23 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 434 правила (= тестови файлове), 45 маршрута, 27 RBAC способности, 44 опции |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 437 правила (= тестови файлове), 45 маршрута, 27 RBAC способности, 44 опции |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.227.tar.gz` | add-on архив (225 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.227.tar.gz` | add-on архив (226 файла) | `dist/RELEASE.json` |
 | `hapi_enterprise-integration-0.69.227.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
 | `hapi-enterprise-gui-0.69.227.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
