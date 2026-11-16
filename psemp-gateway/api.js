@@ -44,7 +44,9 @@ const DEFAULTS = Object.freeze({
   origin: 'PSEMP-Gateway',
   organization: 'PasevSU',
   pgpFingerprint: '',
-  enableOts: false,
+  // On by default so the marker is written without any per-message decision; the
+  // extension's options page can turn it off and that stored value wins.
+  enableOts: true,
 });
 
 /** Header names, in injection order. `X-PasevSU-OTS` is a marker during compose. */

@@ -74,7 +74,7 @@
 
     <div class="checkbox-field">
       <input type="checkbox" id="enableOts" />
-      <label for="enableOts">Enable OTS marker (X-PasevSU-OTS: pending)</label>
+      <label for="enableOts">Mark every message for OpenTimestamps (<code>X-PasevSU-OTS: pending</code>)</label>
     </div>
 
     <button id="save">Save</button>
@@ -84,6 +84,8 @@
       Real OpenPGP signatures (<code>.asc</code>) and OpenTimestamps
       (<code>.ots</code>) cannot be produced inside a Thunderbird MailExtension;
       the <code>X-PasevSU-OTS</code> header is a marker for the SMTP gateway.
+      The marker is written by default so no message is ever sent unstamped —
+      untick the box only if you deliberately do not want the gateway to stamp.
     </p>
 
     <script src="options.js"></script>

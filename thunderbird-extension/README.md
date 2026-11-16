@@ -47,7 +47,7 @@ Dynamic (computed per message):
 | `X-PasevSU-Manifest-SHA256` | SHA-256 of `PasevSU_Manifest.json` (always) |
 | `X-PasevSU-Merkle-Root` | hex Merkle root over body + attachment hashes (always) |
 | `X-PasevSU-PGP-Fingerprint` | `pgpFingerprint` option (omitted if empty) |
-| `X-PasevSU-OTS` | `pending` marker (only when `enableOts` is on) |
+| `X-PasevSU-OTS` | `pending` marker — **on by default**; untick `enableOts` to stop marking |
 
 The `PasevSU_Manifest.json` attachment contains:
 
@@ -86,7 +86,9 @@ Thunderbird → Add-ons → this extension → Preferences).
   (`.ots`) cannot be generated inside a MailExtension (no Node, no `gpg`/`ots`
   binaries). `X-PasevSU-OTS: pending` is a marker; the SMTP gateway / CLI must
   stamp the manifest. (`gpg --armor --detach-sign PasevSU_Manifest.json`,
-  `ots stamp PasevSU_Manifest.json`.)
+  `ots stamp PasevSU_Manifest.json`.) The marker is written **by default** on
+  every message, so nothing is ever sent unstamped unless you untick
+  `enableOts`; the server-side half lives in [`../psemp-gateway/`](../psemp-gateway/).
 - **SHA3-512 / BLAKE3.** Web Crypto exposes only SHA-1/256/384/512. The
   extension uses SHA-256; `blake3` in the manifest is `null` for the gateway
   to fill in.

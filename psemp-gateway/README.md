@@ -72,7 +72,7 @@ Written on every outgoing message, in this order:
 | `X-PasevSU-Manifest-SHA256` | SHA-256 of the exact `PasevSU_Manifest.json` text |
 | `X-PasevSU-Merkle-Root` | Merkle root over body hash + attachment hashes |
 | `X-PasevSU-PGP-Fingerprint` | configured fingerprint — omitted when empty |
-| `X-PasevSU-OTS` | `pending` — only when `enableOts` is on |
+| `X-PasevSU-OTS` | `pending` — **on by default**; turn off to stop marking |
 
 Newlines are stripped from every configured value, `,` and `=` are neutralised in
 the attachment header tokens, and existing `customHeaders` are always preserved
@@ -189,9 +189,10 @@ Thunderbird composer
                  └─ replace `X-PasevSU-OTS: pending` with the completed proof
 ```
 
-Every step is automatic: nothing is opt-in per message. The only switch is
-`enableOts` in the extension options, which controls whether the `pending` marker
-is written so the gateway knows to stamp the message.
+Every step is automatic: nothing is opt-in per message. `enableOts` is on by
+default and only controls whether the `pending` marker is written, so the gateway
+knows to stamp the message; turn it off in the extension options only if you
+deliberately want messages left unstamped.
 
 ## Self-test
 

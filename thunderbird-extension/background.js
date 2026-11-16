@@ -26,7 +26,9 @@ const DEFAULTS = {
   origin: "Thunderbird",
   organization: "PasevSU",
   pgpFingerprint: "",
-  enableOts: false,
+  // On by default: every message is marked for the gateway so nothing has to be
+  // remembered per message. Untick it in the options page to stop marking.
+  enableOts: true,
 };
 
 const MANIFEST_FILENAME = "PasevSU_Manifest.json";

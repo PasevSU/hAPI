@@ -9,7 +9,7 @@ const DEFAULTS = {
   origin: "Thunderbird",
   organization: "PasevSU",
   pgpFingerprint: "",
-  enableOts: false,
+  enableOts: true,
 };
 
 const FIELDS = {
