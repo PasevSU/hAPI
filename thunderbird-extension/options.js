@@ -51,9 +51,14 @@ async function load() {
 }
 
 // Readiness comes from the background script itself: it writes a heartbeat as soon
-// as it loads, and records an error if it cannot register onBeforeSend.
+// as it loads, records an error if it cannot register onBeforeSend, and records one
+// if Thunderbird refuses the manifest attachment during a send.
 async function renderArmed() {
-  const health = await browser.storage.local.get({ psempLastLoadedAt: "", psempArmError: "" });
+  const health = await browser.storage.local.get({
+    psempLastLoadedAt: "",
+    psempArmError: "",
+    psempManifestError: "",
+  });
   const armed = document.getElementById("armed");
   if (health.psempArmError) {
     armed.textContent = `Not armed — ${health.psempArmError}`;
@@ -61,6 +66,15 @@ async function renderArmed() {
     armed.textContent = `Armed — background script loaded at ${health.psempLastLoadedAt}.`;
   } else {
     armed.textContent = "Not armed — the background script has not reported yet. Restart Thunderbird.";
+  }
+
+  // The headers can be injected while the manifest attachment is refused, so this
+  // is reported separately: the last send went out without PasevSU_Manifest.json.
+  const manifest = document.getElementById("manifest");
+  if (manifest) {
+    manifest.textContent = health.psempManifestError
+      ? `Last send: the manifest could NOT be attached — ${health.psempManifestError}`
+      : "";
   }
 }
 

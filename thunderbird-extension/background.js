@@ -182,10 +182,8 @@ async function handleBeforeSend(tab, details) {
 
     const bodyHash = await sha256Hex(new TextEncoder().encode(body));
 
-    if (!Array.isArray(details.attachments)) {
-      details.attachments = [];
-    }
-    const attachmentEntries = await computeAttachmentHashes(details.attachments);
+    const existingAttachments = Array.isArray(details.attachments) ? details.attachments : [];
+    const attachmentEntries = await computeAttachmentHashes(existingAttachments);
 
     // Merkle leaves = body hash + each attachment hash.
     const leaves = [bodyHash, ...attachmentEntries.map((a) => a.sha256)];
@@ -201,12 +199,27 @@ async function handleBeforeSend(tab, details) {
     );
     const manifestHash = await sha256Hex(new TextEncoder().encode(manifestText));
 
-    // Attach the manifest. The manifest itself is intentionally NOT part of the
-    // attachment hash list or the Merkle root (those cover the original body + files).
-    details.attachments.push({
-      file: new File([manifestText], MANIFEST_FILENAME, { type: "application/json" }),
-      name: MANIFEST_FILENAME,
-    });
+    // Attach the manifest. ComposeDetails.attachments is documented as "Only used
+    // in the begin* functions", so pushing an entry into details here is silently
+    // dropped — addAttachment() is the call that is honoured on the way out. The
+    // manifest itself is intentionally NOT part of the attachment hash list or the
+    // Merkle root (those cover the original body + files).
+    try {
+      await browser.compose.addAttachment(tab.id, {
+        file: new File([manifestText], MANIFEST_FILENAME, { type: "application/json" }),
+      });
+    } catch (err) {
+      // A missing manifest must not stop the message, but it must not pass in
+      // silence either: the options page reports this.
+      await Promise.resolve()
+        .then(() =>
+          browser.storage.local.set({
+            psempManifestError: String((err && err.message) || err),
+          })
+        )
+        .catch(() => {});
+      console.error("[PasevSU] manifest could not be attached:", err);
+    }
 
     const newHeaders = await buildHeaders(
       config,

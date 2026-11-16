@@ -20,7 +20,12 @@ On every send (`browser.compose.onBeforeSend`):
    attachment is skipped (logged) and never aborts the send.
 3. Computes a Merkle root over the sorted leaf hashes (body + each attachment).
 4. Generates a per-message Evidence-ID (UUID v4) and a timestamp.
-5. Builds `PasevSU_Manifest.json`, computes its SHA-256, and attaches it.
+5. Builds `PasevSU_Manifest.json`, computes its SHA-256, and attaches it with
+   `compose.addAttachment()`. `ComposeDetails.attachments` is documented as
+   **"Only used in the begin\* functions"**, so an entry pushed into `details`
+   during `onBeforeSend` is silently dropped — which is why the manifest goes in
+   through `addAttachment()`. If Thunderbird refuses it, the message still sends
+   and the options page says so (`psempManifestError`).
 6. Appends all `X-PasevSU-*` headers to `details.customHeaders` **without**
    dropping any existing headers.
 7. Returns `{ details }` so the message is sent; on any error it still returns
@@ -121,6 +126,19 @@ side-load: zip the four files (`manifest.json`, `background.js`, `options.html`,
 `options.js`) at the archive **root** into
 `pasevsu-forensic-headers@pasev.example.xpi` and place it in
 `<profile>\extensions\`.
+
+[`tools/install.ps1`](tools/install.ps1) does exactly that, finds the profile, and
+verifies the installed file's SHA-256 against the build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File thunderbird-extension\tools\install.ps1
+```
+
+Thunderbird **memory-maps** an installed `.xpi`, so it cannot be replaced while
+Thunderbird runs — Windows answers *"the requested operation cannot be performed on
+a file with a user-mapped section open"*. Close Thunderbird first; the script
+refuses and exits with code 2 otherwise. After the install the script also warns if
+the profile's `user.js` lacks the next pref.
 
 Thunderbird disables hand-placed add-ons by default. [`user.js`](user.js) ships the
 pref that turns that off, so the add-on stays enabled across restarts:

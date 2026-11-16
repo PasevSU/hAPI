@@ -60,12 +60,13 @@ function referenceMerkle(hexLeaves) {
 }
 
 /* --- load background.js the way Thunderbird does --------------------------- */
-function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false } = {}) {
+function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false, addAttachmentThrows = null } = {}) {
   const order = [];
   const listeners = [];
   const writes = {};
   const warnings = [];
   const errors = [];
+  const added = [];
 
   const browser = {
     storage: {
@@ -87,6 +88,13 @@ function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false
         if (!entry) throw new Error(`no such attachment ${id}`);
         if (entry.throws) throw entry.throws;
         return new File([entry.bytes], entry.name);
+      },
+      // The only path Thunderbird honours for a new attachment during a send.
+      async addAttachment(tabId, attachment) {
+        order.push('addAttachment');
+        if (addAttachmentThrows) throw addAttachmentThrows;
+        added.push({ tabId, attachment });
+        return { id: `added-${added.length}`, name: attachment.file.name };
       },
       onBeforeSend: {
         addListener(fn) {
@@ -112,7 +120,7 @@ function loadExtension({ stored = {}, attachments = {}, storageGetThrows = false
 
   vm.runInContext(CODE, context, { filename: SOURCE });
 
-  return { order, listeners, writes, warnings, errors };
+  return { order, listeners, writes, warnings, errors, added };
 }
 
 function headerMap(customHeaders) {
@@ -277,16 +285,19 @@ check('attachments are hashed and the merkle root matches an independent tree', 
   assert.strictEqual(headers.get('X-PasevSU-Merkle-Root'), expectedRoot);
 });
 
-check('the manifest attachment is added and its own hash is published', async () => {
-  const { listeners } = loadExtension();
+check('the manifest is attached with addAttachment and its own hash is published', async () => {
+  const { listeners, added } = loadExtension();
   const details = { isPlainText: true, body: 'manifest check', attachments: [], customHeaders: [] };
-  const { details: out } = await listeners[0]({}, details);
+  const { details: out } = await listeners[0]({ id: 7 }, details);
 
-  assert.strictEqual(out.attachments.length, 1, 'exactly one manifest attachment');
-  const manifest = out.attachments[0];
-  assert.strictEqual(manifest.name, MANIFEST);
+  // details.attachments is begin*-only, so it must stay untouched: an entry pushed
+  // there is dropped by Thunderbird and the manifest would silently never be sent.
+  assert.strictEqual(added.length, 1, 'exactly one manifest attachment added');
+  assert.strictEqual(added[0].tabId, 7, 'added to the compose tab being sent');
+  assert.strictEqual(added[0].attachment.file.name, MANIFEST);
+  assert.deepStrictEqual(Array.from(out.attachments || []), [], 'begin*-only field left alone');
 
-  const text = await manifest.file.text();
+  const text = await added[0].attachment.file.text();
   const headers = headerMap(out.customHeaders);
   assert.strictEqual(
     headers.get('X-PasevSU-Manifest-SHA256'),
@@ -300,6 +311,26 @@ check('the manifest attachment is added and its own hash is published', async ()
   assert.strictEqual(parsed.merkle_root, headers.get('X-PasevSU-Merkle-Root'));
   assert.strictEqual(parsed.evidence_id, headers.get('X-PasevSU-Evidence-ID'));
   assert.deepStrictEqual(parsed.attachments, []);
+});
+
+check('a refused manifest attachment still sends, and the failure is recorded', async () => {
+  const { listeners, writes, errors, added } = loadExtension({
+    addAttachmentThrows: new Error('addAttachment refused'),
+  });
+  const details = { isPlainText: true, body: 'refused', attachments: [], customHeaders: [] };
+  const out = await listeners[0]({ id: 1 }, details);
+
+  assert.strictEqual(added.length, 0);
+  assert.match(
+    String(writes.psempManifestError),
+    /addAttachment refused/,
+    'the options page needs to be able to say the manifest was not attached'
+  );
+  assert.ok(errors.length > 0, 'the failure is logged, not swallowed');
+  // The message must still go out with its headers.
+  const headers = headerMap(out.details.customHeaders);
+  assert.ok(headers.get('X-PasevSU-Merkle-Root'), 'headers still injected');
+  assert.ok(!out.cancel, 'never cancels the send');
 });
 
 check('an unreadable attachment is skipped without aborting the send', async () => {
