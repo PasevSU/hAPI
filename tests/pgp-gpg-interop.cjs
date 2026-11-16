@@ -8,16 +8,28 @@ const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const pgp = require('../hapi_enterprise/pgp.js');
 
-function hasGpg() {
-  try {
-    execFileSync('gpg', ['--version'], { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
+// GnuPG се търси и извън PATH: Git за Windows носи `gpg.exe`, но не го слага в PATH и
+// тестът се прескачаше на машина, на която интеропът всъщност е проверим.
+function findGpg() {
+  const candidates = ['gpg'];
+  if (process.platform === 'win32') {
+    const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+    candidates.push(path.join(programFiles, 'Git', 'usr', 'bin', 'gpg.exe'));
+    candidates.push(path.join(programFiles, 'GnuPG', 'bin', 'gpg.exe'));
   }
+  for (const candidate of candidates) {
+    try {
+      execFileSync(candidate, ['--version'], { stdio: 'ignore' });
+      return candidate;
+    } catch {
+      // този кандидат не работи — пробваме следващия
+    }
+  }
+  return null;
 }
 
-if (!hasGpg()) {
+const gpgBin = findGpg();
+if (!gpgBin) {
   console.log('pgp-gpg-interop SKIPPED (gpg не е инсталиран)');
   process.exit(0);
 }
@@ -27,8 +39,13 @@ const data = Buffer.from('интероп ' + new Date().toISOString(), 'utf8');
 const dataFile = path.join(tmp, 'payload.bin');
 fs.writeFileSync(dataFile, data);
 
+// gpg се вика с ОТНОСИТЕЛНИ пътища и `cwd: tmp`. Абсолютен път с буква на диск се разменя
+// погрешно от MSYS сборката на GnuPG (Git за Windows): `--homedir C:\...` се превръща в
+// `<cwd>/C:\...` и ключът не се вдига. Относителните пътища минават и при native GnuPG.
+const rel = (p) => (path.resolve(p).startsWith(path.resolve(tmp)) ? path.relative(tmp, p).split(path.sep).join('/') : p);
 const gpgIn = (home) => (args) =>
-  execFileSync('gpg', ['--homedir', home, '--batch', '--yes', '--pinentry-mode', 'loopback', '--passphrase', '', ...args], {
+  execFileSync(gpgBin, ['--homedir', path.basename(home), '--batch', '--yes', '--pinentry-mode', 'loopback', '--passphrase', '', ...args.map(rel)], {
+    cwd: tmp,
     encoding: 'utf8',
     stdio: ['pipe', 'pipe', 'pipe'],
   });

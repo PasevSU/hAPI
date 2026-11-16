@@ -115,7 +115,8 @@ with *fewer* ones. Five limits shape the contract, and each one is visible in th
    not start with `X-`, `List-` or the one allowed literal (`msip_labels`), and rejects
    `X-Mozilla-*`. A real `Message-ID:` therefore cannot be written by the extension.
    PSEMP sets `X-PasevSU-Message-ID` as the twin and puts the same value in
-   `manifest.provenance.message_id`; only a raw-SMTP gateway writes the real header.
+   `manifest.provenance.message_id`; only a component that composes the message itself
+   (`composeEvidence()`) writes the real header, and nothing here transmits it (§2).
    The delivery receipt (`Disposition-Notification-To`, RFC 8098 MDN) is **not** written
    as a custom header either: the extension sets the native `returnReceipt` boolean and
    Thunderbird adds that field itself, alongside `X-PasevSU-Receipt`.
@@ -264,7 +265,8 @@ engines, and `test/extension-arming.cjs` fails if they ever drift.
 **Why `X-PasevSU-WAR` and not `PasevSU-WAR`.** `ComposeDetails.customHeaders` accepts only
 names beginning `X-`/`List-`, plus `msip_labels`; anything else makes `setComposeDetails()`
 throw, and Thunderbird then aborts the send **with no dialog** (a silent data-loss class of
-bug). Only the gateway, which writes raw SMTP, can emit the unprefixed `PasevSU-WAR:` — the
+bug). Only the gateway, which composes the whole message, can emit the unprefixed
+`PasevSU-WAR:` — into the bundle, not onto the wire, since it has no transport (§2) — the
 same asymmetry as `Message-ID` / `X-PasevSU-Message-ID`. Both engines therefore emit the
 `X-` form, and the gateway additionally emits the bare twin.
 
@@ -453,6 +455,51 @@ work, and what lets a leaked copy be traced to the addressee it was minted for.
 The `+ _ ~` characters are legal in an RFC 5322 dot-atom, so the message stays deliverable,
 but no ordinary MUA generates them — a PasevSU message is recognisable by grep in any mail
 store, and `<evidence_id>` inside the Message-ID links the header to the attached manifest.
+
+The extension can only write the `X-` twin (`X-PasevSU-Message-ID`, §3.1). The real
+`Message-ID:` field is emitted by `composeEvidence()` → `buildHeaderLines()` (api.js), so
+every bundle carries the promoted line; what does not exist is a transport that *sends* it,
+because PSEMP has no SMTP proxy (§2).
+
+### 8.1 The two signing layers, and the order they must be applied in
+
+One digest proves integrity only for as long as a reader trusts the digest. PSEMP therefore
+stacks two layers. They are not interchangeable, and calling layer 1 a signature would be a
+lie — its key is derived from public material and anyone can reproduce it (§7).
+
+| Layer | Produced by | What it is | Covers |
+| --- | --- | --- | --- |
+| 1 — content commitment | extension **and** gateway, always | Merkle root + 25-digit engine code + AES-GCM-sealed digest block; no secret, fully reproducible | body, **every** attachment, compose timestamp |
+| 2 — OpenPGP signature | gateway `seal` (`gpg --detach-sign`, SHA-512) or Thunderbird's built-in OpenPGP (RFC 4880/3156) | a real asymmetric signature by a key only the sender holds | the MIME parts that already contain layer 1 — body, **every** attachment, and `PasevSU_Manifest.json`. **Not** the outer RFC 5322 header block: RFC 3156 signs the body part only |
+
+The rule that makes the stack work is **layer 2 is applied last, over content that already
+contains layer 1**:
+
+* the extension injects its headers and attaches the sealed manifest inside
+  `onBeforeSend`, i.e. *before* Thunderbird's OpenPGP signs the assembled MIME part, so the
+  signature covers body, attachments and manifest together;
+* the gateway writes the sealed manifest text first and only then runs
+  `gpg --detach-sign` over that exact file (`seal`, §5). Injecting a header *after* signing
+  would silently invalidate the signature, and nothing here does it.
+
+A PGP/MIME signature does **not** cover the outer header block (RFC 3156 signs the body
+part, not the RFC 5322 fields), which is a known weakness of PGP/MIME and the reason the
+metadata record travels a second way: `signed_headers` inside `PasevSU_Manifest.json`, which
+*is* a signed part, with `X-PasevSU-Manifest-SHA256` in the outer block to tie the two
+together. Editing `Subject` after signing therefore leaves an outer field that disagrees
+with the signed record, and a verifier that compares them sees it.
+
+What each layer catches, and what neither does:
+
+| The attacker changes | Layer 1 | Layer 2 |
+| --- | --- | --- |
+| one body byte | Merkle root and `X-PasevSU-Body-SHA256` diverge | manifest no longer matches its signature |
+| one byte in a PDF | that attachment's `sha256` row diverges; `check-sent` names the file (§10) | same — the digest is inside the signed manifest |
+| an attachment renamed or swapped | `attachments_sha256` over sorted `[filename, sha256]` pairs (§8) | same |
+| Subject / From / Date / Message-ID | `X-PasevSU-Headers-SHA256` | decisively, through `signed_headers` inside the signed manifest — an edited field no longer matches it |
+
+Neither layer provides confidentiality: encryption is Thunderbird's OpenPGP, not PSEMP's
+(§15). And neither layer survives a re-mailing — a forwarded copy is a new message (§16).
 
 ---
 
@@ -721,8 +768,9 @@ Thunderbird's job, not PSEMP's.**
 
 Known, deliberate gaps. None of them silently weakens a message that was sealed.
 
-* **No real `Message-ID:` from the extension** — §3.1. An SMTP-writing gateway would fix it
-  and does not exist in this repository.
+* **No real `Message-ID:` from the extension** — §3.1. `composeEvidence()` does produce the
+  real field (§8.1), but no SMTP transport exists here to put it on the wire, so in the live
+  path the message is sent by Thunderbird with the `X-` twin only.
 * **No SMTP proxy** — §2. Nothing can be added to a sent message after `onBeforeSend`, which
   is a constraint PSEMP is designed around rather than against.
 * **BLAKE3 is not computed** — neither Web Crypto nor the vendored OpenTimestamps groups

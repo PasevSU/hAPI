@@ -243,4 +243,69 @@ async function waitHealthy(child, base, { attempts = 160, delay = 50, stderr = n
   throw new Error(`сървърът не стартира на ${base} (изчакани ${attempts} опита)${tail()}`);
 }
 
-module.exports = { stopChild, stopTree, reapInstance, freePort, waitHealthy, storageRoot, portalDir, portalBase, portalFolderFor };
+/**
+ * Правата за symlink не са дадени на всеки: Windows без Administrator и без Developer Mode
+ * връща EPERM за `fs.symlinkSync` (проверено 2026-11-15 на тази машина). Тестът не бива да
+ * пада заради средата — но и не бива да мълчи. Затова тук се казва КОЕ правило остава
+ * непроверено, а матрицата брои теста отделно като „пропуснат по среда“ (⊘), не като успех.
+ *
+ * Извикващият пише `if (needsSymlinks('име', 'правилото')) return;` — преди да е създал
+ * временни папки, за да не остават.
+ */
+/**
+ * Създава връзка към път. На Windows без SeCreateSymbolicLinkPrivilege `fs.symlinkSync`
+ * дава EPERM, но junction не иска права и `lstat` го отчита като symlink — затова
+ * проверките от вида „това е връзка, откажи“ минават и тук, вместо да се прескачат.
+ * Junction работи само за СЪЩЕСТВУВАЩА папка: връзка към файл би била „скъсана“ (existsSync
+ * лъже, четенето дава ENOENT), затова за файл пада обратно на истински symlink.
+ */
+function link(target, linkPath) {
+  try {
+    return fs.symlinkSync(target, linkPath);
+  } catch (e) {
+    const denied = e.code === 'EPERM' || e.code === 'EACCES' || e.code === 'ENOTSUP';
+    if (!denied || process.platform !== 'win32' || !fs.statSync(target).isDirectory()) throw e;
+    return fs.symlinkSync(target, linkPath, 'junction');
+  }
+}
+
+// Маха връзка, независимо дали е symlink или junction: junction е папка за Win32, затова
+// `unlinkSync` пада с EPERM, а `rmdirSync` маха само връзката и не пипа целта.
+function removeLink(p) {
+  let st;
+  try {
+    st = fs.lstatSync(p);
+  } catch (e) {
+    if (e.code === 'ENOENT') return;
+    throw e;
+  }
+  if (!st.isSymbolicLink()) {
+    fs.rmSync(p, { recursive: true, force: true });
+    return;
+  }
+  try {
+    fs.unlinkSync(p);
+  } catch (e) {
+    if (e.code !== 'EPERM' && e.code !== 'EACCES' && e.code !== 'EISDIR') throw e;
+    fs.rmdirSync(p);
+  }
+}
+
+function needsSymlinks(name, rule) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-symlink-probe-'));
+  let denied = null;
+  try {
+    fs.mkdirSync(path.join(dir, 'target'));
+    link(path.join(dir, 'target'), path.join(dir, 'link'));
+  } catch (e) {
+    if (e.code !== 'EPERM' && e.code !== 'EACCES' && e.code !== 'ENOTSUP') throw e;
+    denied = e.code;
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+  if (!denied) return false;
+  console.log(`${name} SKIP: средата не дава права за symlink (${denied}) — правилото „${rule}“ остава непроверено тук`);
+  return true;
+}
+
+module.exports = { stopChild, stopTree, reapInstance, freePort, waitHealthy, storageRoot, portalDir, portalBase, portalFolderFor, needsSymlinks, link, removeLink };

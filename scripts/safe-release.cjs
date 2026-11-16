@@ -58,6 +58,9 @@ const plan = [
   ['Генератори · CHANGELOG', 'scripts/sync-addon-changelog.cjs'],
   ['Генератори · правила', 'scripts/gen-test-rules.cjs'],
   ['Генератори · документация', 'scripts/docs-index.cjs'],
+  // `tests/source-inventory.cjs` пуска `--check` в матрицата; без тази стъпка отчетът
+  // изостава от дървото при всяка промяна в `hapi_enterprise/` и матрицата пада.
+  ['Генератори · инвентар', 'scripts/source-inventory.cjs'],
   // `options:`/`schema:` в `config.yaml` се строят от дескриптора (`option-spec.js`). Върви
   // ПРЕДИ справочника: той чете точно тези две секции, а и двете са вход за `build-release`.
   ['Генератори · схема', 'scripts/option-schema.cjs', ['--check']],

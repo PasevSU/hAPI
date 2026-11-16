@@ -71,7 +71,7 @@ check('every buildHeader() name in background.js is one Thunderbird accepts', ()
 check('the emitted set contains no standard mail field', () => {
   const text = fs.readFileSync(SOURCE, 'utf8');
   // Standard fields a well-meaning edit might try to write directly. They belong to
-  // ComposeDetails (subject, returnReceipt, ...) or to psemp-gateway's raw SMTP path.
+  // ComposeDetails (subject, returnReceipt, ...) or to psemp-gateway's message composer.
   for (const field of [
     'Disposition-Notification-To',
     'Message-ID',

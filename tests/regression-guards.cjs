@@ -108,6 +108,9 @@ const GUARDS = {
   'DEF-89': ['option-secrets.cjs'], // тайните опции се прикриват в лога и по име на променлива
   'DEF-90': ['option-effects.cjs'], // опция „само при първи старт“ не се описва като мъртва
   'DEF-91': ['folder-delete.cjs', 'portal-card-link.cjs'], // кодът на ниво носи подписа, иначе е счупена картинка
+  'DEF-92': ['oversize-body.cjs'], // 413 не оставя отровена keep-alive връзка
+  'DEF-93': ['thunderbird-contract.cjs', 'psemp-suites.cjs'], // разписката е `returnReceipt`, не забранена заглавка
+  'DEF-94': ['thunderbird-contract.cjs'], // зареденото add-on се сверява със сорса по хеш и версия
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -195,6 +198,9 @@ const ANCHORS = {
   'DEF-89': { file: 'option-secrets.cjs', contains: 'тайна опция не се прикрива в лога' },
   'DEF-90': { file: 'option-effects.cjs', contains: 'не твърди, че кодът не го чете' },
   'DEF-91': { file: 'folder-delete.cjs', contains: 'подписът влиза и в адреса на кода' },
+  'DEF-92': { file: 'oversize-body.cjs', contains: 'следващата заявка по същата връзка' },
+  'DEF-93': { file: 'thunderbird-contract.cjs', contains: 'sanitizeCustomHeaderName' },
+  'DEF-94': { file: 'thunderbird-contract.cjs', contains: 'loadedAddonVersion' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

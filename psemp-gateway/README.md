@@ -156,8 +156,9 @@ secrecy against the recipient** (the code travels in the same message): it keeps
 file names and digests out of plaintext header scanners while staying recoverable.
 A wrong code fails the GCM tag check rather than returning plausible garbage.
 
-`Message-ID` is emitted twice on purpose. Raw SMTP may set any legal field name, so
-the gateway writes the real `Message-ID:`; the extension cannot, because
+`Message-ID` is emitted twice on purpose. The gateway composes the whole message, so it
+can write the real `Message-ID:` into the bundle (no SMTP transport exists here, so the
+field reaches the wire only once something else sends it); the extension cannot, because
 `ComposeDetails.customHeaders` **rejects any name that does not start with `X-`**
 and a rejected `setComposeDetails()` aborts the send with no dialog at all. Hence
 the identical `X-PasevSU-Message-ID` twin.

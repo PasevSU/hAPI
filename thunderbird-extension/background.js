@@ -24,7 +24,8 @@
  *   - The readable digest block plus a 25-digit derived crypto-engine code and
  *     its AES-256-GCM twin (X-PasevSU-Cripto-title).
  *
- * What it CANNOT do (documented, done by the SMTP gateway / CLI):
+ * What it CANNOT do (documented, done by the `psemp-gateway` CLI or by
+ * Thunderbird's own OpenPGP — never by an SMTP hop; this repo has no SMTP proxy):
  *   - Real OpenPGP signatures (.asc) and OpenTimestamps (.ots) cannot be
  *     produced inside a MailExtension; X-PasevSU-OTS is a "pending" marker only.
  *     `psemp-gateway seal` replaces that marker with a real .asc + .ots pair.
@@ -68,7 +69,8 @@ const MANIFEST_FILENAME = "PasevSU_Manifest.json";
  * The header is `X-PasevSU-WAR` and not `PasevSU-WAR` because Thunderbird's
  * ComposeDetails.customHeaders rejects a name that does not start with "X-" or
  * "List-", and a rejected setComposeDetails() aborts the send with no dialog at all.
- * psemp-gateway speaks raw SMTP, so it writes the unprefixed `PasevSU-WAR:` as well —
+ * psemp-gateway composes the whole message itself, so it writes the unprefixed
+ * `PasevSU-WAR:` as well — into the bundle; it has no transport to send it —
  * the same twin arrangement `Message-ID` already has.
  *
  * The wording is a REQUIREMENT, not a claim that a signature exists: this add-on
@@ -735,7 +737,7 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
     );
   }
   if (config.enableOts) {
-    // Marker only: real OpenTimestamps must be applied by the SMTP gateway / CLI.
+    // Marker only: real OpenTimestamps must be applied afterwards by `psemp-gateway seal`.
     headers.push(buildHeader("X-PasevSU-OTS", "pending"));
   }
   if (config.enableReceipt && context.receiptTo) {
@@ -760,8 +762,9 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
   const engine = await cryptoEngineCode(merkle, bodyHash);
   // X- prefixed on purpose: Thunderbird's ComposeDetails.customHeaders rejects a
   // name that does not start with "X-", and a rejected setComposeDetails() aborts
-  // the send with no dialog at all. The real `Message-ID:` field is written by
-  // psemp-gateway, which speaks raw SMTP and may set any legal field name.
+  // the send with no dialog at all. The real `Message-ID:` field is only produced
+  // by psemp-gateway's composeEvidence() -> buildHeaderLines(); that bundle is not
+  // a transport, so in the live path Thunderbird sends the X- twin alone.
   headers.push(
     buildHeader(
       "X-PasevSU-Message-ID",

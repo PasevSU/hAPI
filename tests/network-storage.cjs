@@ -1,5 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const { needsSymlinks, link } = require('./helpers.cjs');
+if (needsSymlinks('network-storage', 'мрежовата папка не се заобикаля с връзка')) return;
 const {check,isMounted}=require('../hapi_enterprise/storage-preflight');
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'portal-network-'));
 try{
@@ -15,7 +17,7 @@ try{
  assert.throws(()=>check({...cfg,storage_mode:'nfs'},env),/Unsupported/);
  fs.mkdirSync(path.join(tmp,'media','bad'));fs.mkdirSync(path.join(tmp,'media','bad','hapi_enterprise'));fs.writeFileSync(path.join(tmp,'media','bad','hapi_enterprise','existing'),'safe');
  assert.throws(()=>check({...cfg,storage_mount_name:'bad'},env),/Nonempty/);
- fs.symlinkSync(tmp,path.join(tmp,'share','linked'));
+ link(tmp,path.join(tmp,'share','linked'));
  assert.throws(()=>check({...cfg,storage_location:'share',storage_mount_name:'linked'},env),/not mounted/);
  const mi=path.join(tmp,'mountinfo');fs.writeFileSync(mi,'12 11 0:50 / /media/NAS rw - cifs //nas/share rw\n');
  assert.equal(isMounted('/media/NAS',mi),true);assert.equal(isMounted('/media/missing',mi),false);

@@ -143,9 +143,9 @@ const MDN_HEADER = 'Disposition-Notification-To';
  * Two carriers are platform-bound. Thunderbird's Compose API refuses any custom
  * header name that does not start with `X-`/`List-`, and a rejected
  * `setComposeDetails()` aborts the send, so the MailExtension ships
- * `X-PasevSU-WAR`. A field may only be claimed by a sender that writes raw SMTP —
- * this gateway — which therefore emits both `PasevSU-WAR:` and the `X-` twin,
- * exactly as it already does for `Message-ID`.
+ * `X-PasevSU-WAR`. A field may only be claimed by a component that composes the
+ * message itself — this gateway — which therefore emits both `PasevSU-WAR:` and the
+ * `X-` twin, exactly as it already does for `Message-ID`.
  *
  * The text is a requirement, not a claim: the extension does not sign anything
  * (Thunderbird's built-in OpenPGP does, per identity), so it names the signature
@@ -963,10 +963,12 @@ function buildHeaderLines({
   // Appended (never interleaved) so the established header order above stays a contract.
   const stamp = timestamp || new Date().toISOString();
   const messageId = buildMessageId({ evidenceId, timestamp: stamp });
-  // The gateway speaks raw SMTP, so it can write the real field as well. The
-  // extension cannot: Thunderbird's ComposeDetails.customHeaders rejects any name
-  // that does not start with X-, and a rejected setComposeDetails() aborts the send
-  // with no dialog. So both engines emit the X- twin, and only this one promotes it.
+  // The gateway composes the whole message, so it can write the real field as well.
+  // It has no transport of its own (§2), so the line lives in the bundle, not on the
+  // wire. The extension cannot write it at all: ComposeDetails.customHeaders rejects
+  // any name that does not start with X-, and a rejected setComposeDetails() aborts
+  // the send with no dialog. So both engines emit the X- twin, and only this one
+  // promotes it to the unprefixed field.
   lines.push(`Message-ID: ${messageId}`);
   lines.push(`${HEADER_NAMES.messageId}: ${messageId}`);
   const block = buildDigestBlock({ bodySha256: bodyHash, attachmentEntries, timestamp: stamp });
@@ -2572,7 +2574,7 @@ async function selfTest() {
       { config: { enableOts: false }, tagSubject: true }
     );
     assert(tagged.details.subject.endsWith(WAR_MARKER), 'the marker must stay last after the opt-in tag');
-    // Raw SMTP can carry the real field; the X- twin must accompany it.
+    // Composing the message allows the real field; the X- twin must accompany it.
     const lines = buildHeaderLines({ config: {}, evidenceId: '11111111-2222-4333-8444-555555555555' });
     assert(lines.some((line) => line.startsWith('PasevSU-WAR: ')), 'the gateway must emit the unprefixed field');
     assert(
@@ -2659,7 +2661,7 @@ async function selfTest() {
     }
     assert(refused, 'a foreign code must not open the title');
 
-    // Raw SMTP allows the real field; the X- twin is what a MailExtension can emit.
+    // Composing the message allows the real field; the X- twin is what a MailExtension can emit.
     const messageId = byName.get('Message-ID');
     assert(messageId === byName.get(HEADER_NAMES.messageId), 'the real and X- Message-ID must agree');
     assert(messageId.length > 90, `message id must be long, got ${messageId.length}`);

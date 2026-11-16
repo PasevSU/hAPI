@@ -565,7 +565,9 @@ function clearLoginFailures(username) { loginFailures.delete(accountKey(username
 const clean = x => typeof x === 'string' ? x.trim() : '';
 const htmlEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const validSlug = x => /^[a-z0-9][a-z0-9-]{0,62}$/.test(x);
-const body = async (req, limit = 65536) => { let parts = [], size = 0; for await (const chunk of req) { size += chunk.length; if (size > limit) throw Object.assign(new Error('Payload too large'), { status: 413 }); parts.push(chunk) } return Buffer.concat(parts) };
+// Четенето на тялото живее в `body.js`: там са двете правила, които се разминават (преигран
+// iterator от idempotency срещу 413 без унищожен сокет).
+const body = require('./body').read;
 // `null`, число и низ СА валиден JSON, но не са тяло на заявка: маршрутите четат полета от
 // обект, а `null.field` е TypeError и клиентът получаваше 500 за своя грешка (измерено на
 // 29 маршрута). Масивът остава позволен — има маршрути, които приемат списък.

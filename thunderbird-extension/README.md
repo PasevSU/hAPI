@@ -7,9 +7,11 @@ headers are always produced by default.
 
 This is the browser-side component of the **PasevSU Secure Evidence Mail
 Protocol (PSEMP)**. Heavy cryptography that Web Crypto cannot do (OpenPGP
-signing, OpenTimestamps, SHA3-512, BLAKE3) is applied later by the SMTP
-gateway / CLI — this extension produces the hashes, the Merkle root, the
-evidence ID, and a manifest the gateway can stamp.
+signing, OpenTimestamps, SHA3-512, BLAKE3) is applied afterwards by
+[`../psemp-gateway/`](../psemp-gateway/) — a CLI plus a library, not an SMTP
+proxy — while Thunderbird's own OpenPGP does the signing in the MUA itself. This
+extension produces the hashes, the Merkle root, the evidence ID, and a manifest
+those later steps can stamp.
 
 ## What it does
 
@@ -109,8 +111,10 @@ because the requirement was that they always be produced:
 
 The header is `X-PasevSU-WAR` and not `PasevSU-WAR` because Thunderbird refuses any custom
 header name that does not begin with `X-` or `List-`, and a refused `setComposeDetails()`
-**aborts the send with no dialog**. Only the raw-SMTP gateway can also write the bare
-`PasevSU-WAR:` — the same twin arrangement as `Message-ID` / `X-PasevSU-Message-ID`.
+**aborts the send with no dialog**. The bare `PasevSU-WAR:` field can only be written by
+something that composes the message itself — `psemp-gateway`'s `composeEvidence()` does,
+though it has no transport to send it (§2 of the protocol) — the same twin arrangement as
+`Message-ID` / `X-PasevSU-Message-ID`.
 
 The WAR text is phrased as a **requirement, not a claim**: this add-on does not sign.
 Thunderbird's own OpenPGP signs per identity, so a message can only be vouched for by the
@@ -180,7 +184,9 @@ message — it keeps file names and digests out of plaintext header scanners whi
 staying recoverable. A wrong code fails the GCM tag check instead of returning
 plausible garbage.
 
-`Message-ID` is written by `psemp-gateway` (raw SMTP may set any legal field). This
+`Message-ID` is written by `psemp-gateway`, which composes the whole message itself
+(no SMTP transport exists in this repo, so that field reaches the wire only once
+something else sends the bundle). This
 extension emits the `X-PasevSU-Message-ID` twin instead, because Thunderbird's
 `ComposeDetails.customHeaders` **rejects any name that does not start with `X-`**,
 and a rejected `setComposeDetails()` aborts the send with no dialog at all — the
@@ -500,17 +506,59 @@ explanation paragraph all render in German on a German Thunderbird, including
 set — `psemp-gateway/test/locales.cjs` fails on a missing, extra or empty key in
 any language, so a half-translated panel cannot ship.
 
+## The two signing layers
+
+The protocol does not rely on one digest. Two layers are stacked, in this order, and the
+order is not cosmetic.
+
+| Layer | Produced by | What it is | Covers |
+| --- | --- | --- | --- |
+| 1 — content commitment | **this extension**, always | Merkle root + 25-digit engine code + AES-256-GCM-sealed digest block (`X-PasevSU-Merkle-Root`, `X-PasevSU-Cripto-Engine`, `X-PasevSU-Sha256`, `X-PasevSU-Cripto-title`, `X-PasevSU-Manifest-SHA256`, `X-PasevSU-Headers-SHA256`) | body, **every** attachment, compose timestamp |
+| 2 — OpenPGP signature | **Thunderbird's own OpenPGP**, per identity (RFC 4880 and 3156) | a real asymmetric signature by a key only the sender holds | the MIME parts that already contain layer 1: body, **every** attachment, and `PasevSU_Manifest.json`. **Not** the outer header block — RFC 3156 signs the body part only |
+
+Layer 1 runs inside `onBeforeSend`, which is *before* Thunderbird assembles and signs the
+MIME part — so the signature covers the body, the attachments and the sealed manifest
+together. Injecting anything after signing would silently invalidate the signature, and
+nothing here does it.
+
+The outer `X-PasevSU-*` header block itself is **not** covered by a PGP/MIME signature:
+RFC 3156 signs the body part, not the RFC 5322 fields. That is why the metadata record is
+carried a second way — `signed_headers` inside `PasevSU_Manifest.json`, which *is* a signed
+part — and why `X-PasevSU-Manifest-SHA256` sits in the outer block to tie the two together.
+Edit `Subject` after signing and the outer field disagrees with the signed record.
+
+Layer 1 is a **commitment, not a signature**: its key is derived from public material
+(§7 of [the protocol](../psemp-gateway/PROTOCOL.md)), so anyone can recompute and reproduce
+it. That is deliberate — it must be reproducible for verification — but it means the
+authentication is layer 2. `X-PasevSU-Cripto-title` is obfuscation, not confidentiality.
+
+Because the manifest commits to `sha256` of every attachment and to the sorted
+`[filename, sha256]` pairs, changing **one byte in a PDF** breaks the digest that names that
+file, and layer 2 then fails over everything that is signed. Both properties are proven, not
+asserted: `psemp-gateway/test/check-sent.cjs` re-hashes each part and names the altered one,
+and `psemp-gateway/test/seal.cjs` refuses to seal a tampered attachment and reads the real
+SHA-512 digest back out of the finished `.asc`.
+
+**To actually get layer 2 you must turn it on in Thunderbird:** Account Settings → the
+identity → *End-to-End Encryption* → select the key → tick *Digitally sign messages (by
+default)*. The add-on cannot enable it, cannot read the key, and cannot sign. Without that
+setting the message still carries layer 1 and still sends — but then the sentence in
+`X-PasevSU-WAR` is a requirement the message does not meet, which is exactly how it is
+worded.
+
 ## Limitations
 
 - **OpenPGP / OpenTimestamps.** A MailExtension has no Node, no `gpg` and no `ots`
   binary, so real PGP signatures (`.asc`) and OpenTimestamps (`.ots`) cannot be
-  generated here. `X-PasevSU-OTS: pending` is a marker for the SMTP gateway / CLI,
-  which does have both: it stamps the manifest from a vendored OpenTimestamps
-  bundle with no install step, and it reads the signer out of the signature
-  Thunderbird already applied, so the `X-PasevSU-PGP-Fingerprint` claim can be
-  checked against the key that actually signed. The marker is written **by
-  default** on every message, so nothing is ever sent unstamped unless you untick
-  `enableOts`; the server-side half lives in
+  generated here. `X-PasevSU-OTS: pending` is a marker for the `psemp-gateway`
+  CLI, which does have both: it stamps the manifest from a vendored
+  OpenTimestamps bundle with no install step, and it reads the signer out of the
+  signature Thunderbird already applied, so the `X-PasevSU-PGP-Fingerprint` claim
+  can be checked against the key that actually signed. There is **no SMTP proxy**
+  in this repository (protocol §2), so that CLI runs over the saved message or
+  bundle — not at an SMTP hop, and never on the way out. The marker is written
+  **by default** on every message, so nothing is ever sent unstamped unless you
+  untick `enableOts`; the server-side half lives in
   [`../psemp-gateway/`](../psemp-gateway/).
 - **SHA3-512 / BLAKE3.** Web Crypto exposes only SHA-1/256/384/512. The
   extension uses SHA-256; `message_sha3_512`, each `sha3_512` and every `blake3`
@@ -654,6 +702,8 @@ the name and refuses SHA3 as a signature digest outright, because OpenPGP has no
 SHA3 signature packet — SHA3-512 belongs in the manifest, not in the packet.
 
 `PasevSU_Manifest.json.asc` and `.ots` are **not** attached by the extension. It
-cannot produce them; the gateway adds them at the SMTP hop.
+cannot produce them; the `psemp-gateway` CLI produces them afterwards, over the
+saved message — this repository has no SMTP proxy to add anything at a hop (§2 of
+[the protocol](../psemp-gateway/PROTOCOL.md)).
 
 

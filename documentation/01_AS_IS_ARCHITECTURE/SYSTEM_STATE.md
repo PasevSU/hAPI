@@ -22,7 +22,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Изнесени HTTP компонента | **19** файла в `hapi_enterprise/routes/` |
 | Модули на панела | **29** `.js` файла в `hapi_enterprise/ui/` |
 | Обявени операции | **219** в `API_ENDPOINT_REFERENCE.md` |
-| `server.js` | **2717** реда (пор **2722**) — запасът е 5 реда, затова нов сегмент влиза в `server_module/`, а не тук |
+| `server.js` | **2722** реда (пор **2722**) — точно на тавана, затова всеки нов ред влиза в `server_module/` или `routes/`, а не тук |
 | Кеш на статиката | `/ui/*`, `/portal.css`, `/portal.js`, `/portal-i18n.js` — `private, max-age=31536000, immutable` **с `?v=<версия>`**, иначе `no-cache` + `ETag` и `304` без тяло; входната страница и HTML-ът на портала са `no-cache`; миниатюрите са `private, max-age=3600` (DEF-87, DEF-88) |
 | Изнесени функции | **370** функции (420 символа) в 53 модула, **0** непокрити |
 | Тестове в дървото | **433** файла в `tests/` = **433** правила (`helpers.cjs` не е тест); матриксът пуска **432**, а `release-status.cjs` върви след него |
@@ -142,9 +142,9 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | --- | --- | --- |
 | Пълен матрикс | `node scripts/test-matrix.cjs --skip=release-status --attempts=1` | **431/431**, **1** опит (времето е в `reports/test-matrix.json`, за да не остарява тук) |
 | Артефакт | `node scripts/verify-release.cjs` | **22/22** (с `--with-tests` — **23/23**), `dist/` 6 файла |
-| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 427 теста в дървото |
+| Отчет за изданието | `node scripts/release-status.cjs` + `tests/release-status.cjs` | PASS, 445 теста в дървото |
 | ГУИ и съвместимост | `node scripts/audit-gui-compat.cjs` | **33/33** · **28/28** |
-| Регресионни защити | `tests/regression-guards.cjs` | 66 затворени дефекта · 67 защити · 92 теста · **62** котви |
+| Регресионни защити | `tests/regression-guards.cjs` | 87 затворени дефекта · 88 защити · 107 теста · **83** котви |
 | Езиков дълг | `tests/ui-i18n-ratchet.cjs` | 28 модула · 21 142 (таван 21 142) · 30 `t()` · 1 модул със собствен речник · 726 знака демо данни извън дълга |
 | Речник на публичната страница | `tests/portal-i18n.cjs`, `tests/integration-portal-i18n.cjs` | BG/EN/DE с еднакъв набор; интеграцията ползва СЪЩИЯ файл; 23 знака в кода под таван 23 |
 | Одити | `logic-audit --gate` · `bad-code-scan --gate` | 0 · 0 |
