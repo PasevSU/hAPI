@@ -43,6 +43,7 @@ const DEFAULTS = {
   framework: "Forensic-Mail",
   origin: "Thunderbird",
   organization: "PasevSU",
+  caseId: "",
   pgpFingerprint: "",
   // On by default: every message is marked for the gateway so nothing has to be
   // remembered per message. Untick it in the options page to stop marking.
@@ -594,6 +595,11 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
   // "винаги да се вписва" — a message without it is not a PasevSU message.
   headers.push(buildHeader("X-PasevSU-WAR", WAR_HEADER_TEXT));
   headers.push(buildHeader("X-PasevSU-Evidence-ID", evidenceId));
+  // Optional case label. Omitted when empty rather than sent blank, so a reader can
+  // tell "no case set" from "case deliberately blank".
+  if (config.caseId) {
+    headers.push(buildHeader("X-PasevSU-Case-ID", config.caseId));
+  }
   headers.push(buildHeader("X-PasevSU-Body-SHA256", bodyHash));
 
   // The count is always present, so "this message carried no files" is a signed

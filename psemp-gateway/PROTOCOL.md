@@ -158,26 +158,27 @@ Example values below are real output from
 | 4 | `X-PasevSU-Organization` | `PasevSU` | always |
 | 5 | `X-PasevSU-WAR` | see §4a | always |
 | 6 | `X-PasevSU-Evidence-ID` | `ev-8f14e45fceea167a` | always |
-| 7 | `X-PasevSU-Body-SHA256` | `4121f576…885d5955` | always |
-| 8 | `X-PasevSU-Attachments-Count` | `2` | always (`0` when none) |
-| 9 | `X-PasevSU-Attachments-SHA256` | `report.pdf=4de6b94f…,stmt.txt=066167e6…` | when attachments exist |
-| 10 | `X-PasevSU-Attachments-Error` | `photo.jpg=UNREADABLE` | only when one could not be read |
-| 11 | `X-PasevSU-Manifest-SHA256` | `49ba81a1…397e287` | always |
-| 12 | `X-PasevSU-Merkle-Root` | `95a9269a…abd9ea2` | always |
-| 13 | `X-PasevSU-PGP-Fingerprint` | `A1B2…5678` | when configured |
-| 14 | `X-PasevSU-OTS` | `pending` | only when `enableOts` |
-| 15 | `X-PasevSU-Receipt` | `requested` | only when `enableReceipt` |
-| 16 | `X-PasevSU-Message-ID` | `<PasevSU.20261116140000.ev-…@forensic.evidence.pasevsu>` | always |
-| 17 | `X-PasevSU-Sha256` | `body - 4121…,report.pdf - 4de6…,stmt.txt - 0661…,timestep - 2026-11-16T14:00:00.000Z` | always |
-| 18 | `X-PasevSU-Cripto-Engine` | `9572595485317120971519535` | always |
-| 19 | `X-PasevSU-Cripto-title` | `gcm1.fJrzS3nqWX5dErhA.UnuTZ…` | always |
-| 20 | `X-PasevSU-Created` | `2026-11-16T14:00:00.000Z` | always |
-| 21 | `X-PasevSU-Expires` | `2026-11-16T15:00:00.000Z` | always |
-| 22 | `X-PasevSU-Nonce` | `f47ac10b58cc43728e19d1b7f3c5a2e6` | always |
-| 23 | `X-PasevSU-Sequence` | `42` | always |
-| 24 | `X-PasevSU-Canary` | `PASEVSU-2026-11-16-38F47C99` | always |
-| 25 | `X-PasevSU-Headers-SHA256` | `617cef0d…88c7ff` | always |
-| — | `Message-ID` | same value as #16 | gateway only (§3.1) |
+| 7 | `X-PasevSU-Case-ID` | `CASE-2026-001` | when configured |
+| 8 | `X-PasevSU-Body-SHA256` | `4121f576…885d5955` | always |
+| 9 | `X-PasevSU-Attachments-Count` | `2` | always (`0` when none) |
+| 10 | `X-PasevSU-Attachments-SHA256` | `report.pdf=4de6b94f…,stmt.txt=066167e6…` | when attachments exist |
+| 11 | `X-PasevSU-Attachments-Error` | `photo.jpg=UNREADABLE` | only when one could not be read |
+| 12 | `X-PasevSU-Manifest-SHA256` | `49ba81a1…397e287` | always |
+| 13 | `X-PasevSU-Merkle-Root` | `95a9269a…abd9ea2` | always |
+| 14 | `X-PasevSU-PGP-Fingerprint` | `A1B2…5678` | when configured |
+| 15 | `X-PasevSU-OTS` | `pending` | only when `enableOts` |
+| 16 | `X-PasevSU-Receipt` | `requested` | only when `enableReceipt` |
+| 17 | `X-PasevSU-Message-ID` | `<PasevSU.20261116140000.ev-…@forensic.evidence.pasevsu>` | always |
+| 18 | `X-PasevSU-Sha256` | `body - 4121…,report.pdf - 4de6…,stmt.txt - 0661…,timestep - 2026-11-16T14:00:00.000Z` | always |
+| 19 | `X-PasevSU-Cripto-Engine` | `9572595485317120971519535` | always |
+| 20 | `X-PasevSU-Cripto-title` | `gcm1.fJrzS3nqWX5dErhA.UnuTZ…` | always |
+| 21 | `X-PasevSU-Created` | `2026-11-16T14:00:00.000Z` | always |
+| 22 | `X-PasevSU-Expires` | `2026-11-16T15:00:00.000Z` | always |
+| 23 | `X-PasevSU-Nonce` | `f47ac10b58cc43728e19d1b7f3c5a2e6` | always |
+| 24 | `X-PasevSU-Sequence` | `42` | always |
+| 25 | `X-PasevSU-Canary` | `PASEVSU-2026-11-16-38F47C99` | always |
+| 26 | `X-PasevSU-Headers-SHA256` | `617cef0d…88c7ff` | always |
+| — | `Message-ID` | same value as #17 | gateway only (§3.1) |
 | — | `PasevSU-WAR` | same value as #5 | gateway only (§4a) |
 | — | `Disposition-Notification-To` | the receipt address | only when `enableReceipt` |
 

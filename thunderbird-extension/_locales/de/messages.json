@@ -90,6 +90,12 @@
   "labelOrganization": {
     "message": "Organisation"
   },
+  "labelCaseId": {
+    "message": "Fallnummer"
+  },
+  "caseIdHint": {
+    "message": "z. B. CASE-2026-001 (leer lassen, um den Header wegzulassen)"
+  },
   "labelPgp": {
     "message": "PGP-Fingerabdruck (Thunderbird-Schlüssel)"
   },

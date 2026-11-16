@@ -90,6 +90,12 @@
   "labelOrganization": {
     "message": "Organization"
   },
+  "labelCaseId": {
+    "message": "Case ID"
+  },
+  "caseIdHint": {
+    "message": "e.g. CASE-2026-001 (leave empty to omit the header)"
+  },
   "labelPgp": {
     "message": "PGP fingerprint (Thunderbird key)"
   },

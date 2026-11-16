@@ -90,6 +90,12 @@
   "labelOrganization": {
     "message": "Организация"
   },
+  "labelCaseId": {
+    "message": "Номер на дело"
+  },
+  "caseIdHint": {
+    "message": "напр. CASE-2026-001 (празно = без хедър)"
+  },
   "labelPgp": {
     "message": "PGP отпечатък (ключът в Thunderbird)"
   },

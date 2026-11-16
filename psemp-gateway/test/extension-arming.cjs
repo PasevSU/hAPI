@@ -674,6 +674,32 @@ check('enableOts=false drops the marker header', async () => {
   assert.ok(!headerMap(out.customHeaders).has('X-PasevSU-OTS'));
 });
 
+check('the case label rides along, and an empty one leaves no header', async () => {
+  // The original brief asked for a per-case label (`X-hAPI-Case-ID`) that a recipient
+  // could read without opening the manifest. It was dropped in the rename to the
+  // X-PasevSU-* contract, so nothing downstream could tell two cases apart.
+  const unset = loadExtension({ stored: {} });
+  const blank = await unset.listeners[0]({}, {
+    isPlainText: true,
+    body: 'no case',
+    attachments: [],
+    customHeaders: [],
+  });
+  assert.ok(
+    !headerMap(blank.details.customHeaders).has('X-PasevSU-Case-ID'),
+    'an empty caseId must be omitted, not sent blank'
+  );
+
+  const { listeners } = loadExtension({ stored: { caseId: 'CASE-2026-001' } });
+  const { details: out } = await listeners[0]({}, {
+    isPlainText: true,
+    body: 'no case',
+    attachments: [],
+    customHeaders: [],
+  });
+  assert.strictEqual(headerMap(out.customHeaders).get('X-PasevSU-Case-ID'), 'CASE-2026-001');
+});
+
 check('a delivery receipt is requested by default, addressed to the sender', async () => {
   // Reported defect "the delivery-receipt feature does not exist". Like every other
   // header here it must be on without being asked for per message, so the default

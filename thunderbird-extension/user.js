@@ -29,6 +29,7 @@ user_pref(
     "X-PasevSU-Organization",
     "X-PasevSU-WAR",
     "X-PasevSU-Evidence-ID",
+    "X-PasevSU-Case-ID",
     "X-PasevSU-Body-SHA256",
     "X-PasevSU-Attachments-Count",
     "X-PasevSU-Attachments-SHA256",

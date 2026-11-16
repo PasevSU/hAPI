@@ -34,6 +34,7 @@ const KEYS = [
   'framework',
   'origin',
   'organization',
+  'caseId',
   'pgpFingerprint',
   'enableOts',
   'enableReceipt',

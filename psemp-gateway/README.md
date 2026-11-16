@@ -80,6 +80,7 @@ with [`api.js`](api.js) `HEADER_NAMES`, the extension's `buildHeader()` calls an
 | `X-PasevSU-Organization` | `PasevSU` |
 | `X-PasevSU-WAR` | the identity/anti-forwarding statement — always, see below |
 | `X-PasevSU-Evidence-ID` | UUID v4, equal to the manifest `evidence_id` |
+| `X-PasevSU-Case-ID` | configured case label — omitted when empty |
 | `X-PasevSU-Body-SHA256` | SHA-256 of the plain-text body |
 | `X-PasevSU-Attachments-Count` | number of hashed attachments |
 | `X-PasevSU-Attachments-SHA256` | `name=hash,name=hash` — omitted when there are no attachments |

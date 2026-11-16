@@ -50,6 +50,7 @@ Dynamic (computed per message):
 | Header | Value |
 | --- | --- |
 | `X-PasevSU-Evidence-ID` | UUID v4 |
+| `X-PasevSU-Case-ID` | `caseId` option (only when set — an empty case is omitted, never sent blank) |
 | `X-PasevSU-Body-SHA256` | SHA-256 of the message body (always) |
 | `X-PasevSU-Attachments-Count` | number of attachments (always — `0` is a claim, not an absence) |
 | `X-PasevSU-Attachments-SHA256` | comma-separated `name=sha256` list (only when attachments exist) |

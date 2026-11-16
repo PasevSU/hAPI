@@ -44,6 +44,7 @@ const DEFAULTS = Object.freeze({
   framework: 'Forensic-Mail',
   origin: 'PSEMP-Gateway',
   organization: 'PasevSU',
+  caseId: '',
   pgpFingerprint: '',
   // On by default so the marker is written without any per-message decision; the
   // extension's options page can turn it off and that stored value wins.
@@ -90,6 +91,7 @@ const HEADER_NAMES = Object.freeze({
   organization: 'X-PasevSU-Organization',
   war: 'X-PasevSU-WAR',
   evidenceId: 'X-PasevSU-Evidence-ID',
+  caseId: 'X-PasevSU-Case-ID',
   bodySha256: 'X-PasevSU-Body-SHA256',
   attachmentsCount: 'X-PasevSU-Attachments-Count',
   attachmentsSha256: 'X-PasevSU-Attachments-SHA256',
@@ -921,6 +923,9 @@ function buildHeaderLines({
   lines.push(`PasevSU-WAR: ${WAR_HEADER_TEXT}`);
   lines.push(`${HEADER_NAMES.war}: ${WAR_HEADER_TEXT}`);
   lines.push(`${HEADER_NAMES.evidenceId}: ${sanitizeHeaderValue(evidenceId)}`);
+  if (resolved.caseId) {
+    lines.push(`${HEADER_NAMES.caseId}: ${sanitizeHeaderValue(resolved.caseId)}`);
+  }
   lines.push(`${HEADER_NAMES.bodySha256}: ${bodyHash}`);
   if (attachmentEntries.length > 0) {
     const list = attachmentEntries

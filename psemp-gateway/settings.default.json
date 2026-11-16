@@ -3,6 +3,7 @@
   "framework": "Forensic-Mail",
   "origin": "PSEMP-Gateway",
   "organization": "PasevSU",
+  "caseId": "",
   "pgpFingerprint": "",
   "enableOts": true,
   "enableReceipt": true,

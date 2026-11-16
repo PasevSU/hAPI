@@ -8,6 +8,7 @@ const DEFAULTS = {
   framework: "Forensic-Mail",
   origin: "Thunderbird",
   organization: "PasevSU",
+  caseId: "",
   pgpFingerprint: "",
   enableOts: true,
   enableReceipt: true,
@@ -19,6 +20,7 @@ const FIELDS = {
   framework: document.getElementById("framework"),
   origin: document.getElementById("origin"),
   organization: document.getElementById("organization"),
+  caseId: document.getElementById("caseId"),
   pgpFingerprint: document.getElementById("pgpFingerprint"),
   enableOts: document.getElementById("enableOts"),
   enableReceipt: document.getElementById("enableReceipt"),
@@ -121,6 +123,7 @@ async function load() {
   FIELDS.framework.value = config.framework;
   FIELDS.origin.value = config.origin;
   FIELDS.organization.value = config.organization;
+  FIELDS.caseId.value = config.caseId;
   FIELDS.pgpFingerprint.value = config.pgpFingerprint;
   FIELDS.enableOts.checked = Boolean(config.enableOts);
   FIELDS.enableReceipt.checked = Boolean(config.enableReceipt);
@@ -217,6 +220,7 @@ async function save() {
     framework: FIELDS.framework.value.trim() || DEFAULTS.framework,
     origin: FIELDS.origin.value.trim() || DEFAULTS.origin,
     organization: FIELDS.organization.value.trim() || DEFAULTS.organization,
+    caseId: FIELDS.caseId.value.trim(),
     pgpFingerprint: normalizeFingerprint(FIELDS.pgpFingerprint.value),
     enableOts: FIELDS.enableOts.checked,
     enableReceipt: FIELDS.enableReceipt.checked,
@@ -284,6 +288,7 @@ async function exportSettings() {
       framework: config.framework,
       origin: config.origin,
       organization: config.organization,
+      caseId: config.caseId,
       pgpFingerprint: config.pgpFingerprint,
       enableOts: config.enableOts,
       enableReceipt: config.enableReceipt,
