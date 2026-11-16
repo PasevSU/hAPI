@@ -209,6 +209,49 @@ Rules that fall out of the table:
   `[...(details.customHeaders || []), ...newLines]`; a second `onBeforeSend` fire filters
   out our own names first so a message never carries a header twice.
 
+### 4b. An over-long value travels as chunks, never on one line
+
+RFC 5322 §2.1.1 caps a header line at **998 octets**, and Thunderbird does not fold a custom
+header for us: `sanitizeCustomHeaderValue()` in `ext-compose` only trims. So a value we cannot
+make short — a 14-attachment digest block is ~1.7 kB, the encrypted copy ~2.5 kB — travels as
+several lines instead of one illegal one.
+
+| Piece | Name | Value |
+| --- | --- | --- |
+| first | `X-PasevSU-Sha256` | the first ≤ 900 characters |
+| continuation | `X-PasevSU-Sha256-C2`, `-C3`, … | the next ≤ 900, in order |
+| count | `X-PasevSU-Sha256-Chunks` | `2`, `3`, … |
+
+Rules the two engines share (`background.js`, `api.js`):
+
+* **A value that already fits is emitted byte-identical.** Nothing is rewritten to make
+  room, so every short message and every existing fixture stays exactly as it was.
+* **The cut prefers a row boundary.** `splitLossless()` looks for the last `,` inside the
+  last 300 characters of the window and cuts there, so a chunk boundary rarely falls inside
+  a `name=hash` row. If no comma is close enough it cuts at the limit; reassembly does not
+  care where the cut landed.
+* **Reassembly is plain concatenation** of piece 1 then `-C2…-Cn`, with no separator. The
+  `<name>-Chunks` header states the count, so a reader can tell "short" from "truncated" —
+  a message that declares 3 chunks and carries 2 must fail, not verify a partial digest.
+* **Chunk names are derived, not registered.** `user.js` pre-registers the base names in the
+  Thunderbird header lists; `-C2…-Cn` are unbounded and exist only so the value can travel,
+  so registering them would be a lie about a fixed set.
+* **Non-ASCII never reaches the wire.** File tokens are percent-encoded by `headerToken()`
+  (`%D0%9F…`, exactly reversible, `%` itself encoded) and free text becomes an RFC 2047
+  encoded-word `=?UTF-8?B?…?=` in `headerSafeValue()`. Sanitising happens **before**
+  encoding, so a CR/LF is refused rather than hidden inside base64.
+* **Both emitters apply the rule twice.** `buildHeaders()` splits everything it produces,
+  and `enforceAllowedCustomHeaders()` splits again anything that reached the map by another
+  route. Two nets, because one forgotten path is an unsent letter.
+* **The verifier joins before it compares.** `headerGetJoined()` in `check-sent.cjs` reads
+  `<name>-Chunks` and concatenates the pieces before any hash comparison — otherwise it would
+  verify a truncated digest and call a correct message a forgery.
+
+This is registered as DEF-95. The emitter side is guarded by `tests/thunderbird-header-budget.cjs`
+(20 attachments: no value over the ceiling; with both nets disabled the same fixture reaches
+3439 characters), the verifier side by `psemp-gateway/test/check-sent.cjs` (14 attachments
+reassemble; a withheld chunk fails).
+
 ---
 
 ## 4a. The WAR line, the Subject marker, and the body notice

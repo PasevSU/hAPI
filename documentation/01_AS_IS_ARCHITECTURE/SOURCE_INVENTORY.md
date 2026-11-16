@@ -6,7 +6,7 @@
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят: „предназначението“ идва от първия коментар в самия файл, за да не твърди документът нещо, което кодът не казва.
 
-Общо: **131** backend модула · **20** HTTP компонента · **30** UI модула · **9** Python модула · **48** инструмента · **445** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
+Общо: **131** backend модула · **20** HTTP компонента · **30** UI модула · **9** Python модула · **48** инструмента · **446** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
 ### Backend модули (`hapi_enterprise/*.js`) (131)
 

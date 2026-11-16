@@ -229,6 +229,40 @@ MailExtension. They are not decoration: the gateway's `seal` step (see
 [Signing strength](#signing-strength)) fills them in and signs the result. `null`
 therefore means "not computed yet" and must never be read as "verified".
 
+### Long values travel as chunks
+
+RFC 5322 §2.1.1 caps a header line at **998 octets**, and Thunderbird does not fold a custom
+header for us — `sanitizeCustomHeaderValue()` in `ext-compose` only trims. A message with 14
+attachments produces a digest block of ~1.7 kB and an encrypted copy of ~2.5 kB, so those
+values leave on several lines:
+
+```
+X-PasevSU-Sha256: body - 1c4ef56…,evidence-001.pdf - 9ab3…,evidence-002.pdf - 77c1…
+X-PasevSU-Sha256-C2: ,evidence-003.pdf - 4f0e…,…
+X-PasevSU-Sha256-Chunks: 3
+```
+
+The first piece keeps the original name, continuations are `-C2`, `-C3`, …, and `-Chunks`
+states how many pieces there are. Reading the headers therefore means: read `-Chunks`, then
+concatenate `<name>` and `<name>-C2…-Cn` with no separator. `psemp-gateway/tools/check-sent.cjs`
+does that for you and fails a message that declares three chunks and carries two — a partial
+digest must never pass as a short one.
+
+Three details worth knowing:
+
+* **A value that fits is untouched.** Short messages emit exactly the same bytes as before
+  chunking existed, so nothing about a five-header mail changed.
+* **The cut prefers a row boundary** (a `,`) so a `name - hash` row is rarely split across
+  two lines. Reassembly does not depend on where the cut landed.
+* **`-C2…-Cn` are deliberately absent from `user.js`.** They are derived and unbounded;
+  registering them would claim a fixed set that does not exist. They need no entry to be sent
+  or displayed.
+
+Non-ASCII is handled before anything is written: filenames are percent-encoded
+(`%D0%9F…`, exactly reversible) and free text such as the Case ID becomes an RFC 2047
+encoded-word (`=?UTF-8?B?…?=`). Nothing 8-bit reaches the wire, and a CR/LF is stripped
+*before* encoding rather than hidden inside base64.
+
 ## Install
 
 1. Open Thunderbird (ESR ≥ 115).

@@ -148,9 +148,107 @@ function sanitizeHeaderValue(value) {
   return String(value).replace(/[\r\n]+/g, " ").trim();
 }
 
-// Filename safe for the comma-separated `name=hash` attachment header list.
+// Filename safe for the comma-separated `name=hash` attachment header list. Beyond the
+// `,`/`=` that would break the list, anything outside printable ASCII is percent-encoded:
+// a Cyrillic filename would otherwise make the whole value 8-bit, which RFC 5322 does not
+// allow in a header line, and the only other repair (encoding the entire value) would turn
+// the readable `name - hash` block into one base64 blob.
 function headerToken(value) {
-  return sanitizeHeaderValue(value).replace(/[,=]/g, "_");
+  const text = sanitizeHeaderValue(value).replace(/[,=]/g, "_");
+  return text.replace(/[^\x20-\x7E]|%/g, (ch) =>
+    [...new TextEncoder().encode(ch)]
+      .map((byte) => `%${byte.toString(16).toUpperCase().padStart(2, "0")}`)
+      .join("")
+  );
+}
+
+const BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+function base64FromBytes(bytes) {
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i];
+    const b1 = bytes[i + 1];
+    const b2 = bytes[i + 2];
+    out += BASE64_ALPHABET[b0 >> 2];
+    out += BASE64_ALPHABET[((b0 & 0x03) << 4) | ((b1 === undefined ? 0 : b1) >> 4)];
+    out += b1 === undefined ? "=" : BASE64_ALPHABET[((b1 & 0x0f) << 2) | ((b2 === undefined ? 0 : b2) >> 6)];
+    out += b2 === undefined ? "=" : BASE64_ALPHABET[b2 & 0x3f];
+  }
+  return out;
+}
+
+// Last resort for free-text values (a case id typed in Cyrillic, say). RFC 2047 encoded-word
+// is the legal way to carry non-ASCII in a header, and it stays reversible, so the forensic
+// header still says exactly what the user typed instead of a row of question marks.
+function headerSafeValue(value) {
+  const text = String(value == null ? "" : value);
+  if (!/[^\x20-\x7E]/.test(text)) {
+    return text;
+  }
+  return `=?UTF-8?B?${base64FromBytes(new TextEncoder().encode(text))}?=`;
+}
+
+/*
+ * RFC 5322 §2.1.1 caps a header line at 998 octets, and Thunderbird itself works to
+ * the same number: MimeMessageUtils.getReferences() trims References whenever it would
+ * exceed 986 characters plus the field name. A customHeaders value is NOT folded by the
+ * platform — ext-compose.js's sanitizeCustomHeaderValue() is a bare .trim() — so whatever
+ * comes back from onBeforeSend is written to the wire as one line, unchanged.
+ *
+ * Measured failure (14 attachments, long evidence file names): X-PasevSU-Sha256 came back
+ * at 1853 characters, X-PasevSU-Attachments-SHA256 at 1719 and X-PasevSU-Cripto-title at
+ * 2516. Three non-conforming lines in a message Thunderbird then would not send.
+ *
+ * The budget leaves room for the name and ": " inside 998. Nothing is dropped: an
+ * over-long value is cut into pieces and continued in <name>-C2, <name>-C3, ... with
+ * <name>-Chunks saying how many pieces exist. Reassembly is plain concatenation in
+ * suffix order — the cut never lands inside a multi-byte anything, because every value
+ * this add-on emits is ASCII.
+ */
+const HEADER_VALUE_MAX = 900;
+
+function splitLossless(text, limit) {
+  const parts = [];
+  let rest = text;
+  while (rest.length > limit) {
+    let cut = limit;
+    // Prefer to break after a row separator so no `file - hash` row is cut in half.
+    // Only taken when it does not produce a pathologically short piece.
+    const comma = rest.lastIndexOf(",", limit - 1);
+    if (comma >= limit >> 1) {
+      cut = comma + 1;
+    }
+    parts.push(rest.slice(0, cut));
+    rest = rest.slice(cut);
+  }
+  if (rest) {
+    parts.push(rest);
+  }
+  return parts;
+}
+
+/*
+ * One header in, one or more headers out. A value that fits is returned untouched, so
+ * small messages look exactly as they always did; only a value over the budget is split.
+ */
+function chunkHeaderValue(header) {
+  const name = header && header.name ? String(header.name) : "";
+  const value = header && header.value != null ? String(header.value) : "";
+  if (!name || value.length <= HEADER_VALUE_MAX) {
+    return [header];
+  }
+  const parts = splitLossless(value, HEADER_VALUE_MAX);
+  // Built directly, not through buildHeader(): the name was validated when the header was
+  // first made, and the continuation names only append `-Cn` to it, so they inherit that
+  // verdict. Re-running name validation here would also hide the names from the static
+  // scanner in test/custom-header-names.cjs, which reads literal buildHeader() arguments.
+  const chunked = parts.map((part, index) => ({
+    name: index === 0 ? name : `${name}-C${index + 1}`,
+    value: part,
+  }));
+  chunked.push({ name: `${name}-Chunks`, value: String(parts.length) });
+  return chunked;
 }
 
 // gpg prints fingerprints as uppercase hex with no separators, so a fingerprint
@@ -229,10 +327,11 @@ function buildDigestBlock(bodyHash, attachmentEntries, timestamp) {
 }
 
 /*
- * Rows are joined with "," and stay on ONE line: customHeaders carries
- * `{ name, value }` and every value goes through sanitizeHeaderValue(), which strips
- * CR/LF. `headerToken` already escapes "," and "=" out of file names, so the rows stay
- * unambiguous — the same convention X-PasevSU-Attachments-SHA256 uses.
+ * Rows are joined with "," and built as ONE value. `headerToken` already escapes "," and
+ * "=" out of file names, so the rows stay unambiguous — the same convention
+ * X-PasevSU-Attachments-SHA256 uses. The single value is then split across several header
+ * lines when it would break the RFC 5322 line limit (see chunkHeaderValue), so the reader
+ * must join `<name>` with `<name>-C2…-Cn` before parsing the rows.
  */
 function joinBlock(rows) {
   return rows.join(",");
@@ -520,7 +619,9 @@ async function buildManifest(
  * produced through buildHeader().
  */
 function buildHeader(name, value) {
-  return { name, value: sanitizeHeaderValue(value) };
+  // Strip CR/LF first, then make the value legal: sanitising after encoding would let a
+  // newline travel safely inside base64 and reappear on the far side.
+  return { name, value: headerSafeValue(sanitizeHeaderValue(value)) };
 }
 
 /*
@@ -570,7 +671,12 @@ async function enforceAllowedCustomHeaders(headers) {
     const name =
       header && typeof header === "object" ? header.name : String(header || "").split(":")[0];
     if (isAllowedCustomHeaderName(name)) {
-      kept.push(header);
+      // Second net on the RFC 5322 line budget. buildHeaders() already split every value
+      // it produced, so this only fires for a header that bypassed it — and it splits
+      // rather than truncates, because a shortened digest still looks like a digest.
+      kept.push(
+        ...(header && typeof header === "object" ? chunkHeaderValue(header) : [header])
+      );
     } else {
       dropped.push(String(name || "").trim());
     }
@@ -794,7 +900,10 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
   if (context.signedHeaders) {
     headers.push(buildHeader("X-PasevSU-Headers-SHA256", context.signedHeaders.headers_sha256));
   }
-  return headers;
+  // Every value passes the RFC 5322 line budget here, in one place, so a future header
+  // cannot reintroduce a line Thunderbird refuses to send. A value that fits is returned
+  // unchanged; only an over-long one is split (see chunkHeaderValue).
+  return headers.flatMap((header) => chunkHeaderValue(header));
 }
 
 /*

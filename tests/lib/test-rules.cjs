@@ -418,6 +418,7 @@ const RULES = [
   { id: "tag-version", area: "общо", title: "Tag version", owner: "tests/tag-version.cjs" },
   { id: "taxonomy", area: "общо", title: "Taxonomy", owner: "tests/taxonomy.cjs" },
   { id: "thunderbird-contract", area: "общо", title: "Thunderbird contract", owner: "tests/thunderbird-contract.cjs" },
+  { id: "thunderbird-header-budget", area: "общо", title: "Thunderbird header budget", owner: "tests/thunderbird-header-budget.cjs" },
   { id: "transfer-mirror", area: "трансфер", title: "Transfer mirror", owner: "tests/transfer-mirror.cjs" },
   { id: "tsa-breaker", area: "TSA", title: "Tsa breaker", owner: "tests/tsa-breaker.cjs" },
   { id: "tsa-client", area: "TSA", title: "Tsa client", owner: "tests/tsa-client.cjs" },

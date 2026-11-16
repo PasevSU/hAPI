@@ -111,6 +111,7 @@ const GUARDS = {
   'DEF-92': ['oversize-body.cjs'], // 413 не оставя отровена keep-alive връзка
   'DEF-93': ['thunderbird-contract.cjs', 'psemp-suites.cjs'], // разписката е `returnReceipt`, не забранена заглавка
   'DEF-94': ['thunderbird-contract.cjs'], // зареденото add-on се сверява със сорса по хеш и версия
+  'DEF-95': ['thunderbird-header-budget.cjs', 'psemp-suites.cjs'], // дълга заглавка се раздробява, а проверяващият я сглобява
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -201,6 +202,7 @@ const ANCHORS = {
   'DEF-92': { file: 'oversize-body.cjs', contains: 'следващата заявка по същата връзка' },
   'DEF-93': { file: 'thunderbird-contract.cjs', contains: 'sanitizeCustomHeaderName' },
   'DEF-94': { file: 'thunderbird-contract.cjs', contains: 'loadedAddonVersion' },
+  'DEF-95': { file: 'thunderbird-header-budget.cjs', contains: 'RFC_LIMIT' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

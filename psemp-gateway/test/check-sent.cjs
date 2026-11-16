@@ -249,6 +249,47 @@ check('a quoted-printable body part is decoded before it is compared', async () 
   return 'quoted-printable decoded';
 });
 
+/** Realistic evidence filenames; 14 of them push the `name=hash` list past the line limit. */
+function manyFiles(count = 14) {
+  return Array.from({ length: count }, (_, index) => ({
+    name: `evidence-2026-11-16-case-0001-document-number-${String(index + 1).padStart(3, '0')}-final.pdf`,
+    bytes: Buffer.from(`forensic payload ${index}`),
+  }));
+}
+
+check('a message with many attachments verifies across its header chunks', async () => {
+  // A 14-attachment list is ~1.7k characters, over RFC 5322 §2.1.1's 998-octet line limit,
+  // so the emitter splits it into `<name>`, `<name>-C2`, ... plus `<name>-Chunks`. Reading
+  // only the first piece would compare one chunk against every manifest entry and report a
+  // header that had "forgotten" most of the files.
+  const files = manyFiles();
+  const { headers, manifestBytes } = await runExtension({ files });
+  assert.ok(headers.has('X-PasevSU-Attachments-SHA256-C2'), 'the fixture must actually be chunked');
+  const chunks = headers.get('X-PasevSU-Attachments-SHA256-Chunks');
+  assert.strictEqual(chunks, '2', `expected 2 chunks, got ${chunks}`);
+
+  const result = inspectMessage(buildMessage({ headers, manifestBytes, attachmentParts: files }));
+  assert.deepStrictEqual(failing(result), [], `chunked message failed: ${failing(result).join(', ')}`);
+  return `${files.length} attachments across ${chunks} chunks`;
+});
+
+check('a message that declares chunks and withholds one does not pass', async () => {
+  // Truncation must be caught, not tolerated: a half-list would otherwise verify against a
+  // manifest that names every file, which is exactly the silent pass this tool exists for.
+  const files = manyFiles();
+  const { headers, manifestBytes } = await runExtension({ files });
+  const broken = new Map(headers);
+  broken.delete('X-PasevSU-Attachments-SHA256-C2');
+
+  const result = inspectMessage(buildMessage({ headers: broken, manifestBytes, attachmentParts: files }));
+  assert.strictEqual(result.ok, false, 'a broken chunk chain must not verify');
+  assert.ok(
+    failing(result).includes('Attachments-SHA256 header reassembles from its chunks'),
+    `expected the chunk check to fail, got: ${failing(result).join(', ')}`
+  );
+  return 'missing chunk caught';
+});
+
 check('an mbox is split into individual messages', async () => {
   const { headers, manifestBytes } = await runExtension();
   const one = buildMessage({ headers, manifestBytes });

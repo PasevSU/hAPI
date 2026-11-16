@@ -434,7 +434,57 @@ function sanitizeHeaderValue(value) {
 
 /** Filename safe for the comma-separated `name=hash` header list. */
 function headerToken(value) {
-  return sanitizeHeaderValue(value).replace(/[,=]/g, '_');
+  return sanitizeHeaderValue(value)
+    .replace(/[,=]/g, '_')
+    // Anything outside printable ASCII is percent-encoded: a header value byte must be
+    // 0x20-0x7E (RFC 5322 §2.1.1), and a Cyrillic filename would otherwise push an 8-bit
+    // byte onto the wire. `%` is escaped too so the decoding stays unambiguous.
+    .replace(/[^\x20-\x7E]|%/g, (ch) => {
+      const bytes = Buffer.from(ch, 'utf8');
+      let out = '';
+      for (const byte of bytes) out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+      return out;
+    });
+}
+
+/**
+ * RFC 5322 §2.1.1 caps a header line at 998 octets, and nothing in the delivery chain folds
+ * a custom header for us: Thunderbird's `sanitizeCustomHeaderValue` is a bare `.trim()`. A
+ * 14-attachment digest block measured 1853 characters on one line, which made the send
+ * abort. The budget below leaves room for the name and the colon.
+ */
+const HEADER_VALUE_MAX = 900;
+
+/** Split on a `,` row boundary when that keeps the piece at least half full. */
+function splitLossless(text, limit) {
+  const parts = [];
+  let rest = text;
+  while (rest.length > limit) {
+    const window = rest.slice(0, limit);
+    const cut = window.lastIndexOf(',');
+    const at = cut > limit / 2 ? cut + 1 : limit;
+    parts.push(rest.slice(0, at));
+    rest = rest.slice(at);
+  }
+  if (rest.length) parts.push(rest);
+  return parts;
+}
+
+/**
+ * Emit `<name>`, `<name>-C2`, ... plus `<name>-Chunks: N` when a value is over budget.
+ * Concatenating the pieces in order restores the value byte for byte, and a value that
+ * already fits is returned untouched.
+ */
+function chunkHeaderLine(line) {
+  const at = line.indexOf(':');
+  if (at <= 0) return [line];
+  const value = line.slice(at + 1).trim();
+  if (value.length <= HEADER_VALUE_MAX) return [line];
+  const name = line.slice(0, at);
+  const parts = splitLossless(value, HEADER_VALUE_MAX);
+  const out = parts.map((part, index) => `${index === 0 ? name : `${name}-C${index + 1}`}: ${part}`);
+  out.push(`${name}-Chunks: ${parts.length}`);
+  return out;
 }
 
 /* ------------------------------------------------------------------ *
@@ -998,7 +1048,9 @@ function buildHeaderLines({
     })}`
   );
   lines.push(`${HEADER_NAMES.headersSha256}: ${metadata.headers_sha256}`);
-  return lines;
+  // A message with many attachments overruns the 998-octet line limit, so every value is
+  // passed through the same budget the extension applies before it leaves this function.
+  return lines.flatMap(chunkHeaderLine);
 }
 
 /**

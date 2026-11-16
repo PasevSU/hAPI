@@ -112,6 +112,38 @@ function headerGet(headers, name) {
   return found;
 }
 
+/** Undo the RFC 2047 encoded-words the emitter uses for non-ASCII values (a Cyrillic case id). */
+function decodeEncodedWords(value) {
+  if (!value) return value;
+  return value.replace(/=\?UTF-8\?B\?([A-Za-z0-9+/=]+)\?=/gi, (whole, base64) =>
+    Buffer.from(base64, 'base64').toString('utf8')
+  );
+}
+
+/**
+ * Reassemble a value the emitter split across several header lines.
+ *
+ * RFC 5322 §2.1.1 caps a header line at 998 octets and Thunderbird does not fold a custom
+ * header for us, so an over-long digest block travels as `<name>`, `<name>-C2`, ... with the
+ * piece count in `<name>-Chunks`. Reading only `<name>` would verify a TRUNCATED digest and
+ * call it a mismatch — the failure mode this function exists to prevent.
+ *
+ * Returns null for a message that declares chunks and then withholds one: a broken chain
+ * must not pass as a short value. A message with no `<name>` at all returns null too, so
+ * callers that need to tell "absent" from "broken" read the `-Chunks` header themselves.
+ */
+function headerGetJoined(headers, name) {
+  const count = Number(headerGet(headers, `${name}-Chunks`));
+  if (!Number.isInteger(count) || count < 1) return decodeEncodedWords(headerGet(headers, name));
+  let joined = '';
+  for (let index = 1; index <= count; index += 1) {
+    const part = headerGet(headers, index === 1 ? name : `${name}-C${index}`);
+    if (part === null) return null;
+    joined += part;
+  }
+  return decodeEncodedWords(joined);
+}
+
 function decodeQuotedPrintable(text) {
   const bytes = [];
   const joined = text.replace(/=\n/g, '');
@@ -192,16 +224,16 @@ function inspectMessage(text) {
   );
 
   for (const name of HEX_FIELDS) {
-    const value = headerGet(headers, name) || '';
+    const value = headerGetJoined(headers, name) || '';
     add(`${name} is sha256 hex`, /^[0-9a-fA-F]{64}$/.test(value), value ? `${value.length} chars` : 'absent');
   }
 
   for (const [name, pattern, label] of SHAPED_FIELDS) {
-    const value = headerGet(headers, name) || '';
+    const value = headerGetJoined(headers, name) || '';
     add(`${name} is a ${label}`, pattern.test(value), value || 'absent');
   }
 
-  const claimedManifestHash = headerGet(headers, 'X-PasevSU-Manifest-SHA256') || '';
+  const claimedManifestHash = headerGetJoined(headers, 'X-PasevSU-Manifest-SHA256') || '';
   const manifestPart = parts.find((part) => partName(part).toLowerCase() === MANIFEST.toLowerCase());
 
   if (!manifestPart) {
@@ -232,10 +264,10 @@ function inspectMessage(text) {
   }
   add('manifest parses as JSON', true, `framework=${manifest.framework} version=${manifest.version}`);
 
-  const evidenceId = headerGet(headers, 'X-PasevSU-Evidence-ID') || '';
+  const evidenceId = headerGetJoined(headers, 'X-PasevSU-Evidence-ID') || '';
   add('manifest evidence-id matches header', manifest.evidence_id === evidenceId, `manifest=${manifest.evidence_id}`);
 
-  const merkle = headerGet(headers, 'X-PasevSU-Merkle-Root') || '';
+  const merkle = headerGetJoined(headers, 'X-PasevSU-Merkle-Root') || '';
   add('manifest merkle-root matches header', manifest.merkle_root === merkle, `manifest=${manifest.merkle_root}`);
 
   // Prove the manifest agrees with itself before any bytes are compared.
@@ -244,8 +276,16 @@ function inspectMessage(text) {
   }
 
   const claimed = Array.isArray(manifest.attachments) ? manifest.attachments : [];
-  const listed = headerGet(headers, 'X-PasevSU-Attachments-SHA256') || '';
-  if (claimed.length) {
+  // Reassembled across `<name>`/`<name>-C2…-Cn`: a 14-attachment message puts this value
+  // over the RFC 5322 line limit, so reading only the first piece used to look like a
+  // header that forgot most of its files.
+  const listedName = 'X-PasevSU-Attachments-SHA256';
+  const declaredChunks = Number(headerGet(headers, `${listedName}-Chunks`));
+  const listedRaw = headerGetJoined(headers, listedName);
+  const listed = listedRaw || '';
+  if (Number.isInteger(declaredChunks) && declaredChunks > 0 && listedRaw === null) {
+    add('Attachments-SHA256 header reassembles from its chunks', false, 'a chunk is missing');
+  } else if (claimed.length) {
     const names = claimed.map((entry) => entry.filename).join(',');
     add('Attachments-SHA256 header lists every manifest attachment', listed.split(',').length === claimed.length, names);
   }
