@@ -122,16 +122,17 @@ side-load: zip the four files (`manifest.json`, `background.js`, `options.html`,
 `pasevsu-forensic-headers@pasev.example.xpi` and place it in
 `<profile>\extensions\`.
 
-Thunderbird disables hand-placed add-ons by default. Add this to `user.js`
-alongside the header names, or the add-on registers as `userDisabled: true`:
+Thunderbird disables hand-placed add-ons by default. [`user.js`](user.js) ships the
+pref that turns that off, so the add-on stays enabled across restarts:
 
 ```js
 user_pref("extensions.autoDisableScopes", 0);
 ```
 
-Only the **default** profile is scanned for side-loads, so confirm your profile is
-the one Thunderbird actually starts (`Help → Troubleshooting Information → Profile
-Directory`).
+Without it the add-on registers as `userDisabled: true` — installed, listed, and
+doing nothing. Only the **default** profile is scanned for side-loads, so confirm
+your profile is the one Thunderbird actually starts
+(`Help → Troubleshooting Information → Profile Directory`).
 
 ## Checking that it is armed
 

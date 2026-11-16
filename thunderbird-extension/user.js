@@ -36,3 +36,10 @@ user_pref(
     "X-PasevSU-OTS",
   ].join(","),
 );
+
+// A profile side-load (an .xpi placed in <profile>\extensions\) is disabled by
+// default: Thunderbird writes the record with userDisabled: true, so the add-on
+// looks installed and does nothing. Zero removes that default for hand-placed
+// add-ons, so PSEMP stays armed across restarts with no manual re-enable in the
+// Add-ons Manager. Loading through "Debug Add-ons" does not need it.
+user_pref("extensions.autoDisableScopes", 0);
