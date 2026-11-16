@@ -279,8 +279,10 @@ node tests\docs-archive.cjs    # нищо историческо извън arch
 node tests\docs-owner.cjs      # един факт — един дом
 node tests\docs-size.cjs       # живи ≤ 200, нормативни ≤ 400 реда
 node tests\option-spec.cjs     # дескрипторът и config.yaml са едно
-node tests\option-coverage.cjs # всяка опция има читател, всеки env е обявен
-node tests\option-effects.cjs  # всяка опция има доказателство
+node tests\option-schema.cjs   # config.yaml е точно изходът на генератора, коментарите са запазени
+node tests\option-coverage.cjs # всяка опция има читател в изпълнявания код
+node tests\option-secrets.cjs  # тайните опции не излизат в лог
+node tests\option-effects.cjs  # обявеният читател е проверен, а ефектът — видян
 ```
 
 ## 12. Статус (към 0.69.228, в ход)
@@ -290,10 +292,15 @@ node tests\option-effects.cjs  # всяка опция има доказател
 | **D1** | ✔ готов | `scripts/docs-class.cjs` + `tests/docs-class.cjs`; всеки документ носи ред за клас |
 | **D2** | ✔ готов | 14 исторически документа в `07_RELEASE/archive/0.69/`; 6 живи връзки поправени; `doc-citations` не проверява `archive/` |
 | **D3** | ✔ готов | `scripts/options-reference.cjs` → `OPTIONS_REFERENCE.md` (44 опции, 5 преименувания) + `tests/options-reference.cjs`; генераторът и класовете влизат в `safe-release` преди матрицата |
-| **D4** | ✔ частично | `tests/docs-size.cjs` — жив ≤ 200, нормативен ≤ 400 реда; 10 документа в ратчет (таванът само пада). Архивът на затворените дефекти остава |
+| **D4** | ✔ готов | `tests/docs-size.cjs` — жив ≤ 200, нормативен ≤ 400 реда; 10 документа в ратчет (таванът само пада). Затворените дефекти са в `KNOWN_DEFECTS_ARCHIVE.md` (74 реда), а живият регистър е **40 реда** (отворените + последните 10); `known-defects`, `regression-guards` и `unfinished-register` четат ДВАТА файла, тоест архивът остава проверен |
 | **O1** | ✔ готов | `hapi_enterprise/option-spec.js` (44 опции: ключ, env, тип, подразбиране, тайна) + `tests/option-spec.cjs` — ключове/типове/подразбирания съвпадат с `config.yaml`, env е `UPPER(ключ)` или изрично преименуван, имената са уникални |
-| **O2–O4** | ☐ остава | генериране на `schema:`/`OPTION_ENV`, `option-coverage`, `option-secrets`, `option-effects` |
+| **O2** | ✔ готов | `scripts/option-schema.cjs` строи `options:` и `schema:` от дескриптора, пази коментарите и `--check` пада при разминаване; влиза в `safe-release` преди справочника. `tests/option-schema.cjs` пази `--check`, запазването на коментарите, писането на низ/число/булево и негативната проба |
+| **O3** | ✔ готов | `tests/option-coverage.cjs` (всяка опция се чете в изпълнявания код, без дескриптора, измислено име не минава) + `tests/option-secrets.cjs` (деветте тайни се прикриват по ключ и по име на променлива, обикновените остават четими). Намери DEF-89 — `_pass`/`_key`/`_secret` полета не се прикриваха |
+| **O4** | ✔ готов | `tests/option-effects.cjs` — обявеният читател (`readBy` в дескриптора) се сверява с файла; `min_free_mb`, `storage_mode` + `storage_mount_name` и `portal_skin` се проверяват с жив резултат; за опциите с `firstRunOnly` текстът на трите езика не може да твърди, че кодът не ги чете (DEF-90) |
 
-Забележка към D3: `start.js` още мапва опциите в четири стила (това е O2). Дотогава
-`OPTIONS_REFERENCE.md` е **документът на дълга** — всяко преименуване е изброено с причина, за да
-може O3 да провери, че всяка опция има читател.
+Забележка към D3: `start.js` още мапва опциите в четири стила (`optionText('x')`, таблица
+`OPTION_ENV`, таблица `PGP_PATH_ENV`, цикъл за `PGP_*`). Това е **остатъкът от O2**: генерирането
+на `options:`/`schema:` е факт, а сливането на четирите стила в една таблица не е — затова
+дескрипторът днес обявява КОЙ файл чете опцията (`readBy`) и `option-effects` го проверява, вместо
+да разчита на единен мапинг в `start.js`. `OPTIONS_REFERENCE.md` остава **документът на дълга**:
+всяко преименуване е изброено с причина, за да може O3 да провери, че всяка опция има читател.

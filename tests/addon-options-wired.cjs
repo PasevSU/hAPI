@@ -15,11 +15,14 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const addon = path.join(root, 'hapi_enterprise');
 
-// Остарели опции: стоят само за стари конфигурации. Всяка има причина и не бива да расте.
+// Остарели опции: не минават през обичайния канал (env / `options.<ключ>`) и се четат
+// САМО ВЕДНЪЖ, при първи старт, от `/data/options.json` (`firstRunSeed` в `server.js`).
+// Причината е конкретна за всяка, а преводът трябва да казва ТОВА, не че „никой не ги чете“
+// (DEF-90: точно това твърдение стоеше в трите езика и беше невярно).
 const OBSOLETE = {
-  username: 'входът е по самоличността на Home Assistant, не по локален потребител',
-  password: 'същото: локална парола би била втора, по-слаба врата',
-  db_name: 'базата е hapi.sqlite в /data, име не се избира',
+  username: 'само при първи старт: началният потребител на конзолата; след това входът е по самоличността на Home Assistant',
+  password: 'само при първи старт: паролата на началния потребител (иначе се генерира в api-credentials.txt)',
+  db_name: 'само при първи старт: адресът и заглавието на ПЪРВИЯ портал; базата винаги е hapi.sqlite',
 };
 
 // ── 1. Ключовете от схемата ───────────────────────────────────────────────
@@ -67,15 +70,18 @@ assert.deepEqual(
 );
 assert.equal(Object.keys(OBSOLETE).length, 3, 'броят на остарелите опции се промени — обнови анализа и този тест');
 
-// ── 4. Остаряла опция ЗАДЪЛЖИТЕЛНО лъже по-малко: преводът го казва ───────
+// ── 4. Рядко четена опция ЗАДЪЛЖИТЕЛНО лъже по-малко: преводът го казва ────
+// Изискването е двойно: текстът трябва да обясни КОГА се чете и да не твърди, че не се чете.
 const dict = (lang) => fs.readFileSync(path.join(addon, 'translations', lang + '.yaml'), 'utf8');
-for (const lang of ['bg', 'en']) {
+const LIE = /никой код не|kein code liest|no code reads/i;
+for (const lang of ['bg', 'en', 'de']) {
   const text = dict(lang);
   for (const key of Object.keys(OBSOLETE)) {
     const block = text.split(new RegExp('^  ' + key + ':', 'm'))[1] || '';
     const slice = block.slice(0, 400);
-    const honest = lang === 'bg' ? /не се ползва/i : /not used/i;
-    assert.match(slice, honest, `преводът на „${key}“ (${lang}) не казва, че опцията не се ползва`);
+    const honest = lang === 'bg' ? /първи старт/i : lang === 'de' ? /ersten Start/i : /first start/i;
+    assert.match(slice, honest, `преводът на „${key}“ (${lang}) не казва, че се чете при първи старт`);
+    assert.equal(LIE.test(slice), false, `преводът на „${key}“ (${lang}) твърди, че кодът не го чете`);
   }
 }
 

@@ -58,6 +58,9 @@ const plan = [
   ['Генератори · CHANGELOG', 'scripts/sync-addon-changelog.cjs'],
   ['Генератори · правила', 'scripts/gen-test-rules.cjs'],
   ['Генератори · документация', 'scripts/docs-index.cjs'],
+  // `options:`/`schema:` в `config.yaml` се строят от дескриптора (`option-spec.js`). Върви
+  // ПРЕДИ справочника: той чете точно тези две секции, а и двете са вход за `build-release`.
+  ['Генератори · схема', 'scripts/option-schema.cjs', ['--check']],
   // Справочникът на опциите се строи от `config.yaml` + преводите (D3) и трябва да е преди
   // класовете: той самият носи ред за клас, а `docs-class` е последният, който го проверява.
   ['Генератори · опции', 'scripts/options-reference.cjs'],

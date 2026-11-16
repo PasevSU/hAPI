@@ -3,7 +3,7 @@
 # 🏠 HOME ASSISTANT Portal Enterprise - hAPI Enterprise
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-yellow.svg?color=ff00d8)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Version](https://img.shields.io/badge/version-0.69.227-ff00d8.svg)](https://github.com/PasevSU/hAPI)
+[![Version](https://img.shields.io/badge/version-0.69.228-ff00d8.svg)](https://github.com/PasevSU/hAPI)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?color=ff00d8)](https://hacs.xyz)
 
 [![Home Assistant](https://img.shields.io/badge/.-HOME_ASSISTANT-blue?logo=homeassistant)](https://www.home-assistant.io/)
@@ -283,9 +283,9 @@ node hapi_enterprise\standalone.js
 | Парола на PGP ключа (по избор) | `pgp_key_pass` | — | Празно: секретният ключ се приема за незащитен. По-добре `!secret hapi_pgp_path_pass` към файл, отколкото паролата да стои тук. |
 | Криптиране на вътрешните пътища | `pgp_encrypt_paths` | `false` | `false`: пътищата в базата остават в открит вид; `true` изисква зареден секретен ключ — без ключ add-on-ът пак стартира (и пише `pgp.encryption.without-key` в лога), но първото криптиране пада с `PGP_SECRET_KEY_REQUIRED` (503), тоест нищо не остава „уж криптирано“. |
 | Криптиране на работната папка | `pgp_encrypt_workdir` | `false` | `false`: работните файлове се криптират само с вътрешния ключ; `true` ги обвива с PGP ключа (слой 2) и иска зареден секретен ключ. |
-| Потребителско име за конзолата (не се ползва — оставете празно) | `username` | — | Празно: при първи старт се създава конзолен потребител `api`. През Ingress се ползва HA акаунтът. |
-| Парола за конзолата (не се ползва — оставете празно) | `password` | — | Празно: при първи старт се генерира случайна парола и се записва в `api-credentials.txt` (права 0600). |
-| Име на базата (не се ползва — оставете празно) | `db_name` | `Files` | Именува първия портал (`Files`, slug `files`). Сменя се преди първия старт, ако трябва друго име. |
+| Потребителско име при първи старт | `username` | — | Празно: при първи старт се създава конзолен потребител `api`. През Ingress се ползва HA акаунтът. |
+| Парола при първи старт | `password` | — | Празно: при първи старт се генерира случайна парола и се записва в `api-credentials.txt` (права 0600). |
+| Име на първия портал (първи старт) | `db_name` | `Files` | Именува първия портал (`Files`, slug `files`). Сменя се преди първия старт, ако трябва друго име. |
 | Папка за резервни копия | `backup_folder` | — | Празно: `<хранилище>/backups` в папката на add-on-а. Относителен път се решава в `/share`. |
 | Огледална папка за архивите | `backup_mirror` | — | Празно: без второ копие на резервните копия. Всяко зададено копие се проверява с SHA-256. |
 | Второ копие на файловете (папка или s3) | `storage_mirror` | — | Празно: без второ копие на качените файлове. Папка се проверява и възстановява; `s3://bucket/prefix?endpoint=…&lock=дни` пише същото копие в S3-съвместимо хранилище с Object Lock. |
@@ -297,7 +297,7 @@ node hapi_enterprise\standalone.js
 | Публичен домейн | `public_domain` | — | Празно: само относителни адреси — порталите и QR кодовете работят в локалната мрежа, не от интернет. |
 | Публичен API шлюз | `public_gateway` | `true` | `false`: порт `8088` остава непубликуван. `true` отваря gateway-а за собствен reverse proxy. |
 | Адреси в същия origin | `public_same_origin` | `true` | `false`: абсолютните адреси се строят от `public_domain`. `true` дава относителни на адреса на HA. |
-| Роли на потребители | `user_roles` | `{"pasev-admin":"admin"}` | Празно: всеки Ingress потребител е `admin`. Картата е за понижаване, напр. `{"guest": "viewer"}`. |
+| Роли на потребители | `user_roles` | `{\"pasev-admin\":\"admin\"}` | Празно: всеки Ingress потребител е `admin`. Картата е за понижаване, напр. `{"guest": "viewer"}`. |
 | Роли на групи | `group_roles` | — | Празно: без карта на групи. HA не подава групи; reverse proxy, който ги добавя, може. |
 | Място за съхранение | `storage_location` | `share` | `addon_config` (подразбиране): данните са в папката на add-on-а и влизат в snapshot-ите на Supervisor. `share` ползва `/share/hapi/data` и е видимо през Samba; `media` ползва другата споделена папка. |
 | Подпапка за съхранение | `storage_subdirectory` | `hAPI/data` | `hapi_enterprise` е подразбираната подпапка (позволени са до три нива). Ако по-стара инсталация е пазила данните в предишната папка, add-on-ът продължава да ги ползва и пише `STORAGE_LEGACY_LOCATION`, вместо да стартира празен. |

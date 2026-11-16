@@ -105,6 +105,8 @@ const GUARDS = {
   'DEF-86': ['evidence-portal-qr.cjs'], // копието на QR енкодера е точно копие
   'DEF-87': ['static-cache.cjs'], // статиката е immutable само с версия в адреса, нищо не е `public`
   'DEF-88': ['static-etag.cjs'], // тялото живее в паметта, а ETag дава 304 без тяло
+  'DEF-89': ['option-secrets.cjs'], // тайните опции се прикриват в лога и по име на променлива
+  'DEF-90': ['option-effects.cjs'], // опция „само при първи старт“ не се описва като мъртва
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -189,12 +191,17 @@ const ANCHORS = {
   'DEF-86': { file: 'evidence-portal-qr.cjs', contains: 'evidence-portal' },
   'DEF-87': { file: 'static-cache.cjs', contains: 'immutable' },
   'DEF-88': { file: 'static-etag.cjs', contains: 'If-None-Match' },
+  'DEF-89': { file: 'option-secrets.cjs', contains: 'тайна опция не се прикрива в лога' },
+  'DEF-90': { file: 'option-effects.cjs', contains: 'не твърди, че кодът не го чете' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */
 function registry() {
   const rows = new Map();
-  for (const line of read('documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md').split(/\r?\n/)) {
+  for (const line of [
+  read('documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS.md'),
+  read('documentation/01_AS_IS_ARCHITECTURE/KNOWN_DEFECTS_ARCHIVE.md'),
+].join('\n').split(/\r?\n/)) {
     if (!/^\|\s*DEF-\d+\s*\|/.test(line)) continue;
     const cells = line.split('|').map((c) => c.trim());
     rows.set(cells[1], { area: cells[2], description: cells[3], severity: cells[4], status: cells[5] });

@@ -66,7 +66,10 @@ for (const id of ['DEF-09', 'DEF-10', 'DEF-11', 'DEF-12', 'DEF-13', 'DEF-14', 'D
 }
 
 // ── 7. Регистърът твърди същото за DEF-16 ─────────────────────────────────
-const register = fs.readFileSync(path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'KNOWN_DEFECTS.md'), 'utf8');
+const register = [
+  fs.readFileSync(path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'KNOWN_DEFECTS.md'), 'utf8'),
+  fs.readFileSync(path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'KNOWN_DEFECTS_ARCHIVE.md'), 'utf8'),
+].join('\n');
 assert.ok(/^\| DEF-16 \|.*Затворен \(0\.\d+\.\d+\) \|$/m.test(register), 'DEF-16 липсва или не е затворен в регистъра');
 assert.ok(fs.existsSync(path.join(root, 'tests', 'analysis-claims.cjs')), 'тестът, с който DEF-16 е затворен, трябва да съществува');
 
@@ -86,6 +89,9 @@ assert.ok(fs.existsSync(path.join(root, 'tests', 'analysis-claims.cjs')), 'те�
       if (entry.isDirectory()) { if (!['node_modules', 'archive', 'dist', 'release'].includes(entry.name)) walk(full); continue }
       if (!/\.(md|json|ya?ml|js|cjs|ps1)$/i.test(entry.name)) continue;
       if (path.basename(full) === 'KNOWN_DEFECTS.md') continue;
+      // Архивът е исторически: там редът ЗА DEF-02 цитира самата печатна грешка, за да я
+      // опише. Проверява се живият регистър, не записът на затворения дефект.
+      if (path.basename(full) === 'KNOWN_DEFECTS_ARCHIVE.md') continue;
       check(full);
     }
   };

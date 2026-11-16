@@ -16,7 +16,10 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const doc = fs.readFileSync(path.join(root, 'documentation', '07_RELEASE', 'UNFINISHED_TASKS_0.69.211.md'), 'utf8');
-const defects = fs.readFileSync(path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'KNOWN_DEFECTS.md'), 'utf8');
+const defects = [
+  fs.readFileSync(path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'KNOWN_DEFECTS.md'), 'utf8'),
+  fs.readFileSync(path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'KNOWN_DEFECTS_ARCHIVE.md'), 'utf8'),
+].join('\n');
 
 // ── 1. Нито един отворен дефект не е премълчан ─────────────────────────────
 // Клетките се режат по НЕЕКРАНИРАН `|`: в таблицата има код с `\|\|` (напр. условие

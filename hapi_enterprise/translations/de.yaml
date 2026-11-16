@@ -1,12 +1,14 @@
 configuration:
   # Nichts im Code liest diese beiden Optionen. Bisher versprach die Beschreibung einen
   # Konsolen-Login, den es nicht gibt — man legte ein Passwort im Klartext ohne Nutzen ab.
+  # Diese beiden Optionen werden EINMAL beim ersten Start aus `/data/options.json` gelesen —
+  # sie legen den ersten Konsolenbenutzer an. Danach bewirken sie nichts (DEF-90).
   username:
-    name: Konsolen-Benutzername (unbenutzt — leer lassen)
-    description: Nur für alte Konfigurationen. Kein Code liest ihn; die Anmeldung läuft über die Home-Assistant-Identität (user_roles / group_roles).
+    name: Konsolen-Benutzername beim ersten Start
+    description: Wird EINMAL beim ersten Start gelesen — als erster Konsolenbenutzer (Rechte read/download). Danach läuft die Anmeldung über die Home-Assistant-Identität (user_roles / group_roles); eine Änderung hier bewirkt nichts.
   password:
-    name: Konsolen-Passwort (unbenutzt — leer lassen)
-    description: Nur für alte Konfigurationen. Kein Code liest es. Hier kein echtes Passwort hinterlegen.
+    name: Passwort beim ersten Start
+    description: Wird EINMAL beim ersten Start gelesen — als Passwort des ersten Benutzers (8…200 Zeichen). Ist es leer oder zu kurz, wird ein Passwort erzeugt und in `/data/api-credentials.txt` gespeichert. Nach dem ersten Start bewirkt eine Änderung nichts.
   token:
     name: Admin-Token (erforderlich)
     description: >-
@@ -53,8 +55,8 @@ configuration:
       Datei erzeugten, per PGP verpackten Schlüssel). Erfordert einen geladenen Schlüssel.
       Ohne Schlüssel und Passphrase sind die Dateien nicht lesbar.
   db_name:
-    name: Datenbankname (unbenutzt — leer lassen)
-    description: Nur für alte Konfigurationen. Kein Code liest ihn: die Datenbank ist `hapi.sqlite` in /data, und das erste Portal übernimmt den in der Konsole vergebenen Namen. Eine Änderung benennt nichts um.
+    name: Name des ersten Portals (erster Start)
+    description: Wird EINMAL beim ersten Start gelesen — daraus entstehen Adresse und Titel des ersten Portals. Die Datenbank ist immer `hapi.sqlite` in `/data`; nach dem ersten Start benennt eine Änderung nichts um.
   memory_limit_mb:
     name: Node-Heap-Limit (MB)
     description: >-

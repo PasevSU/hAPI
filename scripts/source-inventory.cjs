@@ -135,10 +135,9 @@ function generate() {
     '',
     `Общо: **${sections[0].count}** backend модула · **${sections[1].count}** HTTP компонента · ` +
     `**${sections[2].count}** UI модула · **${sections[3].count}** Python модула · ` +
-    `**${sections[4].count}** инструмента · **${tests.length}** теста.`,
-    '',
-    'Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на',
-    'маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).',
+    `**${sections[4].count}** инструмента · **${tests.length}** теста. Архитектурните описания са в ` +
+    '[`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в ' +
+    '[`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).',
     '',
   ];
   for (const s of sections) lines.push(...s.head);

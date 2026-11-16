@@ -15,7 +15,7 @@ const path = require('node:path');
 const LEVELS = { error: 0, warn: 1, info: 2, debug: 3, trace: 4 };
 const NAMES = ['error', 'warn', 'info', 'debug', 'trace'];
 const SECRET_KEY =
-  /^(authorization|cookie|set-cookie|x-api-key|x-portal-key|token|admin_token|password|passwd|secret|api_key|apikey|portal_key|signature|private_key|key)$/i;
+  /^(authorization|cookie|set-cookie|x-api-key|x-portal-key|token|admin_token|password|passwd|secret)$|(^|[_-])(pass|passwd|password|secret|token|api[_-]?key|private[_-]?key|key|signature)$/i;
 const MAX_STRING = 2048;
 const MAX_ARRAY = 50;
 

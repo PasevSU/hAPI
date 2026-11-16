@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-<a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.227-ff00d8.svg" alt="Version" /></a>
+<a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.228-ff00d8.svg" alt="Version" /></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-informational" alt="Architectures">
@@ -248,9 +248,9 @@ this tab. Options apply on add-on restart.
 | PGP passphrase (optional) | `pgp_key_pass` | — | Empty: the secret key is treated as unprotected. Prefer `!secret hapi_pgp_path_pass` pointing at a file over putting the passphrase here. |
 | Encrypt internal file paths | `pgp_encrypt_paths` | `false` | `false`: storage paths stay in plaintext in the database; `true` requires a loaded secret key — without one the add-on still starts (and logs `pgp.encryption.without-key`), but the first encryption fails with `PGP_SECRET_KEY_REQUIRED` (503), so nothing is silently left unencrypted. |
 | Encrypt the portal work folder | `pgp_encrypt_workdir` | `false` | `false`: work files are encrypted with the internal key only; `true` wraps them with the PGP key (layer 2) and needs a loaded secret key. |
-| Console user name (not used — leave empty) | `username` | — | Empty: a standalone console user `api` is created on first start. Under Ingress the Home Assistant account is used. |
-| Console password (not used — leave empty) | `password` | — | Empty: a random password is generated on first start and written to `api-credentials.txt` (mode 0600). |
-| Database name (not used — leave empty) | `db_name` | `Files` | Names the first portal (`Files`, slug `files`). Change it before the first start to get another name. |
+| Console user name at first start | `username` | — | Empty: a standalone console user `api` is created on first start. Under Ingress the Home Assistant account is used. |
+| Password at first start | `password` | — | Empty: a random password is generated on first start and written to `api-credentials.txt` (mode 0600). |
+| Name of the first portal (first start) | `db_name` | `Files` | Names the first portal (`Files`, slug `files`). Change it before the first start to get another name. |
 | Backup folder | `backup_folder` | — | Empty: `<storage>/backups` inside the add-on data folder. A relative path resolves inside `/share`. |
 | Backup mirror folder | `backup_mirror` | — | Empty: no second copy of the database backups. Every configured copy is verified with SHA-256. |
 | Second copy of the files (folder or s3) | `storage_mirror` | — | Empty: no second copy of uploaded files. A folder is verified and repairable; `s3://bucket/prefix?endpoint=…&lock=дни` writes the same copy into S3-compatible storage with Object Lock. |
@@ -262,7 +262,7 @@ this tab. Options apply on add-on restart.
 | Public domain | `public_domain` | — | Empty: relative links only — portals and QR codes work on the local network, not from the internet. |
 | Public API gateway | `public_gateway` | `true` | `false`: port `8088` stays unpublished. `true` opens the add-on gateway for your own reverse proxy. |
 | Same-origin URLs | `public_same_origin` | `true` | `false`: absolute URLs are built from `public_domain`. `true` emits relative URLs on the HA host and port. |
-| User roles | `user_roles` | `{"pasev-admin":"admin"}` | Empty: every Ingress user is `admin`. The map is for demotion, e.g. `{"guest": "viewer"}`. |
+| User roles | `user_roles` | `{\"pasev-admin\":\"admin\"}` | Empty: every Ingress user is `admin`. The map is for demotion, e.g. `{"guest": "viewer"}`. |
 | Group roles | `group_roles` | — | Empty: no group mapping. Home Assistant does not send groups; a reverse proxy that adds them can. |
 | Storage location | `storage_location` | `share` | `addon_config` (default): data lives in the add-on folder and is included in Supervisor snapshots. `share` uses `/share/hapi/data` and is visible over Samba; `media` uses the other shared folder. |
 | Storage subdirectory | `storage_subdirectory` | `hAPI/data` | `hapi_enterprise` is the default subfolder (up to three levels are allowed). If an older installation kept data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |

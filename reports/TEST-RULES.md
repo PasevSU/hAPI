@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 437 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 441 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 197 |
+| общо | 201 |
 | портал | 48 |
 | GUI | 36 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (197)
+## общо (201)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -159,6 +159,10 @@
 | `office-processing` | Office processing | `tests/office-processing.cjs` |
 | `oidc-login` | Oidc login | `tests/oidc-login.cjs` |
 | `openapi-admin` | Openapi admin | `tests/openapi-admin.cjs` |
+| `option-coverage` | Option coverage | `tests/option-coverage.cjs` |
+| `option-effects` | Option effects | `tests/option-effects.cjs` |
+| `option-schema` | Option schema | `tests/option-schema.cjs` |
+| `option-secrets` | Option secrets | `tests/option-secrets.cjs` |
 | `option-spec` | Option spec | `tests/option-spec.cjs` |
 | `options-reference` | Options reference | `tests/options-reference.cjs` |
 | `packaged-docs` | Packaged docs | `tests/packaged-docs.cjs` |

@@ -1,12 +1,12 @@
 configuration:
-  # Нищо в кода не чете тези две опции. Дотук описанието им обещаваше „вход в конзолата“,
-  # какъвто няма — човек слагаше парола в plaintext без полза.
+  # These two options are read ONCE, on the first start, from `/data/options.json` — they seed
+  # the first console user. After that they do nothing (DEF-90).
   username:
-    name: Console user name (not used — leave empty)
-    description: Kept for old configurations only. No code reads it; sign-in goes through Home Assistant identity (user_roles / group_roles).
+    name: Console user name at first start
+    description: Read ONCE on the first start — as the first console user (read/download scopes). After that, sign-in goes through Home Assistant identity (user_roles / group_roles) and changing this value does nothing.
   password:
-    name: Console password (not used — leave empty)
-    description: Kept for old configurations only. No code reads it. Do not store a real password here.
+    name: Password at first start
+    description: Read ONCE on the first start — as the first user's password (8…200 characters). If it is empty or too short, a password is generated and written to `/data/api-credentials.txt`. After the first start, changing this value does nothing.
   token:
     name: Admin token (required)
     description: >-
@@ -50,8 +50,8 @@ configuration:
       Encrypts the file contents in the portal work folder (AES-256-GCM with a per-file key wrapped
       by PGP). Requires a loaded key. Without the key and passphrase the files cannot be read.
   db_name:
-    name: Database name (not used — leave empty)
-    description: Kept for old configurations only. No code reads it: the database is `hapi.sqlite` in /data, and the first portal takes the name you give it in the console. Changing this value renames nothing.
+    name: Name of the first portal (first start)
+    description: Read ONCE on the first start — it becomes the address and title of the first portal. The database is always `hapi.sqlite` in `/data`; after the first start, changing this value renames nothing.
   memory_limit_mb:
     name: Node heap limit (MB)
     description: >-

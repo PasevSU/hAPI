@@ -38,9 +38,12 @@ for (const entry of OPTIONS) {
   assert.ok(type, entry.key + ': има тип в `schema:`');
   assert.equal(entry.type, type, entry.key + ': типът в дескриптора е същият като в `schema:`');
   const cfgValue = declared.find((o) => o.key === entry.key).value;
-  // YAML пише низовете с кавички (`""`, `"Files"`), а дескрипторът е JavaScript — затова се
-  // сравнява СТОЙНОСТТА, не синтаксисът на езика, в който е записана.
-  const normalised = String(cfgValue).replace(/^(["'])(.*)\1$/, '$2');
+  // YAML пише низовете в кавички и екранира вътрешните (`"{\"a\":\"b\"}"`), а дескрипторът е
+  // JavaScript — затова се сравнява СТОЙНОСТТА: кавичките падат, екранирането се разгръща.
+  const normalised = String(cfgValue)
+    .replace(/^(["'])(.*)\1$/, '$2')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\');
   assert.equal(
     String(entry.def),
     normalised,

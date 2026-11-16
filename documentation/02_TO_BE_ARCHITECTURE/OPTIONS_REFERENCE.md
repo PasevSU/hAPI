@@ -31,14 +31,14 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 | `public_domain` | `PUBLIC_BASE_URL` † | низ, по избор | `""` | — |
 | `public_gateway` | `PUBLIC_GATEWAY` | вкл/изкл, по избор | `true` | — |
 | `public_same_origin` | `PUBLIC_SAME_ORIGIN` | вкл/изкл, по избор | `true` | — |
-| `user_roles` | `USER_ROLES` | низ, по избор | `'{"pasev-admin":"admin"}'` | — |
+| `user_roles` | `USER_ROLES` | низ, по избор | `"{\"pasev-admin\":\"admin\"}"` | — |
 | `group_roles` | `GROUP_ROLES` | низ, по избор | `""` | — |
-| `storage_location` | `STORAGE_LOCATION` | едно от: addon_config · media · share, **задължителна** | `share` | — |
-| `storage_subdirectory` | `STORAGE_SUBDIRECTORY` | шаблон `^[a-zA-Z0-9][a-zA-Z0-9_.-]*(/[a-zA-Z0-9][a-zA-Z0-9_.-]*){0,2}$`, **задължителна** | `hAPI/data` | — |
-| `storage_mode` | `STORAGE_MODE` | едно от: local · ha_network, **задължителна** | `local` | — |
+| `storage_location` | `STORAGE_LOCATION` | едно от: addon_config · media · share, **задължителна** | `"share"` | — |
+| `storage_subdirectory` | `STORAGE_SUBDIRECTORY` | шаблон `^[a-zA-Z0-9][a-zA-Z0-9_.-]*(/[a-zA-Z0-9][a-zA-Z0-9_.-]*){0,2}$`, **задължителна** | `"hAPI/data"` | — |
+| `storage_mode` | `STORAGE_MODE` | едно от: local · ha_network, **задължителна** | `"local"` | — |
 | `storage_mount_name` | `STORAGE_MOUNT_NAME` | низ, по избор | `""` | — |
 | `min_free_mb` | `MIN_FREE_MB` | цяло 0…1048576, **задължителна** | `1000` | — |
-| `log_level` | `LOG_LEVEL` | едно от: error · warn · info · debug · trace, **задължителна** | `info` | — |
+| `log_level` | `LOG_LEVEL` | едно от: error · warn · info · debug · trace, **задължителна** | `"info"` | — |
 | `config_dir` | `HAPI_CONFIG_DIR` † | низ, по избор | `""` | — |
 | `evidence_portal_deploy` | `EVIDENCE_PORTAL_DEPLOY` | вкл/изкл, по избор | `true` | — |
 | `tsa_enabled` | `TSA_ENABLED` | вкл/изкл, по избор | `true` | — |
@@ -48,10 +48,10 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 | `signing_key` | `SIGNING_KEY` | низ, по избор | `""` | — |
 | `encrypt_files` | `ENCRYPT_FILES` | вкл/изкл, по избор | `false` | — |
 | `portal_folder_copy` | `PORTAL_FOLDER_COPY` | вкл/изкл, по избор | `false` | — |
-| `portal_skin` | `PORTAL_SKIN` | едно от: classic · modern, **задължителна** | `classic` | — |
+| `portal_skin` | `PORTAL_SKIN` | едно от: classic · modern, **задължителна** | `"classic"` | — |
 | `tls_cert` | `TLS_CERT` | низ, по избор | `""` | — |
 | `tls_key` | `TLS_KEY` | низ, по избор | `""` | — |
-| `visitor_ip_mode` | `VISITOR_IP_MODE` | шаблон `^(hashed|masked|full)?$`, по избор | `hashed` | — |
+| `visitor_ip_mode` | `VISITOR_IP_MODE` | шаблон `^(hashed|masked|full)?$`, по избор | `"hashed"` | — |
 | `visitor_retention_days` | `VISITOR_RETENTION_DAYS` | цяло 0…3650, по избор | `90` | — |
 | `visitor_geoip_path` | `GEOIP_DB_PATH` † | низ, по избор | `""` | — |
 
@@ -114,23 +114,23 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 
 - **Тип:** низ, по избор · **По подразбиране:** `""`
 - **Променлива:** `USERNAME` (по правилото `UPPER(ключ)`)
-- **Име в картата на add-on-а:** Потребителско име за конзолата (не се ползва — оставете празно)
-- **Описание:** Остава само за стари конфигурации. Никой код не го чете; входът става чрез самоличността на Home Assistant (user_roles / group_roles).
+- **Име в картата на add-on-а:** Потребителско име при първи старт
+- **Описание:** Ползва се ВЕДНЪЖ при първия старт — началният потребител на конзолата (права read/download). След това входът става чрез самоличността на Home Assistant (user_roles / group_roles) и смяната тук не прави нищо.
 
 ### `password`
 
 - **Тип:** тайна (низ), по избор · **По подразбиране:** `""`
 - **Променлива:** `PASSWORD` (по правилото `UPPER(ключ)`)
-- **Име в картата на add-on-а:** Парола за конзолата (не се ползва — оставете празно)
-- **Описание:** Остава само за стари конфигурации. Никой код не я чете. Не слагайте истинска парола тук.
+- **Име в картата на add-on-а:** Парола при първи старт
+- **Описание:** Ползва се ВЕДНЪЖ при първия старт — паролата на началния потребител (8…200 знака). Ако е празна или по-къса, паролата се генерира и се записва в `/data/api-credentials.txt`. След първия старт смяната тук не прави нищо.
 - **Тайна:** да — не се логва, не се връща от `api-info`, не влиза в диагностичния пакет
 
 ### `db_name`
 
 - **Тип:** низ, по избор · **По подразбиране:** `"Files"`
 - **Променлива:** `DB_NAME` (по правилото `UPPER(ключ)`)
-- **Име в картата на add-on-а:** Име на базата (не се ползва — оставете празно)
-- **Описание:** Остава само за стари конфигурации. Никой код не го чете: базата е `hapi.sqlite` в /data, а първият портал носи името, което му дадеш в конзолата. Смяната на стойността не преименува нищо.
+- **Име в картата на add-on-а:** Име на първия портал (първи старт)
+- **Описание:** Ползва се ВЕДНЪЖ при първия старт — от него се правят адресът и заглавието на първия портал. Базата винаги е `hapi.sqlite` в `/data`; след първия старт смяната тук не преименува нищо.
 
 ### `backup_folder`
 
@@ -212,7 +212,7 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 
 ### `user_roles`
 
-- **Тип:** низ, по избор · **По подразбиране:** `'{"pasev-admin":"admin"}'`
+- **Тип:** низ, по избор · **По подразбиране:** `"{\"pasev-admin\":\"admin\"}"`
 - **Променлива:** `USER_ROLES` (по правилото `UPPER(ключ)`)
 - **Име в картата на add-on-а:** Роли на потребители
 - **Описание:** Опционална JSON карта от идентичност на Home Assistant към роля. Ключът се търси в `X-Remote-User-Name`, после в `X-Remote-User-Id`, после в `X-Remote-User-Display-Name`. По подразбиране всеки Ingress потребител е admin — ползвайте я само за понижаване, напр. {"guest": "viewer"}. Роли: `admin`, `operator`, `viewer` и съдебните `judge`, `prosecutor`, `clerk`, `expert`. Съдебните роли САМО четат доказателства и веригата на пазене; изключение е `expert`, който може да представи становище. Непозната роля се отхвърля, за да не даде права правописна грешка. В това разпределение картата е попълнена (потребителят на инсталацията → `admin`) — това е стойността, с която add-on-ът е изпитан.
@@ -226,21 +226,21 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 
 ### `storage_location`
 
-- **Тип:** едно от: addon_config · media · share, **задължителна** · **По подразбиране:** `share`
+- **Тип:** едно от: addon_config · media · share, **задължителна** · **По подразбиране:** `"share"`
 - **Променлива:** `STORAGE_LOCATION` (по правилото `UPPER(ключ)`)
 - **Име в картата на add-on-а:** Място за съхранение
 - **Описание:** Къде живеят документите и базата. `addon_config` (подразбиране) е собствената папка на add-on-а (/config в контейнера) и влиза в snapshot-ите на Supervisor; `share` е споделената папка на Home Assistant (видима през Samba); `media` е другата споделена папка.
 
 ### `storage_subdirectory`
 
-- **Тип:** шаблон `^[a-zA-Z0-9][a-zA-Z0-9_.-]*(/[a-zA-Z0-9][a-zA-Z0-9_.-]*){0,2}$`, **задължителна** · **По подразбиране:** `hAPI/data`
+- **Тип:** шаблон `^[a-zA-Z0-9][a-zA-Z0-9_.-]*(/[a-zA-Z0-9][a-zA-Z0-9_.-]*){0,2}$`, **задължителна** · **По подразбиране:** `"hAPI/data"`
 - **Променлива:** `STORAGE_SUBDIRECTORY` (по правилото `UPPER(ключ)`)
 - **Име в картата на add-on-а:** Подпапка за съхранение
 - **Описание:** Подпапка в избраното място; по подразбиране `hapi_enterprise`, тоест `/config/hapi_enterprise` при `addon_config`. Позволени са до три нива (напр. `documents/hapi/data`). Ако преди обновяването данните са били в старата папка, add-on-ът продължава да ги ползва и пише STORAGE_LEGACY_LOCATION в лога, вместо да стартира с празна база.
 
 ### `storage_mode`
 
-- **Тип:** едно от: local · ha_network, **задължителна** · **По подразбиране:** `local`
+- **Тип:** едно от: local · ha_network, **задължителна** · **По подразбиране:** `"local"`
 - **Променлива:** `STORAGE_MODE` (по правилото `UPPER(ключ)`)
 - **Име в картата на add-on-а:** Режим на съхранение
 - **Описание:** local използва директно монтираната папка; ha_network изисква активен мрежов storage mount в Home Assistant.
@@ -261,7 +261,7 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 
 ### `log_level`
 
-- **Тип:** едно от: error · warn · info · debug · trace, **задължителна** · **По подразбиране:** `info`
+- **Тип:** едно от: error · warn · info · debug · trace, **задължителна** · **По подразбиране:** `"info"`
 - **Променлива:** `LOG_LEVEL` (по правилото `UPPER(ключ)`)
 - **Име в картата на add-on-а:** Ниво на логове
 - **Описание:** error, warn, info, debug или trace. debug добавя по един ред на HTTP заявка; trace е за много подробна диагностика. Файловете се пишат в logs/ в папката на add-on-а.
@@ -331,7 +331,7 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 
 ### `portal_skin`
 
-- **Тип:** едно от: classic · modern, **задължителна** · **По подразбиране:** `classic`
+- **Тип:** едно от: classic · modern, **задължителна** · **По подразбиране:** `"classic"`
 - **Променлива:** `PORTAL_SKIN` (по правилото `UPPER(ключ)`)
 - **Име в картата на add-on-а:** Кожа на публичната страница на портала
 - **Описание:** classic — изпитаният стил (по подразбиране, нищо не се променя). modern — втората кожа: стъклени карти, едра типография, люспести бутони и мрежа от карти за файловете. Двете ползват един и същ HTML — сменя се само стилът, който QR кодът отваря.
@@ -352,7 +352,7 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 
 ### `visitor_ip_mode`
 
-- **Тип:** шаблон `^(hashed|masked|full)?$`, по избор · **По подразбиране:** `hashed`
+- **Тип:** шаблон `^(hashed|masked|full)?$`, по избор · **По подразбиране:** `"hashed"`
 - **Променлива:** `VISITOR_IP_MODE` (по правилото `UPPER(ключ)`)
 - **Име в картата на add-on-а:** Сензори · режим на IP
 - **Описание:** Какво се пази от адреса на посетителя: hashed (необратим хеш, по подразбиране), masked (мрежа/16) или full (пълен адрес — лични данни). Празно → подразбирането. Същото се задава и от конзолата: Настройки → Сензори.
@@ -391,4 +391,4 @@ _Генериран от `hapi_enterprise/config.yaml` и `translations/bg.yaml`
 - Не твърди, че валидацията е на едно място — днес `runtime-config.js` пази втори списък с
   граници (`maxUploadMb`, `maxJobs` …). Това е O-06 и още не е затворено.
 
-_Версия на изданието при генериране: 0.69.227._
+_Версия на изданието при генериране: 0.69.228._

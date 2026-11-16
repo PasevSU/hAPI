@@ -18,7 +18,10 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const doc = path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'KNOWN_DEFECTS.md');
-const text = fs.readFileSync(doc, 'utf8');
+// Живият регистър пази отворените и последните 10 затворени; останалите са в архива.
+// Четат се ЗАЕДНО, иначе архивът излиза от проверката ("затворен без доказателство").
+const archiveDoc = path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'KNOWN_DEFECTS_ARCHIVE.md');
+const text = [fs.readFileSync(doc, 'utf8'), fs.existsSync(archiveDoc) ? fs.readFileSync(archiveDoc, 'utf8') : ''].join('\n');
 
 // ── 1. Версията е текущата ──────────────────────────────────────────────────
 const version = (fs.readFileSync(path.join(root, 'hapi_enterprise', 'config.yaml'), 'utf8').match(/^version:\s*"?([0-9.]+)"?/m) || [])[1];

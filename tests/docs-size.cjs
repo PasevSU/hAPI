@@ -24,7 +24,7 @@ const LIMIT = { жив: 200, нормативен: 400 };
 // Дългът днес (измерен на 0.69.227). Всяко число тук е ОПРАВДАНИЕ да не се пипа сега, не право
 // да расте. Маха се, когато документът слезе под нормата.
 const CEILING = {
-  '01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md': 272, // генериран: един ред на файл
+  '01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md': 271, // генериран: един ред на файл
   '01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md': 216, // живият отчет за състоянието
   '02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md': 866, // нормативен, чака разделяне по договор
   '02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md': 450, // генериран: един ред на операция
