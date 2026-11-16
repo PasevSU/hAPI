@@ -70,10 +70,10 @@ let settingsCache = null;
  */
 function loadSettings(file = SETTINGS_PATH) {
   if (file === SETTINGS_PATH && settingsCache) return settingsCache;
-  let parsed = {};
+  let parsed;
   try {
     parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (error) {
+  } catch {
     parsed = {};
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) parsed = {};
@@ -102,6 +102,12 @@ const HEADER_NAMES = Object.freeze({
   sha256Block: 'X-PasevSU-Sha256',
   criptoEngine: 'X-PasevSU-Cripto-Engine',
   criptoTitle: 'X-PasevSU-Cripto-title',
+  created: 'X-PasevSU-Created',
+  expires: 'X-PasevSU-Expires',
+  nonce: 'X-PasevSU-Nonce',
+  sequence: 'X-PasevSU-Sequence',
+  canary: 'X-PasevSU-Canary',
+  headersSha256: 'X-PasevSU-Headers-SHA256',
 });
 
 /** Standard MDN header (RFC 8098), sent with `X-PasevSU-Receipt: requested`. */
@@ -326,11 +332,16 @@ function buildManifest({
   evidenceId,
   timestamp,
   blake3 = null,
+  replay = null,
+  signedHeaders = null,
+  provenance = null,
 } = {}) {
   const resolved = resolveConfig(config);
   // Key order is a contract: `thunderbird-extension/background.js` writes the same
   // shape with SHA3-512/BLAKE3 left null, because Web Crypto cannot compute them.
   // The gateway recomputes those slots here, so one manifest shape serves both.
+  // Everything from `algorithms` down was APPENDED in PSEMP 1.1 (see PROTOCOL.md §5);
+  // appending keeps every hash the extension already published recomputable.
   return {
     framework: FRAMEWORK,
     version: resolved.version,
@@ -345,6 +356,17 @@ function buildManifest({
     merkle_root: merkle,
     timestamp: timestamp || new Date().toISOString(),
     evidence_id: evidenceId,
+    algorithms: buildAlgorithms(),
+    provenance:
+      provenance ||
+      buildProvenance({
+        recipient: replay && replay.recipient,
+        evidenceId,
+        issuedAt: replay && replay.issued_at,
+        organization: resolved.organization,
+      }),
+    signed_headers: signedHeaders || null,
+    replay: replay || null,
   };
 }
 
@@ -440,7 +462,7 @@ function encryptDigestBlock(code, rows, { merkleRoot = '' } = {}) {
 }
 
 /** Reverse {@link encryptDigestBlock}. Throws on a wrong code or a tampered token. */
-function decryptDigestBlock(code, token, { merkleRoot = '' } = {}) {
+function decryptDigestBlock(code, token, { merkleRoot: _merkleRoot = '' } = {}) {
   const parts = String(token == null ? '' : token).split('.');
   if (parts.length !== 4 || parts[0] !== 'gcm1') throw new Error('not a PasevSU gcm1 title');
   const decoder = crypto.createDecipheriv('aes-256-gcm', keyFromCode(CRYPTO_TITLE_LABEL, code), Buffer.from(parts[1], 'base64url'));
@@ -462,6 +484,294 @@ function buildMessageId({ evidenceId = '', timestamp = '' } = {}) {
 }
 
 /* ------------------------------------------------------------------ *
+ * PSEMP v1.1 — replay defence, cryptographic time, watermark and canary
+ *
+ * Four properties a mail signature alone cannot give you, all computable at compose
+ * time (so both engines agree and nothing is added after the manifest is hashed):
+ *
+ *   1. NONCE + SEQUENCE  — a message that was already accepted cannot be accepted
+ *      again. 128 bits of randomness make guessing hopeless; a per-sender monotonic
+ *      sequence makes a DELIBERATE rollback visible even if a nonce is re-used.
+ *   2. FRESHNESS WINDOW  — `issued_at` .. `expires_at` bounds how long the message is
+ *      a fresh claim. Expiry weakens NOTHING that proves integrity: the Merkle root,
+ *      the PGP signature and the OTS proof stay valid forever. It only says "this
+ *      copy is no longer a currently-issued statement".
+ *   3. RECIPIENT BINDING — the manifest names the mailbox this copy was produced for,
+ *      so a captured copy replayed to a different recipient is detectable, and a leak
+ *      can be traced to the copy it came from.
+ *   4. SIGNED METADATA   — `signed_headers` hashes Subject/From/To/Date/Message-ID and
+ *      the attachment set. A signature over the body alone lets someone re-send the
+ *      same signed body under a new subject or with a file swapped.
+ * ------------------------------------------------------------------ */
+
+const REPLAY_DEFAULTS = Object.freeze({
+  // One hour: long enough for any sane queue, short enough that a captured copy
+  // stops being a currently-issued statement the same working day.
+  maxAgeSeconds: 3600,
+  // Tolerated clock disagreement. Also caps how far in the FUTURE `issued_at` may
+  // sit, which is otherwise a trivial way to extend the freshness window.
+  maxSkewSeconds: 60,
+  // Nonces remembered in one process before the oldest are dropped.
+  windowSize: 4096,
+});
+
+/** The algorithms this build actually uses, recorded so a package is readable later. */
+function buildAlgorithms() {
+  return {
+    body: 'SHA-256',
+    extra: ['SHA3-512', 'BLAKE3'],
+    merkle: 'SHA-256',
+    engine: 'AES-256-GCM',
+    signature: 'OpenPGP',
+    timestamp: 'OpenTimestamps',
+  };
+}
+
+/**
+ * Boundary watermark: the recipient, the issue time and the message id written INSIDE
+ * the hashed manifest (not only in the visible headers), so a leaked copy still names
+ * the envelope it was minted for even if the headers were stripped in transit.
+ */
+function buildProvenance({ recipient = '', messageId = '', evidenceId = '', issuedAt = '', organization = '' } = {}) {
+  return {
+    framework: FRAMEWORK,
+    standard: 'PSEMP',
+    organization: sanitizeHeaderValue(organization),
+    evidence_id: sanitizeHeaderValue(evidenceId),
+    recipient: sanitizeHeaderValue(recipient),
+    message_id: sanitizeHeaderValue(messageId),
+    issued_at: sanitizeHeaderValue(issuedAt),
+  };
+}
+
+/** Render an address value — string, object, or list — as header text. */
+function addressText(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return sanitizeHeaderValue(value);
+  if (Array.isArray(value)) return value.map(addressText).filter(Boolean).join(', ');
+  return sanitizeHeaderValue(value.email || value.id || '');
+}
+
+/** Normalise a `to` value — string, array, or address objects — into a string list. */
+function normalizeRecipients(to) {
+  return (Array.isArray(to) ? to : String(to == null ? '' : to).split(','))
+    .map((value) => {
+      if (value && typeof value === 'object') return sanitizeHeaderValue(value.email || value.id || '');
+      return sanitizeHeaderValue(value);
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Hash the metadata a signature must cover as well as the body.
+ *
+ * `attachments_sha256` hashes the sorted `[filename, sha256]` pairs, so attachment
+ * ORDER never changes the result but a renamed or swapped file always does.
+ * `headers_sha256` covers the whole record and therefore does NOT cover itself.
+ */
+function buildSignedHeaders({
+  subject = '',
+  from = '',
+  to = [],
+  date = '',
+  messageId = '',
+  attachmentEntries = [],
+} = {}) {
+  const files = (attachmentEntries || [])
+    .map((entry) => [
+      String(entry && entry.filename == null ? '' : entry.filename),
+      String(entry && entry.sha256 == null ? '' : entry.sha256),
+    ])
+    .sort((left, right) => (left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0));
+  const record = {
+    subject: sanitizeHeaderValue(subject),
+    from: addressText(from),
+    to: normalizeRecipients(to),
+    date: sanitizeHeaderValue(date),
+    message_id: sanitizeHeaderValue(messageId),
+    attachments_sha256: sha256Hex(JSON.stringify(files)),
+  };
+  const digest = sha256Hex(JSON.stringify(record));
+  return Object.assign({}, record, { headers_sha256: digest });
+}
+
+/**
+ * Canary token in the `PASEVSU-YYYY-MM-DD-XXXXXXXX` shape.
+ *
+ * Derived, never random: the same nonce and sequence always give the same token, so
+ * it survives a re-computation, and nobody can predict the next one from today's.
+ * It replaces the "decoy file" idea — the same leak-tracing effect without putting
+ * fabricated documents into evidence.
+ */
+function buildCanary({ issuedAt = '', sequence = 0, organization = '', nonce = '' } = {}) {
+  const day = sanitizeHeaderValue(issuedAt).slice(0, 10) || new Date().toISOString().slice(0, 10);
+  const seed = sha256Hex(`PasevSU-Canary:v1|${sanitizeHeaderValue(organization)}|${day}|${sequence}|${nonce}`);
+  return `PASEVSU-${day}-${seed.slice(0, 8).toUpperCase()}`;
+}
+
+/**
+ * The replay record that travels in the manifest and in the `X-PasevSU-Nonce`,
+ * `-Created`, `-Expires` and `-Sequence` headers.
+ *
+ * `expires_at` is derived from `issued_at` + `maxAgeSeconds`, so a reader can check
+ * the deadline without trusting the sender's clock twice.
+ */
+function buildReplay({ nonce, sequence = 0, issuedAt, recipient = '', maxAgeSeconds } = {}) {
+  const parsed = Date.parse(issuedAt || '');
+  const stamp = Number.isFinite(parsed) ? new Date(parsed).toISOString() : new Date().toISOString();
+  const ttl = Number.isFinite(Number(maxAgeSeconds)) ? Number(maxAgeSeconds) : REPLAY_DEFAULTS.maxAgeSeconds;
+  const expires = new Date(Date.parse(stamp) + Math.max(0, ttl) * 1000).toISOString();
+  const value = sanitizeHeaderValue(nonce) || crypto.randomUUID().replace(/-/g, '');
+  return {
+    nonce: value,
+    sequence: Number.isFinite(Number(sequence)) ? Number(sequence) : 0,
+    issued_at: stamp,
+    expires_at: expires,
+    recipient: sanitizeHeaderValue(recipient),
+    single_use: true,
+  };
+}
+
+/**
+ * The seen-nonce store that makes replay detection possible.
+ *
+ * A nonce is only ever "already seen" relative to a store, so the store is an explicit
+ * argument rather than hidden state: one guard per receiving process, optionally
+ * backed by a JSON file so a restart does not forget every nonce it accepted.
+ */
+class ReplayGuard {
+  constructor(options = {}) {
+    this.limits = Object.assign({}, REPLAY_DEFAULTS, options.limits || {});
+    this.storePath = options.storePath ? path.resolve(String(options.storePath)) : '';
+    this.seen = new Map();
+    this.persist = options.persist !== false;
+    this.load();
+  }
+
+  /** Read the JSON store, ignoring a missing or unreadable file. */
+  load() {
+    if (!this.storePath) return this;
+    try {
+      const parsed = JSON.parse(fs.readFileSync(this.storePath, 'utf8'));
+      const entries = parsed && typeof parsed === 'object' ? parsed.seen || parsed : {};
+      for (const [key, value] of Object.entries(entries)) {
+        if (value && typeof value === 'object') this.seen.set(key, value);
+      }
+    } catch (error) {
+      if (error && error.code !== 'ENOENT') {
+        // A corrupt store must not silently accept everything: start empty and say so.
+        this.loadError = error.message || String(error);
+      }
+    }
+    return this;
+  }
+
+  /** Write the JSON store; a failure is reported, never thrown into a send path. */
+  save() {
+    if (!this.storePath || !this.persist) return this;
+    try {
+      fs.mkdirSync(path.dirname(this.storePath), { recursive: true });
+      const temporary = `${this.storePath}.tmp`;
+      fs.writeFileSync(temporary, `${JSON.stringify({ version: 1, seen: Object.fromEntries(this.seen) }, null, 2)}\n`, 'utf8');
+      fs.renameSync(temporary, this.storePath);
+      this.saveError = '';
+    } catch (error) {
+      this.saveError = error && error.message ? error.message : String(error);
+    }
+    return this;
+  }
+
+  /** Nonces are compared case-insensitively; they are hex or uuid-shaped. */
+  key(nonce) {
+    return sanitizeHeaderValue(nonce).toLowerCase();
+  }
+
+  /** Drop entries past retention and enforce the window size. */
+  prune(now = Date.now()) {
+    const retention = this.limits.maxAgeSeconds * 4 * 1000;
+    for (const [key, value] of this.seen) {
+      const at = Date.parse(value && value.seen_at);
+      if (Number.isFinite(at) && now - at > retention) this.seen.delete(key);
+    }
+    while (this.seen.size > this.limits.windowSize) {
+      const oldest = this.seen.keys().next();
+      if (oldest.done) break;
+      this.seen.delete(oldest.value);
+    }
+    return this;
+  }
+
+  /**
+   * Record and classify one nonce.
+   * @returns {{ok: boolean, verdict: string, detail: string}}
+   */
+  check(nonce, options = {}) {
+    const limits = Object.assign({}, this.limits, options.limits || {});
+    const now = options.now == null ? Date.now() : Number(options.now);
+    const key = this.key(nonce);
+    if (!key) {
+      return { ok: false, verdict: 'unknown', detail: 'the evidence carries no nonce' };
+    }
+
+    // Freshness first: a stale or future-dated copy is refused before it can poison
+    // the store with a nonce that was never legitimately issued now.
+    const issued = Date.parse(options.issuedAt || '');
+    if (Number.isFinite(issued)) {
+      if (issued - now > limits.maxSkewSeconds * 1000) {
+        return { ok: false, verdict: 'future-dated', detail: `issued_at is ${Math.round((issued - now) / 1000)}s ahead of the verifier clock` };
+      }
+      const age = now - issued;
+      if (age > limits.maxAgeSeconds * 1000) {
+        return { ok: false, verdict: 'expired', detail: `issued ${Math.round(age / 1000)}s ago, window is ${limits.maxAgeSeconds}s` };
+      }
+    }
+
+    const previous = this.seen.get(key);
+    if (previous) {
+      const sameRecipient =
+        sanitizeHeaderValue(previous.recipient).toLowerCase() ===
+        sanitizeHeaderValue(options.recipient).toLowerCase();
+      return {
+        ok: false,
+        verdict: 'replay',
+        detail: `nonce first seen at ${previous.seen_at}${sameRecipient ? ' for the same recipient' : ' for a DIFFERENT recipient'}`,
+      };
+    }
+
+    this.seen.set(key, {
+      seen_at: new Date(now).toISOString(),
+      issued_at: sanitizeHeaderValue(options.issuedAt),
+      expires_at: sanitizeHeaderValue(options.expiresAt),
+      recipient: sanitizeHeaderValue(options.recipient),
+      evidence_id: sanitizeHeaderValue(options.evidenceId),
+    });
+    this.prune(now);
+    this.save();
+    return { ok: true, verdict: 'first-use', detail: 'nonce not present in the store' };
+  }
+}
+
+/**
+ * Replay-check a manifest (or any evidence object carrying a `replay` block).
+ *
+ * Pass the SAME guard across messages — a fresh guard per call can only ever answer
+ * "first use", which is exactly the bug this protects against.
+ */
+function verifyReplay(manifest, options = {}) {
+  const guard = options.guard || new ReplayGuard(options);
+  const replay = (manifest && manifest.replay) || {};
+  const result = guard.check(replay.nonce || options.nonce, {
+    issuedAt: replay.issued_at || options.issuedAt,
+    expiresAt: replay.expires_at || options.expiresAt,
+    recipient: replay.recipient || options.recipient,
+    evidenceId: (manifest && manifest.evidence_id) || options.evidenceId,
+    limits: options.limits,
+    now: options.now,
+  });
+  return Object.assign({ nonce: replay.nonce || '', issued_at: replay.issued_at || '' }, result);
+}
+
+/* ------------------------------------------------------------------ *
  * Header construction
  * ------------------------------------------------------------------ */
 
@@ -477,6 +787,8 @@ function buildHeaderLines({
   merkle = '',
   manifestHash = '',
   timestamp = '',
+  replay = null,
+  signedHeaders = null,
 } = {}) {
   const resolved = resolveConfig(config);
   const lines = [];
@@ -515,6 +827,28 @@ function buildHeaderLines({
   const engine = cryptoEngineCode({ merkleRoot: merkle, bodySha256: bodyHash });
   lines.push(`${HEADER_NAMES.criptoEngine}: ${engine}`);
   lines.push(`${HEADER_NAMES.criptoTitle}: ${encryptDigestBlock(engine, block, { merkleRoot: merkle })}`);
+
+  /*
+   * PSEMP 1.1 — appended after the established block, so the 18-line order above is
+   * untouched. These four carry the replay defence, the freshness deadline, the
+   * per-sender sequence and the leak-tracing canary; `Headers-SHA256` is the digest of
+   * the metadata a signature must also cover (Subject/From/To/Date/Message-ID/files).
+   */
+  const record = replay || buildReplay({ issuedAt: stamp });
+  const metadata = signedHeaders || buildSignedHeaders({ date: stamp, messageId, attachmentEntries });
+  lines.push(`${HEADER_NAMES.created}: ${record.issued_at}`);
+  lines.push(`${HEADER_NAMES.expires}: ${record.expires_at}`);
+  lines.push(`${HEADER_NAMES.nonce}: ${record.nonce}`);
+  lines.push(`${HEADER_NAMES.sequence}: ${record.sequence}`);
+  lines.push(
+    `${HEADER_NAMES.canary}: ${buildCanary({
+      issuedAt: record.issued_at,
+      sequence: record.sequence,
+      organization: resolved.organization,
+      nonce: record.nonce,
+    })}`
+  );
+  lines.push(`${HEADER_NAMES.headersSha256}: ${metadata.headers_sha256}`);
   return lines;
 }
 
@@ -532,7 +866,22 @@ function buildHeaderLines({
  *        signer the message actually proves, so an empty option still yields a
  *        verifiable header instead of none.
  */
-function computeEvidence({ body = '', attachments = [], config, evidenceId, timestamp, signature } = {}) {
+function computeEvidence({
+  body = '',
+  attachments = [],
+  config,
+  evidenceId,
+  timestamp,
+  signature,
+  recipient,
+  subject = '',
+  from = '',
+  to = [],
+  date = '',
+  nonce,
+  sequence = 0,
+  maxAgeSeconds,
+} = {}) {
   const resolved = resolveConfig(config);
   if (!resolved.pgpFingerprint && signature != null) {
     resolved.pgpFingerprint = pgpResolvedFingerprint(signature);
@@ -565,6 +914,33 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
 
   const id = sanitizeHeaderValue(evidenceId) || crypto.randomUUID();
   const stamp = timestamp || new Date().toISOString();
+  // The recipient this copy is minted for: an explicit `recipient` wins, otherwise the
+  // first addressee. Either way the manifest names it, so a replayed copy shows a
+  // recipient that does not match the envelope it arrived in.
+  const primaryRecipient = sanitizeHeaderValue(recipient) || normalizeRecipients(to)[0] || '';
+  const replay = buildReplay({
+    nonce,
+    sequence,
+    issuedAt: stamp,
+    recipient: primaryRecipient,
+    maxAgeSeconds,
+  });
+  const messageId = buildMessageId({ evidenceId: id, timestamp: stamp });
+  const signedHeaders = buildSignedHeaders({
+    subject,
+    from,
+    to,
+    date: date || stamp,
+    messageId,
+    attachmentEntries: entries,
+  });
+  const provenance = buildProvenance({
+    recipient: replay.recipient,
+    messageId,
+    evidenceId: id,
+    issuedAt: replay.issued_at,
+    organization: resolved.organization,
+  });
   const manifest = buildManifest({
     config: resolved,
     bodyHash,
@@ -573,6 +949,9 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
     merkle,
     evidenceId: id,
     timestamp: stamp,
+    replay,
+    signedHeaders,
+    provenance,
   });
   const manifestText = serializeManifest(manifest);
   const manifestHash = manifestSha256(manifestText);
@@ -585,6 +964,8 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
     merkle,
     manifestHash,
     timestamp: stamp,
+    replay,
+    signedHeaders,
   });
   const digestBlock = buildDigestBlock({ bodySha256: bodyHash, attachmentEntries: entries, timestamp: stamp });
 
@@ -603,6 +984,22 @@ function computeEvidence({ body = '', attachments = [], config, evidenceId, time
     manifestText,
     manifestFilename: MANIFEST_FILENAME,
     manifestSha256: manifestHash,
+    // PSEMP 1.1 additions, surfaced so a caller does not have to re-derive them.
+    messageId,
+    nonce: replay.nonce,
+    sequence: replay.sequence,
+    issuedAt: replay.issued_at,
+    expiresAt: replay.expires_at,
+    recipient: replay.recipient,
+    canary: buildCanary({
+      issuedAt: replay.issued_at,
+      sequence: replay.sequence,
+      organization: resolved.organization,
+      nonce: replay.nonce,
+    }),
+    replay,
+    signedHeaders,
+    provenance,
     headerLines,
     headers: headerLines.map((line) => {
       const index = line.indexOf(':');
@@ -644,7 +1041,7 @@ async function sealManifest(manifestPath, options = {}) {
   try {
     claimed = JSON.parse(raw);
   } catch (error) {
-    throw new Error(`${path.basename(target)} is not valid JSON: ${error.message}`);
+    throw new Error(`${path.basename(target)} is not valid JSON: ${error.message}`, { cause: error });
   }
   if (!claimed || typeof claimed !== 'object' || !claimed.framework || !claimed.evidence_id) {
     throw new Error(`${path.basename(target)} is not a PasevSU manifest (framework/evidence_id missing).`);
@@ -784,9 +1181,35 @@ function applyToComposeDetails(details, options = {}) {
     body,
     attachments: options.attachments || [],
     config: options.config,
+    // Metadata travels into `signed_headers` so the digest covers Subject/From/To/Date
+    // and the Message-ID as well as the body — a signature over the body alone would
+    // let a recipient re-send it under a new subject.
+    subject: source.subject,
+    from: source.from,
+    to: source.to || source.recipients,
+    date: source.date,
+    recipient: options.recipient,
+    nonce: options.nonce,
+    sequence: options.sequence,
   });
   source.customHeaders = [...(source.customHeaders || []), ...evidence.headerLines];
+  // Opt-in only: rewriting the Subject is visible to every recipient and breaks mail
+  // threading, so the tag is never applied unless asked for explicitly (PROTOCOL.md §9).
+  if (options.tagSubject) {
+    source.subject = tagSubject(source.subject, evidence.bodySha256);
+  }
   return { details: source, evidence };
+}
+
+/**
+ * Add the short digest tag to a Subject line, e.g. `Case 2026 [34AEF2D1]`.
+ * Idempotent: running it twice does not stack tags.
+ */
+function tagSubject(subject, digest, length = 8) {
+  const tag = `[${String(digest || '').slice(0, length).toUpperCase()}]`;
+  const text = sanitizeHeaderValue(subject);
+  if (!tag || tag === '[]') return text;
+  return text.includes(tag) ? text : `${text} ${tag}`.trim();
 }
 
 /* ------------------------------------------------------------------ *
@@ -810,7 +1233,7 @@ function verifyManifest(manifestText, expectedSha256) {
  * Verify a manifest against the body/attachment bytes it claims to describe.
  * @returns {{ok: boolean, checks: Array<{name: string, ok: boolean, detail?: string}>}}
  */
-function verifyEvidence(manifest, { body = '', attachments = [] } = {}) {
+function verifyEvidence(manifest, { body = '', attachments = [], ...options } = {}) {
   const checks = [];
   const bodyHash = sha256Hex(typeof body === 'string' ? body : String(body == null ? '' : body));
   checks.push({
@@ -877,7 +1300,206 @@ function verifyEvidence(manifest, { body = '', attachments = [] } = {}) {
     detail: `manifest=${manifest.merkle_root} claimed=${claimedRoot}`,
   });
 
+  /*
+   * PSEMP 1.1 — the metadata digest. Checked against ITSELF first, so an edited
+   * `signed_headers` block cannot verify even when the bytes still match; when the
+   * caller supplies the live metadata it is compared with reality as well.
+   */
+  const signed = manifest.signed_headers;
+  if (signed && typeof signed === 'object') {
+    const { headers_sha256: declared, ...record } = signed;
+    const recomputed = sha256Hex(JSON.stringify(record));
+    checks.push({
+      name: 'headers-sha256',
+      ok: recomputed === declared,
+      detail: `manifest=${declared} recomputed=${recomputed}`,
+    });
+    if (options.subject !== undefined || options.messageId !== undefined || options.from !== undefined) {
+      const live = buildSignedHeaders({
+        subject: options.subject === undefined ? record.subject : options.subject,
+        from: options.from === undefined ? record.from : options.from,
+        to: options.to === undefined ? record.to : options.to,
+        date: options.date === undefined ? record.date : options.date,
+        messageId: options.messageId === undefined ? record.message_id : options.messageId,
+        attachmentEntries: claimed.map((entry) => ({ filename: entry.filename, sha256: entry.sha256 })),
+      });
+      checks.push({
+        name: 'headers-match-message',
+        ok: live.headers_sha256 === declared,
+        detail: `manifest=${declared} live=${live.headers_sha256}`,
+      });
+      // A subject or recipient that does not match the manifest means the message was
+      // re-sent under different metadata — exactly the forwarding attack the digest exists for.
+      checks.push({
+        name: 'subject-match',
+        ok: sanitizeHeaderValue(live.subject) === sanitizeHeaderValue(record.subject),
+        detail: `manifest=${record.subject} live=${live.subject}`,
+      });
+    }
+  }
+
+  // Replay needs a shared store to be meaningful, so it only runs when one is passed.
+  if (manifest.replay && typeof manifest.replay === 'object') {
+    const issued = Date.parse(manifest.replay.issued_at);
+    const expires = Date.parse(manifest.replay.expires_at);
+    checks.push({
+      name: 'replay-window-consistent',
+      ok: Number.isFinite(issued) && Number.isFinite(expires) && expires > issued,
+      detail: `issued_at=${manifest.replay.issued_at} expires_at=${manifest.replay.expires_at}`,
+    });
+    if (options.replayGuard) {
+      const verdict = verifyReplay(manifest, {
+        guard: options.replayGuard,
+        now: options.now,
+        limits: options.limits,
+      });
+      checks.push({
+        name: `replay:${verdict.verdict}`,
+        ok: verdict.ok,
+        detail: verdict.detail,
+      });
+    }
+  }
+
   return { ok: checks.every((check) => check.ok), checks };
+}
+
+/* ------------------------------------------------------------------ *
+ * Self-describing evidence package (PROTOCOL.md §12)
+ *
+ * One JSON file that answers "what is this, how was it made, how do I check it"
+ * without needing this codebase. Nothing in it is a new claim: every hash is copied
+ * from the manifest, so the package can be rebuilt from the manifest alone and a
+ * mismatch is visible rather than hidden.
+ * ------------------------------------------------------------------ */
+
+const PACKAGE_FILENAME = 'PasevSU_Package.json';
+
+/** Hash a sidecar (`.asc`, `.ots`) so the package names it precisely, or report absence. */
+function describeSidecar(filePath, role) {
+  const filename = path.basename(filePath);
+  try {
+    const bytes = fs.readFileSync(filePath);
+    return { role, filename, sha256: sha256Hex(bytes), bytes: bytes.length, present: true };
+  } catch {
+    return { role, filename, sha256: null, bytes: 0, present: false };
+  }
+}
+
+/**
+ * Build the self-describing package from an evidence bundle or a bare manifest.
+ *
+ * @param {object} evidence `computeEvidence()` output, or a manifest object.
+ * @param {{manifestPath?: string, bodyFilename?: string, pgpFingerprint?: string}} [options]
+ *        `manifestPath` lets the package record the real `.asc`/`.ots` digests.
+ * @returns {object} the package, ready for `JSON.stringify(pkg, null, 2)`
+ */
+function buildEvidencePackage(evidence, options = {}) {
+  const source = evidence && typeof evidence === 'object' ? evidence : {};
+  const manifest = source.manifest && typeof source.manifest === 'object' ? source.manifest : source;
+  const replay = manifest.replay && typeof manifest.replay === 'object' ? manifest.replay : {};
+  const provenance = manifest.provenance && typeof manifest.provenance === 'object' ? manifest.provenance : {};
+  const manifestText = source.manifestText || serializeManifest(manifest);
+  const manifestDigest = source.manifestSha256 || manifestSha256(manifestText);
+
+  const files = [
+    {
+      role: 'manifest',
+      filename: MANIFEST_FILENAME,
+      sha256: manifestDigest,
+      sha3_512: null,
+      note: 'hashes and links every other file listed here',
+    },
+    {
+      role: 'body',
+      filename: sanitizeHeaderValue(options.bodyFilename) || 'message.txt',
+      sha256: manifest.message_sha256 || '',
+      sha3_512: manifest.message_sha3_512 || null,
+    },
+  ];
+  for (const entry of Array.isArray(manifest.attachments) ? manifest.attachments : []) {
+    files.push({
+      role: 'attachment',
+      filename: entry.filename,
+      sha256: entry.sha256,
+      sha3_512: entry.sha3_512 || null,
+      blake3: entry.blake3 || null,
+    });
+  }
+
+  const manifestPath = options.manifestPath ? path.resolve(String(options.manifestPath)) : '';
+  const sidecar = manifestPath ? `${manifestPath}.asc` : `${MANIFEST_FILENAME}.asc`;
+  const proof = manifestPath ? `${manifestPath}.ots` : `${MANIFEST_FILENAME}.ots`;
+
+  // The canary is derived, never stored in the manifest: a bare manifest still
+  // carries every input, so recompute it instead of reporting an empty field.
+  const canary = sanitizeHeaderValue(options.canary)
+    || sanitizeHeaderValue(source.canary)
+    || (replay.nonce
+      ? buildCanary({
+        issuedAt: replay.issued_at || manifest.timestamp,
+        sequence: replay.sequence,
+        organization: provenance.organization,
+        nonce: replay.nonce,
+      })
+      : '');
+
+  return {
+    package: 'PasevSU_Evidence_Package',
+    standard: 'PSEMP',
+    version: manifest.version || DEFAULTS.version,
+    generated_at: new Date().toISOString(),
+    algorithms: buildAlgorithms(),
+    evidence: {
+      evidence_id: manifest.evidence_id || '',
+      message_sha256: manifest.message_sha256 || '',
+      message_sha3_512: manifest.message_sha3_512 || null,
+      merkle_root: manifest.merkle_root || '',
+      canary,
+      sequence: replay.sequence === undefined ? null : replay.sequence,
+      nonce: replay.nonce || '',
+      recipient: replay.recipient || provenance.recipient || '',
+      issued_at: replay.issued_at || manifest.timestamp || '',
+      expires_at: replay.expires_at || '',
+      single_use: replay.single_use === true,
+    },
+    provenance,
+    signed_headers: manifest.signed_headers || null,
+    files,
+    signature: {
+      algorithm: 'OpenPGP',
+      fingerprint: normalizeFingerprint(options.pgpFingerprint || ''),
+      detached: describeSidecar(sidecar, 'signature'),
+      note: 'A MailExtension cannot run gpg. The signature is written by psemp-gateway seal.',
+    },
+    timestamp: {
+      algorithm: 'OpenTimestamps',
+      proof: describeSidecar(proof, 'timestamp'),
+      note: 'A MailExtension cannot run ots. The proof is written by psemp-gateway stamp/seal.',
+    },
+    verify: [
+      'sha256(PasevSU_Manifest.json) must equal files[role=manifest].sha256',
+      'recompute SHA-256 of the body and of every attachment; each must equal its file entry',
+      'sort the hex leaves (body first, then attachments) and rebuild the Merkle root; it must equal evidence.merkle_root',
+      'gpg --verify PasevSU_Manifest.json.asc PasevSU_Manifest.json',
+      'ots verify PasevSU_Manifest.json.ots',
+      'refuse the message again if evidence.nonce was already accepted (replay defence)',
+      'compare evidence.recipient and signed_headers.to with the envelope the message arrived in',
+    ],
+  };
+}
+
+/** Serialise a package exactly as `buildEvidencePackage` shaped it. */
+function serializePackage(pkg) {
+  return JSON.stringify(pkg, null, 2);
+}
+
+/** Write the package next to a manifest; returns the path written. */
+function writeEvidencePackage(targetPath, evidence, options = {}) {
+  const target = path.resolve(String(targetPath || PACKAGE_FILENAME));
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, `${serializePackage(buildEvidencePackage(evidence, options))}\n`, 'utf8');
+  return target;
 }
 
 /* ------------------------------------------------------------------ *
@@ -908,13 +1530,13 @@ function otsStatus() {
   try {
     const entry = otsRequire.resolve('opentimestamps');
     return { available: true, entry, reason: null };
-  } catch (error) {
+  } catch {
     // The self-contained UMD bundle shipped beside ots-manager.js is a complete
     // runtime (v0.4.9), so a missing npm package is not a limitation.
     try {
       const entry = otsRequire.resolve('./opentimestamps.min.js');
       return { available: true, entry, reason: null, vendored: true };
-    } catch (inner) {
+    } catch {
       return {
         available: false,
         entry: null,
@@ -999,7 +1621,7 @@ function findExecutable(name) {
       const candidate = path.join(dir, name + extension);
       try {
         if (fs.statSync(candidate).isFile()) return candidate;
-      } catch (error) {
+      } catch {
         // Not here; keep looking.
       }
     }
@@ -1331,7 +1953,7 @@ function pgpInspectMessage(input) {
   } finally {
     try {
       fs.rmSync(dir, { recursive: true, force: true });
-    } catch (error) {
+    } catch {
       // A leftover temp directory is not worth failing a verification for.
     }
   }
@@ -1696,9 +2318,45 @@ async function selfTest() {
       `  "merkle_root": "${evidence.merkleRoot}",`,
       '  "timestamp": "2026-01-01T00:00:00.000Z",',
       '  "evidence_id": "11111111-2222-4333-8444-555555555555"',
-      '}',
     ].join('\n');
-    assert(evidence.manifestText === expectedManifest, 'manifest serialisation drifted from the extension contract');
+    // The PSEMP v1.1 block is APPENDED after evidence_id, so the text above stays the
+    // literal contract and the tail is asserted in place rather than re-typed by hand.
+    const tail = JSON.stringify(
+      {
+        algorithms: evidence.manifest.algorithms,
+        provenance: evidence.manifest.provenance,
+        signed_headers: evidence.manifest.signed_headers,
+        replay: evidence.manifest.replay,
+      },
+      null,
+      2
+    )
+      .split('\n')
+      .slice(1, -1)
+      .join('\n');
+    assert(
+      evidence.manifestText === `${expectedManifest},\n${tail}\n}`,
+      'manifest serialisation drifted from the extension contract'
+    );
+    // Key ORDER is the real contract between the two engines, so pin it explicitly.
+    assert(
+      JSON.stringify(Object.keys(evidence.manifest)) ===
+        JSON.stringify([
+          'framework',
+          'version',
+          'message_sha256',
+          'message_sha3_512',
+          'attachments',
+          'merkle_root',
+          'timestamp',
+          'evidence_id',
+          'algorithms',
+          'provenance',
+          'signed_headers',
+          'replay',
+        ]),
+      'manifest key order is the cross-engine contract'
+    );
     assert(verifyManifest(evidence.manifestText, evidence.manifestSha256).ok, 'manifest hash must verify');
     const names = evidence.headers.map((header) => header.name);
     assert(names.includes('X-PasevSU-OTS'), 'enableOts must add the pending marker');
@@ -1776,7 +2434,7 @@ async function selfTest() {
     let refused = false;
     try {
       decryptDigestBlock(wrong, title, { merkleRoot: evidence.merkleRoot });
-    } catch (_error) {
+    } catch {
       refused = true;
     }
     assert(refused, 'a foreign code must not open the title');
@@ -1874,6 +2532,23 @@ module.exports = {
   sealManifest,
   verifyManifest,
   verifyEvidence,
+  // PSEMP 1.1: replay, cryptographic time, watermark, canary, metadata digest
+  REPLAY_DEFAULTS,
+  ReplayGuard,
+  buildAlgorithms,
+  buildProvenance,
+  buildSignedHeaders,
+  buildCanary,
+  buildReplay,
+  verifyReplay,
+  tagSubject,
+  normalizeRecipients,
+  addressText,
+  // self-describing package
+  PACKAGE_FILENAME,
+  buildEvidencePackage,
+  serializePackage,
+  writeEvidencePackage,
   // adapters
   otsStatus,
   otsSidecar,

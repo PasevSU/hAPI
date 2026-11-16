@@ -64,6 +64,37 @@ Dynamic (computed per message):
 | `X-PasevSU-Sha256` | the readable digest block: `body - …`, one `name - …` per file, `timestep - …` |
 | `X-PasevSU-Cripto-Engine` | 25-digit code derived from the seal |
 | `X-PasevSU-Cripto-title` | the same block, AES-256-GCM encrypted under that code |
+| `X-PasevSU-Created` | compose timestamp (always) |
+| `X-PasevSU-Expires` | end of the freshness window (always) |
+| `X-PasevSU-Nonce` | 128-bit hex, single use (always) |
+| `X-PasevSU-Sequence` | per-sender monotonic counter (always) |
+| `X-PasevSU-Canary` | `PASEVSU-YYYY-MM-DD-XXXXXXXX`, names this copy (always) |
+| `X-PasevSU-Headers-SHA256` | SHA-256 over `manifest.signed_headers` (always) |
+
+### Signed metadata, replay and the canary
+
+Everything above except the conditional rows is produced on **every** send; nothing
+here is a per-message opt-in. The last six exist because a signature over the body
+alone is weak:
+
+* **`signed_headers`** hashes Subject, From, To, Date, Message-ID and the attachment
+  set, so metadata cannot be rewritten around a validly signed body. Its digest is
+  published as `X-PasevSU-Headers-SHA256`.
+* **Replay defence** — nonce + sequence + `created`/`expires` + recipient binding is
+  always on. `REPLAY_DEFAULTS` is deliberately **not** in the options page: an
+  optional anti-replay check is off in exactly the messages that matter. A
+  MailExtension cannot keep a nonce store, so the extension mints and publishes
+  the values and a downstream store enforces them.
+* **`-Canary`** names this copy, so a leaked print or export traces back to the
+  transmission and the mailbox it was minted for. It is derived, never random —
+  every input is in the manifest, so it is recomputable from the attached package.
+
+The full specification, including the manifest field order, the Merkle algorithm,
+the five replay verdicts and the evidence package, is
+[`../psemp-gateway/PROTOCOL.md`](../psemp-gateway/PROTOCOL.md). The gateway's
+`seal` command fills the SHA3-512/BLAKE3 slots and adds the real `.asc` + `.ots`
+sidecars; `package` builds `PasevSU_Package.json`.
+
 
 ### The digest block
 

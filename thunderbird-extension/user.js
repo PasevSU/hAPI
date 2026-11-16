@@ -41,6 +41,12 @@ user_pref(
     "X-PasevSU-Sha256",
     "X-PasevSU-Cripto-Engine",
     "X-PasevSU-Cripto-title",
+    "X-PasevSU-Created",
+    "X-PasevSU-Expires",
+    "X-PasevSU-Nonce",
+    "X-PasevSU-Sequence",
+    "X-PasevSU-Canary",
+    "X-PasevSU-Headers-SHA256",
   ].join(","),
 );
 

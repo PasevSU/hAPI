@@ -11,7 +11,18 @@
  *   - SHA-256 of the body and of each attachment (Web Crypto).
  *   - Merkle root over the sorted leaf hashes.
  *   - Build and attach PasevSU_Manifest.json, plus its SHA-256.
- *   - Generate a per-message Evidence-ID (UUID v4).
+ *   - Generate a per-message Evidence-ID (UUID v4) and a long Message-ID.
+ *   - Sign the ENVELOPE, not just the body: Subject, From, To, Date, Message-ID
+ *     and the attachment set go into manifest.signed_headers, published as
+ *     X-PasevSU-Headers-SHA256. Rewriting any of them breaks the seal.
+ *   - Replay defence, always on: a 128-bit nonce, a per-sender monotonic
+ *     sequence, a Created/Expires freshness window and recipient binding, all
+ *     recorded in manifest.replay. REPLAY_DEFAULTS is deliberately NOT a user
+ *     setting — an optional anti-replay check is off in the messages that matter.
+ *   - A derived canary token (X-PasevSU-Canary) naming this copy, so a leaked
+ *     print or export traces back to the transmission it came from.
+ *   - The readable digest block plus a 25-digit derived crypto-engine code and
+ *     its AES-256-GCM twin (X-PasevSU-Cripto-title).
  *
  * What it CANNOT do (documented, done by the SMTP gateway / CLI):
  *   - Real OpenPGP signatures (.asc) and OpenTimestamps (.ots) cannot be
@@ -19,6 +30,12 @@
  *     `psemp-gateway seal` replaces that marker with a real .asc + .ots pair.
  *   - SHA3-512 and BLAKE3 are not available in Web Crypto; the manifest records
  *     "sha3_512": null and "blake3": null so the gateway can fill them in.
+ *   - No nonce STORE: this can publish nonce/sequence, but enforcing single-use
+ *     needs a store that outlives the compose window. `psemp-gateway` owns it.
+ *   - No confidentiality. Encryption is Thunderbird's OpenPGP, not ours; the
+ *     crypto engine below is obfuscation for header scanners, never secrecy.
+ *
+ * Specification: ../psemp-gateway/PROTOCOL.md
  */
 
 const DEFAULTS = {
@@ -158,14 +175,6 @@ function joinBlock(rows) {
   return rows.join(",");
 }
 
-// Inverse of joinBlock, for readers that want the rows back.
-function parseBlock(value) {
-  return String(value == null ? "" : value)
-    .split(",")
-    .map((row) => row.trim())
-    .filter(Boolean);
-}
-
 const B64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 // Padding-free base64url, written out rather than delegating to btoa(): the manual
@@ -227,6 +236,149 @@ async function buildMessageId(evidenceId, timestamp) {
   return `<${local}@forensic.evidence.pasevsu>`;
 }
 
+/*
+ * PSEMP v1.1 — replay defence, cryptographic time, watermark and canary.
+ *
+ * Mirrors `psemp-gateway/api.js` step for step: the canary, the metadata digest and
+ * the provenance block must come out IDENTICAL in both engines, otherwise a message
+ * checked by the gateway would not match the manifest the extension wrote. The nonce
+ * is the one intentional difference — it is fresh per message and never recomputed.
+ *
+ * Everything here is Web Crypto only; a MailExtension has no Node modules and no
+ * filesystem, so the seen-nonce store lives in the gateway (which has both).
+ */
+async function sha256Text(text) {
+  return sha256Hex(new TextEncoder().encode(text));
+}
+
+// Kept out of DEFAULTS on purpose: these are protocol limits, not user settings, so
+// they must never appear on the options page or in the settings-parity contract.
+const REPLAY_DEFAULTS = {
+  maxAgeSeconds: 3600,
+  maxSkewSeconds: 60,
+  windowSize: 4096,
+};
+
+// Same literals as the gateway so `algorithms` reads the same in both manifests.
+// SHA3-512 / BLAKE3 are listed as the gateway's sealing step — Web Crypto has
+// neither, so this extension states them and the gateway fills them in.
+function buildAlgorithms() {
+  return {
+    body: "SHA-256",
+    extra: ["SHA3-512", "BLAKE3"],
+    merkle: "SHA-256",
+    engine: "AES-256-GCM",
+    signature: "OpenPGP",
+    timestamp: "OpenTimestamps",
+  };
+}
+
+function buildProvenance({ recipient, messageId, evidenceId, issuedAt, organization }) {
+  return {
+    framework: "PasevSU",
+    standard: "PSEMP",
+    organization: sanitizeHeaderValue(organization),
+    evidence_id: sanitizeHeaderValue(evidenceId),
+    recipient: sanitizeHeaderValue(recipient),
+    message_id: sanitizeHeaderValue(messageId),
+    issued_at: sanitizeHeaderValue(issuedAt),
+  };
+}
+
+// An address may arrive as a string, an object, or a list of either.
+function addressText(value) {
+  if (!value) return "";
+  if (typeof value === "string") return sanitizeHeaderValue(value);
+  if (Array.isArray(value)) return value.map(addressText).filter(Boolean).join(", ");
+  return sanitizeHeaderValue(value.email || value.id || "");
+}
+
+function normalizeRecipients(to) {
+  return (Array.isArray(to) ? to : String(to == null ? "" : to).split(","))
+    .map((value) => {
+      if (value && typeof value === "object") {
+        return sanitizeHeaderValue(value.email || value.id || "");
+      }
+      return sanitizeHeaderValue(value);
+    })
+    .filter(Boolean);
+}
+
+/*
+ * The metadata a signature must cover as well as the body — subject, from, to, date,
+ * the Message-ID and the attachment digest. `attachments_sha256` hashes the sorted
+ * `[filename, sha256]` pairs, so attachment ORDER never changes the result but a
+ * renamed or swapped file always does. `headers_sha256` covers the whole record and
+ * therefore does not cover itself.
+ */
+async function buildSignedHeaders({ subject, from, to, date, messageId, attachmentEntries }) {
+  const files = (attachmentEntries || [])
+    .map((entry) => [
+      String(entry && entry.filename == null ? "" : entry.filename),
+      String(entry && entry.sha256 == null ? "" : entry.sha256),
+    ])
+    .sort((left, right) => (left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0));
+  const record = {
+    subject: sanitizeHeaderValue(subject),
+    from: addressText(from),
+    to: normalizeRecipients(to),
+    date: sanitizeHeaderValue(date),
+    message_id: sanitizeHeaderValue(messageId),
+    attachments_sha256: await sha256Text(JSON.stringify(files)),
+  };
+  return Object.assign({}, record, { headers_sha256: await sha256Text(JSON.stringify(record)) });
+}
+
+/*
+ * Canary in the `PASEVSU-YYYY-MM-DD-XXXXXXXX` shape. Derived, never random: the same
+ * nonce and sequence always give the same token, so it survives re-computation, and
+ * nobody can predict tomorrow's from today's. This is the leak-tracing device the
+ * brief described as "decoy files", without putting fabricated documents into evidence.
+ */
+async function buildCanary({ issuedAt, sequence, organization, nonce }) {
+  const day =
+    sanitizeHeaderValue(issuedAt).slice(0, 10) || new Date().toISOString().slice(0, 10);
+  const seed = await sha256Text(
+    `PasevSU-Canary:v1|${sanitizeHeaderValue(organization)}|${day}|${sequence}|${nonce}`
+  );
+  return `PASEVSU-${day}-${seed.slice(0, 8).toUpperCase()}`;
+}
+
+// `expires_at` is derived from `issued_at`, so a reader can check the deadline
+// without trusting the sender's clock twice.
+function buildReplay({ nonce, sequence, issuedAt, recipient, maxAgeSeconds }) {
+  const parsed = Date.parse(issuedAt || "");
+  const stamp = Number.isFinite(parsed) ? new Date(parsed).toISOString() : new Date().toISOString();
+  const ttl = Number.isFinite(Number(maxAgeSeconds))
+    ? Number(maxAgeSeconds)
+    : REPLAY_DEFAULTS.maxAgeSeconds;
+  const expires = new Date(Date.parse(stamp) + Math.max(0, ttl) * 1000).toISOString();
+  return {
+    nonce: sanitizeHeaderValue(nonce) || uuidV4().replace(/-/g, ""),
+    sequence: Number.isFinite(Number(sequence)) ? Number(sequence) : 0,
+    issued_at: stamp,
+    expires_at: expires,
+    recipient: sanitizeHeaderValue(recipient),
+    single_use: true,
+  };
+}
+
+/*
+ * Per-sender monotonic counter, kept apart from the options defaults on purpose: it is
+ * bookkeeping, not a setting, so it must not appear on the options page or in the
+ * settings-parity contract. A missing or unwritable store just yields 1.
+ */
+async function nextSequence() {
+  try {
+    const stored = await browser.storage.local.get({ sequence: 0 });
+    const next = (Number(stored && stored.sequence) || 0) + 1;
+    await browser.storage.local.set({ sequence: next });
+    return next;
+  } catch {
+    return 1;
+  }
+}
+
 async function computeAttachmentHashes(attachments) {
   const entries = [];
   const failures = [];
@@ -255,7 +407,16 @@ async function computeAttachmentHashes(attachments) {
   return { entries, failures };
 }
 
-async function buildManifest(config, evidenceId, bodyHash, attachmentEntries, merkle, timestamp) {
+async function buildManifest(
+  config,
+  evidenceId,
+  bodyHash,
+  attachmentEntries,
+  merkle,
+  timestamp,
+  extra
+) {
+  const context = extra || {};
   const manifest = {
     framework: "PasevSU",
     version: sanitizeHeaderValue(config.version),
@@ -273,6 +434,17 @@ async function buildManifest(config, evidenceId, bodyHash, attachmentEntries, me
     merkle_root: merkle,
     timestamp: timestamp || new Date().toISOString(),
     evidence_id: evidenceId,
+    /*
+     * Appended after evidence_id so the established key order above stays put. These
+     * four are NOT Merkle input: the root the headers already published covers the
+     * body and the original attachments only, and adding a leaf now would invalidate
+     * it. They are covered instead by X-PasevSU-Manifest-SHA256, which is computed
+     * over this whole document.
+     */
+    algorithms: buildAlgorithms(),
+    provenance: context.provenance,
+    signed_headers: context.signedHeaders,
+    replay: context.replay,
   };
   return JSON.stringify(manifest, null, 2);
 }
@@ -386,10 +558,35 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
   // name that does not start with "X-", and a rejected setComposeDetails() aborts
   // the send with no dialog at all. The real `Message-ID:` field is written by
   // psemp-gateway, which speaks raw SMTP and may set any legal field name.
-  headers.push(buildHeader("X-PasevSU-Message-ID", await buildMessageId(evidenceId, timestamp)));
+  headers.push(
+    buildHeader(
+      "X-PasevSU-Message-ID",
+      context.messageId || (await buildMessageId(evidenceId, timestamp))
+    )
+  );
   headers.push(buildHeader("X-PasevSU-Sha256", joinBlock(block)));
   headers.push(buildHeader("X-PasevSU-Cripto-Engine", engine));
   headers.push(buildHeader("X-PasevSU-Cripto-title", await encryptDigestBlock(engine, block, merkle)));
+
+  /*
+   * Replay defence and cryptographic time, in the same append-only position the
+   * gateway uses. `Nonce` is single-use and `Sequence` is monotonic per sender, so a
+   * captured message cannot be re-injected as a fresh one; `Created`/`Expires` bound
+   * how long a copy counts as a currently-issued statement (they say nothing about
+   * integrity — the Merkle root and the eventual PGP seal never expire).
+   */
+  if (context.replay) {
+    headers.push(buildHeader("X-PasevSU-Created", context.replay.issued_at));
+    headers.push(buildHeader("X-PasevSU-Expires", context.replay.expires_at));
+    headers.push(buildHeader("X-PasevSU-Nonce", context.replay.nonce));
+    headers.push(buildHeader("X-PasevSU-Sequence", String(context.replay.sequence)));
+  }
+  if (context.canary) {
+    headers.push(buildHeader("X-PasevSU-Canary", context.canary));
+  }
+  if (context.signedHeaders) {
+    headers.push(buildHeader("X-PasevSU-Headers-SHA256", context.signedHeaders.headers_sha256));
+  }
   return headers;
 }
 
@@ -472,13 +669,57 @@ async function handleBeforeSend(tab, details) {
     // One timestamp for the manifest AND the header block, so `timestep` in the
     // digest block and `timestamp` in PasevSU_Manifest.json always agree.
     const stamp = new Date().toISOString();
+
+    /*
+     * Replay defence, cryptographic time, watermark and canary are all minted HERE,
+     * before the manifest is serialised, because the manifest's SHA-256 is published
+     * in X-PasevSU-Manifest-SHA256. Sealing these in afterwards (a gateway-side
+     * amendment) would change the manifest and break that hash — so everything that
+     * travels in the manifest has to exist at compose time.
+     */
+    const sequence = await nextSequence();
+    const nonce = uuidV4().replace(/-/g, "");
+    const messageId = await buildMessageId(evidenceId, stamp);
+    const recipients = normalizeRecipients(details.to || details.recipients);
+    // Bound to the primary recipient: a copy re-sent to someone else no longer
+    // matches the envelope the manifest names.
+    const primaryRecipient = recipients[0] || addressText(details.from);
+    const replay = buildReplay({
+      nonce,
+      sequence,
+      issuedAt: stamp,
+      recipient: primaryRecipient,
+    });
+    const canary = await buildCanary({
+      issuedAt: stamp,
+      sequence,
+      organization: config.organization,
+      nonce,
+    });
+    const signedHeaders = await buildSignedHeaders({
+      subject: details.subject,
+      from: details.from,
+      to: details.to || details.recipients,
+      date: details.date,
+      messageId,
+      attachmentEntries,
+    });
+    const provenance = buildProvenance({
+      recipient: primaryRecipient,
+      messageId,
+      evidenceId,
+      issuedAt: stamp,
+      organization: config.organization,
+    });
+
     const manifestText = await buildManifest(
       config,
       evidenceId,
       bodyHash,
       attachmentEntries,
       merkle,
-      stamp
+      stamp,
+      { provenance, signedHeaders, replay }
     );
     const manifestHash = await sha256Hex(new TextEncoder().encode(manifestText));
 
@@ -521,7 +762,7 @@ async function handleBeforeSend(tab, details) {
       attachmentEntries,
       merkle,
       manifestHash,
-      { failures: attachmentFailures, receiptTo: receiptTo, timestamp: stamp }
+      { failures: attachmentFailures, receiptTo: receiptTo, timestamp: stamp, replay, canary, signedHeaders, messageId }
     );
 
     // Append WITHOUT dropping any existing (foreign) entries.

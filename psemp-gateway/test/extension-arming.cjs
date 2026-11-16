@@ -155,6 +155,12 @@ check('plain-text send gets the full header set in contract order', async () => 
     'X-PasevSU-Sha256',
     'X-PasevSU-Cripto-Engine',
     'X-PasevSU-Cripto-title',
+    'X-PasevSU-Created',
+    'X-PasevSU-Expires',
+    'X-PasevSU-Nonce',
+    'X-PasevSU-Sequence',
+    'X-PasevSU-Canary',
+    'X-PasevSU-Headers-SHA256',
   ]);
 
   const headers = headerMap(result.details.customHeaders);
@@ -383,6 +389,34 @@ check('the manifest is attached with addAttachment and its own hash is published
   assert.strictEqual(parsed.merkle_root, headers.get('X-PasevSU-Merkle-Root'));
   assert.strictEqual(parsed.evidence_id, headers.get('X-PasevSU-Evidence-ID'));
   assert.deepStrictEqual(parsed.attachments, []);
+
+  /*
+   * PSEMP 1.1 — the manifest and the headers must describe ONE nonce. The gateway
+   * reads the nonce out of the manifest and refuses the message if it has seen it
+   * before, so any disagreement here would either make every send look like a
+   * replay or let a replayed copy through as first-use.
+   */
+  assert.match(parsed.replay.nonce, /^[0-9a-f]{32}$/, 'the nonce must be 128-bit hex');
+  assert.strictEqual(parsed.replay.single_use, true);
+  assert.strictEqual(headers.get('X-PasevSU-Nonce'), parsed.replay.nonce);
+  assert.strictEqual(headers.get('X-PasevSU-Created'), parsed.replay.issued_at);
+  assert.strictEqual(headers.get('X-PasevSU-Expires'), parsed.replay.expires_at);
+  assert.strictEqual(headers.get('X-PasevSU-Sequence'), String(parsed.replay.sequence));
+  assert.strictEqual(
+    parsed.replay.expires_at,
+    new Date(Date.parse(parsed.replay.issued_at) + 3600 * 1000).toISOString(),
+    'the freshness window must be one hour'
+  );
+  assert.match(headers.get('X-PasevSU-Canary'), /^PASEVSU-\d{4}-\d{2}-\d{2}-[0-9A-F]{8}$/);
+  assert.strictEqual(parsed.provenance.framework, 'PasevSU');
+
+  // Cross-engine: the metadata digest written by Web Crypto in the extension must
+  // recompute with node:crypto here, or the gateway's verifier would reject every
+  // message the extension produced.
+  const { headers_sha256: declared, ...signedRecord } = parsed.signed_headers;
+  assert.strictEqual(sha256Hex(JSON.stringify(signedRecord)), declared);
+  assert.strictEqual(headers.get('X-PasevSU-Headers-SHA256'), declared);
+  return `${parsed.replay.nonce.slice(0, 8)}… seq ${parsed.replay.sequence}`;
 });
 
 check('a refused manifest attachment still sends, and the failure is recorded', async () => {
@@ -682,6 +716,12 @@ check('every header name is a syntactically valid field name', () => {
     'X-PasevSU-Sha256',
     'X-PasevSU-Cripto-Engine',
     'X-PasevSU-Cripto-title',
+    'X-PasevSU-Created',
+    'X-PasevSU-Expires',
+    'X-PasevSU-Nonce',
+    'X-PasevSU-Sequence',
+    'X-PasevSU-Canary',
+    'X-PasevSU-Headers-SHA256',
   ];
   for (const name of names) {
     assert.match(name, fieldName, `${name} is not a valid field name`);

@@ -16,6 +16,7 @@
  *   node psemp-gateway/cli.js seal <manifest.json> [--body <file>] [--attach <name>=<file>]…
  *   node psemp-gateway/cli.js pgp-info <file>
  *   node psemp-gateway/cli.js pgp-check <file> [--fingerprint <hex>]
+ *   node psemp-gateway/cli.js package <manifest.json> [--out <file.json>]
  *   node psemp-gateway/cli.js self-test
  *
  * Every command prints JSON and exits non-zero only on a real failure. Missing
@@ -52,6 +53,9 @@ const USAGE = `PasevSU PSEMP gateway
                                         supplied bytes.
   pgp-info <file>                       who signed this message (Thunderbird's key)
   pgp-check <file> [--fingerprint hex]  compare the claim with the actual signer
+  package <manifest.json> [--out f] [--body-name n] [--fingerprint hex]
+                                        build the self-describing evidence package
+                                        (PROTOCOL.md §12) from a manifest
   self-test                             known-answer vectors + parity checks`;
 
 function parseOptions(argv) {
@@ -284,6 +288,29 @@ async function main(argv) {
       );
       emit(result);
       if (!result.ok) process.exitCode = 1;
+      return;
+    }
+
+    case 'package': {
+      const [manifestFile] = rest;
+      const resolved = readFileOrFail(manifestFile, 'manifest');
+      const manifest = JSON.parse(fs.readFileSync(resolved, 'utf8'));
+      const packageOptions = {
+        manifestPath: resolved,
+        bodyFilename: options['body-name'] && options['body-name'] !== true
+          ? String(options['body-name'])
+          : undefined,
+        pgpFingerprint: options.fingerprint && options.fingerprint !== true
+          ? String(options.fingerprint)
+          : undefined,
+        canary: options.canary && options.canary !== true ? String(options.canary) : undefined,
+      };
+      if (options.out && options.out !== true) {
+        const written = api.writeEvidencePackage(String(options.out), manifest, packageOptions);
+        emit({ ok: true, standard: 'PSEMP', out: written });
+      } else {
+        emit(api.buildEvidencePackage(manifest, packageOptions));
+      }
       return;
     }
 

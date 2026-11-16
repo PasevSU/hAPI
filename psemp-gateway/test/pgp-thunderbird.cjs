@@ -213,7 +213,14 @@ async function main() {
   });
 
   check('evidence-fills-fingerprint-from-signature', () => {
-    const fixed = { evidenceId: '11111111-2222-4333-8444-555555555555', timestamp: '2026-01-01T00:00:00.000Z' };
+    const fixed = {
+      evidenceId: '11111111-2222-4333-8444-555555555555',
+      timestamp: '2026-01-01T00:00:00.000Z',
+      // Pinned so the manifest is byte-identical apart from the claim under test: the
+      // nonce is fresh per message and would otherwise move the manifest hash itself.
+      nonce: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      sequence: 1,
+    };
     const signed = api.computeEvidence({ body: 'hello', signature: multipartSigned(packet), ...fixed });
     const unsigned = api.computeEvidence({ body: 'hello', ...fixed });
 

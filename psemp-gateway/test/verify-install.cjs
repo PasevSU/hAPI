@@ -33,8 +33,6 @@ const ROOT = path.join(__dirname, '..', '..');
 const ID = JSON.parse(fs.readFileSync(path.join(ROOT, 'thunderbird-extension', 'manifest.json'), 'utf8'))
   .browser_specific_settings.gecko.id;
 
-const quiet = { log() {}, error() {} };
-
 /**
  * Build a profile that should pass, then optionally break one thing.
  *

@@ -41,9 +41,31 @@ const ALWAYS = [
   'X-PasevSU-Body-SHA256',
   'X-PasevSU-Manifest-SHA256',
   'X-PasevSU-Merkle-Root',
+  'X-PasevSU-Message-ID',
+  // Replay defence and signed metadata are always minted, never opt-in: a message
+  // missing these is not a PSEMP 1.1 message and cannot be replay-checked.
+  'X-PasevSU-Created',
+  'X-PasevSU-Expires',
+  'X-PasevSU-Nonce',
+  'X-PasevSU-Sequence',
+  'X-PasevSU-Canary',
+  'X-PasevSU-Headers-SHA256',
 ];
 
-const HEX_FIELDS = ['X-PasevSU-Body-SHA256', 'X-PasevSU-Manifest-SHA256', 'X-PasevSU-Merkle-Root'];
+const HEX_FIELDS = [
+  'X-PasevSU-Body-SHA256',
+  'X-PasevSU-Manifest-SHA256',
+  'X-PasevSU-Merkle-Root',
+  'X-PasevSU-Headers-SHA256',
+];
+
+/** Values that must match a shape rather than being bare 64-hex digests. */
+const SHAPED_FIELDS = [
+  ['X-PasevSU-Nonce', /^[0-9a-f]{32}$/, '128-bit hex nonce'],
+  ['X-PasevSU-Sequence', /^\d+$/, 'monotonic counter'],
+  ['X-PasevSU-Canary', /^PASEVSU-\d{4}-\d{2}-\d{2}-[0-9A-F]{8}$/, 'canary token'],
+  ['X-PasevSU-Message-ID', /^<PasevSU\..+@forensic\.evidence\.pasevsu>$/, 'PasevSU message id'],
+];
 
 /** Split an mbox into messages, or return one message for a plain .eml. */
 function splitMessages(text) {
@@ -171,6 +193,11 @@ function inspectMessage(text) {
   for (const name of HEX_FIELDS) {
     const value = headerGet(headers, name) || '';
     add(`${name} is sha256 hex`, /^[0-9a-fA-F]{64}$/.test(value), value ? `${value.length} chars` : 'absent');
+  }
+
+  for (const [name, pattern, label] of SHAPED_FIELDS) {
+    const value = headerGet(headers, name) || '';
+    add(`${name} is a ${label}`, pattern.test(value), value || 'absent');
   }
 
   const claimedManifestHash = headerGet(headers, 'X-PasevSU-Manifest-SHA256') || '';
@@ -326,7 +353,7 @@ function sentFiles(profile) {
     if (depth > 6) return;
     // The Debug Add-ons page creates a full nested profile; its mail is a copy.
     if (path.basename(dir) === 'chrome_debugger_profile') return;
-    let entries = [];
+    let entries;
     try {
       entries = fs.readdirSync(dir, { withFileTypes: true });
     } catch {
@@ -470,7 +497,7 @@ function lastMessages(file, count, chunkSize = 1 << 20) {
 function newestSent(sources) {
   const candidates = [];
   for (const source of sources) {
-    let message = null;
+    let message;
     let mtime = 0;
     try {
       const newest = lastMessages(source, 1);

@@ -68,7 +68,9 @@ asserts they are not equal.
 
 ## Header contract
 
-Written on every outgoing message, in this order:
+Written on every outgoing message, in this order — the order is a contract shared
+with [`api.js`](api.js) `HEADER_NAMES`, the extension's `buildHeader()` calls and
+`user.js` (see [`PROTOCOL.md`](PROTOCOL.md) §4):
 
 | Header | Value |
 | --- | --- |
@@ -78,20 +80,53 @@ Written on every outgoing message, in this order:
 | `X-PasevSU-Organization` | `PasevSU` |
 | `X-PasevSU-Evidence-ID` | UUID v4, equal to the manifest `evidence_id` |
 | `X-PasevSU-Body-SHA256` | SHA-256 of the plain-text body |
+| `X-PasevSU-Attachments-Count` | number of hashed attachments |
 | `X-PasevSU-Attachments-SHA256` | `name=hash,name=hash` — omitted when there are no attachments |
+| `X-PasevSU-Attachments-Error` | names of attachments that could not be read — omitted when none failed |
 | `X-PasevSU-Manifest-SHA256` | SHA-256 of the exact `PasevSU_Manifest.json` text |
 | `X-PasevSU-Merkle-Root` | Merkle root over body hash + attachment hashes |
 | `X-PasevSU-PGP-Fingerprint` | configured fingerprint — omitted when empty |
-| `X-PasevSU-OTS` | `pending` — **on by default**; turn off to stop marking |
-| `Message-ID` | long `<PasevSU.…@forensic.evidence.pasevsu>` id — gateway only |
-| `X-PasevSU-Message-ID` | the same id, `X-` twin — the extension emits this one |
+| `X-PasevSU-OTS` | `pending` — on by default; turn off to stop marking |
+| `X-PasevSU-Receipt` | `requested` — only when `enableReceipt` is on |
+| `X-PasevSU-Message-ID` | long `<PasevSU.…@forensic.evidence.pasevsu>` id (the gateway also writes the real `Message-ID:`) |
 | `X-PasevSU-Sha256` | digest block: `body - …`, one `name - …` per file, `timestep - …` |
 | `X-PasevSU-Cripto-Engine` | 25-digit code derived from the seal |
 | `X-PasevSU-Cripto-title` | the same block, AES-256-GCM encrypted under that code |
+| `X-PasevSU-Created` | compose timestamp |
+| `X-PasevSU-Expires` | end of the freshness window |
+| `X-PasevSU-Nonce` | 128-bit hex, single use |
+| `X-PasevSU-Sequence` | per-sender monotonic counter |
+| `X-PasevSU-Canary` | `PASEVSU-YYYY-MM-DD-XXXXXXXX`, names this copy |
+| `X-PasevSU-Headers-SHA256` | SHA-256 over `manifest.signed_headers` |
+| `Disposition-Notification-To` | the receipt address — only when `enableReceipt` is on |
+
+Every header except the four conditional ones (`-Attachments-Error`, `-Receipt`,
+`-PGP-Fingerprint` when unset, `-Attachments-SHA256` with no files) is emitted on
+every single message, with no per-message opt-in.
 
 Newlines are stripped from every configured value, `,` and `=` are neutralised in
 the attachment header tokens, and existing `customHeaders` are always preserved
 (new lines are appended, never substituted).
+
+### Signed metadata, replay and the package
+
+The four trailing headers exist for three reasons, all specified in
+[`PROTOCOL.md`](PROTOCOL.md):
+
+* **`signed_headers` (§8)** hashes Subject, From, To, Date, Message-ID and the
+  attachment set, not just the body. Swapping an attachment or rewriting a Subject
+  breaks it; reordering attachments does not.
+* **Replay defence (§11)** — nonce + sequence + `issued_at`/`expires_at` + recipient
+  binding. Always on: `REPLAY_DEFAULTS` is deliberately not a user setting, because
+  an optional anti-replay check is off in exactly the messages that matter.
+* **`-Canary` (§10)** names the copy, so a leaked print or export traces back to the
+  transmission and the mailbox it was minted for.
+
+`node cli.js package <manifest.json> [--out <file.json>]` turns a manifest into
+`PasevSU_Package.json`, the self-describing evidence bundle (§12), with a worked
+example in [`examples/`](examples/). `verifyEvidence()` implements the seven
+verification steps of §13.
+
 
 ### The digest block and the crypto engine
 
