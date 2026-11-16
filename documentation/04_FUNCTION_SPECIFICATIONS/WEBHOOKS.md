@@ -1,5 +1,7 @@
 # Webhooks с HMAC (F4-7)
 
+> **Клас:** нормативен · **Собственик на факта:** договор на функция
+
 Какво излъчва hAPI, как се подписва и какво да направи получателят. Договорът е от
 0.69.87; кодът е в `hapi_enterprise/webhooks.js` и `hapi_enterprise/routes/webhooks.js`,
 тестът — `tests/webhooks.cjs`.

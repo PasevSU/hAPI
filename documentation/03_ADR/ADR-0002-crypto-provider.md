@@ -1,5 +1,7 @@
 # ADR-0002: crypto-provider
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Date:** 2026-10
 - **Context:** Receipts start as HMAC-SHA256; legal evidence needs signatures.

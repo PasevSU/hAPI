@@ -1,5 +1,7 @@
 # Dependency Graph — hAPI Enterprise (As-Is)
 
+> **Клас:** жив · **Собственик на факта:** състояние днес · **Проверен към:** 0.69.227
+
 ## Module → dependency
 
 | Module | Depends on |

@@ -78,6 +78,7 @@ const RULES = [
   { id: "dist-folder", area: "общо", title: "Dist folder", owner: "tests/dist-folder.cjs" },
   { id: "doc-citations", area: "документация", title: "Doc citations", owner: "tests/doc-citations.cjs" },
   { id: "docker-runtime", area: "общо", title: "Docker runtime", owner: "tests/docker-runtime.cjs" },
+  { id: "docs-class", area: "документация", title: "Docs class", owner: "tests/docs-class.cjs" },
   { id: "docs-consistency", area: "документация", title: "Docs consistency", owner: "tests/docs-consistency.cjs" },
   { id: "docs-index", area: "документация", title: "Docs index", owner: "tests/docs-index.cjs" },
   { id: "docs-manual", area: "документация", title: "Docs manual", owner: "tests/docs-manual.cjs" },

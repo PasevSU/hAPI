@@ -1,5 +1,7 @@
 # Release Criteria — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** издаване
+
 ## Hard gates (block release)
 
 - [ ] L0–L5 tests pass (see `06_TESTING/MASTER_TEST_PLAN.md`).

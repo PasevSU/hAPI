@@ -1,5 +1,7 @@
 # Crypto Test Vectors — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** тестове
+
 ## Purpose
 
 Deterministic, published vectors so any implementation (Node, Python, third-party)

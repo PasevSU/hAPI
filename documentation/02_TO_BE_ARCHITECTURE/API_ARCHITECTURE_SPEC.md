@@ -1,5 +1,7 @@
 # hAPI ENTERPRISE — API Architecture & Runtime Logic Specification
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 **Документ:** HAPI-ARCH-API-001
 **Издание:** 1.0 — Архитектурна спецификация
 **Базова версия на интерфейса:** hAPI Enterprise Control Center v0.69.73

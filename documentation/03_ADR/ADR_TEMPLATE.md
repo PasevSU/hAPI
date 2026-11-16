@@ -1,5 +1,7 @@
 # ADR Template
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 ## ADR-XXXX: <Short title>
 
 - **Status:** Proposed | Accepted | Deprecated | Superseded by ADR-XXXX

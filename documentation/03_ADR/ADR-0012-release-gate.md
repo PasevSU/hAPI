@@ -1,5 +1,7 @@
 # ADR-0012: release-gate
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Date:** 2026-10
 - **Context:** Only release when evidence/security requirements are met.

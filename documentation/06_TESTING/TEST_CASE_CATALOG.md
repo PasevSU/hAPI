@@ -1,5 +1,7 @@
 # Test Case Catalog — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** тестове
+
 > Maps function IDs (from `04_FUNCTION_SPECIFICATIONS`) to concrete test files.
 
 | Case ID        | Function    | Test file                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Level                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |

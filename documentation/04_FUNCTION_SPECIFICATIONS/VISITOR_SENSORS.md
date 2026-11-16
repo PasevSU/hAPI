@@ -1,5 +1,7 @@
 # Сензори за комуникацията (Visitor Sensors)
 
+> **Клас:** нормативен · **Собственик на факта:** договор на функция
+
 Статус: обвързващ от 0.69.20. Код: `hapi_enterprise/visitor-intel.js`. Тест:
 `tests/visitor-sensors.cjs`. Home Assistant единици: `sensor.py` (6 нови) + `coordinator.py`.
 

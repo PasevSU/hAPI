@@ -1,5 +1,7 @@
 # Interoperability — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** тестове
+
 ## Matrix
 
 | Capability | HA add-on | Windows | Evidence portal |

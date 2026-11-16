@@ -1,5 +1,7 @@
 # GUI E2E — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** тестове
+
 ## Surfaces under test
 
 1. Admin console (HA Ingress + Windows loopback).

@@ -1,5 +1,7 @@
 # Роли за съд (F7-1)
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 Кой какво може, когато hAPI се ползва от съд. Кодът е в `hapi_enterprise/rbac.js`
 (`CAPABILITIES`, `ROLES`), тестът — `tests/court-roles.cjs` и
 `tests/oracle-rbac-matrix.cjs`.

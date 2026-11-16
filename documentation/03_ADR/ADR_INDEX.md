@@ -1,5 +1,7 @@
 # ADR Index
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 Single authoritative ADR registry for hAPI Enterprise.
 
 - `0001–0012` — enterprise governance, security, and release decisions.

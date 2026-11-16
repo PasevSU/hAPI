@@ -1,5 +1,7 @@
 # ADR — Architecture Decision Records
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 Single authoritative ADR registry for hAPI Enterprise.
 
 - `ADR-0001` … `ADR-0012` — enterprise governance, security, and release decisions.

@@ -1,5 +1,7 @@
 # Release Decision — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** издаване
+
 > Signed record of GO / NO-GO for each release. Fill one block per release.
 
 ## Release record (template)

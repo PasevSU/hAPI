@@ -1,5 +1,7 @@
 # Qualification Plan — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** издаване
+
 ## Objective
 
 Prove a release is fit to ship (HA add-on + Windows + portal) against

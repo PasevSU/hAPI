@@ -1,5 +1,7 @@
 # ADR-0009: evidence-reports
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Date:** 2026-10
 - **Context:** Courts need a human-readable, tamper-evident report of evidence.

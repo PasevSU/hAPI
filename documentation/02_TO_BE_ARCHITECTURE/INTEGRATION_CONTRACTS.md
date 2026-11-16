@@ -1,5 +1,7 @@
 # Integration Contracts — hAPI Enterprise (To-Be)
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 ## API versioning
 
 | Version      | Scope                                   |

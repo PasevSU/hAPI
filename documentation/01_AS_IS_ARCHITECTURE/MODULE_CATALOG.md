@@ -1,5 +1,7 @@
 # Module Catalog — hAPI Enterprise (As-Is)
 
+> **Клас:** жив · **Собственик на факта:** описание на модулите · **Проверен към:** 0.69.227
+
 ## Core & domain
 
 | Module | Responsibility | Interface |

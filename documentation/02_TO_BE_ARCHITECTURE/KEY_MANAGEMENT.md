@@ -1,5 +1,7 @@
 # Key Management — hAPI Enterprise (To-Be)
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 ## Key classes
 
 | Class | Purpose | Storage |

@@ -1,5 +1,7 @@
 # ADR-0007: identity-metadata
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Date:** 2026-10
 - **Context:** Evidence must bind identity and metadata without leaking PII.

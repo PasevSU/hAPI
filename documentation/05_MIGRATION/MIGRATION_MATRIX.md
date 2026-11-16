@@ -1,5 +1,7 @@
 # Migration Matrix — hAPI Enterprise
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 > Maps source objects → destination objects → rules.
 
 | Source | Destination | Rule | Transform |

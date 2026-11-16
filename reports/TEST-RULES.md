@@ -3,7 +3,7 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 433 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 434 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
@@ -18,6 +18,7 @@
 | издаване | 7 |
 | оракул | 6 |
 | тайни връзки | 6 |
+| документация | 5 |
 | пакети | 5 |
 | споделени данни | 5 |
 | HTML | 4 |
@@ -25,7 +26,6 @@
 | TSA | 4 |
 | backup | 4 |
 | админ API | 4 |
-| документация | 4 |
 | правила | 4 |
 | публичен API | 4 |
 | сигурност | 4 |
@@ -463,6 +463,16 @@
 | `secret-patterns` | Secret patterns | `tests/secret-patterns.cjs` |
 | `secret-sweep` | Secret sweep | `tests/secret-sweep.cjs` |
 
+## документация (5)
+
+| Правило | Заглавие | Файл |
+| --- | --- | --- |
+| `doc-citations` | Doc citations | `tests/doc-citations.cjs` |
+| `docs-class` | Docs class | `tests/docs-class.cjs` |
+| `docs-consistency` | Docs consistency | `tests/docs-consistency.cjs` |
+| `docs-index` | Docs index | `tests/docs-index.cjs` |
+| `docs-manual` | Docs manual | `tests/docs-manual.cjs` |
+
 ## пакети (5)
 
 | Правило | Заглавие | Файл |
@@ -527,15 +537,6 @@
 | `admin-hierarchy` | Admin hierarchy | `tests/admin-hierarchy.cjs` |
 | `admin-throttle` | Admin throttle | `tests/admin-throttle.cjs` |
 | `admin-token-shape` | Admin token shape | `tests/admin-token-shape.cjs` |
-
-## документация (4)
-
-| Правило | Заглавие | Файл |
-| --- | --- | --- |
-| `doc-citations` | Doc citations | `tests/doc-citations.cjs` |
-| `docs-consistency` | Docs consistency | `tests/docs-consistency.cjs` |
-| `docs-index` | Docs index | `tests/docs-index.cjs` |
-| `docs-manual` | Docs manual | `tests/docs-manual.cjs` |
 
 ## правила (4)
 

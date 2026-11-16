@@ -1,5 +1,7 @@
 # Паритет на функциите: `PasevSU/hAPI` ↔ това хранилище
 
+> **Клас:** нормативен · **Собственик на факта:** съответствие add-on ↔ интеграция
+
 Сравнение между публичното хранилище [`PasevSU/hAPI`](https://github.com/PasevSU/hAPI)
 (add-on `portal_enterprise/` + интеграция `custom_components/portal_enterprise/`) и тази
 версия (add-on `hapi_enterprise/` + интеграция `custom_components/hapi_enterprise/`).

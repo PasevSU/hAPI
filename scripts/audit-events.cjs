@@ -72,6 +72,8 @@ function generate() {
   const lines = [
     '# Одитни събития — каталог',
     '',
+    require('./docs-class.cjs').lineFor('04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md'),
+    '',
     `> **Генериран документ.** Версия на кода: **${version}**. Пише се от`,
     '> `node scripts/audit-events.cjs`, проверява се от `tests/audit-events.cjs`.',
     '> Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна',

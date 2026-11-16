@@ -1,5 +1,7 @@
 # ADR-0026 — Public API Gateway, файлово предоставяне и контрол на достъпа
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Статус:** Приет
 - **Дата:** 2026-10-20
 - **Обхват:** home-assistant add-on, Windows Edition, Report Studio, File Delivery

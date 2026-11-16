@@ -1,5 +1,7 @@
 # Release Checklist — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** издаване
+
 ## Pre-flight
 
 - [ ] Version bumped (`node scripts/build-release.cjs --version X.Y.Z` — пише в

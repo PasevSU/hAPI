@@ -1,5 +1,7 @@
 # Rollback Plan — hAPI Enterprise Migration
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 ## Strategy
 
 Migration is **copy-then-commit**, so rollback is cheap and safe: the source is

@@ -1,5 +1,7 @@
 # Security Model — hAPI Enterprise (To-Be)
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 ## Principles
 
 - **Zero trust** — every request authenticated, authorized, audited.

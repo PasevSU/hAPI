@@ -1,5 +1,7 @@
 # 6. Диагностика — по симптом
 
+> **Клас:** нормативен · **Собственик на факта:** ръководство
+
 Първо винаги: **логът на add-on-а** (Add-on → Log) и `GET /health`. Кодовете на грешки и
 тяхното значение са в [`04_FUNCTION_SPECIFICATIONS/ERROR_CODES.md`](../04_FUNCTION_SPECIFICATIONS/ERROR_CODES.md).
 

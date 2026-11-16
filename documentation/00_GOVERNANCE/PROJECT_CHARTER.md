@@ -1,5 +1,7 @@
 # Project Charter — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** процес и управление
+
 | Field | Value |
 | ----- | ----- |
 | **Project** | hAPI Enterprise (formerly `portal_enterprise`) |

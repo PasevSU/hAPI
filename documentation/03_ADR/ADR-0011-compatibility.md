@@ -1,5 +1,7 @@
 # ADR-0011: compatibility
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Date:** 2026-10
 - **Context:** Must support HA (LAN/NAS) and Windows with identical behavior.

@@ -1,5 +1,7 @@
 # Master Test Plan — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** тестове
+
 ## Scope
 
 Covers functional, security, crypto, migration, interoperability, and GUI E2E

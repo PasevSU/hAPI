@@ -1,5 +1,7 @@
 # API Endpoint Reference
 
+> **Клас:** нормативен · **Собственик на факта:** HTTP договор
+
 **Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 (API Architecture & Runtime Logic Specification)
 
 **Генериран от кода на hAPI Enterprise 0.69.227.** Не се редактира на ръка.

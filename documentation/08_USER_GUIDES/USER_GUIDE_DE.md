@@ -1,5 +1,7 @@
 # hAPI Enterprise — Benutzerhandbuch
 
+> **Клас:** жив · **Собственик на факта:** упътване за потребителя · **Проверен към:** 0.69.227
+
 ## Was ist hAPI Enterprise
 
 Ein professionelles Home-Assistant-Add-on für Dokumentenverarbeitung, QR-basiertes

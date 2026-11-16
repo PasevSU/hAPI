@@ -76,6 +76,7 @@ const lines = [];
 const push = (...values) => lines.push(...values);
 
 push('# API Endpoint Reference', '');
+push(require('./docs-class.cjs').lineFor('02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md'), '');
 push('**Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 (API Architecture & Runtime Logic Specification)', '');
 push(`**Генериран от кода на hAPI Enterprise ${pkg.version}.** Не се редактира на ръка.`, '');
 push('Източници (живи, не копия):', '');

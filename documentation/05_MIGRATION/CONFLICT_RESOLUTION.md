@@ -1,5 +1,7 @@
 # Conflict Resolution — hAPI Enterprise
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 ## Conflict types & resolution
 
 | Conflict | Detection | Resolution |

@@ -1,5 +1,7 @@
 # Requirements Traceability Matrix — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** процес и управление
+
 Legend: **P**hase, **T**est reference, status ✅/🟡.
 
 | ID | Requirement | Phase | Backend handler | Test | Status |

@@ -1,5 +1,7 @@
 # ADR-0010: migration-policy
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Date:** 2026-10
 - **Context:** Storage/migration must never damage files.

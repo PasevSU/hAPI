@@ -1,5 +1,7 @@
 # Module Specifications
 
+> **Клас:** нормативен · **Собственик на факта:** договор на функция
+
 Each module gets a `FUNCTION_SPECIFICATION_TEMPLATE.md`-formatted spec here, one
 file per module. Key modules to spec first:
 

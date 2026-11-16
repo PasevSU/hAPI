@@ -1,5 +1,7 @@
 # Master Project Plan — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** процес и управление
+
 > Canonical reference for execution: [`docs/plan/15-unified-master-plan-v6.0.md`](../../docs/plan/15-unified-master-plan-v6.0.md).
 > This file summarises it; the phase plans under `docs/plan/` hold the detail.
 > ADR-0024 records the consolidation decision.

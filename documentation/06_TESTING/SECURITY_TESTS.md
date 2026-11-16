@@ -1,5 +1,7 @@
 # Security Tests — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** тестове
+
 ## Threat-driven cases
 
 | Threat                 | Test                                    | Expect                                         |

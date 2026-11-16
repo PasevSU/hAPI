@@ -1,5 +1,7 @@
 # ADR-0004: key-lifecycle
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Date:** 2026-10
 - **Context:** Signing keys must be rotated and revoked without invalidating history.

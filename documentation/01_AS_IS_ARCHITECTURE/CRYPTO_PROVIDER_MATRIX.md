@@ -1,5 +1,7 @@
 # Crypto Provider Matrix — hAPI Enterprise
 
+> **Клас:** жив · **Собственик на факта:** състояние днес · **Проверен към:** 0.69.227
+
 ## Current (As-Is) vs Target (To-Be)
 
 | Capability | Current provider | Current state | Target (Phase 7) |

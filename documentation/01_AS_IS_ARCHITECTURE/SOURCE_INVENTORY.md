@@ -1,11 +1,13 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
+> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.227
+
 > **Генериран документ.** Версия на кода: **0.69.227**. Пише се от
 > `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
 > Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
 > първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **129** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **45** инструмента · **433** теста.
+Общо: **129** backend модула · **19** HTTP компонента · **29** UI модула · **9** Python модула · **46** инструмента · **434** теста.
 
 Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md); списъкът на
 маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
@@ -216,7 +218,7 @@
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (45)
+### Инструменти (`scripts/*.cjs`) (46)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -234,6 +236,7 @@
 | `scripts/decrypt-package.cjs` | Разшифроване на криптиран експортен пакет БЕЗ add-on. |
 | `scripts/dev-dashboard.cjs` | команди (запаметявани в dashboard-commands.json) |
 | `scripts/diag-package.cjs` | ПАКЕТ ЗА ДЕБЪГИНГ И ОТСТРАНЯВАНЕ НА ПРОБЛЕМИ (0.69.208). |
+| `scripts/docs-class.cjs` | КЛАС НА ДОКУМЕНТА — нормата D-01 от `DOCS_AND_OPTIONS_STRUCTURE.md` (0.69.228). |
 | `scripts/docs-index.cjs` | ПЪЛНО СЪДЪРЖАНИЕ НА `documentation/` — ГЕНЕРИРАНО ОТ ДИСКА. |
 | `scripts/docs-manual.cjs` | ГЕНЕРАТОР НА ПРИЛОЖЕНИЯТА КЪМ ПЪЛНОТО РЪКОВОДСТВО (0.69.161). |
 | `scripts/document-empty-catches.cjs` | Еднократен инструмент: добавя КОНКРЕТНА причина във всеки празен `catch` в издавания код. |

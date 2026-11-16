@@ -1,5 +1,7 @@
 # Преглед: `hapi-evidence-portal v1.2` (външен пакет) → какво от него вече е в hAPI
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 **Дата на прегледа:** 2026-10-24 · **Източник:** `hapi-evidence-portal-v1.2-ha-frontend.zip`
 (`VERSION.json`, `HOME_ASSISTANT_DEPLOY.md`, `README.md`, `portal.html`, `assets/*`, `data/demo-evidence.json`)
 **Извод в едно изречение:** пакетът е вече интегриран в `hapi_enterprise/evidence-portal/` и в по-нова

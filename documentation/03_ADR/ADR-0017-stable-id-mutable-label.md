@@ -1,5 +1,7 @@
 # ADR-0017: `id_gruppe` стабилен, `name_folder` mutable label
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Дата:** 2026-10-12
 

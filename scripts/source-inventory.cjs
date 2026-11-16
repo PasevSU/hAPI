@@ -126,6 +126,8 @@ function generate() {
   const lines = [
     '# Source Inventory — hAPI Enterprise (As-Is)',
     '',
+    require('./docs-class.cjs').lineFor('01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md'),
+    '',
     `> **Генериран документ.** Версия на кода: **${version()}**. Пише се от`,
     '> `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.',
     '> Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от',

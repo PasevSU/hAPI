@@ -61,6 +61,8 @@ function renderOptions() {
   const rows = [];
   rows.push('# Приложение А — всички опции на add-on-а');
   rows.push('');
+  rows.push(require('./docs-class.cjs').lineFor('09_COMPLETE_MANUAL/APPENDIX-A-OPTIONS.md'));
+  rows.push('');
   rows.push('> Генерирано от `scripts/docs-manual.cjs`; **не се редактира на ръка**.');
   rows.push('> Стойността в колоната „по подразбиране“ е точно това, което издание ' + version() + ' доставя.');
   rows.push('');
@@ -105,6 +107,8 @@ function renderApi() {
   const names = [...groups.keys()].sort();
   const out = [];
   out.push('# Приложение Б — административни маршрути');
+  out.push('');
+  out.push(require('./docs-class.cjs').lineFor('09_COMPLETE_MANUAL/APPENDIX-B-API.md'));
   out.push('');
   out.push('> Генерирано от `scripts/docs-manual.cjs` от `hapi_enterprise/admin-api-spec.js`;');
   out.push('> **не се редактира на ръка**. Всеки маршрут носи своята способност (виж');

@@ -1,5 +1,7 @@
 # Function Call Graph — hAPI Enterprise (As-Is)
 
+> **Клас:** жив · **Собственик на факта:** състояние днес · **Проверен към:** 0.69.227
+
 > Logical call graph (not exhaustive; derived from module responsibilities).
 
 ```text

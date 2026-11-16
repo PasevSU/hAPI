@@ -1,5 +1,7 @@
 # Dependency Register — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** процес и управление
+
 | ID | Dependency | Type | Version / constraint | Purpose | Fallback |
 | -- | ---------- | ---- | -------------------- | ------- | -------- |
 | D1 | Node.js runtime | Runtime | ≥ 22.13 | `node:sqlite` `DatabaseSync` | Embedded Node in packages |

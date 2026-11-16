@@ -1,5 +1,7 @@
 # ADR-0003: openpgp-v6
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Date:** 2026-10
 - **Context:** Interoperability of evidence with courts/tools that understand OpenPGP.

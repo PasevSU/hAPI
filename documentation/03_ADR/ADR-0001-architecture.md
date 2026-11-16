@@ -1,5 +1,7 @@
 # ADR-0001: architecture
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Date:** 2026-10
 - **Context:** Need one maintainable codebase that runs as HA add-on and Windows app.

@@ -1,5 +1,7 @@
 # Master Migration Plan — hAPI Enterprise
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 ## Scope
 
 Migrate document folders and pointer/directory profiles from their current

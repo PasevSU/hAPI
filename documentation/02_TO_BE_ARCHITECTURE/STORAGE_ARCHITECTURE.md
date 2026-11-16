@@ -1,5 +1,7 @@
 # Storage Architecture — hAPI Enterprise (To-Be)
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 ## Storage classes
 
 | Class | Purpose | Immutable | Encryption |

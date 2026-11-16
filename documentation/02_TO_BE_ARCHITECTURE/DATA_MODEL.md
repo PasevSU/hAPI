@@ -1,5 +1,7 @@
 # Data Model — hAPI Enterprise (To-Be)
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 ## Core entities
 
 | Entity | Description |

@@ -70,6 +70,8 @@ function generate() {
   const lines = [
     '# Кодове за грешка — каталог',
     '',
+    require('./docs-class.cjs').lineFor('04_FUNCTION_SPECIFICATIONS/ERROR_CODES.md'),
+    '',
     `> **Генериран документ.** Версия на кода: **${version}**. Пише се от`,
     '> `node scripts/error-codes.cjs`, проверява се от `tests/error-codes.cjs`.',
     '> Значението идва от текста на самото изключение — ръчна редакция се губи при следващото',

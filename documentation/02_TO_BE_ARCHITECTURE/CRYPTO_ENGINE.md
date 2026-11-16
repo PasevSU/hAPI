@@ -1,5 +1,7 @@
 # Crypto Engine — hAPI Enterprise (To-Be)
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 ## Goal
 
 Upgrade HMAC receipts into **legally meaningful cryptographic evidence**:

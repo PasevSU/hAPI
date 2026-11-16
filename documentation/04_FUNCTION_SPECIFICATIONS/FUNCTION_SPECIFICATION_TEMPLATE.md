@@ -1,5 +1,7 @@
 # Function Specification Template
 
+> **Клас:** нормативен · **Собственик на факта:** договор на функция
+
 ## <ID>: <Function name>
 
 - **Module:** `<module>.js`

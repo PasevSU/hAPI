@@ -1,5 +1,7 @@
 # ADR-0021: Multi-tenancy и Zero Trust — architecture-ready
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 - **Status:** Accepted
 - **Дата:** 2026-10-12
 

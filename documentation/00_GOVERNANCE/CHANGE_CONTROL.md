@@ -1,5 +1,7 @@
 # Change Control — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** процес и управление
+
 ## 1. When a change-control record is required
 
 - Architectural decisions (→ ADR).

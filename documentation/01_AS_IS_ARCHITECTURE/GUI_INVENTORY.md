@@ -1,5 +1,7 @@
 # GUI Inventory — hAPI Enterprise (As-Is)
 
+> **Клас:** жив · **Собственик на факта:** състояние днес · **Проверен към:** 0.69.227
+
 ## 1. Enterprise Control Center (единствен административен интерфейс)
 
 | Aspect     | Detail                                                                                                               |

@@ -1,5 +1,7 @@
 # System Architecture — hAPI Enterprise (To-Be)
 
+> **Клас:** нормативен · **Собственик на факта:** целева архитектура
+
 ## Vision
 
 A single codebase, three deployment targets, one behavior:

@@ -1,5 +1,7 @@
 # Master Function Inventory — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** договор на функция
+
 > Every externally observable function, grouped by domain, with a link to its spec.
 
 ## Document management

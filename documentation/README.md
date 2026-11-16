@@ -1,5 +1,7 @@
 # hAPI Enterprise — Documentation
 
+> **Клас:** нормативен · **Собственик на факта:** индекс на документацията
+
 Enterprise governance and methodology layer. Complements the implementation-level
 `docs/` tree (plan + ADR).
 

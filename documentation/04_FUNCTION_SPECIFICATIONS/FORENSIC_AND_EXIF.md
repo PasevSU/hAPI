@@ -1,5 +1,7 @@
 # Forensic анализ и EXIF (панели 07 и 08)
 
+> **Клас:** нормативен · **Собственик на факта:** договор на функция
+
 Какво казва hAPI за един файл, без да вярва на разширението му. Кодът е в
 `hapi_enterprise/forensic.js` и `hapi_enterprise/exif.js`, маршрутите — в
 `hapi_enterprise/routes/forensic.js`, тестът — `tests/forensic-exif.cjs`.

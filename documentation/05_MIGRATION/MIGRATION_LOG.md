@@ -1,5 +1,7 @@
 # Migration Log — hAPI Enterprise
 
+> **Клас:** исторически · **Замразен към:** 0.69.227
+
 > Append-only migration journal. One line per event; fields separated by `|`.
 
 | Timestamp | Phase | Action | Object | Source hash | Dest hash | Status | Operator |

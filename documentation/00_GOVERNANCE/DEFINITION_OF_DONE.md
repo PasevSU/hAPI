@@ -1,5 +1,7 @@
 # Definition of Done — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** процес и управление
+
 A work item is **Done** only when **all** of the following are true.
 
 ## Functional

@@ -1,5 +1,7 @@
 # Work Breakdown Structure — hAPI Enterprise
 
+> **Клас:** нормативен · **Собственик на факта:** процес и управление
+
 ## 1. Core & domain
 
 - 1.1 Registry (metadata-driven profiles/fields).
