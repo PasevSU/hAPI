@@ -20,8 +20,10 @@
  */
 'use strict';
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const zlib = require('node:zlib');
 
 const { defaultProfile } = require('./check-sent.cjs');
 
@@ -48,25 +50,55 @@ function read(file) {
 }
 
 /**
- * File names stored in a zip, read from its central directory.
+ * The files inside a zip, read from its central directory, with contents inflated.
  *
  * Returns null when the archive cannot be walked, so a corrupt pack fails loudly
- * instead of passing as "no backslashed entries found".
+ * instead of passing as "no backslashed entries found". Reading the bytes, not
+ * just the names, is what lets the caller compare the installed copy with the
+ * source instead of trusting timestamps - a rebuild can keep the mtime and still
+ * ship the previous code.
  */
-function zipEntryNames(zip) {
+function zipEntries(zip) {
   const EOCD = Buffer.from([0x50, 0x4b, 0x05, 0x06]);
   const eocdAt = zip.lastIndexOf(EOCD);
   if (eocdAt < 0) return null;
   const count = zip.readUInt16LE(eocdAt + 10);
   let at = zip.readUInt32LE(eocdAt + 16);
-  const names = [];
+  const entries = [];
   for (let i = 0; i < count; i += 1) {
     if (at + 46 > zip.length || zip.readUInt32LE(at) !== 0x02014b50) return null;
+    const method = zip.readUInt16LE(at + 10);
+    const compressedSize = zip.readUInt32LE(at + 20);
     const nameLength = zip.readUInt16LE(at + 28);
-    names.push(zip.slice(at + 46, at + 46 + nameLength).toString('utf8'));
-    at += 46 + nameLength + zip.readUInt16LE(at + 30) + zip.readUInt16LE(at + 32);
+    const extraLength = zip.readUInt16LE(at + 30);
+    const commentLength = zip.readUInt16LE(at + 32);
+    const localAt = zip.readUInt32LE(at + 42);
+    const name = zip.slice(at + 46, at + 46 + nameLength).toString('utf8');
+
+    if (localAt + 30 > zip.length || zip.readUInt32LE(localAt) !== 0x04034b50) return null;
+    const start = localAt + 30 + zip.readUInt16LE(localAt + 26) + zip.readUInt16LE(localAt + 28);
+    if (start + compressedSize > zip.length) return null;
+    const raw = zip.slice(start, start + compressedSize);
+    let data;
+    if (method === 0) {
+      data = raw;
+    } else if (method === 8) {
+      try {
+        data = zlib.inflateRawSync(raw);
+      } catch {
+        return null;
+      }
+    } else {
+      return null;
+    }
+    entries.push({ name, data });
+    at += 46 + nameLength + extraLength + commentLength;
   }
-  return names;
+  return entries;
+}
+
+function sha256(bytes) {
+  return crypto.createHash('sha256').update(bytes).digest('hex');
 }
 
 /** Files the running extension needs; all of them must be inside the archive. */
@@ -109,6 +141,13 @@ function prefKeys(userJs) {
 }
 
 function main(argv, { log = console.log, error = console.error } = {}) {
+  // main() is callable more than once (the self-test does exactly that), so every
+  // call starts from an empty ledger. Without this a single failing profile leaves
+  // its FAIL lines in the next call's report and poisons a correct run.
+  checks.length = 0;
+  failed = 0;
+  skipped = 0;
+
   const profile = argv[0] || defaultProfile();
   if (!profile || !fs.existsSync(profile)) {
     error('No Thunderbird profile found. Pass one: verify-install.cjs <profile-dir>');
@@ -206,21 +245,40 @@ function main(argv, { log = console.log, error = console.error } = {}) {
     // faults caused exactly that: nested entries written with Windows separators
     // ("_locales\en\messages.json"), and a manifest that declares default_locale
     // while the _locales tree is left out of the archive.
-    const entries = zipEntryNames(zip);
+    const entries = zipEntries(zip);
     ok('the installed .xpi has a readable file list', entries !== null);
     if (entries) {
-      const backslashed = entries.filter((name) => name.includes('\\'));
+      const names = entries.map((entry) => entry.name);
+      const backslashed = names.filter((name) => name.includes('\\'));
       ok('no archive entry uses a backslash', backslashed.length === 0, backslashed.join(', ') || 'none');
-      const missing = requiredEntries.filter((name) => !entries.includes(name));
+      const missing = requiredEntries.filter((name) => !names.includes(name));
       ok(
         `the archive carries every required file (${requiredEntries.length})`,
         missing.length === 0,
         missing.join(', ') || 'none',
       );
+
+      // The mtime check above is a heuristic; this is the fact behind it. A stale
+      // pack that happens to be newer than the source (a rebuild from a dirty
+      // stage, a copy after the edit) passes on time and fails here.
+      const differing = entries
+        .map((entry) => entry.name)
+        .filter((name) => {
+          const source = path.join(EXTENSION, name.replace(/\//g, path.sep));
+          if (!fs.existsSync(source)) return false;
+          const entry = entries.find((candidate) => candidate.name === name);
+          return sha256(entry.data) !== sha256(fs.readFileSync(source));
+        });
+      ok(
+        'the archive carries the current source, not a previous build',
+        differing.length === 0,
+        differing.join(', ') || 'every file matches',
+      );
+
       if (manifest.default_locale) {
         ok(
           `the archive carries the default_locale tree (${manifest.default_locale})`,
-          entries.includes(`_locales/${manifest.default_locale}/messages.json`),
+          names.includes(`_locales/${manifest.default_locale}/messages.json`),
           'Thunderbird deletes the add-on when __MSG_*__ cannot resolve',
         );
       }

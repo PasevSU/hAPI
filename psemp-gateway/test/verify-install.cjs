@@ -99,21 +99,21 @@ function zipBytes(entries) {
 const MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, 'thunderbird-extension', 'manifest.json'), 'utf8'));
 
 /**
- * The archive the installer is supposed to produce. `backslash` recreates the
- * Windows-separator packing fault, `withLocales: false` the missing
- * default_locale tree.
+ * The archive the installer is supposed to produce, carrying the real source
+ * bytes so the content-identity check has something honest to compare.
+ *
+ * `backslash` recreates the Windows-separator packing fault, `withLocales: false`
+ * the missing default_locale tree, and `tamper` a file that is the right name and
+ * a newer build time but the wrong content.
  */
-function xpiEntries({ backslash = false, withLocales = true } = {}) {
-  const sep = backslash ? '\\' : '/';
-  const entries = ['manifest.json', 'background.js', 'options.html', 'options.js']
-    .map((name) => ({ name, data: 'fixture' }));
-  if (withLocales) {
-    entries.push({
-      name: `_locales${sep}${MANIFEST.default_locale}${sep}messages.json`,
-      data: 'fixture',
-    });
-  }
-  return entries;
+function xpiEntries({ backslash = false, withLocales = true, tamper = null } = {}) {
+  const names = ['manifest.json', 'background.js', 'options.html', 'options.js'];
+  if (withLocales) names.push(`_locales/${MANIFEST.default_locale}/messages.json`);
+  return names.map((name) => {
+    const source = path.join(ROOT, 'thunderbird-extension', name.replace(/\//g, path.sep));
+    const data = name === tamper ? Buffer.from('previous build\n', 'utf8') : fs.readFileSync(source);
+    return { name: backslash ? name.replace(/\//g, '\\') : name, data };
+  });
 }
 
 /**
@@ -255,6 +255,41 @@ checks.push({
       return 'exit 1';
     } finally {
       fs.rmSync(profile, { recursive: true, force: true });
+    }
+  },
+});
+
+checks.push({
+  name: 'an .xpi that carries a previous build is a failure even when it is newer',
+  fn() {
+    const profile = makeProfile({ xpi: { tamper: 'background.js' } });
+    try {
+      const { code, text } = run(profile);
+      assert.strictEqual(code, 1, `a stale payload must fail, got exit ${code}:\n${text}`);
+      assert.doesNotMatch(text, /FAIL the installed \.xpi is at least as new/, 'the timestamp check must still pass');
+      assert.match(text, /FAIL the archive carries the current source, not a previous build\s+background\.js/);
+      assert.match(text, /RESULT: 1 FAILED/, `only the payload check may fail:\n${text}`);
+      return 'exit 1';
+    } finally {
+      fs.rmSync(profile, { recursive: true, force: true });
+    }
+  },
+});
+
+checks.push({
+  name: 'each run reports only its own findings, not the previous run',
+  fn() {
+    const broken = makeProfile({ xpi: { backslash: true } });
+    const good = makeProfile();
+    try {
+      assert.strictEqual(run(broken).code, 1, 'the broken profile must fail');
+      const { code, text } = run(good);
+      assert.strictEqual(code, 0, `a good profile after a bad one must pass, got:\n${text}`);
+      assert.doesNotMatch(text, /FAIL/, 'findings leaked between runs');
+      return 'no leakage';
+    } finally {
+      fs.rmSync(broken, { recursive: true, force: true });
+      fs.rmSync(good, { recursive: true, force: true });
     }
   },
 });

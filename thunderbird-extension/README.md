@@ -311,8 +311,12 @@ to build at all when `default_locale` names a tree that is not in the stage fold
 [`psemp-gateway/tools/verify-install.cjs`](../../psemp-gateway/tools/verify-install.cjs)
 guards this from outside: it walks the installed archive's central directory and
 fails on an unreadable file list, on any backslashed entry, on a missing required
-file, and on a missing `default_locale` tree. Its own test proves the guards fire
-against a deliberately mis-packed fixture.
+file, and on a missing `default_locale` tree. It also inflates every entry and
+compares its SHA-256 with the source file of the same name, because a timestamp is
+only a guess: a rebuild from a dirty stage, or a copy made after the edit, can be
+newer than `background.js` and still contain the previous code. Its own test proves
+each guard fires, including one fixture that is deliberately newer *and* stale —
+which only the content check can catch.
 
 The script also repairs the profile's `user.js`. Thunderbird sends only the custom
 headers whose names are registered in `mail.compose.other.header`, so a profile
@@ -399,9 +403,10 @@ node psemp-gateway/tools/verify-install.cjs
 
 It exits `0` only when the names `background.js` writes, the gateway's
 `HEADER_NAMES` and the profile's `mail.compose.other.header` agree in order, the
-installed copy is not older than the source, and the archive itself is loadable
+installed copy is not older than the source, the archive itself is loadable
 (readable file list, no backslashed entries, every required file present, the
-`default_locale` tree present).
+`default_locale` tree present), and every file it carries is byte-identical to the
+one in the repository.
 
 ## What a recipient can verify
 
