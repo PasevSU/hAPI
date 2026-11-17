@@ -387,6 +387,50 @@ async function main() {
     });
   });
 
+  await check('seal-can-also-sign-the-whole-message', async () => {
+    const dir = tempDir();
+    const runSeal = async (keyId) => {
+      const file = writeManifest(
+        dir,
+        extensionManifest({ attachments: [{ filename: 'Anlage 1.pdf', data: PDF }] })
+      );
+      const out = path.join(dir, 'message.eml');
+      const report = await api.sealManifest(file, {
+        body: BODY,
+        attachments: [{ filename: 'Anlage 1.pdf', data: PDF }],
+        sign: false,
+        stamp: false,
+        keyId,
+        // Opt-in on purpose: the whole-message signature needs the attachment BYTES,
+        // which a caller sealing a manifest it received may not hold.
+        signedMessage: { outputPath: out },
+      });
+      return { report, out };
+    };
+
+    if (!api.pgpStatus().available) {
+      const { report } = await runSeal();
+      assert.strictEqual(report.signature.status, 'skipped');
+      assert.ok(report.message, 'the whole-message report is present when it was asked for');
+      assert.strictEqual(report.message.status, 'unavailable');
+      assert.strictEqual(report.message.message, null, 'no hollow multipart/signed is offered');
+      assert.strictEqual(report.ok, false, 'the one thing the caller asked for did not happen');
+      return `reported unavailable (${report.message.reason})`;
+    }
+
+    return withTempKeyring(async ({ fingerprint }) => {
+      const { report, out } = await runSeal(fingerprint);
+      assert.strictEqual(report.message.ok, true, JSON.stringify(report.message.signature || report.message.reason));
+      assert.strictEqual(report.ok, true, 'a requested message signature that worked is a clean seal');
+      assert.ok(report.artifacts.includes(out), 'the message is listed among the artifacts');
+      assert.strictEqual(report.message.coverage.length, 2, 'body + the one sealed attachment');
+      assert.strictEqual(report.message.coverage[1].sha256, api.sha256Hex(PDF), 'the signed bytes are the sealed bytes');
+      const verified = await api.verifySignedMessage({ path: out });
+      assert.strictEqual(verified.ok, true, 'the sealed message verifies');
+      return `one signature over body + ${report.message.coverage.length - 1} attachment`;
+    });
+  });
+
   await check('stamping-is-reported-not-faked', async () => {
     const dir = tempDir();
     const file = writeManifest(dir, extensionManifest());

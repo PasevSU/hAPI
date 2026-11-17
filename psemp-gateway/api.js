@@ -585,6 +585,13 @@ const ENGINE_LABEL = 'PasevSU-Cripto-Engine:v1';
 const CRYPTO_TITLE_LABEL = 'PasevSU-Cripto-title:v1';
 const ENGINE_DIGITS = 25;
 
+/*
+ * The same Message-ID domain the extension uses. `@forensic.evidence.pasevsu` claimed a
+ * `.pasevsu` TLD that does not exist, so the twin engines now agree on a domain the
+ * sender can actually receive mail at.
+ */
+const MESSAGE_ID_DOMAIN = 'forensic.evidence.pasevsu-dev.com';
+
 /** Derive the 25-digit crypto-engine code from the evidence. */
 function cryptoEngineCode({ merkleRoot = '', bodySha256 = '' } = {}) {
   const seed = sha256Hex(`${ENGINE_LABEL}|${merkleRoot}|${bodySha256}`);
@@ -669,7 +676,7 @@ function buildMessageId({ evidenceId = '', timestamp = '' } = {}) {
   const seed = sha256Hex(`${ENGINE_LABEL}|msgid|${evidenceId}|${stamp}`);
   const slug = (offset, length) => seed.slice(offset, offset + length);
   const local = `PasevSU.${stamp}.${evidenceId || slug(0, 8)}+${slug(8, 6)}_${slug(14, 6)}~${slug(20, 6)}.${slug(26, 6)}`;
-  return `<${local}@forensic.evidence.pasevsu>`;
+  return `<${local}@${MESSAGE_ID_DOMAIN}>`;
 }
 
 /* ------------------------------------------------------------------ *
@@ -1355,13 +1362,46 @@ async function sealManifest(manifestPath, options = {}) {
     report.timestamp = await otsStamp(target);
   }
 
+  // The manifest `.asc` above signs a description of the message. When the caller
+  // also asks for `signedMessage`, one further signature covers the body and every
+  // attachment in full — see the PGP/MIME section. It is opt-in because it needs the
+  // attachment bytes the manifest only describes, and a caller sealing a manifest it
+  // received may not hold them.
+  if (options.signedMessage) {
+    const settings = options.signedMessage === true ? {} : options.signedMessage;
+    const attachmentBytes = [];
+    for (const entry of claimed.attachments || []) {
+      const name = sanitizeHeaderValue(entry && entry.filename);
+      if (supplied.has(name)) attachmentBytes.push({ filename: name, data: supplied.get(name) });
+    }
+    try {
+      report.message = await signWholeMessage({
+        body: options.body === undefined || options.body === null ? '' : options.body,
+        attachments: attachmentBytes,
+        headers: settings.headers,
+        keyId: settings.keyId || options.keyId,
+        digestAlgo: settings.digestAlgo || options.digestAlgo,
+        outputPath: settings.outputPath,
+      });
+    } catch (error) {
+      report.message = {
+        ok: false,
+        status: 'failed',
+        reason: 'SIGNED_MESSAGE_FAILED',
+        detail: error && error.message ? error.message : String(error),
+      };
+    }
+  }
+
   const signed = report.signature && report.signature.status === 'ok';
   const stamped = report.timestamp && report.timestamp.status === 'ok';
   report.ok = true;
+  if (report.message && !report.message.ok) report.ok = false;
   report.status = signed && stamped ? 'sealed' : 'sealed-partial';
   report.signaturePath = signed ? report.signature.signaturePath || signaturePath : null;
   report.proofPath = stamped ? report.timestamp.otsPath || proofPath : null;
   report.artifacts = [target, report.signaturePath, report.proofPath].filter(Boolean);
+  if (report.message && report.message.messagePath) report.artifacts.push(report.message.messagePath);
   return report;
 }
 
@@ -2372,6 +2412,597 @@ function pgpVerify(file, signaturePath) {
 }
 
 /* ------------------------------------------------------------------ *
+ * Whole-message OpenPGP signature — PGP/MIME (RFC 3156)
+ *
+ * `pgpSign()` above writes a DETACHED signature over one file — in practice the
+ * manifest. That covers the manifest, and the manifest covers the attachments by
+ * hash, but the attachment BYTES themselves never sit inside a signature: nothing
+ * stops a repackager from handing a verifier a different PDF whose hash was never
+ * checked against the message that was signed.
+ *
+ * This section closes that. One signature over one MIME entity:
+ *
+ *   multipart/signed                       <- the single signature
+ *     part 1: multipart/mixed              <- everything that is signed
+ *               text/plain                 <- the body
+ *               application/octet-stream…  <- every attachment, in full
+ *     part 2: application/pgp-signature    <- one detached signature over part 1
+ *
+ * Repacking, adding a file, dropping a file or editing either body or any
+ * attachment changes part 1, and the single signature stops verifying. That is
+ * the property a per-file signature cannot give: N signatures prove N files are
+ * genuine but say nothing about the SET, and an attacker who removes a file and
+ * its signature leaves a perfectly valid signature on what remains.
+ *
+ * Byte discipline is the whole point, so four rules are not negotiable:
+ *   1. Every line ends with CRLF, exactly as RFC 3156 canonicalisation requires.
+ *   2. The entity is signed in BINARY (`gpg --detach-sign`, no text mode), so the
+ *      signature covers the exact octets written, not a normalised copy. Writing a
+ *      Buffer means Windows never rewrites an LF into a CRLF behind our back.
+ *   3. Boundaries are DERIVED from the content, so the same input signs to the
+ *      same bytes twice and a boundary can never collide with the payload.
+ *   4. Part bodies are base64. Base64 is pure ASCII with a fixed line length, so
+ *      8-bit headers, bare-LF drift and long-line folding cannot corrupt the
+ *      signed bytes in transit — the decoded content is byte-identical anyway.
+ * ------------------------------------------------------------------ */
+
+const SIGNED_MESSAGE_PROTOCOL = 'application/pgp-signature';
+const SIGNED_MESSAGE_MICALG = 'pgp-sha512';
+const SIGNED_MESSAGE_CRLF = '\r\n';
+
+/**
+ * MIME type by extension, for attachments a caller does not label itself.
+ * Only the formats evidence actually arrives in are named; everything else stays
+ * `application/octet-stream`, which is always correct even when unspecific.
+ */
+const SIGNED_MESSAGE_TYPES = Object.freeze({
+  txt: 'text/plain',
+  log: 'text/plain',
+  csv: 'text/csv',
+  json: 'application/json',
+  xml: 'application/xml',
+  eml: 'message/rfc822',
+  pdf: 'application/pdf',
+  zip: 'application/zip',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  heic: 'image/heic',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  asc: 'application/pgp-signature',
+  ots: 'application/vnd.opentimestamps.ots',
+});
+
+/** Content type for a filename we were not told the type of. */
+function signedMessageTypeFor(filename) {
+  const extension = (/\.([A-Za-z0-9]+)$/.exec(String(filename == null ? '' : filename)) || [])[1];
+  if (!extension) return 'application/octet-stream';
+  return SIGNED_MESSAGE_TYPES[extension.toLowerCase()] || 'application/octet-stream';
+}
+
+/**
+ * A boundary derived from the content it delimits.
+ *
+ * RFC 2046 §5.1.1 caps a boundary at 70 characters from a restricted set; the
+ * prefix plus 32 hex digits stays well inside it. Deriving it from the payload is
+ * what makes the output reproducible: the same message produces the same bytes,
+ * so two runs can be compared, and a re-sign of unchanged content is detectable
+ * rather than looking like a new message.
+ */
+function signedMessageBoundary(label, seed) {
+  return `=_PasevSU_${label}_${sha256Hex(seed).slice(0, 32)}`;
+}
+
+/** Base64 body wrapped at 76 characters, CRLF between lines, no trailing CRLF. */
+function signedMessageBase64(data, width = 76) {
+  const encoded = toBuffer(data).toString('base64');
+  const lines = [];
+  for (let at = 0; at < encoded.length; at += width) lines.push(encoded.slice(at, at + width));
+  return lines.join(SIGNED_MESSAGE_CRLF);
+}
+
+/**
+ * `Content-Disposition` for an attachment filename.
+ *
+ * An ASCII name is emitted as a quoted-string, which every client reads. A name
+ * outside printable ASCII is percent-encoded into the RFC 2231 extended form
+ * instead of being pushed onto the wire as raw 8-bit bytes: RFC 5322 §2.1.1 does
+ * not allow those, and a client that mangles the name would also change the bytes
+ * the signature covers.
+ */
+function signedMessageDisposition(filename) {
+  const name = sanitizeHeaderValue(filename) || 'attachment';
+  const plain = /^[\x20-\x7E]+$/.test(name) && !/["\\]/.test(name);
+  if (plain) return `attachment; filename="${name}"`;
+  const encoded = Array.from(Buffer.from(name, 'utf8'))
+    .map((byte) => {
+      const character = String.fromCharCode(byte);
+      // RFC 2231 §4 attr-char: unreserved plus a few safe punctuation marks.
+      return /[A-Za-z0-9!#$&+.^_`|~-]/.test(character)
+        ? character
+        : `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+    })
+    .join('');
+  return `attachment; filename*=UTF-8''${encoded}`;
+}
+
+/** One MIME part: headers, blank line, base64 body. No trailing CRLF. */
+function signedMessagePart({ contentType, disposition = null, data, description = null }) {
+  const lines = [`Content-Type: ${contentType}`];
+  if (disposition) lines.push(`Content-Disposition: ${disposition}`);
+  if (description) lines.push(`Content-Description: ${description}`);
+  lines.push('Content-Transfer-Encoding: base64', '');
+  lines.push(signedMessageBase64(data));
+  return lines.join(SIGNED_MESSAGE_CRLF);
+}
+
+/**
+ * Build the entity that will be signed: the body plus every attachment, in full.
+ *
+ * Returns the exact bytes as a string plus a `coverage` list naming what those
+ * bytes contain, so a caller — and a report — can state precisely what the single
+ * signature covers instead of hoping.
+ *
+ * A message with no attachments yields a bare `text/plain` part rather than a
+ * one-child `multipart/mixed`, which is what Thunderbird produces and what a
+ * recipient's client expects.
+ *
+ * @param {{body?: string, attachments?: Array<{filename?: string, data?: *,
+ *          contentType?: string}>, subject?: string}} [options]
+ * @returns {{entity: string, boundary: string|null, coverage: Array<object>,
+ *          bytes: number}}
+ */
+function buildSignedEntity(options = {}) {
+  const textBytes = Buffer.from(String(options.body == null ? '' : options.body), 'utf8');
+  const items = Array.isArray(options.attachments) ? options.attachments : [];
+  const files = items.map((item) => {
+    const filename = sanitizeHeaderValue(item && item.filename) || 'attachment';
+    if (!item || item.data === undefined || item.data === null) {
+      // Signing a manifest that lists a file whose bytes we do not hold would
+      // certify a claim instead of content. Refuse rather than guess.
+      throw new Error(`Attachment "${filename}" carries no bytes, so it cannot be signed.`);
+    }
+    const bytes = toBuffer(item.data);
+    return {
+      filename,
+      bytes,
+      sha256: sha256Hex(bytes),
+      contentType: sanitizeHeaderValue(item.contentType) || signedMessageTypeFor(filename),
+    };
+  });
+
+  const textPart = signedMessagePart({ contentType: 'text/plain; charset=utf-8', data: textBytes });
+  const coverage = [
+    { role: 'body', filename: null, contentType: 'text/plain; charset=utf-8', bytes: textBytes.length, sha256: sha256Hex(textBytes) },
+    ...files.map((file) => ({
+      role: 'attachment',
+      filename: file.filename,
+      contentType: file.contentType,
+      bytes: file.bytes.length,
+      sha256: file.sha256,
+    })),
+  ];
+
+  if (files.length === 0) {
+    return { entity: textPart, boundary: null, coverage, bytes: Buffer.byteLength(textPart, 'latin1') };
+  }
+
+  const boundary = signedMessageBoundary(
+    'mixed',
+    [sha256Hex(textBytes), ...files.map((file) => `${file.filename}:${file.sha256}`)].join('\n')
+  );
+  const segments = [`--${boundary}`, textPart];
+  for (const file of files) {
+    segments.push(
+      `--${boundary}`,
+      signedMessagePart({
+        contentType: file.contentType,
+        disposition: signedMessageDisposition(file.filename),
+        data: file.bytes,
+      })
+    );
+  }
+  segments.push(`--${boundary}--`);
+  const mixedBody = segments.join(SIGNED_MESSAGE_CRLF);
+  const entity = [
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    '',
+    mixedBody,
+  ].join(SIGNED_MESSAGE_CRLF);
+
+  return { entity, boundary, coverage, bytes: Buffer.byteLength(entity, 'latin1') };
+}
+
+/** Header lines the caller may set on the outer wrapper, in a stable order. */
+const SIGNED_MESSAGE_HEADERS = Object.freeze([
+  'from',
+  'to',
+  'cc',
+  'reply-to',
+  'subject',
+  'date',
+  'message-id',
+]);
+
+/** Only known headers, sanitised, so a caller cannot inject a bogus wrapper line. */
+function signedMessageOuterHeaders(headers) {
+  const lines = [];
+  const source = headers && typeof headers === 'object' ? headers : {};
+  for (const name of SIGNED_MESSAGE_HEADERS) {
+    const value = sanitizeHeaderValue(source[name]);
+    if (!value) continue;
+    const label = name.replace(/(^|-)([a-z])/g, (_, dash, letter) => `${dash}${letter.toUpperCase()}`);
+    lines.push(`${label}: ${value}`);
+  }
+  return lines;
+}
+
+/** `pgp-sha512` for SHA512, and so on: the micalg token must match the digest used. */
+function signedMessageMicalg(digestAlgorithm) {
+  return `pgp-${String(digestAlgorithm).toLowerCase()}`;
+}
+
+/**
+ * Sign the whole message — body AND attachments — with ONE OpenPGP signature.
+ *
+ * Never fabricates a signature: with no `gpg` on PATH the report says
+ * `unavailable` and no `message` is returned, because a `multipart/signed` with a
+ * hollow second part would look signed and verify nowhere.
+ *
+ * @param {{body?: string, attachments?: Array<{filename?: string, data?: *,
+ *          contentType?: string}>, headers?: object, keyId?: string,
+ *          digestAlgo?: string, outputPath?: string}} [options]
+ * @returns {Promise<object>} a report; the assembled message is on `.message`.
+ */
+async function signWholeMessage(options = {}) {
+  const built = buildSignedEntity(options);
+  const digest = normalizeDigestAlgo(options.digestAlgo);
+  const report = {
+    ok: false,
+    status: 'unavailable',
+    coverage: built.coverage,
+    entityBytes: built.bytes,
+    boundary: built.boundary,
+    micalg: SIGNED_MESSAGE_MICALG,
+    message: null,
+    messagePath: null,
+    messageSha256: null,
+    entityPath: null,
+    signaturePath: null,
+    signature: null,
+    digestRequested: digest.requested || digest.name,
+  };
+
+  if (digest.error) {
+    return { ...report, status: 'failed', reason: digest.error, detail: digest.detail };
+  }
+
+  const status = pgpStatus();
+  if (!status.available) {
+    return {
+      ...report,
+      reason: status.reason,
+      detail: status.detail,
+      unsignedEntity: built.entity,
+    };
+  }
+
+  const micalg = signedMessageMicalg(digest.name);
+  report.micalg = micalg;
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-signed-'));
+  try {
+    // Written as a Buffer: a string write could be re-encoded, and the signature
+    // must cover the octets the message actually carries.
+    const entityFile = path.join(dir, 'signed-entity.eml');
+    fs.writeFileSync(entityFile, Buffer.from(built.entity, 'latin1'));
+
+    // `force: true` on purpose: the entity legitimately contains `.asc` attachment
+    // bytes, and pgpSign's "already signed" guard reads any embedded
+    // `BEGIN PGP SIGNATURE` block as a signature on the entity itself.
+    const signature = pgpSign(entityFile, {
+      keyId: options.keyId,
+      outputPath: path.join(dir, 'signature.asc'),
+      force: true,
+      digestAlgo: options.digestAlgo,
+    });
+    if (signature.status !== 'ok') {
+      return {
+        ...report,
+        status: signature.status === 'unavailable' ? 'unavailable' : 'failed',
+        reason: signature.reason || 'SIGN_FAILED',
+        detail: signature.detail || signature.stderr || null,
+        // Not the pgpSign report verbatim: its paths point into the temp directory,
+        // which is about to be deleted.
+        signature: { status: signature.status, reason: signature.reason || null, detail: signature.detail || null },
+        unsignedEntity: built.entity,
+      };
+    }
+
+    // Part 2 of a PGP/MIME message carries the BINARY signature, base64 encoded.
+    // The armored `.asc` is kept beside the message for `gpg --verify` by hand.
+    const armored = fs.readFileSync(signature.signaturePath);
+    const binarySignature = armorPayloadToBytes(armored.toString('latin1'));
+    if (!binarySignature.length) {
+      return { ...report, status: 'failed', reason: 'SIGNATURE_UNREADABLE', signature };
+    }
+
+    const outer = signedMessageBoundary('sig', built.entity);
+    const headerLines = [
+      ...signedMessageOuterHeaders(options.headers),
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/signed; micalg=${micalg}; ` +
+        `protocol="${SIGNED_MESSAGE_PROTOCOL}"; boundary="${outer}"`,
+    ];
+    const signaturePart = signedMessagePart({
+      contentType: `${SIGNED_MESSAGE_PROTOCOL}; name="signature.asc"`,
+      disposition: 'attachment; filename="signature.asc"',
+      description: 'OpenPGP digital signature',
+      data: binarySignature,
+    });
+
+    // The preamble names the standard, so a client that shows raw source still
+    // says what the message is. The CRLF before each delimiter belongs to the
+    // delimiter (RFC 2046 §5.1.1), which is why the entity is not re-terminated.
+    const message = [
+      headerLines.join(SIGNED_MESSAGE_CRLF),
+      '',
+      WAR_STANDARD,
+      `--${outer}`,
+      built.entity,
+      `--${outer}`,
+      signaturePart,
+      `--${outer}--`,
+      '',
+    ].join(SIGNED_MESSAGE_CRLF);
+
+    report.message = message;
+    report.messageSha256 = sha256Hex(message);
+    report.entitySha256 = sha256Hex(built.entity);
+    // The temp directory is deleted on the way out, so its paths must not leak into a
+    // report a caller will act on. Only the digest facts survive.
+    report.signature = {
+      status: signature.status,
+      executable: signature.executable || null,
+      digestRequested: signature.digestRequested || null,
+      digestAlgo: signature.digestAlgo || null,
+      digestSource: signature.digestSource || null,
+    };
+    report.signaturePath = null;
+    report.status = 'signed';
+    report.ok = true;
+
+    if (options.outputPath) {
+      const target = path.resolve(String(options.outputPath));
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, message, 'utf8');
+      report.messagePath = target;
+      // The signature proves the message; this proves who signed it. Kept next to
+      // the message because the envelope is not part of the signed bytes.
+      const sidecar = `${target}.asc`;
+      fs.writeFileSync(sidecar, armored);
+      report.signaturePath = sidecar;
+      report.entityPath = `${target}.entity`;
+      fs.writeFileSync(report.entityPath, Buffer.from(built.entity, 'latin1'));
+    }
+
+    return report;
+  } finally {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true });
+    } catch {
+      // A leftover temp directory is not worth failing a signature for.
+    }
+  }
+}
+
+/** `boundary=...` out of a Content-Type value, quoted or bare. */
+function signedMessageBoundaryOf(contentType) {
+  const match = /boundary\s*=\s*(?:"([^"]+)"|([^;\s]+))/i.exec(String(contentType || ''));
+  return match ? (match[1] || match[2]) : null;
+}
+
+/** Header block of a message (or part) as a lowercase-keyed map. */
+function signedMessageHeaders(text) {
+  const headers = {};
+  let current = null;
+  for (const line of String(text).split(/\r?\n/)) {
+    if (/^[ \t]/.test(line) && current) {
+      headers[current] += ` ${line.trim()}`;
+      continue;
+    }
+    const at = line.indexOf(':');
+    if (at <= 0) continue;
+    current = line.slice(0, at).toLowerCase().trim();
+    headers[current] = line.slice(at + 1).trim();
+  }
+  return headers;
+}
+
+/**
+ * Split a PGP/MIME message into the signed entity and the signature, byte exactly.
+ *
+ * Indices are taken over a latin1 view, so one character is one octet and slicing
+ * cannot corrupt a binary attachment. RFC 2046 §5.1.1 makes the CRLF before a
+ * delimiter part of the delimiter, which is exactly why the entity is recovered
+ * without it — the same rule the signer used.
+ *
+ * @returns {{signed: boolean, reason?: string, entity?: string, signature?: Buffer,
+ *   boundary?: string|null, protocol?: string|null, micalg?: string|null,
+ *   headers?: object}}
+ */
+function splitSignedMessage(input) {
+  const text = toBuffer(input).toString('latin1');
+  const blank = /\r?\n\r?\n/.exec(text);
+  if (!blank) return { signed: false, reason: 'NO_HEADERS' };
+  const headers = signedMessageHeaders(text.slice(0, blank.index));
+  const contentType = headers['content-type'] || '';
+
+  if (!/^multipart\/signed\b/i.test(contentType)) {
+    return { signed: false, reason: 'NOT_MULTIPART_SIGNED', headers, protocol: null, micalg: null };
+  }
+  const boundary = signedMessageBoundaryOf(contentType);
+  if (!boundary) return { signed: false, reason: 'NO_BOUNDARY', headers };
+  const protocol = (/protocol\s*=\s*(?:"([^"]+)"|([^;\s]+))/i.exec(contentType) || []).slice(1).find(Boolean) || null;
+  const micalg = (/micalg\s*=\s*(?:"([^"]+)"|([^;\s]+))/i.exec(contentType) || []).slice(1).find(Boolean) || null;
+
+  const bodyStart = blank.index + blank[0].length;
+  const delimiter = `--${boundary}`;
+  // The first delimiter opens part 1; whatever precedes it is the preamble.
+  let at = text.indexOf(delimiter, bodyStart);
+  while (at !== -1 && !(at === bodyStart || text.slice(at - 2, at) === '\r\n' || text.slice(at - 1, at) === '\n')) {
+    at = text.indexOf(delimiter, at + delimiter.length);
+  }
+  if (at === -1) return { signed: false, reason: 'NO_FIRST_DELIMITER', headers, boundary, protocol, micalg };
+
+  const entityStart = at + delimiter.length;
+  const afterFirst = entityStart + (/^\r?\n/.exec(text.slice(entityStart)) || [''])[0].length;
+  const closer = `${SIGNED_MESSAGE_CRLF}${delimiter}`;
+  const closeAt = text.indexOf(closer, afterFirst);
+  if (closeAt === -1) return { signed: false, reason: 'NO_SECOND_DELIMITER', headers, boundary, protocol, micalg };
+
+  const entity = text.slice(afterFirst, closeAt);
+  const signatureStart = closeAt + closer.length;
+  const nextLine = signatureStart + (/^\r?\n/.exec(text.slice(signatureStart)) || [''])[0].length;
+  const endAt = text.indexOf(`${SIGNED_MESSAGE_CRLF}${delimiter}--`, nextLine);
+  const signaturePart = text.slice(nextLine, endAt === -1 ? undefined : endAt);
+  const signatureHeaders = signedMessageHeaders(signaturePart);
+  const signatureBlank = /\r?\n\r?\n/.exec(signaturePart);
+  if (!signatureBlank) return { signed: false, reason: 'NO_SIGNATURE_BODY', headers, boundary, protocol, micalg, entity };
+
+  const base64 = signaturePart
+    .slice(signatureBlank.index + signatureBlank[0].length)
+    .replace(/\s+/g, '');
+  const signature = Buffer.from(base64, 'base64');
+  if (!signature.length) {
+    return { signed: false, reason: 'SIGNATURE_UNREADABLE', headers, boundary, protocol, micalg, entity };
+  }
+
+  return {
+    signed: true,
+    entity,
+    signature,
+    signatureContentType: signatureHeaders['content-type'] || null,
+    boundary,
+    protocol,
+    micalg,
+    headers,
+  };
+}
+
+/**
+ * What the signed entity contains, read from the entity itself.
+ *
+ * Reported as "declared", never as verified: these names are covered by the
+ * signature, so they are exactly as trustworthy as the signature is — which is the
+ * point of reading them from inside it rather than from the envelope.
+ */
+function describeSignedEntity(entity) {
+  const text = toBuffer(entity).toString('latin1');
+  const parts = [];
+  const blank = /\r?\n\r?\n/.exec(text);
+  const headers = signedMessageHeaders(text.slice(0, blank ? blank.index : text.length));
+  const boundary = signedMessageBoundaryOf(headers['content-type']);
+  const bodies = boundary ? text.split(`${SIGNED_MESSAGE_CRLF}--${boundary}`) : [text];
+
+  for (const chunk of boundary ? bodies.slice(1) : bodies) {
+    if (/^--/.test(chunk)) break;
+    const trimmed = chunk.replace(/^\r?\n/, '');
+    const split = /\r?\n\r?\n/.exec(trimmed);
+    const partHeaders = signedMessageHeaders(trimmed.slice(0, split ? split.index : 0));
+    if (!partHeaders['content-type']) continue;
+    const disposition = partHeaders['content-disposition'] || '';
+    const quoted = /filename="([^"]*)"/i.exec(disposition);
+    const extended = /filename\*\s*=\s*UTF-8''([^;\s]+)/i.exec(disposition);
+    parts.push({
+      contentType: partHeaders['content-type'],
+      disposition: disposition || null,
+      filename: quoted
+        ? quoted[1]
+        : extended
+          ? decodeURIComponent(extended[1])
+          : null,
+      encoding: partHeaders['content-transfer-encoding'] || null,
+    });
+  }
+  return parts;
+}
+
+/**
+ * Verify a whole-message PGP/MIME signature.
+ *
+ * `ok` requires all three: the message is `multipart/signed`, the signature
+ * verifies over the recovered entity, and the format is whichever the wrapper
+ * declares. Tampering with the body or with any attachment, or adding or dropping
+ * a part, changes the signed bytes and fails.
+ *
+ * @param {string|Buffer|{path: string}} input message bytes, or `{ path }`
+ * @returns {Promise<object>} a report; never throws for a broken message.
+ */
+async function verifySignedMessage(input) {
+  // `{ path }` is accepted so a CLI caller does not have to read a 10 MB `.eml` into
+  // memory just to hand it over, and so the helpers stay string/Buffer only.
+  const bytes = input && typeof input === 'object' && !Buffer.isBuffer(input) && input.path
+    ? fs.readFileSync(path.resolve(String(input.path)))
+    : input;
+  const split = splitSignedMessage(bytes);
+  const report = {
+    ok: false,
+    signed: split.signed === true,
+    micalg: split.micalg || null,
+    protocol: split.protocol || null,
+    boundary: split.boundary || null,
+    parts: split.entity ? describeSignedEntity(split.entity) : [],
+    signature: { status: 'unavailable', verified: false },
+    reason: null,
+  };
+  if (!split.signed) return { ...report, reason: split.reason || 'NOT_SIGNED' };
+
+  const status = pgpStatus();
+  if (!status.available) {
+    return { ...report, reason: status.reason, detail: status.detail };
+  }
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-verify-'));
+  try {
+    const entityFile = path.join(dir, 'entity.eml');
+    const signatureFile = path.join(dir, 'signature.pgp');
+    fs.writeFileSync(entityFile, Buffer.from(split.entity, 'latin1'));
+    fs.writeFileSync(signatureFile, split.signature);
+    const verified = pgpVerify(entityFile, signatureFile);
+    // The issuer is read out of the signature PACKET, not from gpg's output and not
+    // from `pgpInspectMessage`, which expects a whole message and would see a bare
+    // binary `.sig` as unsigned. That also means the signer is named on a machine
+    // with no gpg beyond the one that just verified.
+    const packets = verified.verified ? parseOpenPgpSignatures(split.signature) : [];
+    const signer = packets.find((entry) => entry.issuerFingerprint || entry.issuerKeyId) || null;
+    report.signature = {
+      status: verified.status,
+      verified: verified.verified === true,
+      exitCode: verified.exitCode,
+      stderr: verified.stderr || '',
+      digestAlgo: signer && signer.hashAlg ? DIGEST_NAMES[signer.hashAlg] || null : null,
+      issuerFingerprint: signer ? signer.issuerFingerprint || null : null,
+      issuerKeyId: signer ? signer.issuerKeyId || null : null,
+    };
+    report.ok = verified.verified === true;
+    report.reason = verified.verified ? null : 'SIGNATURE_INVALID';
+    report.entitySha256 = sha256Hex(split.entity);
+    return report;
+  } finally {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true });
+    } catch {
+      // A leftover temp directory is not worth failing a verification for.
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ *
  * EML evidence (05-forensics/email-evidence-js-core)
  * ------------------------------------------------------------------ */
 
@@ -2850,6 +3481,17 @@ module.exports = {
   pgpCrossCheck,
   pgpResolvedFingerprint,
   normalizeFingerprint,
+  // whole-message PGP/MIME (RFC 3156) — one signature over body + attachments
+  SIGNED_MESSAGE_PROTOCOL,
+  SIGNED_MESSAGE_MICALG,
+  SIGNED_MESSAGE_TYPES,
+  signedMessageTypeFor,
+  signedMessageMicalg,
+  buildSignedEntity,
+  signWholeMessage,
+  splitSignedMessage,
+  describeSignedEntity,
+  verifySignedMessage,
   emailEvidence,
   // diagnostics
   selfTest,

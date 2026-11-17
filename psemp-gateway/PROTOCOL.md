@@ -85,6 +85,7 @@ do.
    │                                                                  │
    │  seal    SHA3-512 + BLAKE3 slots · gpg --detach-sign → .asc       │
    │          ots stamp → .ots    (sha512 digest by default)           │
+   │  sign    one PGP/MIME signature over body + attachments (§8.2)    │
    │  package PasevSU_Package.json — the self-describing bundle (§12)  │
    └──────────────────────────────────────────────────────────────────┘
                           ↓
@@ -176,7 +177,7 @@ Example values below are real output from
 | 15 | `X-PasevSU-PGP-Fingerprint` | `A1B2…5678` | when configured |
 | 16 | `X-PasevSU-OTS` | `pending` | only when `enableOts` |
 | 17 | `X-PasevSU-Receipt` | `requested` | only when `enableReceipt` |
-| 18 | `X-PasevSU-Message-ID` | `<PasevSU.20261116140000.ev-…@forensic.evidence.pasevsu>` | always |
+| 18 | `X-PasevSU-Message-ID` | `<PasevSU.20261116140000.ev-…@forensic.evidence.pasevsu-dev.com>` | always |
 | 19 | `X-PasevSU-Sha256` | `body - 4121…,report.pdf - 4de6…,stmt.txt - 0661…,timestep - 2026-11-16T14:00:00.000Z` | always |
 | 20 | `X-PasevSU-Cripto-Engine` | `9572595485317120971519535` | always |
 | 21 | `X-PasevSU-Cripto-title` | `gcm1.fJrzS3nqWX5dErhA.UnuTZ…` | always |
@@ -480,7 +481,7 @@ Two details make this useful rather than decorative:
 ```json
 { "framework": "PasevSU", "standard": "PSEMP", "organization": "PasevSU",
   "evidence_id": "ev-8f14e45fceea167a", "recipient": "recipient@example.com",
-  "message_id": "<PasevSU.20261116140000.ev-…@forensic.evidence.pasevsu>",
+  "message_id": "<PasevSU.20261116140000.ev-…@forensic.evidence.pasevsu-dev.com>",
   "issued_at": "2026-11-16T14:00:00.000Z" }
 ```
 
@@ -492,7 +493,7 @@ work, and what lets a leaked copy be traced to the addressee it was minted for.
 `Message-ID` is built to be long and visibly ours:
 
 ```text
-<PasevSU.<YYYYMMDDhhmmss>.<evidence_id>+<6hex>_<6hex>~<6hex>.<6hex>@forensic.evidence.pasevsu>
+<PasevSU.<YYYYMMDDhhmmss>.<evidence_id>+<6hex>_<6hex>~<6hex>.<6hex>@forensic.evidence.pasevsu-dev.com>
 ```
 
 The `+ _ ~` characters are legal in an RFC 5322 dot-atom, so the message stays deliverable,
@@ -513,7 +514,8 @@ lie — its key is derived from public material and anyone can reproduce it (§7
 | Layer | Produced by | What it is | Covers |
 | --- | --- | --- | --- |
 | 1 — content commitment | extension **and** gateway, always | Merkle root + 25-digit engine code + AES-GCM-sealed digest block; no secret, fully reproducible | body, **every** attachment, compose timestamp |
-| 2 — OpenPGP signature | gateway `seal` (`gpg --detach-sign`, SHA-512) or Thunderbird's built-in OpenPGP (RFC 4880/3156) | a real asymmetric signature by a key only the sender holds | the MIME parts that already contain layer 1 — body, **every** attachment, and `PasevSU_Manifest.json`. **Not** the outer RFC 5322 header block: RFC 3156 signs the body part only |
+| 2 — OpenPGP signature, detached | gateway `seal` (`gpg --detach-sign`, SHA-512) or Thunderbird's built-in OpenPGP (RFC 4880) | a real asymmetric signature by a key only the sender holds | exactly one file: `PasevSU_Manifest.json`. It reaches the attachments only through the hash rows inside that manifest |
+| 2b — OpenPGP signature, whole message | gateway `sign-message` / `seal --signed-message` (RFC 3156 MIME, `pgp-sha512`), or Thunderbird's own OpenPGP/MIME | one asymmetric signature over one entity that **contains** the attachments, so the set itself is signed | the MIME part that already contains layer 1 — body, **every** attachment in full, and `PasevSU_Manifest.json` when it travels as a part. **Not** the outer RFC 5322 header block: RFC 3156 signs the body part only |
 
 The rule that makes the stack work is **layer 2 is applied last, over content that already
 contains layer 1**:
@@ -532,6 +534,12 @@ metadata record travels a second way: `signed_headers` inside `PasevSU_Manifest.
 together. Editing `Subject` after signing therefore leaves an outer field that disagrees
 with the signed record, and a verifier that compares them sees it.
 
+Layer 2 exists in two shapes, and the difference is not cosmetic. The **detached** `.asc`
+signs one file — the manifest — so attachment bytes are covered only *by hash*, and only for
+a verifier who walks the chain. The **whole-message** signature (§8.2) signs the attachment
+bytes themselves, inside one entity, so the set of files is signed too: delete a file and
+the signature breaks, which no collection of per-file signatures can promise.
+
 What each layer catches, and what neither does:
 
 | The attacker changes | Layer 1 | Layer 2 |
@@ -543,6 +551,61 @@ What each layer catches, and what neither does:
 
 Neither layer provides confidentiality: encryption is Thunderbird's OpenPGP, not PSEMP's
 (§15). And neither layer survives a re-mailing — a forwarded copy is a new message (§16).
+
+### 8.2 One signature over the whole message (PGP/MIME, RFC 3156)
+
+A detached `.asc` over `PasevSU_Manifest.json` (`seal`, §5) proves the manifest, and the
+manifest describes the attachments by hash — so the chain *does* reach the files, but only
+for a verifier that walks it, and only as far as the manifest itself is trusted. Nothing in
+that arrangement puts attachment bytes under a signature.
+
+Per-file signatures do not fix this either: they prove each file genuine and say nothing
+about the **set**. An attacker who removes a file *and* its signature leaves every remaining
+signature perfectly valid, and the message still verifies. Deleting an exhibit must be as
+detectable as altering one.
+
+`signWholeMessage()` therefore produces one signature over one entity that holds everything:
+
+```text
+multipart/signed; micalg=pgp-sha512; protocol="application/pgp-signature"
+  ├── part 1 (the signed entity)
+  │     multipart/mixed
+  │       ├── text/plain            the body
+  │       ├── application/…         attachment 1, in full
+  │       └── application/…         attachment n, in full
+  └── part 2
+        application/pgp-signature   ONE detached signature over part 1
+```
+
+Add a file, drop a file, rename a file, or change one byte of the body or of any attachment,
+and part 1 changes, so the single signature stops verifying. `verifySignedMessage()` reports
+which of those happened, and names the signer from the signature packet itself.
+
+Four byte-level rules make this hold, and none of them is cosmetic:
+
+| Rule | Why |
+| --- | --- |
+| every line ends CRLF | RFC 3156 canonicalisation; a bare LF re-encoded in transit would change the signed octets |
+| the entity is signed in binary, from a `Buffer` | the signature covers the octets on the wire, not a text-mode normalisation — Windows will otherwise turn LF into CRLF behind you |
+| the boundary is derived from the content | the same input signs to the same bytes twice, so two runs are comparable and a re-sign of unchanged content is detectable |
+| part bodies are base64, no 8-bit headers | base64 is ASCII with a fixed line length, so transport cannot corrupt the signed bytes; a non-ASCII filename goes into RFC 2231 `filename*=UTF-8''…` form instead of raw bytes |
+
+Two consequences worth stating plainly:
+
+* a message with **no** attachments is a bare `text/plain` part, not a one-child
+  `multipart/mixed` — the same shape Thunderbird produces;
+* an attachment whose bytes the caller does not hold is **refused**, not signed. Signing a
+  filename with no content would certify a claim instead of evidence.
+
+The whole-message signature is **opt-in** (`seal --signed-message`, or `sign-message`
+directly) because it needs the attachment bytes, which the manifest only describes. Without
+`gpg` it reports `unavailable` and returns no message: a `multipart/signed` whose second part
+is hollow would look signed and verify nowhere.
+
+The two signatures complement each other and neither replaces the other. The manifest `.asc`
+is self-contained, travels with the manifest, and survives being copied out of the message.
+The whole-message signature is the only one that binds the message as a whole. A message that
+carries both is strictly stronger than one that carries either.
 
 ---
 
@@ -803,7 +866,7 @@ What was asked for, and what is actually in the repository. The distinction betw
 | 2 | Sign the headers, not only the body | **implemented** | `manifest.signed_headers` + `X-PasevSU-Headers-SHA256` (§8) |
 | 3 | Decoy files carrying a hidden identifier | **declined, reason given** | §10 — canary replaces it |
 | 4 | Cryptographic time (`X-Created` + proof) | **implemented**, proof needs `ots` | `-Created`/`-Expires` + `.ots` (§13.5) |
-| 5 | Several signature layers (engine + PGP + mail signature) | **partly** | engine code + manifest hash now; PGP + OTS via `seal` |
+| 5 | Several signature layers (engine + PGP + mail signature) | **implemented** | engine code + manifest hash always; detached PGP + OTS via `seal`; one whole-message PGP/MIME signature via `sign-message` (§8.2) |
 | 6 | Hash in the Subject | **implemented, opt-in** | `tagSubject()` (§9) |
 | 7 | Canary tokens | **implemented** | `X-PasevSU-Canary` (§10) |
 | 8 | Attachments inside an encrypted ZIP | **declined** | adds no strength against a real attacker; Thunderbird's own encryption covers confidentiality |
@@ -827,7 +890,7 @@ package identifier + a timestamped log.* Here is where each one actually runs:
 | SHA-256 of body and every file | extension (`crypto.subtle`) **and** gateway (`node:crypto`) | done, cross-tested |
 | Unique identifier | `evidence_id` + `nonce` + `sequence` + canary | done |
 | Manifest, Merkle root, headers | extension, at compose time | done |
-| PGP **signature** | gateway `seal` → `gpg --detach-sign`, SHA-512 digest | done, requires `gpg` |
+| PGP **signature** | gateway `seal` → `gpg --detach-sign` over the manifest, SHA-512 digest; and `sign-message` / `seal --signed-message` → one `multipart/signed` over body **and** every attachment (§8.2) | done, requires `gpg`. The whole-message form is opt-in because it needs the attachment bytes |
 | PGP **encryption** | **Thunderbird's own OpenPGP**, not PSEMP | out of scope by design — PSEMP records, it does not encrypt; encrypting inside a MailExtension would duplicate a reviewed implementation and make the headers unreadable to the recipient |
 | Real timestamp | gateway `stamp`/`seal` → `ots` | done, requires `ots` |
 | Timestamped log | `ReplayGuard` store + the gateway's JSON output | done; the store is a log of accepted nonces |
@@ -855,6 +918,12 @@ Known, deliberate gaps. None of them silently weakens a message that was sealed.
   multi-process writer test is not.
 * **The extension cannot persist a nonce store** — it mints nonce and sequence and relies on
   a downstream store to enforce them (§11.4).
+* **A whole-message signature needs the attachment bytes, so the extension cannot do it
+  alone** — §8.2. `sign-message` therefore sits outside the compose window and is opt-in: a
+  manifest describes attachments by hash, and signing a filename without its content would
+  certify a claim rather than evidence. In the live path this is covered by Thunderbird's own
+  OpenPGP/MIME, which does sign body and attachments together; PSEMP's version exists so the
+  same guarantee is available with the gateway's key and without a Thunderbird identity.
 * **Does a mail signature survive a forwarding hop?** No. PSEMP verifies the copy as sent;
   a re-mailing by a third party is a new message and must be re-stamped, which is precisely
   what `Origin:` and `provenance` make visible.

@@ -1143,7 +1143,10 @@ check('the message id is long, non-standard and per-message', async () => {
   // X- prefixed: ComposeDetails.customHeaders rejects any other name, and a
   // rejected setComposeDetails() aborts the send with no dialog.
   assert.ok(!once.has('Message-ID'), 'a bare Message-ID would abort the send');
-  assert.match(id, /^<PasevSU\.\d{14}\.[0-9a-f-]{36}\+[0-9a-f]{6}_[0-9a-f]{6}~[0-9a-f]{6}\.[0-9a-f]{6}@forensic\.evidence\.pasevsu>$/);
+  assert.match(
+    id,
+    /^<PasevSU\.\d{14}\.[0-9a-f-]{36}\+[0-9a-f]{6}_[0-9a-f]{6}~[0-9a-f]{6}\.[0-9a-f]{6}@forensic\.evidence\.pasevsu-dev\.com>$/
+  );
   assert.ok(id.length > 90, `expected a long message id, got ${id.length} chars`);
   assert.notStrictEqual(id, twice.get('X-PasevSU-Message-ID'), 'each send gets its own evidence id');
 });

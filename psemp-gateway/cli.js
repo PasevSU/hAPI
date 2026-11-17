@@ -57,12 +57,20 @@ const USAGE = `PasevSU PSEMP gateway
                                         the default digest; the report states the digest
                                         read back out of the signature.
   verify-sig <file> <file.asc>          verify a detached OpenPGP signature
-  seal <manifest.json> [--body f] [--attach name=f]…
+  seal <manifest.json> [--body f] [--attach name=f]… [--signed-message]
                                         fill the SHA3-512 slots a MailExtension cannot
                                         compute, then write <manifest>.asc (SHA-512
                                         digest) and <manifest>.ots. Refuses to seal a
                                         manifest whose claimed hashes do not match the
-                                        supplied bytes.
+                                        supplied bytes. --signed-message ALSO writes one
+                                        PGP/MIME message (RFC 3156) whose single
+                                        signature covers the body and every attachment.
+  sign-message [--body f] [--attach name=f]… [--out msg.eml] [--key id] [--digest SHA512]
+                                        one OpenPGP signature over the whole message:
+                                        PGP/MIME multipart/signed wrapping the body and
+                                        every attachment, in full. Adding, removing or
+                                        editing any of them breaks the signature.
+  verify-message <msg.eml>              verify that whole-message PGP/MIME signature
   pgp-info <file>                       who signed this message (Thunderbird's key)
   pgp-check <file> [--fingerprint hex]  compare the claim with the actual signer
   package <manifest.json> [--out f] [--body-name n] [--fingerprint hex]
@@ -362,7 +370,59 @@ async function main(argv) {
         stamp: options['no-ots'] !== true,
         blake3: options.blake3 && options.blake3 !== true ? String(options.blake3) : null,
         digestAlgo: options.digest && options.digest !== true ? String(options.digest) : undefined,
+        signedMessage: options['signed-message'] === true
+          ? {
+            headers: {
+              from: options.from && options.from !== true ? String(options.from) : undefined,
+              to: options.to && options.to !== true ? String(options.to) : undefined,
+              subject: options.subject && options.subject !== true ? String(options.subject) : undefined,
+            },
+            outputPath: options.out && options.out !== true ? path.resolve(String(options.out)) : undefined,
+          }
+          : null,
       });
+      emit(report);
+      if (!report.ok) process.exitCode = 1;
+      return;
+    }
+
+    case 'sign-message': {
+      const attachments = [];
+      for (const entry of [].concat(options.attach || [])) {
+        if (entry === true) throw new Error('--attach needs a file path, or name=path to rename it.');
+        const raw = String(entry);
+        const split = raw.indexOf('=');
+        const name = split === -1 ? path.basename(raw) : raw.slice(0, split);
+        const file = split === -1 ? raw : raw.slice(split + 1);
+        attachments.push({ filename: name, data: fs.readFileSync(readFileOrFail(file, '--attach')) });
+      }
+      const body = options.body && options.body !== true
+        ? fs.readFileSync(readFileOrFail(options.body, '--body'))
+        : '';
+      const report = await api.signWholeMessage({
+        body,
+        attachments,
+        headers: {
+          from: options.from && options.from !== true ? String(options.from) : undefined,
+          to: options.to && options.to !== true ? String(options.to) : undefined,
+          subject: options.subject && options.subject !== true ? String(options.subject) : undefined,
+          date: options.date && options.date !== true ? String(options.date) : undefined,
+        },
+        keyId: options.key && options.key !== true ? String(options.key) : undefined,
+        digestAlgo: options.digest && options.digest !== true ? String(options.digest) : undefined,
+        outputPath: options.out && options.out !== true ? path.resolve(String(options.out)) : undefined,
+      });
+      // The whole message is large and prints badly; report the facts, not the body.
+      const { message, ...facts } = report;
+      emit({ ...facts, messagePreview: message ? message.slice(0, 400) : null });
+      if (!report.ok) process.exitCode = 1;
+      return;
+    }
+
+    case 'verify-message': {
+      const [file] = rest;
+      const resolved = readFileOrFail(file, 'message');
+      const report = await api.verifySignedMessage({ path: resolved });
       emit(report);
       if (!report.ok) process.exitCode = 1;
       return;

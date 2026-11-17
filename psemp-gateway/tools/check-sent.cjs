@@ -75,7 +75,7 @@ const SHAPED_FIELDS = [
   ['X-PasevSU-Nonce', /^[0-9a-f]{32}$/, '128-bit hex nonce'],
   ['X-PasevSU-Sequence', /^\d+$/, 'monotonic counter'],
   ['X-PasevSU-Canary', /^PASEVSU-\d{4}-\d{2}-\d{2}-[0-9A-F]{8}$/, 'canary token'],
-  ['X-PasevSU-Message-ID', /^<PasevSU\..+@forensic\.evidence\.pasevsu>$/, 'PasevSU message id'],
+  ['X-PasevSU-Message-ID', /^<PasevSU\..+@forensic\.evidence\.pasevsu-dev\.com>$/, 'PasevSU message id'],
 ];
 
 /** Split an mbox into messages, or return one message for a plain .eml. */

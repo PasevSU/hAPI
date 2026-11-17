@@ -64,7 +64,7 @@ Dynamic (computed per message):
 | `X-PasevSU-PGP-Fingerprint` | `pgpFingerprint` option (omitted if empty) |
 | `X-PasevSU-OTS` | `pending` marker — **on by default**; untick `enableOts` to stop marking |
 | `X-PasevSU-Receipt` | `requested` — only when `enableReceipt` is on |
-| `X-PasevSU-Message-ID` | long `<…@forensic.evidence.pasevsu>` Message-ID (always) |
+| `X-PasevSU-Message-ID` | long `<…@forensic.evidence.pasevsu-dev.com>` Message-ID (always) |
 | `X-PasevSU-Sha256` | the readable digest block: `body - …`, one `name - …` per file, `timestep - …` |
 | `X-PasevSU-Cripto-Engine` | 25-digit code derived from the seal |
 | `X-PasevSU-Cripto-title` | the same block, AES-256-GCM encrypted under that code |
@@ -822,5 +822,24 @@ SHA3 signature packet — SHA3-512 belongs in the manifest, not in the packet.
 cannot produce them; the `psemp-gateway` CLI produces them afterwards, over the
 saved message — this repository has no SMTP proxy to add anything at a hop (§2 of
 [the protocol](../psemp-gateway/PROTOCOL.md)).
+
+Note what that `.asc` actually covers: the **manifest**, not the message. The
+manifest describes every attachment by hash, so the chain reaches the files, but
+the attachment bytes are never themselves inside a signature. If you want the body
+and every attachment under **one** signature — so that deleting a file is as
+detectable as altering one — the gateway has a second command for it:
+
+```powershell
+node psemp-gateway/cli.js sign-message --body message.txt `
+  --attach report.pdf --to "a@example.org" --out message.eml
+node psemp-gateway/cli.js verify-message message.eml
+```
+
+`sign-message` builds a PGP/MIME `multipart/signed` entity whose first part is a
+`multipart/mixed` of the body plus every attachment in full, and signs that once
+(RFC 3156, `pgp-sha512`). It is opt-in because it needs the attachment bytes,
+which a manifest only describes. Inside the composer the equivalent is
+Thunderbird's own OpenPGP/MIME, which this add-on neither replaces nor overrides —
+see §8.2 of [the protocol](../psemp-gateway/PROTOCOL.md).
 
 

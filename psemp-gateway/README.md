@@ -19,6 +19,7 @@ manifest produced here verifies a manifest produced there, and vice versa.
 | `PasevSU_Manifest.json` + its SHA-256 | yes | yes |
 | NIST SHA3-512, RIPEMD-160, Keccak-512 | no | yes |
 | Real OpenPGP detached signature (`.asc`) | no | yes, with a `gpg` binary on `PATH` |
+| One signature over the whole message — body **and** every attachment | no | yes, `sign-message`, with a `gpg` binary on `PATH` |
 | Read the signer out of Thunderbird's own signature | no | yes — pure-Node packet parser, no `gpg` needed |
 | Real OpenTimestamps proof (`.ots`) | no — writes `pending` | yes, from the vendored browser bundle, no npm install |
 | BLAKE3 | no | not bundled (Web Crypto and the vendored groups have none) |
@@ -90,7 +91,7 @@ with [`api.js`](api.js) `HEADER_NAMES`, the extension's `buildHeader()` calls an
 | `X-PasevSU-PGP-Fingerprint` | configured fingerprint — omitted when empty |
 | `X-PasevSU-OTS` | `pending` — on by default; turn off to stop marking |
 | `X-PasevSU-Receipt` | `requested` — only when `enableReceipt` is on |
-| `X-PasevSU-Message-ID` | long `<PasevSU.…@forensic.evidence.pasevsu>` id (the gateway also writes the real `Message-ID:`) |
+| `X-PasevSU-Message-ID` | long `<PasevSU.…@forensic.evidence.pasevsu-dev.com>` id (the gateway also writes the real `Message-ID:`) |
 | `X-PasevSU-Sha256` | digest block: `body - …`, one `name - …` per file, `timestep - …` |
 | `X-PasevSU-Cripto-Engine` | 25-digit code derived from the seal |
 | `X-PasevSU-Cripto-title` | the same block, AES-256-GCM encrypted under that code |
@@ -279,6 +280,11 @@ node psemp-gateway/cli.js pgp-check message.eml --fingerprint ABCDEF
 node psemp-gateway/cli.js seal PasevSU_Manifest.json --body message.txt --attach report.pdf
 node psemp-gateway/cli.js seal PasevSU_Manifest.json --body message.txt `
      --attach "report=report.pdf" --attach "photo=photo.jpg" --key ABCDEF
+node psemp-gateway/cli.js seal PasevSU_Manifest.json --body message.txt `
+     --attach report.pdf --signed-message --out message.eml
+node psemp-gateway/cli.js sign-message --body message.txt `
+     --attach report.pdf --to "a@example.org" --out message.eml
+node psemp-gateway/cli.js verify-message message.eml
 ```
 
 `pgp-info` prints what `pgpInspectMessage()` found — format, issuer fingerprint,
@@ -391,6 +397,53 @@ is **not** on `PATH` by default. The GnuPG status cache is keyed on `PATH` and
 "unavailable" as soon as the PATH is corrected — it is not memoised for the life
 of the process.
 
+### `sign-message` — one signature over the whole message
+
+`seal` signs the **manifest**, and the manifest describes the attachments by
+hash. `sign-message` signs the **message**: one PGP/MIME `multipart/signed`
+entity whose first part is a `multipart/mixed` of the body plus every attachment
+in full, and whose second part is one `application/pgp-signature` over part 1.
+
+```console
+$ node psemp-gateway/cli.js sign-message --body message.txt `
+      --attach report.pdf --attach "photo=photo.jpg" `
+      --to "a@example.org" --subject "Case 2026-001" --out message.eml
+{
+  "ok": true,
+  "status": "signed",
+  "micalg": "pgp-sha512",
+  "entityBytes": 448213,
+  "messageSha256": "b4f1c0…",
+  "entitySha256": "9d1a72…",
+  "messagePath": "…\\message.eml",
+  "signaturePath": "…\\message.eml.asc",
+  "coverage": [
+    { "role": "body", "contentType": "text/plain", "bytes": 41, "sha256": "…" },
+    { "role": "attachment", "filename": "report.pdf", "bytes": 448052, "sha256": "…" }
+  ],
+  "messagePreview": "MIME-Version: 1.0\r\nContent-Type: multipart/signed…"
+}
+```
+
+The report never carries the whole message — `message` is replaced with a
+400-character `messagePreview` so a 10 MB entity is not printed into a terminal.
+`verify-message <msg.eml>` is the other direction: it splits the message, verifies
+the one signature, and reports the issuer fingerprint and digest **read out of
+the signature packet**, not out of the message headers.
+
+Why one signature and not one per file: N per-file signatures prove N files and
+say nothing about the **set**. An attacker who deletes a file *and* its signature
+leaves every remaining signature valid, and the message still verifies. One
+signature over one entity makes removing an exhibit as detectable as altering
+one, and the tests prove all four cases (`test/signed-message.cjs`).
+
+The four byte rules, the MIME shape and the SET-versus-per-file argument are in
+[`PROTOCOL.md`](PROTOCOL.md) §8.2. The whole-message signature is **opt-in** —
+`sign-message`, or `seal --signed-message` — because it needs the attachment
+bytes, which a manifest only describes. With no GnuPG it reports `unavailable`
+and returns no message: a `multipart/signed` with a hollow second part would look
+signed and verify nowhere.
+
 ## Enabling the optional adapters
 
 Neither step is required for the hash/manifest path.
@@ -439,13 +492,16 @@ Thunderbird composer
                  ├─ NIST SHA3-512 / Keccak-512 / RIPEMD-160 if required
                  ├─ OpenPGP detached signature  → PasevSU_Manifest.json.asc
                  ├─ OpenTimestamps proof        → PasevSU_Manifest.json.ots
+                 ├─ (opt-in) one PGP/MIME signature over body + all attachments
                  └─ replace `X-PasevSU-OTS: pending` with the completed proof
 ```
 
-Every step is automatic: nothing is opt-in per message. `enableOts` is on by
-default and only controls whether the `pending` marker is written, so the gateway
-knows to stamp the message; turn it off in the extension options only if you
-deliberately want messages left unstamped.
+Every step except the whole-message signature is automatic: nothing is opt-in per
+message. `enableOts` is on by default and only controls whether the `pending`
+marker is written, so the gateway knows to stamp the message; turn it off in the
+extension options only if you deliberately want messages left unstamped. The
+whole-message signature (`sign-message`, or `seal --signed-message`) is opt-in
+because it needs the attachment bytes, which the manifest only describes.
 
 ## Verifying the install
 

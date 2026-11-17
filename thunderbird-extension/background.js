@@ -29,6 +29,11 @@
  *   - Real OpenPGP signatures (.asc) and OpenTimestamps (.ots) cannot be
  *     produced inside a MailExtension; X-PasevSU-OTS is a "pending" marker only.
  *     `psemp-gateway seal` replaces that marker with a real .asc + .ots pair.
+ *     That .asc signs the MANIFEST, not the message: to put the body and every
+ *     attachment under ONE signature, use `psemp-gateway sign-message` (or
+ *     `seal --signed-message`), documented in PROTOCOL.md §8.2. Inside the
+ *     composer, the equivalent is Thunderbird's own OpenPGP/MIME, which signs
+ *     body and attachments together — see the WAR text's requirement above.
  *   - SHA3-512 and BLAKE3 are not available in Web Crypto; the manifest records
  *     "sha3_512": null and "blake3": null so the gateway can fill them in.
  *   - No nonce STORE: this can publish nonce/sequence, but enforcing single-use
@@ -326,6 +331,16 @@ const ENGINE_LABEL = "PasevSU-Cripto-Engine:v1";
 const CRYPTO_TITLE_LABEL = "PasevSU-Cripto-title:v1";
 const ENGINE_DIGITS = 25;
 
+/*
+ * The domain half of the generated Message-ID. It must be a domain the sender can
+ * actually receive mail at: `@forensic.evidence.pasevsu` used a `.pasevsu` TLD that
+ * does not exist, so every message claimed an address no MTA can resolve or reply to,
+ * which is a documented spam signal in its own right. RFC 5322 does not require the
+ * RHS to resolve, but a Message-ID built on a real domain is what receivers expect
+ * and what `psemp-gateway` derives, so both engines read the same constant.
+ */
+const MESSAGE_ID_DOMAIN = "forensic.evidence.pasevsu-dev.com";
+
 async function sha256Bytes(text) {
   return new Uint8Array(
     await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))
@@ -419,7 +434,7 @@ async function buildMessageId(evidenceId, timestamp) {
   );
   const slug = (offset, length) => seed.slice(offset, offset + length);
   const local = `PasevSU.${stamp}.${evidenceId}+${slug(8, 6)}_${slug(14, 6)}~${slug(20, 6)}.${slug(26, 6)}`;
-  return `<${local}@forensic.evidence.pasevsu>`;
+  return `<${local}@${MESSAGE_ID_DOMAIN}>`;
 }
 
 /*
@@ -784,14 +799,19 @@ function withWarNotice(details, field) {
 }
 
 // An MDN address may arrive as "Name <a@b>" or as { email } / { id }.
+// The angle-bracket form is split, not passed through: a receipt address carrying a
+// display name is not an address, and `X-PasevSU-Receipt-Recipient` would then hold
+// `Pasev Denislav <pasev@example.com>` where a reader expects only the mailbox.
 function addressOf(value) {
   if (!value) {
     return "";
   }
-  if (typeof value === "string") {
-    return sanitizeHeaderValue(value);
-  }
-  return sanitizeHeaderValue(value.email || value.id || "");
+  const text =
+    typeof value === "string"
+      ? sanitizeHeaderValue(value)
+      : sanitizeHeaderValue(value.email || value.id || "");
+  const bracketed = /<([^<>]+)>\s*$/.exec(text);
+  return bracketed ? bracketed[1].trim() : text;
 }
 
 /*

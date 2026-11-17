@@ -37,7 +37,7 @@
     "organization": "PasevSU",
     "evidence_id": "ev-8f14e45fceea167a",
     "recipient": "recipient@example.com",
-    "message_id": "<PasevSU.20261116140000.ev-8f14e45fceea167a+37ccbb_1d87f3~cc0a5d.b3e7e4@forensic.evidence.pasevsu>",
+    "message_id": "<PasevSU.20261116140000.ev-8f14e45fceea167a+37ccbb_1d87f3~cc0a5d.b3e7e4@forensic.evidence.pasevsu-dev.com>",
     "issued_at": "2026-11-16T14:00:00.000Z"
   },
   "signed_headers": {
@@ -47,9 +47,9 @@
       "recipient@example.com"
     ],
     "date": "2026-11-16T13:59:58.000Z",
-    "message_id": "<PasevSU.20261116140000.ev-8f14e45fceea167a+37ccbb_1d87f3~cc0a5d.b3e7e4@forensic.evidence.pasevsu>",
+    "message_id": "<PasevSU.20261116140000.ev-8f14e45fceea167a+37ccbb_1d87f3~cc0a5d.b3e7e4@forensic.evidence.pasevsu-dev.com>",
     "attachments_sha256": "cb9dd61910e508564fe0bb67f713564010bc54790d0eee17e870b32854e38d5b",
-    "headers_sha256": "617cef0d7d341ec9aff350f1f81800dada558fb91b0535f86f68ba8fd288c7ff"
+    "headers_sha256": "9ffd8752ee6f02d4701ffdabb2690704e6273883e9917b9ab059d41a2fd23341"
   },
   "replay": {
     "nonce": "f47ac10b58cc43728e19d1b7f3c5a2e6",
