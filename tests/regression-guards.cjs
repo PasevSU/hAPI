@@ -112,6 +112,7 @@ const GUARDS = {
   'DEF-93': ['ui-portal-functions.cjs'], // панелът показва броя от присъдата, не от lowercase ключове
   'DEF-94': ['check-log-integration.cjs', 'verify-verdict.cjs'], // провал на проверка не изчезва от журнала
   'DEF-95': ['bad-code.cjs'], // находка на скенера сочи реда на интерполацията, не началото на шаблона
+  'DEF-69': ['gui-contract-single-source.cjs', 'gui-portal-create-contract.cjs'], // адресите идват от договора, не се строят в панела
 };
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
 // Без тях „има тест“ може да значи „има файл с име, което звучи правилно“.
@@ -202,6 +203,7 @@ const ANCHORS = {
   'DEF-93': { file: 'ui-portal-functions.cjs', contains: 'проблемни 1' },
   'DEF-94': { file: 'check-log-integration.cjs', contains: 'verdict.failed' },
   'DEF-95': { file: 'bad-code.cjs', contains: 'находката сочи реда с интерполацията' },
+  'DEF-69': { file: 'gui-contract-single-source.cjs', contains: 'адресът от договора печели' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

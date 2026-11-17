@@ -175,7 +175,7 @@
   },
   "hapi_enterprise/ui/files-manager.js": {
     "no-unused-vars": {
-      "count": 5
+      "count": 4
     },
     "no-useless-assignment": {
       "count": 4

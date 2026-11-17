@@ -1024,6 +1024,18 @@
   const accessOf = (p) => ({ query: (p && p.accessQuery) || '', expires: (p && p.accessExpires) || null });
 
   /**
+   * Подписаният достъп се слага ВЕДНЪЖ, на ЕДНО място. Договорът от сървъра вече го носи в
+   * `page` и в `api`, а нивата на QR студиото минават през същата функция — вторият опит да се
+   * добави даваше `?expires=…&sig=…&expires=…&sig=…` (същите стойности, но адрес, който човек
+   * не може да прочете и сравни). Затова адрес, който вече го съдържа, се връща непокътнат.
+   */
+  function withAccessQuery(u, q) {
+    if (typeof u !== 'string' || !u || !q) return u;
+    if (u.includes(q)) return u;
+    return u + (u.includes('?') ? '&' + q.slice(1) : q);
+  }
+
+  /**
    * Запомня договора за адресите, издаден от сървъра (страница · API · QR · преглед).
    * Панелът НЕ строи тези адреси сам: едно място (`hapi_enterprise/portal-links.js`), за да
    * не се разминават панелът и публичната страница. Спътникът „само за преглед“ влиза под
@@ -1048,7 +1060,7 @@
   function qrStudioLevels(x) {
     const c = state.contracts[x.id] || {};
     const q = (x && x.accessQuery) || '';
-    const withQ = (u) => (typeof u === 'string' && u && q ? u + (u.includes('?') ? '&' + q.slice(1) : q) : u);
+    const withQ = (u) => withAccessQuery(u, q);
     const root = linkBase();
     const levels = [
       {
@@ -1065,8 +1077,18 @@
     const tree = state.tree && state.tree.portalId === x.id ? (state.tree.data && state.tree.data.tree) || null : null;
     if (!tree) return levels;
     const folderPage = (rel) => withQ(`${root}/p/${encodeURIComponent(x.id)}?folder=${encodeURIComponent('/' + rel)}`);
-    const filePage = (rel) =>
-      withQ(`${root}/file.html:${encodeURIComponent(x.slug)}/${rel.split('/').map(encodeURIComponent).join('/')}`);
+    // Страницата на ФАЙЛ идва от ШАБЛОНА на договора (`file.page` = `/file.html:{slug}/{path}`),
+    // не от втори литерал в панела: смени ли сървърът пътя, панелът го вижда без промяна.
+    const fileTemplate = (c.file && c.file.page) || '/file.html:{slug}/{path}';
+    const fillTemplate = (tpl, values) => String(tpl).replace(/\{(\w+)\}/g, (m, k) => (k in values ? values[k] : m));
+    const filePage = (rel) => {
+      const pagePath = fillTemplate(fileTemplate, {
+        slug: encodeURIComponent(x.slug),
+        path: String(rel).split('/').map(encodeURIComponent).join('/'),
+      });
+      // Шаблонът е относителен (`/file.html:…`) — базата на панела се добавя тук.
+      return withQ(pagePath.startsWith('/') ? `${root}${pagePath}` : pagePath);
+    };
     const walk = (node) => {
       for (const sub of node.folders || []) {
         levels.push({
@@ -1184,21 +1206,25 @@
       // празен обект: контролният панел показваше празни адреси (API, манифест, файлове,
       // хранилище, OpenAPI), а менюто „API ▾“ на картата не се рисуваше никога — тоест
       // трите му действия (копирай / отвори / изтегли) бяха недостъпни за човека.
-      const refs = spec.buildReferences(linkBase(), p.slug, p.id);
+      // Един източник (DEF-69): договорът от сървъра печели там, където го има
+      // (`withContract`), а `buildReferences` допълва само липсващото.
+      const refs = spec.withContract(state.contracts[p.id], spec.buildReferences(linkBase(), p.slug, p.id));
       // Подписаният достъп за частен портал ПРЕДИ адресите: без него `/p/<id>` и API-то
       // връщат 404 (вж. server.js → portalAuthorized / portal-access.js).
       const q = (access && access.query) || '';
-      const withAccess = (u) => (typeof u === 'string' && u && q ? u + (u.includes('?') ? '&' + q.slice(1) : q) : u);
+      const withAccess = (u) => withAccessQuery(u, q);
       const qrUrl = withAccess(refs.qrUrl || `${linkBase()}/api/v1/p/${p.slug}/qr.svg`);
-      // „Адрес на портала“ е ЧОВЕШКАТА страница (там води QR кодът), не JSON API-то.
-      // Адресира се с ID на портала: връзката не издава името и не се чупи при преименуване.
-      const landing = withAccess(refs.landingUrl || `${linkBase()}/p/${p.id || p.slug}`);
-      const refsQ = Object.fromEntries(Object.entries(refs).map(([k, v]) => [k, k.endsWith('Url') ? withAccess(v) : v]));
-      // `folderUrl` е същият адрес, но изрично обявен като „страницата с папката“: порталът
-      // със собствена папка се отваря в режим „папка“ (`{{FOLDERS}}` в portal.html). Ключът
-      // беше само коментиран в `portal-control.js` и липсваше тук, тоест QR кодът винаги
-      // падаше на `landing`. Сега има една стойност и двата пътя дават ЕДИН адрес.
-      state.api[p.id] = { record, openapi, refs: refsQ, qrUrl, landing, folderUrl: landing, accessQuery: q, accessExpires: (access && access.expires) || null, at: new Date().toISOString() };
+      // Втори копия на адресите НЕ се пазят: `refs`/`refsQ`/`landing`/`folderUrl` нямаха нито
+      // един консуматор (картата чете `at`, QR блокът — `qrUrl`, панелите — `record`), а
+      // подписаният достъп вече е в самите адреси на `record.links` (срв. DEF-69).
+      state.api[p.id] = {
+        record,
+        openapi,
+        qrUrl,
+        accessQuery: q,
+        accessExpires: (access && access.expires) || null,
+        at: new Date().toISOString(),
+      };
       if (!quiet) toast(T('fm.apiQrGenerated'), 'ok');
       return state.api[p.id];
     } catch (e) {
@@ -1329,24 +1355,10 @@
     rememberContract(created.data.id, created.data.contract);
     const all = await api('/admin/api/portals');
     if (all.ok && all.data && Array.isArray(all.data.portals)) {
-      state.portals = all.data.portals.map((p, i) => ({
-        id: String(p.id),
-        slug: String(p.slug),
-        title: p.title,
-        visibility: p.visibility || 'private',
-        description: p.description || '',
-        category: p.category || '',
-        subject: p.subject || '',
-        flag: p.flag || 'none',
-        notes: p.notes || '',
-        contactId: p.contactId || '',
-        caseId: p.caseId || '',
-        createdAt: p.createdAt || '',
-        access: p.visibility === 'public' ? 'FREE' : 'KEY_REQUIRED',
-        storage_root: p.storage_root || '/share',
-        token_policy: tokenPolicy(p.token_policy),
-        files: (p.files || []).map(normalizeFile),
-      }));
+      // Формата на портала се определя на ЕДНО място (`portalFromApi`) — тук имаше негово
+      // копие, което не носеше подписания достъп: току-що създаден частен портал се отваряше
+      // в QR студиото без `accessQuery`, тоест адресите на файловете и папките нямаха подпис.
+      state.portals = all.data.portals.map(portalFromApi);
       state.portalIndex = Math.max(0, state.portals.findIndex((p) => p.id === created.data.id));
       state.openPortal = state.portals[state.portalIndex].id;
     }

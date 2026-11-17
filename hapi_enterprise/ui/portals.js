@@ -212,6 +212,7 @@
       }
       const out = await response.json();
       state.record = out.record;
+      state.references = out.references || null;
       state.openapi = spec().buildOpenApi({ slug: state.slug, title: out.record.title }, { baseUrl: out.references.base });
       const disk = (out.disk && out.disk.dir) || '';
       render(disk ? T('pa.note.disk', { dir: disk }) : '');
@@ -245,7 +246,10 @@
       return;
     }
 
-    const refs = state.record.links || spec().buildReferences('', state.slug);
+    // Адресите са на СЪРВЪРА, когато ги има (DEF-69): `record.links` от `buildApiRecord` или
+    // `references` от отговора. Локалният `buildReferences` остава само за демо записа от
+    // `localStorage`, който не е минавал през сървър.
+    const refs = (state.record && state.record.links) || state.references || spec().buildReferences('', state.slug);
     badge.className = 'badge ok';
     badge.textContent = T('pa.state.ok');
     const storage = state.record.storage || {};
@@ -285,5 +289,5 @@
     [dlApi, dlOpenapi, copy].forEach((b) => (b.disabled = false));
   }
 
-  window.PortalsPanel = { mount(container) { host = container; state = { slug: '', baseUrl: '', record: null, openapi: null }; shell(); } };
+  window.PortalsPanel = { mount(container) { host = container; state = { slug: '', baseUrl: '', record: null, references: null, openapi: null }; shell(); } };
 })();

@@ -3,13 +3,13 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 465 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 466 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 209 |
 | портал | 57 |
-| GUI | 41 |
+| GUI | 42 |
 | Home Assistant | 18 |
 | отчети | 16 |
 | ядро | 15 |
@@ -317,10 +317,11 @@
 | `portal-upload-409` | Portal upload 409 | `tests/portal-upload-409.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (41)
+## GUI (42)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
+| `gui-contract-single-source` | Gui contract single source | `tests/gui-contract-single-source.cjs` |
 | `gui-coverage` | Gui coverage | `tests/gui-coverage.cjs` |
 | `gui-csp-guard` | Gui csp guard | `tests/gui-csp-guard.cjs` |
 | `gui-csp-same-origin` | Gui csp same origin | `tests/gui-csp-same-origin.cjs` |

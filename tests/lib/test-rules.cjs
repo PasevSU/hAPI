@@ -124,6 +124,7 @@ const RULES = [
   { id: "gateway-api", area: "общо", title: "Gateway api", owner: "tests/gateway-api.cjs" },
   { id: "gateway-server", area: "общо", title: "Gateway server", owner: "tests/gateway-server.cjs" },
   { id: "generator-app", area: "общо", title: "Generator app", owner: "tests/generator-app.cjs" },
+  { id: "gui-contract-single-source", area: "GUI", title: "Gui contract single source", owner: "tests/gui-contract-single-source.cjs" },
   { id: "gui-coverage", area: "GUI", title: "Gui coverage", owner: "tests/gui-coverage.cjs" },
   { id: "gui-csp-guard", area: "GUI", title: "Gui csp guard", owner: "tests/gui-csp-guard.cjs" },
   { id: "gui-csp-same-origin", area: "GUI", title: "Gui csp same origin", owner: "tests/gui-csp-same-origin.cjs" },

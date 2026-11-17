@@ -61,6 +61,37 @@ function buildReferences(baseUrl, slug, id) {
 }
 
 /**
+ * Адресите на портала за показване: договорът на сървъра печели, `buildReferences` допълва.
+ *
+ * Защо съществува (DEF-69): панелът строи същите адреси ВТОРИ път с `buildReferences`, докато
+ * сървърът вече ги издава в договора (`core_module/address.js` → `portal-links.contract`). Двете
+ * могат да се разминат — друг основен адрес (Ingress), друг идентификатор, подписан достъп — и
+ * тогава показаният QR код води на адрес, който сървърът не признава. Затова тук има ЕДНО
+ * правило на едно място: каквото договорът носи, се ВЗИМА; `buildReferences` остава само за
+ * това, което договорът не съдържа (`filesUrl`, `storageUrl`, `pingUrl`, `qrJsonUrl`).
+ *
+ * Ключовете са същите като на `buildReferences` — консуматорите не се променят.
+ */
+function withContract(contract, built) {
+  const merged = Object.assign({}, built);
+  const c = contract && contract.ready === true ? contract : null;
+  if (!c) return merged;
+  const fromContract = {
+    slug: c.slug,
+    landingUrl: c.page,
+    apiUrl: c.api,
+    manifestUrl: c.manifest,
+    openapiUrl: c.openapi,
+    qrUrl: c.qr,
+  };
+  for (const [key, value] of Object.entries(fromContract)) {
+    // Само непразна стойност заменя: частичен договор не бива да изтрива валиден адрес.
+    if (typeof value === 'string' && value) merged[key] = value;
+  }
+  return merged;
+}
+
+/**
  * Има ли порталът СОБСТВЕНА папка с документи (не общия `/share` или `/media`)?
  *
  * Защо има значение за картата: договорът `/<api>/tree` обслужва ИМЕННО такава папка. За
@@ -395,7 +426,7 @@ function buildOpenApi(portal, options = {}) {
 
 // Името е различно от `API` в report-manifest.js: двата файла се зареждат като
 // класически <script> в една глобална лексикална среда и не бива да си пречат.
-const API_SPEC = { SLUG, assertSlug, buildReferences, buildApiRecord, buildOpenApi };
+const API_SPEC = { SLUG, assertSlug, buildReferences, withContract, buildApiRecord, buildOpenApi };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = API_SPEC;
 if (typeof globalThis !== 'undefined') globalThis.HapiApiSpec = API_SPEC;
