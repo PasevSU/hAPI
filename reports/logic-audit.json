@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-11-17T15:02:04.195Z",
-  "files": 740,
-  "scannedLines": 133331,
+  "generatedAt": "2026-11-17T19:37:00.679Z",
+  "files": 741,
+  "scannedLines": 132403,
   "total": 1,
   "open": [],
   "accepted": [
     {
       "file": "hapi_enterprise/server.js",
-      "line": 644,
+      "line": 650,
       "rule": "off-by-one-loop",
       "sev": "critical",
       "segment": "lockedAncestor",

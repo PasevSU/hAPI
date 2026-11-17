@@ -780,7 +780,7 @@ const statikIndex = require('./statik-index').create({ dir: path.join(root, 'sta
 const reportsRoutes = require('./routes/reports').create({
   root, json, fail, body, parse, audit, log, cryptoOptions, runtime,
   reportSystemInfo, persistTsaRecords, adminGate, tsaKeep, pruneTsaRecords, auditChain, publish: (e, d) => webhooks.publish(e, d),
-  resolvePortal, portalRoot, portalAbs, filesRoot, statik: statikIndex, hash: core.api.hash, packager,
+  resolvePortal, portalRoot, portalAbs, filesRoot, statik: statikIndex, hash: core.api.hash, packager, links,
 });
 
 const generatorRoutes = require('./routes/generator').create({ generator, adminGate, audit, json, fail, parse });

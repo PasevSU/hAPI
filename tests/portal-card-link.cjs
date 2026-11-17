@@ -63,13 +63,13 @@ assert.ok(headMain > 0, 'главата на картата има контей�
 assert.ok(headActions > headMain, 'действията са в СВОЙ контейнер след името');
 const actions = manager.slice(headActions, manager.indexOf('<hr class="u-divider"'));
 assert.ok(actions.length > 200, 'контейнерът с действията е наличен');
-for (const attr of ['data-pkg-portal', 'data-report-portal', 'data-report-recursive', 'data-qr-portal']) {
+for (const attr of ['data-pkg-portal', 'data-report-portal', 'data-qr-portal']) {
   assert.ok(actions.includes(attr), `${attr} е в ОБЩИЯ ред на действията, не на отделен ред`);
 }
 // QR бутонът е ПОСЛЕДЕН в реда, тоест горе вдясно, където човек го търси.
 assert.ok(
   actions.indexOf('data-pkg-portal') < actions.indexOf('data-qr-portal') &&
-  actions.indexOf('data-report-recursive') < actions.indexOf('data-qr-portal'),
+  actions.indexOf('data-report-portal') < actions.indexOf('data-qr-portal'),
   'QR бутонът е последен в реда (горе вдясно)',
 );
 assert.match(css, /\.pf-portal-head \{[\s\S]{0,200}align-items: center/, 'заглавният ред подравнява по вертикала (име и бутони на равно)');

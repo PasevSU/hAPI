@@ -77,6 +77,8 @@
     return items.size;
   }
 
+  const noop = () => undefined; // отписване, което не прави нищо — за невалиден абонат
+
   const API = {
     add,
     remove,
@@ -88,7 +90,7 @@
     count: () => items.size,
     keys: () => Array.from(items.keys()),
     onChange(fn) {
-      if (typeof fn !== 'function') return () => {};
+      if (typeof fn !== 'function') return noop;
       listeners.add(fn);
       return () => listeners.delete(fn);
     },

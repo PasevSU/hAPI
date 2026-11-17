@@ -36,6 +36,9 @@ function create(deps) {
     statik,
     hash: hashApi,
     packager,
+    // Адресите се строят само в `links.js` (`tests/links-contract.cjs`); компонентът не ги
+    // сглобява на ръка.
+    links,
   } = deps;
   const crypto = require('node:crypto');
   const fsp = require('node:fs/promises');
@@ -197,8 +200,9 @@ function create(deps) {
         const sha256 = crypto.createHash('sha256').update(pdf).digest('hex');
         // Отчетът на портал или папка няма публичен API адрес за СПИСЪК (публичното API дава
         // файл по път), затова препратката сочи дървото на портала в административното API.
+        // Пътят на файла се строи през `links.js` (един източник за адресите), не на ръка.
         const api = type === 'file'
-          ? '/api/v1/p/' + encodeURIComponent(portal.slug) + '/tree/file?path=' + encodeURIComponent(built.path)
+          ? links.portalApiPath(portal) + '/tree/file?path=' + encodeURIComponent(built.path)
           : '/admin/api/portals/' + encodeURIComponent(portal.id) + '/tree';
         const record = statik.add({
           id,

@@ -217,7 +217,11 @@ const order = (name) => html.indexOf('src="' + name + '"');
 assert.ok(order('debug-ledger.js') > 0, 'index.html зарежда debug-ledger.js');
 assert.ok(order('i18n.js') < order('debug-ledger.js'), 'речникът е преди протокола — иначе текстовете са ключове');
 assert.ok(order('debug-ledger.js') < order('debug-objects.js'), 'протоколът е преди инструмента, който пише в него');
-const server = fs.readFileSync(path.join(root, 'hapi_enterprise', 'server.js'), 'utf8');
-assert.match(server, /'debug-ledger\.js'/, 'server.js сервира /ui/debug-ledger.js (иначе 404 и панелът мълчи)');
+// От 0.69.242 allowlist-ът е данни (`ui-files.json`, D12) — `server.js` само го зарежда.
+const allow = JSON.parse(fs.readFileSync(path.join(root, 'hapi_enterprise', 'ui-files.json'), 'utf8'));
+assert.ok(
+  Object.values(allow).some(([rel]) => rel === 'ui/debug-ledger.js'),
+  'сървърът сервира /ui/debug-ledger.js (иначе 404 и панелът мълчи)',
+);
 
 console.log('PASS debug-ledger: ' + laws.length + ' закона · всеки с причина, решение и тест · протокол с подпис, брояч и регресия · таван ' + ledger.LIMIT + ' · оцелява презареждане');

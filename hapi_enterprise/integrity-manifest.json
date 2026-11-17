@@ -1,9 +1,9 @@
 {
-  "version": "0.69.241",
-  "generatedAt": "2026-11-17T18:48:27.812Z",
+  "version": "0.69.242",
+  "generatedAt": "2026-11-17T19:18:40.553Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
-    "server.js": "44493e1c7d9785baec33759c520ebba4d17c16e958f2392e3c4d8dac859704ba",
+    "server.js": "3ebde815ee49e552dc10e80d941da80fe72b9b0d02a66177eaa2bc21b1953d35",
     "paths.js": "034d9abfe584e90dab516e10e47a344d4dba440c2c7f2a1961e603ab3d88706e",
     "storage-preflight.js": "2e51af333c54139a45b7b4bfa1c194fc1c314a06e811850820ebcd882008384f",
     "integrity.js": "31faa40f9dedfdf46c9a3cd3cb9537ab73aafda72ea32f74bee1f7b93207a8ba",
@@ -16,7 +16,7 @@
     "parse-json.js": "abe7390025da266167ada290f9c4282e14b9e2e685bf278b5a9d279bdd20b46f",
     "portal-config.js": "c382388933a304219f79e704d7c95fe38f96da4927f27955b1081e461d830d63",
     "ui-files.json": "e3f454fc2e1f6fda7f4beecb030f6589e86d5e1675d39c0940a84d23ea348b6b",
-    "statik-index.js": "54608945f2bdddb28b8fdcfe22e9bff8cdd2833d00fdf404db3d28b0da012e80",
+    "statik-index.js": "664a96a8102a0ee6a76796eb53d6409dc8b6efc2f160d88bfc6bf3b31e37188b",
     "server_module/statik.js": "9c1f1bf0ac4cb6b1edd859698b5cec755bcaddbfbfa0efc21a8697dc363f5c40",
     "ui/index.html": "90fe3d03578db2e7720a88588100e39425621e134c00d3880425089bdd31baf4",
     "ui/app.js": "fb060ef3839f2d88b54e55d645acf1761a4a45e66c586cfbe6b02ccaeb49ff24",

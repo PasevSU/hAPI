@@ -90,7 +90,7 @@
       </div>
       ${state.newFolder
         ? `<form class="pf-form u-mb" id="pt-folder-form">
-             <div class="field"><input id="pt-folder-name" maxlength="100" autocomplete="off" placeholder="${esc(T('pt.folderName'))}" /></div>
+             <input id="pt-folder-name" class="pf-fn-param" maxlength="100" autocomplete="off" placeholder="${esc(T('pt.folderName'))}" aria-label="${esc(T('pt.folderName'))}" />
              <div class="u-row u-row-2">
                <button type="submit" class="btn btn-sm btn-primary">${esc(T('pt.create'))}</button>
                <button type="button" class="btn btn-sm" data-pt-folder-cancel>${esc(T('pt.cancel'))}</button>

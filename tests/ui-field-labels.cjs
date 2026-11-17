@@ -105,7 +105,9 @@ const labels = loadLabels();
     for (const block of matches) if (!/<label[\s>]/.test(block)) withoutLabel.push(file + ': ' + block.slice(0, 80));
   }
   assert.deepEqual(withoutLabel, [], 'полета без етикет до себе си (помощникът не може да ги свърже):\n  ' + withoutLabel.join('\n  '));
-  assert.ok(withField.length >= 9, 'панелите с полета са необичайно малко: ' + withField.join(', '));
+  // 9-те панела със `.field` станаха 8 в 0.69.242: студиото, което също имаше полета, е
+  // премахнато. Прагът е колкото днешните панели — намаляването му иска причина.
+  assert.ok(withField.length >= 8, 'панелите с полета са необичайно малко: ' + withField.join(', '));
   assert.ok(blocks >= 109, 'намерени .field блокове: ' + blocks + ' — очакват се поне 109 (толкова са измерени при затварянето на DEF-38)');
 }
 

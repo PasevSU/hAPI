@@ -59,8 +59,9 @@ assert.match(icons, /SPRITE_STYLES = \['standard', 'fine', 'bold', 'duotone', 'g
 assert.match(icons, /'\/ui\/icons-v4\.svg'/, 'помощникът строи адреса на спрайта');
 assert.match(icons, /window\.HapiIcons = \{ ico, names: Object\.keys\(P\), sprite, SPRITE_STYLES \}/, 'спрайтът е изнесен до всички панели');
 
-const server = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'server.js'), 'utf8');
-assert.match(server, /files\['\/ui\/icons-v4\.svg'\] = \['ui\/icons-v4\.svg', 'image\/svg\+xml; charset=utf-8'\]/, 'сървърът сервира спрайта с правилния тип');
+// От 0.69.242 allowlist-ът е данни: типът се проверява в самия запис на `ui-files.json`.
+const allow = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui-files.json'), 'utf8'));
+assert.deepEqual(allow['/ui/icons-v4.svg'], ['ui/icons-v4.svg', 'image/svg+xml; charset=utf-8'], 'сървърът сервира спрайта с правилния тип');
 
 console.log(
   'PASS icons-v4: 142 × 5 = 710 символа · един изглед · уникални id · без script/style/външни адреси · помощник и сървърен адрес сочат същия файл',

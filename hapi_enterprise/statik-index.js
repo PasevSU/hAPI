@@ -17,6 +17,8 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+// Един четец на JSON (DEF-67): счупен лист не бива да хвърля и да събаря маршрута.
+const { parseJson } = require('./parse-json');
 
 const INDEX_NAME = 'index.json';
 // Същата политика като `portal-archive.js`: доказателството живее 183 дни, после се маха.
@@ -46,19 +48,28 @@ function create({ dir, log = null, now = () => Date.now(), retentionDays = RETEN
 
   function ensure() {
     if (state) return state;
+    let raw;
     try {
-      const raw = fs.readFileSync(indexPath, 'utf8');
-      const parsed = JSON.parse(raw);
-      const links = parsed && typeof parsed.links === 'object' && parsed.links ? parsed.links : {};
-      // Запис без `id`/`url` не може да се сервира — маха се, вместо да дава 500 по-късно.
-      for (const [id, record] of Object.entries(links)) {
-        if (!ID.test(id) || !record || typeof record !== 'object' || !record.file) delete links[id];
-      }
-      state = { version: 1, updatedAt: parsed && parsed.updatedAt ? String(parsed.updatedAt) : new Date(now()).toISOString(), links };
+      raw = fs.readFileSync(indexPath, 'utf8');
     } catch (e) {
       if (e.code !== 'ENOENT') log?.warn?.('statik.index.unreadable', { ns: 'statik', err: e.message });
       state = empty();
+      return state;
     }
+    const decoded = parseJson(raw);
+    if (!decoded.ok) {
+      // Счупен лист → празен списък и предупреждение: панелът не бива да пада заради листа.
+      log?.warn?.('statik.index.unreadable', { ns: 'statik', err: String(decoded.error && decoded.error.message) });
+      state = empty();
+      return state;
+    }
+    const parsed = decoded.value && typeof decoded.value === 'object' ? decoded.value : {};
+    const links = parsed.links && typeof parsed.links === 'object' ? parsed.links : {};
+    // Запис без `id`/`url` не може да се сервира — маха се, вместо да дава 500 по-късно.
+    for (const [id, record] of Object.entries(links)) {
+      if (!ID.test(id) || !record || typeof record !== 'object' || !record.file) delete links[id];
+    }
+    state = { version: 1, updatedAt: parsed.updatedAt ? String(parsed.updatedAt) : new Date(now()).toISOString(), links };
     return state;
   }
 
