@@ -103,6 +103,15 @@ const tag = (name) => `[${name}]`;
     const serverText = fs.readFileSync(path.join(ADDON, 'server.js'), 'utf8');
     ok(serverText.includes("'private, max-age=3600'"), tag('§4') + ' миниатюрите се пазят само в браузъра (`private`)');
 
+    // ── §5: `/statik/` — линкът на отчета (ADR-0028) ──────────────────────────
+    // Един `id` никога не сочи друго съдържание, затова `immutable` е верен; адресът е
+    // capability, тоест не бива да влиза в търсачки и не бива да е `no-store` (иначе
+    // 750 KB PDF се тегли при всяко отваряне на вече видян линк).
+    const statikSource = fs.readFileSync(path.join(ADDON, 'server_module', 'statik.js'), 'utf8');
+    ok(/max-age=31536000, immutable/.test(statikSource), tag('§5') + ' линкът на отчета е `immutable` по `id`');
+    ok(/noindex/.test(statikSource), tag('§5') + ' линкът не влиза в търсачки (`noindex`)');
+    ok(!/no-store/.test(statikSource), tag('§5') + ' линкът не се пречиства при всяко теглене');
+
     console.log(`OK static-cache · ${checks} твърдения · версия ${VERSION}`);
   } finally {
     await server.stop();

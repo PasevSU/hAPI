@@ -5498,6 +5498,88 @@
           "response": []
         },
         {
+          "name": "Отчет за портал, папка или файл в едно натискане",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/reports/oneclick",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "reports",
+                "oneclick"
+              ]
+            },
+            "description": "Отчет за портал, папка или файл в едно натискане\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Лист с генерираните отчети и техните адреси",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/reports/links",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "reports",
+                "links"
+              ]
+            },
+            "description": "Лист с генерираните отчети и техните адреси\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтриване на отчет и неговия адрес",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/v2/reports/links/{id}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "v2",
+                "reports",
+                "links",
+                "{{id}}"
+              ]
+            },
+            "description": "Изтриване на отчет и неговия адрес\n\nПраво (RBAC): `core`"
+          },
+          "response": []
+        },
+        {
           "name": "Пакет с доказателства (PDF + манифест + токени)",
           "request": {
             "method": "POST",

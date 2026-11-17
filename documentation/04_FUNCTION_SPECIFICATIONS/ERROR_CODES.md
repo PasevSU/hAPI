@@ -7,7 +7,7 @@
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
 
-Общо: **84** кода, излъчвани от `hapi_enterprise/`. От тях **64** носят
+Общо: **85** кода, излъчвани от `hapi_enterprise/`. От тях **65** носят
 собствено обяснение в кода; останалите се разпознават по кода и файла.
 
 ## Кодове по азбучен ред
@@ -67,6 +67,7 @@
 | `PORTAL_CONFIG_MISSING` | порталът още няма configuration.yaml | `hapi_enterprise/routes/portal-config.js` |
 | `PORTAL_CONFIG_NO_FOLDER` | порталът ползва общ корен и няма своя папка за configuration.yaml | `hapi_enterprise/routes/portal-config.js` |
 | `PORTAL_CONFIG_UNREADABLE` | — | `hapi_enterprise/routes/portal-config.js` |
+| `PORTAL_WITHOUT_FOLDER` | отчетът за папка/файл иска портал със собствена папка | `hapi_enterprise/routes/reports.js` |
 | `PUBLIC_UNREADABLE` | — | `hapi_enterprise/path-crypto.js` |
 | `RESPONSE_ALREADY_SENT` | втори отговор е отказан (първият вече е изпратен), код | `hapi_enterprise/respond.js` |
 | `S2K_AEAD_UNSUPPORTED` | Платформата няма поддръжка на AEAD режима на този ключ ( | `hapi_enterprise/pgp.js` |

@@ -4,9 +4,9 @@
 
 > **Генериран документ.** Версия на кода: **0.69.241**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **136** backend модула · **22** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **468** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
+Общо: **139** backend модула · **22** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **470** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Файлове (246)
+### Файлове (249)
 
 | Файл | Вид | Предназначение (първи ред от самия файл) |
 | ---- | --- | ----------------------------------------- |
@@ -114,6 +114,7 @@
 | `hapi_enterprise/readiness.js` | backend | Решение за readiness — чиста функция, без I/O. |
 | `hapi_enterprise/registry.js` | backend | Metadata-driven profile schemas (prefix 1000-5000). A new profile is a config entry, |
 | `hapi_enterprise/report-manifest.js` | backend | Фаза 11 / RS-01: манифест на отчет (Report Studio). |
+| `hapi_enterprise/report-oneclick.js` | backend | ОТЧЕТ С ЕДНО НАТИСКАНЕ (ADR-0028, D2/D3): обхват → манифест, без HTTP и без рендер. |
 | `hapi_enterprise/report-package.js` | backend | ПАКЕТ С ДОКАЗАТЕЛСТВА от манифест на отчет (W7). |
 | `hapi_enterprise/report-render.js` | backend | Фаза 11 / RS-03: манифест → PDF чрез собствения pdf-writer (без външни зависимости). |
 | `hapi_enterprise/report-stamp.js` | backend | Фаза 11 / RS-05: реален RFC 3161 обхват върху отчет от Report Studio. |
@@ -150,6 +151,7 @@
 | `hapi_enterprise/send.js` | backend | „Бърз линк“ (Send-lite): еднократен/срочен/безсрочен публичен достъп до ЕДИН файл, |
 | `hapi_enterprise/server_module/portal-assets.js` | backend | СТАТИЧНИТЕ ФАЙЛОВЕ НА ПУБЛИЧНАТА СТРАНИЦА — `/portal.js`, `/portal-i18n.js`, `/portal.css` |
 | `hapi_enterprise/server_module/portal-landing.js` | backend | ПУБЛИЧНАТА СТРАНИЦА НА ПОРТАЛА — `/p/<id>[/]` (0.69.220). |
+| `hapi_enterprise/server_module/statik.js` | backend | `/statik/<id>/<име>` — ЛИНКЪТ НА ОТЧЕТА, САМО ЗА ИЗТЕГЛЯНЕ (ADR-0028, D5/§6.3). |
 | `hapi_enterprise/server-modules.js` | backend | ВСИЧКИ ФАЙЛОВЕ ОТ `server_module/` СА КОМПОНЕНТИ — БЕЗ ТВЪРДО ВПИСАН СПИСЪК (0.69.220). |
 | `hapi_enterprise/server.js` | backend | Allowlist-ът на статиката е ДАННИ, не код (D12): нов UI файл = ред в `ui-files.json`, без |
 | `hapi_enterprise/share-links.js` | backend | Share links за портал: NFC/QR таг за Home Assistant Companion + universal link. |
@@ -161,6 +163,7 @@
 | `hapi_enterprise/standalone.js` | backend | hAPI Enterprise — edge/standalone runtime. |
 | `hapi_enterprise/start.js` | backend | hAPI Enterprise — add-on entrypoint. |
 | `hapi_enterprise/static-etag.js` | backend | ETag И 304 ЗА СТАТИКАТА (DEF-88, 0.69.227). |
+| `hapi_enterprise/statik-index.js` | backend | ЛИСТЪТ НА `/statik/` ЛИНКОВЕТЕ (ADR-0028, D4/D5). |
 | `hapi_enterprise/storage-check.js` | backend | Storage health checks: verifies that each configured storage location exists, is a |
 | `hapi_enterprise/storage-migrate.js` | backend | !/usr/bin/env node |
 | `hapi_enterprise/storage-preflight.js` | backend | Логическите корени идват от `paths.js` — един източник за целия проект (вж. `tests/storage-roots.cjs`). |

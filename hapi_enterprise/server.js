@@ -775,9 +775,12 @@ async function runStorageCheck(reason) {
 // --- HTTP компоненти ---
 // Всеки компонент получава САМО това, което му е нужно; сървърът държи рутирането и
 // общото състояние. Така файлът расте с нови маршрути, без да расте като монолит.
+// Листът на `/statik/` линковете (ADR-0028, D4): един писач, атомарен запис, retention 183 дни.
+const statikIndex = require('./statik-index').create({ dir: path.join(root, 'statik'), log }); statikIndex.prune();
 const reportsRoutes = require('./routes/reports').create({
   root, json, fail, body, parse, audit, log, cryptoOptions, runtime,
   reportSystemInfo, persistTsaRecords, adminGate, tsaKeep, pruneTsaRecords, auditChain, publish: (e, d) => webhooks.publish(e, d),
+  resolvePortal, portalRoot, portalAbs, filesRoot, statik: statikIndex, hash: core.api.hash,
 });
 
 const generatorRoutes = require('./routes/generator').create({ generator, adminGate, audit, json, fail, parse });
@@ -796,7 +799,7 @@ const keyring = require('./path-crypto').create({ env: process.env });
 const portalSkin = require('./portal-skin').create({ keyring, log }); // кожа на портала + предупреждение
 // Компонентите от `server_module/` се зареждат ВСИЧКИ, по име — без твърдо вписан списък
 // (`server-modules.js`). Всяко ново файлче там влиза в диспечера само със съществуването си.
-const serverModules = require('./server-modules').load({ dir: path.join(__dirname, 'server_module'), host: { links, baseUrl, htmlEsc, fail, portalPolicy, resolvePortal, portalArchive, recordTelemetry, portalRoot, portalSkin, portalDir: path.join(__dirname, 'portal'), portalPageFile: path.join(__dirname, 'portal', 'portal.html'), addonVersion } });
+const serverModules = require('./server-modules').load({ dir: path.join(__dirname, 'server_module'), host: { links, baseUrl, htmlEsc, fail, portalPolicy, resolvePortal, portalArchive, recordTelemetry, portalRoot, portalSkin, portalDir: path.join(__dirname, 'portal'), portalPageFile: path.join(__dirname, 'portal', 'portal.html'), addonVersion, statik: statikIndex, audit, log } });
 // PGP инструментите и подписването на папки/файлове: ключът идва от опциите, без да се пита.
 const pgpTools = require('./pgp-tools').create({ keyring, listKeys: () => db.pgpKeys || [], decryptSecret: key => { if (!key || !key.secretEnc) return ''; return fileCrypto.decrypt(Buffer.from(key.secretEnc, 'base64'), adminToken).toString('utf8') }, pgp });
 const pgpSign = require('./pgp-sign').create({ tools: pgpTools, root: path.join(root, 'pgp-signatures'), roots: { '/share': paths.resolveRoot('share'), '/media': paths.resolveRoot('media') }, audit, log });

@@ -33,7 +33,12 @@ assert.equal(sign.SIGN_PATH, '/admin/api/v2/reports/sign', 'пътят за по
 assert.equal(sign.VERIFY_PATH, '/admin/api/v2/cms/verify', 'пътят за проверка е един');
 const indexHtml = read('hapi_enterprise/ui/index.html');
 assert.ok(indexHtml.includes('report-sign.js'), 'index.html зарежда модула');
-assert.ok(read('hapi_enterprise/server.js').includes("'report-sign.js'"), 'сървърът сервира /ui/report-sign.js');
+// От 0.69.242 allowlist-ът е данни (`ui-files.json`, D12), а `server.js` само го зарежда.
+const uiAllowlist = JSON.parse(read('hapi_enterprise/ui-files.json'));
+assert.ok(
+  Object.values(uiAllowlist).some(([rel]) => rel === 'ui/report-sign.js'),
+  'сървърът сервира /ui/report-sign.js',
+);
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'portal-cms-panel-'));

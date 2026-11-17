@@ -6,12 +6,12 @@
 > **не се редактира на ръка**. Всеки маршрут носи своята способност (виж
 > `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` за пълния договор).
 
-Общо: **229** маршрута в **2** групи.
+Общо: **232** маршрута в **2** групи.
 
 | Група | Маршрути |
 | --- | --- |
 | `/PATCH` | 1 |
-| `/admin/api` | 228 |
+| `/admin/api` | 231 |
 
 ## /PATCH
 
@@ -160,6 +160,9 @@
 | GET | `/admin/api/v2/migrate` | Анализ на данни за миграция |
 | POST | `/admin/api/v2/migrate` | Миграция (с dryRun) |
 | POST | `/admin/api/v2/reports/render` | Рендер на отчет (PDF) от манифест |
+| POST | `/admin/api/v2/reports/oneclick` | Отчет за портал, папка или файл в едно натискане |
+| GET | `/admin/api/v2/reports/links` | Лист с генерираните отчети и техните адреси |
+| DELETE | `/admin/api/v2/reports/links/{id}` | Изтриване на отчет и неговия адрес |
 | POST | `/admin/api/v2/reports/package` | Пакет с доказателства (PDF + манифест + токени) |
 | POST | `/admin/api/v2/reports/sign` | Detached CMS подпис на отчет |
 | POST | `/admin/api/v2/cms/verify` | Проверка на detached CMS подпис |

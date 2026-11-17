@@ -27,6 +27,14 @@ function create(deps) {
     pruneTsaRecords,
     auditChain,
     publish,
+    // Отчетът с едно натискане (0.69.242) иска порталите и листа на `/statik/` — подават се
+    // отвън, за да не знае компонентът за базата и за пътищата (същият договор както досега).
+    resolvePortal,
+    portalRoot,
+    portalAbs,
+    filesRoot,
+    statik,
+    hash: hashApi,
   } = deps;
   const crypto = require('node:crypto');
   const fsp = require('node:fs/promises');
@@ -122,6 +130,97 @@ function create(deps) {
         res.writeHead(201, headers);
         return res.end(pdf);
       } catch (e) { return fail(res, e.status || 500, (e.code ? e.code + ': ' : '') + (e.message || 'Report render failed')) }
+    }
+    // ── Отчет с едно натискане (ADR-0028, 0.69.242) ────────────────────────
+    // Обхватът не се избира във формуляр: той идва от МЯСТОТО на бутона (`type`) и от пътя
+    // в портала (`path`). Отчетът се строи ВИНАГИ наново (D7) — стар линк не се преизползва,
+    // защото отчет, изтеглен от стар адрес, твърди състояние, което вече не е вярно.
+    if (parts[3] === 'reports' && parts[4] === 'oneclick' && parts.length === 5) {
+      if (!adminGate(req, res, 'reports', method)) return;
+      if (method !== 'POST') return fail(res, 405, 'Method not allowed');
+      const rdoc = await readJson(req, 64 * 1024); if (rdoc.error) return fail(res, rdoc.status, rdoc.error);
+      const payload = rdoc.value;
+      const portal = resolvePortal(String(payload.portal || ''));
+      if (!portal) return fail(res, 404, 'Unknown portal');
+      const storageRoot = portal.storage_root || '/share';
+      const type = String(payload.type || 'portal');
+      // Отчетът за ПАПКА или ФАЙЛ описва дървото на портала, а то съществува само при собствена
+      // папка: `/share` и `/media` са общите корени на всички портали (същото правило като при
+      // папковия API), тоест отчетът щеше да опише чужди файлове.
+      if (type !== 'portal') {
+        const logical = portalRoot(storageRoot);
+        if (logical === '/share' || logical === '/media') return fail(res, 400, 'PORTAL_WITHOUT_FOLDER: отчетът за папка/файл иска портал със собствена папка');
+      }
+      try {
+        const createdAt = new Date().toISOString();
+        const oneclick = require('../report-oneclick');
+        // Порталът има РЕГИСТЪР на файловете (`files/<portalId>/<fileId>`), а папката — дърво.
+        // Затова отчетът за портал описва регистъра, а за папка/файл — дървото: двете са
+        // различни източници и отчетът казва кой от тях е ползвал (`scope`).
+        const built = type === 'portal'
+          ? await oneclick.build({
+            type,
+            portal,
+            createdAt,
+            hash: hashApi,
+            sources: (Array.isArray(portal.files) ? portal.files : []).filter((f) => f && f.id).map((f) => ({ abs: path.join(filesRoot, portal.id, f.id), name: f.name || f.id })),
+          })
+          : await oneclick.build({ type, dir: portalAbs(storageRoot), rel: String(payload.path || ''), portal, createdAt, hash: hashApi });
+        const reportRender = require('../report-render');
+        const pdf = reportRender.renderPdf(built.manifest, {
+          data: built.data,
+          hashes: built.hashes,
+          createdAt,
+          system: reportSystemInfo({ issuedAt: createdAt, tsa: 'не е поискан' }),
+        });
+        const id = statik.newId();
+        statik.prune(); // изтеклите отчети и липсващите им файлове се махат при всяко ново генериране
+        statik.put(id, pdf);
+        const sha256 = crypto.createHash('sha256').update(pdf).digest('hex');
+        // Отчетът на портал или папка няма публичен API адрес за СПИСЪК (публичното API дава
+        // файл по път), затова препратката сочи дървото на портала в административното API.
+        const api = type === 'file'
+          ? '/api/v1/p/' + encodeURIComponent(portal.slug) + '/tree/file?path=' + encodeURIComponent(built.path)
+          : '/admin/api/portals/' + encodeURIComponent(portal.id) + '/tree';
+        const record = statik.add({
+          id,
+          file: built.name,
+          portalId: portal.id,
+          slug: portal.slug,
+          type,
+          scope: built.scope,
+          path: built.path,
+          name: built.name,
+          sha256,
+          bytes: pdf.length,
+          files: built.totals.files,
+          url: '/statik/' + id + '/' + built.name,
+          api,
+        });
+        void audit('report.oneclick', { portalId: portal.id, type, path: built.path, id, files: built.totals.files, bytes: pdf.length, sha256 });
+        log.info('report.oneclick', { ns: 'report', portalId: portal.id, type, id, files: built.totals.files, bytes: pdf.length });
+        return json(res, 201, record);
+      } catch (e) {
+        if (e && e.status) return fail(res, e.status, (e.code ? e.code + ': ' : '') + (e.message || 'Report failed'));
+        throw e;
+      }
+    }
+    // Листът с линковете (D4): кога · какво · път · линк · изтегляния.
+    if (parts[3] === 'reports' && parts[4] === 'links' && parts.length === 5) {
+      if (!adminGate(req, res, 'reports', method)) return;
+      if (method !== 'GET') return fail(res, 405, 'Method not allowed');
+      const portal = url.searchParams.get('portal') ? resolvePortal(url.searchParams.get('portal')) : null;
+      if (url.searchParams.get('portal') && !portal) return fail(res, 404, 'Unknown portal');
+      return json(res, 200, { links: statik.list({ portalId: portal ? portal.id : null }) });
+    }
+    if (parts[3] === 'reports' && parts[4] === 'links' && parts.length === 6) {
+      if (!adminGate(req, res, 'reports', method)) return;
+      if (method !== 'DELETE') return fail(res, 405, 'Method not allowed');
+      const gone = statik.remove(parts[5]);
+      if (!gone) return fail(res, 404, 'Not found');
+      void audit('statik.gone', { id: parts[5] });
+      res.writeHead(204, { 'Cache-Control': 'no-store' });
+      return res.end();
     }
     // W7: Пакет с доказателства от манифеста. Статусът не се закръгля нагоре:
     // READY само когато START и STOP токените са налични (и подписът, ако е поискан),

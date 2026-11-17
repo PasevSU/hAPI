@@ -209,8 +209,10 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
     assert.deepEqual(consoleErrors, [], 'панелите писаха в console.error:\n  ' + consoleErrors.slice(0, 5).join('\n  '));
 
     // ── 7. Сървърът сервира всички файлове, които панелите искат ────────────────
-    const serverSrc = fs.readFileSync(path.join(root, 'hapi_enterprise', 'server.js'), 'utf8');
-    for (const file of PANEL_MODULES) assert.ok(serverSrc.includes("'" + file + "'"), 'server.js не сервира ' + file);
+    // От 0.69.242 allowlist-ът е данни (`ui-files.json`, D12), а `server.js` само го зарежда.
+    const uiAllowlist = JSON.parse(fs.readFileSync(path.join(root, 'hapi_enterprise', 'ui-files.json'), 'utf8'));
+    const served = new Set(Object.values(uiAllowlist).map(([rel]) => rel));
+    for (const file of PANEL_MODULES) assert.ok(served.has('ui/' + file), 'сървърът не сервира ' + file);
 
     console.log('PASS gui-panels: ' + NAV.length + ' панела на жив add-on · контакт и дело СЪЗДАДЕНИ през формата · търсене филтрира · валидаторът отговаря');
   } finally {

@@ -5186,6 +5186,116 @@
         }
       }
     },
+    "/admin/api/v2/reports/oneclick": {
+      "post": {
+        "summary": "Отчет за портал, папка или файл в едно натискане",
+        "operationId": "post_v2_reports_oneclick",
+        "tags": [
+          "reports"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "core",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/api/v2/reports/links": {
+      "get": {
+        "summary": "Лист с генерираните отчети и техните адреси",
+        "operationId": "get_v2_reports_links",
+        "tags": [
+          "reports"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "core",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/admin/api/v2/reports/links/{id}": {
+      "delete": {
+        "summary": "Изтриване на отчет и неговия адрес",
+        "operationId": "delete_v2_reports_links_id",
+        "tags": [
+          "reports"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "core",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: id"
+          }
+        ]
+      }
+    },
     "/admin/api/v2/reports/package": {
       "post": {
         "summary": "Пакет с доказателства (PDF + манифест + токени)",

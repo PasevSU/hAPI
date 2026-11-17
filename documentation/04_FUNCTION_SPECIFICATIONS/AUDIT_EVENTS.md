@@ -7,7 +7,7 @@
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **204** събития, излъчвани от **24** файла.
+Общо: **207** събития, излъчвани от **25** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -177,6 +177,7 @@
 | `qr.blocked.view` | `hapi_enterprise/routes/portal-storage.js` |
 | `qr.restore.refused` | `hapi_enterprise/routes/portal-qr.js` |
 | `qr.restored` | `hapi_enterprise/routes/portal-qr.js` |
+| `report.oneclick` | `hapi_enterprise/routes/reports.js` |
 | `report.package` | `hapi_enterprise/routes/reports.js` |
 | `report.render` | `hapi_enterprise/routes/reports.js` |
 | `report.sign` | `hapi_enterprise/routes/reports.js` |
@@ -191,6 +192,8 @@
 | `sensors.settings` | `hapi_enterprise/server.js` |
 | `sensors.visitor.forget` | `hapi_enterprise/server.js` |
 | `settings_changed` | `hapi_enterprise/server.js` |
+| `statik.get` | `hapi_enterprise/server_module/statik.js` |
+| `statik.gone` | `hapi_enterprise/routes/reports.js` · `hapi_enterprise/server_module/statik.js` |
 | `storage.check.failed` | `hapi_enterprise/server.js` |
 | `storage.mirror.verify` | `hapi_enterprise/server.js` |
 | `taxonomy.add` | `hapi_enterprise/server.js` |

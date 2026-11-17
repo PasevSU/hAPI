@@ -142,8 +142,8 @@
 | --- | --- | --- |
 | 0 | Двете части на плана + `ADR-0028`, `docs-class --write`, `docs-index` | `node tests/docs-class.cjs`, `docs-index` |
 | 1 | ✔ `ui-files.json` (D12) + `server.js` чете оттам · изпълнена | `server-structure` (2712/2722), `html-assets`, `ingress-panel-load`, `docker-runtime`, `ui-version` |
-| 2 | нов `report-oneclick.js` + маршрут `oneclick` + лист | `oneclick-reports.cjs` |
-| 3 | нов `statik-index.js` + `server_module/statik.js` + retention | `statik-links.cjs`, `docker-runtime` |
+| 2 | ✔ нов `report-oneclick.js` + маршрут `oneclick` + лист · изпълнена | `oneclick-reports.cjs` |
+| 3 | ✔ нов `statik-index.js` + `server_module/statik.js` + retention · изпълнена | `statik-links.cjs`, `docker-runtime` |
 | 4 | `ui/selection.js` + `ui/portal-tree.js` + блок „Дърво“ | `ui-portal-tree.cjs`, `ui-block-aria` |
 | 5 | Бутони в `FUNCTIONS` (`area: 'report'`) + линк в листа на екрана | `ui-portal-functions`, `ui-report-buttons.cjs` |
 | 6 | Махане на Report Studio (§9) + пазач | `report-studio-removed.cjs`, `gui-sections`, `ui-settings-sections` |
@@ -184,6 +184,8 @@
 
 ## 14. Какво следва веднага след одобрението
 
-Стъпка 1 (§11) е изпълнена: allowlist-ът на статиката е `hapi_enterprise/ui-files.json`, а
-`server.js` го чете с един ред (2722 → 2712). Следва стъпка 2 — `report-oneclick.js` и маршрутът
-`admin/api/v2/reports/oneclick`, защото без нея няма какво да произведе `/statik/` линк.
+Стъпки 1–3 (§11) са изпълнени: allowlist-ът на статиката е `hapi_enterprise/ui-files.json`
+(`server.js` 2722 → 2715), отчетът се строи от `report-oneclick.js` през
+`POST /admin/api/v2/reports/oneclick`, а линкът `/statik/<id>/<име>` се сервира от
+`server_module/statik.js` без токен. Следва стъпка 4 — `ui/selection.js` и `ui/portal-tree.js`
+(маркиране и дърво-панел), защото отчетът за избраните файлове идва оттам.

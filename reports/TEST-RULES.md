@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 468 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 470 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 211 |
+| общо | 213 |
 | портал | 57 |
 | GUI | 42 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (211)
+## общо (213)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -163,6 +163,7 @@
 | `node-runtime-gate` | Node runtime gate | `tests/node-runtime-gate.cjs` |
 | `office-processing` | Office processing | `tests/office-processing.cjs` |
 | `oidc-login` | Oidc login | `tests/oidc-login.cjs` |
+| `oneclick-reports` | Oneclick reports | `tests/oneclick-reports.cjs` |
 | `openapi-admin` | Openapi admin | `tests/openapi-admin.cjs` |
 | `option-coverage` | Option coverage | `tests/option-coverage.cjs` |
 | `option-effects` | Option effects | `tests/option-effects.cjs` |
@@ -239,6 +240,7 @@
 | `start-token-required` | Start token required | `tests/start-token-required.cjs` |
 | `static-cache` | Static cache | `tests/static-cache.cjs` |
 | `static-etag` | Static etag | `tests/static-etag.cjs` |
+| `statik-links` | Statik links | `tests/statik-links.cjs` |
 | `storage` | Storage | `tests/storage.cjs` |
 | `store-accessors` | Store accessors | `tests/store-accessors.cjs` |
 | `store-migration` | Store migration | `tests/store-migration.cjs` |
