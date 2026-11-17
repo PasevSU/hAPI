@@ -597,6 +597,37 @@ Two consequences worth stating plainly:
 * an attachment whose bytes the caller does not hold is **refused**, not signed. Signing a
   filename with no content would certify a claim instead of evidence.
 
+#### Signature time and expiry
+
+An OpenPGP signature packet carries a **creation time** (subpacket 2) always, and an
+**expiry** (subpacket 3) only when the signer stated one. gpg writes the creation time by
+default and no expiry, which is what this gateway does too: a signature that expires stops
+verifying, and an exhibit has to outlive the case it supports. Pass `--sig-expire` (or
+`sigExpire`) — a gpg duration such as `1d` or `2y` — to state one.
+
+`gpg --list-packets` shows the difference, and it is the source of the Thunderbird message
+*„Signatur-Ablaufdatum: Kein Zeitpunkt in der Signatur enthalten“*:
+
+```text
+hashed subpkt 2 len 4 (sig created 2026-11-17)                      <- always present
+critical hashed subpkt 3 len 4 (sig expires after 1d0h0m)           <- only with --sig-expire
+```
+
+Both fields are read out of the packet and reported, because **"no expiry stated" and "not
+yet expired" are different claims** and merging them into one `false` would let a report say
+a signature is valid forever when it never promised anything:
+
+| Field | Meaning |
+| --- | --- |
+| `createdAt` / `createdIso` | when the signature was made, from the packet |
+| `expiryStated` | `true` only when subpacket 3 is present |
+| `expiresIn` / `expiresAt` / `expiresIso` | the stated expiry, or `null` |
+| `expired` | `null` when no expiry is stated, otherwise `true`/`false` |
+
+Because these live in the **hashed** subpacket area, nobody can drop or edit an expiry
+without invalidating the signature — and a verifier reading the packet cannot be told the
+wrong story.
+
 The whole-message signature is **opt-in** (`seal --signed-message`, or `sign-message`
 directly) because it needs the attachment bytes, which the manifest only describes. Without
 `gpg` it reports `unavailable` and returns no message: a `multipart/signed` whose second part

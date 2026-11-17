@@ -65,7 +65,7 @@ const USAGE = `PasevSU PSEMP gateway
                                         supplied bytes. --signed-message ALSO writes one
                                         PGP/MIME message (RFC 3156) whose single
                                         signature covers the body and every attachment.
-  sign-message [--body f] [--attach name=f]… [--out msg.eml] [--key id] [--digest SHA512]
+  sign-message [--body f] [--attach name=f]… [--out msg.eml] [--key id] [--digest SHA512] [--sig-expire 1d]
                                         one OpenPGP signature over the whole message:
                                         PGP/MIME multipart/signed wrapping the body and
                                         every attachment, in full. Adding, removing or
@@ -410,6 +410,7 @@ async function main(argv) {
         },
         keyId: options.key && options.key !== true ? String(options.key) : undefined,
         digestAlgo: options.digest && options.digest !== true ? String(options.digest) : undefined,
+        sigExpire: options['sig-expire'] && options['sig-expire'] !== true ? String(options['sig-expire']) : undefined,
         outputPath: options.out && options.out !== true ? path.resolve(String(options.out)) : undefined,
       });
       // The whole message is large and prints badly; report the facts, not the body.

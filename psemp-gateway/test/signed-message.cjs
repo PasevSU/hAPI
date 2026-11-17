@@ -369,6 +369,100 @@ async function main() {
     return 'honest about unsigned mail';
   });
 
+  // An OpenPGP signature carries a creation time always, and an expiry only when the
+  // signer stated one. Both are read here, because "no expiry stated" and "not yet
+  // expired" are different claims: merging them would let a report say "valid
+  // forever" about a signature that simply never promised anything.
+  await check('the-report-says-when-the-signature-was-made', async () => {
+    if (!gpgOnPath().available) return 'skipped — no gpg';
+    return withTempKeyring(async ({ fingerprint }) => {
+      const before = Math.floor(Date.now() / 1000);
+      const report = await api.signWholeMessage({
+        body: BODY,
+        attachments: sample(),
+        keyId: fingerprint,
+      });
+      assert.strictEqual(report.ok, true, JSON.stringify(report.signature));
+      assert.ok(Number.isFinite(report.signature.createdAt), 'a creation time is in the packet');
+      assert.ok(report.signature.createdAt >= before - 5, 'and it is not in the past');
+      assert.ok(report.signature.createdIso, 'reported as an ISO date too');
+      assert.strictEqual(
+        report.signature.expiryStated,
+        false,
+        'no expiry is stated by default, because an exhibit must not stop verifying'
+      );
+      assert.strictEqual(report.signature.expiresAt, null);
+      assert.strictEqual(report.signature.expiresIn, null);
+      return `made ${report.signature.createdIso}, no expiry stated`;
+    });
+  });
+
+  await check('an-expiry-is-stated-only-when-asked-for', async () => {
+    if (!gpgOnPath().available) return 'skipped — no gpg';
+    return withTempKeyring(async ({ fingerprint }) => {
+      const report = await api.signWholeMessage({
+        body: BODY,
+        attachments: sample(),
+        keyId: fingerprint,
+        sigExpire: '1d',
+      });
+      assert.strictEqual(report.ok, true, JSON.stringify(report.signature));
+      assert.strictEqual(report.signature.expiryStated, true, 'the expiry is stated');
+      assert.strictEqual(report.signature.expiresIn, 86400, 'and it is the one requested');
+      assert.strictEqual(report.signature.expired, false, 'a fresh signature has not expired');
+      assert.strictEqual(
+        report.signature.expiresAt,
+        report.signature.createdAt + 86400,
+        'expiry is measured from the creation time in the packet'
+      );
+
+      // The expiry lives inside the signed packet, so it cannot be dropped or edited
+      // without breaking the signature — and a verifier reports it back.
+      const dir = tempDir();
+      const out = path.join(dir, 'expires.eml');
+      const written = await api.signWholeMessage({
+        body: BODY,
+        attachments: sample(),
+        keyId: fingerprint,
+        sigExpire: '1d',
+        outputPath: out,
+      });
+      assert.strictEqual(written.ok, true);
+      const verified = await api.verifySignedMessage({ path: out });
+      assert.strictEqual(verified.ok, true, JSON.stringify(verified.signature));
+      assert.strictEqual(verified.signature.expiryStated, true);
+      assert.strictEqual(verified.signature.expiresIn, 86400);
+      assert.strictEqual(
+        verified.signature.createdAt,
+        written.signature.createdAt,
+        'the verifier reads the same creation time the signer wrote'
+      );
+      return 'expiry stated, signed, and read back';
+    });
+  });
+
+  await check('the-times-come-out-of-the-signature-not-the-clock', async () => {
+    // signatureTimes() must translate a packet's fields, and must not invent an
+    // expiry for a packet that carries none — the failure mode behind a report that
+    // claims a signature expires when it does not, or vice versa.
+    const created = 1700000000;
+    const plain = api.signatureTimes({ createdAt: created, expiresIn: null });
+    assert.strictEqual(plain.createdAt, created);
+    assert.strictEqual(plain.createdIso, new Date(created * 1000).toISOString());
+    assert.strictEqual(plain.expiresAt, null);
+    assert.strictEqual(plain.expiryStated, false);
+    assert.strictEqual(plain.expired, null, 'no expiry is not the same as not expired');
+
+    const lasting = api.signatureTimes({ createdAt: created, expiresIn: 86400 });
+    assert.strictEqual(lasting.expiresAt, created + 86400);
+    assert.strictEqual(lasting.expiryStated, true);
+    assert.strictEqual(lasting.expired, true, 'a 2023 signature with a day to live has expired');
+
+    assert.strictEqual(api.signatureTimes(null).createdAt, null, 'a missing packet is not a date');
+    assert.strictEqual(api.signatureTimes(null).expired, null);
+    return 'null expiry stays null, stated expiry is computed';
+  });
+
   console.log('signed-message:');
   for (const entry of checks) console.log(`  ok  ${entry.name} — ${entry.detail}`);
   for (const note of notes) console.log(`  note ${note}`);

@@ -2075,9 +2075,23 @@ function readPgpPackets(bytes) {
   return packets;
 }
 
-/** Issuer key ID (type 16) and issuer fingerprint (type 33) live in the subpackets. */
+/**
+ * Signature subpackets worth reading: issuer (16, 33) and time (2, 3).
+ *
+ * Subpacket 2 is the creation time, and a signer almost always writes it.
+ * Subpacket 3 is the expiry, and it is OPTIONAL — gpg writes one only when asked
+ * (`--default-sig-expire`), so a signature with no expiry says "this signature
+ * does not expire", not "this signature is broken". Both are reported so a reader
+ * can tell those two cases apart; `expiresIn: null` is a fact, not a gap.
+ */
 function parseSignatureSubpackets(bytes, start, end) {
-  const found = { issuerFingerprint: null, issuerKeyId: null };
+  const found = {
+    issuerFingerprint: null,
+    issuerKeyId: null,
+    createdAt: null,
+    expiresIn: null,
+    expiryCritical: false,
+  };
   let offset = start;
   while (offset < end && offset < bytes.length) {
     const first = bytes[offset];
@@ -2095,16 +2109,47 @@ function parseSignatureSubpackets(bytes, start, end) {
       cursor += 4;
     }
     if (!length || cursor + length > bytes.length || cursor + length > end) break;
+    const critical = (bytes[cursor] & 0x80) !== 0;
     const type = bytes[cursor] & 0x7f;
     const body = bytes.subarray(cursor + 1, cursor + length);
     if (type === 33 && body.length >= 21) {
       found.issuerFingerprint = body.subarray(1).toString('hex').toUpperCase();
     } else if (type === 16 && body.length >= 8) {
       found.issuerKeyId = body.subarray(0, 8).toString('hex').toUpperCase();
+    } else if (type === 2 && body.length >= 4) {
+      found.createdAt = body.readUInt32BE(0);
+    } else if (type === 3 && body.length >= 4) {
+      found.expiresIn = body.readUInt32BE(0);
+      found.expiryCritical = critical;
     }
     offset = cursor + length;
   }
   return found;
+}
+
+/**
+ * Turn a signature packet's time subpackets into dates a report can print.
+ *
+ * `expiresIn: null` means the signer stated no expiry, which is the OpenPGP
+ * default and the right choice for evidence: a signature that expires is a
+ * signature that stops being checkable, and an exhibit has to outlive the case.
+ * `expired` is therefore `null` rather than `false` — "no expiry stated" and
+ * "not yet expired" are different claims and must not be merged into one.
+ */
+function signatureTimes(signature) {
+  const createdAt = signature && Number.isFinite(signature.createdAt) ? signature.createdAt : null;
+  const expiresIn = signature && Number.isFinite(signature.expiresIn) ? signature.expiresIn : null;
+  const expiresAt = createdAt !== null && expiresIn !== null && expiresIn > 0 ? createdAt + expiresIn : null;
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    createdAt,
+    createdIso: createdAt === null ? null : new Date(createdAt * 1000).toISOString(),
+    expiresIn,
+    expiresAt,
+    expiresIso: expiresAt === null ? null : new Date(expiresAt * 1000).toISOString(),
+    expiryStated: expiresAt !== null,
+    expired: expiresAt === null ? null : now > expiresAt,
+  };
 }
 
 /**
@@ -2122,10 +2167,20 @@ function parseOpenPgpSignatures(signatureData) {
     if (packet.tag !== 2) continue;
     const body = packet.body;
     const version = body[0];
-    const signature = { version, sigType: null, issuerFingerprint: null, issuerKeyId: null };
+    const signature = {
+      version,
+      sigType: null,
+      issuerFingerprint: null,
+      issuerKeyId: null,
+      createdAt: null,
+      expiresIn: null,
+      expiryCritical: false,
+    };
     if (version === 3) {
       if (body.length >= 15) {
         signature.sigType = body[2];
+        // v3 keeps the creation time in the packet header and cannot carry an expiry.
+        signature.createdAt = body.readUInt32BE(3);
         signature.issuerKeyId = body.subarray(7, 15).toString('hex').toUpperCase();
       }
     } else if (version === 4 || version === 5) {
@@ -2159,7 +2214,20 @@ function parseOpenPgpSignatures(signatureData) {
  */
 function pgpInspectMessage(input) {
   const detection = detectPgpSignature(input);
-  const base = { ...detection, issuerFingerprint: null, issuerKeyId: null, signerSource: null, reason: null };
+  const base = {
+    ...detection,
+    issuerFingerprint: null,
+    issuerKeyId: null,
+    signerSource: null,
+    createdAt: null,
+    createdIso: null,
+    expiresIn: null,
+    expiresAt: null,
+    expiresIso: null,
+    expiryStated: null,
+    expired: null,
+    reason: null,
+  };
   if (!detection.signed) return { ...base, reason: 'NO_SIGNATURE' };
 
   const block = extractPgpSignatureBlock(input);
@@ -2175,6 +2243,7 @@ function pgpInspectMessage(input) {
       issuerFingerprint: signer.issuerFingerprint,
       issuerKeyId: signer.issuerKeyId,
       signerSource: 'signature-packet',
+      ...signatureTimes(signer),
       reason: null,
     };
   }
@@ -2358,7 +2427,7 @@ function normalizeDigestAlgo(requested) {
  * @returns {{status: string, signaturePath?: string, digestAlgo?: string|null,
  *   digestSource?: string, reason?: string}}
  */
-function pgpSign(file, { keyId, outputPath, armor = true, force = false, digestAlgo } = {}) {
+function pgpSign(file, { keyId, outputPath, armor = true, force = false, digestAlgo, sigExpire } = {}) {
   const input = path.resolve(file);
   const existing = force ? null : detectPgpSignature({ path: input });
   if (existing && existing.signed) {
@@ -2389,17 +2458,37 @@ function pgpSign(file, { keyId, outputPath, armor = true, force = false, digestA
   const args = ['--batch', '--yes', '--detach-sign'];
   if (armor) args.push('--armor');
   args.push('--digest-algo', digest.name);
+  // Evidence outlives cases, so no expiry is the default: a signature that stops
+  // verifying after a date is a signature that stops being evidence. Callers who
+  // need one pass a gpg duration ("1d", "2y") and it is stated INSIDE the signed
+  // packet, where nobody can drop it without breaking the signature.
+  if (sigExpire !== undefined && sigExpire !== null && sigExpire !== '') {
+    args.push('--default-sig-expire', String(sigExpire));
+  }
   if (keyId) args.push('--local-user', String(keyId));
   args.push('--output', target, input);
   const result = gpgRun(args);
   if (result.status !== 'ok') return result;
   const probed = probeSignatureDigest(target);
+  // The creation time is read back out of the packet we just wrote, so the report
+  // states when the signature was made instead of when the caller asked for it.
+  // An armored file has to be handed over as text; as a Buffer it would be parsed
+  // as binary and yield nothing.
+  let times = {};
+  try {
+    const raw = fs.readFileSync(target);
+    times = signatureTimes(parseOpenPgpSignatures(armor ? raw.toString('latin1') : raw)[0] || null);
+  } catch {
+    // A signature that exists but whose packet cannot be re-read is still a
+    // signature; the time fields just stay null.
+  }
   return {
     status: 'ok',
     signaturePath: target,
     executable: result.executable,
     digestRequested: digest.requested || digest.name,
     ...probed,
+    ...times,
   };
 }
 
@@ -2709,6 +2798,7 @@ async function signWholeMessage(options = {}) {
       outputPath: path.join(dir, 'signature.asc'),
       force: true,
       digestAlgo: options.digestAlgo,
+      sigExpire: options.sigExpire,
     });
     if (signature.status !== 'ok') {
       return {
@@ -2771,6 +2861,16 @@ async function signWholeMessage(options = {}) {
       digestRequested: signature.digestRequested || null,
       digestAlgo: signature.digestAlgo || null,
       digestSource: signature.digestSource || null,
+      // Stated only when one was asked for; "never expires" is the default because
+      // an expired exhibit verifies nowhere, and the timestamp inside the packet
+      // already says when it was made.
+      createdAt: signature.createdAt || null,
+      createdIso: signature.createdIso || null,
+      expiresIn: signature.expiresIn === undefined ? null : signature.expiresIn,
+      expiresAt: signature.expiresAt === undefined ? null : signature.expiresAt,
+      expiresIso: signature.expiresIso || null,
+      expiryStated: signature.expiryStated === undefined ? false : signature.expiryStated,
+      expired: signature.expired === undefined ? null : signature.expired,
     };
     report.signaturePath = null;
     report.status = 'signed';
@@ -2988,6 +3088,9 @@ async function verifySignedMessage(input) {
       digestAlgo: signer && signer.hashAlg ? DIGEST_NAMES[signer.hashAlg] || null : null,
       issuerFingerprint: signer ? signer.issuerFingerprint || null : null,
       issuerKeyId: signer ? signer.issuerKeyId || null : null,
+      // When the signature was made, and whether it ever expires. Both come from the
+      // signed packet, so neither can be edited without breaking the signature.
+      ...signatureTimes(signer),
     };
     report.ok = verified.verified === true;
     report.reason = verified.verified ? null : 'SIGNATURE_INVALID';
@@ -3492,6 +3595,7 @@ module.exports = {
   splitSignedMessage,
   describeSignedEntity,
   verifySignedMessage,
+  signatureTimes,
   emailEvidence,
   // diagnostics
   selfTest,

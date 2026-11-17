@@ -444,6 +444,34 @@ bytes, which a manifest only describes. With no GnuPG it reports `unavailable`
 and returns no message: a `multipart/signed` with a hollow second part would look
 signed and verify nowhere.
 
+#### Time, and why a signature does not expire here
+
+Every OpenPGP signature records **when** it was made, and only some record **until
+when** it is valid. gpg writes the first and not the second, and so does this
+gateway: a signature that expires stops verifying, and an exhibit must outlive the
+case it supports. Ask for one with `--sig-expire 1d` (any gpg duration) if you need
+it — it is written into the signed packet, so it cannot be removed without breaking
+the signature.
+
+If Thunderbird shows *„Signatur-Ablaufdatum: Kein Zeitpunkt in der Signatur
+enthalten“* (or the English *"Signature expiration: no time in the signature"*), that
+is this fact stated plainly, not a defect. The creation time is there; the expiry is
+not, because none was requested. The report keeps the two apart, so nothing claims a
+signature is valid forever when it merely never promised anything:
+
+```console
+"signature": {
+  "status": "ok",
+  "digestAlgo": "SHA-512",
+  "createdAt": 1794944839,
+  "createdIso": "2026-11-17T19:47:19.000Z",
+  "expiryStated": false,
+  "expiresAt": null,
+  "expiresIso": null,
+  "expired": null            // no expiry stated, so "expired" is not false — it is unstated
+}
+```
+
 ## Enabling the optional adapters
 
 Neither step is required for the hash/manifest path.
