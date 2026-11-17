@@ -1,6 +1,6 @@
 # Migration Matrix — hAPI Enterprise
 
-> **Клас:** исторически · **Замразен към:** 0.69.235
+> **Клас:** исторически · **Замразен към:** 0.69.236
 
 > Maps source objects → destination objects → rules.
 

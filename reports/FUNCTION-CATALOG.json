@@ -1,10 +1,10 @@
 {
   "generatedFor": "hapi_enterprise",
-  "total": 437,
-  "tested": 409,
+  "total": 446,
+  "tested": 418,
   "untested": 28,
-  "fnTotal": 380,
-  "fnTested": 380,
+  "fnTotal": 387,
+  "fnTested": 387,
   "modules": [
     {
       "module": "hapi_enterprise/api-registry.js",
@@ -1265,6 +1265,26 @@
           "tested": true
         },
         {
+          "name": "isGrouped",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "isOff",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "machineName",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "makeId",
+          "kind": "функция",
+          "tested": true
+        },
+        {
           "name": "MAX_BYTES",
           "kind": "константа",
           "tested": false
@@ -1273,6 +1293,21 @@
           "name": "MAX_FILES",
           "kind": "константа",
           "tested": false
+        },
+        {
+          "name": "migrate",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "nextNumber",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "OPTION_KEYS",
+          "kind": "константа",
+          "tested": true
         },
         {
           "name": "parse",
@@ -1290,6 +1325,11 @@
           "tested": false
         },
         {
+          "name": "RULES",
+          "kind": "константа",
+          "tested": true
+        },
+        {
           "name": "validate",
           "kind": "функция",
           "tested": true
@@ -1301,6 +1341,16 @@
         },
         {
           "name": "write",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/portal-folder.js",
+      "functions": [
+        {
+          "name": "name",
           "kind": "функция",
           "tested": true
         }

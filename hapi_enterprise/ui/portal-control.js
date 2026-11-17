@@ -139,10 +139,71 @@
               </div>
             </div>
           </div>
+          ${optionsBlock(ctx)}
         </div>`
         : ''
       }
       </section>`;
+  }
+
+  /**
+   * Блокът „Опции“ — четирите раздела на `configuration.yaml` и жива разпечатка на файла.
+   * Рисува се САМО когато описанието е прочетено: иначе човек би видял полета, които още не
+   * знаят стойностите си („празно“ вместо „наследено“). Текстът минава през `T()`, защото
+   * таванът на този модул е 0 български стринга (DEF-49).
+   */
+  function optionsBlock(ctx) {
+    const { esc, T, ico, config } = ctx;
+    const title = `<h6>${ico('gear')} ${esc(T('pc.options.title'))}</h6>`;
+    if (!config) return `<div class="pf-security">${title}<p class="hint">${esc(T('pc.options.loading'))}</p></div>`;
+    if (config.error) return `<div class="pf-security">${title}<p class="hint">${esc(config.error)}</p></div>`;
+    const d = config.effective || config.data || {};
+    const sel = (name, value, values) =>
+      `<select name="opt.${name}">${values
+        .map((v) => `<option value="${esc(v)}" ${String(value) === String(v) ? 'selected' : ''}>${esc(v === '' ? '—' : v)}</option>`)
+        .join('')}</select>`;
+    const check = (name, label, value) =>
+      `<div class="field"><label><input type="checkbox" name="opt.${name}" ${value === true ? 'checked' : ''} /> ${esc(T(label))}</label></div>`;
+    return `
+      <div class="pf-security" data-pf-options>
+        ${title}
+        <p class="hint">${esc(T('pc.options.hint'))}</p>
+        <form id="pf-config-form">
+          <fieldset><legend>${esc(T('pc.options.portal'))}</legend>
+            <div class="field"><label>${esc(T('pc.field.visibility'))}</label>${sel('visibility', d.visibility, ['private', 'public'])}</div>
+          </fieldset>
+          <fieldset><legend>${esc(T('pc.options.access'))}</legend>
+            <div class="field"><label>${esc(T('pc.options.mode'))}</label>${sel('access_mode', d.access_mode, ['', 'free', 'key', 'token'])}</div>
+            ${check('access_review_only', 'pc.options.review', d.access_review_only)}
+            ${check('access_download_requires_key', 'pc.options.downloadKey', d.access_download_requires_key)}
+            <div class="field"><label>${esc(T('pc.options.ttl'))}</label>${sel('temporary_default_ttl', d.temporary_default_ttl, ['1h', '6h', '24h'])}</div>
+          </fieldset>
+          <fieldset><legend>${esc(T('pc.options.qr'))}</legend>
+            <div class="field"><label>${esc(T('pc.options.qrStyle'))}</label>${sel('qr_style', d.qr_style, ['frame', 'plain'])}</div>
+            <div class="field"><label>${esc(T('pc.options.qrCaption'))}</label>${sel('qr_caption', d.qr_caption, ['url', 'title'])}</div>
+            ${check('qr_levels_folder', 'pc.options.levelFolder', d.qr_levels_folder)}
+            ${check('qr_levels_file', 'pc.options.levelFile', d.qr_levels_file)}
+          </fieldset>
+          <fieldset><legend>${esc(T('pc.options.interface'))}</legend>
+            ${check('folders_default_visible', 'pc.options.folderVisible', d.folders_default_visible)}
+            ${check('folders_default_media', 'pc.options.folderMedia', d.folders_default_media)}
+            ${check('storage_copy_to_folder', 'pc.options.copy', d.storage_copy_to_folder)}
+            <div class="field"><label>${esc(T('pc.options.columns'))}</label>${sel('ui_columns', d.ui_columns, ['2', '3', '4'])}</div>
+            ${check('ui_show_sizes', 'pc.options.sizes', d.ui_show_sizes)}
+            ${check('audit_telemetry', 'pc.options.telemetry', d.audit_telemetry)}
+          </fieldset>
+          <div class="u-row u-row-2">
+            <button type="submit" class="btn">${esc(T('pc.options.save'))}</button>
+            <button type="button" class="btn btn-sm" id="pf-config-verify">${esc(T('pc.options.verify'))}</button>
+          </div>
+        </form>
+        <div class="u-row u-row-2 u-mt">
+          <button type="button" class="btn btn-sm" id="pf-config-show">${esc(T('pc.options.show'))}</button>
+          <span class="hint">${esc(T('pc.options.hash', { hash: String(config.hash || '—').slice(0, 12) }))}</span>
+        </div>
+        <pre class="pf-config-file" id="pf-config-file" ${config.preview ? '' : 'hidden'}>${esc(config.preview || '')}</pre>
+        <output class="pf-security-out ${config.notice ? config.notice.kind : ''}" id="pf-config-out" aria-live="polite">${config.notice ? esc(config.notice.text) : ''}</output>
+      </div>`;
   }
 
   window.HapiPortalControl = { render };

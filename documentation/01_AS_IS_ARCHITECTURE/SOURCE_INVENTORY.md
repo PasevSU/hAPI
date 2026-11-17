@@ -1,12 +1,12 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.235
+> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.236
 
-> **Генериран документ.** Версия на кода: **0.69.235**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
+> **Генериран документ.** Версия на кода: **0.69.236**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **133** backend модула · **20** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **457** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
+Общо: **133** backend модула · **21** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **461** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Файлове (241)
+### Файлове (242)
 
 | Файл | Вид | Предназначение (първи ред от самия файл) |
 | ---- | --- | ----------------------------------------- |
@@ -129,6 +129,7 @@
 | `hapi_enterprise/routes/oidc.js` | routes | OIDC вход — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/pgp-keyring.js` | routes | PGP ключохранилище — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/portal-archive.js` | routes | ЗАКРИВАНЕ НА ПОРТАЛ (архив за съхранение, 6 месеца преди окончателно изтриване). |
+| `hapi_enterprise/routes/portal-config.js` | routes | ОПЦИИ НА ПОРТАЛА ПРЕЗ HTTP — един вход към `configuration.yaml`. |
 | `hapi_enterprise/routes/portal-links.js` | routes | ВРЪЗКИ ЗА QR СТУДИОТО — временна, само за четене и с парола (0.69.229). |
 | `hapi_enterprise/routes/portal-page.js` | routes | Публичната страница на портала — ЕДИН адрес, на адреса на add-on-а (и през Home Assistant). |
 | `hapi_enterprise/routes/portal-qr.js` | routes | Логическите корени (`/share`, `/media`) се разпознават през ЕДИН модул — `paths.js`. |

@@ -248,6 +248,9 @@
     // QR за всяко ниво, преглед. Пази се по id, за да се показва веднага след създаването —
     // без втора заявка и без панелът да си измисля адреси по свое правило.
     contracts: {},
+    // Описанието на портала (`configuration.yaml`) по id: GET …/config връща data, effective,
+    // hash (чекпойнт) и problems. Пази се, за да не се чете при всяко рисуване.
+    config: {},
     selected: null,
     panel: 'actions',
     // След създаване на портал QR студиото се отваря само: кодът е първото, което човек
@@ -1356,6 +1359,9 @@
     // прозорец, който брошката в главата на картата отваря по-късно.
     const fresh = portal();
     if (fresh) openQrStudio(fresh);
+    // Новият портал вече има своето `configuration.yaml` (създава се с папката) — панелът го
+    // прочита, за да покаже опциите и чекпойнта веднага, без второ отваряне.
+    if (fresh) void loadConfig(fresh, true).then(render);
     toast(
       T(added ? 'portal.create.qrReadyFiles' : 'portal.create.qrReady', {
         slug,
@@ -1474,6 +1480,107 @@
       : accessOf(fresh);
     generateApi(fresh, true, access);
     toast(T('fm.portalUpdated'), 'ok');
+    render();
+  }
+
+  // ── Опции на портала (`configuration.yaml`) ──────────────────────────────
+  /** Събира `opt.*` полетата във вид, който договорът приема (bool/число/низ). */
+  function configPatch(form) {
+    const patch = {};
+    for (const el of form.querySelectorAll('[name]')) {
+      const name = String(el.name || el.getAttribute('name') || '');
+      if (!name.startsWith('opt.')) continue;
+      const key = name.slice(4);
+      if (!key) continue;
+      const type = String(el.type || el.getAttribute('type') || '').toLowerCase();
+      if (type === 'checkbox') patch[key] = el.checked === true;
+      else if (type === 'number' || key === 'ui_columns') patch[key] = Number(el.value);
+      else patch[key] = String(el.value);
+    }
+    return patch;
+  }
+
+  function configNode(selector) {
+    return host ? host.querySelector(selector) : null;
+  }
+
+  function configOut(text, kind) {
+    const p = portal();
+    const cfg = p && state.config[p.id];
+    if (cfg) cfg.notice = { text, kind: kind || '' };
+    const out = configNode('#pf-config-out');
+    if (!out) return toast(text, kind);
+    out.textContent = text;
+    out.className = 'pf-security-out ' + (kind || '');
+  }
+
+  /**
+   * Записва описанието през ЕДИНСТВЕНИЯ маршрут (PUT …/config) с чекпойнта от последното
+   * четене. `409` не се презаписва на сляпо: презарежда се файлът и човекът вижда, че нещо
+   * друго го е променило (два отворени таба, ръчна редакция през Samba).
+   */
+  async function saveConfig(form) {
+    const p = portal();
+    const cfg = p && state.config[p.id];
+    if (!p) return;
+    if (!connected()) return demoMutate(T('pc.options.demo'), () => { state.lastAction = T('pc.options.demo'); });
+    if (!cfg || cfg.error) return configOut(cfg && cfg.error ? cfg.error : T('pc.options.loading'), 'err');
+    const r = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/config`, {
+      method: 'PUT',
+      json: { config: configPatch(form), expectHash: cfg.hash || null },
+    });
+    if (!r.ok) {
+      if (r.status === 409) {
+        await loadConfig(p, true);
+        configOut(T('pc.options.conflict'), 'err');
+        return render();
+      }
+      return configOut(r.error || `HTTP ${r.status}`, 'err');
+    }
+    state.config[p.id] = r.data;
+    await reload();
+    await loadConfig(portal(), true);
+    toast(T('pc.options.saved', { revision: r.data.revision }), 'ok');
+    render();
+  }
+
+  /** Сверка на `files[]` с диска — същият маршрут, който показва „липсващ/излишен/променен“. */
+  async function verifyConfig() {
+    const p = portal();
+    if (!p) return;
+    if (!connected()) return configOut(T('pc.options.clean'), 'ok');
+    const r = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/config/verify`, { method: 'POST' });
+    if (!r.ok) { configOut(r.error || `HTTP ${r.status}`, 'err'); return render(); }
+    if (r.data.ok) { configOut(T('pc.options.clean'), 'ok'); return render(); }
+    configOut(
+      T('pc.options.diff', {
+        missing: (r.data.missing || []).length,
+        extra: (r.data.extra || []).length,
+        changed: (r.data.changed || []).length,
+      }),
+      'err',
+    );
+    render();
+  }
+
+  /** Показва файла ТОЧНО както е на диска (export.yaml), без панелът да го сглобява сам. */
+  async function showConfigFile() {
+    const p = portal();
+    if (!p) return;
+    if (!connected()) {
+      const cfg = state.config[p.id];
+      if (cfg) cfg.preview = T('pc.options.noFile');
+      return render();
+    }
+    const res = await fetch(`${base()}/admin/api/portals/${encodeURIComponent(p.id)}/config/export.yaml`, {
+      headers: { Authorization: `Bearer ${token()}` },
+    });
+    if (!res.ok) return configOut(`HTTP ${res.status}`, 'err');
+    const text = await res.text();
+    // Разпечатката живее в СЪСТОЯНИЕТО, не само във възела: всяко следващо рисуване
+    // (напр. обновен чекпойнт) иначе триеше показания файл.
+    const cfg = state.config[p.id];
+    if (cfg) cfg.preview = text;
     render();
   }
 
@@ -2509,6 +2616,27 @@
     // Коментарите и флаговете на папките идват заедно с дървото (ключът е път с водeщ „/“).
     state.folderNotes = (r.ok && r.data && r.data.folderNotes) || {};
     state.folderMeta = (r.ok && r.data && r.data.folderMeta) || {};
+    // Всяка промяна на съдържанието вдига `revision` на описанието — чекпойнтът се обновява
+    // заедно с дървото, иначе следващият запис на опции удря 409 без причина. Тук НЕ се
+    // рисува: извикващият вече рисува, а излишен render между две действия триеше временния
+    // изход на панела (напр. издадения токен, който се показва само веднъж).
+    if (connected() && (force || !state.config[p.id])) void loadConfig(p, force);
+  }
+
+  /**
+   * Чете описанието на портала (`GET …/config`). Пази се по id — панелът не пита при всяко
+   * рисуване, а при отваряне на портала и след промяна. В демо режим няма файл: връща null и
+   * блокът „Опции“ не се показва.
+   */
+  let configEpoch = 0;
+  async function loadConfig(p, force) {
+    if (!p || !connected()) return null;
+    if (!force && state.config[p.id]) return state.config[p.id];
+    const epoch = ++configEpoch;
+    const r = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/config`);
+    if (epoch !== configEpoch) return null;
+    state.config[p.id] = r.ok && r.data ? r.data : { error: r.error || `HTTP ${r.status}` };
+    return state.config[p.id];
   }
 
   /** Флагове на папка: видима / медийна / заключена (по подразбиране: видима, не е медийна, отключена). */
@@ -2718,6 +2846,7 @@
       p,
       state,
       api: state.api[p.id] || null,
+      config: state.config[p.id] || null,
       files: p.files || [],
       scope,
       scoped: filesForFolder(scope),
@@ -3781,6 +3910,9 @@
         if (!connected() && !state.api[target.id]) generateApi(target, true, accessOf(target));
         // Дървото на папките е за конкретен портал — при смяна се чете наново.
         if (state.tree.portalId !== target.id) void loadTree().then(render);
+        // Описанието (опциите) се чете при отваряне: блокът „Опции“ показва ефективните
+        // стойности и чекпойнта, а не ги гадае от картата.
+        if (connected() && !state.config[target.id]) void loadConfig(target).then(render);
         render();
       });
     });
@@ -3855,6 +3987,16 @@
         savePortal(e.target);
       });
     }
+    // Опциите на портала (`configuration.yaml`): запис с чекпойнт, сверка с диска, показване
+    // на самия файл. Всичките минават през маршрутите на `routes/portal-config.js`.
+    if (q('#pf-config-form')) {
+      q('#pf-config-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        void saveConfig(e.target);
+      });
+    }
+    if (q('#pf-config-verify')) q('#pf-config-verify').addEventListener('click', () => void verifyConfig());
+    if (q('#pf-config-show')) q('#pf-config-show').addEventListener('click', () => void showConfigFile());
     // API/QR се създават заедно с портала — няма бутон „Генерирай“. Панелът НЕ изрежда
     // техническите адреси: остава само QR кодът, който отваря портала, и действията по него.
     // ── Вход към портала ────────────────────────────────────────────────────
@@ -4452,6 +4594,11 @@
         .then(loadConnection)
         .catch(() => { })
         .then(loadTree)
+        .catch(() => { })
+        .then(() => {
+          const p = portal();
+          return p ? loadConfig(p) : null;
+        })
         .catch(() => { })
         .then(() => {
           if (epoch === mountEpoch && host === node) render();

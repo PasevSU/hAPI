@@ -65,9 +65,10 @@ async function ensure(portal) {
   const configFile = path.join(dir, DESCRIPTION);
   if (!fs.existsSync(configFile)) {
     try {
-      portalConfig.write(configFile, portalConfig.initial({ slug: portal && portal.slug, title: portal && portal.title }), {
-        slug: portal && portal.slug,
-      });
+      // Началният файл носи ТЕКУЩИТЕ опции на портала (видимост, флаг, тема), не само
+      // подразбиранията: иначе нов публичен портал изглежда частен, докато не се качи файл.
+      const seed = Object.assign(portalConfig.initial({ slug: portal && portal.slug, title: portal && portal.title }), describePortal(portal));
+      portalConfig.write(configFile, seed, { slug: portal && portal.slug });
     } catch (error) {
       // Само НЕВАЛИДНО описание се прескача (например портал без валиден slug): папката остава
       // без файл и го получава при първия успешен запис през API-то. Всяка друга грешка
@@ -408,10 +409,8 @@ async function removeArtifacts(root) {
 /** Режимът на достъп в базата (`FREE`/`KEY_REQUIRED`/`DISABLED`) → езикът на описанието. */
 const FILE_ACCESS_BY_MODE = Object.freeze({ FREE: 'free', KEY_REQUIRED: 'key', DISABLED: 'disabled' });
 const PORTAL_VISIBILITY = new Set(['public', 'private']);
-const IDENT = /^[A-Za-z0-9_-]{0,64}$/;
-const SHA256 = /^[0-9a-f]{64}$/;
-const CONTENT_ID = /^CT-[0-9a-f]{32}$/;
-const FILE_ID = /^[A-Za-z0-9_-]{6,64}$/;
+// Формите идват от договора на описанието — тук НЕ се пише втори комплект.
+const { SHA256, CONTENT_ID, FILE_ID, ID_FIELD: IDENT } = portalConfig.RULES;
 /** Фиксиран печат за сравнение: ревизията и датата се пишат при записа, не влизат в „променено ли е“. */
 const STABLE_STAMP = '1970-01-01T00:00:00Z';
 
@@ -421,18 +420,27 @@ function iso(value) {
   return Number.isFinite(t) ? new Date(t).toISOString() : '';
 }
 
-/** Разделът `portal` — това, което базата знае за портала (и което проверката приема). */
+/**
+ * Опциите, които идват от записа на портала (плосък вид, план 26).
+ *
+ * Връщат се ВИНАГИ — и празните стойности. Иначе изтрит идентификатор или изключен флаг щеше да
+ * остане от предишния файл и описанието щеше да казва друго, отколкото базата.
+ */
 function describePortal(portal) {
   const slug = String((portal && portal.slug) || '');
-  const title = String((portal && portal.title) || '').trim() || slug || 'portal';
+  const name = (String((portal && portal.title) || '').trim() || slug || 'portal').slice(0, 160);
   const out = {
     slug: slug || 'portal',
-    title: title.slice(0, 160),
+    name,
     visibility: PORTAL_VISIBILITY.has(portal && portal.visibility) ? portal.visibility : 'private',
     flag: String((portal && portal.flag) || 'none'),
     category: String((portal && portal.category) || '').slice(0, 120),
     subject: String((portal && portal.subject) || '').slice(0, 200),
     notes: String((portal && (portal.notesText || portal.notes)) || '').slice(0, 2000),
+    contact_id: '',
+    case_id: '',
+    parent_id: '',
+    readonly: portal && portal.readonly === true,
   };
   // Идентификаторите се слагат само ако минават проверката — иначе цялото описание би паднало
   // заради едно чуждо поле, а то не е причина порталът да остане без описание.
@@ -440,7 +448,6 @@ function describePortal(portal) {
     const text = String(value || '');
     if (text && IDENT.test(text)) out[key] = text;
   }
-  if (portal && portal.readonly === true) out.readonly = true;
   return out;
 }
 
@@ -521,7 +528,9 @@ async function syncConfig(portal) {
     current = read;
   }
   const base = current ? current.data : portalConfig.initial({ slug: portal && portal.slug, title: portal && portal.title });
-  const next = { ...base, portal: { ...(base.portal || {}), ...describePortal(portal) }, files: describeFiles(portal) };
+  const next = { ...base, ...describePortal(portal), files: describeFiles(portal) };
+  // Идентификаторът се издава веднъж и се пази: смяна на заглавието не бива да прави нов обект.
+  if (!next.id) next.id = portalConfig.makeId(next.slug, next.name, 1);
   const stable = (data) => portalConfig.emit({ ...data, revision: 1, updated_at: STABLE_STAMP });
   if (current && stable(next) === stable(current.data)) return { changed: false, revision: current.revision };
   try {

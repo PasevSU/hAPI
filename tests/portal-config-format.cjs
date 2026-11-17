@@ -15,52 +15,44 @@ const SAMPLE = [
   'version: 1',
   'revision: 7',
   'updated_at: "2026-11-16T10:00:00Z"',
-  'portal:',
-  '  slug: dogovor',
-  '  title: "Договор: 2026 / №7"',
-  '  visibility: private',
-  '  flag: none',
-  '  category: ""',
-  '  subject: ""',
-  '  notes: "бележка с # и : вътре"',
-  '  contact_id: c-1',
-  '  case_id: ""',
-  '  readonly: false',
-  '  parent_id: ""',
-  'access:',
-  '  mode: key',
-  '  review_only: false',
-  '  download_requires_key: true',
-  '  temporary:',
-  '    default_ttl: 24h',
-  '    default_read_only: true',
-  '    password_required: false',
-  'qr:',
-  '  style: frame',
-  '  caption: url',
-  '  levels:',
-  '    folder: true',
-  '    file: true',
-  '  archive_on_change: false',
+  'id: dogovor-dogovor-001',
+  'slug: dogovor',
+  'name: "Договор: 2026 / №7"',
+  'visibility: private',
+  'flag: none',
+  'category: ""',
+  'subject: ""',
+  'notes: "бележка с # и : вътре"',
+  'contact_id: c-1',
+  'case_id: ""',
+  'parent_id: ""',
+  'readonly: false',
+  'access_mode: key',
+  'access_review_only: false',
+  'access_download_requires_key: true',
+  'temporary_default_ttl: 24h',
+  'temporary_default_read_only: true',
+  'temporary_password_required: false',
+  'qr_style: frame',
+  'qr_caption: url',
+  'qr_levels_folder: true',
+  'qr_levels_file: true',
+  'qr_archive_on_change: false',
+  'folders_default_visible: true',
+  'folders_default_media: false',
+  'folders_default_locked: false',
+  'storage_subpath: ""',
+  'storage_copy_to_folder: true',
+  'ui_columns: 3',
+  'ui_show_sizes: true',
+  'audit_telemetry: true',
+  'off: []',
   'folders:',
-  '  defaults:',
-  '    visible: true',
-  '    media: false',
-  '    locked: false',
-  '  items:',
-  '    "/Договори":',
-  '      visible: false',
-  '      media: true',
-  '      locked: true',
-  '      reason: лични данни',
-  'storage:',
-  '  subpath: ""',
-  '  copy_to_folder: true',
-  'ui:',
-  '  columns: 3',
-  '  show_sizes: true',
-  'audit:',
-  '  telemetry: true',
+  '  "/Договори":',
+  '    visible: false',
+  '    media: true',
+  '    locked: true',
+  '    reason: лични данни',
   'files:',
   '  - id: file-000001',
   '    path: /Договори/a.pdf',
@@ -81,10 +73,12 @@ const again = config.emit(parsed.data);
 assert.equal(again, SAMPLE, 'обратният прочит е байт-идентичен (иначе всеки запис прави шум в diff-а)');
 assert.deepEqual(config.parse(again).data, parsed.data, 'двойният прочит дава същите стойности');
 
-// Типовете стигат до кода такива, каквито са: bool не е низ, число не е низ.
-assert.equal(parsed.data.ui.columns, 3, 'числото е число');
-assert.equal(parsed.data.portal.readonly, false, 'bool е bool');
-assert.equal(parsed.data.folders.items['/Договори'].locked, true, 'флагът на папката е bool');
+// Форматът е ПЛОСЪК (план 26): опциите са имена, не групи `portal:`/`access:`/`qr:`.
+assert.equal(parsed.data.portal, undefined, 'няма група `portal:` — опциите са на едно ниво');
+assert.equal(parsed.data.ui_columns, 3, 'числото е число');
+assert.equal(parsed.data.readonly, false, 'bool е bool');
+assert.equal(parsed.data.access_mode, 'key', 'режимът на достъп е опция, не раздел');
+assert.equal(parsed.data.folders['/Договори'].locked, true, 'флагът на папката е bool');
 assert.equal(parsed.data.files.length, 1, 'файлът е запис в списъка');
 assert.equal(parsed.data.files[0].path, '/Договори/a.pdf', 'пътят е запазен точно');
 
@@ -114,11 +108,11 @@ const refuses = (text, expected, why) => {
   assert.match(JSON.stringify(result.problems), expected, why + ': ' + JSON.stringify(result.problems));
 };
 
-refuses('portal:\n\tslug: x\n', /табулация/, 'табулация за отстъп');
-refuses('portal:\n  slug: a\n  slug: b\n', /дублиран ключ/, 'дублиран ключ');
-refuses('portal:\n  title: "незатворен\n', /незатворени кавички/, 'незатворени кавички');
-refuses('portal:\n  title: a: b\n', /незатворени|специален|дублиран|ред без/, 'двоеточие без кавички');
-refuses('portal:\n  notes: *alias\n', /специален знак|кавички/, 'anchor/alias не се поддържа');
+refuses('slug:\n\tname: x\n', /табулация/, 'табулация за отстъп');
+refuses('slug: a\nslug: b\n', /дублиран ключ/, 'дублиран ключ');
+refuses('name: "незатворен\n', /незатворени кавички/, 'незатворени кавички');
+refuses('name: a: b\n', /незатворени|специален|дублиран|ред без/, 'двоеточие без кавички');
+refuses('notes: *alias\n', /специален знак|кавички/, 'anchor/alias не се поддържа');
 refuses('само текст без двоеточие\n', /ред без/, 'ред без двоеточие');
 // Скалар в `files:` минава ЧЕТЕНЕТО (форматът е позволен), но не минава ПРОВЕРКАТА — затова двете
 // са отделни стъпки: четецът не знае схемата, а проверката не знае редовете.
@@ -143,30 +137,44 @@ const withIssue = (mutate, expectedPath) => {
 withIssue((d) => { d.version = 2; }, 'version');
 withIssue((d) => { d.revision = 0; }, 'revision');
 withIssue((d) => { d.updated_at = 'вчера'; }, 'updated_at');
-withIssue((d) => { d.portal.slug = 'Голям Портал'; }, 'portal.slug');
-withIssue((d) => { d.portal.title = ''; }, 'portal.title');
-withIssue((d) => { d.portal.title = 'x'.repeat(161); }, 'portal.title');
-withIssue((d) => { d.portal.visibility = 'secret'; }, 'portal.visibility');
-withIssue((d) => { d.ui = { columns: 5 }; }, 'ui.columns');
-withIssue((d) => { d.storage = { subpath: '../извън' }; }, 'storage.subpath');
-withIssue((d) => { d.storage = { subpath: 'a/b/c/d' }; }, 'storage.subpath');
+withIssue((d) => { d.slug = 'Голям Портал'; }, 'slug');
+withIssue((d) => { d.name = ''; }, 'name');
+withIssue((d) => { d.name = 'x'.repeat(161); }, 'name');
+withIssue((d) => { d.visibility = 'secret'; }, 'visibility');
+withIssue((d) => { d.ui_columns = 5; }, 'ui_columns');
+withIssue((d) => { d.storage_subpath = '../извън'; }, 'storage_subpath');
+withIssue((d) => { d.storage_subpath = 'a/b/c/d'; }, 'storage_subpath');
+// Всяка опция присъства ВИНАГИ: липсващ ключ е грешка, а не „подразбиране“ (план 26, §1.1).
+withIssue((d) => { delete d.flag; }, 'flag');
+// Идентификаторът има три части и точно три цифри.
+withIssue((d) => { delete d.id; }, 'id');
+withIssue((d) => { d.id = 'dogovor'; }, 'id');
+withIssue((d) => { d.id = 'dogovor-ok-0001'; }, 'id');
+withIssue((d) => { d.id = 'drug-ok-001'; }, 'id');
+withIssue((d) => { d.id = 'dogovor--001'; }, 'id');
+// `off:` приема само имена на съществуващи опции, без повторение.
+withIssue((d) => { d.off = ['няма-такава']; }, 'off[0]');
+withIssue((d) => { d.off = ['visibility', 'visibility']; }, 'off[1]');
 assert.ok(
-  config.validate({ ...base, portal: { slug: 'dogovor', title: 'x' } }, { slug: 'drug' }).some((i) => i.path === 'portal.slug'),
-  'името на папката и `portal.slug` трябва да съвпадат',
+  config.validate({ ...base, slug: 'dogovor' }, { slug: 'drug' }).some((i) => i.path === 'slug'),
+  'името на папката и `slug` трябва да съвпадат',
 );
 
 // ── 4. Ефективни стойности: липсващ ключ = подразбиране ────────────────────────
-const eff = config.effective({ portal: { slug: 'x', title: 'X', visibility: 'public' } });
-assert.equal(eff.access.mode, 'free', 'публичният портал без изричен режим е свободен');
-assert.equal(config.effective({ portal: { slug: 'x', title: 'X', visibility: 'private' } }).access.mode, 'key', 'частният иска ключ');
-assert.equal(eff.ui.columns, 3, 'колоните идват от подразбиранията');
-assert.equal(eff.folders.defaults.visible, true, 'папките са видими по подразбиране');
-const overridden = config.effective({ ui: { columns: 4 }, folders: { defaults: { visible: false } } });
-assert.equal(overridden.ui.columns, 4, 'записаното печели');
-assert.equal(overridden.folders.defaults.media, false, 'а непопълненото остава от подразбирането');
+const eff = config.effective({ slug: 'x', name: 'X', visibility: 'public' });
+assert.equal(eff.access_mode, 'free', 'публичният портал без изричен режим е свободен');
+assert.equal(config.effective({ slug: 'x', name: 'X', visibility: 'private' }).access_mode, 'key', 'частният иска ключ');
+assert.equal(eff.ui_columns, 3, 'колоните идват от подразбиранията');
+assert.equal(eff.folders_default_visible, true, 'папките са видими по подразбиране');
+const overridden = config.effective({ slug: 'x', name: 'X', ui_columns: 4, folders_default_visible: false });
+assert.equal(overridden.ui_columns, 4, 'записаното печели');
+assert.equal(overridden.folders_default_media, false, 'а непопълненото остава от подразбирането');
 assert.equal(overridden.version, undefined, 'номерата на файла не изтичат в ефективните стойности');
+assert.deepEqual(overridden.off, [], 'изключените опции са празен списък по подразбиране');
+assert.equal(config.isOff({ off: ['visibility'] }, 'visibility'), true, '`off:` изключва опция, без да губи стойността');
+assert.equal(config.isOff({ off: [] }, 'visibility'), false, 'неизключената опция се прилага');
 
 console.log(
-  'PASS portal-config-format: обратен прочит байт по байт · отказ за табулация/дублиран ключ/незатворени кавички/anchor · ' +
-    config.FILE_KEYS.length + ' полета на файл · 8 проверки на стойности · подразбирания и „записаното печели“',
+  'PASS portal-config-format: плосък YAML (без групи) · обратен прочит байт по байт · отказ за табулация/дублиран ключ/незатворени кавички/anchor · ' +
+    config.FILE_KEYS.length + ' полета на файл · проверки на всяка опция и на `id`/`off:` · подразбирания и „записаното печели“',
 );

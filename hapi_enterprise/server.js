@@ -824,6 +824,7 @@ const eventStream = require('./event-stream').create({ log }); const webhooks = 
 // Папки на портала: нова, флагове, изтриване (същият договор create/handle като останалите).
 const folders = require('./routes/folders').create({ json, fail, parse, audit, clean, fsp, path, portalAbs, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr: qrRegistry }); const fileTransfer = require('./routes/file-transfer').create({ json, fail, parse, audit, update, clean, fsp, path, crypto, filesRoot, id, contentIds, storeMirrored, removeMirrored, portalFolder, portalFolderCopy, writeApiDir, baseUrl, observer, retention, getPortals: () => db.portals, publish: webhooks.publish }); const idempotency = require('./idempotency').create({ store: metadataStore, fail, audit, limit: () => runtime.effective().maxUploadBytes });
 // Качване на сесии: парче по парче, със сверка по SHA-256 и възстановяване (routes/upload-sessions.js).
+const portalConfigRoutes = require('./routes/portal-config').create({ json, fail, parse, body, audit, fsp, path, portalAbs, portalFolder, update, hash: core.api.hash });
 const uploadSessions = require('./routes/upload-sessions').create({ json, fail, parse, body, audit, clean, fsp, path, crypto, portalAbs, workdirIo, qrRegistry, folderMetaOf, lockedAncestor, sessionsRoot: path.join(root, 'upload-sessions'), historyRoot: path.join(root, 'upload-history'), maxBytes: () => runtime.effective().maxUploadBytes });
 async function handler(req, res) {
   try {
@@ -2220,7 +2221,7 @@ async function handler(req, res) {
           return json(res, 200, { portal: { id: p.id, slug: p.slug, title: p.title }, storageRoot: out.storageRoot, exists: out.exists, truncated: out.truncated, folderCount: out.folderCount, fileCount: out.fileCount, bytes: out.bytes, tree: out.tree, folderNotes, folderMeta, generatedAt: new Date().toISOString() });
         }
         // Папки на портала: нова, флагове, изтриване — компонент `routes/folders.js`.
-        if (await folders.handle({ req, res, url, parts, method, portal: p })) return; if (await portalQr.handle({ req, res, url, parts, method, portal: p })) return; if (await fileTransfer.handle({ req, res, url, parts, method, portal: p })) return; if (await portalArchive.handle({ req, res, url, parts, method, portal: p })) return; if (await uploadSessions.handle({ req, res, url, parts, method, portal: p })) return;
+        if (await folders.handle({ req, res, url, parts, method, portal: p })) return; if (await portalConfigRoutes.handle({ req, res, url, parts, method, portal: p })) return; if (await portalQr.handle({ req, res, url, parts, method, portal: p })) return; if (await fileTransfer.handle({ req, res, url, parts, method, portal: p })) return; if (await portalArchive.handle({ req, res, url, parts, method, portal: p })) return; if (await uploadSessions.handle({ req, res, url, parts, method, portal: p })) return;
         // Прикачване на файл в папката на портала (storage_root): тялото е съдържанието,
         // пътят идва като ?path=/подпапка/файл.txt (родителските папки се създават).
         if (parts[4] === 'tree' && parts[5] === 'upload' && parts.length === 6 && method === 'POST') {

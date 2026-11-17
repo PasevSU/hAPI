@@ -2,12 +2,12 @@
 
 > **Клас:** нормативен · **Собственик на факта:** одитни събития
 
-> **Генериран документ.** Версия на кода: **0.69.235**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.236**. Пише се от
 > `node scripts/audit-events.cjs`, проверява се от `tests/audit-events.cjs`.
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **201** събития, излъчвани от **22** файла.
+Общо: **204** събития, излъчвани от **23** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -133,6 +133,9 @@
 | `portal.api.remove` | `hapi_enterprise/server.js` |
 | `portal.close` | `hapi_enterprise/routes/portal-archive.js` |
 | `portal.close.companion` | `hapi_enterprise/routes/portal-archive.js` |
+| `portal.config.adopt` | `hapi_enterprise/routes/portal-config.js` |
+| `portal.config.read` | `hapi_enterprise/routes/portal-config.js` |
+| `portal.config.verify` | `hapi_enterprise/routes/portal-config.js` |
 | `portal.delete` | `hapi_enterprise/routes/portal-archive.js` |
 | `portal.delete.refused` | `hapi_enterprise/routes/portal-archive.js` |
 | `portal.file.open` | `hapi_enterprise/routes/portal-storage.js` |

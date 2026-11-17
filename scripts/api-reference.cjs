@@ -88,7 +88,6 @@ push('```bash');
 push('node scripts/api-reference.cjs           # записва документа');
 push('node scripts/api-reference.cjs --check   # проверява, че е актуален (в матрицата)');
 push('```');
-push('');
 push('> Правило: промяна в маршрут без повторно генериране чупи `tests/api-reference.cjs`.', '');
 push('## 1. Административни операции', '');
 push('Всички пътища са под `/admin` и изискват административна идентичност (`Authorization: Bearer <ADMIN_TOKEN>`; през Home Assistant — ingress сесия). Колоната „право“ е RBAC способността, с която `adminGate` решава дали ролята на клиента я има.', '');

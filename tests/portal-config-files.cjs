@@ -101,8 +101,8 @@ assert.equal(unreadable.changed.includes('/a.pdf'), false, 'нечетимият
 // ── 4. Разлика: какво точно се мени (за 409 и за панела) ──────────────────────
 const before = base([fileAt({ path: '/a.pdf', listed: true })]);
 const after = base([fileAt({ path: '/a.pdf', listed: false })]);
-const changes = config.diff(config.effective({ folders: { defaults: { visible: true } } }), config.effective({ folders: { defaults: { visible: false } } }));
-assert.deepEqual(changes.map((c) => c.path), ['folders.defaults.visible'], 'разликата е по ключ, не „нещо се мени“: ' + JSON.stringify(changes));
+const changes = config.diff(config.effective({ folders_default_visible: true }), config.effective({ folders_default_visible: false }));
+assert.deepEqual(changes.map((c) => c.path), ['folders_default_visible'], 'разликата е по ключ, не „нещо се мени“: ' + JSON.stringify(changes));
 assert.equal(changes[0].from, true, 'старата стойност е налична');
 assert.equal(changes[0].to, false, 'новата стойност е налична');
 assert.deepEqual(config.diff(before, after).filter((c) => c.path === 'portal.title'), [], 'несмененото не влиза в разликата');

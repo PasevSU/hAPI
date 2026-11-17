@@ -1,9 +1,9 @@
 {
-  "version": "0.69.235",
-  "generatedAt": "2026-11-17T03:56:16.767Z",
+  "version": "0.69.236",
+  "generatedAt": "2026-11-17T06:20:21.109Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
-    "server.js": "da68db559eb83e2fa531825b2271d6f0d67f3287403dbf46c9df9f6fbcb8b559",
+    "server.js": "e3c3c6568617d09ddb78b3c35276aaad1d653849e1a0935a6038101476445e0a",
     "paths.js": "034d9abfe584e90dab516e10e47a344d4dba440c2c7f2a1961e603ab3d88706e",
     "storage-preflight.js": "7632573dd4c501d41df8c5fbaae90ddb75a4cafb1446da887429065369b96fa7",
     "integrity.js": "322ca2d2dd929202bb54aac06f068587838d279dab6ad7d4e3d274c24db985e1",
@@ -13,13 +13,13 @@
     "core_module/api-docs.js": "a44f90d61bfa18d15579aefd833b29f434c157c4df6e4254e4dee6fe8c66f50b",
     "core_module/hash.js": "4a34de45a7f8f93bdace6d7e29478d273451629867d0ef69d27f414aac02ac8e",
     "core_module/http.js": "bf762535761222d18f2710ae13d1fc51d61eec37184123ae74cb580ca24a3290",
-    "portal-config.js": "f86e398b354afb4485a4da830c288eae8151c08647517138db1a321d0317762d",
+    "portal-config.js": "44a9b014a0a9e68bb3965004ef2f67f73d065cb85bd72d10b1f72df22ee69248",
     "ui/index.html": "2b57cde5cbb2d4f3adee6bd7ea7294adafd6bd1309f9b5883cf36a09feaf5073",
     "ui/app.js": "f17a9569b53c80dc0edf971052ce2adbaa9748b913995c412fd60d6c3d2e8354",
     "ui/settings-panel.js": "5c717a4c7c8f1dd467e962ad7866f60cb4d20f74eba928f56474d840b2d0ae19",
     "ui/field-labels.js": "efd27ab8208417f711fc1a9c36180639f5096b5baa75edcb061793971dadb43d",
     "ui/debug-objects.js": "5b5089867c0fd97d46a932f3a51cd7e6f0d0e40b3ef823cef5ec31ff87a75735",
     "ui/debug-ledger.js": "8aba4c478b3543c4a34cbc769c9a69c02f4a1936813f8eac22f7375f258967e5",
-    "ui/i18n.js": "b2838891aeb3f86c44ba7de6802226a7be2c47fc6eeb0d548cb11a9daa80ee0a"
+    "ui/i18n.js": "7bb59918dc48529f3f36bf54a51157bba85844425e710373170a4f78ba0b3961"
   }
 }

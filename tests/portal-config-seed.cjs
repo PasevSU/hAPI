@@ -51,19 +51,21 @@ const portalConfig = require(path.join(__dirname, '..', 'hapi_enterprise', 'port
     // ── Съдържанието: пълно описание, което минава проверката ────────────────
     const read = portalConfig.read(file, { slug: 's-opisanie' });
     assert.deepEqual(read.problems, [], 'прочетеното описание е валидно: ' + JSON.stringify(read.problems));
-    assert.equal(read.data.portal.slug, 's-opisanie', 'описанието знае коя папка е');
-    assert.equal(read.data.portal.title, 'Портал с описание', 'заглавието идва от портала');
+    assert.equal(read.data.slug, 's-opisanie', 'описанието знае коя папка е');
+    assert.equal(read.data.name, 'Портал с описание', 'името идва от портала');
     assert.equal(read.data.version, 1, 'версията на формата е 1');
     assert.ok(read.data.revision >= 1, 'ревизията започва от 1');
+    assert.match(read.data.id, /^s-opisanie-[a-z0-9-]+-\d{3}$/, 'идентификаторът е {{portal}}-{{portal_name}}-001: ' + read.data.id);
+    assert.equal(read.legacy, false, 'новото описание е в ПЛОСКИЯ вид, не в стария групиран');
     const eff = portalConfig.effective(read.data);
-    for (const key of ['access', 'qr', 'folders', 'storage', 'ui', 'audit']) {
-      assert.ok(eff[key] && typeof eff[key] === 'object', 'в описанието стои и разделът „' + key + '“');
+    for (const key of ['access_mode', 'qr_style', 'folders_default_visible', 'storage_subpath', 'ui_columns', 'audit_telemetry']) {
+      assert.ok(Object.prototype.hasOwnProperty.call(eff, key), 'в ефективните стойности стои опцията „' + key + '“');
     }
 
     // ── Ръчна промяна на НАСТРОЙКА не се губи при следващо докосване ─────────
     const before = fs.readFileSync(file, 'utf8');
-    assert.match(before, /columns: 3/, 'подразбирането за колони е в файла');
-    const edited = before.replace('columns: 3', 'columns: 4');
+    assert.match(before, /ui_columns: 3/, 'подразбирането за колони е в файла');
+    const edited = before.replace('ui_columns: 3', 'ui_columns: 4');
     fs.writeFileSync(file, edited, 'utf8');
     assert.equal(fs.readFileSync(file, 'utf8'), edited, 'файлът е променен на ръка');
 
@@ -71,7 +73,7 @@ const portalConfig = require(path.join(__dirname, '..', 'hapi_enterprise', 'port
     const second = await upload('vtori.txt', 'второ');
     assert.ok([200, 201].includes(second.status), 'вторият файл се качва: ' + second.status);
     const afterText = fs.readFileSync(file, 'utf8');
-    assert.match(afterText, /columns: 4/, 'ръчната промяна на настройка е запазена');
+    assert.match(afterText, /ui_columns: 4/, 'ръчната промяна на настройка е запазена');
     const after = portalConfig.read(file, { slug: 's-opisanie' });
     assert.deepEqual(after.problems, [], 'описанието остава валидно: ' + JSON.stringify(after.problems));
     assert.ok(after.revision > read.data.revision, 'ревизията е вдигната след промяната: ' + after.revision);
