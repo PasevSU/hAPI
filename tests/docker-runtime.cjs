@@ -126,34 +126,26 @@ assert.deepEqual(
   '. Или ги свържи, или ги добави в NOT_REQUIRED_BY_DESIGN с причина.',
 );
 // Статичните файлове на Enterprise Control Center не се хващат от require-веригата:
-// build context-ът на Supervisor е САМО тази папка, затова всеки асет от UI_FILES
-// трябва да съществува в hapi_enterprise/ и да е покрит от COPY.
+// build context-ът на Supervisor е САМО тази папка, затова всеки асет от allowlist-а
+// трябва да съществува в hapi_enterprise/ и да е покрит от COPY. От 0.69.242 allowlist-ът
+// е ДАННИ (`ui-files.json`, D12), тоест четем него, а не блок код в `server.js`.
 assert.match(docker, /^COPY ui \/app\/ui\/$/m, 'Dockerfile трябва да копира ui/ в /app/ui/');
 const serverSrc = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-// Форматирането в server.js може да е `const UI_FILES = (() => {` — затова се търси
-// по шаблон, а не по точен низ (иначе тестът чупи при безобиден reformat).
-const uiStart = serverSrc.search(/const UI_FILES\s*=/);
-assert.ok(uiStart > 0, 'server.js: липсва UI_FILES allowlist');
-const uiBlock = serverSrc.slice(uiStart, serverSrc.indexOf('})();', uiStart));
-const assets = new Set();
-for (const m of uiBlock.matchAll(/'((?:ui|hapi_enterprise)\/[A-Za-z0-9._-]+)'/g)) assets.add(m[1]);
-// `links.js` е ЕДИН файл за сървъра и за панела: сервира се на `/ui/links.js`, но живее в
-// корена на add-on-а. Затова проверката повтаря същото правило, вместо да иска копие в ui/.
-const linksFromRoot = /f === 'links\.js' \? f : 'ui\/' \+ f/.test(uiBlock);
-for (const line of uiBlock.split('\n')) {
-  const prefix = /files\['\/ui\/'\s*\+\s*f\]/.test(line)
-    ? 'ui/'
-    : /files\['\/hapi_enterprise\/'\s*\+\s*f\]/.test(line)
-      ? ''
-      : null;
-  if (prefix === null) continue;
-  const list = line.slice(line.indexOf('['), line.lastIndexOf(']') + 1);
-  for (const m of list.matchAll(/'([A-Za-z0-9._-]+\.js)'/g)) assets.add(linksFromRoot && m[1] === 'links.js' ? m[1] : prefix + m[1]);
-}
+assert.match(
+  serverSrc,
+  /require\(['"]\.\/ui-files\.json['"]\)/,
+  'server.js: липсва UI_FILES allowlist (трябва да чете ui-files.json)',
+);
+const uiAllowlist = JSON.parse(fs.readFileSync(path.join(root, 'ui-files.json'), 'utf8'));
+const assets = new Set(Object.values(uiAllowlist).map(([rel]) => rel));
 assert.ok(assets.size >= 20, 'UI_FILES трябва да съдържа поне 20 асета, намерени ' + assets.size);
+// Префиксът `hapi_enterprise/` в стойността е за разработка от repo root; в add-on папката
+// (и в образа) същият файл е в корена — `uiFile()` в сървъра прави същото отнемане.
+const localOf = (asset) => asset.replace(/^hapi_enterprise\//, '');
 for (const asset of assets) {
-  assert.ok(fs.existsSync(path.join(root, asset)), 'UI асетът липсва в add-on папката: ' + asset);
-  if (asset.startsWith('ui/')) continue; // покрит от COPY ui
-  assert.ok(copied.has(asset.replace(/^hapi_enterprise\//, '')), 'Dockerfile COPY липсва ' + asset);
+  assert.ok(fs.existsSync(path.join(root, localOf(asset))), 'UI асетът липсва в add-on папката: ' + asset);
+  // `ui/` и `generator/` влизат с COPY на цяла папка, а коренните файлове — по име.
+  if (asset.startsWith('ui/') || asset.startsWith('generator/')) continue;
+  assert.ok(copied.has(localOf(asset)), 'Dockerfile COPY липсва ' + asset);
 }
 console.log('PASS pinned SQLite-compatible Node runtime + complete module manifest');

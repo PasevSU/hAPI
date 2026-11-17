@@ -118,7 +118,7 @@
 
 | Порта | Какво иска | Как планът го изпълнява |
 | --- | --- | --- |
-| `server-structure` | `server.js` ≤ 2722 реда, 22 компонента, договор `create/handle` | 0 нови реда (`host` на ред 793, `ui-files.json` освобождава ~40) |
+| `server-structure` | `server.js` ≤ 2722 реда, 22 компонента, договор `create/handle` | 0 нови реда (`host` на ред 793; `ui-files.json` освободи **10** реда — измерено, не „~40“) |
 | `html-assets` / `ingress-panel-load` | всеки сервиран UI файл е в allowlist | `ui-files.json` + `?v=<версия>` |
 | `static-cache` | `?v=` → immutable, иначе `no-cache`; без `no-store` | `/statik/` е отделен namespace с `immutable` по id, вписан в теста |
 | `ui-portal-functions` | ≥10 функции, икони от `icons-v4-map.json`, 3 езика, чекбокс, общ бутон | отчетите влизат като записи в `FUNCTIONS` |
@@ -141,7 +141,7 @@
 | # | Стъпка | Зелен критерий |
 | --- | --- | --- |
 | 0 | Двете части на плана + `ADR-0028`, `docs-class --write`, `docs-index` | `node tests/docs-class.cjs`, `docs-index` |
-| 1 | `ui-files.json` (D12) + `server.js` чете оттам | `server-structure`, `html-assets`, `ingress-panel-load` |
+| 1 | ✔ `ui-files.json` (D12) + `server.js` чете оттам · изпълнена | `server-structure` (2712/2722), `html-assets`, `ingress-panel-load`, `docker-runtime`, `ui-version` |
 | 2 | нов `report-oneclick.js` + маршрут `oneclick` + лист | `oneclick-reports.cjs` |
 | 3 | нов `statik-index.js` + `server_module/statik.js` + retention | `statik-links.cjs`, `docker-runtime` |
 | 4 | `ui/selection.js` + `ui/portal-tree.js` + блок „Дърво“ | `ui-portal-tree.cjs`, `ui-block-aria` |
@@ -163,7 +163,7 @@
 | Индексът се поврежда | запис през temp + `rename`; четене с толерантност; `statik-links.cjs` пуска счупен JSON |
 | Report Studio оставя висящи ключове | `report-studio-removed.cjs` търси `rs.` в `i18n.js` и в `data.js` |
 | Навигационната симетрия се чупи | `ui-nav-symmetry` брои групите след махането |
-| `server.js` пак стига тавана | стъпка 1 освобождава ~40 реда; новият код е извън него по договор |
+| `server.js` пак стига тавана | стъпка 1 освободи **10** реда (измерено); новият код е извън него по договор |
 | Шрифтове/PDF в Alpine | не се пипа рендърът; пази `tests/pdf-signature.cjs` (тече и днес) |
 | Дублиране на дървото (сървър) | панелът ползва `routes/folders.js`; нов сървърен код само за отчети и `/statik/` |
 
@@ -184,5 +184,6 @@
 
 ## 14. Какво следва веднага след одобрението
 
-Стъпка 1 (§11) — `ui-files.json`, защото тя освобождава мястото, без което останалите стъпки
-опрат в тавана на `server.js`.
+Стъпка 1 (§11) е изпълнена: allowlist-ът на статиката е `hapi_enterprise/ui-files.json`, а
+`server.js` го чете с един ред (2722 → 2712). Следва стъпка 2 — `report-oneclick.js` и маршрутът
+`admin/api/v2/reports/oneclick`, защото без нея няма какво да произведе `/statik/` линк.

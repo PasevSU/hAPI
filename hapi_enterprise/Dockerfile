@@ -73,6 +73,9 @@ COPY config.yaml /app/config.yaml
 # Строи се при изданието от `scripts/integrity-manifest.cjs`; без него сверката се пропуска
 # СЪС съобщение в лога, а не тихо.
 COPY integrity-manifest.json /app/integrity-manifest.json
+# Allowlist-ът на статиката (D12): какво се сервира на `/ui/`, `/hapi_enterprise/` и
+# `/generator/`. Без него `server.js` не стартира (MODULE_NOT_FOUND), затова е отделен ред.
+COPY ui-files.json /app/ui-files.json
 # Enterprise Control Center (статика, сервира се на /ui/...). Build context-ът на
 # Supervisor е ТАЗИ папка, затова UI-ят задължително живее вътре в нея.
 COPY ui /app/ui/

@@ -1,0 +1,222 @@
+{
+  "/ui": [
+    "ui/index.html",
+    "text/html; charset=utf-8"
+  ],
+  "/ui/": [
+    "ui/index.html",
+    "text/html; charset=utf-8"
+  ],
+  "/ui/index.html": [
+    "ui/index.html",
+    "text/html; charset=utf-8"
+  ],
+  "/ui/manifest.example.json": [
+    "ui/manifest.example.json",
+    "application/json; charset=utf-8"
+  ],
+  "/ui/tokens.css": [
+    "ui/tokens.css",
+    "text/css; charset=utf-8"
+  ],
+  "/ui/layout.css": [
+    "ui/layout.css",
+    "text/css; charset=utf-8"
+  ],
+  "/ui/components.css": [
+    "ui/components.css",
+    "text/css; charset=utf-8"
+  ],
+  "/ui/themes.css": [
+    "ui/themes.css",
+    "text/css; charset=utf-8"
+  ],
+  "/ui/icons-v4.svg": [
+    "ui/icons-v4.svg",
+    "image/svg+xml; charset=utf-8"
+  ],
+  "/ui/links.js": [
+    "links.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/api-base.js": [
+    "ui/api-base.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/bootstrap.js": [
+    "ui/bootstrap.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/panel-registry.js": [
+    "ui/panel-registry.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/field-labels.js": [
+    "ui/field-labels.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/debug-ledger.js": [
+    "ui/debug-ledger.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/app.js": [
+    "ui/app.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/icons.js": [
+    "ui/icons.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/data.js": [
+    "ui/data.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/i18n.js": [
+    "ui/i18n.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/debug-objects.js": [
+    "ui/debug-objects.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/report-objects.js": [
+    "ui/report-objects.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/report-scope.js": [
+    "ui/report-scope.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/report-studio.js": [
+    "ui/report-studio.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/portals.js": [
+    "ui/portals.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/portal-control.js": [
+    "ui/portal-control.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/portal-folders.js": [
+    "ui/portal-folders.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/portal-files.js": [
+    "ui/portal-files.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/qr-studio.js": [
+    "ui/qr-studio.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/files-manager.js": [
+    "ui/files-manager.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/upload-progress.js": [
+    "ui/upload-progress.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/directory-panel.js": [
+    "ui/directory-panel.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/dashboard-panel.js": [
+    "ui/dashboard-panel.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/monitoring-panel.js": [
+    "ui/monitoring-panel.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/paptresor.js": [
+    "ui/paptresor.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/settings-panel.js": [
+    "ui/settings-panel.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/secret-share.js": [
+    "ui/secret-share.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/report-sign.js": [
+    "ui/report-sign.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/export-center.js": [
+    "ui/export-center.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/public-gateway.js": [
+    "ui/public-gateway.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/visitors-panel.js": [
+    "ui/visitors-panel.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/hapi_enterprise/report-manifest.js": [
+    "hapi_enterprise/report-manifest.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/hapi_enterprise/api-spec.js": [
+    "hapi_enterprise/api-spec.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/hapi_enterprise/virtual-storage.js": [
+    "hapi_enterprise/virtual-storage.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/hapi_enterprise/storage-tree.js": [
+    "hapi_enterprise/storage-tree.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/hapi_enterprise/export-rules.js": [
+    "hapi_enterprise/export-rules.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/hapi_enterprise/export-manager.js": [
+    "hapi_enterprise/export-manager.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/hapi_enterprise/download-access.js": [
+    "hapi_enterprise/download-access.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/hapi_enterprise/public-gateway.js": [
+    "hapi_enterprise/public-gateway.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/hapi_enterprise/qrcode.js": [
+    "hapi_enterprise/qrcode.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/generator": [
+    "generator/index.html",
+    "text/html; charset=utf-8"
+  ],
+  "/generator/": [
+    "generator/index.html",
+    "text/html; charset=utf-8"
+  ],
+  "/generator/index.html": [
+    "generator/index.html",
+    "text/html; charset=utf-8"
+  ],
+  "/generator/app.js": [
+    "generator/app.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/generator/style.css": [
+    "generator/style.css",
+    "text/css; charset=utf-8"
+  ],
+  "/secret-view.js": [
+    "secret-view.js",
+    "text/javascript; charset=utf-8"
+  ]
+}

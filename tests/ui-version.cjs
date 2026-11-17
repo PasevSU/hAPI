@@ -75,8 +75,19 @@ assert.ok(
 );
 
 // 5. Сървърът сервира bootstrap.js — иначе панелът в Home Assistant остава без ядра.
+//    От 0.69.242 allowlist-ът е ДАННИ (`ui-files.json`, D12), затова се гледа там, а в
+//    `server.js` се проверява само, че списъкът наистина се чете от него.
 const server = read('hapi_enterprise/server.js');
-assert.ok(/'bootstrap\.js'/.test(server), 'server.js: allowlist-ът на /ui/ не съдържа bootstrap.js');
+const uiAllowlist = JSON.parse(read('hapi_enterprise/ui-files.json'));
+assert.ok(
+  Object.values(uiAllowlist).some(([rel]) => rel === 'ui/bootstrap.js'),
+  'ui-files.json: allowlist-ът на /ui/ не съдържа bootstrap.js',
+);
+assert.match(
+  server,
+  /require\(['"]\.\/ui-files\.json['"]\)/,
+  'server.js: не чете allowlist-а от ui-files.json — списъкът и кодът се разминават',
+);
 
 // 6. Работещият add-on съобщава ПРОДУКТОВАТА си версия (за сензора в HA и за отчета).
 //    `apiVersion.VERSION.CURRENT` е версията на API-то („v2“) — не на продукта.

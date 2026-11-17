@@ -51,27 +51,28 @@ const componentText = serverSources
   .join('\n');
 
 // ── Allowlist-ът на сървъра — преди проверката на страниците ────────────────
-// `UI_FILES` в `server.js` изброява какво сървърът сервира на `/ui/`, `/hapi_enterprise/` и
-// `/generator/`. Точно затова `ui/index.html` може да зареди `links.js`, който стои в КОРЕНА на
-// add-on-а: `/ui/links.js` се map-ва към него (специалният случай `f === 'links.js'`).
-// Без тази част проверката би обявила работещ файл за липсващ.
+// `UI_FILES` изброява какво сървърът сервира на `/ui/`, `/hapi_enterprise/` и `/generator/`.
+// От 0.69.242 списъкът е ДАННИ (`hapi_enterprise/ui-files.json`, D12), а не код в `server.js`:
+// точно затова `ui/index.html` може да зареди `links.js`, който стои в КОРЕНА на add-on-а
+// (`/ui/links.js` → `links.js`). Без тази част проверката би обявила работещ файл за липсващ.
 const serverJs = fs.readFileSync(path.join(root, 'hapi_enterprise', 'server.js'), 'utf8');
-const blockStart = serverJs.indexOf('const UI_FILES = (() => {');
-assert.ok(blockStart > 0, 'блокът UI_FILES е намерен в server.js');
-const block = serverJs.slice(blockStart, serverJs.indexOf('})();', blockStart));
+assert.match(
+  serverJs,
+  /require\(['"]\.\/ui-files\.json['"]\)/,
+  'server.js трябва да чете allowlist-а от ui-files.json (иначе списъкът се разминава с кода)',
+);
+const allowlistFile = path.join(root, 'hapi_enterprise', 'ui-files.json');
+assert.ok(fs.existsSync(allowlistFile), 'липсва hapi_enterprise/ui-files.json — allowlist-ът на статиката');
+const allowlist = JSON.parse(fs.readFileSync(allowlistFile, 'utf8'));
 const served = new Set();
-const addServed = (raw) => {
-  const name = String(raw).replace(/^.*\//, '');
-  // Само имена на файлове: ключове като `/ui/` и `/generator/` сочат папка, не файл.
+for (const [route, entry] of Object.entries(allowlist)) {
+  assert.ok(Array.isArray(entry) && entry.length === 2, `ui-files.json: записът ${route} трябва да е [път, тип]`);
+  const [rel, type] = entry;
+  assert.match(type, /^[\w-]+\/[\w.+-]+/, `ui-files.json: записът ${route} няма валиден Content-Type`);
+  // Само имена на файлове: ключовете `/ui/` и `/generator/` сочат папка, но стойността им е файл.
+  const name = String(rel).replace(/^.*\//, '');
   if (/^[\w-]+(\.[\w-]+)+$/.test(name)) served.add(name);
-};
-// Имената се взимат САМО от масивите (`for (const f of [...])`) и от директните ключове
-// (`files['/generator/app.js']`). Изразът за подравняване (`f === 'links.js' ? …`) НЕ се брои:
-// иначе име, махнато от allowlist-а, пак изглежда „сервирано“ заради самото това сравнение.
-for (const match of block.matchAll(/for \(const f of \[([^\]]+)\]/g)) {
-  for (const name of match[1].matchAll(/'([\w./-]+)'/g)) addServed(name[1]);
 }
-for (const match of block.matchAll(/files\['([^']+)'\]/g)) addServed(match[1]);
 assert.ok(served.size >= 20, `в allowlist-а са намерени само ${served.size} имена — счупен разбор`);
 
 const problems = [];

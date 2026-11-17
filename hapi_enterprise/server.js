@@ -3,6 +3,12 @@ const http = require('node:http'), fs = require('node:fs'), fsp = require('node:
 const paths = require('./paths'); // логически корени и имена на променливи — ЕДИН източник
 const pageVersion = require('./page-version'); // версия в адреса на статичните ресурси (DEF-87)
 const staticEtag = require('./static-etag'); const { parseJson, parseJsonOr } = require('./parse-json'); // статика в паметта (DEF-88) · един четец на JSON, без хвърляне (DEF-67)
+// Allowlist-ът на статиката е ДАННИ, не код (D12): нов UI файл = ред в `ui-files.json`, без
+// ред в `server.js`, чийто бюджет е изчерпан. Ключът е адресът, стойността — [път, тип].
+// Два частни случая, които не личат от JSON-а: `/ui/links.js` сочи към `links.js` в КОРЕНА на
+// add-on-а (един файл за сървъра и за панела), а `/secret-view.js` е публичен, защото страницата
+// на тайна връзка се отваря извън административния listener (ingress).
+const UI_FILES = require('./ui-files.json');
 const root = path.resolve(process.env.DATA_DIR || paths.LOGICAL_ROOTS.data), port = Number(process.env.PORT || 8099), adminToken = process.env.ADMIN_TOKEN;
 // Една жива инстанция на data директория (виж instance-lock.js). Попълва се в start().
 const instanceId = String(process.env.INSTANCE_ID || '').trim() || crypto.randomBytes(6).toString('hex');
@@ -1453,24 +1459,8 @@ async function handler(req, res) {
     // Старите отметки /admin стигат до него с пренасочване, за да не се губи навикът.
     if ((url.pathname === '/admin' || url.pathname === '/admin/') && method === 'GET') { res.writeHead(302, { Location: '/ui/index.html', 'Cache-Control': 'no-store' }); return res.end() }
     // Enterprise Control Center GUI (Фаза 10/11). Публичен като /admin: данните са ДЕМО,
-    // а административните API-та си изискват Bearer токен. Allowlist — без произволни пътища.
-    const UI_FILES = (() => {
-      const files = { '/ui': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/index.html': ['ui/index.html', 'text/html; charset=utf-8'], '/ui/manifest.example.json': ['ui/manifest.example.json', 'application/json; charset=utf-8'] };
-      for (const f of ['tokens.css', 'layout.css', 'components.css', 'themes.css']) files['/ui/' + f] = ['ui/' + f, 'text/css; charset=utf-8']; // дизайн системата: токени · оформление · компоненти · тема; спрайтът v4 идва отделно, защото е image/svg+xml
-      files['/ui/icons-v4.svg'] = ['ui/icons-v4.svg', 'image/svg+xml; charset=utf-8'];
-      for (const f of ['links.js', 'api-base.js', 'bootstrap.js', 'panel-registry.js', 'field-labels.js', 'debug-ledger.js', 'app.js', 'icons.js', 'data.js', 'i18n.js', 'debug-objects.js', 'report-objects.js', 'report-scope.js', 'report-studio.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js', 'qr-studio.js', 'files-manager.js', 'upload-progress.js', 'directory-panel.js', 'dashboard-panel.js', 'monitoring-panel.js', 'paptresor.js', 'settings-panel.js', 'secret-share.js', 'report-sign.js', 'export-center.js', 'public-gateway.js', 'visitors-panel.js']) files['/ui/' + f] = [f === 'links.js' ? f : 'ui/' + f, 'text/javascript; charset=utf-8'];
-      for (const f of ['report-manifest.js', 'api-spec.js', 'virtual-storage.js', 'storage-tree.js', 'export-rules.js', 'export-manager.js', 'download-access.js', 'public-gateway.js', 'qrcode.js']) files['/hapi_enterprise/' + f] = ['hapi_enterprise/' + f, 'text/javascript; charset=utf-8'];
-      // PasevSU Document Generator — самостоятелно приложение под `/generator/`.
-      files['/generator'] = ['generator/index.html', 'text/html; charset=utf-8'];
-      files['/generator/'] = ['generator/index.html', 'text/html; charset=utf-8'];
-      files['/generator/index.html'] = ['generator/index.html', 'text/html; charset=utf-8'];
-      files['/generator/app.js'] = ['generator/app.js', 'text/javascript; charset=utf-8'];
-      files['/generator/style.css'] = ['generator/style.css', 'text/css; charset=utf-8'];
-      // Публичната страница на тайна връзка отваря този скрипт от корена: `/hapi_enterprise/`
-      // е достъпен само на административния listener (ingress), а прегледът е публичен.
-      files['/secret-view.js'] = ['secret-view.js', 'text/javascript; charset=utf-8'];
-      return files;
-    })();
+    // а административните API-та си изискват Bearer токен. Allowlist — без произволни пътища:
+    // списъкът е в `ui-files.json` (зареден веднъж при старт), а не се строи при всяка заявка.
     // Статиката се търси първо до server.js (така е в контейнера: /app/ui, /app/*.js),
     // после в родителската папка (така е при разработка от repo root). Липсващ файл
     // връща 404, а не 500 — иначе UI-ят „гърми" само в add-on-а.

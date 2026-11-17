@@ -151,7 +151,7 @@
 | `hapi_enterprise/server_module/portal-assets.js` | backend | СТАТИЧНИТЕ ФАЙЛОВЕ НА ПУБЛИЧНАТА СТРАНИЦА — `/portal.js`, `/portal-i18n.js`, `/portal.css` |
 | `hapi_enterprise/server_module/portal-landing.js` | backend | ПУБЛИЧНАТА СТРАНИЦА НА ПОРТАЛА — `/p/<id>[/]` (0.69.220). |
 | `hapi_enterprise/server-modules.js` | backend | ВСИЧКИ ФАЙЛОВЕ ОТ `server_module/` СА КОМПОНЕНТИ — БЕЗ ТВЪРДО ВПИСАН СПИСЪК (0.69.220). |
-| `hapi_enterprise/server.js` | backend | Една жива инстанция на data директория (виж instance-lock.js). Попълва се в start(). |
+| `hapi_enterprise/server.js` | backend | Allowlist-ът на статиката е ДАННИ, не код (D12): нов UI файл = ред в `ui-files.json`, без |
 | `hapi_enterprise/share-links.js` | backend | Share links за портал: NFC/QR таг за Home Assistant Companion + universal link. |
 | `hapi_enterprise/shared-data.js` | backend | ЕДНИ И СЪЩИ ДАННИ — ОТ РАЗЛИЧНИ ПРОЦЕСИ (многослоен цикъл върху един източник на истина). |
 | `hapi_enterprise/signer.js` | backend | Подпис + timestamp (Фаза 3.3): HMAC-SHA256 над SHA-256 хеша на файла. |
