@@ -427,7 +427,12 @@ assert.ok(dict.bg['portal.qr.button'], 'остава ключът на буто�
 assert.match(src, /\[data-open-portal\], \[data-open-portal-id\]/, 'щракването по картата отваря портала');
 assert.match(src, /findIndex\(\(x\) => x\.id === byId\)/, 'ИД-то се превежда до индекс, а не се гадае');
 assert.equal(/window\.open/.test(src), false, 'прегледът не отваря нов таб');
-assert.equal(/target="_blank"/.test(src), false);
+// От 0.69.242 единственото място с `target="_blank"` е ЛИНКЪТ НА ОТЧЕТА (ADR-0028): PDF
+// се отваря в нов раздел, за да не се губи панелът, и винаги носи `rel="noreferrer"`.
+// Картата на портала продължава да НЕ отваря нов таб.
+const blanks = src.match(/target="_blank"[^>]*/g) || [];
+assert.equal(blanks.length, 1, 'само линкът на отчета отваря нов раздел, намерени: ' + blanks.length);
+assert.match(blanks[0], /rel="noreferrer"/, 'външният линк носи rel="noreferrer"');
 assert.equal(/fm-actions-btn/.test(src), false, 'менюто с действия е заменено от бутоните');
 const nc = m.normalizeContact({ id: 'c9', email: 'a@b.co', fields: { name: 'Тест', phone: '+1 2' } });
 assert.equal(nc.name, 'Тест');

@@ -3,7 +3,7 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 472 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 466 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
@@ -11,9 +11,9 @@
 | портал | 57 |
 | GUI | 44 |
 | Home Assistant | 18 |
-| отчети | 16 |
 | ядро | 15 |
 | PGP | 14 |
+| отчети | 10 |
 | съхранение | 8 |
 | издаване | 7 |
 | документация | 6 |
@@ -393,27 +393,6 @@
 | `ha-translations` | Ha translations | `tests/ha-translations.cjs` |
 | `ha-version-sensor` | Ha version sensor | `tests/ha-version-sensor.cjs` |
 
-## отчети (16)
-
-| Правило | Заглавие | Файл |
-| --- | --- | --- |
-| `report-api` | Report api | `tests/report-api.cjs` |
-| `report-entry-points` | Report entry points | `tests/report-entry-points.cjs` |
-| `report-manifest` | Report manifest | `tests/report-manifest.cjs` |
-| `report-manifests` | Report manifests | `tests/report-manifests.cjs` |
-| `report-objects` | Report objects | `tests/report-objects.cjs` |
-| `report-objects-real` | Report objects real | `tests/report-objects-real.cjs` |
-| `report-package` | Report package | `tests/report-package.cjs` |
-| `report-qr` | Report qr | `tests/report-qr.cjs` |
-| `report-render` | Report render | `tests/report-render.cjs` |
-| `report-scope` | Report scope | `tests/report-scope.cjs` |
-| `report-stamp` | Report stamp | `tests/report-stamp.cjs` |
-| `report-studio-columns` | Report studio columns | `tests/report-studio-columns.cjs` |
-| `report-studio-panel` | Report studio panel | `tests/report-studio-panel.cjs` |
-| `report-table-header-repeat` | Report table header repeat | `tests/report-table-header-repeat.cjs` |
-| `report-table-widths` | Report table widths | `tests/report-table-widths.cjs` |
-| `report-tsa-e2e` | Report tsa e2e | `tests/report-tsa-e2e.cjs` |
-
 ## ядро (15)
 
 | Правило | Заглавие | Файл |
@@ -452,6 +431,21 @@
 | `pgp-unknown-subkey` | Pgp unknown subkey | `tests/pgp-unknown-subkey.cjs` |
 | `pgp-v6` | Pgp v6 | `tests/pgp-v6.cjs` |
 | `pgp-workdir-encryption` | Pgp workdir encryption | `tests/pgp-workdir-encryption.cjs` |
+
+## отчети (10)
+
+| Правило | Заглавие | Файл |
+| --- | --- | --- |
+| `report-api` | Report api | `tests/report-api.cjs` |
+| `report-manifest` | Report manifest | `tests/report-manifest.cjs` |
+| `report-manifests` | Report manifests | `tests/report-manifests.cjs` |
+| `report-package` | Report package | `tests/report-package.cjs` |
+| `report-qr` | Report qr | `tests/report-qr.cjs` |
+| `report-render` | Report render | `tests/report-render.cjs` |
+| `report-stamp` | Report stamp | `tests/report-stamp.cjs` |
+| `report-studio-removed` | Report studio removed | `tests/report-studio-removed.cjs` |
+| `report-table-header-repeat` | Report table header repeat | `tests/report-table-header-repeat.cjs` |
+| `report-tsa-e2e` | Report tsa e2e | `tests/report-tsa-e2e.cjs` |
 
 ## съхранение (8)
 

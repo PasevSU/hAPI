@@ -79,18 +79,6 @@
     "ui/debug-objects.js",
     "text/javascript; charset=utf-8"
   ],
-  "/ui/report-objects.js": [
-    "ui/report-objects.js",
-    "text/javascript; charset=utf-8"
-  ],
-  "/ui/report-scope.js": [
-    "ui/report-scope.js",
-    "text/javascript; charset=utf-8"
-  ],
-  "/ui/report-studio.js": [
-    "ui/report-studio.js",
-    "text/javascript; charset=utf-8"
-  ],
   "/ui/portals.js": [
     "ui/portals.js",
     "text/javascript; charset=utf-8"
@@ -153,6 +141,10 @@
   ],
   "/ui/report-sign.js": [
     "ui/report-sign.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/reports-panel.js": [
+    "ui/reports-panel.js",
     "text/javascript; charset=utf-8"
   ],
   "/ui/export-center.js": [

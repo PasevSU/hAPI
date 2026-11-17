@@ -24,7 +24,7 @@ const { storageRoot } = require('./helpers.cjs');
 const ROOT = path.join(__dirname, '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const PANEL_MODULES = [
-  'data.js', 'icons.js', 'report-studio.js', 'portals.js', 'portal-control.js',
+  'data.js', 'icons.js', 'portals.js', 'portal-control.js',
   'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js',
   'dashboard-panel.js', 'settings-panel.js', 'export-center.js', 'public-gateway.js',
   'visitors-panel.js', 'secret-report-sign.js', 'report-sign.js', 'secret-share.js',

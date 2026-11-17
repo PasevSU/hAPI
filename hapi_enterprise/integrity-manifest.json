@@ -1,6 +1,6 @@
 {
   "version": "0.69.241",
-  "generatedAt": "2026-11-17T16:36:36.473Z",
+  "generatedAt": "2026-11-17T18:48:27.812Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
     "server.js": "44493e1c7d9785baec33759c520ebba4d17c16e958f2392e3c4d8dac859704ba",
@@ -15,15 +15,15 @@
     "core_module/http.js": "926d1a8a606cf39290c6ac0899a54fe2b47955f1a9a89cf5e2c46c90b5868eab",
     "parse-json.js": "abe7390025da266167ada290f9c4282e14b9e2e685bf278b5a9d279bdd20b46f",
     "portal-config.js": "c382388933a304219f79e704d7c95fe38f96da4927f27955b1081e461d830d63",
-    "ui-files.json": "c514bea8461936ccfc315b382230929b6d1e6f809c3833fdc71ad0629d06da92",
+    "ui-files.json": "e3f454fc2e1f6fda7f4beecb030f6589e86d5e1675d39c0940a84d23ea348b6b",
     "statik-index.js": "54608945f2bdddb28b8fdcfe22e9bff8cdd2833d00fdf404db3d28b0da012e80",
     "server_module/statik.js": "9c1f1bf0ac4cb6b1edd859698b5cec755bcaddbfbfa0efc21a8697dc363f5c40",
-    "ui/index.html": "7df38848616144a206d4a22cf831f4392511629c149a7658b20ea0ce760a7057",
-    "ui/app.js": "f17a9569b53c80dc0edf971052ce2adbaa9748b913995c412fd60d6c3d2e8354",
+    "ui/index.html": "90fe3d03578db2e7720a88588100e39425621e134c00d3880425089bdd31baf4",
+    "ui/app.js": "fb060ef3839f2d88b54e55d645acf1761a4a45e66c586cfbe6b02ccaeb49ff24",
     "ui/settings-panel.js": "5c717a4c7c8f1dd467e962ad7866f60cb4d20f74eba928f56474d840b2d0ae19",
     "ui/field-labels.js": "efd27ab8208417f711fc1a9c36180639f5096b5baa75edcb061793971dadb43d",
     "ui/debug-objects.js": "5b5089867c0fd97d46a932f3a51cd7e6f0d0e40b3ef823cef5ec31ff87a75735",
     "ui/debug-ledger.js": "8aba4c478b3543c4a34cbc769c9a69c02f4a1936813f8eac22f7375f258967e5",
-    "ui/i18n.js": "e50c934dbce13c97347146a8fe77556b6b4eb06da48fea2051dda4235077eadc"
+    "ui/i18n.js": "9a3a676e18a072da6fb880478b27ac6e1e777ef160b674696b33d7fed96aefc3"
   }
 }

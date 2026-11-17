@@ -15,7 +15,7 @@ const { startServer, mountUi, waitFor, expandPortalBlocks } = require('./lib/gui
 const MODULES = [
   'data.js', 'icons.js', 'portals.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js',
   'selection.js', 'portal-tree.js', 'files-manager.js', 'directory-panel.js', 'dashboard-panel.js',
-  'settings-panel.js', 'export-center.js', 'public-gateway.js', 'visitors-panel.js',
+  'settings-panel.js', 'export-center.js', 'public-gateway.js', 'visitors-panel.js', 'reports-panel.js',
 ];
 
 (async () => {
@@ -96,6 +96,18 @@ const MODULES = [
     const filePdf = await fetch(server.base + fileUrl);
     assert.equal(filePdf.status, 200, 'отчетът за файла се отваря');
     assert.equal(Buffer.from(await filePdf.arrayBuffer()).subarray(0, 5).toString('latin1'), '%PDF-');
+
+    // ── 4. Панелът „Отчети“ показва издадените линкове ───────────────────────
+    // Това е листът, който свързва линка с пътя (D4) — без него адресът съществува, но
+    // човекът не знае кой отчет къде сочи.
+    const reportsHost = ui.container();
+    ui.window.HapiReportsPanel.mount(reportsHost);
+    const rowLink = await waitFor(() => {
+      const anchors = Array.from(reportsHost.querySelectorAll('a'));
+      return anchors.find((a) => String(a.getAttribute('href') || '').startsWith('/statik/')) || null;
+    }, { label: 'линкът в списъка с отчети' });
+    assert.ok(String(rowLink.getAttribute('href')).startsWith('/statik/'), 'листът показва издадения адрес');
+    assert.match(String(reportsHost.textContent || ''), /Издадени/, 'листът казва колко отчета има');
 
     console.log('PASS ui-report-buttons: портал · папка · файл от мястото на бутона · линк + копиране · PDF без токен');
   } finally {

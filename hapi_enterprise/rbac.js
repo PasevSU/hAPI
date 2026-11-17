@@ -27,6 +27,10 @@ const CAPABILITIES = {
   generator: { admin: true, operator: true, viewer: 'read' },
   pgp: { admin: true, operator: true, viewer: 'read' },
   packages: { admin: true, operator: true, viewer: 'read' },
+  // Отчетите с едно натискане (ADR-0028): издаването и триенето на линк е операция с
+  // последствие (линкът работи без токен), затова „само за четене“ не стига — гледачът
+  // вижда листа, но не издава и не трие.
+  reports: { admin: true, operator: true, viewer: 'read' },
   core: { admin: true, operator: true, viewer: 'read' },
   settings: { admin: true },
   qr: { admin: true },

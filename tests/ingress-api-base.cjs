@@ -94,7 +94,7 @@ function sourceChecks() {
   const html = fs.readFileSync(path.join(ROOT, 'hapi_enterprise/ui/index.html'), 'utf8');
   const helperAt = html.indexOf('src="api-base.js"');
   assert(helperAt > 0, 'ui/index.html не зарежда api-base.js');
-  for (const panel of ['dashboard-panel.js', 'files-manager.js', 'report-studio.js', 'settings-panel.js']) {
+  for (const panel of ['dashboard-panel.js', 'files-manager.js', 'settings-panel.js']) {
     const panelAt = html.indexOf('src="' + panel + '"');
     assert(panelAt > helperAt, `api-base.js трябва да се зарежда преди ${panel}`);
   }

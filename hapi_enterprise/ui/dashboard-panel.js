@@ -84,65 +84,23 @@
       return;
     }
 
-    const list = portals.ok && portals.data ? (Array.isArray(portals.data) ? portals.data : portals.data.portals || []) : [];
-    const files = list.reduce((sum, p) => sum + (Array.isArray(p.files) ? p.files.length : 0), 0);
-
-    // ── Отчети: комбо и рекурсивен комбо — тук, на главното табло ────────────
-    // Отчетът за един портал или за един файл стои там, където е самият обект
-    // (опциите на файла; картата на портала). На таблото стоят само обхватите
-    // „всичко“, защото тук се вижда цялата система.
-    if (!list.length) {
-      reportBox.innerHTML = `<p class="hint">${esc(T('dsh.noPortals'))}</p>`;
-      return;
-    }
-    const filesOf = (n) => `${n} ${n === 1 ? T('noun.file.one') : T('noun.file.many')}`;
-    const portalsOf = (n) => `${n} ${n === 1 ? T('dsh.portal.one') : T('dsh.portal.many')}`;
+    // ── Отчети: последните издадени линкове ─────────────────────────────────
+    // Студиото (сглобяване на отчет на ръка) е премахнато в 0.69.242 — отчетът вече се
+    // прави с ЕДНО натискане от мястото на обекта (портал · папка · файл · избрани).
+    // Затова таблото не строи отчет, а показва издадените линкове: това е адресът, който
+    // се изпраща на проверяващ, и той трябва да е видим, без да се рови в диска.
+    // `GET …/reports/links` връща и последните, и старите — тук се взимат първите пет.
+    const links = await api('/admin/api/v2/reports/links');
+    const issued = links.ok && links.data && Array.isArray(links.data.links) ? links.data.links.slice(0, 5) : [];
     reportBox.innerHTML = `
-      <p class="hint">${esc(T('dsh.report.hint'))}
-        ${esc(T('dsh.report.scope', { scope: portalsOf(list.length) + ' · ' + filesOf(files) }))}</p>
-      <div class="row-actions">
-        <button type="button" class="btn btn-primary" data-report="combo">${esc(T('dsh.combo'))}</button>
-        <button type="button" class="btn" data-report="combo-recursive">${esc(T('dsh.comboRecursive'))}</button>
-      </div>
-      <p class="hint" id="dash-report-note"></p>`;
-    const note = reportBox.querySelector('#dash-report-note');
-    const buttons = [...reportBox.querySelectorAll('button[data-report]')];
-    const toast = (message, kind) => {
-      if (window.HapiUI && typeof window.HapiUI.toast === 'function') window.HapiUI.toast(message, kind);
-    };
-    const runReport = async (recursive, button) => {
-      const S = window.HapiReportScope;
-      if (!S) return toast(T('dsh.err.noScope'), 'err');
-      const restore = button.textContent;
-      button.disabled = true;
-      button.textContent = T('dsh.building');
-      try {
-        // Рекурсивният обхват включва и папките от хранилището на всеки портал. Чете се
-        // последователно (`for … of` с `await`): `map` с `async` връща обещания, които
-        // никой не чака, и грешка в средата остава необслужена (пази `logic-audit`).
-        let trees = null;
-        if (recursive) {
-          trees = {};
-          for (const p of list) {
-            const res = await api('/admin/api/portals/' + encodeURIComponent(p.id) + '/tree');
-            if (res.ok && res.data) trees[p.id] = res.data;
-          }
-        }
-        const result = S.buildCombo({ portals: list, trees, recursive });
-        S.open(result);
-        if (note) note.textContent = result.label + ' · ' + filesOf(result.summary.files || 0);
-      } catch (e) {
-        toast(T('dsh.err.build', { message: e && e.message ? e.message : e }), 'err');
-      } finally {
-        button.disabled = false;
-        button.textContent = restore;
-      }
-    };
-    for (const button of buttons) {
-      button.addEventListener('click', () => {
-        void runReport(button.dataset.report === 'combo-recursive', button);
-      });
-    }
+      <p class="hint">${esc(T('dsh.report.hint'))}</p>
+      ${issued.length
+        ? `<ul class="dash-report-links">${issued
+          .map((link) => `<li><a href="${esc(link.url)}" target="_blank" rel="noreferrer">${esc(link.name || link.url)}</a>
+            <span class="hint">${esc([link.type, link.path || '', String(link.files || 0) + ' ' + T('rp.files')].filter(Boolean).join(' · '))}</span></li>`)
+          .join('')}</ul>`
+        : `<p class="hint">${esc(T('dsh.report.empty'))}</p>`}
+      <p class="hint">${esc(T('dsh.report.list'))}</p>`;
   }
 
   function mountAbout(view) {

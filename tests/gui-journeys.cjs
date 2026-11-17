@@ -218,26 +218,6 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     return null;
   }, { label: 'бутонът „' + attr + '“ в картата на „' + needle + '“', timeout: BUDGET });
 
-  /**
-   * Картата на НАШИЯ портал в списъка. Търси се по същия начин, по който човек я намира с
-   * очи — през бутона „Отвори портала“, чийто ред носи адреса (slug), и после нагоре до
-   * картата. Така сценарият не зависи от поредността на порталите в списъка.
-   */
-  const portalCard = async (slug) => {
-    const row = await waitFor(() => {
-      for (const el of app.$$('[data-open-portal]')) {
-        let node = el;
-        for (let i = 0; i < 6 && node; i++) {
-          if (text(node).includes(slug)) return el;
-          node = node.parentNode;
-        }
-      }
-      return null;
-    }, { label: 'картата на портала „' + slug + '“', timeout: BUDGET });
-    const card = row.closest ? row.closest('.pf-portal') : null;
-    assert.ok(card, 'картата на портала се разпознава по класа .pf-portal');
-    return card;
-  };
 
   /**
    * Отваря панела с филтри на блока „Файлове в портала“.
@@ -713,24 +693,6 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.ok(String(said).length > 3, 'панелът казва какво е станало: ' + said);
     });
 
-    // ── J29. Report Studio: нов документ, блок и валидация ────────────────────
-    await journey('J29 Report Studio: блок и валидация', async () => {
-      app.nav('report');
-      await settle('Report Studio');
-      app.click('#rs-new', 'бутонът „Нов“');
-      const countNow = () => Number((text(app.$('#rs-count')).match(/\d+/) || [0])[0]);
-      const before = countNow();
-      assert.ok(before > 0, 'новият документ има блокове: ' + before);
-      const item = await waitFor(() => app.$$('#rs-lib [data-type]')[0], { label: 'първият обект в библиотеката' });
-      item.click();
-      await waitFor(() => countNow() > before, { label: 'блокът да влезе в документа' });
-      app.clearToasts();
-      app.click('#rs-validate', 'бутонът „Валидирай“');
-      await waitFor(() => app.toast(), { label: 'присъдата на валидатора' });
-      assert.match(app.toast().message, /валиден|Невалиден/i, 'валидаторът дава присъда: ' + app.toast().message);
-    });
-
-    // ── J30. Посетители: обновяване и CSV през панела ─────────────────────────
     await journey('J30 посетители: обновяване', async () => {
       app.nav('visitors');
       await settle('панелът „Кой влиза“');
@@ -909,28 +871,6 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.equal(app.requests.length, before, 'с невалиден идентификатор също не се праща заявка');
     });
 
-    // ── J41. Report Studio: запазване и отмяна на действието ──────────────────
-    await journey('J41 Report Studio: запази и отмени', async () => {
-      app.nav('report');
-      await settle('Report Studio');
-      app.click('#rs-new', 'бутонът „Нов“');
-      const countNow = () => Number((text(app.$('#rs-count')).match(/\d+/) || [0])[0]);
-      const before = countNow();
-      const item = await waitFor(() => app.$$('#rs-lib [data-type]')[0], { label: 'първият обект в библиотеката' });
-      item.click();
-      await waitFor(() => countNow() > before, { label: 'блокът да влезе в документа' });
-      app.click('#rs-undo', 'бутонът „Отмени“');
-      await waitFor(() => countNow() === before, { label: 'отмяната на действието' });
-      app.click('#rs-redo', 'бутонът „Повтори“');
-      await waitFor(() => countNow() > before, { label: 'повторението на действието' });
-      app.clearToasts();
-      app.click('#rs-save', 'бутонът „Запази“');
-      await waitFor(() => app.toast() || text(app.$('#rs-state')), { label: 'отговорът при запазване', timeout: BUDGET });
-      const said = (app.toast() || {}).message || text(app.$('#rs-state'));
-      assert.ok(String(said).length > 2, 'панелът казва какво е станало при запазване: ' + said);
-    });
-
-    // ── J42. Контакт: поле по желание, редакция и изтриване ───────────────────
     await journey('J42 контакт: редакция и изтриване', async () => {
       app.nav('contacts');
       await settle('панелът „Контакти“');
@@ -1069,56 +1009,6 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       );
     });
 
-    // ── J47. Report Studio: колони на таблицата — добави, премести, махни ─────
-    await journey('J47 Report Studio: колони на таблица', async () => {
-      app.nav('report');
-      await settle('Report Studio');
-      app.click('#rs-new', 'бутонът „Нов“');
-      const item = await waitFor(
-        () => app.$$('#rs-lib [data-type]').find((el) => el.getAttribute('data-type') === 'table'),
-        { label: 'обектът „Таблица“ в библиотеката', timeout: BUDGET },
-      );
-      item.click();
-      await waitFor(() => app.$('#p-addcol'), { label: 'редактора на таблицата', timeout: BUDGET });
-      const cols = () => app.$$('[data-col="del"]').length;
-      const before = cols();
-      assert.ok(before > 0, 'таблицата има колони: ' + before);
-      app.fill('#p-newcol', 'Нова колона');
-      app.click('#p-addcol', 'бутонът „Добави“ за колона');
-      await waitFor(() => cols() === before + 1, { label: 'новата колона в списъка', timeout: BUDGET });
-      // „↑“/„↓“ местят колоната — натиска се същият бутон, който вижда човекът.
-      const down = app.$$('[data-col="down"]');
-      down[down.length - 1].click();
-      await waitFor(() => cols() === before + 1, { label: 'подредбата след „↓“', timeout: BUDGET });
-      const del = app.$$('[data-col="del"]');
-      del[del.length - 1].click();
-      await waitFor(() => cols() === before, { label: 'колоната да се махне', timeout: BUDGET });
-    });
-
-    // ── J48. Report Studio: избор на алгоритми в Hash таблица ─────────────────
-    await journey('J48 Report Studio: алгоритми на Hash таблица', async () => {
-      const item = await waitFor(
-        () => app.$$('#rs-lib [data-type]').find((el) => el.getAttribute('data-type') === 'hash-table'),
-        { label: 'обектът „Hash таблица“ в библиотеката', timeout: BUDGET },
-      );
-      item.click();
-      const boxes = await waitFor(() => (app.$$('[data-alg]').length ? app.$$('[data-alg]') : null), {
-        label: 'списъкът с алгоритми',
-        timeout: BUDGET,
-      });
-      const box = boxes[0];
-      const alg = box.getAttribute('data-alg');
-      assert.ok(alg, 'алгоритъмът има име: ' + alg);
-      const want = !box.checked;
-      app.check(box, want);
-      await waitFor(() => {
-        const again = app.$('[data-alg="' + alg + '"]');
-        return again && again.checked === want ? again : null;
-      }, { label: 'алгоритъмът „' + alg + '“ да стане ' + (want ? 'избран' : 'изключен'), timeout: BUDGET });
-      assert.equal(app.$('[data-alg="' + alg + '"]').checked, want, 'изборът на алгоритъм се пази в панела');
-    });
-
-    // ── J49. Gateway: смяна на достъп и видимост на файл ──────────────────────
     await journey('J49 gateway: достъп и видимост на файл', async () => {
       app.nav('gateway');
       await settle('панелът „Публичен gateway“');
@@ -1389,54 +1279,18 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       );
     });
 
-    // ── J56. Report Studio: колони на оформлението (columns блок) ─────────────
-    await journey('J56 Report Studio: колони на оформлението', async () => {
-      app.nav('report');
-      await settle('Report Studio');
-      app.click('#rs-new', 'бутонът „Нов“');
-      const item = await waitFor(
-        () => app.$$('#rs-lib [data-type]').find((el) => el.getAttribute('data-type') === 'columns'),
-        { label: 'обектът „Колони“ в библиотеката', timeout: BUDGET },
-      );
-      item.click();
-      const firstTitle = await waitFor(() => app.$('[data-lcol-title="0"]'), { label: 'заглавието на първата колона', timeout: BUDGET });
-      app.fill(firstTitle, 'Лява колона от сценария');
-      await waitFor(() => {
-        const again = app.$('[data-lcol-title="0"]');
-        return again && again.value === 'Лява колона от сценария' ? again : null;
-      }, { label: 'заглавието да се запази в блока', timeout: BUDGET });
-      // Текстът на колоната се пише със същия път (input → блокът се обновява).
-      const text2 = await waitFor(() => app.$('[data-lcol-text="1"]'), { label: 'текстът на втората колона', timeout: BUDGET });
-      app.fill(text2, 'Текст от сценария');
-      await waitFor(() => {
-        const again = app.$('[data-lcol-text="1"]');
-        return again && again.value === 'Текст от сценария' ? again : null;
-      }, { label: 'текстът да се запази в блока', timeout: BUDGET });
-      // „Добави колона“ вдига броя на колоните в самия блок — проверява се през документа,
-      // защото панелът нарочно пази полетата непокътнати, докато човекът пише.
-      const before = Number((text(app.$('#rs-count')).match(/\d+/) || [0])[0]);
-      app.click('#p-addlcol', 'бутонът „Добави колона“');
-      await settle('оформлението след новата колона');
-      assert.equal(Number((text(app.$('#rs-count')).match(/\d+/) || [0])[0]), before, 'документът не губи блокове при редакция на колоните');
-    });
-
-    // ── J57. Табло: комбо отчет през бутона ──────────────────────────────────
-    await journey('J57 табло: комбо отчет', async () => {
+    // ── J57. Табло: последните издадени отчети ──────────────────────────────
+    // Студиото го няма (0.69.242): таблото вече не сглобява отчет, а показва линковете,
+    // които вече са издадени — това е адресът, който се изпраща на проверяващ.
+    await journey('J57 табло: издадени отчети', async () => {
       app.nav('dashboard');
       await settle('таблото');
-      const button = await waitFor(() => app.$('[data-report]'), { label: 'бутонът за комбо отчет', timeout: BUDGET });
-      const kind = button.getAttribute('data-report');
-      app.clearToasts();
-      button.click();
-      // Отчетът се сглобява и се ОТВАРЯ в Report Studio — таблото води там, вместо да
-      // остави човека с празна бележка.
-      await waitFor(() => app.location.hash === '#report', { label: 'преминаването към Report Studio', timeout: BUDGET });
-      const count = await waitFor(() => {
-        const node = app.$('#rs-count');
-        return node && Number((text(node).match(/\d+/) || [0])[0]) > 0 ? node : null;
-      }, { label: 'сглобения отчет с блокове', timeout: BUDGET });
-      assert.match(kind, /combo/, 'натиснат е бутонът за комбо отчет: ' + kind);
-      assert.ok(Number((text(count).match(/\d+/) || [0])[0]) > 0, 'отчетът има блокове: ' + text(count));
+      const note = await waitFor(
+        () => app.$$('.panel-body p.hint').find((el) => /линк|отчет/i.test(text(el))) || null,
+        { label: 'обяснението за отчетите', timeout: BUDGET },
+      );
+      assert.ok(note, 'таблото обяснява къде се прави отчет: ' + text(note).slice(0, 80));
+      assert.ok(!app.$('[data-report="combo"]'), 'бутонът за комбо отчет (студиото) го няма');
     });
 
     // ── J58. Файл: копиране на хеш от „Пълни данни“ ───────────────────────────
@@ -1478,16 +1332,26 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
     });
 
     // ── J60. Портал: отчет за портала от картата му ──────────────────────────
+    // Едно натискане → готов линк `/statik/…` в реда за състояние (ADR-0028). Никакво
+    // преминаване към студио: то го няма.
     await journey('J60 портал: отчет за портала', async () => {
+      // Портал със СВОЙ файл: празният обхват се отказва с причина, а отчет за нула файла
+      // не е отчет. (Редът за състояние с линка се проверява в `ui-report-buttons.cjs`,
+      // където порталът е известен; тук се гледа САМОТО действие през интерфейса.)
+      await ownPortalWithFile('gui-journey-report-portal');
       const report = await waitFor(() => app.$('[data-report-portal]'), { label: 'бутонът „Отчет за портала“', timeout: BUDGET });
+      app.clearToasts();
+      const asked = app.requests.length;
       report.click();
-      // Отчетът се сглобява и се отваря в Report Studio — същият път като от таблото.
-      await waitFor(() => app.location.hash === '#report', { label: 'преминаването към Report Studio', timeout: BUDGET });
-      const count = await waitFor(() => {
-        const node = app.$('#rs-count');
-        return node && Number((text(node).match(/\d+/) || [0])[0]) > 0 ? node : null;
-      }, { label: 'отчетът с блокове', timeout: BUDGET });
-      assert.ok(Number((text(count).match(/\d+/) || [0])[0]) > 0, 'отчетът за портала има блокове: ' + text(count));
+      // Отчетът се поисква от сървъра с обхват „портал“ — не се отваря студио и не се
+      // сглобява нищо в браузъра (това беше старото поведение).
+      const post = await waitFor(() => {
+        const made = app.requests.slice(asked).filter((r) => /\/admin\/api\/v2\/reports\/oneclick$/.test(r.url));
+        return made.length ? made[made.length - 1] : null;
+      }, { label: 'заявката за отчета', timeout: BUDGET });
+      assert.equal(post.method, 'POST', 'отчетът се иска с POST');
+      assert.match(String(post.body || ''), /"type":"portal"/, 'обхватът е ПОРТАЛЪТ: ' + String(post.body || '').slice(0, 120));
+      assert.notEqual(app.location.hash, '#report', 'студиото не се отваря (него го няма)');
     });
 
     // ── J61. Портал: пакетът на портала от картата му ────────────────────────
@@ -1744,36 +1608,6 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
         app.requests.slice(beforeOpen).some((r) => r.url.endsWith(apiUrl)),
         '„Отвори“ поиска ИМЕННО адреса на папката: ' + app.requests.slice(beforeOpen).map((r) => r.url).join(' · '),
       );
-    });
-
-    // ── J67. Портал: рекурсивният отчет води до „Отчети“ ──────────────────────
-    await journey('J67 портал: рекурсивен отчет', async () => {
-      const slug = 'gui-journey-report-recursive';
-      await ownPortalWithFile(slug);
-      await portalList();
-      const card = await portalCard(slug);
-      const button = await waitFor(() => card.querySelector('[data-report-recursive]'), {
-        label: 'бутонът за рекурсивен отчет',
-        timeout: BUDGET,
-      });
-      app.clearToasts();
-      button.click();
-      // Рекурсивният отчет включва и папките от хранилището, затова панелът първо иска
-      // дървото на портала, а после отваря сглобения отчет в Report Studio.
-      const said = await waitFor(() => {
-        const t = app.toast();
-        return t && /Отчети/.test(t.message) ? t : null;
-      }, { label: 'съобщението за отворения отчет', timeout: BUDGET });
-      assert.equal(said.kind, 'ok', 'отчетът се отваря: ' + said.message);
-      assert.ok(
-        app.requests.some((r) => /\/portals\/[^/]+\/tree$/.test(r.url)),
-        'рекурсивният отчет поиска дървото на портала: ' + app.requests.slice(-4).map((r) => r.url).join(' · '),
-      );
-      const count = await waitFor(() => {
-        const node = app.$('#rs-count');
-        return node && Number((text(node).match(/\d+/) || [0])[0]) > 0 ? node : null;
-      }, { label: 'сглобения отчет с блокове', timeout: BUDGET });
-      assert.ok(Number((text(count).match(/\d+/) || [0])[0]) > 0, 'отчетът има блокове: ' + text(count));
     });
 
     // ── J68. Портал: QR кодът се показва и скрива БЕЗ промяна на сървъра ──────

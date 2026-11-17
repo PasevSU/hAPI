@@ -39,6 +39,9 @@ const EXPECTED = {
   // това отказва. Без него съдът получава 403, `capabilities` остава `null` и GUI-ят не
   // филтрира — тоест вижда повече, не по-малко (`tests/court-whoami.cjs`).
   whoami: { admin: 'all', operator: 'read', viewer: 'read', judge: 'read', prosecutor: 'read', clerk: 'read', expert: 'read' },
+  // Отчетите с едно натискане (ADR-0028, 0.69.242): издаването и триенето на линк е
+  // операция с последствие — линкът работи без токен, затова гледачът само чете листа.
+  reports: { admin: 'all', operator: 'all', viewer: 'read' },
   users: { admin: 'all', operator: 'none', viewer: 'none' },
   // ── Роли за съд (F7-1) ──────────────────────────────────────────────────────
   // Съдът чете доказателства и веригата на пазене, но НЕ създава и НЕ променя нищо.

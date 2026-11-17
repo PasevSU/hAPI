@@ -4,9 +4,9 @@
 
 > **Генериран документ.** Версия на кода: **0.69.241**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **139** backend модула · **22** HTTP компонента · **32** UI модула · **9** Python модула · **49** инструмента · **472** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
+Общо: **139** backend модула · **22** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **466** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Файлове (251)
+### Файлове (249)
 
 | Файл | Вид | Предназначение (първи ред от самия файл) |
 | ---- | --- | ----------------------------------------- |
@@ -193,10 +193,8 @@
 | `hapi_enterprise/ui/portals.js` | ui | Панел „Портали & API“ (Фаза 8 / API-01…03): генериране на публично API, |
 | `hapi_enterprise/ui/public-gateway.js` | ui | Public Gateway & Access (PG-2) — два канала, портални политики и Public Access Test. |
 | `hapi_enterprise/ui/qr-studio.js` | ui | QR СТУДИО — ЕДНО ГЛОБАЛНО МЯСТО ЗА ВСЯКА QR ОПЕРАЦИЯ (0.69.229). |
-| `hapi_enterprise/ui/report-objects.js` | ui | Регистър на обектите за Report Studio (Фаза 11 / обектна библиотека). |
-| `hapi_enterprise/ui/report-scope.js` | ui | Обхвати на отчетите — ЕДНО място, за да не се разминават отчетите по местата, от |
 | `hapi_enterprise/ui/report-sign.js` | ui | Клиент за detached CMS (PKCS#7) подпис на отчет — това, което панелът вика. |
-| `hapi_enterprise/ui/report-studio.js` | ui | Report Studio (Фаза 11 / RS-02): библиотека → документ → свойства → A4 preview. |
+| `hapi_enterprise/ui/reports-panel.js` | ui | ПАНЕЛ „ОТЧЕТИ“ — листът с твърдогенерираните линкове (ADR-0028, §6.1). |
 | `hapi_enterprise/ui/secret-share.js` | ui | Генериране на тайни връзки в БРАУЗЪРА — моделът на scrt.link v2 (MIT), собствен код. |
 | `hapi_enterprise/ui/selection.js` | ui | ГЛОБАЛНО МАРКИРАНЕ НА ФАЙЛОВЕ (ADR-0028, D8). |
 | `hapi_enterprise/ui/settings-panel.js` | ui | Настройки на връзката: админ токен, API адрес и публичен адрес за API/QR. |

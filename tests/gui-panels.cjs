@@ -16,7 +16,6 @@ const { startServer, mountUi, waitFor, root } = require('./lib/gui-harness.cjs')
 const PANEL_MODULES = [
   'data.js',
   'icons.js',
-  'report-studio.js',
   'portals.js',
   'portal-control.js',
   'portal-folders.js',
@@ -29,6 +28,7 @@ const PANEL_MODULES = [
   'export-center.js',
   'public-gateway.js',
   'visitors-panel.js',
+  'reports-panel.js',
   'secret-share.js',
   'report-sign.js',
 ];
@@ -56,7 +56,7 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
     const w = ui.window;
 
     // ── 1. Модулите са заредени ─────────────────────────────────────────────────
-    for (const name of ['HapiDashboardPanel', 'HapiMonitoringPanel', 'ReportStudio', 'FilesManagerPanel', 'PortalsPanel', 'ExportCenterPanel', 'PublicGatewayPanel', 'ContactsPanel', 'CasesPanel', 'SettingsPanel', 'HapiVisitorsPanel', 'HapiSecretShare', 'HapiReportSign']) {
+    for (const name of ['HapiDashboardPanel', 'HapiMonitoringPanel', 'HapiReportsPanel', 'FilesManagerPanel', 'PortalsPanel', 'ExportCenterPanel', 'PublicGatewayPanel', 'ContactsPanel', 'CasesPanel', 'SettingsPanel', 'HapiVisitorsPanel', 'HapiSecretShare', 'HapiReportSign']) {
       assert.ok(w[name], 'липсва ' + name + ' — app.js щеше да покаже „не е зареден“');
     }
 
@@ -72,7 +72,7 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       { id: 'cases', mount: (h) => w.CasesPanel.mount(h), expect: ['Дела', 'Ново дело'] },
       { id: 'gateway', mount: (h) => w.PublicGatewayPanel.mount(h), expect: ['Public Gateway', 'Публични портали'] },
       { id: 'export', mount: (h) => w.ExportCenterPanel.mount(h), expect: ['Export & Download Center', 'Режим на експортиране'] },
-      { id: 'report', mount: (h) => w.ReportStudio.mount(h), expect: ['Report Studio', 'Документ структура'] },
+      { id: 'report', mount: (h) => w.HapiReportsPanel.mount(h), expect: ['Отчети', 'Издадени линкове'] },
       { id: 'visitors', mount: (h) => w.HapiVisitorsPanel.mount(h), expect: ['Кой влиза', 'Уникални посетители', 'Посетители'] },
       { id: 'settings', mount: (h) => { w.SettingsPanel.state.section = 'general'; w.SettingsPanel.mount(h) }, expect: ['Връзка с add-on-а', 'Публичен адрес'] },
     ];
@@ -192,15 +192,13 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       host.remove();
     }
 
-    // ── 5. Report Studio: присъдата идва от валидатора, не от теста ─────────────
+    // ── 5. Панелът „Отчети“ показва листа (студиото го няма от 0.69.242) ────────
     {
       const host = ui.container();
-      w.ReportStudio.mount(host);
-      await waitFor(() => buttonByText(host, /Валидирай/), { label: 'бутона „Валидирай“' });
-      ui.clearToasts();
-      buttonByText(host, /Валидирай/).click();
-      await waitFor(() => ui.toasts.length > 0, { label: 'отговор от валидатора' });
-      assert.match((ui.lastToast() || {}).message || '', /валид|грешк|проблем/i, 'валидаторът отговаря с присъда, не мълчи');
+      w.HapiReportsPanel.mount(host);
+      await waitFor(() => buttonByText(host, /Презареди/), { label: 'бутона „Презареди“ на листа' });
+      await waitFor(() => /Издадени|Още няма/.test(text(host)), { label: 'състоянието на листа' });
+      assert.match(text(host), /Издадени|Още няма/, 'листът казва колко линка има, вместо да мълчи');
       host.remove();
     }
 

@@ -18,7 +18,7 @@ const assert = require('node:assert/strict');
 const { startServer, mountUi, waitFor, expandPortalBlocks, PORTAL_BLOCK_TOGGLES } = require('./lib/gui-harness.cjs');
 
 const PANEL_MODULES = [
-  'data.js', 'icons.js', 'report-studio.js', 'portals.js', 'portal-control.js',
+  'data.js', 'icons.js', 'portals.js', 'portal-control.js',
   'portal-folders.js', 'portal-files.js', 'selection.js', 'portal-tree.js', 'files-manager.js',
   'directory-panel.js', 'dashboard-panel.js', 'settings-panel.js', 'export-center.js',
   'public-gateway.js', 'visitors-panel.js', 'secret-share.js', 'report-sign.js',

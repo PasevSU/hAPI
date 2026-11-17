@@ -1646,50 +1646,11 @@
     if (id === 'delete') return removeFile(f);
     if (id === 'lock') return toggleLock(f);
     if (id === 'package') return buildPackage();
-    if (id === 'report') return openFileReport(f);
+    // Отчетът вече е с ЕДНО натискане (ADR-0028): обхватът е файлът, а резултатът е линк.
+    if (id === 'report') return oneClickReport({ type: 'selection', fileIds: [f.id] });
     if (id === 'move' || id === 'copy') return startTransfer(f, id);
     if (id === 'encrypt') return toast('Шифроването се избира при качване на нов файл или версия', '');
     return undefined;
-  }
-
-  // ── Отчети ───────────────────────────────────────────────────────────────
-  // Същата логика като таблото и картата на портала: сглобява се манифест през
-  // `HapiReportScope` и се отваря в Report Studio. Единствената разлика е обхватът.
-  function openFileReport(f) {
-    const S = window.HapiReportScope;
-    if (!S) return toast('Модулът за отчети (report-scope.js) не е зареден', 'err');
-    const p = portal();
-    if (!f || !p) return toast('Избери файл и портал за отчета', 'err');
-    try {
-      const result = S.buildFile({ portal: p, file: f });
-      S.open(result);
-      toast(result.label + ' — отворен в „Отчети“', 'ok');
-    } catch (e) {
-      toast('Отчетът не може да се сглоби: ' + (e && e.message ? e.message : e), 'err');
-    }
-  }
-
-  async function openPortalReport(index, recursive) {
-    const S = window.HapiReportScope;
-    if (!S) return toast('Модулът за отчети (report-scope.js) не е зареден', 'err');
-    const p = state.portals[index];
-    if (!p) return toast('Порталът не е намерен', 'err');
-    try {
-      // Рекурсивният отчет включва и папките от хранилището (дървото на портала).
-      let tree = null;
-      if (recursive && connected()) {
-        const res = await api(`/admin/api/portals/${encodeURIComponent(p.id)}/tree`);
-        if (res.ok) tree = res.data;
-        else if (res.status && res.status !== 404) return toast(res.error || `HTTP ${res.status}`, 'err');
-      } else if (recursive && state.tree && state.tree.portalId === p.id) {
-        tree = state.tree.data || null;
-      }
-      const result = S.buildPortal({ portal: p, tree, recursive });
-      S.open(result);
-      toast(result.label + ' — отворен в „Отчети“', 'ok');
-    } catch (e) {
-      toast('Отчетът не може да се сглоби: ' + (e && e.message ? e.message : e), 'err');
-    }
   }
 
   // ── Пакет с файловете на портала ────────────────────────────────────────
@@ -2241,6 +2202,10 @@
       }</p>
       </div>
 
+      ${/* Линкът на отчета (ADR-0028) живее в КОРЕНА на панела, не в блок: отчет се иска
+           и от картата на портала в списъка, където няма отворен портал и няма блокове. */ ''}
+      <output class="pf-security-out" id="pf-report-out" aria-live="polite"></output>
+
       <section class="panel">
         <div class="panel-head">
           <h2>${openP
@@ -2326,8 +2291,9 @@
                       <button type="button" class="fm-ico-btn pf-pkg-btn" data-pkg-portal="${i}" title="Изтегли пакета (ZIP с всички файлове от хранилището: ${esc(
         x.storage_root || '/share',
       )})" aria-label="Изтегли пакета">${ICON.download}</button>
-                      <button type="button" class="fm-ico-btn pf-report-btn" data-report-portal="${i}" title="Отчет за портала (с всички регистрирани файлове)" aria-label="Отчет за портала">${ico('note')}</button>
-                      <button type="button" class="fm-ico-btn pf-report-btn" data-report-recursive="${i}" title="Рекурсивен отчет за портала (с папките от хранилището)" aria-label="Рекурсивен отчет за портала">${ICON.folder}</button>
+                      <button type="button" class="fm-ico-btn pf-report-btn" data-report-portal="${i}" title="${esc(
+        T('pc.report.portal.title'),
+      )}" aria-label="${esc(T('pc.report.portal'))}">${ico('note')}</button>
                       <button type="button" class="fm-ico-btn pf-qr-btn" data-qr-portal="${i}" aria-haspopup="dialog" title="${esc(
         T('portal.qr.button'),
       )}" aria-label="${esc(T('portal.qr.button'))}">${ico4('qr', 'duotone')}</button>
@@ -2941,7 +2907,10 @@
   async function oneClickReport({ type, path: rel, fileIds }) {
     const p = portal();
     if (!p) return;
-    const out = document.getElementById('pf-report-out');
+    // Елементът се търси и в КОРЕНА на панела, не само в документа: панелът може да е
+    // монтиран в контейнер извън `document` (така го правят тестовете) и тогава
+    // `getElementById` не го вижда, а резултатът изчезва безшумно.
+    const out = document.getElementById('pf-report-out') || (host ? host.querySelector('#pf-report-out') : null);
     const say = (text, kind) => {
       if (!out) return;
       out.textContent = text;
@@ -2990,10 +2959,9 @@
              своя input (щракването не правеше нищо). Скрити са, но носят име за четеца. */ ''}
         <input type="file" id="fm-file-input" class="u-hidden" aria-label="Избор на един файл за качване" />
         <input type="file" id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple aria-label="Избор на папка за внасяне" />
-        ${/* Линкът на отчета (ADR-0028) стои ИЗВЪН сгъваемите блокове: отчет се иска от портал,
-             папка и файл, тоест от три различни блока, а резултатът е един. В сгъваемо тяло
-             той изчезва от документа и човекът не вижда какво е получил. */ ''}
-        <output class="pf-security-out" id="pf-report-out" aria-live="polite"></output>
+        ${/* Линкът на отчета (ADR-0028) се рисува ВЕДНЪЖ, в корена на панела (вж. `render`):
+             отчет се иска от портал, папка и файл, тоест от различни блокове и от списъка,
+             а резултатът е един. Втори `#pf-report-out` тук би дал два елемента с едно id. */ ''}
         ${panel(window.HapiPortalControl, ctx)}
         ${panel(window.HapiPortalFolders, ctx)}
         ${panel(window.HapiPortalFiles, ctx)}
@@ -4067,11 +4035,16 @@
         void buildPackage({ portalId: target.id, includeStorage: true });
       });
     });
+    // Отчет за портала от картата: отваря портала и иска отчета с едно натискане
+    // (ADR-0028). „Рекурсивен отчет“ вече не съществува — обхватът е порталът, а папките
+    // от хранилището влизат в отчета за папка/избрани.
     host.querySelectorAll('[data-report-portal]').forEach((el) => {
-      el.addEventListener('click', () => { void openPortalReport(Number(el.dataset.reportPortal), false) });
-    });
-    host.querySelectorAll('[data-report-recursive]').forEach((el) => {
-      el.addEventListener('click', () => { void openPortalReport(Number(el.dataset.reportRecursive), true) });
+      el.addEventListener('click', () => {
+        const target = state.portals[Number(el.dataset.reportPortal)];
+        if (!target) return;
+        state.portalIndex = Number(el.dataset.reportPortal);
+        void oneClickReport({ type: 'portal' });
+      });
     });
     // Всеки блок на портала се сгъва/разгъва от заглавието си — и е АКОРДЕОН: отваря се
     // САМО един, а затварянето не оставя нищо отворено (началното състояние). Дотук трите

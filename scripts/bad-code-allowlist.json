@@ -91,24 +91,9 @@
     "reason": "Каналите и етикетите идват от собствените константи (GW().CHANNELS), имената на файлове — през esc(). CSP без unsafe-inline."
   },
   {
-    "file": "hapi_enterprise/ui/report-studio.js",
-    "rule": "html-sink",
-    "reason": "Манифестните полета се рендират през esc(); кодовете на грешки са собствени константи на валидатора; ${body} е HTML от нашия renderer в изолиран преглед."
-  },
-  {
     "file": "hapi_enterprise/ui/settings-panel.js",
     "rule": "html-sink",
     "reason": "Само състояния и вътрешни компоненти (statusLine/pgpSection), които екранират стойностите си."
-  },
-  {
-    "file": "hapi_enterprise/ui/report-scope.js",
-    "rule": "json-parse-untrusted",
-    "reason": "Парсва се САМО стойност, която самият интерфейс е записал в sessionStorage (чакащ обхват на отчет). Парсването е в try/catch — повредена стойност дава null, не 500, и панелът отваря шаблона."
-  },
-  {
-    "file": "tests/report-entry-points.cjs",
-    "rule": "json-parse-untrusted",
-    "reason": "Тестът чете обхвата, който панелът току-що е записал в sessionStorage, за да провери какво вижда Report Studio. Данните са от същия процес, а тест без парсване не може да провери нищо."
   },
   {
     "file": "hapi_enterprise/routes/link-check.js",

@@ -114,9 +114,13 @@ const cleaned = [];
     assert.equal('note' in (rev.archive || {}), false, 'вътрешните бележки не излизат');
 
     // ── 6. Отчетният запис сочи съдържанието, не само името ─────────────────
+    // Студиото е премахнато (0.69.242), но правилото остава: отчетът описва СЪДЪРЖАНИЕТО.
+    // Днес го строи `report-oneclick.js`, който смята SHA-256 на всеки файл от диска —
+    // затова тук се проверява той, а не изчезналият клиентски модул.
     console.log('· отчетът за файл съдържа Content ID');
-    const scope = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui', 'report-scope.js'), 'utf8');
-    assert.match(scope, /\['Content ID', file && file\.contentId\]/, 'отчетният запис носи идентичността на съдържанието');
+    const oneclick = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'report-oneclick.js'), 'utf8');
+    assert.match(oneclick, /sha256:\s*hashed\.hex/, 'отчетът носи sha256 на съдържанието, а не само името');
+    assert.match(oneclick, /entries\.map\(\(entry\) => \(\{ sha256: entry\.sha256, name: entry\.name \}\)\)/, 'общият отпечатък е по съдържание + име');
 
     console.log('PASS content-id: съдържанието определя идентичността · нова версия = нова идентичност · верига content_id → sha256 → manifest_id → qr_id · отчетът сочи съдържание');
   } finally {

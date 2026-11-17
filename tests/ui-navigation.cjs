@@ -105,17 +105,10 @@ assert.match(filesManager, /files\/\$\{f\.id\}\/signed-url/);
 assert.match(filesManager, /Администраторски адрес за изтегляне/);
 assert.match(filesManager, /\/admin\/api\/connection/);
 
-// 5б. RFC 3161 START / STOP блокът (порт от HASH_REPORT): TSA URL-и, два бутона
-// и резултат; токенът идва само от сървъра, никога от интерфейса.
-const reportStudio = read('ui/report-studio.js');
-for (const marker of ['rs-tsa-start-url', 'rs-tsa-stop-url', 'rs-tsa-start', 'rs-tsa-stop', 'rs-tsa-result']) {
-  assert.ok(reportStudio.includes(marker), 'Report Studio: липсва ' + marker);
-}
-assert.match(reportStudio, /https:\/\/zeitstempel\.dfn\.de\//);
-assert.match(reportStudio, /http:\/\/timestamp\.digicert\.com/);
-assert.match(reportStudio, /\/admin\/api\/v2\/rfc3161/);
-assert.match(reportStudio, /JSON\.stringify\(\{ phase, manifest: result\.manifest, url \}\)/);
-assert.equal(/token\s*[:=]\s*['"][a-f0-9]{40,}/i.test(reportStudio), false, 'интерфейсът не измисля токени');
+// 5б. Report Studio е премахнат (0.69.242): TSA интерфейсът беше негов. Правилото, което
+// пазеше — „токенът идва само от сървъра“ — вече го пази `report-studio-removed.cjs` (няма
+// файл, няма навигационен раздел, няма висящи ключове), а сървърните маршрути `/rfc3161`
+// остават и се проверяват от `rfc3161-api.cjs`.
 
 // 6. Табелки: еднакъв стил и големина за всички (chip/badge/state-chip) и по-добър контраст на картите.
 assert.match(css, /--card: #13233c;/);

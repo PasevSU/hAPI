@@ -132,10 +132,8 @@ function plannedExportCapabilities() {
     .filter((c) => !ready.has(c.id));
 }
 
-function plannedReportObjects() {
-  const src = fs.readFileSync(path.join(ROOT, 'hapi_enterprise', 'ui', 'report-objects.js'), 'utf8');
-  return [...src.matchAll(/\{\s*type:\s*'([a-z_]+)',[^}]*label:\s*'([^']+)'[^}]*status:\s*'planned'/g)].map((m) => ({ type: m[1], label: m[2] }));
-}
+// Report Studio е премахнат в 0.69.242 (ADR-0028): библиотеката с обекти също. Отчетът се
+// строи сървърно (`report-oneclick.js`), затова тук няма „планирани обекти“ за проверка.
 
 // Документирани в `documentation/`, но нереализирани. Проверява се, че ги няма в кода.
 const DOCUMENTED_GAPS = [
@@ -175,10 +173,9 @@ lines.push('');
 const caps = plannedExportCapabilities();
 lines.push(caps.length ? '| id | Какво липсва |\n| --- | --- |\n' + caps.map((c) => `| \`${c.id}\` | ${c.label} |`).join('\n') : '- няма (всички са реализирани)');
 lines.push('');
-lines.push('### Б.2 Report Studio (`ui/report-objects.js`) — изключени типове');
+lines.push('### Б.2 Report Studio — премахнат (0.69.242)');
 lines.push('');
-const objs = plannedReportObjects();
-lines.push(objs.length ? '| тип | Обект |\n| --- | --- |\n' + objs.map((o) => `| \`${o.type}\` | ${o.label} |`).join('\n') : '- няма');
+lines.push('- няма: студиото и библиотеката с обекти са изтрити по ADR-0028 (отчетът се строи сървърно)');
 lines.push('');
 lines.push('### Б.3 Документирани, но нереализирани функции');
 lines.push('');

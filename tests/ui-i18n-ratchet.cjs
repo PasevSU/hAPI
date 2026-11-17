@@ -6,7 +6,7 @@
 // или DE интерфейс тези страници остават на български. Числата за 0.69.206 (български
 // знаци в СТРИНГОВЕ, след махане на коментарите):
 //
-//   files-manager.js 9672 · settings-panel.js 7423 · report-studio.js 3260 ·
+//   files-manager.js 9672 · settings-panel.js 7423 · reports-panel.js 0 ·
 //   portal-control.js 2137 · export-center.js 1977 · monitoring-panel.js 1831 · …
 //
 // Тестът НЕ твърди, че преводът е готов — не е. Той пази две неща, които иначе се губят
@@ -87,14 +87,13 @@ const CEILING = {
   // Панелът „Дърво“ и глобалното маркиране (ADR-0028): целият текст минава през `T()`.
   'portal-tree.js': 0,
   'selection.js': 0,
+  // Панелът „Отчети“ (списък с линкове, ADR-0028): целият текст минава през `T()`.
+  'reports-panel.js': 0,
   'portal-folders.js': 53,
   'portals.js': 0,
   'qr-studio.js': 909, // целият текст минава през `T()`, а резервните низове са на български
   'public-gateway.js': 0,
-  'report-objects.js': 265,
-  'report-scope.js': 812,
   'report-sign.js': 77,
-  'report-studio.js': 3260,
   'secret-share.js': 84,
   'settings-panel.js': 7423,
   'visitors-panel.js': 0,

@@ -28,7 +28,7 @@
       security: 'Сигурност',
       backups: 'Резервни копия',
       qr: 'QR архиви',
-      report: 'Report Studio',
+      report: 'Отчети',
       settings: 'Настройки',
       about: 'Относно',
       ready: 'Готов',
@@ -64,7 +64,7 @@
       security: 'Security',
       backups: 'Backups',
       qr: 'QR archive',
-      report: 'Report Studio',
+      report: 'Reports',
       settings: 'Settings',
       about: 'About',
       ready: 'Ready',
@@ -100,7 +100,7 @@
       security: 'Sicherheit',
       backups: 'Sicherungen',
       qr: 'QR-Archiv',
-      report: 'Report Studio',
+      report: 'Berichte',
       settings: 'Einstellungen',
       about: 'Über',
       ready: 'Bereit',
@@ -175,7 +175,7 @@
       // Иска същата способност като сензорите, защото без нея няма какво да покаже.
       { id: 'monitoring', title: 'Мониторинг', global: 'HapiMonitoringPanel', capabilities: ['sensors'] },
       { id: 'about', title: 'Относно', global: 'HapiDashboardPanel', method: 'mountAbout' },
-      { id: 'report', title: 'Report Studio', global: 'ReportStudio', capabilities: ['settings'] },
+      { id: 'report', title: 'Отчети', global: 'HapiReportsPanel', capabilities: ['reports'] },
       { id: 'visitors', title: 'Посетители', global: 'HapiVisitorsPanel', capabilities: ['sensors'] },
       // Порталът има две поколения панел; първият наличен печели.
       { id: 'portals', title: 'Портали', global: ['FilesManagerPanel', 'PortalsPanel'], capabilities: ['portals'] },
@@ -333,9 +333,9 @@
     });
     updateBar();
     renderNav();
-    // Report Studio пази собствено състояние (манифест) — не го пре-монтираме
-    // при смяна на език, за да не се губи редакцията.
-    if (current !== 'report') renderView();
+    // Панел „Отчети“ е списък, който се чете наново при смяна на езика — премонтира се
+    // заедно с останалите (студиото, което пазеше редакция, вече го няма — 0.69.242).
+    renderView();
   }
 
   /**

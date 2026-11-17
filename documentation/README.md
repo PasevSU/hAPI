@@ -31,7 +31,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **156** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **155** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -125,8 +125,7 @@ _Генериран списък: **156** документа. Пише се от
 | `04_FUNCTION_SPECIFICATIONS/PORTAL_CONFIGURATION.md` | Опции на портала — `configuration.yaml` |
 | `04_FUNCTION_SPECIFICATIONS/PORTAL_PAGE_CONTRACT.md` | Договор за изпълнение: публична страница на портала (`/p/<id>`) |
 | `04_FUNCTION_SPECIFICATIONS/REPORT_EVIDENCE_PACKAGE.md` | Пакет с доказателства от отчет — договор |
-| `04_FUNCTION_SPECIFICATIONS/REPORT_OBJECTS.md` | Report Studio — обектна библиотека (договор) |
-| `04_FUNCTION_SPECIFICATIONS/REPORT_SCOPES.md` | Договор за отчетите: обхвати и къде живеят (Фаза 11 / Report Studio) |
+| `04_FUNCTION_SPECIFICATIONS/REPORT_ONECLICK.md` | Договор за отчетите с едно натискане (ADR-0028) |
 | `04_FUNCTION_SPECIFICATIONS/VISITOR_SENSORS.md` | Сензори за комуникацията (Visitor Sensors) |
 | `04_FUNCTION_SPECIFICATIONS/WEBHOOKS.md` | Webhooks с HMAC (F4-7) |
 | `04_FUNCTION_SPECIFICATIONS/WORM_MAIN_STORE.md` | WORM за основното хранилище (F7-3) |

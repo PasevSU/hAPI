@@ -179,7 +179,13 @@ const root = path.join(__dirname, '..');
     assert.match(panelSource, /data-action="secretCreate"/, 'секция „Данни“ има бутон за създаване');
     assert.match(panelSource, /window\.HapiSecretShare/, 'панелът взима модула за тайни връзки');
     assert.match(panelSource, /share\.create\(\{/, 'панелът създава линка през този модул');
-    assert.ok(serverSource.includes("'secret-share.js'"), 'сървърът сервира модула на /ui/secret-share.js');
+    // От 0.69.242 allowlist-ът е данни (`ui-files.json`, D12) — `server.js` само го зарежда.
+    assert.match(serverSource, /require\(['"]\.\/ui-files\.json['"]\)/, 'сървърът чете allowlist-а от ui-files.json');
+    const servedUi = JSON.parse(fs.readFileSync(path.join(root, 'hapi_enterprise', 'ui-files.json'), 'utf8'));
+    assert.ok(
+      Object.values(servedUi).some(([rel]) => rel === 'ui/secret-share.js'),
+      'сървърът сервира модула на /ui/secret-share.js',
+    );
 
     // ── 10. Линкът сочи навън и под HA Ingress префикс ─────────────────────────
     const cases = [
