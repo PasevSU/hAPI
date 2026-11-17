@@ -120,14 +120,34 @@ function receiptsIn(message, mailbox = '') {
  *
  * Sent folders are skipped by default: a receipt there is an echo of one the
  * account sent, not an acknowledgement received.
+ *
+ * One receipt saved in several folders — Gmail keeps "All Mail", the Inbox and every
+ * label as separate mailboxes — is still one acknowledgement, so copies are folded
+ * into `mailboxes` rather than counted again. Measured on a real profile: three
+ * copies of one receipt would otherwise have read as three deliveries.
  */
 function readReceipts(profile, { includeSent = false } = {}) {
+  const byId = new Map();
   const out = [];
   const files = mboxFiles(profile, (name) => includeSent || !isSentName(name));
   for (const file of files) {
     const mailbox = path.basename(file);
     for (const message of streamMessages(file)) {
-      out.push(...receiptsIn(message, mailbox));
+      for (const receipt of receiptsIn(message, mailbox)) {
+        const key = messageIdKey(receipt.messageId);
+        if (!key) {
+          out.push({ ...receipt, mailboxes: [mailbox] });
+          continue;
+        }
+        const seen = byId.get(key);
+        if (seen) {
+          if (!seen.mailboxes.includes(mailbox)) seen.mailboxes.push(mailbox);
+          continue;
+        }
+        const entry = { ...receipt, mailboxes: [mailbox] };
+        byId.set(key, entry);
+        out.push(entry);
+      }
     }
   }
   return out;
@@ -186,7 +206,10 @@ function checkReceipts({ profile, includeSent = false } = {}) {
     // back depends on the recipient's client, not on the address. The counts state
     // what is known and nothing more.
     note: 'An absent receipt is not evidence of non-delivery.',
+    // Distinct receipts. `copies` is how many files they were found in, so a client
+    // that keeps All Mail beside the Inbox cannot turn one acknowledgement into three.
     receipts: receipts.length,
+    copies: receipts.reduce((total, receipt) => total + receipt.mailboxes.length, 0),
     matched,
     unmatched,
     requested: requested.length,

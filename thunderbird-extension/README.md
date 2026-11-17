@@ -489,7 +489,8 @@ matches its `Original-Message-ID` to the `Message-ID` we assigned. Output:
 | --- | --- |
 | `requested` | messages that asked for a receipt |
 | `indexed` | sent messages carrying PasevSU evidence headers |
-| `receipts` | receipt parts found in the incoming mail |
+| `receipts` | distinct receipts found in the incoming mail |
+| `copies` | how many folder copies those receipts were read from — Gmail keeps All Mail beside the Inbox, and one acknowledgement must not count twice |
 | `matched` | receipts whose `Original-Message-ID` names a message we sent — with its `evidenceId` and `manifestSha256` |
 | `unmatched` | receipts for other mail, kept rather than dropped |
 
@@ -575,15 +576,18 @@ setting exists independently; if both prompt, that is harmless.
 ### Why a receipt may still never arrive
 
 `Disposition-Notification-To` on the wire is a *request*. Measured on this mailbox
-(2026‑11‑17, `node psemp-gateway/tools/check-receipts.cjs`): 563 receipts are
-already sitting in the incoming mail, **3 of them matched to a message this add-on
-sent**, each carrying `Original-Message-ID` equal to the `Message-ID` we assigned.
+(2026‑11‑17, `node psemp-gateway/tools/check-receipts.cjs`): 121 distinct receipts
+are already sitting in the incoming mail, **one of them matched to a message this
+add-on sent**, carrying `Original-Message-ID` equal to the `Message-ID` we assigned
+and the same `X-PasevSU-Evidence-ID` as the sent copy. That one receipt is stored in
+two mailboxes («Цялата поща» and `INBOX`) and counts once — Gmail keeps All Mail
+beside the Inbox, and counting copies would report deliveries that did not happen.
 So receipts do work — but they are not guaranteed, for reasons outside this add-on:
 
 1. **MDN is voluntary.** The recipient's client decides, and some never ask. Gmail's
    **web** client does not implement MDN, so a recipient who reads mail only in a
    browser will never return one. The same `@gmail.com` address read in Thunderbird
-   *does* return one — that is exactly where the 3 matched receipts came from. The
+   *does* return one — that is exactly where the matched receipt came from. The
    address is not the deciding factor; the client is.
 2. **DSN — the "it reached the server" proof — is out of reach of a
    MailExtension.** RFC 3461 delivery notifications (`NOTIFY=SUCCESS`) are SMTP

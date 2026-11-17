@@ -240,6 +240,48 @@ check('a Sent folder is not scanned for receipts unless asked', () =>
     return 'skipped by default, found on request';
   }));
 
+check('one receipt saved in several folders is one acknowledgement', () =>
+  withTemp((dir) => {
+    // Gmail keeps All Mail, the Inbox and every label as separate mailboxes. Counting
+    // each copy would report three deliveries where one message came back once.
+    const receipt = [
+      'From: recipient@example.test',
+      'Message-ID: <d6342a40-d4ae-4c35-9093-c5dc7c439eba@example.test>',
+      'Subject: Read: evidence test',
+      'MIME-Version: 1.0',
+      'Content-Type: multipart/report; report-type=disposition-notification; boundary="mdn-boundary"',
+      '',
+      '--mdn-boundary',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'The message was displayed.',
+      '--mdn-boundary',
+      'Content-Type: message/disposition-notification',
+      '',
+      'Final-Recipient: rfc822; recipient@example.test',
+      'Original-Message-ID: <ours@example.test>',
+      'Disposition: manual-action/MDN-sent-manually; displayed',
+      '--mdn-boundary--',
+      '',
+    ].join('\n');
+
+    const profile = path.join(dir, 'profile');
+    const folders = path.join(profile, 'Mail', 'Local Folders');
+    fs.mkdirSync(folders, { recursive: true });
+    const body = `From - Mon Jan 01 00:00:00 2026\n${receipt}\n`;
+    fs.writeFileSync(path.join(folders, 'Inbox'), body);
+    fs.writeFileSync(path.join(folders, 'All Mail'), body);
+
+    const found = readReceipts(profile);
+    assert.strictEqual(found.length, 1, 'two copies must not count as two receipts');
+    assert.deepStrictEqual(
+      found[0].mailboxes.slice().sort(),
+      ['All Mail', 'Inbox'],
+      'both folders must still be recorded'
+    );
+    return `1 receipt in ${found[0].mailboxes.length} folders`;
+  }));
+
 check('message ids compare through brackets, whitespace and case', () => {
   const key = messageIdKey('  <AbC-123@Example.TEST>\n');
   assert.strictEqual(key, 'abc-123@example.test');
