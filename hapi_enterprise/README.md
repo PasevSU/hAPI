@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-<a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.233-ff00d8.svg" alt="Version" /></a>
+<a href="https://github.com/PasevSU/hAPI"><img src="https://img.shields.io/badge/version-0.69.234-ff00d8.svg" alt="Version" /></a>
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-ff00d8.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B-41BDF5?logo=homeassistant" alt="Home Assistant 2024.6+">
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-informational" alt="Architectures">
@@ -148,11 +148,13 @@ Five minutes of preparation avoids almost every first-start surprise.
 
 1. **Take a Home Assistant snapshot first** — Settings → System → Backups → *Create
    backup*. The add-on uses `backup: cold`, so future snapshots stop it for a moment.
-2. **Decide where documents live.** The default is `addon_config` →
-   `/config/hapi_enterprise` in the container (the add-on's own configuration folder).
-   - `addon_config` (**default**) — data is included in Supervisor snapshots and stays
-     separate from `/share`.
-   - `share` — documents go to `/share/hapi/data`, visible over Samba and to other add-ons.
+2. **Decide where documents live.** The default is `share` → everything sits in
+   `/share/hAPI`, visible over Samba and to other add-ons.
+   - `share` (**default**) — the add-on's own data in `/share/hAPI/data`, the portals in
+     `/share/hAPI/portals/<slug>`; nothing is written straight into `/share`.
+   - `addon_config` — data stays in the add-on's own configuration folder and is included
+     in Supervisor snapshots.
+   - `media` — the other shared folder.
 3. **For network storage**, create the mount in Settings → System → Storage **before**
    starting the add-on. With `storage_mode: ha_network` the add-on refuses to start when
    the mount is inactive instead of silently writing to the boot disk.
@@ -175,7 +177,7 @@ Five minutes of preparation avoids almost every first-start surprise.
 
 ```yaml
 storage_location: share
-storage_subdirectory: hapi/data
+storage_subdirectory: hAPI/data
 storage_mode: local
 min_free_mb: 200
 log_level: info
@@ -199,8 +201,8 @@ tls_key: ""
 
 | Option                 | Recommended                | Why                                                                   |
 | ---------------------- | -------------------------- | --------------------------------------------------------------------- |
-| `storage_location`     | `share` (deliberate choice) | The shipped default is `addon_config`; choose `share` for Samba access. |
-| `storage_subdirectory` | `hapi/data` (with `share`) | The shipped default is `hapi_enterprise`; up to three path levels are allowed. |
+| `storage_location`     | `share` (deliberate choice) | The shipped default is `share`: everything in `/share/hAPI`.           |
+| `storage_subdirectory` | `hAPI/data` (with `share`) | Default folder for the add-on's own data; up to three path levels.    |
 | `storage_mode`         | `local`                    | `ha_network` only with an active mount, otherwise startup fails.      |
 | `min_free_mb`          | `1000` (500+ for scans)    | Fails closed before a half-written upload fills the disk.             |
 | `log_level`            | `info`                     | `debug` writes one line per request — use it only while diagnosing.   |
@@ -264,8 +266,8 @@ this tab. Options apply on add-on restart.
 | Same-origin URLs | `public_same_origin` | `true` | `false`: absolute URLs are built from `public_domain`. `true` emits relative URLs on the HA host and port. |
 | User roles | `user_roles` | `{\"pasev-admin\":\"admin\"}` | Empty: every Ingress user is `admin`. The map is for demotion, e.g. `{"guest": "viewer"}`. |
 | Group roles | `group_roles` | — | Empty: no group mapping. Home Assistant does not send groups; a reverse proxy that adds them can. |
-| Storage location | `storage_location` | `share` | `addon_config` (default): data lives in the add-on folder and is included in Supervisor snapshots. `share` uses `/share/hapi/data` and is visible over Samba; `media` uses the other shared folder. |
-| Storage subdirectory | `storage_subdirectory` | `hAPI/data` | `hapi_enterprise` is the default subfolder (up to three levels are allowed). If an older installation kept data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |
+| Storage location | `storage_location` | `share` | `share` (default): everything lives in `/share/hAPI` and is visible over Samba. `media` uses the other shared folder; `addon_config` keeps the data in the add-on folder, included in Supervisor snapshots. |
+| Storage subdirectory | `storage_subdirectory` | `hAPI/data` | `hAPI/data` is the default folder for the add-on’s own data (database, settings, marker; up to three levels are allowed). Each portal’s documents live separately in `hAPI/portals/<slug>`, so moving this folder never moves the portals. If an older installation kept data in a previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty. |
 | Storage mode | `storage_mode` | `local` | `local`: the mounted folder is used directly. `ha_network` refuses to start when the mount is inactive. |
 | Network storage name | `storage_mount_name` | — | Empty: only meaningful with `storage_mode: ha_network`, where the mount name is required. |
 | Minimum free space (MB) | `min_free_mb` | `1000` | `1000`: startup fails below 1000 MB free. Lower it only if the host has less space available. |
@@ -378,15 +380,17 @@ reports `primary` / `mirror` state (`ok`, `mismatch`, `missing`).
 
 The add-on folder comes from `map: app_config:rw`; there is no `/addon_config` mount.
 `DATA_DIR` is not `/data`: it is `<storage_location>/<storage_subdirectory>`, resolved by
-`storage-preflight.js` at start. The current default is **`/config/hapi_enterprise`**
-(`storage_location: addon_config`, `storage_subdirectory: hapi_enterprise`); `share` and
-`media` remain valid choices, and the subdirectory may have up to three levels.
+`storage-preflight.js` at start. The current default is **`/share/hAPI/data`**
+(`storage_location: share`, `storage_subdirectory: hAPI/data`); `addon_config` and `media`
+remain valid choices, and the subdirectory may have up to three levels. It only moves the
+add-on's own data — every portal keeps its own folder in `<storage_location>/hAPI/portals/<slug>`.
 
-> **Upgrading from an older version.** Earlier defaults used `share/hapi/data`. If that
-> folder holds data and the configured location is empty, the add-on **keeps using the old
-> path** and logs `STORAGE_LEGACY_LOCATION` — otherwise the upgrade could start with an empty
-> database. Back up both locations before changing storage options; do not move the database
-> without its referenced files.
+> **Upgrading from an older version.** Earlier defaults used `share/hapi/data` and, before
+> that, `addon_config/hapi_enterprise`. If such a folder holds data and the configured
+> location is empty, the add-on **keeps using the old path** and logs
+> `STORAGE_LEGACY_LOCATION` — otherwise the upgrade could start with an empty database. Back
+> up both locations before changing storage options; do not move the database without its
+> referenced files.
 
 ## Document Generator (`/generator/`)
 
@@ -614,7 +618,7 @@ keys/<N>-<fingerprint>/private.asc     private material — attach, then keep th
 keys/<N>-<fingerprint>/subkeys/*.json  subkey roles: sign, encrypt-comms, encrypt-storage, authenticate
 ```
 
-Unzip the bundle into `<storage>/keys/` (for example `/share/hapi/data/keys/`): the\nadd-on imports every `private.asc`/`public.asc` pair at start, records the roles and\nnever overwrites an existing fingerprint. `POST /admin/api/pgp/keys/import` re-scans the\nfolder on demand and reports what was imported or skipped.\n\nPoint `signing_key` at the fingerprint of the primary key: the signing subkey is chosen
+Unzip the bundle into `<storage>/keys/` (for example `/share/hAPI/data/keys/`): the\nadd-on imports every `private.asc`/`public.asc` pair at start, records the roles and\nnever overwrites an existing fingerprint. `POST /admin/api/pgp/keys/import` re-scans the\nfolder on demand and reports what was imported or skipped.\n\nPoint `signing_key` at the fingerprint of the primary key: the signing subkey is chosen
 automatically. `encrypt-comms` / `encrypt-storage` subkeys are reserved for PGP-level
 encryption, which this add-on does not implement yet — file encryption at rest uses
 AES-256-GCM, and transport encryption uses TLS. Nothing pretends otherwise.

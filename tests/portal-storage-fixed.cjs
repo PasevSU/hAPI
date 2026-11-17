@@ -5,7 +5,7 @@
 // Единственото, което тази свобода даваше на нормалния потребител, беше начин да насочи
 // портала към общата папка `/share` — тоест да отдаде чуждите портали — или да остави
 // файловете на място, което после не намира. Затова:
-//   1. нов портал получава `<корен на порталите>/<slug>` = `/share/hapi/data/root_storage/<slug>`;
+//   1. нов портал получава `<корен на порталите>/<slug>` = `/share/hAPI/portals/<slug>`;
 //   2. PATCH със `storage_root` се ОТКАЗВА (403), освен при изричния администраторски изход
 //      `HAPI_PORTAL_STORAGE_ROOT_EDIT=1`;
 //   3. панелът ПОКАЗВА пътя (read-only) и няма input за него.
@@ -19,16 +19,16 @@ const { stopChild } = require('./helpers.cjs');
 const paths = require('../hapi_enterprise/paths');
 
 // Логическият корен и host пътят идват от `paths.js` — тестът не строи `<диск>:\share`.
-const baseOf = (server) => paths.portalRootLogical({ STORAGE_ROOT_OVERRIDE: server.storageRoot() });
+const baseOf = (server) => paths.portalsRoot({ STORAGE_ROOT_OVERRIDE: server.storageRoot() });
 const dirOf = (server, storageRoot) => paths.resolveStoragePath(storageRoot, '', { STORAGE_ROOT_OVERRIDE: server.storageRoot() });
 
 (async () => {
-  // ── 1. Нов портал: коренът е `/share/hapi/data/root_storage/<slug>` ─────────
+  // ── 1. Нов портал: коренът е `/share/hAPI/portals/<slug>` ──────────────────
   const server = await startServer();
   try {
     const base = baseOf(server);
-    assert.equal(base, '/share/hapi/data/root_storage', 'коренът по подразбиране е под хранилището на add-on-а: ' + base);
-    assert.equal(paths.PORTAL_STORAGE_SUBDIR, 'root_storage', 'подпапката е с фиксирано име');
+    assert.equal(base, '/share/hAPI/portals', 'коренът по подразбиране е домашната папка на add-on-а: ' + base);
+    assert.equal(paths.PORTAL_STORAGE_SUBDIR, 'portals', 'подпапката е с фиксирано име');
 
     const slug = 'fixed-' + Math.random().toString(16).slice(2, 8);
     const created = await server.api('/admin/api/portals', 'POST', { slug, title: 'Фиксирана папка', visibility: 'public' });
@@ -87,5 +87,5 @@ const dirOf = (server, storageRoot) => paths.resolveStoragePath(storageRoot, '',
     await admin.stop();
   }
 
-  console.log('PASS portal-storage-fixed: нов портал → /share/hapi/data/root_storage/<slug> · PATCH на папката → 403 (с изход HAPI_PORTAL_STORAGE_ROOT_EDIT=1) · панелът я показва, но не я редактира');
+  console.log('PASS portal-storage-fixed: нов портал → /share/hAPI/portals/<slug> · PATCH на папката → 403 (с изход HAPI_PORTAL_STORAGE_ROOT_EDIT=1) · панелът я показва, но не я редактира');
 })();

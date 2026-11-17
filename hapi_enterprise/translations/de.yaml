@@ -130,16 +130,20 @@ configuration:
   storage_location:
     name: Speicherort
     description: >-
-      Wo Dokumente und Datenbank liegen. `addon_config` (Standard) ist der eigene Ordner des
-      Add-ons (/config im Container) und in Supervisor-Snapshots enthalten; `share` ist der
-      gemeinsame Home-Assistant-Ordner (über Samba sichtbar); `media` der andere gemeinsame Ordner.
+      Wo hAPI seine Dateien ablegt. `share` (Standard) bedeutet alles unter `/share/hAPI`,
+      über Samba sichtbar; `media` ist der andere gemeinsame Ordner; `addon_config` legt die
+      Daten in den eigenen Ordner des Add-ons (/config im Container) und nimmt sie in
+      Supervisor-Snapshots auf.
   storage_subdirectory:
     name: Unterordner im Speicherort
     description: >-
-      Unterordner im gewählten Speicherort; standardmäßig `hapi_enterprise`, also
-      `/config/hapi_enterprise` beim Standard `addon_config`. Bis zu drei Ebenen sind erlaubt
-      (z. B. `documents/hapi/data`). Lagen die Daten vor dem Update im alten Ordner, nutzt das
-      Add-on ihn weiter und protokolliert STORAGE_LEGACY_LOCATION statt mit leerer Datenbank zu starten.
+      Unterordner im gewählten Speicherort für die EIGENEN Daten des Add-ons (Datenbank,
+      Einstellungen, Markierung); standardmäßig `hAPI/data`, also `/share/hAPI/data`. Bis zu
+      drei Ebenen sind erlaubt (z. B. `hAPI/state/data`). Die Dokumente jedes Portals liegen
+      getrennt unter `hAPI/portals/<slug>`, das Verschieben dieses Ordners verschiebt die
+      Portale also nie. Lagen die Daten vor dem Update in einem älteren Ordner, nutzt das
+      Add-on ihn weiter und protokolliert STORAGE_LEGACY_LOCATION statt mit leerer Datenbank
+      zu starten.
   storage_mode:
     name: Speichermodus
     description: >-

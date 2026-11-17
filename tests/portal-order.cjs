@@ -53,7 +53,7 @@ const cleaned = [];
 
     // ── 1. Универсалният вход: `order` сочи папката на портала ────────────────
     // Стойността на `order` е ЛОГИЧЕСКИЯТ `storage_root` на портала без водеща наклонена
-    // черта — от 0.69.211 той е `/share/hapi/data/root_storage/<slug>`.
+    // черта — от 0.69.211 той е `/share/hAPI/portals/<slug>`.
     const orderOf = (x) => String(x.storage_root || '').replace(/^\/+/, '');
     const page = await api('/portal.html?order=' + encodeURIComponent(orderOf(portal)));
     assert.equal(page.status, 200, 'order сервира страницата на портала');

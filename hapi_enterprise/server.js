@@ -590,7 +590,7 @@ const varsContext = () => interp.contextFrom(db && db.variables);
 const withVars = value => (typeof value === 'string' && value.includes('{{') ? interp.text(value, varsContext()) : value);
 // Публичният изглед на портала: това, което вижда landing страницата (QR кодът води там).
 const publicPortal = p => ({
-  id: p.id, slug: p.slug, title: withVars(p.title), description: withVars(p.description), notes: withVars(p.notesText || ''), category: p.category || '', subject: p.subject || '', flag: p.flag || 'none', storage_root: p.storage_root || paths.portalRootLogical(), visibility: p.visibility, branding: p.branding || {}, createdAt: p.createdAt, readonly: portalView.isReadonly(p), parentId: p.parentId || null,
+  id: p.id, slug: p.slug, title: withVars(p.title), description: withVars(p.description), notes: withVars(p.notesText || ''), category: p.category || '', subject: p.subject || '', flag: p.flag || 'none', storage_root: p.storage_root || paths.portalsRoot(), visibility: p.visibility, branding: p.branding || {}, createdAt: p.createdAt, readonly: portalView.isReadonly(p), parentId: p.parentId || null,
   // Броят е само на видимите файлове — скритите не се броят в публичния изглед.
   fileCount: p.files.filter(f => f.listed !== false).length, term: p.term || 'unlimited', expiresAt: p.expiresAt || null, access: p.access || 'free',
   contact: (() => { const c = publicContact(p.contactId); return c ? { ...c, email: withVars(c.email), name: withVars(c.name) } : null })(),
@@ -615,9 +615,9 @@ const publicPortal = p => ({
 // Флаг на портала: само от фиксиран списък (иначе 'none').
 const PORTAL_FLAGS = ['none', 'info', 'important', 'urgent', 'archive'];
 const portalFlag = v => (PORTAL_FLAGS.includes(String(v || '')) ? String(v) : 'none');
-// Папка с файлове: само под разрешените корени, без „..“ и контролни знаци. Празна стойност НЕ значи „целия /share“, а папката на порталите по подразбиране (`paths.portalRootLogical`) — общият корен се иска изрично, защото такъв портал отдава чужди папки. Смяната ѝ след създаването е отказана (вж. PORTAL_STORAGE_ROOT_EDIT).
+// Папка с файлове: само под разрешените корени, без „..“ и контролни знаци. Празна стойност НЕ значи „целия /share“, а папката на порталите по подразбиране (`paths.portalsRoot`) — общият корен се иска изрично, защото такъв портал отдава чужди папки. Смяната ѝ след създаването е отказана (вж. PORTAL_STORAGE_ROOT_EDIT).
 const PORTAL_STORAGE_ROOT_EDIT = process.env.HAPI_PORTAL_STORAGE_ROOT_EDIT === '1';
-const portalRoot = v => { const s = String(v == null ? '' : v).trim(); const base = paths.portalRootLogical(); if (!s) return base; const ok = /^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(s) || s === base || s.startsWith(base + '/'); if (!ok || s.includes('..') || /\/config|\/homeassistant/.test(s.replace(base, ''))) throw Object.assign(new Error('Invalid storage_root'), { status: 400 }); return s.replace(/\/+$/, '') || base };
+const portalRoot = v => { const s = String(v == null ? '' : v).trim(); const base = paths.portalsRoot(); if (!s) return base; const ok = /^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(s) || s === base || s.startsWith(base + '/'); if (!ok || s.includes('..') || /\/config|\/homeassistant/.test(s.replace(base, ''))) throw Object.assign(new Error('Invalid storage_root'), { status: 400 }); return s.replace(/\/+$/, '') || base };
 const portalAbs = v => paths.resolveStoragePath(portalRoot(v)); // логически → host път: единственото място
 
 // Флагове на папките: нормализирани (липсващ ключ = по подразбиране). На модулно ниво,

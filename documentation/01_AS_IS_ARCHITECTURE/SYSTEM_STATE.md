@@ -1,6 +1,6 @@
 # Състояние на системата и промени в 0.69.227
 
-> **Клас:** жив · **Собственик на факта:** състояние днес · **Проверен към:** 0.69.233
+> **Клас:** жив · **Собственик на факта:** състояние днес · **Проверен към:** 0.69.234
 
 > Живият документ за **„какво е системата днес“**, за разлика от нормативните документи в
 > `02_TO_BE_ARCHITECTURE/` (какво трябва да бъде). Обновява се при всяко издание, а числата се
@@ -44,7 +44,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | **Мобилна кора на публичната страница (0.69.209)** — числа, статус на достъпа, лист за файл със сверка на отпечатъка, бърза лента | последният комит на изданието (виж `CHANGELOG.md`) | страницата се отваря ПЪРВО на телефон, а числата и статусът ѝ липсваха | `portal-mobile.cjs` |
 | **Образът е чист Alpine без npm (0.69.210)** — Node от официалния musl tarball, `--exclude='*/npm'` | `59a3406` | Docker Scout: 2 critical + 21 high, част от тях в пакети НА npm, който никога не се изпълнява | `docker-runtime.cjs`, `raspberrypi-compat.cjs`, `ha-support-matrix.cjs` §6, S04 на `verify-release` |
 | **Двата портала са обяснени (ADR-0027)** — динамичен `/p/<slug>` срещу статичен evidence-portal | `59a3406` | въпросът „защо има два портала“ нямаше писмен отговор | `documentation/03_ADR/ADR-0027-two-portals.md` |
-| **Папката на порталите е фиксирана (0.69.211)** — `/share/hapi/data/root_storage/<slug>`, панелът само я показва | `811e191` | свободното поле даваше начин порталът да сочи общия `/share` (чуждите папки) или папка, която никой не намира | `portal-storage-fixed.cjs`, `storage-roots.cjs`, `files-manager.cjs`, `portal-card-link.cjs` |
+| **Папката на порталите е фиксирана (0.69.211)** — днес `<корен>/hAPI/portals/<slug>`, панелът само я показва | `811e191` | свободното поле даваше начин порталът да сочи общия `/share` (чуждите папки) или папка, която никой не намира | `portal-storage-fixed.cjs`, `storage-roots.cjs`, `files-manager.cjs`, `portal-card-link.cjs` |
 | **Портал „само за преглед“ със свой QR (0.69.211)** — втори запис `portal-view.js`, `inline` файлове, без пакет | `811e191` | при създаване трябва да има и read-only изглед, който не може да изтече като ZIP | `portal-readonly.cjs`, `portal-storage.cjs` |
 | **Образът СЕ билдва (0.69.212)** — двуетапен Dockerfile: `node:22.23.2-alpine AS node` дава само `/usr/local/bin/node`, вторият етап е `alpine:3.24`; npm/npx/corepack остават в изхвърления етап | виж `CHANGELOG.md` (0.69.212) | 0.69.210/0.69.211 теглеха Node от musl тарбол по несъществуващ адрес (`curl 404`) — нито един образ не стигна до ghcr.io, а Supervisor-ът на HA даваше `[404] manifest unknown` | `docker-runtime.cjs`, `raspberrypi-compat.cjs`, `ha-support-matrix.cjs` §6, `ha-compatibility.cjs` HA-C01, S04 на `verify-release` (всички гледат етапите, не регулярен израз) |
 | **Архивът не взима локални файлове (0.69.213)** — `release-lib.archiveEntries()` изключва всичко, което `git ls-files --others --ignored` познава; същото правило ползват `build-release` и S08/S09 на `verify-release` | виж `CHANGELOG.md` (0.69.213) | 0.69.212 даде 212 файла в `dist/RELEASE.json` на тази машина и 211 в CI (локален `generator.7z`); отчетът цитира бройката, CI го обяви за остарял и `CI`/`Release` паднаха | `release-archive-ignored.cjs`, `regression-guards.cjs` (DEF-58) |
@@ -71,7 +71,7 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 | Договор | Единственото място | Тест |
 | --- | --- | --- |
 | Логически корени `/share`, `/media`, `/config`, `/data` | `hapi_enterprise/paths.js` | `storage-roots.cjs` |
-| Корен на порталните папки (`/share/hapi/data/root_storage`) | `paths.portalRootLogical()` / `paths.portalRootFor(slug)`; `storage-preflight` подава ефективните `STORAGE_LOCATION`/`STORAGE_SUBDIRECTORY` в env | `portal-storage-fixed.cjs`, `storage-roots.cjs` |
+| Корен на порталните папки (`/share/hAPI/portals`) | `paths.portalsRoot()` / `paths.portalRootFor(slug)`; домашната папка `/share/hAPI` е `paths.hapiHome()`, а `storage-preflight` подава ефективните `STORAGE_LOCATION`/`STORAGE_SUBDIRECTORY` в env | `portal-storage-fixed.cjs`, `storage-roots.cjs` |
 | Смяна на папката на портал | `PORTAL_STORAGE_ROOT_EDIT` (`HAPI_PORTAL_STORAGE_ROOT_EDIT=1`) — иначе `PATCH` е 403 | `portal-storage-fixed.cjs` |
 | Портал „само за преглед“ | `hapi_enterprise/portal-view.js` (втори запис, `inline` файлове, без пакет) | `portal-readonly.cjs` |
 | Сервирани UI файлове | `UI_FILES` в `server.js` (allowlist — нов файл иначе е 404) | `html-assets.cjs`, `docker-runtime.cjs` |

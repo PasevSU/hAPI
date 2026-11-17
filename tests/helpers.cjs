@@ -22,8 +22,8 @@ function storageRoot() {
 /**
  * Папката на портала на диска, изчислена от ЛОГИЧЕСКИЯ `storage_root` през `paths.js`.
  *
- * Тестът не бива да строи `<share>/<slug>` сам: от 0.69.210 коренът на порталите е
- * `/share/hapi/data/root_storage` и живее на едно място (`paths.portalRootLogical`).
+ * Тестът не бива да строи `<share>/<slug>` сам: от 0.69.234 коренът на порталите е
+ * `/share/hAPI/portals` и живее на едно място (`paths.portalsRoot`).
  * @param {{dir: string, share: string, env: object}} storage резултат от `storageRoot()`
  * @param {string} storageRootValue `storage_root` на портала, както го връща API-то
  * @returns {string} абсолютен път на host
@@ -34,10 +34,10 @@ function portalDir(storage, storageRootValue) {
   return paths.resolveStoragePath(storageRootValue, '', storage.env);
 }
 
-/** Логическият корен на порталите за средата на теста (напр. `/share/hapi/data/root_storage`). */
+/** Логическият корен на порталите за средата на теста (напр. `/share/hAPI/portals`). */
 function portalBase(storage) {
   const paths = require('../hapi_enterprise/paths');
-  return paths.portalRootLogical(storage.env);
+  return paths.portalsRoot(storage.env);
 }
 
 /**

@@ -13,6 +13,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const layout = require('../hapi_enterprise/layout.js');
 const { startServer } = require('./lib/gui-harness.cjs');
+const { portalDir } = require('./helpers.cjs');
 
 const root = path.join(__dirname, '..');
 
@@ -65,14 +66,16 @@ const root = path.join(__dirname, '..');
     const doc = fs.readFileSync(path.join(root, 'documentation', '01_AS_IS_ARCHITECTURE', 'STORAGE_LAYOUT.md'), 'utf8');
     for (const id of ids) assert.ok(doc.includes(id), `документът споменава „${id}“`);
     for (const url of routeUrls) assert.ok(doc.includes(url), `документът споменава адреса ${url}`);
-    for (const fragment of ['/app/portal/portal.html', 'api/<slug>/portal.html', '/share/<slug>', '/config/www/hapi/data/']) {
+    for (const fragment of ['/app/portal/portal.html', 'api/<slug>/portal.html', '/share/hAPI/portals/<slug>', '/config/www/hapi/data/']) {
       assert.ok(doc.includes(fragment), `документът показва пътя ${fragment}`);
     }
     assert.match(doc, /portal\.html` е ДВЕ неща/, 'документът изрично обяснява двете значения на portal.html');
 
     // ── 5. Чистене на тестовата папка на портала ───────────────────────────
     try {
-      fs.rmSync(path.join(server.storageRoot(), 'share', portal.slug), { recursive: true, force: true });
+      // Пътят идва от самия портал (`storage_root`), не от твърд низ: иначе чистенето
+      // пропуска и оставя папки в хранилището на следващото пускане.
+      fs.rmSync(portalDir({ env: { STORAGE_ROOT_OVERRIDE: server.storageRoot() } }, portal.storage_root), { recursive: true, force: true });
     } catch {
       /* заключен файл на Windows */
     }

@@ -127,18 +127,19 @@ configuration:
   storage_location:
     name: Storage location
     description: >-
-      Where documents and the database live. `addon_config` (default) is the add-on's own
-      folder (/config inside the container) and is included in Supervisor snapshots; `share`
-      is the shared Home Assistant folder (visible over Samba); `media` is the other shared
-      folder.
+      Where hAPI keeps its files. `share` (default) means everything lives in `/share/hAPI`,
+      visible over Samba; `media` is the other shared folder; `addon_config` keeps the data
+      in the add-on's own folder (/config inside the container) and includes it in Supervisor
+      snapshots.
   storage_subdirectory:
     name: Storage subdirectory
     description: >-
-      Subfolder inside the chosen location; `hapi_enterprise` by default, i.e.
-      `/config/hapi_enterprise` for the default `addon_config` location. Up to three levels
-      are allowed (e.g. `documents/hapi/data`). If the data lived in the old folder before
-      the update, the add-on keeps using it and logs STORAGE_LEGACY_LOCATION instead of
-      starting with an empty database.
+      Subfolder inside the chosen location for the add-on's OWN data (database, settings,
+      marker); `hAPI/data` by default, i.e. `/share/hAPI/data`. Up to three levels are
+      allowed (e.g. `hAPI/state/data`). The documents of every portal live separately in
+      `hAPI/portals/<slug>`, so moving this folder never moves the portals. If the data
+      lived in an older folder before the update, the add-on keeps using it and logs
+      STORAGE_LEGACY_LOCATION instead of starting with an empty database.
   storage_mode:
     name: Storage mode
     description: >-

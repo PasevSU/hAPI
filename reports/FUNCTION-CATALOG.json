@@ -1,10 +1,10 @@
 {
   "generatedFor": "hapi_enterprise",
-  "total": 435,
-  "tested": 407,
+  "total": 437,
+  "tested": 409,
   "untested": 28,
-  "fnTotal": 379,
-  "fnTested": 379,
+  "fnTotal": 380,
+  "fnTested": 380,
   "modules": [
     {
       "module": "hapi_enterprise/api-registry.js",
@@ -935,6 +935,16 @@
           "tested": true
         },
         {
+          "name": "HAPI_HOME",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "hapiHome",
+          "kind": "функция",
+          "tested": true
+        },
+        {
           "name": "isLogicalRoot",
           "kind": "функция",
           "tested": true
@@ -965,7 +975,7 @@
           "tested": true
         },
         {
-          "name": "portalRootLogical",
+          "name": "portalsRoot",
           "kind": "функция",
           "tested": true
         },

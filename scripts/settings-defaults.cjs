@@ -161,12 +161,12 @@ const MEANING = {
     bg: 'Празно: без карта на групи. HA не подава групи; reverse proxy, който ги добавя, може.',
   },
   storage_location: {
-    en: '`addon_config` (default): data lives in the add-on folder and is included in Supervisor snapshots. `share` uses `/share/hapi/data` and is visible over Samba; `media` uses the other shared folder.',
-    bg: '`addon_config` (подразбиране): данните са в папката на add-on-а и влизат в snapshot-ите на Supervisor. `share` ползва `/share/hapi/data` и е видимо през Samba; `media` ползва другата споделена папка.',
+    en: '`share` (default): everything lives in `/share/hAPI` and is visible over Samba. `media` uses the other shared folder; `addon_config` keeps the data in the add-on folder, included in Supervisor snapshots.',
+    bg: '`share` (подразбиране): всичко живее в `/share/hAPI` и е видимо през Samba. `media` ползва другата споделена папка; `addon_config` държи данните в папката на add-on-а и ги включва в snapshot-ите на Supervisor.',
   },
   storage_subdirectory: {
-    en: '`hapi_enterprise` is the default subfolder (up to three levels are allowed). If an older installation kept data in the previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty.',
-    bg: '`hapi_enterprise` е подразбираната подпапка (позволени са до три нива). Ако по-стара инсталация е пазила данните в предишната папка, add-on-ът продължава да ги ползва и пише `STORAGE_LEGACY_LOCATION`, вместо да стартира празен.',
+    en: '`hAPI/data` is the default folder for the add-on\u2019s own data (database, settings, marker; up to three levels are allowed). Each portal\u2019s documents live separately in `hAPI/portals/<slug>`, so moving this folder never moves the portals. If an older installation kept data in a previous folder, the add-on keeps using it and logs `STORAGE_LEGACY_LOCATION` instead of starting empty.',
+    bg: '`hAPI/data` е подразбираната папка за СОБСТВЕНИТЕ данни на add-on-а (база, настройки, маркер; позволени са до три нива). Документите на всеки портал са отделно в `hAPI/portals/<slug>`, така че преместването на тази папка не мести порталите. Ако по-стара инсталация е пазила данните в предишна папка, add-on-ът продължава да ги ползва и пише `STORAGE_LEGACY_LOCATION`, вместо да стартира празен.',
   },
   storage_mode: {
     en: '`local`: the mounted folder is used directly. `ha_network` refuses to start when the mount is inactive.',

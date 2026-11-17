@@ -34,7 +34,7 @@ const ENV = Object.freeze({
   DATA_DIR: 'DATA_DIR',
   /** Кой логически корен се ползва (`share` по подразбиране). */
   STORAGE_LOCATION: 'STORAGE_LOCATION',
-  /** Подпапка под корена (`hapi/data` по подразбиране). */
+  /** Подпапка под корена (`hAPI/data` по подразбиране). */
   STORAGE_SUBDIRECTORY: 'STORAGE_SUBDIRECTORY',
   /** Име на монтирането при мрежово хранилище (`storage_mode: ha_network`). */
   STORAGE_MOUNT: 'STORAGE_MOUNT_NAME',
@@ -44,14 +44,28 @@ const ENV = Object.freeze({
  * Подразбиранията на хранилището — същите, които `storage-preflight.js` прилага към опциите
  * `storage_location` / `storage_subdirectory`. Живеят ТУК, защото от тях зависи и логическият
  * корен на порталите: втори списък с корени е забранен (`tests/storage-roots.cjs` §2б).
+ *
+ * `hAPI/data`, а не `hapi/data`: add-on-ът пише САМО в собствената си папка `hAPI` под избрания
+ * корен, никога направо в `/share` (заявка на потребителя: „нищо да не се прави в /share“).
+ * Голямата буква не е вкус — тя е името, което вижда човекът в Samba/File editor и което
+ * съвпада с подразбирането в `config.yaml`.
  */
-const STORAGE_DEFAULTS = Object.freeze({ location: 'share', subdirectory: 'hapi/data' });
+const STORAGE_DEFAULTS = Object.freeze({ location: 'share', subdirectory: 'hAPI/data' });
 
 /** Имената в опциите на add-on-а → ключове на `LOGICAL_ROOTS`. Единственото превеждане. */
 const OPTION_ROOTS = Object.freeze({ addon_config: 'config', media: 'media', share: 'share' });
 
-/** Подпапката на хранилището, в която живеят документите на порталите. */
-const PORTAL_STORAGE_SUBDIR = 'root_storage';
+/** Името на домашната папка на add-on-а под избрания корен (`/share/hAPI`). */
+const HAPI_HOME = 'hAPI';
+
+/**
+ * Подпапката на домашната папка, в която живеят порталите (`/share/hAPI/portals`).
+ *
+ * Порталите са ПОТРЕБИТЕЛСКО съдържание, затова мястото им не следва `storage_subdirectory`
+ * (то мести вътрешните данни: база, настройки, маркер) — то е фиксирано, за да не изчезват
+ * документите, когато човекът премести базата. Всеки портал получава своя папка в него.
+ */
+const PORTAL_STORAGE_SUBDIR = 'portals';
 
 /** Подпапката на временната папка, в която падат корените извън контейнера. */
 const TEMP_BASE = 'hapi-storage';
@@ -124,29 +138,43 @@ function resolveStoragePath(storageRoot, slug = '', env = process.env) {
 }
 
 /**
- * Логическият корен на порталите — папката, в която нов портал получава СВОЯ подпапка.
+ * Логическата домашна папка на add-on-а под избрания корен — `<корен>[/монтиране]/hAPI`.
  *
- * По подразбиране `/share/hapi/data/root_storage`: вътре в хранилището на add-on-а, но в
- * отделна папка, за да не се смесват базата/настройките с потребителските документи.
- * `STORAGE_LOCATION` и `STORAGE_SUBDIRECTORY` идват от storage preflight-а (той ги записва в
- * env), затова при избрано `/media` или `addon_config` коренът следва избора, вместо да е
- * закован към `/share`.
+ * Тук живее ВСИЧКО, което add-on-ът пише: `data/` (база, настройки, маркер) и `portals/`
+ * (папките на порталите). Нищо не се пише направо в `/share`.
+ *
+ * `STORAGE_LOCATION` и `STORAGE_MOUNT_NAME` идват от storage preflight-а (той ги записва в
+ * env), затова при избрано `/media` или `addon_config` (или мрежово хранилище) домашната
+ * папка следва избора, вместо да е закована към `/share`.
  *
  * @param {NodeJS.ProcessEnv} [env]
- * @returns {string} логически път, напр. `/share/hapi/data/root_storage`
+ * @returns {string} логически път, напр. `/share/hAPI`
  */
-function portalRootLogical(env = process.env) {
+function hapiHome(env = process.env) {
   const location = String(env[ENV.STORAGE_LOCATION] || '').trim() || STORAGE_DEFAULTS.location;
-  const sub = String(env[ENV.STORAGE_SUBDIRECTORY] || '').trim() || STORAGE_DEFAULTS.subdirectory;
   const name = OPTION_ROOTS[location];
   if (!name) throw new Error('Unknown storage location: ' + location);
   const mount = String(env[ENV.STORAGE_MOUNT] || '').trim();
-  return [LOGICAL_ROOTS[name], mount, sub, PORTAL_STORAGE_SUBDIR].filter(Boolean).join('/').replace(/\/{2,}/g, '/');
+  return [LOGICAL_ROOTS[name], mount, HAPI_HOME].filter(Boolean).join('/').replace(/\/{2,}/g, '/');
+}
+
+/**
+ * Логическият корен на порталите — папката, в която нов портал получава СВОЯ подпапка.
+ *
+ * По подразбиране `/share/hAPI/portals`: вътре в домашната папка на add-on-а, но отделно от
+ * базата и настройките (`data/`), за да не се смесват вътрешните файлове с потребителските
+ * документи, и отделно от самия `/share`.
+ *
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {string} логически път, напр. `/share/hAPI/portals`
+ */
+function portalsRoot(env = process.env) {
+  return hapiHome(env).replace(/\/+$/, '') + '/' + PORTAL_STORAGE_SUBDIR;
 }
 
 /** Логическата папка на един портал: `<корен на порталите>/<slug>`. */
 function portalRootFor(slug, env = process.env) {
-  const base = portalRootLogical(env).replace(/\/+$/, '');
+  const base = portalsRoot(env).replace(/\/+$/, '');
   return base + '/' + String(slug || '').trim();
 }
 
@@ -183,12 +211,14 @@ module.exports = {
   TEMP_BASE,
   STORAGE_DEFAULTS,
   OPTION_ROOTS,
+  HAPI_HOME,
   PORTAL_STORAGE_SUBDIR,
   isLogicalRoot,
   logicalRoot,
   existingRoot,
   resolveRoot,
   resolveStoragePath,
-  portalRootLogical,
+  hapiHome,
+  portalsRoot,
   portalRootFor,
 };

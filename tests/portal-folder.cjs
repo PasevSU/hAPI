@@ -44,7 +44,7 @@ let created = null;
     created = portal;
 
     // ── 1. Собствена папка, създадена веднага ────────────────────────────────
-    // От 0.69.210 коренът на порталите е `/share/hapi/data/root_storage` (едно място:
+    // От 0.69.210 коренът на порталите е `/share/hAPI/portals` (едно място:
     // `paths.portalRootLogical`) — тестът го взима оттам, а не го строи сам.
     assert.equal(portal.storage_root, portalBase(storage) + '/' + slug, 'порталът получава собствена папка, не целия /share');
     assert.ok(portal.storage_root.startsWith(portalBase(storage) + '/'), 'папката е под корена на порталите: ' + portal.storage_root);

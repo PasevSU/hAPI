@@ -175,7 +175,7 @@ function create(deps) {
   /**
    * Порталът, чиято папка (`storage_root`) съдържа този относителен път — по НАЙ-ДЪЛГИЯ
    * съвпадащ корен. Единственото място в модула, което знае как е подредено хранилището:
-   * от 0.69.211 коренът е `/share/hapi/data/root_storage/<slug>`, а не `/share/<slug>`.
+   * от 0.69.211 коренът е `/share/hAPI/portals/<slug>`, а не `/share/<slug>`.
    */
   function portalForPath(pathValue) {
     const rel = links.portalFolderRel(pathValue);

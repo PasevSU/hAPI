@@ -6,13 +6,19 @@ const paths = require('./paths');
 // превеждането живее в `paths.OPTION_ROOTS`, за да го ползва и логическият корен на порталите.
 const ROOT_NAMES = paths.OPTION_ROOTS;
 const roots = Object.fromEntries(Object.entries(ROOT_NAMES).map(([option, name]) => [option, paths.LOGICAL_ROOTS[name]]));
-// Подразбиране от 0.69.87: `/share/hapi/data`. Документите са на едно предвидимо място,
+// Подразбиране от 0.69.234: `/share/hAPI/data`. Документите са на едно предвидимо място,
 // видимо през Samba/File editor и извън папката на add-on-а, така че преинсталиране или
 // обновяване на add-on-а да не го мести. add-on папката остава валиден избор.
 const DEFAULT_LOCATION = paths.STORAGE_DEFAULTS.location, DEFAULT_SUB = paths.STORAGE_DEFAULTS.subdirectory;
-// Старото подразбиране — само за да НЕ се обяви стара инсталация за празна.
-const LEGACY_LOCATION = 'addon_config', LEGACY_SUB = 'hapi_enterprise';
-// До три нива (`hapi/data`, `documents/hapi/data`), всяко сегмент с безопасни знаци.
+// Старите подразбирания — само за да НЕ се обяви стара инсталация за празна. Редът е от
+// най-новото към най-старото: първото място с РЕАЛНИ данни печели.
+//   0.69.87 – 0.69.233: `/share/hapi/data` (малка буква; порталите в `data/root_storage`)
+//   до 0.69.87:         `<add-on config>/hapi_enterprise`
+const LEGACY_LOCATIONS = Object.freeze([
+  Object.freeze({ location: 'share', sub: 'hapi/data' }),
+  Object.freeze({ location: 'addon_config', sub: 'hapi_enterprise' }),
+]);
+// До три нива (`hAPI/data`, `documents/hapi/data`), всяко сегмент с безопасни знаци.
 const SUB_OK = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*(\/[a-zA-Z0-9][a-zA-Z0-9_.-]*){0,2}$/;
 function validSub(sub) { return typeof sub === 'string' && sub.length <= 160 && SUB_OK.test(sub) && !/(^|\/)\.\.?(\/|$)/.test(sub) }
 /** Има ли РЕАЛНИ данни в тази папка (маркер + база/настройки), а не само празна директория. */
@@ -53,13 +59,19 @@ function check(options, env = process.env) {
   let base = path.join(parent, sub), chosenRoot = root, effectiveLocation = kind, effectiveSub = sub;
   // Миграционна защита: старото място има данни, новото е празно → ползва се СТАРОТО.
   // Иначе при обновяване „порталите изчезват“, защото add-on-ът стартира с нова празна база.
-  const legacyRoot = env.STORAGE_ROOT_OVERRIDE
-    ? path.resolve(env.STORAGE_ROOT_OVERRIDE, LEGACY_LOCATION)
-    : paths.existingRoot(ROOT_NAMES[LEGACY_LOCATION], env);
-  const legacyBase = legacyRoot ? path.join(legacyRoot, LEGACY_SUB) : '';
-  if (legacyBase && base !== legacyBase && hasData(legacyBase) && !hasData(base)) {
-    console.error('STORAGE_LEGACY_LOCATION: намерени са данни в ' + legacyBase + ' — ползва се това място, за да не се създаде празна инсталация. Премести ги в ' + base + ' и рестартирай, за да минеш на новото подразбиране.');
-    base = legacyBase; chosenRoot = legacyRoot; effectiveLocation = LEGACY_LOCATION; effectiveSub = LEGACY_SUB;
+  const baseOf = (location, legacySub) => {
+    const legacyRoot = env.STORAGE_ROOT_OVERRIDE
+      ? path.resolve(env.STORAGE_ROOT_OVERRIDE, location)
+      : paths.existingRoot(ROOT_NAMES[location], env);
+    return legacyRoot ? { root: legacyRoot, base: path.join(legacyRoot, legacySub) } : null;
+  };
+  for (const legacy of LEGACY_LOCATIONS) {
+    if (hasData(base)) break; // новото място вече има данни → няма какво да се спасява
+    const candidate = baseOf(legacy.location, legacy.sub);
+    if (!candidate || candidate.base === base || !hasData(candidate.base)) continue;
+    console.error('STORAGE_LEGACY_LOCATION: намерени са данни в ' + candidate.base + ' — ползва се това място, за да не се създаде празна инсталация. Премести ги в ' + base + ' и рестартирай, за да минеш на новото подразбиране.');
+    base = candidate.base; chosenRoot = candidate.root; effectiveLocation = legacy.location; effectiveSub = legacy.sub;
+    break;
   }
   if (!fs.existsSync(chosenRoot) || !fs.statSync(chosenRoot).isDirectory()) throw Error('Storage mount unavailable: ' + chosenRoot);
   if (fs.lstatSync(chosenRoot).isSymbolicLink()) throw Error('Symlink storage root refused');
@@ -75,7 +87,7 @@ function check(options, env = process.env) {
       if (fs.readFileSync(marker, 'utf8') !== 'portal-enterprise-v1\n') throw Error('Invalid storage marker');
     }
   } else {
-    // `recursive` е нужен за подпапка с повече от едно ниво (`hapi/data`). Това НЕ създава
+  // `recursive` е нужен за подпапка с повече от едно ниво (`hAPI/data`). Това НЕ създава
     // монтирането: то се проверява по-горе и липсващо монтиране е отказ, не mkdir.
     fs.mkdirSync(base, { recursive: true, mode: 0o700 });
     fs.writeFileSync(path.join(base, '.portal-enterprise-storage'), 'portal-enterprise-v1\n', { flag: 'wx', mode: 0o600 });
@@ -83,12 +95,14 @@ function check(options, env = process.env) {
   const probe = path.join(base, '.write-test-' + process.pid);
   try { fs.writeFileSync(probe, 'ok', { flag: 'wx', mode: 0o600 }); fs.unlinkSync(probe) } catch (e) { throw Error('Storage is not writable: ' + e.message) }
   if (fs.statfsSync) { const s = fs.statfsSync(base); const free = Number(s.bavail) * Number(s.bsize); if (free < Number(options.min_free_mb || 100) * 1024 * 1024) throw Error('Insufficient free storage space') }
-  // Ефективният избор се записва в env: от него `paths.portalRootLogical()` строи логическия
-  // корен на порталите (`/share/hapi/data/root_storage`), без втори списък с корени.
+  // Ефективният избор се записва в env: от него `paths.hapiHome()` строи домашната папка на
+  // add-on-а (`/share/hAPI`), а `paths.portalsRoot()` — мястото на порталите
+  // (`/share/hAPI/portals`), без втори списък с корени. `storage_subdirectory` мести САМО
+  // вътрешните данни (база, настройки, маркер), не потребителските папки на порталите.
   env[paths.ENV.STORAGE_LOCATION] = effectiveLocation;
   env[paths.ENV.STORAGE_SUBDIRECTORY] = effectiveSub;
   env[paths.ENV.STORAGE_MOUNT] = mode === 'ha_network' ? mountName : '';
   return base;
 }
 if (require.main === module) { try { const options = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || '/data/options.json', 'utf8')); process.stdout.write(check(options) + '\n') } catch (e) { console.error('STORAGE PREFLIGHT FAILED: ' + e.message); process.exit(1) } }
-module.exports = { check, isMounted, hasData, validSub, DEFAULT_LOCATION, DEFAULT_SUB, LEGACY_LOCATION, LEGACY_SUB };
+module.exports = { check, isMounted, hasData, validSub, DEFAULT_LOCATION, DEFAULT_SUB, LEGACY_LOCATIONS };

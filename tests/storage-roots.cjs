@@ -317,9 +317,32 @@ async function main() {
       // С override и съществуваща папка → минава и връща базата под нея.
       fs.mkdirSync(path.join(tmp, 'share'), { recursive: true });
       const base = preflight.check({}, { STORAGE_ROOT_OVERRIDE: tmp });
-      assert.equal(base, path.join(tmp, 'share', 'hapi', 'data'), 'preflight връща <override>/share/hapi/data');
+      assert.equal(base, path.join(tmp, 'share', 'hAPI', 'data'), 'preflight връща <override>/share/hAPI/data');
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  // ── 5д. Домашната папка и порталите: нищо направо в /share ──────────────
+  // Заявка (потребител, 0.69.234): „нищо да не се прави в /share, трябва да е в /share/hAPI“.
+  // Затова add-on-ът пише само в `<корен>/hAPI`: вътрешните данни в `hAPI/data`, а всеки
+  // портал — в СВОЯТА папка под `hAPI/portals/<slug>`.
+  {
+    const home = paths.hapiHome({});
+    assert.equal(home, '/share/hAPI', 'домашната папка е <корен>/hAPI: ' + home);
+    assert.equal(paths.portalsRoot({}), '/share/hAPI/portals', 'порталите са в hAPI/portals');
+    assert.equal(paths.portalRootFor('demo', {}), '/share/hAPI/portals/demo', 'всеки портал има своя папка');
+    assert.equal(paths.HAPI_HOME, 'hAPI', 'името на домашната папка е едно');
+    assert.equal(paths.PORTAL_STORAGE_SUBDIR, 'portals', 'подпапката на порталите е една');
+    // Изборът на място се спазва — но пак под собствена папка `hAPI`.
+    assert.equal(paths.hapiHome({ STORAGE_LOCATION: 'media' }), '/media/hAPI', 'при media домашната папка следва избора');
+    assert.equal(paths.hapiHome({ STORAGE_LOCATION: 'share', STORAGE_MOUNT_NAME: 'NAS' }), '/share/NAS/hAPI', 'мрежовото монтиране влиза в пътя');
+    assert.throws(() => paths.hapiHome({ STORAGE_LOCATION: 'nope' }), /Unknown storage location/, 'непознато място е грешка, не мълчание');
+    // `storage_subdirectory` мести ВЪТРЕШНИТЕ данни, не потребителските папки на порталите.
+    assert.equal(paths.portalsRoot({ STORAGE_SUBDIRECTORY: 'documents/hapi' }), '/share/hAPI/portals', 'подпапката на данните не мести порталите');
+    // И нито един от двата пътя не е самият корен — портал не бива да пише направо в /share.
+    for (const value of [paths.hapiHome({}), paths.portalsRoot({}), paths.portalRootFor('x', {})]) {
+      assert.equal(paths.isLogicalRoot(value), false, 'не е общ корен: ' + value);
     }
   }
 

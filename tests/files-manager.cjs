@@ -438,7 +438,7 @@ assert.match(serverSrc, /const portalFlag\s*=/);
 assert.match(serverSrc, /const portalRoot\s*=/);
 // 0.69.62: без изричен storage_root порталът получава СОБСТВЕНА папка, иначе експлорерът
 // показва целия /share (стотици чужди папки), а не файловете на портала.
-// 0.69.210: коренът идва от `paths.portalRootFor(slug)` — `/share/hapi/data/root_storage/<slug>`.
+  // 0.69.210: коренът идва от `paths.portalRootFor(slug)` — `/share/hAPI/portals/<slug>`.
 assert.match(serverSrc, /storage_root:\s*portalRoot\(b\.storage_root\s*\|\|\s*paths\.portalRootFor\(slug\)\)/);
 assert.match(serverSrc, /const PORTAL_STORAGE_ROOT_EDIT\s*=\s*process\.env\.HAPI_PORTAL_STORAGE_ROOT_EDIT\s*===\s*'1'/);
 // 0.69.63: папката на портала се създава от модула `portal-folder` (там отиват и файловете).
