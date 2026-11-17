@@ -78,6 +78,12 @@
   "receiptError": {
     "message": "No receipt address: the receipt header is only written when the sending identity or the fallback address below is known."
   },
+  "fingerprintInvalid": {
+    "message": "The fingerprint was not saved: it must be 40 or 64 hexadecimal characters (no spaces). Copy it from the key properties in Thunderbird."
+  },
+  "fingerprintIsKeyId": {
+    "message": "That is a key ID (8 or 16 characters), not a fingerprint. Open the key properties and copy the full 40-character fingerprint."
+  },
   "labelVersion": {
     "message": "Version"
   },

@@ -261,6 +261,30 @@ function normalizeFingerprint(value) {
 }
 
 /*
+ * A fingerprint is 40 hex digits for a v4 key and 64 for v6. A key ID is 8 or 16.
+ *
+ * Measured on a real send: X-PasevSU-PGP-Fingerprint carried 28 hex digits — the
+ * case ID pasted into the wrong field — and nothing objected, because
+ * normalizeFingerprint only upper-cases. The verifier then compared a key ID with a
+ * fingerprint and reported the signer as untrusted. A claim that cannot possibly be
+ * a fingerprint is worse than no claim: it turns a proof into a false accusation, so
+ * it is dropped and recorded rather than published.
+ */
+function fingerprintProblem(value) {
+  const normalized = normalizeFingerprint(value);
+  if (!normalized) {
+    return "";
+  }
+  if (!/^[0-9A-F]+$/.test(normalized)) {
+    return "not-hex";
+  }
+  if (normalized.length !== 40 && normalized.length !== 64) {
+    return normalized.length === 8 || normalized.length === 16 ? "key-id-not-fingerprint" : "wrong-length";
+  }
+  return "";
+}
+
+/*
  * Merkle root over a list of hex-encoded leaf digests.
  *  1. Sort the hex strings ascending.
  *  2. If one leaf, that leaf is the root.
@@ -834,13 +858,21 @@ async function buildHeaders(config, evidenceId, bodyHash, attachmentEntries, mer
 
   headers.push(buildHeader("X-PasevSU-Manifest-SHA256", manifestHash));
   headers.push(buildHeader("X-PasevSU-Merkle-Root", merkle));
-  if (config.pgpFingerprint) {
+  const fingerprintIssue = fingerprintProblem(config.pgpFingerprint);
+  if (config.pgpFingerprint && !fingerprintIssue) {
     // A claim: the MailExtension cannot read Thunderbird's own keyring, so this is
     // what the sender says Thunderbird signs with. `psemp-gateway pgp-check`
     // compares it with the signer actually found in the delivered message.
     headers.push(
       buildHeader("X-PasevSU-PGP-Fingerprint", normalizeFingerprint(config.pgpFingerprint))
     );
+  }
+  if (fingerprintIssue) {
+    // Recorded for the options page and the log, not published: a header saying the
+    // sender typed a key ID where a fingerprint belongs is noise for the recipient,
+    // and the verifier already reports the honest "no claim to compare" instead.
+    console.error(`[PasevSU] pgpFingerprint is ${fingerprintIssue}; the claim is omitted.`, config.pgpFingerprint);
+    noteFingerprintIssue(fingerprintIssue);
   }
   if (config.enableOts) {
     // Marker only: real OpenTimestamps must be applied afterwards by `psemp-gateway seal`.
@@ -961,8 +993,92 @@ async function listComposeAttachments(tab, details) {
   return source.filter((att) => att && att.name !== MANIFEST_FILENAME);
 }
 
+/*
+ * Has this message already been stamped by an earlier pass?
+ *
+ * onBeforeSend is not promised to fire once. Measured on a real send it fired THREE
+ * times for one message: each pass minted its own evidenceId, attached its own
+ * PasevSU_Manifest.json and appended its own headers, so the message carried three
+ * manifests while X-PasevSU-Manifest-SHA256 named only the last one. Every step was
+ * individually correct and the chain still could not be verified — the complaint
+ * "все още не се подписва целият мейл" arriving from a message that looked fine in
+ * the compose window.
+ *
+ * The guard is the observable proof that a pass FINISHED, not a counter kept in the
+ * background page: the manifest attachment, plus our own evidence header for the
+ * narrower case where the headers were applied but addAttachment failed. That also
+ * covers two copies of the add-on running at once (a temporary load beside the
+ * installed XPI), which two independent background pages cannot coordinate through
+ * memory.
+ *
+ * A stamped message is sent as it is: `{}` means "no changes". Re-stamping is never
+ * the safe answer, because the second manifest can only disagree with the first.
+ */
+const EVIDENCE_HEADER = "x-pasevsu-evidence-id";
+
+function customHeaderName(entry) {
+  const name = entry && typeof entry === "object" ? entry.name : String(entry || "").split(":")[0];
+  return String(name || "").trim().toLowerCase();
+}
+
+async function alreadyStamped(tab, details) {
+  if ((details && details.customHeaders ? details.customHeaders : []).some((entry) => customHeaderName(entry) === EVIDENCE_HEADER)) {
+    return "evidence-header";
+  }
+  if (!(tab && typeof tab.id === "number" && browser.compose.listAttachments)) {
+    return "";
+  }
+  try {
+    const listed = await browser.compose.listAttachments(tab.id);
+    if ((listed || []).some((att) => att && att.name === MANIFEST_FILENAME)) {
+      return "manifest-attached";
+    }
+  } catch (err) {
+    // Unreadable is not stamped: refusing here would leave the message with no
+    // evidence at all, which is the one outcome worse than a duplicate.
+    console.error("[PasevSU] could not check for an earlier stamp:", err);
+  }
+  return "";
+}
+
+/*
+ * A fingerprint that cannot be one is a configuration error, and the sender has to
+ * learn about it: the options page reads this back and says so. Fire-and-forget
+ * because buildHeaders() is on the send path and must never wait on storage.
+ */
+function noteFingerprintIssue(issue) {
+  Promise.resolve()
+    .then(async () => {
+      const stored = await browser.storage.local.get({ psempFingerprintIssue: "" });
+      if (stored.psempFingerprintIssue !== issue) {
+        await browser.storage.local.set({
+          psempFingerprintIssue: issue,
+          psempFingerprintIssueAt: new Date().toISOString(),
+        });
+      }
+    })
+    .catch(() => {});
+}
+
+async function recordRestamp(reason) {  await Promise.resolve()
+    .then(async () => {
+      const previous = await browser.storage.local.get({ psempRestamps: 0 });
+      await browser.storage.local.set({
+        psempRestamps: (Number(previous.psempRestamps) || 0) + 1,
+        psempLastRestamp: { at: new Date().toISOString(), reason },
+      });
+    })
+    .catch(() => {});
+}
+
 async function handleBeforeSend(tab, details) {
   try {
+    const prior = await alreadyStamped(tab, details);
+    if (prior) {
+      await recordRestamp(prior);
+      return {};
+    }
+
     const config = Object.assign({}, DEFAULTS, await browser.storage.local.get(DEFAULTS));
 
     // Body selection: prefer the plain-text variant. Fall back gracefully.

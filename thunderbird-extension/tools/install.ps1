@@ -141,6 +141,13 @@ if ($hadUserJs) {
   Copy-Item $userJs (Join-Path $Profile 'user.js.psemp-before-install') -Force
 }
 
+# Normalise BEFORE the edits below, not after. Set-PrefLine anchors on `;[ \t]*$`,
+# and in multiline mode `$` matches before "\n" but not before "\r" — so on a CRLF
+# file the pattern cannot match, and every pref it was asked to replace is instead
+# appended as a second copy. Observed 2026-11-17: a CRLF user.js ended up with two
+# `extensions.autoDisableScopes` lines, the first still 15.
+$text = ($text -replace "`r`n", "`n") -replace "`r", "`n"
+
 function Set-PrefLine([string]$body, [string]$key, [string]$line) {
   $pattern = '(?m)^[ \t]*user_pref\("' + [regex]::Escape($key) + '",[^\r\n]*\);[ \t]*$'
   if ([regex]::IsMatch($body, $pattern)) { return [regex]::Replace($body, $pattern, $line) }
@@ -149,17 +156,43 @@ function Set-PrefLine([string]$body, [string]$key, [string]$line) {
 
 $composeLine = 'user_pref("mail.compose.other.header", "' + ($names -join ',') + '");'
 $expandedLine = 'user_pref("mailnews.headers.extraExpandedHeaders", "' + (($names | ForEach-Object { $_.ToLower() }) -join ' ') + '");'
-$guardLines = @()
-if ($text -notmatch 'extensions\.autoDisableScopes') {
-  $guardLines += '// A profile side-load is registered disabled without this.'
-  $guardLines += 'user_pref("extensions.autoDisableScopes", 0);'
-}
-
+# These two decide whether the add-on is ARMED after a rebuild, so their values
+# are enforced, not merely added:
+#
+#   extensions.autoDisableScopes = 0   Thunderbird's default registers an .xpi that
+#       was hand-placed in <profile>\extensions\ with userDisabled: true, so the
+#       add-on is installed and inert. Any non-zero mask re-disables it after every
+#       rebuild, which breaks the standing requirement that the headers appear
+#       without anyone touching the Add-ons Manager.
+#   xpinstall.signatures.required = false   Thunderbird's factory value is already
+#       false (greprefs.js), but a profile that copied a Firefox-style user.js can
+#       carry `true`, and then the unsigned hand-built .xpi is refused outright.
+#
+# Set-PrefLine REPLACES an existing line, so a profile that says 15 (the value
+# chosen for a "confirm every side-load" posture) is corrected here rather than
+# left contradicting the build.
 $text = Set-PrefLine $text 'mail.compose.other.header' $composeLine
 $text = Set-PrefLine $text 'mailnews.headers.extraExpandedHeaders' $expandedLine
-if ($guardLines.Count -gt 0) { $text = $text.TrimEnd() + "`n" + ($guardLines -join "`n") }
+$text = Set-PrefLine $text 'extensions.autoDisableScopes' 'user_pref("extensions.autoDisableScopes", 0);'
+$text = Set-PrefLine $text 'xpinstall.signatures.required' 'user_pref("xpinstall.signatures.required", false);'
 
-$text = ($text -replace "`r`n", "`n") -replace "`r", "`n"
+# A duplicate key is not harmless: user.js is applied in file order and the LAST
+# assignment wins, so a stale `autoDisableScopes = 15` earlier in the file would
+# still look "fixed" while the file carries the old value too. Set-PrefLine uses
+# [regex]::Replace, which rewrites every match instead of collapsing them, so the
+# duplicates are removed here by keeping only the last line per key.
+$lines = $text -split "`n"
+$lastIndexOf = @{}
+for ($i = 0; $i -lt $lines.Count; $i += 1) {
+  if ($lines[$i] -match '^[ \t]*user_pref\("([^"]+)",') { $lastIndexOf[$matches[1]] = $i }
+}
+$kept = New-Object System.Collections.Generic.List[string]
+for ($i = 0; $i -lt $lines.Count; $i += 1) {
+  if ($lines[$i] -match '^[ \t]*user_pref\("([^"]+)",' -and $lastIndexOf[$matches[1]] -ne $i) { continue }
+  $kept.Add($lines[$i])
+}
+$text = ($kept -join "`n")
+
 $text = $text.TrimEnd()
 if (-not $text.EndsWith(';')) { $text += ';' }
 [IO.File]::WriteAllText($userJs, $text, (New-Object System.Text.UTF8Encoding($false)))

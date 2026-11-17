@@ -36,6 +36,8 @@ const {
   parseBlock,
   cryptoEngineCode,
   decryptDigestBlock,
+  pgpInspectMessage,
+  pgpCrossCheck,
 } = require('../api.js');
 
 const MANIFEST = 'PasevSU_Manifest.json';
@@ -197,6 +199,30 @@ function param(value, key) {
 }
 
 /**
+ * The parts of a multipart body, preamble and epilogue discarded.
+ *
+ * RFC 2046 allows text before the first delimiter and after the last one, and
+ * Thunderbird uses the preamble: every PGP/MIME message starts with "This is an
+ * OpenPGP/MIME signed message (RFC 4880 and 3156)". Splitting on the bare delimiter
+ * makes that sentence a headerless text/plain child, which then becomes
+ * `children[0]` — the very child a multipart/signed signs. Reading it as a part
+ * would answer "what does the signature cover?" with the preamble instead of the
+ * message, so the first delimiter has to be consumed before splitting.
+ */
+function splitMultipart(body, boundary) {
+  const marker = `--${boundary}`;
+  const at = body.indexOf(marker);
+  if (at === -1) return [];
+  const segments = [];
+  for (const segment of body.slice(at + marker.length).split(marker)) {
+    if (segment.startsWith('--')) break; // closing delimiter; the epilogue is not a part
+    if (!segment.trim()) continue;
+    segments.push(parseMessage(segment));
+  }
+  return segments;
+}
+
+/**
  * Walk the MIME tree and return the leaf parts with their decoded bytes.
  * multipart/signed inside multipart/mixed is followed to its leaves.
  */
@@ -217,9 +243,7 @@ function collectParts(headers, body, depth = 0) {
   }
 
   const parts = [];
-  for (const segment of body.split(`--${boundary}`)) {
-    if (!segment.trim() || segment.startsWith('--')) continue;
-    const parsed = parseMessage(segment);
+  for (const parsed of splitMultipart(body, boundary)) {
     parts.push(...collectParts(parsed.headers, parsed.body, depth + 1));
   }
   return parts;
@@ -227,6 +251,84 @@ function collectParts(headers, body, depth = 0) {
 
 function partName(part) {
   return part.name || '';
+}
+
+/** The MIME structure, kept nested: coverage is a question about containment. */
+function mimeTree(headers, body, depth = 0) {
+  const contentType = headerGet(headers, 'Content-Type') || 'text/plain';
+  const disposition = headerGet(headers, 'Content-Disposition') || '';
+  const boundary = param(contentType, 'boundary');
+  const node = {
+    contentType,
+    disposition,
+    name: param(disposition, 'filename') || param(contentType, 'name'),
+    bytes: null,
+    children: [],
+  };
+  if (!/^\s*multipart\//i.test(contentType) || !boundary || depth > 8) {
+    node.bytes = decodePart(body, headerGet(headers, 'Content-Transfer-Encoding'));
+    return node;
+  }
+  for (const parsed of splitMultipart(body, boundary)) {
+    node.children.push(mimeTree(parsed.headers, parsed.body, depth + 1));
+  }
+  return node;
+}
+
+function collectNamed(node, into = []) {
+  if (node.name) into.push(node.name);
+  for (const child of node.children) collectNamed(child, into);
+  return into;
+}
+
+/**
+ * How far the OpenPGP signature actually reaches.
+ *
+ * "Signed" is not "signed whole". Thunderbird's PGP/MIME signs the FIRST part of a
+ * multipart/signed, so a message whose files sit next to the signed part as
+ * siblings of an outer multipart/mixed carries a signature that says nothing about
+ * the files — the exact shape this tool reported as green while the user reported
+ * "целият мейл не се подписва". Containment is therefore checked structurally: the
+ * signed part must be the outermost one, and no payload part may live outside it.
+ *
+ * Only the detached signature itself is exempt, and only by content type. An earlier
+ * version also dropped anything named `*.asc`/`*.sig` and the manifest, which made the
+ * containment check vacuous: with every named part filtered out of `outside`, "the
+ * signature covers the files" passed while nothing was being compared.
+ */
+function payloadNames(node, into = []) {
+  if (/^\s*application\/(?:pgp-signature|x-pkcs7-signature)\b/i.test(node.contentType)) return into;
+  if (node.name) into.push(node.name);
+  for (const child of node.children) payloadNames(child, into);
+  return into;
+}
+
+function signatureScope(text) {
+  const { headers, body } = parseMessage(text);
+  const root = mimeTree(headers, body);
+
+  let signedNode = null;
+  const find = (node) => {
+    if (signedNode) return;
+    if (/^\s*multipart\/signed/i.test(node.contentType)) {
+      signedNode = node;
+      return;
+    }
+    for (const child of node.children) find(child);
+  };
+  find(root);
+
+  const all = payloadNames(root);
+  if (!signedNode) return { found: false, topLevelSigned: false, inside: [], outside: all, all };
+
+  const entity = signedNode.children[0] || null;
+  const inside = entity ? payloadNames(entity) : [];
+  const remaining = all.slice();
+  for (const name of inside) {
+    const index = remaining.indexOf(name);
+    if (index !== -1) remaining.splice(index, 1);
+  }
+  return { found: true, topLevelSigned: signedNode === root, inside, outside: remaining, all };
 }
 
 /** Re-derive every claim a sent message makes about itself. */
@@ -331,6 +433,67 @@ function inspectMessage(text) {
     // Signature and timestamp sidecars describe the manifest; they are not payload.
     if (/\.(asc|ots)$/i.test(name)) continue;
     add(`attachment ${name} is in the manifest`, listedNames.has(name), listedNames.has(name) ? '' : 'not listed');
+  }
+
+  // ---------------------------------------------------------------------------
+  // DOES THE SIGNATURE COVER THE MESSAGE?
+  //
+  // The user's requirement is the strong one: the signature must reach the files,
+  // not just the text. These three checks are what "подписът обхваща всичко заедно с
+  // прикачените файлове" means operationally.
+  // ---------------------------------------------------------------------------
+  const fingerprintClaim = headerGetJoined(headers, 'X-PasevSU-PGP-Fingerprint') || '';
+  if (fingerprintClaim) {
+    // A truncated claim is worse than no claim: 28 hex is what a case label looks
+    // like, and it was published as this field once, so the shape is enforced here.
+    add(
+      'X-PasevSU-PGP-Fingerprint is a fingerprint or key id',
+      /^(?:[0-9A-F]{16}|[0-9A-F]{40}|[0-9A-F]{64})$/i.test(fingerprintClaim.replace(/[^0-9A-F]/gi, '')),
+      fingerprintClaim
+    );
+  }
+
+  const signature = pgpInspectMessage(text);
+  add(
+    'message is OpenPGP signed',
+    signature.signed,
+    signature.signed ? signature.format : `not signed (${signature.reason || 'NO_SIGNATURE'})`
+  );
+
+  if (signature.signed) {
+    const scope = signatureScope(text);
+    // A text-only message has no named parts, so "everything is inside" holds
+    // vacuously and is reported as such. A message that DOES carry files must show
+    // at least one inside, otherwise the comparison proved nothing.
+    const covered = scope.topLevelSigned && scope.outside.length === 0 && (scope.all.length === 0 || scope.inside.length > 0);
+    add(
+      'signature wraps the whole message (files inside it)',
+      covered,
+      !scope.topLevelSigned
+        ? 'the signed part is nested inside multipart/mixed, so the files are covered by nothing'
+        : scope.outside.length
+          ? `outside the signed part: ${scope.outside.join(', ')}`
+          : scope.all.length === 0
+            ? 'no named parts to cover (text only)'
+            : `${scope.inside.length}/${scope.all.length} named part(s) inside`
+    );
+
+    const duplicated = [...new Set(scope.all.filter((name, index) => scope.all.indexOf(name) !== index))];
+    add(
+      'each payload part is attached once',
+      duplicated.length === 0,
+      duplicated.length ? `duplicated: ${duplicated.join(', ')}` : `${scope.all.length} part(s)`
+    );
+
+    const cross = pgpCrossCheck(text, { fingerprint: fingerprintClaim });
+    const mismatch = cross.checks.find(
+      (check) => check.name === 'fingerprint-match' || check.name === 'fingerprint-verifiable' || check.name === 'fingerprint-claimed'
+    );
+    add(
+      'signer matches the fingerprint claim',
+      cross.ok,
+      mismatch ? mismatch.detail : cross.info && cross.info.issuerFingerprint
+    );
   }
 
   // ---------------------------------------------------------------------------

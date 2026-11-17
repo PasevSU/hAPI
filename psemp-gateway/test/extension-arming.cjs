@@ -208,10 +208,18 @@ check('plain-text send gets the full header set in contract order', async () => 
 });
 
 check('a re-fired beforeSend does not stack the marker or the notice', async () => {
-  // Thunderbird may fire onBeforeSend more than once for one message (re-open, Send
-  // Later, retry). Two markers or two footers would be visible to the recipient, so
-  // both appends are guarded by the marker itself.
-  const { listeners } = loadExtension();
+  /*
+   * Thunderbird may fire onBeforeSend more than once for one message (re-open, Send
+   * Later, retry) — measured at THREE times for a single real send. Two markers or two
+   * footers would be visible to the recipient, and, worse, every pass minted its own
+   * evidenceId and attached its own manifest, so the message carried three manifests
+   * while the headers named only the last one.
+   *
+   * The answer is therefore not "de-duplicate the second pass" but "do not run it at
+   * all": a message that already carries our evidence header is sent exactly as it is,
+   * which the extension declares by returning `{}` (no changes to apply).
+   */
+  const { listeners, order } = loadExtension();
   const details = {
     isPlainText: true,
     subject: 'Case 2026',
@@ -220,20 +228,57 @@ check('a re-fired beforeSend does not stack the marker or the notice', async () 
     customHeaders: [],
   };
   const first = await listeners[0]({}, details);
-  const second = await listeners[0]({}, first.details);
+  assert.ok(first.details, 'the first pass must produce the stamped message');
 
-  assert.strictEqual(
-    Object.prototype.hasOwnProperty.call(second.details, 'body'),
-    false,
-    'a body that already carries the notice must come back untouched'
-  );
-  const finalSubject = second.details.subject ?? first.details.subject ?? details.subject;
-  assert.strictEqual(finalSubject, 'Case 2026 {{ PasevSU-WAR }}');
-  assert.strictEqual(finalSubject.split('{{ PasevSU-WAR }}').length - 1, 1);
-  assert.strictEqual(
-    headerNames(second.details.customHeaders).filter((name) => name === 'X-PasevSU-WAR').length,
+  const second = await listeners[0]({}, first.details);
+  // Compared by keys, not deepStrictEqual: the listener runs inside a vm realm, whose
+  // Object.prototype is not this realm's, so a plain `{}` would fail prototype equality.
+  assert.deepStrictEqual(Object.keys(second), [], 'a re-fired pass must return no changes, so the send proceeds untouched');
+  assert.deepStrictEqual(
+    first.details.customHeaders.filter((h) => h.name === 'X-PasevSU-WAR').length,
     1,
-    'our own headers are stripped and re-added, never duplicated'
+    'the marker is written once'
+  );
+  assert.strictEqual(
+    (first.details.subject.match(/\{\{ PasevSU-WAR \}\}/g) || []).length,
+    1,
+    'the subject marker is written once'
+  );
+  assert.ok(
+    order.includes('storage.set:psempRestamps'),
+    'the skipped pass is recorded, so a triple fire is visible instead of silent'
+  );
+});
+
+check("the add-on's own manifest is never hashed as a user attachment", async () => {
+  /*
+   * Defence in depth for the one path the guard cannot see: listAttachments() is
+   * unavailable (older build) or empty, so the stamp check comes up blind and the
+   * pass proceeds on details.attachments — which may still name the manifest a
+   * previous pass left behind. Hashing it would put our own envelope in the evidence
+   * chain, and the manifest would then disagree with itself.
+   */
+  const bytes = Buffer.from('user file');
+  const { listeners, added } = loadExtension({
+    attachments: { 5: { name: 'doc.pdf', bytes } },
+    listed: null,
+  });
+
+  const details = {
+    isPlainText: true,
+    body: 'second pass',
+    attachments: [{ id: 5, name: 'doc.pdf' }, { id: 6, name: MANIFEST }],
+    customHeaders: [],
+  };
+  const { details: out } = await listeners[0]({ id: 4 }, details);
+
+  const headers = headerMap(out.customHeaders);
+  assert.strictEqual(headers.get('X-PasevSU-Attachments-SHA256'), `doc.pdf=${sha256Hex(bytes)}`);
+  const parsed = JSON.parse(await added[0].attachment.file.text());
+  assert.deepStrictEqual(
+    parsed.attachments.map((a) => a.filename),
+    ['doc.pdf'],
+    'the manifest must not hash itself'
   );
 });
 
@@ -525,7 +570,7 @@ check('the files are enumerated with listAttachments, not the send snapshot', as
   assert.strictEqual(parsed.attachments[0].sha256, sha256Hex(bytes));
 });
 
-check("this add-on's own manifest is not counted as a user attachment", async () => {
+check("a manifest already in the message stops a second stamping pass", async () => {
   const bytes = Buffer.from('user file');
   const { listeners, added } = loadExtension({
     attachments: { 5: { name: 'doc.pdf', bytes } },
@@ -534,16 +579,12 @@ check("this add-on's own manifest is not counted as a user attachment", async ()
   });
 
   const details = { isPlainText: true, body: 'second pass', attachments: [], customHeaders: [] };
-  const { details: out } = await listeners[0]({ id: 4 }, details);
+  const out = await listeners[0]({ id: 4 }, details);
 
-  const headers = headerMap(out.customHeaders);
-  assert.strictEqual(headers.get('X-PasevSU-Attachments-SHA256'), `doc.pdf=${sha256Hex(bytes)}`);
-  const parsed = JSON.parse(await added[0].attachment.file.text());
-  assert.deepStrictEqual(
-    parsed.attachments.map((a) => a.filename),
-    ['doc.pdf'],
-    'the manifest must not hash itself'
-  );
+  // A manifest already in the message proves a pass completed, so this one declines to
+  // run: an empty result leaves the message exactly as the earlier pass stamped it.
+  assert.deepStrictEqual(Object.keys(out), [], 'a pass that sees the manifest must not stamp again');
+  assert.strictEqual(added.length, 0, 'no second manifest is attached');
 });
 
 check('the manifest is attached with addAttachment and its own hash is published', async () => {
@@ -667,6 +708,47 @@ check('a fingerprint is normalised to bare uppercase hex', async () => {
     headers.get('X-PasevSU-PGP-Fingerprint'),
     'ABCDEF0123456789ABCDEF0123456789ABCDEF01'
   );
+});
+
+check('a value that cannot be a fingerprint is not published as one', async () => {
+  /*
+   * Measured on a real send: `X-PasevSU-PGP-Fingerprint` carried 28 hex digits — the
+   * case ID pasted into the wrong field. Normalisation only upper-cased, so the claim
+   * reached the wire, and the verifier then compared a key ID against the signer's real
+   * fingerprint and reported the message as untrusted. A claim that is provably not a
+   * fingerprint is worse than no claim, so it is dropped and recorded for the options
+   * page instead.
+   */
+  const cases = [
+    ['CB506C11850F99BBBBA54D09C6A8', 'wrong-length'],
+    ['97151EA3065D5EC6', 'key-id-not-fingerprint'],
+    ['not a fingerprint at all', 'not-hex'],
+  ];
+  for (const [value, expected] of cases) {
+    const { listeners, writes, errors } = loadExtension({ stored: { pgpFingerprint: value } });
+    const details = { isPlainText: true, body: 'fp', attachments: [], customHeaders: [] };
+    const { details: out } = await listeners[0]({}, details);
+    assert.ok(
+      !headerMap(out.customHeaders).has('X-PasevSU-PGP-Fingerprint'),
+      `${expected}: the impossible claim must not reach the wire`
+    );
+    assert.ok(
+      writes.psempFingerprintIssue === expected,
+      `${expected}: the reason is recorded so the options page can show it`
+    );
+    assert.ok(
+      errors.some((line) => line.includes('pgpFingerprint')),
+      `${expected}: and logged`
+    );
+  }
+});
+
+check('a 64-hex (v6) fingerprint is accepted like a v4 one', async () => {
+  const v6 = 'A'.repeat(64);
+  const { listeners } = loadExtension({ stored: { pgpFingerprint: v6.toLowerCase() } });
+  const details = { isPlainText: true, body: 'fp', attachments: [], customHeaders: [] };
+  const { details: out } = await listeners[0]({}, details);
+  assert.strictEqual(headerMap(out.customHeaders).get('X-PasevSU-PGP-Fingerprint'), v6);
 });
 
 check('enableOts=false drops the marker header', async () => {

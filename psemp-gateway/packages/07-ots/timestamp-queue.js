@@ -4,9 +4,8 @@ import {
   verifyTimestamp, 
   createSha256File,
   logEvent 
-} from './lib/ots-manager.js';
-import { readFileSync, writeFileSync, existsSync, renameSync } from 'node:fs';
-import { join } from 'node:path';
+} from './ots-manager.js';
+import { existsSync } from 'node:fs';
 
 const CHECK_INTERVAL = 60000; // 60 секунди
 
@@ -39,8 +38,10 @@ async function processQueue() {
         const verifyResult = await verifyTimestamp(otsPath);
         
         if (verifyResult.verified) {
-          // 3. Създаваме .sha256 файл
-          const sha256Path = createSha256File(otsPath, verifyResult);
+          // 3. Създаваме .sha256 файл за САМИЯ документ, не за доказателството
+          const original = otsPath.replace(/\.ots$/i, '');
+          const target = existsSync(original) ? original : otsPath;
+          const sha256Path = createSha256File(target);
           console.log(`   📄 Създаден: ${sha256Path}`);
           logEvent(`Печатът ${otsPath} е завършен и верифициран`, 'success');
         }

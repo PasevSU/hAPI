@@ -39,6 +39,7 @@ const {
   newestSent,
 } = require('../tools/check-sent.cjs');
 const { appendWarMarker } = require('../api.js');
+const { FINGERPRINT, signaturePacket } = require('./lib/openpgp.cjs');
 
 const MANIFEST = MANIFEST_FILENAME;
 
@@ -66,7 +67,10 @@ async function runExtension({ body = 'Forensic body', files = [], subject = 'evi
   });
 
   const { listeners, added } = loadExtension({
-    stored: { version: '1.1', caseId: 'CASE-1', pgpFingerprint: 'ABCDEF0123456789' },
+    // A 40-hex fingerprint, because that is the only shape the extension will publish:
+    // an 8/16-hex key id is refused outright, so a fixture claiming one would model a
+    // message the add-on cannot produce. It matches the signer in lib/openpgp.cjs.
+    stored: { version: '1.1', caseId: 'CASE-1', pgpFingerprint: FINGERPRINT },
     attachments,
   });
   const details = {
@@ -85,6 +89,9 @@ async function runExtension({ body = 'Forensic body', files = [], subject = 'evi
   return { headers: headerMap(result.details.customHeaders), manifestBytes, details };
 }
 
+/** The fingerprint the fixtures' synthetic signature claims to come from. */
+const SIGNER_FINGERPRINT = FINGERPRINT;
+
 function base64Lines(buffer) {
   return buffer.toString('base64').replace(/(.{76})/g, '$1\r\n');
 }
@@ -92,27 +99,37 @@ function base64Lines(buffer) {
 /**
  * Assemble a MIME message. `parts` are extra body parts; the manifest is added
  * unless `includeManifest` is false, which is how a dropped manifest is simulated.
+ *
+ * The message is PGP/MIME signed by default, because that is what Thunderbird sends
+ * once the account signs mail: an unsigned fixture would model a message the add-on
+ * cannot produce. The signature is hand-built (see `lib/openpgp.cjs`) — this proves
+ * the verifier's structural reasoning, not the crypto.
  */
 function buildMessage({
   headers,
   manifestBytes,
   body = 'Forensic body',
+  bodyEncoding = '8bit',
   attachmentParts = [],
   includeManifest = true,
   recase = false,
   subject = WAR_SUBJECT,
+  sign = true,
+  nestInner = false,
+  extraParts = [],
 }) {
   const boundary = 'psemp-test-boundary';
-  const lines = ['From: sender@example.test', 'To: recipient@example.test', `Subject: ${subject}`, 'MIME-Version: 1.0'];
+  const head = ['From: sender@example.test', 'To: recipient@example.test', `Subject: ${subject}`, 'MIME-Version: 1.0'];
 
   for (const [name, value] of headers) {
     // Thunderbird hands custom header names back in Http-Header-Case; the checker
     // must match case-insensitively (RFC 5322 section 2.2).
-    lines.push(`${recase ? recaseHeader(name) : name}: ${value}`);
+    head.push(`${recase ? recaseHeader(name) : name}: ${value}`);
   }
 
+  const lines = [];
   lines.push(`Content-Type: multipart/mixed; boundary="${boundary}"`, '', `--${boundary}`);
-  lines.push('Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: 8bit', '', body);
+  lines.push('Content-Type: text/plain; charset=utf-8', `Content-Transfer-Encoding: ${bodyEncoding}`, '', body);
   lines.push(`--${boundary}`);
 
   for (const part of attachmentParts) {
@@ -127,9 +144,68 @@ function buildMessage({
     lines.push('Content-Transfer-Encoding: base64', '', base64Lines(manifestBytes), `--${boundary}`);
   }
 
+  for (const part of extraParts) {
+    lines.push(`Content-Type: ${part.contentType || 'application/octet-stream'}; name="${part.name}"`);
+    lines.push(`Content-Disposition: attachment; filename="${part.name}"`);
+    lines.push('Content-Transfer-Encoding: base64', '', base64Lines(part.bytes) || '', `--${boundary}`);
+  }
+
   lines.push('--', '');
-  return lines.join('\r\n');
+  const mixed = lines.join('\r\n');
+  if (!sign) return [...head, mixed].join('\r\n');
+
+  return [...head, signedEnvelope({ inner: mixed, nestInner })].join('\r\n');
 }
+
+/**
+ * Wrap an already-assembled MIME entity in a PGP/MIME signature.
+ *
+ * The top-level headers stay outside: in PGP/MIME only the entity below `Content-Type`
+ * is signed, which is why the extension's own headers are not covered by the signature
+ * and why their integrity rests on the manifest instead.
+ *
+ * `nestInner` puts the multipart/signed *inside* an outer multipart/mixed, which is the
+ * shape that carries files outside the signature.
+ */
+function signedEnvelope({ inner, nestInner }) {
+  const outer = 'psemp-signed-boundary';
+  const mixed = 'psemp-mixed-boundary';
+  const preamble = 'This is an OpenPGP/MIME signed message (RFC 4880 and 3156)';
+  const signedPart = [
+    `Content-Type: multipart/signed; micalg=pgp-sha256; protocol="application/pgp-signature"; boundary="${outer}"`,
+    '',
+    preamble,
+    `--${outer}`,
+    inner,
+    `--${outer}`,
+    'Content-Type: application/pgp-signature; name="signature.asc"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    base64Lines(signaturePacket(SIGNER_FINGERPRINT)),
+    `--${outer}--`,
+    '',
+  ].join('\r\n');
+
+  if (!nestInner) return signedPart;
+
+  // The signed message is one part of an outer multipart/mixed — the shape in which
+  // files sit beside the signature and are therefore covered by nothing.
+  return [
+    `Content-Type: multipart/mixed; boundary="${mixed}"`,
+    '',
+    `--${mixed}`,
+    signedPart,
+    `--${mixed}`,
+    'Content-Type: application/octet-stream; name="outside.pdf"',
+    'Content-Disposition: attachment; filename="outside.pdf"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    base64Lines(Buffer.from('outside the signature')),
+    `--${mixed}--`,
+    '',
+  ].join('\r\n');
+}
+
 
 /** X-PasevSU-Body-SHA256 -> X-Pasevsu-Body-Sha256, as Thunderbird normalises it. */
 function recaseHeader(name) {
@@ -236,6 +312,91 @@ function tamper(headers, name, transform) {
   );
 }
 
+/* --- layer 2: does the signature reach the files? -------------------------- */
+
+check('an unsigned message fails even though every evidence header is right', async () => {
+  // The defect the user reported as "целият мейл не се подписва": the headers can all
+  // verify while nothing on the wire is signed at all.
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({ headers, manifestBytes, sign: false });
+  const result = inspectMessage(message);
+
+  assert.strictEqual(result.ok, false, 'an unsigned message must not pass');
+  assert.ok(
+    failing(result).includes('message is OpenPGP signed'),
+    `expected the signature check to fail, got: ${failing(result).join(', ') || 'nothing failed'}`
+  );
+  return 'unsigned message rejected';
+});
+
+check('a file outside the signed part is reported, not waved through', async () => {
+  // multipart/mixed { multipart/signed { ... }, outside.pdf } — the signature is
+  // real and covers the text, the file beside it is covered by nothing.
+  const pdf = { name: 'document.pdf', bytes: Buffer.from('pretend this is a pdf') };
+  const { headers, manifestBytes } = await runExtension({ files: [pdf] });
+  const message = buildMessage({ headers, manifestBytes, attachmentParts: [pdf], nestInner: true });
+  const result = inspectMessage(message);
+
+  assert.ok(result.ok === false, 'files outside the signature must not pass');
+  const coverage = result.checks.find((check) => check.name === 'signature wraps the whole message (files inside it)');
+  assert.ok(coverage, 'the coverage check must be present');
+  assert.strictEqual(coverage.ok, false, 'coverage must fail when a file sits outside the signed part');
+  // Two shapes are refused, and either wording names the defect: the signed part is
+  // nested so the files are covered by nothing, or it is top-level with a file beside it.
+  assert.match(coverage.detail, /nested inside multipart\/mixed|outside the signed part/);
+  return `nested signature caught: ${coverage.detail}`;
+});
+
+check('a duplicated manifest fails the attach-once check', async () => {
+  // The triple-stamping defect: three passes each attached a manifest, so the header
+  // named one while the message carried three.
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({
+    headers,
+    manifestBytes,
+    extraParts: [{ name: MANIFEST, bytes: manifestBytes }],
+  });
+  const result = inspectMessage(message);
+
+  const once = result.checks.find((check) => check.name === 'each payload part is attached once');
+  assert.ok(once, 'the attach-once check must be present');
+  assert.strictEqual(once.ok, false, 'a second manifest must be reported');
+  assert.match(once.detail, /duplicated: .*PasevSU_Manifest\.json/);
+  return 'duplicate manifest caught';
+});
+
+check('a truncated fingerprint claim is refused as a claim at all', async () => {
+  // 28 hex is what the case label looked like; it was published as a fingerprint once.
+  const { headers, manifestBytes } = await runExtension();
+  const truncated = 'CB506C11850F99BBBBA54D09C6A8';
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-PGP-Fingerprint', () => truncated),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+
+  const shape = result.checks.find((check) => check.name === 'X-PasevSU-PGP-Fingerprint is a fingerprint or key id');
+  assert.ok(shape, 'the shape check must be present when a claim is made');
+  assert.strictEqual(shape.ok, false, '28 hex must not pass as a fingerprint');
+  return 'truncated claim refused';
+});
+
+check('a claim that does not match the signer is reported', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const other = 'FFFFEEEE00001111222233334444555566667777';
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-PGP-Fingerprint', () => other),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+
+  const match = result.checks.find((check) => check.name === 'signer matches the fingerprint claim');
+  assert.ok(match, 'the signer/claim check must be present');
+  assert.strictEqual(match.ok, false, 'a claim naming another key must not pass');
+  assert.match(match.detail, /claim=/, `expected claim and signer in the detail, got: ${match.detail}`);
+  return 'claim/signer mismatch caught';
+});
+
 /* --- layer 1: the crypto headers are re-derived, not trusted ---------------- */
 
 check('a tampered digest row is caught by re-deriving the block', async () => {
@@ -327,27 +488,12 @@ check('header names are matched case-insensitively', async () => {
 
 check('a quoted-printable body part is decoded before it is compared', async () => {
   const { headers, manifestBytes } = await runExtension();
-  const boundary = 'qp-boundary';
-  const message = [
-    'From: a@example.test',
-    `Subject: ${WAR_SUBJECT}`,
-    ...Array.from(headers, ([name, value]) => `${name}: ${value}`),
-    `Content-Type: multipart/mixed; boundary="${boundary}"`,
-    '',
-    `--${boundary}`,
-    'Content-Type: text/plain; charset=utf-8',
-    'Content-Transfer-Encoding: quoted-printable',
-    '',
-    'Forensic body=20with=20escapes',
-    `--${boundary}`,
-    `Content-Type: application/json; name="${MANIFEST}"`,
-    `Content-Disposition: attachment; filename="${MANIFEST}"`,
-    'Content-Transfer-Encoding: base64',
-    '',
-    base64Lines(manifestBytes),
-    `--${boundary}--`,
-    '',
-  ].join('\n');
+  const message = buildMessage({
+    headers,
+    manifestBytes,
+    body: 'Forensic body=20with=20escapes',
+    bodyEncoding: 'quoted-printable',
+  });
 
   const result = inspectMessage(message);
   assert.deepStrictEqual(failing(result), [], `qp decoding failed: ${failing(result).join(', ')}`);
@@ -593,19 +739,25 @@ check('the newest sent message wins on its own Date, not the mailbox mtime', () 
 
 /* --- runner --------------------------------------------------------------- */
 
-(async () => {
-  let failed = 0;
-  console.log(path.basename(__filename));
-  for (const { name, fn } of checks) {
-    try {
-      const detail = await fn();
-      console.log(`  ok   ${name}${typeof detail === 'string' ? ` (${detail})` : ''}`);
-    } catch (err) {
-      failed += 1;
-      console.log(`  FAIL ${name}`);
-      console.log(`       ${String(err.message).split('\n').slice(0, 12).join('\n       ')}`);
+// Guarded so `test/stamp-sent.cjs` can import the fixture builders below without
+// re-running this whole suite.
+if (require.main === module) {
+  (async () => {
+    let failed = 0;
+    console.log(path.basename(__filename));
+    for (const { name, fn } of checks) {
+      try {
+        const detail = await fn();
+        console.log(`  ok   ${name}${typeof detail === 'string' ? ` (${detail})` : ''}`);
+      } catch (err) {
+        failed += 1;
+        console.log(`  FAIL ${name}`);
+        console.log(`       ${String(err.message).split('\n').slice(0, 12).join('\n       ')}`);
+      }
     }
-  }
-  console.log(`\n${checks.length - failed}/${checks.length} checks passed`);
-  if (failed > 0) process.exitCode = 1;
-})();
+    console.log(`\n${checks.length - failed}/${checks.length} checks passed`);
+    if (failed > 0) process.exitCode = 1;
+  })();
+}
+
+module.exports = { runExtension, buildMessage, WAR_SUBJECT, checks };

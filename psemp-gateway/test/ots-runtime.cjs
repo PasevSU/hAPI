@@ -105,6 +105,49 @@ async function main() {
       `${api.sha256Hex(Buffer.from('PSEMP evidence bytes', 'utf8'))}  evidence.txt\n`
     );
     assert.strictEqual(manager.createSha256File(file), sidecar);
+
+    // 5. A calendar that refuses must be NAMED. The bundle's browser HTTP layer
+    //    cannot open a socket at all, so ots.stamp() used to reject with
+    //    "Cannot read properties of undefined (reading 'protocol')" and
+    //    allSettled swallowed it: every calendar looked like "no timestamp
+    //    returned", the caller only saw the generic "No usable calendar
+    //    attestation", and no proof was ever written. With the fetch path the
+    //    status code and the calendar URL survive into the error. Offline and
+    //    deterministic: the server is this process.
+    const refusing = require('node:http').createServer((request, response) => {
+      response.writeHead(503, { 'Content-Type': 'text/plain' });
+      response.end('calendar unavailable');
+    });
+    await new Promise((resolve) => refusing.listen(0, '127.0.0.1', resolve));
+    const { port } = refusing.address();
+    const calendarUrl = `http://127.0.0.1:${port}`;
+    const unreachable = path.join(tmpDir, 'no-calendar.txt');
+    fs.writeFileSync(unreachable, 'PSEMP evidence bytes', 'utf8');
+    try {
+      await assert.rejects(
+        () => manager.createTimestamp(unreachable, { calendars: [calendarUrl], m: 1 }),
+        (error) => {
+          assert.match(
+            error.message,
+            /No usable calendar attestation/,
+            `unexpected failure shape: ${error.message}`
+          );
+          assert.match(
+            error.message,
+            /HTTP 503/,
+            `the calendar status was lost: ${error.message}`
+          );
+          assert.ok(
+            error.message.includes(calendarUrl),
+            `the failing calendar was not named: ${error.message}`
+          );
+          return true;
+        }
+      );
+      assert.ok(!fs.existsSync(`${unreachable}.ots`), 'a proof was written by a refusing calendar');
+    } finally {
+      await new Promise((resolve) => refusing.close(resolve));
+    }
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

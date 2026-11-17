@@ -36,6 +36,13 @@ const USAGE = `PasevSU PSEMP gateway
   hash <algo> <file>                    digest a file (algo: ${Object.keys(api.ALGORITHMS).join('|')})
   evidence <file> [--name n]            headers + manifest for one file body
   eml <file.eml> [--out manifest.json]  evidence-object for an RFC822 message
+  stamp-sent [--profile dir] [--file msg] [--out dir]
+                                        find the newest Sent message, verify its
+                                        evidence chain, then stamp its manifest.
+                                        REFUSES to stamp when the chain is broken,
+                                        because anchoring broken evidence would make
+                                        a defect look proven. Proofs land in
+                                        psemp-gateway/data/pending/ (git-ignored).
   stamp <file> [--out proof.ots]        OpenTimestamps proof (degrades to pending)
   verify <proof.ots>                    verify an OpenTimestamps proof
   upgrade <proof.ots>                   upgrade a pending proof
@@ -190,6 +197,86 @@ async function main(argv) {
         return;
       }
       emit(evidence);
+      return;
+    }
+
+    case 'stamp-sent': {
+      // Only this command needs the profile/MIME readers, so they are loaded here
+      // rather than at startup.
+      const tools = require('./tools/check-sent.cjs');
+      const outDir = options.out && options.out !== true
+        ? path.resolve(String(options.out))
+        : path.join(__dirname, 'data', 'pending');
+
+      let message;
+      let source;
+      if (options.file && options.file !== true) {
+        source = readFileOrFail(options.file, '--file');
+        message = fs.readFileSync(source, 'utf8');
+      } else {
+        const profile = options.profile && options.profile !== true
+          ? path.resolve(String(options.profile))
+          : tools.defaultProfile();
+        if (!profile) throw new Error('No Thunderbird profile found; pass --profile <dir>.');
+        const newest = tools.newestSent(tools.sentFiles(profile));
+        if (!newest) throw new Error(`No non-empty Sent message under ${profile}.`);
+        message = newest.message;
+        source = newest.source;
+      }
+
+      // A timestamp turns whatever bytes it covers into "this existed at time T".
+      // Doing that for evidence that does not verify would publish a defect as if
+      // it were proven, so the proof is only created for an intact chain.
+      const inspection = tools.inspectMessage(message);
+      if (!inspection.ok) {
+        emit({
+          status: 'refused',
+          reason: 'the evidence chain is broken, so nothing was timestamped',
+          source,
+          stamped: null,
+          failures: inspection.checks
+            .filter((check) => !check.ok)
+            .map((check) => `${check.name}${check.detail ? `: ${check.detail}` : ''}`),
+        });
+        process.exitCode = 1;
+        return;
+      }
+
+      // Re-read the manifest part itself instead of re-serialising the parsed
+      // object: its sha256 has to equal X-PasevSU-Manifest-SHA256, and pretty
+      // printing the object would silently change that hash.
+      const parsed = tools.parseMessage(message);
+      const manifestPart = tools
+        .collectParts(parsed.headers, parsed.body)
+        .find((part) => /^pasevsu_manifest\.json$/i.test(tools.partName(part)));
+      if (!manifestPart) throw new Error('The chain verified but the manifest part vanished.');
+
+      const evidenceId = String((inspection.manifest && inspection.manifest.evidence_id) || '');
+      const base = (evidenceId || `msg-${Date.now()}`).replace(/[^A-Za-z0-9._-]/g, '_');
+      fs.mkdirSync(outDir, { recursive: true });
+      const manifestPath = path.join(outDir, `${base}.manifest.json`);
+      fs.writeFileSync(manifestPath, manifestPart.bytes);
+      // The raw message is kept next to the proof so the chain can be re-checked
+      // later; it is what the manifest's hashes point at.
+      const messagePath = path.join(outDir, `${base}.eml`);
+      fs.writeFileSync(messagePath, message, 'utf8');
+
+      const proof = await api.otsStamp(manifestPath);
+      const signed = inspection.manifest && inspection.manifest.signed_headers;
+      emit({
+        source,
+        evidenceId: evidenceId || null,
+        messageId: (signed && signed.message_id) || null,
+        manifest: manifestPath,
+        manifestSha256: api.sha256Hex(manifestPart.bytes),
+        message: messagePath,
+        messageSha256: api.sha256Hex(Buffer.from(message, 'utf8')),
+        // The OTS adapter's own report is passed through untouched: its shape differs
+        // between "stamped" and "pending", and inventing keys here would hide that.
+        stamp: proof,
+      });
+      // A missing OTS tool is reported as "pending", never as a failure — the same
+      // contract `stamp` follows.
       return;
     }
 

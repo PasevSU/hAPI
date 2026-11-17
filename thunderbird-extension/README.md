@@ -448,6 +448,29 @@ installed copy is not older than the source, the archive itself is loadable
 `default_locale` tree present), and every file it carries is byte-identical to the
 one in the repository.
 
+### Getting the `.ots` for the newest sent message
+
+The add-on marks `X-PasevSU-OTS: pending` because it cannot run `ots`. The bridge
+is one command; it finds the newest Sent message itself, verifies the evidence
+chain, and only then asks the gateway for a proof:
+
+```console
+node psemp-gateway/cli.js stamp-sent
+```
+
+- It **refuses** — exit `1`, nothing written — when the chain does not verify
+  (manifest hash vs header, evidence-id, Merkle root, fingerprint claim, signature
+  scope, attachment bytes, signed record vs live `Message-ID`). Timestamping a
+  broken message would publish a defect as if it were proven.
+- On success it writes `<evidence-id>.manifest.json` and `<evidence-id>.eml` into
+  `psemp-gateway/data/pending/` (git-ignored) and stamps the **manifest**. The
+  manifest is copied byte-for-byte out of the message rather than re-serialised,
+  so its SHA-256 still equals `X-PasevSU-Manifest-SHA256`; re-printing the parsed
+  object would quietly change the hash the proof is anchored to.
+- `--profile <dir>` points at a different profile, `--file <msg>` at one message,
+  `--out <dir>` at another output directory. Without `ots` installed the result is
+  `"status": "pending"`, never an error.
+
 ## What a recipient can verify
 
 Every claim in the chain was re-checked against the raw source of a real sent
@@ -522,6 +545,29 @@ that asks for no receipt.
 The request is standard, not coercive: the recipient's client **asks** them, and
 most clients show a dialog. Thunderbird's own per-account "Return Receipts"
 setting exists independently; if both prompt, that is harmless.
+
+### Why a receipt may still never arrive
+
+`Disposition-Notification-To` on the wire is a *request*. Measured on a real
+mailbox (2.2 GB Sent folder, 2026‑11), the field is present on every message the
+add-on sent — and no receipt came back, for two reasons that are not defects here:
+
+1. **MDN is voluntary.** The recipient's client decides. Gmail does not implement
+   MDN at all, so a message to a `@gmail.com` address can never return a receipt,
+   however the send was configured. This is a property of the recipient, not of
+   the add-on.
+2. **DSN — the "it reached the server" proof — is out of reach of a
+   MailExtension.** RFC 3461 delivery notifications (`NOTIFY=SUCCESS`) are SMTP
+   envelope parameters, not message headers. A WebExtension cannot set envelope
+   parameters, the same class of limitation as `.asc` and `.ots`. Only the sending
+   MTA can request them, so for a real delivery proof the SMTP gateway for
+   `pasevsu-dev.com` has to add `NOTIFY=SUCCESS,FAILURE,DELAY`.
+
+What the add-on guarantees is therefore the *request* plus the evidence that it
+was made: `returnReceipt`, `X-PasevSU-Receipt: requested`, and — once a receipt
+does arrive — a `message/disposition-notification` part in the Inbox that names
+the original `Message-ID`, so the pair can be tied together. An absent receipt is
+not evidence of non-delivery, and it must never be presented as one.
 
 ### German and Bulgarian
 

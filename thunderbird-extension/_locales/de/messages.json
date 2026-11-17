@@ -78,6 +78,12 @@
   "receiptError": {
     "message": "Keine Empfangsadresse: der Header für die Lesebestätigung wird nur geschrieben, wenn die sendende Identität oder die Ausweichadresse unten bekannt ist."
   },
+  "fingerprintInvalid": {
+    "message": "Der Fingerabdruck wurde nicht gespeichert: Er muss aus 40 oder 64 Hexadezimalzeichen bestehen (ohne Leerzeichen). Kopieren Sie ihn aus den Schlüsseleigenschaften in Thunderbird."
+  },
+  "fingerprintIsKeyId": {
+    "message": "Das ist eine Schlüssel-ID (8 oder 16 Zeichen), kein Fingerabdruck. Öffnen Sie die Schlüsseleigenschaften und kopieren Sie den vollständigen 40-stelligen Fingerabdruck."
+  },
   "labelVersion": {
     "message": "Version"
   },

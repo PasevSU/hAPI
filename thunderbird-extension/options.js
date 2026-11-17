@@ -43,6 +43,10 @@ const FALLBACK = {
   attachmentFailures: "Unreadable attachments (named in X-PasevSU-Attachments-Error): $1",
   receiptError:
     "No receipt address: the receipt header is only written when the sending identity or the fallback address below is known.",
+  fingerprintInvalid:
+    "The fingerprint was not saved: it must be 40 or 64 hexadecimal characters (no spaces).",
+  fingerprintIsKeyId:
+    "That is a key ID (8 or 16 characters), not a fingerprint. Copy the full 40-character fingerprint.",
   save: "Save",
   saved: "Saved.",
   exported: "Exported settings.default.json",
@@ -89,6 +93,25 @@ function normalizeFingerprint(value) {
     .replace(/[\s:]/g, "")
     .replace(/^0x/i, "")
     .toUpperCase();
+}
+
+// Same rule as background.js: a fingerprint is 40 hex digits (v4) or 64 (v6).
+// Anything else is rejected HERE, before it is stored, so the send path never has to
+// publish a claim that cannot be one. Measured on a real send, a 28-digit value — the
+// case ID pasted into the wrong field — reached the wire and made the verifier accuse
+// the signer of not matching its own key.
+function fingerprintProblem(value) {
+  const normalized = normalizeFingerprint(value);
+  if (!normalized) {
+    return "";
+  }
+  if (!/^[0-9A-F]+$/.test(normalized)) {
+    return "not-hex";
+  }
+  if (normalized.length !== 40 && normalized.length !== 64) {
+    return normalized.length === 8 || normalized.length === 16 ? "key-id-not-fingerprint" : "wrong-length";
+  }
+  return "";
 }
 
 function setStatus(message) {
@@ -215,16 +238,31 @@ async function renderArmed() {
 }
 
 async function save() {
+  const typedFingerprint = FIELDS.pgpFingerprint.value;
+  const fingerprintIssue = fingerprintProblem(typedFingerprint);
+  if (fingerprintIssue) {
+    // Refused at the point of entry: the field keeps what was typed so it can be
+    // corrected, and nothing impossible is written to storage.
+    if (fingerprintIssue === "key-id-not-fingerprint") {
+      setStatus(t("fingerprintIsKeyId"));
+    } else {
+      setStatus(t("fingerprintInvalid"));
+    }
+    return;
+  }
   const next = {
     version: FIELDS.version.value.trim() || DEFAULTS.version,
     framework: FIELDS.framework.value.trim() || DEFAULTS.framework,
     origin: FIELDS.origin.value.trim() || DEFAULTS.origin,
     organization: FIELDS.organization.value.trim() || DEFAULTS.organization,
     caseId: FIELDS.caseId.value.trim(),
-    pgpFingerprint: normalizeFingerprint(FIELDS.pgpFingerprint.value),
+    pgpFingerprint: normalizeFingerprint(typedFingerprint),
     enableOts: FIELDS.enableOts.checked,
     enableReceipt: FIELDS.enableReceipt.checked,
     receiptAddress: FIELDS.receiptAddress.value.trim(),
+    // A fingerprint just accepted clears the complaint background.js recorded for the
+    // previous one, so the page stops reporting a defect the user has already fixed.
+    psempFingerprintIssue: "",
   };
   await browser.storage.local.set(next);
   FIELDS.pgpFingerprint.value = next.pgpFingerprint;

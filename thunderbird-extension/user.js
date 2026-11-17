@@ -59,3 +59,8 @@ user_pref(
 // add-ons, so PSEMP stays armed across restarts with no manual re-enable in the
 // Add-ons Manager. Loading through "Debug Add-ons" does not need it.
 user_pref("extensions.autoDisableScopes", 0);
+
+// Thunderbird's factory value is already false (greprefs.js), but a profile that
+// started life as a Firefox one can carry true, and then the hand-built unsigned
+// .xpi is refused before any of the code below runs.
+user_pref("xpinstall.signatures.required", false);

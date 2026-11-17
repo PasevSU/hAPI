@@ -5,12 +5,18 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const OTS_PACKAGE = 'opentimestamps';
+const CALENDAR_TIMEOUT = 20000;
+const CALENDAR_MAX_RESPONSE = 10000;
+
+let vendoredInUse = false;
 
 function runtime() {
   try {
+    vendoredInUse = false;
     return require(OTS_PACKAGE);
   } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND' && error.message.includes(`'${OTS_PACKAGE}'`)) {
+      vendoredInUse = true;
       return vendoredRuntime();
     }
     throw error;
@@ -66,6 +72,110 @@ function timestampOptions(options = {}) {
     ...(options.timeout === undefined ? {} : { timeout: options.timeout }),
     ...(options.esplora === undefined ? {} : { esplora: options.esplora })
   };
+}
+
+/*
+ * The vendored bundle ships the BROWSER HTTP layer (request + bluebird + XHR shims),
+ * which cannot open a socket under Node: every submit fails with
+ * "Cannot read properties of undefined (reading 'protocol')" and `stamp` then
+ * silently merges nothing. Do the calendar round-trips with Node's own fetch and
+ * use the bundle only for serialization, merkle tips and timestamp merging.
+ */
+function calendarBase(url) {
+  return String(url).replace(/\/+$/, '');
+}
+
+async function calendarBytes(response, url) {
+  if (!response.ok) throw new Error(`HTTP ${response.status} from ${calendarBase(url)}`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.byteLength > CALENDAR_MAX_RESPONSE) {
+    throw new Error(`Calendar response from ${calendarBase(url)} exceeded ${CALENDAR_MAX_RESPONSE} bytes`);
+  }
+  return bytes;
+}
+
+function calendarTimestamp(ots, bytes, commitment) {
+  const context = new ots.Context.StreamDeserialization(bytes);
+  return ots.Timestamp.deserialize(context, Array.from(commitment));
+}
+
+async function submitToCalendar(ots, url, commitment) {
+  const response = await fetch(`${calendarBase(url)}/digest`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/vnd.opentimestamps.v1',
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: Buffer.from(commitment),
+    signal: AbortSignal.timeout(CALENDAR_TIMEOUT)
+  });
+  return calendarTimestamp(ots, await calendarBytes(response, url), commitment);
+}
+
+async function fetchFromCalendar(ots, url, commitment) {
+  const hex = Buffer.from(commitment).toString('hex');
+  const response = await fetch(`${calendarBase(url)}/timestamp/${hex}`, {
+    method: 'GET',
+    headers: { Accept: 'application/vnd.opentimestamps.v1' },
+    signal: AbortSignal.timeout(CALENDAR_TIMEOUT)
+  });
+  return calendarTimestamp(ots, await calendarBytes(response, url), commitment);
+}
+
+async function stampWithoutLibraryHttp(ots, detached, calendars, minimum) {
+  const tip = ots.makeMerkleTree([detached]);
+  if (!tip) throw new Error('Invalid input');
+
+  const outcomes = await Promise.allSettled(calendars.map(url => submitToCalendar(ots, url, tip.msg)));
+  let merged = 0;
+  const failures = [];
+  outcomes.forEach((outcome, index) => {
+    if (outcome.status === 'fulfilled' && outcome.value) {
+      tip.merge(outcome.value);
+      merged++;
+      return;
+    }
+    const reason = outcome.status === 'rejected' ? outcome.reason : null;
+    failures.push(`${calendarBase(calendars[index])}: ${reason && reason.message ? reason.message : 'no timestamp returned'}`);
+  });
+
+  const required = Math.min(minimum, calendars.length);
+  if (merged < required) {
+    throw new Error(
+      `No usable calendar attestation was returned by ${calendars.length} calendar(s); no proof was saved` +
+        (failures.length ? ` (${failures.join('; ')})` : '')
+    );
+  }
+  return merged;
+}
+
+async function upgradeWithoutLibraryHttp(ots, detached, calendars) {
+  const timestamp = detached.timestamp;
+  const targets = [];
+  for (const subStamp of timestamp.directlyVerified()) {
+    if (subStamp.isTimestampComplete()) continue;
+    for (const attestation of subStamp.attestations) {
+      if (!(attestation instanceof ots.Notary.PendingAttestation)) continue;
+      const urls = calendars && calendars.length ? calendars : [attestation.uri];
+      for (const url of urls) {
+        if (!/^https?:\/\//i.test(String(url))) continue;
+        targets.push({ subStamp, url, commitment: subStamp.msg });
+      }
+    }
+  }
+
+  const outcomes = await Promise.allSettled(
+    targets.map(target => fetchFromCalendar(ots, target.url, target.commitment))
+  );
+  let changed = false;
+  outcomes.forEach((outcome, index) => {
+    if (outcome.status !== 'fulfilled' || !outcome.value) return;
+    const { subStamp } = targets[index];
+    if (outcome.value.getAttestations().size === 0) return;
+    subStamp.merge(outcome.value);
+    changed = true;
+  });
+  return changed;
 }
 
 function deserializeProof(otsPath, ots) {
@@ -167,7 +277,19 @@ export async function createTimestamp(file, options = {}) {
     ...(options.m ? { m: options.m } : {})
   };
 
-  await ots.stamp(detached, stampOptions);
+  const calendars = stampOptions.calendars && stampOptions.calendars.length
+    ? stampOptions.calendars
+    : ots.Calendar.DEFAULT_AGGREGATORS;
+  const minimum = stampOptions.m && stampOptions.m > 0
+    ? stampOptions.m
+    : (calendars.length >= 2 ? 2 : 1);
+
+  if (vendoredInUse) {
+    await stampWithoutLibraryHttp(ots, detached, calendars, minimum);
+  } else {
+    await ots.stamp(detached, stampOptions);
+  }
+
   const details = proofDetails(output, detached, ots);
   if (details.pendingCount === 0 && !details.complete) {
     throw new Error('No usable calendar attestation was returned; no proof was saved.');
@@ -188,10 +310,12 @@ export async function createTimestamp(file, options = {}) {
 export async function upgradeTimestamp(otsPath, options = {}) {
   const ots = runtime();
   const { bytes, detached } = deserializeProof(otsPath, ots);
-  const changed = await ots.upgrade(detached, {
-    ...timestampOptions(options),
-    ...(options.calendars ? { calendars: options.calendars } : {})
-  });
+  const changed = vendoredInUse
+    ? await upgradeWithoutLibraryHttp(ots, detached, options.calendars)
+    : await ots.upgrade(detached, {
+      ...timestampOptions(options),
+      ...(options.calendars ? { calendars: options.calendars } : {})
+    });
   const updated = Buffer.from(detached.serializeToBytes());
   const backupPath = changed && !updated.equals(bytes)
     ? persistUpgrade(otsPath, updated)
