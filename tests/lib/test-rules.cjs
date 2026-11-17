@@ -459,6 +459,7 @@ const RULES = [
   { id: "ui-portal-functions", area: "GUI", title: "Ui portal functions", owner: "tests/ui-portal-functions.cjs" },
   { id: "ui-portal-tree", area: "GUI", title: "Ui portal tree", owner: "tests/ui-portal-tree.cjs" },
   { id: "ui-progress", area: "GUI", title: "Ui progress", owner: "tests/ui-progress.cjs" },
+  { id: "ui-report-buttons", area: "GUI", title: "Ui report buttons", owner: "tests/ui-report-buttons.cjs" },
   { id: "ui-settings-sections", area: "GUI", title: "Ui settings sections", owner: "tests/ui-settings-sections.cjs" },
   { id: "ui-shell-nav", area: "GUI", title: "Ui shell nav", owner: "tests/ui-shell-nav.cjs" },
   { id: "ui-skin", area: "GUI", title: "Ui skin", owner: "tests/ui-skin.cjs" },

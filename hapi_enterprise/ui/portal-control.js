@@ -31,6 +31,10 @@
     { id: 'qr-restore', area: 'qr', label: 'pc.qr.restore', icon: 'restore', fallback: 'refresh' },
     // Настройки: сверка на `files[]` с диска.
     { id: 'config-verify', area: 'config', label: 'pc.options.verify', icon: 'manifest', fallback: 'id' },
+    // Отчети (ADR-0028): един бутон на портала дава точен отчет и готов линк за изпращане.
+    // Обхватът идва от МЯСТОТО на бутона, а не от формуляр — затова тук е само порталът;
+    // папка и файл имат своя бутон в реда си (`HapiOneClick.run`).
+    { id: 'report-portal', area: 'report', label: 'pc.report.portal', title: 'pc.report.portal.title', icon: 'manifest', fallback: 'download' },
   ];
 
   /**
@@ -179,6 +183,11 @@
       })}</div>
                 <p class="hint">${esc(T('pc.qr.verify.hint'))}</p>
                 <output class="pf-security-out" id="pf-qr-out" aria-live="polite"></output>
+              </div>
+              <div class="pf-security">
+                <h6>${ico('download')} ${esc(T('pc.report.title'))}</h6>
+                <p class="hint">${esc(T('pc.report.hint'))}</p>
+                <div class="pf-fn-list">${fnRows(ctx, 'report')}</div>
               </div>
               <div class="pf-security">
                 <h6>${ico('plus')} ${esc(T('pc.fn.title'))}</h6>

@@ -62,7 +62,7 @@ const i18nSrc = read('hapi_enterprise/ui/i18n.js');
   for (const fn of FUNCTIONS) {
     assert.ok(fn.icon && HIERARCHY.has(fn.icon), 'иконата „' + fn.icon + '“ на „' + fn.id + '“ е в йерархията на спрайта');
     assert.ok(fn.fallback, '„' + fn.id + '“ има резервна икона от вградения набор');
-    assert.ok(['security', 'access', 'qr', 'config'].includes(fn.area), '„' + fn.id + '“ е в позната област');
+    assert.ok(['security', 'access', 'qr', 'config', 'report'].includes(fn.area), '„' + fn.id + '“ е в позната област');
     // Всеки текст се среща в BG, EN и DE речника — иначе немският панел показва ключ.
     const occurrences = i18nSrc.split("'" + fn.label + "':").length - 1;
     assert.equal(occurrences, 3, 'текстът на „' + fn.id + '“ (' + fn.label + ') е на трите езика: ' + occurrences);

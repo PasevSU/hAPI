@@ -72,6 +72,11 @@
       )}" aria-pressed="${flags.locked}" title="${esc(
         flags.locked ? T('pf.lock.on') : T('pf.lock.off'),
       )}">${flags.locked ? ICON.locked : ICON.unlocked}</button>
+          <button type="button" class="fm-ico-btn" data-report-folder="${esc(
+        key,
+      )}" title="${esc(T('pc.report.folder.title', { path }))}" aria-label="${esc(
+        T('pc.report.folder.title', { path }),
+      )}">${ico('download')}</button>
           <button type="button" class="fm-ico-btn ${gear ? 'on' : ''}" data-folder-gear="${esc(key)}" aria-expanded="${gear}" title="${esc(
         T('pf.gear'),
       )}">${ico('gear')}</button>

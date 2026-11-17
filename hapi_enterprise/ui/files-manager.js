@@ -2932,6 +2932,56 @@
    * контролен панел · папки на портала · файлове в портала. Всеки блок се рисува от
    * собствения си JS файл (ui/portal-control.js, ui/portal-folders.js, ui/portal-files.js).
    */
+  /**
+   * ОТЧЕТ С ЕДНО НАТИСКАНЕ (ADR-0028, стъпка 5): обхватът идва от МЯСТОТО на бутона —
+   * портал (обектът функции), папка (ред в дървото) или файл (ред в списъка). Всеки отчет се
+   * строи наново и получава адрес `/statik/<id>/<име>`; панелът го показва с „копирай“, защото
+   * линкът е смисълът на отчета — изпраща се на проверяващ.
+   */
+  async function oneClickReport({ type, path: rel, fileIds }) {
+    const p = portal();
+    if (!p) return;
+    const out = document.getElementById('pf-report-out');
+    const say = (text, kind) => {
+      if (!out) return;
+      out.textContent = text;
+      out.dataset.kind = kind || '';
+    };
+    if (!connected()) return say(T('pc.report.demo'), '');
+    if (type === 'folder' && !String(p.storage_root || '')) {
+      // Портал без собствена папка няма дърво — отчетът за папка щеше да опише чужди файлове.
+      return say(T('pc.report.noFolder'), 'err');
+    }
+    say(T('pc.report.busy'), '');
+    const body = { portal: p.id, type };
+    if (Array.isArray(fileIds) && fileIds.length) body.fileIds = fileIds;
+    else if (type === 'folder' || type === 'file') body.path = String(rel == null ? '' : rel);
+    else if (type === 'selection') body.paths = Array.isArray(rel) ? rel : [];
+    const r = await api('/admin/api/v2/reports/oneclick', { method: 'POST', json: body });
+    if (!r.ok) {
+      say(r.error || `HTTP ${r.status}`, 'err');
+      return toast(r.error || `HTTP ${r.status}`, 'err');
+    }
+    const url = String((r.data && r.data.url) || '');
+    if (out) {
+      out.dataset.kind = 'ok';
+      out.innerHTML = `${esc(T('pc.report.done'))} <a href="${esc(url)}" target="_blank" rel="noreferrer">${esc(url)}</a>
+        <button type="button" class="btn btn-sm" data-report-copy="${esc(url)}">${esc(T('pc.report.copy'))}</button>`;
+      const copy = out.querySelector('[data-report-copy]');
+      if (copy) {
+        copy.addEventListener('click', () => {
+          const clip = window.navigator && window.navigator.clipboard;
+          if (!clip || typeof clip.writeText !== 'function') return toast(T('pc.report.copyManual'), '');
+          clip.writeText(url).then(() => toast(T('pc.report.copied'), 'ok')).catch(() => toast(T('pc.report.copyManual'), ''));
+        });
+      }
+    }
+    toast(T('pc.report.toast'), 'ok');
+  }
+  // Един вход за трите места, които го викат: обектът функции, редът на папката и редът на
+  // файла. Модулите им нямат токен и не строят свои заявки — викат този обект.
+  if (typeof window !== 'undefined') window.HapiOneClick = { run: (opts) => void oneClickReport(opts || {}) };
+
   function portalDetail(p) {
     const ctx = panelCtx(p);
     return `<div class="pf-panels">
@@ -2940,6 +2990,10 @@
              своя input (щракването не правеше нищо). Скрити са, но носят име за четеца. */ ''}
         <input type="file" id="fm-file-input" class="u-hidden" aria-label="Избор на един файл за качване" />
         <input type="file" id="fm-dir-input" class="u-hidden" webkitdirectory directory multiple aria-label="Избор на папка за внасяне" />
+        ${/* Линкът на отчета (ADR-0028) стои ИЗВЪН сгъваемите блокове: отчет се иска от портал,
+             папка и файл, тоест от три различни блока, а резултатът е един. В сгъваемо тяло
+             той изчезва от документа и човекът не вижда какво е получил. */ ''}
+        <output class="pf-security-out" id="pf-report-out" aria-live="polite"></output>
         ${panel(window.HapiPortalControl, ctx)}
         ${panel(window.HapiPortalFolders, ctx)}
         ${panel(window.HapiPortalFiles, ctx)}
@@ -4064,6 +4118,15 @@
       });
     }
     if (q('#pf-config-verify')) bindFn('config-verify', () => verifyConfig());
+  // Отчет за ЦЕЛИЯ портал от обекта функции (ADR-0028): един бутон, готов линк.
+  if (q('#pf-report-portal')) bindFn('report-portal', () => oneClickReport({ type: 'portal' }));
+  // Отчет за папка (ред в дървото) и за регистриран файл (ред в списъка) — същият вход.
+  host.querySelectorAll('[data-report-folder]').forEach((el) => {
+    el.addEventListener('click', () => void oneClickReport({ type: 'folder', path: el.dataset.reportFolder || '' }));
+  });
+  host.querySelectorAll('[data-report-file]').forEach((el) => {
+    el.addEventListener('click', () => void oneClickReport({ type: 'selection', fileIds: [el.dataset.reportFile] }));
+  });
     if (q('#pf-config-show')) q('#pf-config-show').addEventListener('click', () => void showConfigFile());
     // API/QR се създават заедно с портала — няма бутон „Генерирай“. Панелът НЕ изрежда
     // техническите адреси: остава само QR кодът, който отваря портала, и действията по него.

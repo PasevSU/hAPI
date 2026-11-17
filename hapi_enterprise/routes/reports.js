@@ -168,7 +168,21 @@ function create(deps) {
             sources: (Array.isArray(portal.files) ? portal.files : []).filter((f) => f && f.id).map((f) => ({ abs: path.join(filesRoot, portal.id, f.id), name: f.name || f.id })),
           })
           : type === 'selection'
-            ? await oneclick.build({ type, dir: portalAbs(storageRoot), paths: Array.isArray(payload.paths) ? payload.paths.map(String) : [], portal, createdAt, hash: hashApi })
+            ? (Array.isArray(payload.fileIds) && payload.fileIds.length
+              // Регистриран файл (ред в списъка): байтовете са в `files/<portalId>/<fileId>`,
+              // името идва от записа — отчетът описва ТОЗИ файл, не цялата папка.
+              ? await oneclick.build({
+                type,
+                portal,
+                createdAt,
+                hash: hashApi,
+                sources: payload.fileIds.map(String).map((id) => {
+                  const record = (Array.isArray(portal.files) ? portal.files : []).find((f) => f && f.id === id);
+                  if (!record) throw Object.assign(new Error('Unknown file: ' + id), { status: 404 });
+                  return { abs: path.join(filesRoot, portal.id, id), name: record.name || id };
+                }),
+              })
+              : await oneclick.build({ type, dir: portalAbs(storageRoot), paths: Array.isArray(payload.paths) ? payload.paths.map(String) : [], portal, createdAt, hash: hashApi }))
             : await oneclick.build({ type, dir: portalAbs(storageRoot), rel: String(payload.path || ''), portal, createdAt, hash: hashApi });
         const reportRender = require('../report-render');
         const pdf = reportRender.renderPdf(built.manifest, {
