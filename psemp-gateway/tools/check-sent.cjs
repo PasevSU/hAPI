@@ -275,12 +275,6 @@ function mimeTree(headers, body, depth = 0) {
   return node;
 }
 
-function collectNamed(node, into = []) {
-  if (node.name) into.push(node.name);
-  for (const child of node.children) collectNamed(child, into);
-  return into;
-}
-
 /**
  * How far the OpenPGP signature actually reaches.
  *
