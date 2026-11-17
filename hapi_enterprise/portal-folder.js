@@ -11,9 +11,11 @@
 //   • едноименните не се презаписват: `име.pdf`, `име-2.pdf`, `име-3.pdf`;
 //   • `portal.html` е генерирана страница на портала (списък с файловете и адресите им).
 
+const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const paths = require('./paths');
+const portalConfig = require('./portal-config');
 
 /** Абсолютният път на папката на портала (на HA: /share/<slug>). */
 function folderPath(storageRoot) {
@@ -57,6 +59,22 @@ async function ensure(portal) {
   if (paths.isLogicalRoot(portal && portal.storage_root)) return null;
   const dir = folderPath(portal && portal.storage_root);
   await fsp.mkdir(dir, { recursive: true });
+  // Всяка папка на портал носи СВОЕТО описание (`configuration.yaml`): портал без него е
+  // просто папка. Създава се веднъж, с пълните подразбирания, за да се вижда на едно място
+  // какво може да се настрои. Съществуващ файл НИКОГА не се презаписва — той е истината.
+  const configFile = path.join(dir, DESCRIPTION);
+  if (!fs.existsSync(configFile)) {
+    try {
+      portalConfig.write(configFile, portalConfig.initial({ slug: portal && portal.slug, title: portal && portal.title }), {
+        slug: portal && portal.slug,
+      });
+    } catch (error) {
+      // Само НЕВАЛИДНО описание се прескача (например портал без валиден slug): папката остава
+      // без файл и го получава при първия успешен запис през API-то. Всяка друга грешка
+      // (права, пълен диск) се вдига — там тишината би скрила загубени данни.
+      if (error.code !== 'PORTAL_CONFIG_INVALID') throw error;
+    }
+  }
   return dir;
 }
 
@@ -278,8 +296,13 @@ ${body}
  * `api.json`/`openapi.json`/`portal.html` заедно с документите, а броячите на папката щяха да
  * растат с три, без човекът да е добавил нищо.
  */
-const GENERATED = new Set(['portal.html', 'api.json', 'openapi.json']);
-const isGenerated = (name) => GENERATED.has(String(name || ''));
+// Генерираните артефакти се трият при изтриване/преместване — затова са отделен списък от
+  // описанието: `configuration.yaml` е СЪСТОЯНИЕТО на портала (опции, флагове на папките, файлове)
+  // и не бива да изчезва при преместване. За дървото и двата вида НЕ са съдържание.
+  const ARTIFACTS = new Set(['portal.html', 'api.json', 'openapi.json']);
+  const GENERATED = ARTIFACTS;
+  const DESCRIPTION = 'configuration.yaml';
+  const isGenerated = (name) => ARTIFACTS.has(String(name || '')) || String(name || '') === DESCRIPTION;
 
 /** Атомарен запис в папката на портала (tmp + rename), за да не се чете половин файл. */
 async function writeAtomic(file, content) {
@@ -356,7 +379,7 @@ async function removeArtifacts(root) {
   const dir = folderPath(typeof root === 'string' ? root : root && root.storage_root);
   if (paths.isLogicalRoot(typeof root === 'string' ? root : root && root.storage_root)) return [];
   const removed = [];
-  for (const name of GENERATED) {
+  for (const name of ARTIFACTS) {
     const full = path.join(dir, name);
     try {
       await fsp.unlink(full);
@@ -370,4 +393,4 @@ async function removeArtifacts(root) {
   return removed;
 }
 
-module.exports = { folderPath, safeName, ensure, store, remove, page, rootPage, listTree, writeArtifacts, folderReady, removeArtifacts, isGenerated, GENERATED };
+module.exports = { folderPath, safeName, ensure, store, remove, page, rootPage, listTree, writeArtifacts, folderReady, removeArtifacts, isGenerated, GENERATED, ARTIFACTS, DESCRIPTION };

@@ -1,6 +1,6 @@
 # Migration Log — hAPI Enterprise
 
-> **Клас:** исторически · **Замразен към:** 0.69.232
+> **Клас:** исторически · **Замразен към:** 0.69.233
 
 > Append-only migration journal. One line per event; fields separated by `|`.
 

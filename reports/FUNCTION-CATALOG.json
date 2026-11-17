@@ -1,10 +1,10 @@
 {
   "generatedFor": "hapi_enterprise",
-  "total": 420,
-  "tested": 395,
-  "untested": 25,
-  "fnTotal": 370,
-  "fnTested": 370,
+  "total": 435,
+  "tested": 407,
+  "untested": 28,
+  "fnTotal": 379,
+  "fnTested": 379,
   "modules": [
     {
       "module": "hapi_enterprise/api-registry.js",
@@ -1217,6 +1217,86 @@
       ]
     },
     {
+      "module": "hapi_enterprise/portal-config.js",
+      "functions": [
+        {
+          "name": "DEFAULTS",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "diff",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "effective",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "emit",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "ENUMS",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "FILE_KEYS",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "initial",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "MAX_BYTES",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "MAX_FILES",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "parse",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "read",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "RESERVED",
+          "kind": "константа",
+          "tested": false
+        },
+        {
+          "name": "validate",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "verify",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "write",
+          "kind": "функция",
+          "tested": true
+        }
+      ]
+    },
+    {
       "module": "hapi_enterprise/portal-integrity.js",
       "functions": [
         {
@@ -1372,7 +1452,7 @@
         {
           "name": "SKINS",
           "kind": "константа",
-          "tested": false
+          "tested": true
         },
         {
           "name": "stylesheet",

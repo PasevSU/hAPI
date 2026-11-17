@@ -2,12 +2,12 @@
 
 > **Клас:** нормативен · **Собственик на факта:** кодове на грешки
 
-> **Генериран документ.** Версия на кода: **0.69.232**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.233**. Пише се от
 > `node scripts/error-codes.cjs`, проверява се от `tests/error-codes.cjs`.
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
 
-Общо: **78** кода, излъчвани от `hapi_enterprise/`. От тях **59** носят
+Общо: **80** кода, излъчвани от `hapi_enterprise/`. От тях **61** носят
 собствено обяснение в кода; останалите се разпознават по кода и файла.
 
 ## Кодове по азбучен ред
@@ -61,6 +61,8 @@
 | `PASSPHRASE_WRONG` | Паролата на секретния ключ не е вярна (AEAD тагът не се провери; опити: | `hapi_enterprise/pgp.js` |
 | `PATH_OUTSIDE_STORAGE` | пътят сочи извън /share и /media (вкл. през „..“ или симв. връзка) | `hapi_enterprise/pgp-sign.js` |
 | `PGP_SECRET_KEY_REQUIRED` | — | `hapi_enterprise/path-crypto.js` |
+| `PORTAL_CONFIG_CONFLICT` | файлът е променен между четенето и записа | `hapi_enterprise/portal-config.js` |
+| `PORTAL_CONFIG_INVALID` | описанието не минава проверката ( | `hapi_enterprise/portal-config.js` |
 | `PUBLIC_UNREADABLE` | — | `hapi_enterprise/path-crypto.js` |
 | `RESPONSE_ALREADY_SENT` | втори отговор е отказан (първият вече е изпратен), код | `hapi_enterprise/respond.js` |
 | `S2K_AEAD_UNSUPPORTED` | Платформата няма поддръжка на AEAD режима на този ключ ( | `hapi_enterprise/pgp.js` |

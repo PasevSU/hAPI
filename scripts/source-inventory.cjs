@@ -87,19 +87,14 @@ function walk(dir, ext) {
   return out;
 }
 
-function table(files, label) {
-  const rows = files
-    .map((abs) => ({ name: path.relative(ROOT, abs).replace(/\\/g, '/'), purpose: purposeOf(abs) }))
+// ЕДНА таблица за всички файлове: отделните таблици по вид харчеха по четири реда глава всяка
+// (заглавие, празен ред, шапка, линия), а таванът на документа (`tests/docs-size.cjs`) само пада.
+// Фактите са същите — видът става колона, а редът е по път, тоест един файл се намира с търсене.
+
+function rowsOf(files, kind) {
+  return files
+    .map((abs) => ({ name: path.relative(ROOT, abs).replace(/\\/g, '/'), purpose: purposeOf(abs), kind }))
     .sort((a, b) => a.name.localeCompare(b.name));
-  const head = [
-    `### ${label} (${rows.length})`,
-    '',
-    '| Файл | Предназначение (първи ред от самия файл) |',
-    '| ---- | ----------------------------------------- |',
-    ...rows.map((r) => `| \`${r.name}\` | ${r.purpose.replace(/\|/g, '\\|')} |`),
-    '',
-  ];
-  return { head, count: rows.length };
 }
 
 function generate() {
@@ -116,12 +111,14 @@ function generate() {
   });
 
   const sections = [
-    table(backend, 'Backend модули (`hapi_enterprise/*.js`)'),
-    table(routes, 'HTTP компоненти (`hapi_enterprise/routes/*.js`)'),
-    table(ui, 'Интерфейс (`hapi_enterprise/ui/*.js`)'),
-    table(py, 'Home Assistant интеграция (`custom_components/**/*.py`)'),
-    table(scripts, 'Инструменти (`scripts/*.cjs`)'),
+    rowsOf(backend, 'backend'),
+    rowsOf(routes, 'routes'),
+    rowsOf(ui, 'ui'),
+    rowsOf(py, 'python'),
+    rowsOf(scripts, 'инструмент'),
   ];
+  const counts = sections.map((s) => s.length);
+  const all = sections.flat().sort((a, b) => a.name.localeCompare(b.name));
 
   const lines = [
     '# Source Inventory — hAPI Enterprise (As-Is)',
@@ -130,14 +127,18 @@ function generate() {
     '',
     `> **Генериран документ.** Версия на кода: **${version()}**. Пише се от \`node scripts/source-inventory.cjs\`, проверява се от \`tests/source-inventory.cjs\`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.`,
     '',
-    `Общо: **${sections[0].count}** backend модула · **${sections[1].count}** HTTP компонента · ` +
-    `**${sections[2].count}** UI модула · **${sections[3].count}** Python модула · ` +
-    `**${sections[4].count}** инструмента · **${tests.length}** теста. Архитектурните описания са в ` +
+    `Общо: **${counts[0]}** backend модула · **${counts[1]}** HTTP компонента · ` +
+    `**${counts[2]}** UI модула · **${counts[3]}** Python модула · ` +
+    `**${counts[4]}** инструмента · **${tests.length}** теста. Архитектурните описания са в ` +
     '[`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в ' +
     '[`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).',
     '',
+    `### Файлове (${all.length})`,
+    '',
+    '| Файл | Вид | Предназначение (първи ред от самия файл) |',
+    '| ---- | --- | ----------------------------------------- |',
+    ...all.map((r) => `| \`${r.name}\` | ${r.kind} | ${r.purpose.replace(/\|/g, '\\|')} |`),
   ];
-  for (const s of sections) lines.push(...s.head);
   return lines.join('\n');
 }
 
