@@ -42,7 +42,7 @@ Static (from options):
 | Header | Value |
 | --- | --- |
 | `X-PasevSU-Version` | `version` option (default `1.0`) |
-| `X-PasevSU-Build` | the installed add-on's own version, read from `manifest.json` (currently `1.8`) |
+| `X-PasevSU-Build` | the installed add-on's own version, read from `manifest.json` (currently `1.10`) |
 | `X-PasevSU-Framework` | `framework` option (default `Forensic-Mail`) |
 | `X-PasevSU-Origin` | `origin` option (default `Thunderbird`) |
 | `X-PasevSU-Organization` | `organization` option (default `PasevSU`) |
@@ -537,7 +537,7 @@ transit. Two caveats belong here rather than in a footnote:
 - **`X-PasevSU-Version` is the config/format version, not the build.** It defaults
   to `1.0` and is typed by the user, so two very different builds can both say
   `1.0` — which is how a stale prototype went unnoticed. `X-PasevSU-Build` names
-  the add-on version that actually stamped the message (`1.8` today) and is read
+  the add-on version that actually stamped the message (`1.10` today) and is read
   from `manifest.json` at send time, so it cannot go stale by being forgotten.
   Compare messages by `Build`; read `Version` as "which settings format". A
   message with no `Build` header came from a build older than 1.8.

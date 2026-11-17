@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "__MSG_extName__",
-  "version": "1.9",
+  "version": "1.10",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "browser_specific_settings": {
@@ -10,9 +10,14 @@
       "strict_min_version": "115.0"
     }
   },
-  "permissions": ["compose", "storage"],
+  "permissions": [
+    "compose",
+    "storage"
+  ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
   "options_ui": {
     "page": "options.html",

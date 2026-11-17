@@ -1,11 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <title data-i18n="optionsTitle">PasevSU Forensic Mail — Options</title>
     <style>
       body {
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
         margin: 1.5rem;
         max-width: 40rem;
       }
@@ -24,7 +28,7 @@
         color: #555;
         margin-top: -0.4rem;
       }
-      input[type="text"] {
+      input[type='text'] {
         width: 100%;
         padding: 0.3rem 0.4rem;
       }
@@ -55,7 +59,7 @@
         margin-top: 1.5rem;
       }
       #attachHashes {
-        font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+        font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
         font-size: 0.75rem;
         word-break: break-all;
       }
@@ -121,18 +125,13 @@
     <div class="checkbox-field">
       <input type="checkbox" id="enableReceipt" />
       <label for="enableReceipt" data-i18n-html="labelReceipt"
-        >Ask for a delivery receipt on every message
-        (<code>Disposition-Notification-To</code>)</label
+        >Ask for a delivery receipt on every message (<code>Disposition-Notification-To</code>)</label
       >
     </div>
     <div class="field">
-      <label for="receiptAddress" data-i18n="labelReceiptAddress"
-        >Fallback receipt address</label
-      >
+      <label for="receiptAddress" data-i18n="labelReceiptAddress">Fallback receipt address</label>
       <input type="text" id="receiptAddress" />
-      <small data-i18n="receiptAddressHint"
-        >used only when Thunderbird does not report the sending identity</small
-      >
+      <small data-i18n="receiptAddressHint">used only when Thunderbird does not report the sending identity</small>
     </div>
 
     <button id="save" data-i18n="save">Save</button>
@@ -141,20 +140,16 @@
     <h2 data-i18n="sectionShared">Shared settings file</h2>
     <p data-i18n-html="sharedIntro">
       The gateway keeps the same keys in
-      <code>psemp-gateway/settings.default.json</code>. Import it here so both halves
-      agree on version, framework, organization and PGP fingerprint, and export the
-      current values back to that file when you change them.
+      <code>psemp-gateway/settings.default.json</code>. Import it here so both halves agree on version, framework,
+      organization and PGP fingerprint, and export the current values back to that file when you change them.
     </p>
     <div class="checkbox-field">
       <input type="file" id="importFile" accept=".json,application/json" />
-      <button id="exportFile" type="button" data-i18n="exportButton">
-        Export settings file
-      </button>
+      <button id="exportFile" type="button" data-i18n="exportButton">Export settings file</button>
     </div>
     <p class="note" data-i18n-html="originNote">
-      <code>origin</code> is not copied from the file: it names the producer, so the
-      extension always writes <code>Thunderbird</code> and the gateway writes
-      <code>PSEMP-Gateway</code>.
+      <code>origin</code> is not copied from the file: it names the producer, so the extension always writes
+      <code>Thunderbird</code> and the gateway writes <code>PSEMP-Gateway</code>.
     </p>
 
     <p class="note" data-i18n-html="receiptNote">
@@ -163,13 +158,18 @@
     </p>
 
     <p class="note" data-i18n-html="pgpNote">
-      <strong>OpenPGP already configured in Thunderbird.</strong> Put the fingerprint
-      of the key your account already signs with here.
+      <strong>OpenPGP already configured in Thunderbird.</strong> Put the fingerprint of the key your account already
+      signs with here.
+    </p>
+
+    <p class="note" data-i18n-html="signatureTimeNote">
+      <strong>„Signatur-Ablaufdatum: Kein Zeitpunkt in der Signatur enthalten“ is a fact, not a fault.</strong>
+      Thunderbird's OpenPGP dialog shows it when the signature carries no expiry date.
     </p>
 
     <p class="note" data-i18n-html="limitationsNote">
-      Real OpenPGP signatures (<code>.asc</code>) and OpenTimestamps
-      (<code>.ots</code>) cannot be produced inside a Thunderbird MailExtension.
+      Real OpenPGP signatures (<code>.asc</code>) and OpenTimestamps (<code>.ots</code>) cannot be produced inside a
+      Thunderbird MailExtension.
     </p>
 
     <script src="options.js"></script>
