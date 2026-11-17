@@ -1,7 +1,7 @@
 'use strict';
 // Phase 4.4 QR/virtual-folder: branded QR landing page, QR artifact revocation,
 // and notify dispatch hook (email/SMS via HA notify.*).
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),http=require('node:http'),{spawn}=require('node:child_process');
 const notify=require('../hapi_enterprise/notify');
 
@@ -17,7 +17,7 @@ const notify=require('../hapi_enterprise/notify');
   await assert.rejects(()=>n.send('bad',null,{message:'x'}),e=>e.status===400,'invalid service throws 400');
  }
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'qr-dispatch-'));
- const token='qr-dispatch-admin-secret-2026';const pub=18422,mpub=18755;
+ const token='qr-dispatch-admin-secret-2026';const pub = await freePort(),mpub = await freePort();
  const base=`http://127.0.0.1:${pub}`,mockBase=`http://127.0.0.1:${mpub}`;
  // Mock HA notify service endpoint — captures the call.
  let captured=null;

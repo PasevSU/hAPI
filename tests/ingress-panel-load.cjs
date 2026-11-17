@@ -18,13 +18,15 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 
 const INGRESS = '/api/hassio_ingress/panel-token_9f2c';
-const pub = 18399;
-const adm = 18398;
+let pub = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
+let adm = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
 
 (async () => {
+  pub = await freePort();
+  adm = await freePort();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-ingress-panel-'));
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: { ...process.env, DATA_DIR: dir, ADMIN_TOKEN: 'ingress-panel-secret-4a7f19c2b8e5d3', PORT: String(pub), ADMIN_PORT: String(adm), INGRESS_MODE: 'true' },

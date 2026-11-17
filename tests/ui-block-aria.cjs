@@ -77,7 +77,7 @@ const PANEL_MODULES = [
       }, { label: 'блокът ' + block + ' да се сгъне' });
       const closed = toggleOf(block);
       assert.equal(closed.hasAttribute('aria-controls'), false, 'сгънатият блок „' + block + '“ вече не сочи никъде');
-      assert.equal(host.querySelector('#' + id), null, 'сгънатото тяло на „' + block + '“ не е в документа');
+      assert.ok(!host.querySelector('#' + id), 'сгънатото тяло на „' + block + '“ не е в документа');
     }
 
     console.log('PASS ui-block-aria: всеки превключвател назовава тялото си, сгънат не сочи нищо');

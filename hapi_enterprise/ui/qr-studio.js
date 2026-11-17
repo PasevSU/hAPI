@@ -8,7 +8,9 @@
 // Договорът тук е един и глобален (`window.HapiQrStudio`), за да го ползва ВСЕКИ панел:
 //   • `open(spec)`  — изскачащ прозорец с ЧЕТИРИ раздела: обикновен · само за четене ·
 //                     временен (срок/парола/само за четене) · папки и файлове;
-//   • `figure(url, label)` — рамка с QR код и ЛИНКА, изписана в долния ръб (еднакъв вид навсякъде);
+//   • `figure(url, label)` — ЕДНО изображение: QR код и ЛИНК, изписана в долния му ръб
+//                     (еднакъв вид навсякъде); адресът се носи и като `data-url` върху
+//                     картата, за да го чете машина (копиране, проверки, екранен четец);
 //   • `copy(text, label)`  — копиране с потвърждение;
 //   • `close()`.
 //
@@ -64,29 +66,127 @@
     return levels[state.index] || levels[0] || null;
   };
 
-  // ── Рамка с код и линк ───────────────────────────────────────────────────
+  // ── ЕДНА КАРТИНКА: код + надпис + ЦЕЛИЯТ адрес ──────────────────────────
+  // Изискване на собственика: кодът и адресът да са в ЕДНО изображение, модерно и стилно —
+  // така разпечатано, снимано или изпратено, то носи и кода, и адреса си, без да разчита на
+  // текст до себе си. Дотук `figure()` рисуваше HTML рамка с отделен ред за адреса (и той се
+  // съкращаваше с „…“), а `downloadSvg()` изнасяше САМО кода.
+  //
+  // Затова картата е SVG: един документ, който се показва и се изтегля еднакво. Адресът се
+  // пренася на редове (до 6), за да се чете ЦЕЛИЯТ — дълга връзка не се реже.
+  const CARD = { width: 560, pad: 32, qr: 440, gap: 20 };
+
+  /** Пренася текст по думи, с таван на редовете и многоточие само ако е прелял. */
+  function wrapText(text, perLine, maxLines) {
+    const words = String(text == null ? '' : text).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+      const next = line ? line + ' ' + word : word;
+      if (next.length > perLine && line) {
+        lines.push(line);
+        line = word;
+        if (lines.length === maxLines) break;
+      } else {
+        line = next;
+      }
+    }
+    if (lines.length < maxLines && line) lines.push(line);
+    const total = words.join(' ').length;
+    const shown = lines.join(' ').length;
+    if (total > shown && lines.length) lines[lines.length - 1] = lines[lines.length - 1].replace(/.$/, '…');
+    return lines.length ? lines : [''];
+  }
+
+  /** Пренася адрес по естествени граници (`/`, `?`, `&`), без да губи нито един знак. */
+  function wrapUrl(url, perLine) {
+    let rest = String(url == null ? '' : url);
+    const lines = [];
+    while (rest.length > perLine && lines.length < 6) {
+      let cut = rest.lastIndexOf('/', perLine);
+      if (cut < perLine * 0.5) cut = rest.lastIndexOf('&', perLine);
+      if (cut < perLine * 0.5) cut = rest.lastIndexOf('?', perLine);
+      if (cut < perLine * 0.5) cut = perLine - 1;
+      lines.push(rest.slice(0, cut + 1));
+      rest = rest.slice(cut + 1);
+    }
+    if (rest) lines.push(rest);
+    return lines.length ? lines : [''];
+  }
+
+  /** Отделя вътрешността на QR SVG от обвивката, за да влезе в общата карта. */
+  function qrParts(svg) {
+    const view = /viewBox="0 0 ([\d.]+)\s+([\d.]+)"/.exec(svg);
+    const size = view ? Number(view[1]) : 0;
+    const inner = String(svg)
+      .replace(/^[\s\S]*?>/, '')
+      .replace(/<\/svg>\s*$/, '')
+      .replace(/<rect[^>]*fill="white"[^>]*\/>/g, '');
+    return { size: size > 0 ? size : 208, inner };
+  }
+
+  /** SVG карта: фон, ъгълчета, код, надпис и целият адрес на редове. */
+  function buildCard(url, label) {
+    const svg = render(url);
+    if (!svg) return '';
+    const parts = qrParts(svg);
+    const W = CARD.width;
+    const scale = CARD.qr / parts.size;
+    const labelLines = wrapText(label, 30, 2);
+    const urlLines = wrapUrl(url, 62);
+    const labelY = CARD.pad + CARD.qr + CARD.gap + 20;
+    const urlY = labelY + labelLines.length * 24 + 6;
+    const H = urlY + (urlLines.length - 1) * 18 + 30 + CARD.pad;
+    const tx = Math.round((W - CARD.qr) / 2);
+    const labelBlock = labelLines
+      .map(
+        (line, i) =>
+          `<text x="${W / 2}" y="${labelY + i * 24}" text-anchor="middle" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="19" font-weight="600" fill="#0b1a2b">${esc(
+            line,
+          )}</text>`,
+      )
+      .join('');
+    const urlText = urlLines
+      .map(
+        (line, i) =>
+          `<text x="${W / 2}" y="${urlY + i * 18}" text-anchor="middle" font-family="Consolas, Menlo, monospace" font-size="12.5" fill="#4a5c78">${esc(
+            line,
+          )}</text>`,
+      )
+      .join('');
+    const corners =
+      `<path d="M28 60V28h32" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round"/>` +
+      `<path d="M${W - 28} 60V28h-32" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round"/>` +
+      `<path d="M28 ${H - 60}v32h32" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round"/>` +
+      `<path d="M${W - 28} ${H - 60}v32h-32" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round"/>`;
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(
+        label || url || '',
+      )}">` +
+      `<rect x="0" y="0" width="${W}" height="${H}" rx="28" fill="#ffffff"/>` +
+      `<rect x="1.5" y="1.5" width="${W - 3}" height="${H - 3}" rx="26.5" fill="none" stroke="#dbe7f8" stroke-width="3"/>` +
+      corners +
+      `<rect x="${tx - 10}" y="${CARD.pad - 10}" width="${CARD.qr + 20}" height="${CARD.qr + 20}" rx="18" fill="#f6faff"/>` +
+      `<g transform="translate(${tx} ${CARD.pad}) scale(${scale.toFixed(4)})">${parts.inner}</g>` +
+      labelBlock +
+      urlText +
+      '</svg>'
+    );
+  }
+
+  // ── Рамката, която вижда целият панел ────────────────────────────────────
   /**
-   * Еднакъв вид навсякъде: изпъкнала рамка с ъгълчета, код в средата и ЛИНКЪТ, изписан в
-   * долния ръб — така разпечатан или сниман, кодът носи и адреса си, а не само картинка.
+   * Еднакъв вид навсякъде: карта с код, надпис и адреса в СЪЩИЯ SVG — тоест това, което се
+   * вижда, е точно това, което се изтегля. Разпечатано или снимано, носи адреса си.
    */
   function figure(url, label, opts) {
     const o = opts || {};
-    const svg = o.svg || render(url);
-    const text = String(url || '');
-    const shown = o.short || text;
-    if (!svg) {
-      return `<figure class="qs-figure qs-empty"><div class="qs-frame"><p class="hint">${esc(T('qr.missing', 'Кодът не може да бъде построен'))}</p></div></figure>`;
+    const card = buildCard(url, label);
+    if (!card) {
+      return `<figure class="qs-figure qs-empty"><div class="qs-card"><p class="hint">${esc(T('qr.missing', 'Кодът не може да бъде построен'))}</p></div></figure>`;
     }
     return `<figure class="qs-figure">
-        <div class="qs-frame">
-          <span class="qs-corner qs-corner-tl" aria-hidden="true"></span><span class="qs-corner qs-tr" aria-hidden="true"></span>
-          <span class="qs-corner qs-bl" aria-hidden="true"></span><span class="qs-corner qs-br" aria-hidden="true"></span>
-          <div class="qs-code" role="img" aria-label="${esc(o.alt || T('qr.alt', 'QR код към {url}', { url: shown }))}">${svg}</div>
-        </div>
-        <figcaption class="qs-caption">
-          ${label ? `<span class="qs-caption-label">${esc(label)}</span>` : ''}
-          <span class="qs-caption-url" title="${esc(text)}">${esc(shown)}</span>
-        </figcaption>
+      <div class="qs-card" data-url="${esc(String(url || ''))}" role="img" aria-label="${esc(o.alt || T('qr.alt', 'QR код към {url}', { url: String(url || '') }))}">${card}</div>
       </figure>`;
   }
 
@@ -124,9 +224,9 @@
     }
   }
 
-  /** Изтегляне на кода като SVG файл — същият код, който е на екрана. */
+  /** Изтегляне на КАРТАТА като SVG — кодът и адресът в едно изображение, както се вижда. */
   function downloadSvg(url, label) {
-    const svg = render(url);
+    const svg = buildCard(url, label);
     if (!svg) {
       notify(T('qr.missing', 'Кодът не може да бъде построен'), true);
       return;
@@ -257,10 +357,11 @@
   ).join('')}</select></div>`
         : ''
     }
-          <button type="submit" class="btn btn-sm btn-primary" ${state.busy ? 'disabled' : ''}>${esc(
+          <button type="submit" class="btn btn-sm btn-primary" aria-busy="${state.busy ? 'true' : 'false'}" ${state.busy ? 'disabled' : ''}>${esc(
       T('qr.temp.generate', 'Генерирай връзка'),
     )}</button>
         </form>
+        ${state.busy ? '<div class="bar qs-busy" data-indeterminate role="status" aria-live="polite"><i></i></div>' : ''}
         ${state.error ? `<p class="qs-note qs-note-err" role="alert">${esc(state.error)}</p>` : ''}
         ${
       result
@@ -354,7 +455,7 @@
     box.className = 'qs-backdrop';
     box.id = 'qs-modal';
     box.hidden = true;
-    box.innerHTML = `<div class="qs-window" role="dialog" aria-modal="true" aria-labelledby="qs-title">
+    box.innerHTML = `<div class="qs-window dialog dialog-lg" role="dialog" aria-modal="true" aria-labelledby="qs-title">
         <div class="qs-head">
           <h3 class="qs-title" id="qs-title"></h3>
           <div class="qs-head-right">

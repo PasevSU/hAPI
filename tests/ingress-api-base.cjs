@@ -20,7 +20,7 @@ const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { spawn } = require('node:child_process');
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 
 const ROOT = path.join(__dirname, '..');
 const HELPER = path.join(ROOT, 'hapi_enterprise/ui/api-base.js');
@@ -119,10 +119,12 @@ function sourceChecks() {
 }
 
 const INGRESS = '/api/hassio_ingress/panel-token_9f2c';
-const pub = 18499;
-const adm = 18498;
+let pub = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
+let adm = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
 
 (async () => {
+  pub = await freePort();
+  adm = await freePort();
   const unit = unitChecks();
   const source = sourceChecks();
 

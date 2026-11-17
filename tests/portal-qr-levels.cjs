@@ -112,7 +112,7 @@ const PANEL_MODULES = [
   );
   assert.ok(rows.length >= 3, 'има ред за всяко ниво: ' + rows.length);
   // Всяко ниво носи ГОТОВ публичен адрес, а не администраторски път.
-  const captions = rows.map((r) => String((r.querySelector('.qs-caption-url') || {}).textContent || '').trim());
+    const captions = rows.map((r) => String((r.querySelector('.qs-card[data-url]') || { getAttribute: () => '' }).getAttribute('data-url') || '').trim());
   assert.ok(captions.every((c) => /\/p\/|file\.html/.test(c)), 'всяко ниво носи публичен адрес: ' + captions.join(' | '));
   assert.equal(captions.some((c) => /admin\/api/.test(c)), false, 'нивата не сочат към административния API');
   assert.equal(new Set(captions).size >= 3, true, 'трите нива имат РАЗЛИЧНИ адреси');

@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const {spawn}=require('node:child_process');
 // Unit-level retention logic + HTTP endpoint smoke test.
 (async()=>{
@@ -34,7 +34,7 @@ const {spawn}=require('node:child_process');
 
  // --- HTTP endpoint smoke test (default disabled) ---
  const dir2=fs.mkdtempSync(path.join(os.tmpdir(),'retention-http-'));
- const token='retention-admin-secret-2026-y3',pub=18419,B=`http://127.0.0.1:${pub}`;
+ const token='retention-admin-secret-2026-y3',pub = await freePort(),B=`http://127.0.0.1:${pub}`;
  const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir2,ADMIN_TOKEN:token,PORT:String(pub)},stdio:'pipe'});
  try{
   let ready=false;for(let i=0;i<70;i++){try{if((await fetch(B+'/health')).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,70))}

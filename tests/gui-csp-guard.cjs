@@ -72,8 +72,10 @@ const PUBLIC_BASE = 'https://pasev.asuscomm.com';
     const qrBtn = await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът на портала' });
     qrBtn.click();
     const studio = await waitFor(() => ui.window.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
-    const caption = await waitFor(() => studio.querySelector('.qs-caption-url'), { label: 'адреса под кода' });
-    const qrUrl = String(caption.textContent || '').trim();
+      // 0.69.232: адресът е ЧАСТ от изображението, затова се чете от картата (`data-url`), а не
+      // от отделен HTML ред — такъв ред вече няма и `portal-card-link` пази точно това.
+      const caption = await waitFor(() => studio.querySelector('.qs-card[data-url]'), { label: 'картата с адреса' });
+      const qrUrl = String(caption.getAttribute('data-url') || '').trim();
     assert.ok(qrUrl.startsWith(PUBLIC_BASE), 'QR кодът носи публичния адрес: ' + qrUrl);
     // Менюто на ПАПКАТА показва същия публичен адрес, а заявката отива на произхода на
     // панела — точно това пази `sameOrigin()`.

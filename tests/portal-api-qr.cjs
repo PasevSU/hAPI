@@ -6,12 +6,12 @@
 // `qrPayload`, затова презаписваше `api/<slug>/qr.svg` с адрес на API-то. Панелът вика
 // точно този път веднага след създаване, т.е. новосъздаденият портал получаваше QR към
 // JSON. Тук се сверява самото съдържание на QR-а (генериран независимо от сървъра).
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict'), fs = require('node:fs'), os = require('node:os'), path = require('node:path'), { spawn } = require('node:child_process');
 const svgFor = (text) => { const q = require('../hapi_enterprise/qrcode.js')(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 8, margin: 4, scalable: true }) };
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'portal-apiqr-'));
-  const token = 'apiqr-test-admin-secret-2026-b7c3', pub = 18297;
+  const token = 'apiqr-test-admin-secret-2026-b7c3', pub = await freePort();
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], { env: { ...process.env, DATA_DIR: dir, ADMIN_TOKEN: token, PORT: String(pub), PUBLIC_GATEWAY_PORT: '0', PUBLIC_BASE_URL: 'https://example.test' }, stdio: 'pipe' });
   try {
     let ready = false;

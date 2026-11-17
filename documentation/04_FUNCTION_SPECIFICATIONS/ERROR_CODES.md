@@ -2,12 +2,12 @@
 
 > **Клас:** нормативен · **Собственик на факта:** кодове на грешки
 
-> **Генериран документ.** Версия на кода: **0.69.231**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.232**. Пише се от
 > `node scripts/error-codes.cjs`, проверява се от `tests/error-codes.cjs`.
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
 
-Общо: **70** кода, излъчвани от `hapi_enterprise/`. От тях **51** носят
+Общо: **78** кода, излъчвани от `hapi_enterprise/`. От тях **59** носят
 собствено обяснение в кода; останалите се разпознават по кода и файла.
 
 ## Кодове по азбучен ред
@@ -27,6 +27,14 @@
 | `CHECKSUM_MISMATCH` | CRC24 на armor не съвпада | `hapi_enterprise/pgp.js` |
 | `DATA_TOO_LONG` | Данните не се побират в един RSA блок | `hapi_enterprise/pgp.js` |
 | `DECRYPT_FAILED` | Съобщението не може да бъде декриптирано | `hapi_enterprise/pgp.js` |
+| `ETIMEDOUT` | таймаут след | `hapi_enterprise/core_module/http.js` |
+| `HASH_BAD_CHUNK` | размерът на парчето е извън позволените граници | `hapi_enterprise/core_module/hash.js` |
+| `HASH_BAD_ENTRIES` | очаква се списък от записи | `hapi_enterprise/core_module/hash.js` |
+| `HASH_BAD_ENTRY` | всеки запис иска непразно име | `hapi_enterprise/core_module/hash.js` |
+| `HASH_BAD_EXPECTED` | очакваният хеш не е 64 шестнайсетични знака | `hapi_enterprise/core_module/hash.js` |
+| `HASH_UNKNOWN_ALGO` | позволени са само sha256 и sha512 | `hapi_enterprise/core_module/hash.js` |
+| `HTTP_BAD_OPTION` | настройката трябва да е положително число | `hapi_enterprise/core_module/http.js` |
+| `HTTP_NO_FETCH` | липсва fetch — подай fetchImpl | `hapi_enterprise/core_module/http.js` |
 | `INTEGRITY_MISMATCH` | работещият код не съвпада с издадения манифест → | `hapi_enterprise/integrity.js` · `hapi_enterprise/start.js` |
 | `INVALID_ARMOR` | Очаква се ASCII armor текст | `hapi_enterprise/pgp.js` |
 | `INVALID_DATA` | Очаква се Buffer за подпис | `hapi_enterprise/pgp.js` |

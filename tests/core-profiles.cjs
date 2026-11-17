@@ -1,9 +1,9 @@
 'use strict';
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),{spawn}=require('node:child_process');
 (async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'core-profiles-'));
- const token='core-profiles-admin-secret-2026-x9',pub=18401,B=`http://127.0.0.1:${pub}`;
+ const token='core-profiles-admin-secret-2026-x9',pub = await freePort(),B=`http://127.0.0.1:${pub}`;
  const PROFILES=JSON.stringify({'6000':{label:{bg:'Активи'},fields:[{name:'asset_id',type:'string',required:true,indexed:true},{name:'value',type:'number'},{name:'secret',type:'encrypted'}]}});
  const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub),PROFILES},stdio:'pipe'});
  try{

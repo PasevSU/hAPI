@@ -634,10 +634,10 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       // Проверява се, че ТОЗИ адрес се отваря и е човешката страница, а не JSON.
       const qrBtn = await waitFor(() => app.$('[data-qr-portal]'), { label: 'QR бутонът на портала', timeout: BUDGET });
       qrBtn.click();
-      // 0.69.229: адресът е изписан под кода в QR студиото (част от рамката).
+      // 0.69.232: адресът е част от изображението на кода — чете се от картата (`data-url`).
       const studio = await waitFor(() => app.$('#qs-modal'), { label: 'прозореца на QR студиото', timeout: BUDGET });
-      const caption = await waitFor(() => studio.querySelector('.qs-caption-url'), { label: 'адреса под кода', timeout: BUDGET });
-      const url = String(caption.textContent || '').trim();
+      const caption = await waitFor(() => studio.querySelector('.qs-card[data-url]'), { label: 'картата с адреса', timeout: BUDGET });
+      const url = String(caption.getAttribute('data-url') || '').trim();
       assert.match(url, /\/p\/[0-9a-zA-Z-]+/, 'адресът е човешката страница на портала: ' + url);
       // Едно отваряне на вече показания адрес — каквото прави човек, като го натисне.
       const opened = await app.openLink(url);
@@ -824,7 +824,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       assert.ok(app.requests.some((r) => r.method === 'DELETE' && r.url.endsWith('/tokens/' + tokenId)), 'отнемането минава през DELETE API');
       app.click('#pf-token-list', 'повторно зареждане на списъка с токени');
       await waitFor(() => /отнет/.test(text(app.$('#pf-token-out'))), { label: 'отнетото състояние в списъка' });
-      assert.equal(app.$('[data-token-revoke]'), null, 'отнетият токен вече няма активен бутон за отнемане');
+      assert.ok(!app.$('[data-token-revoke]'), 'отнетият токен вече няма активен бутон за отнемане');
     });
 
     // ── J35. Портал: обновяване на ключа за подпис ────────────────────────────
@@ -1276,11 +1276,35 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       await waitFor(() => app.toast(), { label: 'отговорът при изчистване на бележката', timeout: BUDGET });
       assert.equal(app.toast().kind, 'ok', 'бележката е изчистена: ' + app.toast().message);
       await waitFor(() => !/Бележка от сценария/.test(text(view())), { label: 'бележката да изчезне от дървото', timeout: BUDGET });
-      // QR кодът НЕ е в менюто на папката: в панела има ЕДИН код — този на портала.
+      // Всяка папка има СВОЙ вход към QR студиото и той отваря ЕДИНИЯ прозорец направо на
+      // нивото на папката. Дотук тук стоеше обратното твърдение („менюто няма собствен QR
+      // код“) — остатък от предишния договор. То падаше, а `assert.equal(възел, null)` при
+      // провал строи diff от ЦЕЛИЯ DOM: 144 s и „Array buffer allocation failed“ вместо
+      // разбираемо съобщение (DEF-92).
       const again = await waitFor(ownGear, { label: 'менюто ⚙ на папката отново', timeout: BUDGET });
       again.click();
       await settle('менюто на папката');
-      assert.equal(app.$('[data-folder-qr="' + rel + '"]'), null, 'менюто на папката няма собствен QR код');
+      const qrEntry = app.$('[data-folder-qr="' + rel + '"]');
+      assert.ok(qrEntry, 'менюто на папката има вход към QR студиото на своето ниво');
+      app.clearToasts();
+      qrEntry.click();
+      const studio = await waitFor(() => app.$('#qs-modal'), { label: 'QR студиото за папката', timeout: BUDGET });
+      assert.equal(studio.hasAttribute('hidden'), false, 'студиото се отваря от менюто на папката');
+      const card = await waitFor(() => app.$('.qs-card[data-url]'), { label: 'картата с адреса на папката', timeout: BUDGET });
+      const levels = app.$$('#qs-level-select option').map((option) => text(option));
+      const url = String(card.getAttribute('data-url') || '');
+      assert.ok(
+        levels.some((label) => label.includes(folder)),
+        'студиото познава папката като ниво: ' + levels.join(' | '),
+      );
+      assert.match(
+        url,
+        /folder=/,
+        'картата носи адреса на ТАЗИ папка: ' + url + ' · нива: ' + levels.join(' | ') + ' · ключ на бутона: ' + qrEntry.getAttribute('data-folder-qr'),
+      );
+      // Прозорецът се затваря, както го прави човекът — следващият сценарий не бива да
+      // наследява отворен модал от този.
+      app.click('#qs-close', 'бутонът „Затвори“ на QR студиото');
     });
 
     // ── J54. Портал: контакт с поле по желание (добави, махни, запази) ────────
@@ -1775,7 +1799,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
         [],
         'показването на кода не променя нищо на сървъра: ' + fresh.map((r) => r.method + ' ' + r.url).join(' · '),
       );
-      assert.ok(pop.querySelector('.qs-frame svg'), 'кодът е нарисуван в рамката');
+      assert.ok(pop.querySelector('.qs-card svg'), 'кодът е нарисуван в картата');
       assert.ok(pop.querySelector('[data-qs-copy]'), 'адресът има „Копирай“');
       assert.equal(app.$('[data-qr-portal]').getAttribute('data-qr-portal'), openedId, 'панелът остава на СЪЩИЯ портал');
       assert.ok(app.$('[data-close-portal]'), 'порталът е отворен в същия раздел (има „← Списък с портали“)');
@@ -1975,7 +1999,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
       }, { label: 'известието за връщане', timeout: BUDGET });
       assert.equal(back.kind, 'ok', 'връщането минава: ' + back.message);
       await settle('списъка след връщане');
-      assert.equal(app.$('.pf-archive'), null, 'след връщането секцията „Затворени портали“ изчезва');
+      assert.ok(!app.$('.pf-archive'), 'след връщането секцията „Затворени портали“ изчезва');
       await waitFor(() => {
         for (const el of app.$$('[data-open-portal]')) {
           let node = el;
@@ -2012,7 +2036,7 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
           if (wantOpen) {
             assert.ok(app.$(bodySel), 'тялото на „' + what + '“ се рисува, когато блокът е разгънат');
           } else {
-            assert.equal(app.$(bodySel), null, 'тялото на „' + what + '“ не се рисува, докато е сгънато');
+            assert.ok(!app.$(bodySel), 'тялото на „' + what + '“ не се рисува, докато е сгънато');
           }
         }
       };
@@ -2143,8 +2167,8 @@ const ONLY_JOURNEY = String(process.env.HAPI_GUI_ONLY_JOURNEY || '').trim().toUp
           assert.ok(app.$(id), 'блокът за подпис има ' + id);
         }
         // Нито поле за ключ, нито поле за парола в блока — те идват от конфигурацията.
-        assert.equal(app.$('#set-pgp-sign-key'), null, 'няма поле за ключ');
-        assert.equal(app.$('#set-pgp-sign-pass'), null, 'няма поле за парола');
+assert.ok(!app.$('#set-pgp-sign-key'), 'няма поле за ключ');
+      assert.ok(!app.$('#set-pgp-sign-pass'), 'няма поле за парола');
 
         app.clearToasts();
         app.fill('#set-pgp-sign-folder', '/share/' + folderName);

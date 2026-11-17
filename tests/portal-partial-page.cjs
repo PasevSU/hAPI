@@ -75,7 +75,7 @@ async function mount(base, pagePath, bodyHtml) {
   // ── 2. Минимална страница: нито #status, нито #title, нито #q ────────────────
   const minimal = await mount(base, '/p/partial', '<div id="hapi-boot" data-base="" data-api="/api/v1/p/partial" data-folder="" data-folders="0" data-qr=""></div>');
   assert.deepEqual(minimal.errors, [], 'липсващите възли не чупят скрипта: ' + minimal.errors.join(' | '));
-  assert.equal(minimal.doc.getElementById('status'), null, 'в тази страница #status наистина липсва');
+  assert.ok(!minimal.doc.getElementById('status'), 'в тази страница #status наистина липсва');
 
   // ── 3. Същият договор за интеграционния вариант (другият portal.js) ──────────
   const integration = path.join(__dirname, '..', 'custom_components', 'hapi_enterprise', 'portal.js');

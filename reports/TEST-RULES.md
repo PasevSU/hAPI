@@ -3,17 +3,17 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 442 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 452 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 202 |
+| общо | 206 |
 | портал | 48 |
-| GUI | 36 |
+| GUI | 40 |
 | Home Assistant | 18 |
 | отчети | 16 |
+| ядро | 15 |
 | PGP | 14 |
-| ядро | 13 |
 | съхранение | 8 |
 | издаване | 7 |
 | документация | 6 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (202)
+## общо (206)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -127,6 +127,8 @@
 | `helper-contracts` | Helper contracts | `tests/helper-contracts.cjs` |
 | `helper-contracts-2` | Helper contracts 2 | `tests/helper-contracts-2.cjs` |
 | `helper-contracts-3` | Helper contracts 3 | `tests/helper-contracts-3.cjs` |
+| `icons-v4` | Icons v4 | `tests/icons-v4.cjs` |
+| `icons-v4-map` | Icons v4 map | `tests/icons-v4-map.cjs` |
 | `idempotency` | Idempotency | `tests/idempotency.cjs` |
 | `ingress-api-base` | Ingress api base | `tests/ingress-api-base.cjs` |
 | `ingress-auth` | Ingress auth | `tests/ingress-auth.cjs` |
@@ -175,6 +177,7 @@
 | `pdf-signature` | Pdf signature | `tests/pdf-signature.cjs` |
 | `pgp` | Pgp | `tests/pgp.cjs` |
 | `policy-gui` | Policy gui | `tests/policy-gui.cjs` |
+| `port-hygiene` | Port hygiene | `tests/port-hygiene.cjs` |
 | `powershell-scripts` | Powershell scripts | `tests/powershell-scripts.cjs` |
 | `preview` | Preview | `tests/preview.cjs` |
 | `preview-unsafe-types` | Preview unsafe types | `tests/preview-unsafe-types.cjs` |
@@ -241,6 +244,7 @@
 | `update-repo` | Update repo | `tests/update-repo.cjs` |
 | `upload-rollback-guard` | Upload rollback guard | `tests/upload-rollback-guard.cjs` |
 | `upload-sessions` | Upload sessions | `tests/upload-sessions.cjs` |
+| `verify-runner` | Verify runner | `tests/verify-runner.cjs` |
 | `versioning` | Versioning | `tests/versioning.cjs` |
 | `virtual-storage` | Virtual storage | `tests/virtual-storage.cjs` |
 | `visitors-panel` | Visitors panel | `tests/visitors-panel.cjs` |
@@ -301,7 +305,7 @@
 | `portal-upload-409` | Portal upload 409 | `tests/portal-upload-409.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (36)
+## GUI (40)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -327,15 +331,19 @@
 | `ui-block-aria` | Ui block aria | `tests/ui-block-aria.cjs` |
 | `ui-coverage` | Ui coverage | `tests/ui-coverage.cjs` |
 | `ui-css-split` | Ui css split | `tests/ui-css-split.cjs` |
+| `ui-dialog-size` | Ui dialog size | `tests/ui-dialog-size.cjs` |
 | `ui-field-labels` | Ui field labels | `tests/ui-field-labels.cjs` |
 | `ui-folder-note-race` | Ui folder note race | `tests/ui-folder-note-race.cjs` |
 | `ui-i18n` | Ui i18n | `tests/ui-i18n.cjs` |
 | `ui-i18n-ratchet` | Ui i18n ratchet | `tests/ui-i18n-ratchet.cjs` |
 | `ui-icons` | Ui icons | `tests/ui-icons.cjs` |
 | `ui-inline-style-csp` | Ui inline style csp | `tests/ui-inline-style-csp.cjs` |
+| `ui-layout-rules` | Ui layout rules | `tests/ui-layout-rules.cjs` |
+| `ui-motion` | Ui motion | `tests/ui-motion.cjs` |
 | `ui-nav-outside-click` | Ui nav outside click | `tests/ui-nav-outside-click.cjs` |
 | `ui-nav-symmetry` | Ui nav symmetry | `tests/ui-nav-symmetry.cjs` |
 | `ui-navigation` | Ui navigation | `tests/ui-navigation.cjs` |
+| `ui-progress` | Ui progress | `tests/ui-progress.cjs` |
 | `ui-settings-sections` | Ui settings sections | `tests/ui-settings-sections.cjs` |
 | `ui-shell-nav` | Ui shell nav | `tests/ui-shell-nav.cjs` |
 | `ui-skin` | Ui skin | `tests/ui-skin.cjs` |
@@ -386,6 +394,26 @@
 | `report-table-widths` | Report table widths | `tests/report-table-widths.cjs` |
 | `report-tsa-e2e` | Report tsa e2e | `tests/report-tsa-e2e.cjs` |
 
+## ядро (15)
+
+| Правило | Заглавие | Файл |
+| --- | --- | --- |
+| `core-api-version` | Core api version | `tests/core-api-version.cjs` |
+| `core-container` | Core container | `tests/core-container.cjs` |
+| `core-groups` | Core groups | `tests/core-groups.cjs` |
+| `core-hash` | Core hash | `tests/core-hash.cjs` |
+| `core-http` | Core http | `tests/core-http.cjs` |
+| `core-migration` | Core migration | `tests/core-migration.cjs` |
+| `core-modules` | Core modules | `tests/core-modules.cjs` |
+| `core-orphan` | Core orphan | `tests/core-orphan.cjs` |
+| `core-plugins` | Core plugins | `tests/core-plugins.cjs` |
+| `core-profiles` | Core profiles | `tests/core-profiles.cjs` |
+| `core-qr-file` | Core qr file | `tests/core-qr-file.cjs` |
+| `core-repository` | Core repository | `tests/core-repository.cjs` |
+| `core-signer` | Core signer | `tests/core-signer.cjs` |
+| `core-store` | Core store | `tests/core-store.cjs` |
+| `core-variables` | Core variables | `tests/core-variables.cjs` |
+
 ## PGP (14)
 
 | Правило | Заглавие | Файл |
@@ -404,24 +432,6 @@
 | `pgp-unknown-subkey` | Pgp unknown subkey | `tests/pgp-unknown-subkey.cjs` |
 | `pgp-v6` | Pgp v6 | `tests/pgp-v6.cjs` |
 | `pgp-workdir-encryption` | Pgp workdir encryption | `tests/pgp-workdir-encryption.cjs` |
-
-## ядро (13)
-
-| Правило | Заглавие | Файл |
-| --- | --- | --- |
-| `core-api-version` | Core api version | `tests/core-api-version.cjs` |
-| `core-container` | Core container | `tests/core-container.cjs` |
-| `core-groups` | Core groups | `tests/core-groups.cjs` |
-| `core-migration` | Core migration | `tests/core-migration.cjs` |
-| `core-modules` | Core modules | `tests/core-modules.cjs` |
-| `core-orphan` | Core orphan | `tests/core-orphan.cjs` |
-| `core-plugins` | Core plugins | `tests/core-plugins.cjs` |
-| `core-profiles` | Core profiles | `tests/core-profiles.cjs` |
-| `core-qr-file` | Core qr file | `tests/core-qr-file.cjs` |
-| `core-repository` | Core repository | `tests/core-repository.cjs` |
-| `core-signer` | Core signer | `tests/core-signer.cjs` |
-| `core-store` | Core store | `tests/core-store.cjs` |
-| `core-variables` | Core variables | `tests/core-variables.cjs` |
 
 ## съхранение (8)
 

@@ -14,6 +14,7 @@
 // Умишлено НЕ се стреми да е пълен браузър: няма layout, CSS, навигация и мрежа.
 
 const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+const util = require('node:util');
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 
 function decodeEntities(text) {
@@ -240,6 +241,18 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
       this.checked = false;
       this.files = [];
       this.ownerDocument = doc;
+      // КРАТЪК ИНСПЕКТ (DEF-89). `assert.equal(възел, null)` при провал строи diff от целия
+      // възел — с децата, атрибутите и `ownerDocument`. Измерено: 144 s и „Array buffer
+      // allocation failed“ вместо съобщение, тоест грешката се превръщаше в OOM. Един ред
+      // стига, за да се разбере КОЙ възел е сгрешен.
+      this[util.inspect.custom] = () => {
+        const id = this.getAttribute('id');
+        const cls = String(this.getAttribute('class') || '').split(/\s+/).filter(Boolean).slice(0, 3).join('.');
+        return (
+          '<' + this.tagName + (id ? '#' + id : '') + (cls ? '.' + cls : '') + '>' +
+          ' · ' + this.childNodes.length + ' деца'
+        );
+      };
       this.dataset = new Proxy(
         {},
         {
@@ -475,6 +488,20 @@ function createDocument({ lang = 'bg', title = 'hAPI' } = {}) {
       return out;
     }
     querySelector(selector) { return this.querySelectorAll(selector)[0] || null }
+    // Браузърът казва дали възелът е в документа. Без това `ensureModal()` в QR студиото
+    // строи ВТОРИ прозорец при всяко отворяне (в браузър преизползва същия) и тестът чете
+    // стария — точно това скри „QR за тази папка отваря грешно ниво“ (DEF-92).
+    // Граница: `removeChild` тук НЕ чисти `parentNode` (виж бележката при него), затова
+    // откачен възел продължава да изглежда свързан — за панелите това е безопасната посока.
+    get isConnected() {
+      const owner = this.ownerDocument;
+      let node = this;
+      while (node) {
+        if (node === owner || node === (owner && owner.documentElement)) return true;
+        node = node.parentNode;
+      }
+      return false;
+    }
     contains(node) {
       let cur = node;
       while (cur) { if (cur === this) return true; cur = cur.parentNode }

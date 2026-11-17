@@ -15,13 +15,14 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 
 const ROOT = path.join(__dirname, '..');
 const TOKEN = 'error-logging-token-3d7f10b6e8a24c95';
-const PORT = 18430;
+let PORT = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
 
 (async () => {
+  PORT = await freePort();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-errlog-'));
   const child = spawn(process.execPath, [path.join(ROOT, 'hapi_enterprise', 'server.js')], {
     env: { ...process.env, DATA_DIR: dir, PORT: String(PORT), ADMIN_TOKEN: TOKEN, PUBLIC_GATEWAY_PORT: '0', LOG_LEVEL: 'debug' },

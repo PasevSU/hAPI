@@ -16,6 +16,13 @@
   // директно в шаблоните (${ICON.size}); действията пазят ИМЕ и се рисуват с ico().
   const ico = (name, extra) =>
     typeof window !== 'undefined' && window.HapiIcons ? window.HapiIcons.ico(name, extra) : '';
+  // Икона от спрайта v4 с избран стил; непозната икона/стил пада към вградения набор,
+  // за да не остане празно място, ако спрайтът не се е заредил (или при демо режим).
+  const ico4 = (name, style, extra) => {
+    const api = typeof window !== 'undefined' ? window.HapiIcons : null;
+    const svg = api && typeof api.sprite === 'function' ? api.sprite(name, style) : '';
+    return svg || ico(name, extra);
+  };
   // Текст по ключ: картите на портала минават през речника (BG/EN/DE), както Настройки —
   // иначе немският и английският потребител виждат български надписи в преведения панел.
   // Липсващ ключ връща самото име, за да се види веднага при разработка.
@@ -1126,6 +1133,8 @@
       return false;
     }
     const levels = qrStudioLevels(x);
+    // `rel` и `levels[].rel` идват от ЕДНО място — `path` на възела в дървото (без наклонена
+    // черта отпред; с наклонена е само ЕТИКЕТЪТ за екран). Затова сравнението е точно.
     const wanted = String(rel == null ? '' : rel);
     const found = wanted ? levels.findIndex((l) => l.rel === wanted) : 0;
     return studio.open({
@@ -2191,7 +2200,7 @@
                       <button type="button" class="fm-ico-btn pf-report-btn" data-report-recursive="${i}" title="Рекурсивен отчет за портала (с папките от хранилището)" aria-label="Рекурсивен отчет за портала">${ICON.folder}</button>
                       <button type="button" class="fm-ico-btn pf-qr-btn" data-qr-portal="${i}" aria-haspopup="dialog" title="${esc(
         T('portal.qr.button'),
-      )}" aria-label="${esc(T('portal.qr.button'))}">${ico('qr')}</button>
+      )}" aria-label="${esc(T('portal.qr.button'))}">${ico4('qr', 'duotone')}</button>
                     </div>
                   </div>
                   <hr class="u-divider" />

@@ -17,11 +17,11 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 
 const ROOT = path.join(__dirname, '..');
 const TOKEN = 'input-errors-token-6b2e94d1f7a05c38';
-const PORT = 18440;
+let PORT = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
 
 const CASES = [
   // [метод, път, тяло]
@@ -51,6 +51,7 @@ const CASES = [
 ];
 
 (async () => {
+  PORT = await freePort();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-input-errors-'));
   const child = spawn(process.execPath, [path.join(ROOT, 'hapi_enterprise', 'server.js')], {
     env: { ...process.env, DATA_DIR: dir, PORT: String(PORT), ADMIN_TOKEN: TOKEN, PUBLIC_GATEWAY_PORT: '0' },

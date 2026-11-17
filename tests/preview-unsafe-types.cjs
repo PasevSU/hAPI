@@ -83,7 +83,7 @@ const PNG = Buffer.from(
     button.click();
     await waitFor(() => ui.document.body.querySelector('#fm-modal-body p.hint'), { label: 'съобщението в прозореца', timeout: 15000 });
     const modal = ui.document.body.querySelector('#fm-modal-body');
-    assert.equal(modal.querySelector('iframe'), null, 'за SVG НЕ се създава iframe (blob в същия произход = XSS)');
+    assert.ok(!modal.querySelector('iframe'), 'за SVG НЕ се създава iframe (blob в същия произход = XSS)');
     assert.match(
       String(modal.textContent || ''),
       /SVG, HTML и XML/,

@@ -1,6 +1,6 @@
 # ADR Index
 
-> **Клас:** исторически · **Замразен към:** 0.69.231
+> **Клас:** исторически · **Замразен към:** 0.69.232
 
 Single authoritative ADR registry for hAPI Enterprise.
 

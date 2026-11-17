@@ -1,6 +1,6 @@
 'use strict';
 // Фаза 8: генериране на публично API + хранилище за портал (api-spec + api-registry).
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict'),
   fs = require('node:fs'),
   os = require('node:os'),
@@ -91,7 +91,7 @@ const spec = require('../hapi_enterprise/api-spec.js');
   // --- 2. Интеграция: endpoint + файлове на диска ---------------------------
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'api-gen-'));
   const token = 'api-gen-admin-secret-2026-x7';
-  const port = 18472;
+  const port = await freePort();
   const B = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: { ...process.env, DATA_DIR: dir, ADMIN_TOKEN: token, PORT: String(port) },

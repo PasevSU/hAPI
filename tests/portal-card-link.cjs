@@ -76,15 +76,13 @@ assert.match(css, /\.pf-portal-head \{[\s\S]{0,200}align-items: center/, 'заг
 assert.match(css, /\.pf-portal-head-actions \{[\s\S]{0,160}margin-left: auto/, 'действията са притиснати вдясно');
 assert.match(css, /\.pf-portal-head \.pf-qr-btn \{[\s\S]{0,120}color: var\(--accent\)/, 'QR бутонът е откроен');
 
-// ── 2г. Кодът е в ИЗПЪКНАЛА рамка с ЛИНК в долния ръб (0.69.229) ─────────
-// Изискване на собственика: кодът да е в професионална рамка, която „изпъква“, а адресът да е
-// изписан от долния ѝ край — така разпечатан или сниман, кодът носи и адреса си.
+// ── 2г. Кодът и адресът са в ЕДНА картинка (0.69.232) ──────────────────────
+// Изискване на собственика: „qr и url трябва да са в едно изображение, модерно и стилно“.
+// Затова картата е SVG — същият документ се показва и се изтегля, а адресът се пренася на
+// редове, за да се чете целият, вместо да се съкращава с „…“ в отделен HTML ред.
 const cssText = css.replace(/\s+/g, ' ');
-assert.match(cssText, /\.qs-frame \{[^}]*border: 2px solid var\(--line-strong\)/, 'рамката на кода е с плътна граница');
-assert.match(cssText, /\.qs-frame \{[^}]*box-shadow:[^}]*0 14px 34px/, 'рамката изпъква (сянка)');
-assert.match(cssText, /\.qs-corner \{/, 'рамката има ъгълчета');
-assert.match(cssText, /\.qs-caption \{[^}]*border-radius: 0 0 var\(--radius\) var\(--radius\)/, 'линкът е залепен за долния ръб на рамката');
-assert.match(cssText, /\.qs-caption-url \{/, 'адресът се изписва в долния ръб');
+assert.match(cssText, /\.qs-card \{[^}]*max-width: 560px/, 'картата има таван на ширината');
+assert.match(cssText, /\.qs-card > svg \{[^}]*width: 100%/, 'картата се побира в блока');
 
 // ── 2д. Прозорецът има ЧЕТИРИ раздела и те са отделни функции ────────────
 const studio = uiSrc('qr-studio.js');
@@ -95,7 +93,10 @@ for (const fn of ['tabPlain', 'tabReadonly', 'tabTemp', 'tabLevels']) {
   assert.match(studio, new RegExp('function ' + fn + '\\('), 'разделът ' + fn + ' съществува');
 }
 assert.match(studio, /function figure\(url, label, opts\)/, 'рамката с код и линк е ЕДНА за навсякъде');
-assert.match(studio, /qs-caption-url/, 'адресът е част от фигурата, не отделен ред');
+assert.match(studio, /function buildCard\(url, label\)/, 'картата (код + надпис + адрес) има ЕДИН построител');
+assert.match(studio, /function wrapUrl\(url, perLine\)/, 'дългият адрес се пренася, а не се реже');
+assert.match(studio, /downloadSvg[\s\S]{0,160}buildCard\(/, 'изтегля се СЪЩАТА карта, не само кодът');
+assert.match(studio, /qs-card/, 'фигурата е една карта, не рамка + отделен ред');
 assert.match(studio, /data-qs-copy=/, 'всеки адрес има „Копирай“');
 assert.match(studio, /data-qs-download=/, 'кодът се изтегля като SVG');
 assert.match(studio, /qr\.toPortal/, 'има вход „Към публичния портал“');
@@ -188,19 +189,24 @@ assert.match(
     // ── 6. Блокът „Достъп и QR код“ ГО НЯМА на екрана ───────────────────────
     assert.equal(host.textContent.includes('Достъп и QR код'), false, 'блокът не се рисува');
     for (const id of ['pf-open-portal', 'pf-refresh-access', 'pf-qr-download', 'pf-qr-print', 'pf-open-folder', 'pf-portal-qr']) {
-      assert.equal(host.querySelector('#' + id), null, `на екрана няма #${id}`);
+      assert.ok(!host.querySelector('#' + id), `на екрана няма #${id}`);
     }
 
     // ── 7. QR бутонът отваря ГЛОБАЛНОТО студио (едно за всички нива) ───────
     const btn = host.querySelector('[data-qr-portal]');
     assert.equal(btn.getAttribute('aria-haspopup'), 'dialog', 'бутонът обявява, че отваря прозорец');
-    assert.equal(host.querySelector('[data-qr-pop]'), null, 'поповерът е премахнат — кодът е в прозореца');
+    assert.ok(!host.querySelector('[data-qr-pop]'), 'поповерът е премахнат — кодът е в прозореца');
     btn.click();
     const studio = await waitFor(() => ui.window.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
     assert.equal(studio.hidden, false, 'щракването отваря студиото');
     assert.equal(studio.querySelectorAll('[data-qs-tab]').length, 4, 'прозорецът има ЧЕТИРИ раздела');
-    await waitFor(() => studio.querySelector('.qs-frame svg'), { label: 'кода в рамката' });
-    assert.match(studio.querySelector('.qs-caption-url').textContent, /\/p\/|file\.html/, 'адресът е изписан под кода');
+    await waitFor(() => studio.querySelector('.qs-card svg'), { label: 'кода в картата' });
+    const card = studio.querySelector('.qs-card');
+    assert.ok(card, 'картата е на екрана');
+    assert.equal(card.querySelectorAll('svg').length, 1, 'кодът и адресът са в ЕДНО изображение');
+    const cardText = String(card.textContent || '').replace(/\s+/g, ' ');
+    assert.match(cardText, /https?:\/\//, 'адресът е изписан ВЪТРЕ в картинката');
+    assert.ok(!studio.querySelector('.qs-caption-url'), 'няма отделен HTML ред за адреса');
     assert.ok(studio.querySelector('[data-qs-copy]'), 'до адреса има „Копирай“');
     assert.ok(studio.querySelector('[data-qs-download]'), 'има „Изтегли SVG“');
 
@@ -243,8 +249,8 @@ assert.match(
     }
     // Папката се ПОКАЗВА, но не е поле за писане (0.69.211).
     assert.ok(settings.querySelector('[data-pf-storage-root]'), 'папката се вижда в същата форма');
-    assert.equal(settings.querySelector('[name="storage_root"]'), null, 'папката не е input');
-    assert.equal(host.querySelector('[data-block="control"] [data-qr-pop]'), null, 'в отворения контролен панел няма QR код');
+    assert.ok(!settings.querySelector('[name="storage_root"]'), 'папката не е input');
+    assert.ok(!host.querySelector('[data-block="control"] [data-qr-pop]'), 'в отворения контролен панел няма QR код');
     settings.querySelector('[name="title"]').value = 'Портал с код (обновен)';
     ui.clearToasts();
     settings.querySelector('button[type="submit"]').click();

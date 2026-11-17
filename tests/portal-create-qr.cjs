@@ -67,17 +67,17 @@ const PANEL_MODULES = [
     assert.deepEqual(patches.map((p) => p.body || ''), [], 'няма втори PATCH за видимостта');
 
     // ── 2. QR кодът е готов и СЕ ВИЖДА веднага — в QR студиото ───────────────
-    // 0.69.229: след създаване се отваря глобалният прозорец (един за всички нива), а кодът
-    // е в рамката му, с изписан под него адрес.
+    // 0.69.229: след създаване се отваря глобалният прозорец (един за всички нива); от 0.69.232
+    // кодът и адресът са ЕДНО изображение (`.qs-card`), затова адресът се чете като `data-url`.
     const pop = await waitFor(
       () => {
         const el = ui.window.document.getElementById('qs-modal');
-        return el && !el.hasAttribute('hidden') && el.querySelector('.qs-frame svg') ? el : null;
+        return el && !el.hasAttribute('hidden') && el.querySelector('.qs-card svg') ? el : null;
       },
       { label: 'видим прозорец на QR студиото със SVG', timeout: 15000 },
     );
-    const caption = pop.querySelector('.qs-caption-url');
-    const href = caption ? String(caption.textContent || '').trim() : '';
+    const caption = pop.querySelector('.qs-card[data-url]');
+    const href = caption ? String(caption.getAttribute('data-url') || '').trim() : '';
     // Адресът може да е по slug или по id (панелът строи същия адрес, който ползва порталът) —
     // важното е да сочи ИМЕННО този портал, а не общ вход.
     assert.match(href, /\/p\/(qr-vednaga|[0-9a-f]{16,})/, 'кодът води към портала: ' + href);

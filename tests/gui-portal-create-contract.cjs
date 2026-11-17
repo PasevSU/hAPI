@@ -82,10 +82,10 @@ const text = (node) => String((node && node.textContent) || '').replace(/\s+/g, 
     assert.match(preview.href, /\/p\//, 'прегледът е страница, не API: ' + preview.href);
     assert.notEqual(page.href, preview.href, 'прегледът е СВОЯ страница, не същата като портала');
 
-// QR кодът в същия прозорец сочи ЧОВЕШКАТА страница, не JSON-а: рамката носи кода, а
-  // адресът е изписан под него — същата стойност, която стои и в реда „Публичен портал“.
-  const qrSvg = app.document.querySelector('#qs-modal .qs-frame svg');
-  assert.ok(qrSvg, 'QR кодът е нарисуван в рамката');
+  // QR кодът в същия прозорец сочи ЧОВЕШКАТА страница, не JSON-а: картата носи кода и адреса
+  // в ЕДНО изображение (0.69.232), а адресът се чете от `data-url` на същата карта.
+  const qrSvg = app.document.querySelector('#qs-modal .qs-card svg');
+  assert.ok(qrSvg, 'QR кодът е нарисуван в картата');
   assert.equal(shown.find((l) => /\/p\//.test(l.href) && !/\/api\//.test(l.href)).href, page.href, 'QR кодът сочи страницата на портала');
 
     // ── И трите водят до жива страница, макар порталът да е ПРАЗЕН ───────────

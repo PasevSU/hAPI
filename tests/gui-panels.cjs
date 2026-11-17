@@ -126,9 +126,13 @@ const buttonByText = (host, pattern) => host.querySelectorAll('button').find((b)
       // 0.69.229: кодът е в ГЛОБАЛНОТО студио; подписаният адрес стои като текст в рамката
       // и в реда „Публичен портал“ (с копче за копиране), а не като `href` върху картинката.
       const studio = await waitFor(() => w.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
-      const caption = await waitFor(() => studio.querySelector('.qs-caption-url'), { label: 'адреса под кода' });
-      const signed = String(caption.textContent || '');
-      assert.match(signed, /\?expires=\d+&sig=[a-f0-9]{64}$/, 'адресът на частен портал носи подпис: ' + signed);
+    // 0.69.232: кодът и адресът са в ЕДНА карта (SVG); подписът се чете от текста ѝ, защото
+    // адресът е пренесен на редове, а не е отделен HTML ред. Затова адресът се ИЗВАЖДА от
+    // текста — пред него стои надписът на нивото.
+    const card = await waitFor(() => studio.querySelector('.qs-card'), { label: 'картата с кода и адреса' });
+    const cardText = String(card.textContent || '').replace(/\s+/g, '');
+    const signed = (/https?:\/\/\S+/.exec(cardText) || [''])[0];
+      assert.match(signed, /\?expires=\d+&sig=[a-f0-9]{64}$/, 'адресът на частен портал носи подпис: ' + cardText);
       const copyBtn = studio.querySelector('[data-qs-copy]');
       assert.ok(copyBtn, 'адресът има „Копирай“');
       const ok = await fetch(signed);

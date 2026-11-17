@@ -5,6 +5,8 @@
 // null за селектор, тестовете „минават“, без да са натиснали нищо. Затова тук се
 // проверява поведението, което панелите реално ползват.
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { createDocument, parseSelector } = require('./lib/dom-stub.cjs');
 
 const doc = createDocument();
@@ -16,7 +18,7 @@ host.innerHTML = '<h1 id="title">Отчет &amp; тест</h1><button data-acti
 assert.equal(host.querySelector('#title').textContent, 'Отчет & тест', 'ентите се декодират');
 assert.equal(host.querySelectorAll('[data-action]').length, 1, 'намира по data-атрибут');
 assert.equal(host.querySelector('button').getAttribute('data-action'), 'save');
-assert.equal(host.querySelector('#nope'), null, 'липсващият елемент е null, не изключение');
+assert.ok(host.querySelector('#nope') === null, 'липсващият елемент е null, не изключение');
 
 // ── 2. Потомък, клас, name и списък със запетая ─────────────────────────────────
 host.innerHTML =
@@ -27,7 +29,7 @@ assert.equal(host.querySelector('#nav .nav-item[data-panel="report"]').getAttrib
 assert.equal(host.querySelector('.langs button[data-lang="bg"]').getAttribute('data-lang'), 'bg', 'верига от два елемента');
 assert.equal(host.querySelectorAll('.langs button').length, 2, 'всички деца по таг');
 assert.equal(host.querySelector('input[name="contactId"]').getAttribute('value'), 'c1', 'атрибут със стойност');
-assert.equal(host.querySelector('.pf-form, #nav'), host.querySelector('#nav'), 'списък със запетая връща първия срещнат');
+assert.ok(host.querySelector('.pf-form, #nav') === host.querySelector('#nav'), 'списък със запетая връща първия срещнат');
 
 // ── 3. Клик минава през слушателите, както в браузър ───────────────────────────
 let clicked = 0;
@@ -55,6 +57,58 @@ assert.equal(el.innerHTML.includes('<span>вътре</span>'), true, 'innerHTML 
 
 // ── 5. Неподдържан селектор гърми СВЕТКАВИЦА, не тихо null ─────────────────────
 assert.throws(() => parseSelector('div > span'), /неподдържан селектор/, 'непознат синтаксис се съобщава');
-assert.equal(doc.getElementById('nav'), host.querySelector('#nav'), 'getElementById работи по цялото дърво');
+assert.ok(doc.getElementById('nav') === host.querySelector('#nav'), 'getElementById работи по цялото дърво');
 
-console.log('PASS dom-stub: innerHTML се парсва · селектори (#id/.class/[data-x]/потомък/запетая) · click() · dataset/classList · непознат селектор гърми');
+// ── 6. Твърдение НИКОГА не получава DOM възел (DEF-92) ─────────────────────────
+// Причината е измерена: `assert.equal(app.$('[data-folder-qr]'), null)` в J53 падна, Node
+// построи diff (`myersDiff`) от инспекцията на ЦЕЛИЯ възел — 42 KB срещу `null` е
+// квадратично сравнение — и сценарият умря след 144 s с „Array buffer allocation failed“.
+// Забележка: `util.inspect.custom` НЕ помага — `assert` инспектира с изключена собствена
+// инспекция (проверено с брояч). Затова единствената защита е твърдението да получава
+// СТОЙНОСТ: `assert.ok(!възел)` / `assert.ok(възел === друг)`, а за съдържание —
+// `.textContent` / `.getAttribute`.
+const NODE_IN_ASSERT = /assert\.(?:equal|strictEqual|notEqual|deepEqual)\(\s*(?:[A-Za-z_$][\w$]*\.)*(?:\$|\$\$|querySelector|querySelectorAll|getElementById)\([^()]*\)\s*[,)]/;
+const offenders = [];
+for (const name of fs.readdirSync(__dirname).filter((f) => f.endsWith('.cjs'))) {
+  const src = fs.readFileSync(path.join(__dirname, name), 'utf8');
+  src.split('\n').forEach((line, index) => {
+    // Коментар, който ПОКАЗВА правилото, не е нарушение — затова се пропуска.
+    const trimmed = line.trim();
+    if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
+    if (NODE_IN_ASSERT.test(line)) offenders.push(name + ':' + (index + 1) + ': ' + trimmed.slice(0, 90));
+  });
+}
+assert.deepEqual(offenders, [], 'твърдение сравнява DOM възел — при провал строи diff от целия възел:\n  ' + offenders.join('\n  '));
+
+// Кратката инспекция пази всичко останало (console.log, съобщения), затова се мери.
+const big = doc.createElement('div');
+big.setAttribute('class', 'fm-file');
+for (let i = 0; i < 300; i += 1) {
+  const row = doc.createElement('div');
+  row.setAttribute('class', 'fm-row');
+  row.innerHTML = '<span class="nm">ред ' + i + '</span><button data-x="' + i + '">к</button>';
+  big.appendChild(row);
+}
+const inspectStarted = Date.now();
+const printed = require('node:util').inspect(big);
+const inspectSpent = Date.now() - inspectStarted;
+assert.ok(inspectSpent < 100, 'инспекцията на възел с 300 деца е бърза, а взе ' + inspectSpent + ' ms');
+assert.ok(printed.length < 200, 'инспекцията е един ред, а е ' + printed.length + ' знака');
+assert.match(printed, /<div\.fm-file> · 300 деца/, 'инспекцията казва какво е възелът: ' + printed);
+
+// ── 7. `isConnected`: в документа или не (DEF-92, втората половина) ─────────────
+// Без него `ensureModal()` в QR студиото строи ВТОРИ прозорец при всяко отваряне (в браузър
+// преизползва същия) и тестът чете стария — тъкмо това скри, че „QR за тази папка“ показва
+// адреса на портала. Проверява се и двата отговора, за да не е винаги „true“.
+const attached = doc.createElement('div');
+attached.setAttribute('id', 'attached');
+doc.body.appendChild(attached);
+assert.equal(attached.isConnected, true, 'добавен в body възел е свързан');
+const detached = doc.createElement('div');
+assert.equal(detached.isConnected, false, 'невграден възел не е свързан');
+assert.equal(doc.body.isConnected, true, 'body е свързан през documentElement');
+const nested = doc.createElement('span');
+attached.appendChild(nested);
+assert.equal(nested.isConnected, true, 'вгнезден възел наследява свързаността');
+
+console.log('PASS dom-stub: innerHTML се парсва · селектори (#id/.class/[data-x]/потомък/запетая) · click() · dataset/classList · непознат селектор гърми · твърденията не получават възел (DEF-92) · инспекцията е един ред · isConnected');

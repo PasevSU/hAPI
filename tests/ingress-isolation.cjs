@@ -1,10 +1,10 @@
 'use strict';
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict'), fs = require('node:fs'), os = require('node:os'), path = require('node:path'), { spawn } = require('node:child_process');
 const ingress = '/api/hassio_ingress/test-token_123';
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'portal-ingress-'));
-  const token = 'ingress-test-admin-secret-2026-a9f1', pub = 18199, adm = 18198;
+  const token = 'ingress-test-admin-secret-2026-a9f1', pub = await freePort(), adm = await freePort();
   const projectFolder = path.join(dir, 'html-projects', 'ingress-site');
   fs.mkdirSync(projectFolder, { recursive: true });
   fs.writeFileSync(path.join(projectFolder, 'index.html'), '<h1>Ingress site works</h1>');

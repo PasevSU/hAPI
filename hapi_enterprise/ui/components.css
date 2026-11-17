@@ -449,6 +449,25 @@ input[type="radio"] {
   cursor: pointer;
 }
 
+/* Раздели на ДИАЛОГ са с равна ширина (правило R4): `1fr` дава еднаква колона независимо от
+   текста, `min-width: 0` + многоточие пазят дългата дума вътре. Лентата с филтри (`.tabs`
+   без този клас) си остава flex — там иконите са много и равенството би изяло мястото.
+   Използва се като `class="tabs tabs-equal"`. Проверява се от `tests/ui-layout-rules.cjs`. */
+.tabs.tabs-equal {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  flex-wrap: nowrap;
+}
+
+.tabs.tabs-equal button {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
 .tabs button.active {
   border-color: var(--accent);
   color: var(--accent);
@@ -1802,8 +1821,10 @@ input[type="radio"] {
 .qs-window {
   display: flex;
   flex-direction: column;
-  width: min(760px, 100%);
-  max-height: min(88vh, 900px);
+  /* Размерът е в проценти от екрана (правило D1): `--dlg-gap` пази отстъп от ръба, така че
+     екранът не се закрива; `24em` е долна граница за четене на тесен екран. */
+  width: clamp(24em, var(--dlg-w-lg), calc(100vw - 2 * var(--dlg-gap)));
+  max-height: calc(100vh - 2 * var(--dlg-gap));
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
@@ -1843,14 +1864,21 @@ input[type="radio"] {
 }
 
 .qs-tabs {
-  display: flex;
-  flex-wrap: wrap;
+  /* Същото правило като `.tabs`: четирите раздела на QR студиото са РАВНИ. */
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: var(--sp-1);
   padding: var(--sp-2) var(--sp-4) 0;
   border-bottom: 1px solid var(--line);
 }
 
 .qs-tab {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
   padding: var(--sp-2) var(--sp-3);
   border: 1px solid transparent;
   border-bottom: 0;
@@ -1895,6 +1923,19 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* Една картинка: код + надпис + целият адрес са в СЪЩИЯ SVG (вж. `buildCard` в qr-studio.js).
+   Така това, което се вижда, е точно това, което се изтегля и разпечатва. */
+.qs-card {
+  width: 100%;
+  max-width: 560px;
+}
+
+.qs-card > svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .qs-frame {
@@ -1965,36 +2006,7 @@ input[type="radio"] {
   height: auto;
 }
 
-/* Линкът е ЧАСТ ОТ КОДА: стои в долния ръб на рамката. */
-.qs-caption {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-1);
-  max-width: 100%;
-  margin-top: calc(var(--sp-1) * -1);
-  padding: var(--sp-2) var(--sp-3);
-  border: 1px solid var(--line-strong);
-  border-radius: 0 0 var(--radius) var(--radius);
-  background: #fff;
-  color: #22303f;
-}
-
-.qs-caption-label {
-  font-size: var(--fs-12-5);
-  font-weight: 600;
-}
-
-.qs-caption-url {
-  overflow: hidden;
-  max-width: 34rem;
-  font-family: monospace;
-  font-size: var(--fs-12-5);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  direction: ltr;
-}
-
+/* Линкът е ЧАСТ ОТ КОДА — вътре в изображението (`.qs-card`), не отделен ред. */
 .qs-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2084,12 +2096,6 @@ input[type="radio"] {
 .qs-level .qs-frame::before,
 .qs-level .qs-corner {
   display: none;
-}
-
-.qs-level .qs-caption {
-  margin-top: var(--sp-1);
-  border: 0;
-  background: transparent;
 }
 
 .qs-clip {
@@ -3962,4 +3968,290 @@ body.up-locked {
   display: flex;
   gap: var(--sp-4);
   justify-content: flex-end;
+}
+
+/* Действията на ред стоят в ДЕСНИЯ край (правило R2): една вертикална ос за всички редове.
+   Името е `.actions-right`, а НЕ `.row-actions` — последното вече значи друго (мрежа от
+   бутони за отчет, ред 1273). Едно име с две значения е класът на DEF-81.
+   Дясното прилепване идва от `.line-name { flex: 1 }` в родителя, не от `margin: auto` —
+   така няма нито един литерал извън скалата за отстояния. */
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  min-width: 0;
+}
+
+.line-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--sp-4);
+  flex: 0 0 auto;
+}
+
+.row-num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── ДВИЖЕНИЕ: зареждане · мислене · обработване · напредък ────────────────────
+   Един набор примитиви за ЦЕЛИЯ панел, за да не изглежда всяко чакане различно.
+   Правилата, които ги пазят (вж. `tests/ui-motion.cjs`):
+     • анимират се САМО `transform`, `opacity` и `background-position` — те не карат
+       браузъра да преизчислява подредбата (затова няма `left/top/width/height`);
+     • продължителностите идват от `--dur-*`, кривите — от `--ease-*` (tokens.css);
+     • всеки индикатор има СПОКOЙНО състояние при `prefers-reduced-motion: reduce`;
+     • определен напредък ползва НАТИВЕН `<progress>` (`.up-bar-progress`), а не
+       вграден стил — CSP `style-src self` не позволява `style="width:…"`. */
+@keyframes hapi-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hapi-dots {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes hapi-slide {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(330%);
+  }
+}
+
+@keyframes hapi-shimmer {
+  from {
+    background-position: -160% 0;
+  }
+  to {
+    background-position: 260% 0;
+  }
+}
+
+/* Зареждане: пръстен, който се върти. `currentColor` го прави еднакъв навсякъде. */
+.spin {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
+  border-radius: var(--radius-circle);
+  animation: hapi-spin var(--dur-3) linear infinite;
+  vertical-align: middle;
+}
+
+.spin-sm {
+  width: 14px;
+  height: 14px;
+}
+
+.spin-lg {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
+}
+
+/* Мислене: три точки с раздалечен ритъм — „чакам отговор“, не „копирам файл“. */
+.think {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.think > i {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-circle);
+  background: currentColor;
+  animation: hapi-dots calc(var(--dur-3) * 1.6) var(--ease-in-out) infinite;
+}
+
+.think > i:nth-child(2) {
+  animation-delay: var(--dur-1);
+}
+
+.think > i:nth-child(3) {
+  animation-delay: calc(var(--dur-1) * 2);
+}
+
+/* Обработване: пунктиран пръстен — различен от „зареждане“ нарочно, за да се вижда,
+   че процесът е на сървъра, а не само в браузъра. */
+.work {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-circle);
+  animation: hapi-spin calc(var(--dur-3) * 3) linear infinite;
+  vertical-align: middle;
+}
+
+/* Напредък без известен край: лента, която минава през релсата (не се пълни). */
+.bar {
+  position: relative;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.bar > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  animation: hapi-slide calc(var(--dur-3) * 2.2) var(--ease-in-out) infinite;
+}
+
+/* Скелет: място, което чака съдържание — същата релса, но с блясък. */
+.skel {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--panel-2) 25%, var(--panel) 37%, var(--panel-2) 63%);
+  background-size: 400% 100%;
+  animation: hapi-shimmer calc(var(--dur-3) * 2.4) linear infinite;
+}
+
+/* Бутон, който работи: спинерът идва от `aria-busy`, без нов маркъп в панелите. */
+.btn[aria-busy='true'],
+.btn[aria-busy='true']:disabled {
+  cursor: progress;
+  opacity: 0.92;
+}
+
+.btn[aria-busy='true']::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-circle);
+  margin-right: var(--sp-3);
+  animation: hapi-spin var(--dur-3) linear infinite;
+  vertical-align: -2px;
+}
+
+/* Отстоянието на индикатора под формата — тук, за да не расте литералите в модулите. */
+.qs-busy {
+  margin-top: var(--sp-3);
+}
+
+/* Общ индикатор за работа (`HapiProgress`): надпис + мярка в един ред. */
+.pg {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.pg-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pg-meter {
+  width: 120px;
+  height: 4px;
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.pg-meter::-webkit-progress-bar {
+  background: var(--panel-2);
+}
+
+.pg-meter::-webkit-progress-value,
+.pg-meter::-moz-progress-bar {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.pg-err {
+  color: var(--red);
+}
+
+/* ── ПРОЗОРЦИ: ПРОЦЕНТИ ОТ ЕКРАНА, ТОЧЕН ОТСТЪП ОТ РЪБА ─────────────────────────
+   Ширината е в `vw`, височината — в `vh`, а `--dlg-gap` (tokens.css) е отстъпът
+   от ръба. Така прозорецът НИКОГА не закрива екрана: винаги се вижда рамката
+   на панела под него. Ако съдържанието се побира — показва се цялото
+   (височината е `auto`); ако не — тялото скролва, а главата и кракът остават.
+   Класовете са една скала: sm 38% · md 56% · lg 74% · full 92% от ширината. */
+.dialog {
+  width: clamp(22em, var(--dlg-w-md), calc(100vw - 2 * var(--dlg-gap)));
+  max-height: calc(100vh - 2 * var(--dlg-gap));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dialog.dialog-sm {
+  --dlg-w-md: var(--dlg-w-sm);
+}
+
+.dialog.dialog-lg {
+  --dlg-w-md: var(--dlg-w-lg);
+}
+
+.dialog.dialog-full {
+  --dlg-w-md: var(--dlg-w-full);
+  max-height: 92vh;
+}
+
+/* Само тялото скролва; главата и кракът остават видими (правило R3). */
+.dialog > .dialog-body {
+  overflow: auto;
+}
+
+.dialog > .dialog-head,
+.dialog > .dialog-foot {
+  position: sticky;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .work,
+  .btn[aria-busy='true']::before,
+  .think > i,
+  .bar > i,
+  .skel {
+    animation: none;
+  }
+
+  .think > i {
+    opacity: 0.7;
+  }
+
+  .bar > i {
+    width: 100%;
+    opacity: 0.5;
+  }
+
+  .skel {
+    background: var(--panel-2);
+  }
 }

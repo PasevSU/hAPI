@@ -8,7 +8,7 @@
 // истински HTTP клиент (urllib), а `web.StreamResponse` записва байтовете. Извиква се
 // `view.get(request, tail='p/<slug>')` за изгледа `/api/v1/p/{tail:.*}` и се проверява, че
 // тялото е JSON-ът на портала, статусът е 200, а `Content-Type` е запазен.
-const { stopChild, storageRoot } = require('./helpers.cjs');
+const { stopChild, storageRoot, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -16,7 +16,7 @@ const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
 
 const root = path.join(__dirname, '..');
-const port = 18422;
+let port = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
 const token = 'proxy-e2e-admin-secret-2026-p7q3';
 
 const findPython = () => {
@@ -101,6 +101,7 @@ if (!python) {
 }
 
 (async () => {
+  port = await freePort();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-proxy-'));
   const data = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-proxy-data-'));
   // Папката на тестовия портал е под ЛОГИЧЕСКИЯ /share; на диска е в временния корен на

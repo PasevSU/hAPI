@@ -19,14 +19,14 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const { frameAllowed, frameSources } = require('./lib/csp-frame.cjs');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN = 'panel-framing-token-9c4e17b2a6d8f035';
-const pub = 18409;
-const adm = 18408;
-const HA = `http://127.0.0.1:${adm}`;
+let pub = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
+let adm = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
+let HA = ''; // строи се след като adm получи стойност — иначе адресът носи порт 0
 const PREFIXES = ['/api/hassio_ingress/panel-token_9f2c', '/app/99438e72_hapi_enterprise'];
 let ENGINE_CASES = 0;
 
@@ -154,6 +154,9 @@ function refsOf(html) {
 }
 
 (async () => {
+  pub = await freePort();
+  adm = await freePort();
+  HA = `http://127.0.0.1:${adm}`;
   checkEngine();
   checkStaticSurfaces();
 

@@ -1,8 +1,7 @@
 'use strict';
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict'), fs = require('node:fs'), os = require('node:os'), path = require('node:path'), { spawn } = require('node:child_process');
 (async () => {
-  const { freePort } = require('./helpers.cjs');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'portal-sensors-')), port = await freePort(), admin = 'sensor-test-admin-token-123456789';
   let child; const base = `http://127.0.0.1:${port}`;
   const request = async (url, method = 'GET', body, headers = {}) => { const r = await fetch(base + url, { method, headers, body }); let v; try { v = await r.json() } catch { v = null } return { status: r.status, value: v } };

@@ -81,7 +81,7 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     app.nav('dashboard');
     await settle('таблото');
     for (const selector of ['#mon-cards', '#mon-visitors', '#mon-res', '#mon-live', '#mon-refresh']) {
-      assert.equal(app.$(selector), null, 'таблото не показва ' + selector);
+      assert.ok(!app.$(selector), 'таблото не показва ' + selector);
     }
     const dashText = text(view());
     assert.equal(/Уникални посетители|Отказани достъпи|Ресурси и хранилище/.test(dashText), false, 'таблото няма мониторинг числа: ' + dashText.slice(0, 160));
@@ -98,7 +98,7 @@ const BUDGET = Number(process.env.HAPI_GUI_TIMEOUT_MS || 45000);
     );
     // Един дял за всеки бутон: равен брой колони се задава от мрежата, а не от текста.
     assert.equal(app.$$('#dash-quick .badge').length, 0, 'бързият достъп няма табелки към бутоните');
-    assert.equal(app.$('#status-pill'), null, 'няма табелка „Готов“ до заглавието на приложението');
+    assert.ok(!app.$('#status-pill'), 'няма табелка „Готов“ до заглавието на приложението');
     assert.equal(ui('index.html').includes('status-pill'), false, 'index.html не рисува status-pill');
     for (const [file, pattern] of [
       ['dashboard-panel.js', /badge ok/],

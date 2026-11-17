@@ -101,5 +101,18 @@
     return `<svg class="ui-ico${extra ? ' ' + extra : ''}" aria-hidden="true" focusable="false"><use href="#ui-i-${key}"/></svg>`;
   }
 
-  window.HapiIcons = { ico, names: Object.keys(P) };
+  // ── Външен спрайт v4 (142 икони × 5 стила = 710 символа) ────────────────
+  // Живее в един файл `/ui/icons-v4.svg`, за да не иска 710 адреса и 710 заявки. Версията
+  // в адреса идва от `data.js` — така спрайтът се кешира завинаги, но се сменя при издание.
+  const SPRITE_STYLES = ['standard', 'fine', 'bold', 'duotone', 'glow'];
+  function sprite(name, style) {
+    const id = String(name || '');
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) return '';
+    const st = SPRITE_STYLES.includes(style) ? style : 'standard';
+    const version = typeof window !== 'undefined' && window.HAPI_VERSION ? String(window.HAPI_VERSION) : '';
+    const href = '/ui/icons-v4.svg' + (version ? '?v=' + encodeURIComponent(version) : '') + '#' + id + '--' + st;
+    return `<svg class="ui-ico" aria-hidden="true" focusable="false"><use href="${href}"></use></svg>`;
+  }
+
+  window.HapiIcons = { ico, names: Object.keys(P), sprite, SPRITE_STYLES };
 })();

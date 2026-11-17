@@ -46,14 +46,15 @@ const PANEL_MODULES = [
 
     const qrBtn = await waitFor(() => host.querySelector('[data-qr-portal]'), { label: 'QR бутонът в главата на картата' });
     qrBtn.click();
-    // 0.69.229: адресът се чете от РАМКАТА в QR студиото (раздел „Обикновен“) — той е част от
-    // фигурата и е изписан под кода, а не е `href` върху самата картинка.
-    const studio = await waitFor(() => ui.window.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
-    const caption = await waitFor(() => studio.querySelector('.qs-caption-url'), { label: 'адреса под кода' });
+      // 0.69.232: адресът се чете от КАРТАТА в QR студиото (раздел „Обикновен“) — той е част от
+      // изображението (изписан в долния му ръб) и се носи като `data-url`, а не като `href`
+      // върху самата картинка.
+      const studio = await waitFor(() => ui.window.document.getElementById('qs-modal'), { label: 'прозореца на QR студиото' });
+      const caption = await waitFor(() => studio.querySelector('.qs-card[data-url]'), { label: 'картата с адреса' });
 
-    // ── 2. Адресът идва от ГУИ-ТО — от рамката на кода ───────────────────────
-    const link = String(caption.textContent || '').trim();
-    assert.ok(link, 'адресът е изписан под кода');
+      // ── 2. Адресът идва от ГУИ-ТО — от картата на кода ──────────────────────
+      const link = String(caption.getAttribute('data-url') || '').trim();
+      assert.ok(link, 'адресът е част от изображението');
     assert.match(link, /\/p\/[0-9a-f]{16,}/, 'адресът е на портала: ' + link);
     assert.equal(/:8099|:18099/.test(link), false, 'адресът не носи служебен порт: ' + link);
 
@@ -69,7 +70,7 @@ const PANEL_MODULES = [
     // Дотук тук стояха два отделни бутона към портала и папката, които водеха до различни
     // адреси. Сега входът е само връзката върху QR кода, за да няма два пътя към едно място.
     for (const id of ['pf-open-folder', 'pf-open-portal', 'pf-portal-qr']) {
-      assert.equal(host.querySelector('#' + id), null, `в картата няма #${id}`);
+      assert.ok(!host.querySelector('#' + id), `в картата няма #${id}`);
     }
 
     console.log(

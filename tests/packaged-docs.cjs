@@ -88,7 +88,8 @@ assert.ok(uiTokens.has('data-qr-portal'), 'ui/README.md описва QR буто
 // 0.69.229: кодът вече е в глобалния прозорец — описанието трябва да сочи раздела и рамката,
 // а не стария поповер.
 assert.ok(uiTokens.has('data-qs-tab'), 'ui/README.md описва разделите на QR студиото (`data-qs-tab`)');
-assert.ok(uiTokens.has('qs-caption-url'), 'ui/README.md казва, че адресът е изписан под кода (`qs-caption-url`)');
+  assert.ok(uiTokens.has('data-url'), 'ui/README.md казва, че адресът е част от изображението и се носи като `data-url`');
+  assert.equal(uiTokens.has('qs-caption-url'), false, 'ui/README.md не обещава махнатия отделен ред с адреса (`qs-caption-url`)');
 // …и не обещава отделен блок, който е махнат, освен ако не пише, че е махнат.
 for (const para of uiDoc.split(/\n\s*\n/)) {
   if (!para.includes('Достъп и QR код')) continue;

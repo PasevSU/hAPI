@@ -1,0 +1,636 @@
+{
+  "version": "4.0.0",
+  "generatedFrom": "hierarchy.json",
+  "style": "standard",
+  "scopes": {
+    "Портал": {
+      "Създаване": {
+        "icon": "plus",
+        "items": [
+          {
+            "label": "Създай портал",
+            "icon": "create-portal"
+          },
+          {
+            "label": "Създай папка",
+            "icon": "create-folder"
+          },
+          {
+            "label": "Добави файл",
+            "icon": "create-file"
+          },
+          {
+            "label": "Качи файлове",
+            "icon": "upload"
+          },
+          {
+            "label": "Качи папка",
+            "icon": "upload-folder"
+          }
+        ]
+      },
+      "Съдържание": {
+        "icon": "folder-tree",
+        "items": [
+          {
+            "label": "Файлове и папки",
+            "icon": "folder-tree"
+          },
+          {
+            "label": "Регистрирай файлове",
+            "icon": "manifest"
+          },
+          {
+            "label": "Търси",
+            "icon": "search"
+          },
+          {
+            "label": "Филтрирай",
+            "icon": "filter"
+          }
+        ]
+      },
+      "Отчети": {
+        "icon": "report-portal",
+        "items": [
+          {
+            "label": "Отчет за целия портал",
+            "icon": "report-portal"
+          },
+          {
+            "label": "Комбиниран отчет за ≥2 файла",
+            "icon": "report-combo"
+          },
+          {
+            "label": "Рекурсивен отчет с подпапки",
+            "icon": "report-recursive"
+          },
+          {
+            "label": "Манифест и SHA-256",
+            "icon": "hash-verify"
+          },
+          {
+            "label": "Одит",
+            "icon": "audit"
+          }
+        ]
+      },
+      "QR и достъп": {
+        "icon": "qr",
+        "items": [
+          {
+            "label": "QR студио",
+            "icon": "qr"
+          },
+          {
+            "label": "Публикувай",
+            "icon": "public"
+          },
+          {
+            "label": "Ограничи достъп",
+            "icon": "private"
+          },
+          {
+            "label": "Подписана връзка",
+            "icon": "link"
+          },
+          {
+            "label": "История на QR",
+            "icon": "qr-history"
+          },
+          {
+            "label": "Отмени QR",
+            "icon": "qr-revoke"
+          }
+        ]
+      },
+      "Сигурност": {
+        "icon": "shield-check",
+        "items": [
+          {
+            "label": "Провери целостта",
+            "icon": "hash-verify"
+          },
+          {
+            "label": "Провери подписи",
+            "icon": "signature"
+          },
+          {
+            "label": "Провери времеви печат",
+            "icon": "timestamp"
+          },
+          {
+            "label": "Управление на ключове",
+            "icon": "key"
+          }
+        ]
+      },
+      "Архив": {
+        "icon": "archive",
+        "items": [
+          {
+            "label": "Архивирай",
+            "icon": "archive"
+          },
+          {
+            "label": "Провери архив",
+            "icon": "archive-verify"
+          },
+          {
+            "label": "Върни версия",
+            "icon": "restore"
+          },
+          {
+            "label": "История",
+            "icon": "history"
+          }
+        ]
+      },
+      "Администриране": {
+        "icon": "settings",
+        "items": [
+          {
+            "label": "Настройки",
+            "icon": "settings"
+          },
+          {
+            "label": "Роли и права",
+            "icon": "permissions"
+          },
+          {
+            "label": "Лиценз",
+            "icon": "license"
+          },
+          {
+            "label": "Затвори портал",
+            "icon": "close"
+          }
+        ]
+      }
+    },
+    "Папка": {
+      "Създаване": {
+        "icon": "plus",
+        "items": [
+          {
+            "label": "Нова подпапка",
+            "icon": "create-folder"
+          },
+          {
+            "label": "Добави файл",
+            "icon": "create-file"
+          },
+          {
+            "label": "Качи папка",
+            "icon": "upload-folder"
+          }
+        ]
+      },
+      "Операции": {
+        "icon": "folder",
+        "items": [
+          {
+            "label": "Отвори",
+            "icon": "open"
+          },
+          {
+            "label": "Копирай",
+            "icon": "copy"
+          },
+          {
+            "label": "Премести",
+            "icon": "move"
+          },
+          {
+            "label": "Преименувай",
+            "icon": "rename"
+          },
+          {
+            "label": "Изтрий",
+            "icon": "delete"
+          }
+        ]
+      },
+      "Отчети": {
+        "icon": "report-folder",
+        "items": [
+          {
+            "label": "Отчет за папката",
+            "icon": "report-folder"
+          },
+          {
+            "label": "Комбиниран отчет за ≥2 файла",
+            "icon": "report-combo"
+          },
+          {
+            "label": "Рекурсивен отчет за дървото",
+            "icon": "report-recursive"
+          },
+          {
+            "label": "SHA-256 и манифест",
+            "icon": "hash-verify"
+          }
+        ]
+      },
+      "Сигурност": {
+        "icon": "lock",
+        "items": [
+          {
+            "label": "Заключи",
+            "icon": "lock"
+          },
+          {
+            "label": "Провери съдържание",
+            "icon": "hash-verify"
+          },
+          {
+            "label": "Права",
+            "icon": "permissions"
+          }
+        ]
+      },
+      "Архив": {
+        "icon": "archive",
+        "items": [
+          {
+            "label": "Архивирай папката",
+            "icon": "archive"
+          },
+          {
+            "label": "Провери архив",
+            "icon": "archive-verify"
+          },
+          {
+            "label": "История",
+            "icon": "history"
+          }
+        ]
+      }
+    },
+    "Файл": {
+      "Основни": {
+        "icon": "file",
+        "items": [
+          {
+            "label": "Отвори",
+            "icon": "open"
+          },
+          {
+            "label": "Преглед",
+            "icon": "view"
+          },
+          {
+            "label": "Изтегли",
+            "icon": "download"
+          },
+          {
+            "label": "Копирай",
+            "icon": "copy"
+          },
+          {
+            "label": "Премести",
+            "icon": "move"
+          },
+          {
+            "label": "Преименувай",
+            "icon": "rename"
+          },
+          {
+            "label": "Изтрий",
+            "icon": "delete"
+          }
+        ]
+      },
+      "Отчет": {
+        "icon": "report-single",
+        "items": [
+          {
+            "label": "Единичен отчет",
+            "icon": "report-single"
+          },
+          {
+            "label": "SHA-256 проверка",
+            "icon": "hash-verify"
+          },
+          {
+            "label": "Манифест / метаданни",
+            "icon": "metadata"
+          },
+          {
+            "label": "Разписка",
+            "icon": "proof"
+          }
+        ]
+      },
+      "Подписи": {
+        "icon": "signature",
+        "items": [
+          {
+            "label": "Провери подпис",
+            "icon": "signature"
+          },
+          {
+            "label": "Провери времеви печат",
+            "icon": "timestamp"
+          },
+          {
+            "label": "Версии",
+            "icon": "versions"
+          }
+        ]
+      },
+      "Споделяне": {
+        "icon": "qr",
+        "items": [
+          {
+            "label": "QR на файла",
+            "icon": "qr"
+          },
+          {
+            "label": "Подписан URL",
+            "icon": "link"
+          },
+          {
+            "label": "Копирай адрес",
+            "icon": "copy"
+          },
+          {
+            "label": "Видимост",
+            "icon": "visible"
+          },
+          {
+            "label": "Заключи",
+            "icon": "lock"
+          }
+        ]
+      },
+      "Други": {
+        "icon": "ellipsis",
+        "items": [
+          {
+            "label": "Бележка",
+            "icon": "note"
+          },
+          {
+            "label": "История",
+            "icon": "history"
+          },
+          {
+            "label": "Свойства",
+            "icon": "details"
+          }
+        ]
+      }
+    },
+    "QR студио": {
+      "Обхват": {
+        "icon": "qr-scope",
+        "items": [
+          {
+            "label": "Портал",
+            "icon": "portal"
+          },
+          {
+            "label": "Папка и файлове",
+            "icon": "folder-tree"
+          },
+          {
+            "label": "Един файл",
+            "icon": "file"
+          }
+        ]
+      },
+      "Режим": {
+        "icon": "settings",
+        "items": [
+          {
+            "label": "Обикновен",
+            "icon": "qr"
+          },
+          {
+            "label": "Само за четене",
+            "icon": "qr-readonly"
+          },
+          {
+            "label": "Временен",
+            "icon": "temporary"
+          },
+          {
+            "label": "Папки и файлове",
+            "icon": "qr-scope"
+          }
+        ]
+      },
+      "Връзка": {
+        "icon": "link",
+        "items": [
+          {
+            "label": "Отвори",
+            "icon": "open"
+          },
+          {
+            "label": "Копирай",
+            "icon": "copy"
+          },
+          {
+            "label": "Сподели",
+            "icon": "share"
+          },
+          {
+            "label": "Изтегли SVG",
+            "icon": "qr-download"
+          }
+        ]
+      },
+      "Контрол": {
+        "icon": "key",
+        "items": [
+          {
+            "label": "История",
+            "icon": "qr-history"
+          },
+          {
+            "label": "Отмени QR",
+            "icon": "qr-revoke"
+          },
+          {
+            "label": "Провери обхват",
+            "icon": "qr-scope"
+          },
+          {
+            "label": "Срок",
+            "icon": "expiry"
+          }
+        ]
+      }
+    },
+    "Избор и състояния": {
+      "Checkbox": {
+        "icon": "check-square",
+        "items": [
+          {
+            "label": "Празен",
+            "icon": "square"
+          },
+          {
+            "label": "Избран",
+            "icon": "check-square"
+          },
+          {
+            "label": "Частично избран",
+            "icon": "minus-square"
+          }
+        ]
+      },
+      "Switch": {
+        "icon": "switch-on",
+        "items": [
+          {
+            "label": "Включено",
+            "icon": "switch-on"
+          },
+          {
+            "label": "Изключено",
+            "icon": "switch-off"
+          },
+          {
+            "label": "Недостъпно",
+            "icon": "unavailable"
+          }
+        ]
+      },
+      "Radio": {
+        "icon": "radio-on",
+        "items": [
+          {
+            "label": "Избран",
+            "icon": "radio-on"
+          },
+          {
+            "label": "Неизбран",
+            "icon": "radio-off"
+          }
+        ]
+      },
+      "Видимост": {
+        "icon": "visible",
+        "items": [
+          {
+            "label": "Видим",
+            "icon": "visible"
+          },
+          {
+            "label": "Скрит",
+            "icon": "hidden"
+          },
+          {
+            "label": "Недостъпен",
+            "icon": "blocked"
+          }
+        ]
+      },
+      "Резултат": {
+        "icon": "info",
+        "items": [
+          {
+            "label": "Успех",
+            "icon": "success"
+          },
+          {
+            "label": "Грешка",
+            "icon": "failure"
+          },
+          {
+            "label": "Предупреждение",
+            "icon": "warning"
+          },
+          {
+            "label": "Изчаква",
+            "icon": "pending"
+          },
+          {
+            "label": "Проверява",
+            "icon": "loading"
+          }
+        ]
+      }
+    }
+  },
+  "iconsUsed": [
+    "archive",
+    "archive-verify",
+    "audit",
+    "blocked",
+    "check-square",
+    "close",
+    "copy",
+    "create-file",
+    "create-folder",
+    "create-portal",
+    "delete",
+    "details",
+    "download",
+    "ellipsis",
+    "expiry",
+    "failure",
+    "file",
+    "filter",
+    "folder",
+    "folder-tree",
+    "hash-verify",
+    "hidden",
+    "history",
+    "info",
+    "key",
+    "license",
+    "link",
+    "loading",
+    "lock",
+    "manifest",
+    "metadata",
+    "minus-square",
+    "move",
+    "note",
+    "open",
+    "pending",
+    "permissions",
+    "plus",
+    "portal",
+    "private",
+    "proof",
+    "public",
+    "qr",
+    "qr-download",
+    "qr-history",
+    "qr-readonly",
+    "qr-revoke",
+    "qr-scope",
+    "radio-off",
+    "radio-on",
+    "rename",
+    "report-combo",
+    "report-folder",
+    "report-portal",
+    "report-recursive",
+    "report-single",
+    "restore",
+    "search",
+    "settings",
+    "share",
+    "shield-check",
+    "signature",
+    "square",
+    "success",
+    "switch-off",
+    "switch-on",
+    "temporary",
+    "timestamp",
+    "unavailable",
+    "upload",
+    "upload-folder",
+    "versions",
+    "view",
+    "visible",
+    "warning"
+  ]
+}

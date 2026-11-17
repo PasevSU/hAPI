@@ -5,7 +5,7 @@
 // HA, тоест на чужд маршрут. Тук се проверява, че префиксът от proxy-то (`X-Forwarded-Prefix`)
 // влиза и в двата адреса, че невалиден префикс се игнорира, и че интеграцията сервира
 // `/hapi/…`, защото `/api/…` може да бъде засенчен от HA.
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -13,10 +13,11 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 
 const root = path.join(__dirname, '..');
-const port = 18411;
+let port = 0; // вдига се в началото на главната функция (портът се взима от ядрото)
 const token = 'prefix-test-admin-secret-2026-k4m2';
 
 (async () => {
+  port = await freePort();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ha-prefix-'));
   const child = spawn(process.execPath, [path.join(root, 'hapi_enterprise', 'server.js')], {
     env: { ...process.env, DATA_DIR: dir, ADMIN_TOKEN: token, PORT: String(port), PUBLIC_GATEWAY_PORT: '0', PUBLIC_BASE_URL: '' },

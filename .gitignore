@@ -54,6 +54,12 @@ reports/*.txt
 reports/*.py
 reports/*.log
 
+# Пълните логове на тестовете са локално доказателство, не артефакт на изданието.
+# Показалецът (`reports/TEST-LOG.md`) остава в хранилището — той е четимото резюме.
+reports/test-logs/
+reports/test-log.jsonl
+reports/test-log-state.json
+
 # Dev dashboard (local)
 dashboard-commands.json
 

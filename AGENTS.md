@@ -12,10 +12,12 @@
 | --- | --- |
 | Пълен тестов пакет | `node scripts/safe-release.cjs` (генератори → build → verify → матрица → отчет → скенери → lint) |
 | Бърза проверка | `node scripts/safe-release.cjs --fast` (същото без матрицата) |
+| Дневник на всички тестове | `node scripts/verify-runner.cjs` — ВСЕКИ тест, пълен лог на всеки в `reports/test-logs/<пуск>/`; `--status` чете без пуск, `--tail=<име>` показва лога |
 | Един тест | `node tests/<име>.cjs` |
 | Отчет за изданието | `node scripts/release-status.cjs` + `node tests/release-status.cjs` |
 | Изграждане | `node scripts/build-release.cjs` → `node scripts/verify-release.cjs` → `node scripts/build-haoss.cjs` |
 | Линт | `npx eslint hapi_enterprise tests custom_components scripts --max-warnings=0` |
+| Икони (спрайт v4) | `node scripts/build-icons-sprite.mjs --zip=<PasevSU-SVG-Controls-v4-Complete.zip>` → `hapi_enterprise/ui/icons-v4.svg` (710 символа); пази се от `tests/icons-v4.cjs` |
 | Документи | `sync-addon-changelog` · `source-inventory` · `gen-test-rules` · `docs-index` · `docs-manual` · `api-reference` · `openapi-admin` · `error-codes` · `audit-events` |
 
 ## Твърди порти (чупят изданието)
@@ -43,7 +45,8 @@
   `server-module.js`, но `create(deps, api) => ({ name?, fn })`, а `core.api.<име>` е замразен.
   Първият аргумент е това, което `server.js` подава, вторият — ЖИВИЯТ обект на слоя, за да
   ползва един модул друг. Днес: `qr` (SVG) · `address` (договор · `attach` · `landingPath`) ·
-  `api-docs` (`spec` · `record` · `registry`). Никой не вика `qr-svg`/`portal-links`/`api-spec`
+  `api-docs` (`spec` · `record` · `registry`) · `hash` (`digest` · `file` · `verify` · `basis`) ·
+  `http` (`client`). Никой не вика `qr-svg`/`portal-links`/`api-spec`
   напряко. Тест: `tests/core-modules.cjs`. Нова функция → файл в `core_module/`
   (+ ред в `COPY core_module`) и ред в `CRITICAL` на `integrity.js`.
 - `hapi_enterprise/module-folder.js` — ЕДНОТО правило за име на файл в динамична папка
@@ -87,6 +90,16 @@
   изключва format on save).
 - Тестовете оставят папки в `%TEMP%`; матрицата вече ги чисти сама след серията.
 - Браузърните инструменти не стигат до `127.0.0.1` → ползвай `gui-harness`, не Playwright.
+- **Твърдение никога не получава DOM възел.** `assert.equal(app.$(…), null)` при провал кара
+  Node да строи diff (`myersDiff`) от инспекцията на ЦЕЛИЯ възел — измерено **144 s** и
+  `Array buffer allocation failed` вместо съобщение, тоест грешката се превръща в OOM и
+  никой не разбира какво е сгрешено (DEF-92). Възел се проверява с `assert.ok(!възел)` /
+  `assert.ok(възел === друг)`, а за съдържание се чете `.textContent`/`.getAttribute`.
+  Пази го `tests/dom-harness.cjs` §6.
+- **Тестовият DOM трябва да познава `isConnected`.** Без него `ensureModal()` в QR студиото
+  строи ВТОРИ прозорец при всяко отваряне (браузърът преизползва същия) и тестът чете стария —
+  точно това скри, че „QR за тази папка“ показва адреса на портала (DEF-92). Пази го
+  `tests/dom-harness.cjs` §7, а `gui-journeys` J53 го проверява от край до край.
 - `--only` не пише `reports/test-matrix.json` (пази пълния отчет за `release-status`).
 - **Версия без таг = издание без образ.** Версията в `config.yaml` се вдига преди тага, а
   `addon-image.yml` строи образа по версията от манифеста. Затова този workflow се пуска и на

@@ -36,6 +36,10 @@ const CRITICAL = [
   'core_module/qr.js',
   'core_module/address.js',
   'core_module/api-docs.js',
+  // Хешът и изходящите заявки (0.69.232): през тях минават `files[].sha256` в описанието на
+  // портала и всяка заявка навън. Подмяната им не се вижда от останалите тестове.
+  'core_module/hash.js',
+  'core_module/http.js',
   'ui/index.html',
   'ui/app.js',
   'ui/settings-panel.js',

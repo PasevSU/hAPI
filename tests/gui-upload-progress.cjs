@@ -112,7 +112,7 @@ const { startServer, mountUi, waitFor } = require('./lib/gui-harness.cjs');
     const closeBtn = ui.document.body.querySelector('[data-up="close"]');
     assert.ok(closeBtn, 'има бутон за затваряне');
     closeBtn.click();
-    assert.equal(ui.document.body.querySelector('[data-up-backdrop]'), null, 'след затваряне фонът го няма');
+    assert.ok(!ui.document.body.querySelector('[data-up-backdrop]'), 'след затваряне фонът го няма');
     assert.equal(ui.document.body.classList.contains('up-locked'), false, 'и скролът се връща');
 
     // ── 4. Отказът се ВИЖДА: същият файл без „презапиши“ → 409 ───────────────

@@ -376,7 +376,122 @@
     };
   }
 
-  const API = { create, sha256Hex, fmt };
+  // ── ОБЩ ИНДИКАТОР ЗА РАБОТА ────────────────────────────────────────────────
+  /**
+   * Един индикатор за всички панели, върху класовете от `components.css`.
+   *
+   *   begin({ mode: 'determinate' | 'indeterminate' | 'thinking', label, max, host })
+   *
+   * `determinate` ползва НАТИВЕН `<progress>` (CSP забранява `style="width:…"`, а `<progress>`
+   * е и по-точен за екранен четец); `indeterminate` — лентата `.bar`; `thinking` — точките
+   * `.think`. Връща handle: `set(value, text)`, `text(msg)`, `done(msg)`, `fail(msg)`, `close()`.
+   * Няма собствени текстове: надписът идва от викащия (затова модулът остава с 0 български
+   * низове в ратчета на i18n).
+   */
+  function progress(opts) {
+    const o = opts || {};
+    const doc = o.document || (typeof document !== 'undefined' ? document : null);
+    if (!doc) throw new Error('progress: document is required');
+    const host = o.host || doc.body;
+    const mode = o.mode === 'determinate' || o.mode === 'thinking' ? o.mode : 'indeterminate';
+    const box = doc.createElement('div');
+    box.className = 'pg';
+    box.setAttribute('role', 'status');
+    box.setAttribute('aria-live', 'polite');
+    box.setAttribute('aria-busy', 'true');
+    const text = doc.createElement('span');
+    text.className = 'pg-text';
+    if (o.label) text.textContent = String(o.label);
+    if (o.label) box.appendChild(text);
+    let meter = null;
+    if (mode === 'determinate') {
+      meter = doc.createElement('progress');
+      meter.className = 'pg-meter';
+      meter.max = Number(o.max) > 0 ? Number(o.max) : 100;
+      meter.value = 0;
+      box.appendChild(meter);
+    } else if (mode === 'thinking') {
+      const dots = doc.createElement('span');
+      dots.className = 'think';
+      for (let i = 0; i < 3; i += 1) dots.appendChild(doc.createElement('i'));
+      box.appendChild(dots);
+    } else {
+      const bar = doc.createElement('div');
+      bar.className = 'bar';
+      bar.setAttribute('data-indeterminate', '');
+      bar.appendChild(doc.createElement('i'));
+      box.appendChild(bar);
+    }
+    host.appendChild(box);
+    let closed = false;
+    const say = (msg, cls) => {
+      if (msg != null) text.textContent = String(msg);
+      if (!text.parentNode) box.insertBefore(text, box.firstChild);
+      if (cls) text.classList.add(cls);
+    };
+    return {
+      el: box,
+      /** Задава стойност (само при `determinate`) и надпис; извън диапазона се отрязва. */
+      set(value, msg) {
+        if (closed) return this;
+        if (meter) {
+          const max = Number(meter.max) || 100;
+          meter.value = Math.max(0, Math.min(Number(value) || 0, max));
+        }
+        say(msg);
+        return this;
+      },
+      text(msg) {
+        if (!closed) say(msg);
+        return this;
+      },
+      /** Готово: обявява края и маха индикатора (той не бива да остава на екрана). */
+      done(msg) {
+        if (closed) return this;
+        if (msg != null) say(msg);
+        box.setAttribute('aria-busy', 'false');
+        this.close();
+        return this;
+      },
+      /** Провал: индикаторът ОСТАВА с обяснение, докато някой не го затвори. */
+      fail(msg) {
+        if (closed) return this;
+        say(msg == null ? '' : msg, 'pg-err');
+        box.setAttribute('aria-busy', 'false');
+        return this;
+      },
+      close() {
+        if (closed) return;
+        closed = true;
+        if (box.parentNode) box.parentNode.removeChild(box);
+      },
+    };
+  }
+
+  /**
+   * „Заето“ върху бутон без нов маркъп: `aria-busy` включва спинер (`components.css`).
+   * Връща функция за отмяна, която връща предишното състояние.
+   */
+  function attachBusy(btn) {
+    // Без бутон няма какво да се отмени, но извикващият вика `stop()` без проверка — затова
+  // се връща функция, която НЕ прави нищо (израз, не празно тяло: празното тяло изглежда
+  // като забравена реализация и `tests/no-stubs.cjs` го отказва).
+  if (!btn || typeof btn.setAttribute !== 'function') return () => undefined;
+    const wasDisabled = Boolean(btn.disabled);
+    btn.setAttribute('aria-busy', 'true');
+    if ('disabled' in btn) btn.disabled = true;
+    return () => {
+      btn.setAttribute('aria-busy', 'false');
+      if ('disabled' in btn) btn.disabled = wasDisabled;
+    };
+  }
+
+  const API = { create, sha256Hex, fmt, progress, attachBusy };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
-  if (typeof window !== 'undefined') window.HAPIUploadProgress = API;
+  if (typeof window !== 'undefined') {
+    window.HAPIUploadProgress = API;
+    // Общият индикатор е достъпен за ВСЕКИ панел: едни класове, един договор
+    // (`tests/ui-motion.cjs` пази движението, `tests/ui-progress.cjs` — поведението).
+    window.HapiProgress = { begin: progress, attachBusy };
+  }
 })();

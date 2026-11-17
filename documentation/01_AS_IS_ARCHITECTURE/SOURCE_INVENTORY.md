@@ -1,15 +1,12 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.231
+> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.232
 
-> **Генериран документ.** Версия на кода: **0.69.231**. Пише се от
-> `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`.
-> Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от
-> първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
+> **Генериран документ.** Версия на кода: **0.69.232**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **130** backend модула · **20** HTTP компонента · **30** UI модула · **9** Python модула · **48** инструмента · **442** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
+Общо: **132** backend модула · **20** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **452** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Backend модули (`hapi_enterprise/*.js`) (130)
+### Backend модули (`hapi_enterprise/*.js`) (132)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -27,6 +24,8 @@
 | `hapi_enterprise/content-id.js` | Идентичност на СЪДЪРЖАНИЕТО (`content_id`) — §11 и §12 от HAPI-ARCH-API-001. |
 | `hapi_enterprise/core_module/address.js` | ГЛОБАЛНА ФУНКЦИЯ „address“ — договорът за адресите на портала, файловете и прегледа. |
 | `hapi_enterprise/core_module/api-docs.js` | ГЛОБАЛНА ФУНКЦИЯ „api-docs“ — API документът на портала (OpenAPI + api/<slug>/). |
+| `hapi_enterprise/core_module/hash.js` | ГЛОБАЛНА ФУНКЦИЯ „hash“ — едно място за хеш, парче по парче. |
+| `hapi_enterprise/core_module/http.js` | ГЛОБАЛНА ФУНКЦИЯ „http“ — един изходящ клиент с таймаут и типизирана грешка. |
 | `hapi_enterprise/core_module/qr.js` | ГЛОБАЛНА ФУНКЦИЯ „qr“ — единственото място, което прави QR код. |
 | `hapi_enterprise/core-store.js` | Core hierarchical store (DOCFLOW Phases 1). Own SQLite file, additive to the legacy |
 | `hapi_enterprise/core.js` | ГЛОБАЛНИТЕ ФУНКЦИИ НА СЪРВЪРА — ВСИЧКИ ФАЙЛОВЕ ОТ `core_module/` БЕЗ ТВЪРДО ВПИСАН СПИСЪК. |
@@ -218,7 +217,7 @@
 | `custom_components/hapi_enterprise/entity.py` | Shared entity helpers for the hAPI Enterprise integration. |
 | `custom_components/hapi_enterprise/sensor.py` | Sensor platform for hAPI Enterprise telemetry. |
 
-### Инструменти (`scripts/*.cjs`) (48)
+### Инструменти (`scripts/*.cjs`) (49)
 
 | Файл | Предназначение (първи ред от самия файл) |
 | ---- | ----------------------------------------- |
@@ -270,3 +269,4 @@
 | `scripts/test-matrix.cjs` | Цялостен тестов пакет: изпълнява ВСИЧКИ тестове от `tests/` и при каквато и да е |
 | `scripts/tree-fingerprint.cjs` | ОТПЕЧАТЪК НА ДЪРВОТО — за да не може остаряла матрица да мине за зелена (0.69.224). |
 | `scripts/verify-release.cjs` | Проверка на изданието за Home Assistant — всички сценарии на едно място. |
+| `scripts/verify-runner.cjs` | ДНЕВНИК НА ВСИЧКИ ТЕСТОВЕ — пуска ВСЕКИ тест и запазва ПЪЛНИЯ му изход (0.69.232). |

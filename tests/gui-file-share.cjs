@@ -86,7 +86,7 @@ const CONTENT = 'podpisan-adees-ot-panela';
     assert.equal(opened.status, 200, 'първоначалният адрес се отваря без токен: ' + address + ' → ' + opened.status);
     assert.equal(await opened.text(), CONTENT, 'по адреса идва СЪДЪРЖАНИЕТО на файла');
     assert.ok(first.modal.querySelector('#fm-share-download'), 'има бутон „Изтегли файла“');
-    assert.equal(first.modal.querySelector('#fm-create-key'), null, 'за FREE файл не се предлага ключ');
+    assert.ok(!first.modal.querySelector('#fm-create-key'), 'за FREE файл не се предлага ключ');
     assert.equal(/X-Portal-Key/.test(first.modal.textContent), false, 'не подвежда с X-Portal-Key');
     assert.equal(/издава се…/.test(first.modal.textContent), false, 'полето не остава на „издава се…“');
     const issuedOnce = calls.filter((c) => /\/signed-url$/.test(c)).length;

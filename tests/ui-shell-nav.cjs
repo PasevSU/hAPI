@@ -112,7 +112,7 @@ const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
     for (const [toggleSel, bodySel, what] of BLOCKS) {
       const toggle = await waitFor(() => fresh.$(toggleSel), { label: 'заглавието на ' + what, timeout: 15000 });
       assert.equal(toggle.getAttribute('aria-expanded'), 'false', what + ' е СГЪНАТ по подразбиране');
-      assert.equal(fresh.$(bodySel), null, 'тялото на „' + what + '“ не се рисува, докато е сгънато');
+      assert.ok(!fresh.$(bodySel), 'тялото на „' + what + '“ не се рисува, докато е сгънато');
     }
     // И се разгъва с едно натискане — иначе „сгънато“ би значело „скрито завинаги“.
     fresh.$('[data-pf-files-tog]').click();

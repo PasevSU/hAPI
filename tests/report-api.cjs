@@ -1,6 +1,6 @@
 'use strict';
 // Фаза 11 / RS-03: POST /admin/api/v2/reports/render (манифест → PDF).
-const { stopChild } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict'),
   fs = require('node:fs'),
   os = require('node:os'),
@@ -10,7 +10,7 @@ const assert = require('node:assert/strict'),
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'report-api-'));
   const token = 'report-api-admin-secret-2026-r3';
-  const port = 18471;
+  const port = await freePort();
   const B = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, [path.join(__dirname, '../hapi_enterprise/server.js')], {
     env: { ...process.env, DATA_DIR: dir, ADMIN_TOKEN: token, PORT: String(port) },
