@@ -109,7 +109,6 @@ assert.equal(interp.render(null, ctx).output, '', 'null не гърми');
     const portal = await created.json();
     assert.ok([200, 201].includes(created.status), 'порталът е създаден: ' + JSON.stringify(portal));
     const p = portal.portal || portal;
-    const slug = p.slug || (p.portal && p.portal.slug);
     const portalId = p.id || (p.portal && p.portal.id);
 
     // Публичният изглед: разгънати текстове, но БЕЗ промяна на записа.

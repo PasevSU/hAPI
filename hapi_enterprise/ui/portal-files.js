@@ -162,7 +162,7 @@
 
   /** Блок „Файлове в портала“: заглавие с икони, панел с филтри и картите на файловете. */
   function render(ctx) {
-    const { esc, state, p, files, scoped, visible, scope, ICON, ico, T } = ctx;
+    const { esc, state, files, scoped, visible, scope, ICON, ico, T } = ctx;
     const treePath = ctx.treePath;
     const uploadForm = ctx.uploadForm;
     // Блокът е СГЪНАТ по подразбиране (както всички блокове на портала).

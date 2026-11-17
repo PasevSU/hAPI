@@ -3,7 +3,6 @@
 // относителен и да остава в папката. Проверката е обща за build-release и verify-release,
 // а тестът пази и двете посоки: опасните пътища падат, нормалните минават.
 const assert = require('node:assert/strict');
-const path = require('node:path');
 const lib = require('../scripts/release-lib.cjs');
 
 const good = [

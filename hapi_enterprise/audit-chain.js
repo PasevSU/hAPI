@@ -21,6 +21,7 @@ function createAuditChain(root) {
     } return { valid: true, count: seq, lastHash: prev };
   }
   async function init() { if (initialized) return; const result = await verify(); if (!result.valid) throw Error('Audit chain corrupted: ' + result.reason); sequence = result.count; previous = result.lastHash; initialized = true }
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
   function append(event, details = {}) { const task = queue.then(async () => { await init(); const e = { seq: ++sequence, at: new Date().toISOString(), event, details, prevHash: previous }; e.hash = hash(canonical(e)); const line = JSON.stringify(e).replace(/[\u0000-\u001f\u007f\u2028\u2029]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')); await fs.appendFile(filename, line + '\n', { mode: 0o600 }); previous = e.hash; return e }); queue = task.catch(() => { }); return task }
   async function tail(limit = 500) {
     await queue;

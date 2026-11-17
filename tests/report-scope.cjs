@@ -45,7 +45,6 @@ const treeOf = (folders, fileCount, bytes) => ({
 });
 
 const ids = (manifest) => manifest.blocks.map((b) => b.id);
-const types = (manifest) => manifest.blocks.map((b) => b.type);
 
 function assertValid(result, what) {
   assert.ok(result && result.manifest, what + ': има манифест');

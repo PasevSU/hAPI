@@ -59,6 +59,6 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('nod
     console.log('core-repository OK');
   }finally{
     // node:sqlite WAL може да задържи файловете за миг на Windows — ретрай.
-    for(let i=0;i<20;i++){try{fs.rmSync(dir,{recursive:true,force:true});break}catch(e){await new Promise(r=>setTimeout(r,50))}}
+    for(let i=0;i<20;i++){try{fs.rmSync(dir,{recursive:true,force:true});break}catch{await new Promise(r=>setTimeout(r,50))}}
   }
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -20,7 +20,7 @@ const ALLOWED = /^[A-Za-z0-9_.-]+\.html$/;
 
 const $ = (selector) => document.querySelector(selector);
 const editor = $('#editor');
-const status = $('#status');
+const statusEl = $('#status');
 let catalog = [];
 // Реалният път на диска идва от сървъра: така човек знае къде да сложи шаблон,
 // вместо да гадае къде е DATA_DIR на add-on-а.
@@ -28,7 +28,7 @@ let folderPath = 'generator/temp';
 let selectedRange = null;
 
 const message = (text) => {
-  status.textContent = text;
+  statusEl.textContent = text;
 };
 
 /** Една заявка към hAPI с разбираемо съобщение при отказ. */
@@ -37,7 +37,7 @@ async function request(url, options = {}) {
   if (res.status === 401) throw new Error('Няма достъп — отвори генератора през панела на hAPI (Ingress)');
   if (res.status === 403) throw new Error('Ролята ти няма право да променя шаблони');
   const text = await res.text();
-  let data = null;
+  let data;
   try {
     data = JSON.parse(text);
   } catch {

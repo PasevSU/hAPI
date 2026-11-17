@@ -21,8 +21,8 @@ const SEED = [
 ];
 let commands = loadCommands();
 function loadCommands() {
-  try { const list = JSON.parse(fs.readFileSync(COMMANDS_FILE, 'utf8')); if (Array.isArray(list) && list.length) return list; } catch {}
-  try { fs.writeFileSync(COMMANDS_FILE, JSON.stringify(SEED, null, 2)); } catch {}
+  try { const list = JSON.parse(fs.readFileSync(COMMANDS_FILE, 'utf8')); if (Array.isArray(list) && list.length) return list; } catch { /* няма файл или е счупен — падаме към началния списък */ }
+  try { fs.writeFileSync(COMMANDS_FILE, JSON.stringify(SEED, null, 2)); } catch { /* не се записва (само за четене) — началният списък стига за панела */ }
   return JSON.parse(JSON.stringify(SEED));
 }
 function saveCommands() { fs.writeFileSync(COMMANDS_FILE, JSON.stringify(commands, null, 2)); }
@@ -92,7 +92,7 @@ function stopCommand(id) {
   try {
     if (process.platform === 'win32') spawn('taskkill', ['/pid', String(job.child.pid), '/T', '/F'], { windowsHide: true });
     else { try { process.kill(-job.child.pid, 'SIGTERM'); } catch { job.child.kill(); } }
-  } catch { try { job.child.kill(); } catch {} }
+  } catch { try { job.child.kill(); } catch { /* процесът вече е излязъл — няма какво да убиваме */ } }
   return true;
 }
 

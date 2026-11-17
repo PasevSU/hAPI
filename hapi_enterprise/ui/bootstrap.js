@@ -33,7 +33,7 @@
       window.HAPI_SHARED_READY = true;
       try {
         document.dispatchEvent(new Event('hapi:shared-ready'));
-      } catch (e) {
+      } catch {
         /* стар браузър без Event — флагът window.HAPI_SHARED_READY стига */
       }
       return;

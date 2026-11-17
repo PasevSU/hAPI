@@ -1,6 +1,6 @@
 # ADR — Architecture Decision Records
 
-> **Клас:** исторически · **Замразен към:** 0.69.240
+> **Клас:** исторически · **Замразен към:** 0.69.241
 
 Single authoritative ADR registry for hAPI Enterprise.
 

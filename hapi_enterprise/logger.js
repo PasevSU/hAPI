@@ -104,7 +104,7 @@ function create(options = {}) {
         .readdirSync(logDir)
         .filter((name) => /^debug-.*\.jsonl$/.test(name))
         .map((name) => {
-          let at = 0;
+          let at;
           try {
             at = fs.statSync(path.join(logDir, name)).mtimeMs;
           } catch {

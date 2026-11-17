@@ -5,7 +5,7 @@
 //   POST /admin/api/rules/reload   — презареждане без рестарт на add-on-а
 //   GET  /admin/api/connection     — роля, режим, публичен адрес и версия на API
 //   GET  /admin/api/load           — текущото ниво на load control
-const { stopChild, freePort, waitHealthy } = require('./helpers.cjs');
+const { stopChild, freePort } = require('./helpers.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -28,7 +28,7 @@ const { spawn } = require('node:child_process');
       },
       body: body ? JSON.stringify(body) : undefined,
     });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch {

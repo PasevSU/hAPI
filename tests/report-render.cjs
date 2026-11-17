@@ -35,7 +35,6 @@ assert.match(blocks[signIndex].text, /не е издаден/);
 assert.doesNotMatch(JSON.stringify(blocks), /tsaToken|MIIB|BEGIN CERTIFICATE/);
 
 // 3. Таблица без данни → заглавен ред + една запълваща колона.
-const tableBlock = manifest.blocks.find((b) => b.type === 'table');
 const emptyTable = R.toPdfBlocks(manifest, {}).find((b) => b.type === 'table' && b.rows[0][0] === 'name');
 assert.deepEqual(emptyTable.rows[0], ['name', 'position', 'email']);
 assert.equal(emptyTable.rows.length, 2);

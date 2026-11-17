@@ -12,7 +12,7 @@ function validateLimits(l) {
     const v = l[k];
     if (INT[k]) { if (v === null || v === '') out[k] = null; else { const n = Number(v); if (!Number.isInteger(n) || n < INT[k][0] || n > INT[k][1]) throw Error('Invalid ' + k); out[k] = n } }
     else if (k === 'requirePortalToken' || k === 'storeRawIp') { if (v === null || v === '') out[k] = null; else if (typeof v === 'boolean') out[k] = v; else throw Error('Invalid ' + k) }
-    else { const s = String(v ?? '').trim().replace(/\/+$/, ''); if (s && (s.length > 200 || !/^https?:\/\/[A-Za-z0-9.\-:\[\]]+(\/[A-Za-z0-9._~\-\/]*)?$/.test(s))) throw Error('Invalid ' + k); out[k] = s }
+    else { const s = String(v ?? '').trim().replace(/\/+$/, ''); if (s && (s.length > 200 || !/^https?:\/\/[A-Za-z0-9.\-:[\]]+(\/[A-Za-z0-9._~\-/]*)?$/.test(s))) throw Error('Invalid ' + k); out[k] = s }
   }
   return out
 }
@@ -70,6 +70,7 @@ function validateSensors(s) {
     } else {
       // Път до файл на диска: само абсолютен, без контроли и без „..“.
       const value = String(v ?? '').trim();
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
       if (value && (value.length > 500 || !value.startsWith('/') || /\.\./.test(value) || /[\u0000-\u001f]/.test(value))) throw Error('Invalid geoipPath');
       out[key] = value;
     }
@@ -92,7 +93,7 @@ function validate(v) {
 // Публичен базов адрес: `limits.publicBaseUrl` (Settings) или `PUBLIC_BASE_URL` от средата
 // (start.js го подава по опцията `public_domain`). Невалидна стойност се игнорира, за да не
 // се създадат QR кодове с чужд или счупен адрес.
-function publicBase(v) { const s = String(v ?? '').trim().replace(/\/+$/, ''); return s && s.length <= 200 && /^https?:\/\/[A-Za-z0-9.\-:\[\]]+(\/[A-Za-z0-9._~\-\/]*)?$/.test(s) ? s : '' }
+function publicBase(v) { const s = String(v ?? '').trim().replace(/\/+$/, ''); return s && s.length <= 200 && /^https?:\/\/[A-Za-z0-9.\-:[\]]+(\/[A-Za-z0-9._~\-/]*)?$/.test(s) ? s : '' }
 
 /**
  * Формата на администраторския токен — САМО разпознаване, без проверка на подпис.

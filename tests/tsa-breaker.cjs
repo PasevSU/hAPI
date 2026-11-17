@@ -154,7 +154,7 @@ const DIGEST = 'cd'.repeat(32);
       },
       body: body ? JSON.stringify(body) : undefined,
     });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch {

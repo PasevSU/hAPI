@@ -1283,8 +1283,8 @@
     if (storageRoot && (!/^\/(share|media)(\/[^\\\r\n\0]*)?$/.test(storageRoot) || storageRoot.includes('..')))
       return toast(T('fm.folderOutsideRoots'), 'err');
     const foldered = folderFiles(form);
-    let contactId = '';
-    let caseId = '';
+    let contactId;
+    let caseId;
     try {
       contactId = await ensureContact(form);
       caseId = await ensureCase(form, contactId);
@@ -1451,8 +1451,8 @@
 
   async function savePortal(form) {
     const p = portal();
-    let contactId = p.contactId || '';
-    let caseId = p.caseId || '';
+    let contactId;
+    let caseId;
     try {
       contactId = await ensureContact(form);
       caseId = await ensureCase(form, contactId);
@@ -3034,11 +3034,11 @@
       case 'note':
         return notePane(f);
       case 'signedUrl':
-        return signedUrlPane(f);
+        return signedUrlPane();
       case 'receipt':
-        return receiptPane(f);
+        return receiptPane();
       case 'verifyReceipt':
-        return verifyReceiptPane(f);
+        return verifyReceiptPane();
       default:
         return actionsPane(f);
     }
@@ -3046,7 +3046,7 @@
 
   // ── Подписан URL, разписка и проверка на разписка ─────────────────────
   // Три реални административни маршрута, които преди съществуваха само в API-то.
-  function signedUrlPane(f) {
+  function signedUrlPane() {
     return `<form class="fm-form" data-signed-url>
       <p class="hint">Подписан URL важи само за файлове с публичен достъп (FREE); за защитени файлове
         add-on-ът отказва с 403. Ключът за подпис се сменя от „Контролен панел → Сигурност“.</p>
@@ -3058,7 +3058,7 @@
     </form>`;
   }
 
-  function receiptPane(f) {
+  function receiptPane() {
     return `<form class="fm-form" data-receipt>
       <p class="hint">Разписката е HMAC-SHA256 върху SHA-256 на файла и момента на издаване. Тя се
         проверява с текущия ключ на портала — смяна на ключа прави старите разписки непроверими.</p>
@@ -3069,7 +3069,7 @@
     </form>`;
   }
 
-  function verifyReceiptPane(f) {
+  function verifyReceiptPane() {
     return `<form class="fm-form" data-verify-receipt>
       <p class="hint">Постави разписката (JSON или низ), за да провериш дали е издадена от този портал.</p>
       <div class="field"><label>Разписка</label>
@@ -3484,18 +3484,6 @@
     } catch (e) {
       toast(`Няма връзка: ${e.message}`, 'err');
     }
-  }
-  function closeAllMenus() {
-    document.querySelectorAll('.fm-menu').forEach((m) => {
-      m.hidden = true;
-      m.style.position = '';
-      m.style.left = '';
-      m.style.top = '';
-      m.style.maxHeight = '';
-      m.style.overflowY = '';
-      // Менюто се връща при бутона си, за да не остава в body.
-      if (m._wrap && m.parentElement === document.body) m._wrap.appendChild(m);
-    });
   }
   function wireMenus() {
     if (menusWired) return;

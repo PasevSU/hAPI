@@ -12,7 +12,6 @@
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
-const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
 
 const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');

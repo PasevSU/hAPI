@@ -387,7 +387,7 @@ var qrcode = function () {
 
       mode = mode || 'Byte';
 
-      var newData = null;
+      var newData;
 
       switch (mode) {
         case 'Numeric':
@@ -693,7 +693,7 @@ var qrcode = function () {
       var black = Array(cellSize + 1).join('  ');
 
       var ascii = '';
-      var line = '';
+      var line;
       for (y = 0; y < size; y += 1) {
         r = Math.floor((y - min) / cellSize);
         line = '';

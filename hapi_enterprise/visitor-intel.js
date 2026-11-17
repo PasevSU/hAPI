@@ -81,7 +81,7 @@ const SOCIAL_HOSTS = ['facebook.', 'instagram.', 'linkedin.', 'twitter.', 'x.com
 function classifyReferer(value, ownHosts = []) {
   const raw = String(value || '').slice(0, 512);
   if (!raw) return { host: '', type: 'direct' };
-  let host = '';
+  let host;
   try { host = new URL(raw).host.toLowerCase() } catch { return { host: '', type: 'invalid' } }
   const base = host.replace(/^www\./, '');
   if (ownHosts.some((own) => own && (base === own || base.endsWith('.' + own)))) return { host: base, type: 'internal' };

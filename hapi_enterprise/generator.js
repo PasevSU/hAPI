@@ -58,7 +58,7 @@ function create({ root } = {}) {
 
   /** Списък на шаблоните — четен от диска ВСЕКИ път, без кеш. */
   function list() {
-    let names = [];
+    let names;
     try {
       names = fs.readdirSync(dir);
     } catch (e) {
@@ -76,7 +76,7 @@ function create({ root } = {}) {
         continue; // файлът е изчезнал между readdir и stat — не е шаблон
       }
       if (!stat.isFile()) continue;
-      let html = '';
+      let html;
       try {
         html = fs.readFileSync(abs, 'utf8');
       } catch {
@@ -109,7 +109,7 @@ function create({ root } = {}) {
       if (e.code !== 'ENOENT') throw e;
     }
     if (existing.length) return { copied: [], dir, skipped: true }; // вече има шаблони — не се пипа
-    let names = [];
+    let names;
     try {
       names = fs.readdirSync(seedDir).filter((f) => NAME_RE.test(f) && !f.startsWith('.')).sort();
     } catch (e) {
@@ -156,6 +156,7 @@ function create({ root } = {}) {
     const file = checkName(name);
     const body = String(html == null ? '' : html);
     if (!body.trim()) throw bad('шаблонът е празен');
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
     if (/[\u0000]/.test(body)) throw bad('шаблонът съдържа нулев байт');
     const bytes = Buffer.byteLength(body, 'utf8');
     if (bytes > MAX_BYTES) throw bad(`шаблонът е ${Math.round(bytes / 1024)} KiB — таванът е ${MAX_BYTES / 1024} KiB`, 413);

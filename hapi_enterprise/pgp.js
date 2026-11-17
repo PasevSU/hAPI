@@ -52,7 +52,6 @@ const HASHES = {
   14: { name: 'sha3-512', label: 'SHA3-512', info: '3051300d060960864801650304020a05000440', salt: 32 },
 };
 const HASH_SHA256 = 8;
-const HASH_SHA512 = 10;
 const HASH_FOR_EDDSA = 10; // GnuPG подписва Ed25519 със SHA-512
 const SIG_TYPE_BINARY = 0x00;
 const MAX_KEY_BYTES = 256 * 1024;

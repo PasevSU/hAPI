@@ -303,7 +303,6 @@ function create(opts = {}) {
   function search(prefix, q) {
     q = (q || '').trim();
     if (!q) return [];
-    const like = '%' + q + '%';
     const recs = stmt.listRecords.all().filter(r => !prefix || r.prefix === prefix);
     const out = [];
     for (const r of recs) {

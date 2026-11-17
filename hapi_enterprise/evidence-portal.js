@@ -104,7 +104,7 @@ function detectRoot(roots = candidateRoots()) {
 /** Защо даден корен не е приет — показва се в грешката, за да не се гадае. */
 function whyNot(root) {
   const notes = [];
-  let isDir = false;
+  let isDir;
   try {
     isDir = fs.statSync(root).isDirectory();
   } catch {

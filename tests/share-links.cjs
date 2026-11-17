@@ -48,6 +48,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   assert.match(yaml, /tag_id: "hapi-demo"/, 'tag_id съвпада с адреса на тага');
   assert.match(yaml, /tag_scanned|persistent_notification/, 'има действие');
   assert.ok(yaml.includes('\\"2026\\"'), 'кавичките в заглавието се екранират: ' + yaml);
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
   assert.ok(!/[\u0000-\u0008]/.test(yaml), 'няма управляващи знаци');
   assert.equal(share.yamlString('a\\b'), '"a\\\\b"', 'обратната наклонена черта се екранира');
 

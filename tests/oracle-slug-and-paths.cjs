@@ -12,7 +12,7 @@ const { startServer } = require('./lib/gui-harness.cjs');
 
 const json = async (url) => {
   const res = await fetch(url);
-  let data = null;
+  let data;
   try {
     data = await res.json();
   } catch {

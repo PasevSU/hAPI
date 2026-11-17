@@ -42,7 +42,7 @@ async function waitHealthy(base, attempts = 160) {
       headers: { ...auth, ...(body ? { 'Content-Type': 'application/json' } : {}) },
       body: body ? JSON.stringify(body) : undefined,
     });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch {

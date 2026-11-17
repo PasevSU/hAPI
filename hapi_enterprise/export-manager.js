@@ -302,7 +302,7 @@
     if (target.action === 'abort') return { ok: false, reason: 'exists', path: null, name: target.name };
 
     const tmp = pathMod.join(destDir, `.${pathMod.basename(target.name)}.${Math.random().toString(36).slice(2, 8)}${opt.tempSuffix || '.part'}`);
-    let sourceHash = null;
+    let sourceHash;
     try {
       sourceHash = verify ? await sha256File(src) : null;
       await fsp.copyFile(src, tmp, fs.constants.COPYFILE_EXCL);

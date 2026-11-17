@@ -31,7 +31,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **153** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **156** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -58,7 +58,7 @@ _Генериран списък: **153** документа. Пише се от
 | `01_AS_IS_ARCHITECTURE/MODULE_CATALOG.md` | Module Catalog — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md` | Source Inventory — hAPI Enterprise (As-Is) |
 | `01_AS_IS_ARCHITECTURE/STORAGE_LAYOUT.md` | Къде какво стои — структура на файловете |
-| `01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md` | Състояние на системата и промени в 0.69.237 |
+| `01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md` | Състояние на системата и промени в 0.69.241 |
 | `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` | hAPI ENTERPRISE — API Architecture & Runtime Logic Specification |
 | `02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md` | API Endpoint Reference |
 | `02_TO_BE_ARCHITECTURE/ARCHITECTURE_COMPLIANCE_MATRIX.md` | Architecture Compliance Matrix |
@@ -111,6 +111,7 @@ _Генериран списък: **153** документа. Пише се от
 | `03_ADR/ADR-0025-report-studio.md` | ADR-0025: Report Studio — manifest-driven отчети с RFC 3161 обхват |
 | `03_ADR/ADR-0026-public-gateway-and-digital-delivery.md` | ADR-0026 — Public API Gateway, файлово предоставяне и контрол на достъпа |
 | `03_ADR/ADR-0027-two-portals.md` | ADR-0027 — Два портала: динамичният (`portal/`) и статичният (`evidence-portal/`) |
+| `03_ADR/ADR-0028-one-click-reports.md` | ADR-0028: Отчети с едно натискане вместо Report Studio |
 | `03_ADR/README.md` | ADR — Architecture Decision Records |
 | `04_FUNCTION_SPECIFICATIONS/AUDIT_EVENTS.md` | Одитни събития — каталог |
 | `04_FUNCTION_SPECIFICATIONS/DEBUG_OBJECTS.md` | Дебъгинг: разпознаване на обектите и прилагане на законите |
@@ -161,6 +162,8 @@ _Генериран списък: **153** документа. Пише се от
 | `07_RELEASE/archive/0.69/UNFINISHED_TASKS_0.69.210.md` | Неизпълнени задачи — критичен анализ (0.69.210, измерено 2026-11-15) |
 | `07_RELEASE/AUDIT-PROTOCOL.md` | Протокол от одита и изданието |
 | `07_RELEASE/FEATURE_PARITY.md` | Паритет на функциите: `PasevSU/hAPI` ↔ това хранилище |
+| `07_RELEASE/PLAN_ONE_CLICK_REPORTS_UI.md` | План, част 2: интерфейс, премахване на Report Studio и ред на изпълнение (0.69.242) |
+| `07_RELEASE/PLAN_ONE_CLICK_REPORTS.md` | План: отчети с едно натискане, дърво-панел и `/statik/` линкове (0.69.242) |
 | `07_RELEASE/QUALIFICATION_PLAN.md` | Qualification Plan — hAPI Enterprise |
 | `07_RELEASE/RELEASE_BUILD.md` | Изграждане и проверка на издание (Home Assistant) |
 | `07_RELEASE/RELEASE_CHECKLIST.md` | Release Checklist — hAPI Enterprise |

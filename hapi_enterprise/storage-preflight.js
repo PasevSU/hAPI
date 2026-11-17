@@ -93,7 +93,7 @@ function check(options, env = process.env) {
     fs.writeFileSync(path.join(base, '.portal-enterprise-storage'), 'portal-enterprise-v1\n', { flag: 'wx', mode: 0o600 });
   }
   const probe = path.join(base, '.write-test-' + process.pid);
-  try { fs.writeFileSync(probe, 'ok', { flag: 'wx', mode: 0o600 }); fs.unlinkSync(probe) } catch (e) { throw Error('Storage is not writable: ' + e.message) }
+  try { fs.writeFileSync(probe, 'ok', { flag: 'wx', mode: 0o600 }); fs.unlinkSync(probe) } catch (e) { throw new Error('Storage is not writable: ' + e.message, { cause: e }) }
   if (fs.statfsSync) { const s = fs.statfsSync(base); const free = Number(s.bavail) * Number(s.bsize); if (free < Number(options.min_free_mb || 100) * 1024 * 1024) throw Error('Insufficient free storage space') }
   // Ефективният избор се записва в env: от него `paths.hapiHome()` строи домашната папка на
   // add-on-а (`/share/hAPI`), а `paths.portalsRoot()` — мястото на порталите

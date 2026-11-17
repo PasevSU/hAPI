@@ -20,7 +20,6 @@ function create(deps) {
     audit,
     log,
     cryptoOptions,
-    runtime,
     reportSystemInfo,
     persistTsaRecords,
     adminGate,
@@ -305,7 +304,7 @@ function create(deps) {
       try { names = (await fsp.readdir(dir)).filter(n => n.endsWith('.json')).sort() } catch (e) { if (e.code !== 'ENOENT') throw e }
       const files = [];
       for (const name of names.slice(-tsaKeep())) {
-        let record = null;
+        let record;
         try { record = JSON.parse(await fsp.readFile(path.join(dir, name), 'utf8')) } catch { continue }
         const expected = record && record.token && record.token.sha256 ? String(record.token.sha256) : null;
         const item = { file: record.file || '', phase: record.phase || '', digest: record.digest || '', expected, actual: null, bytes: 0, status: 'missing' };

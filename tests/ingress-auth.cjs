@@ -27,7 +27,7 @@ const assert = require('node:assert/strict');
 
   const get = async (url, headers = {}) => {
     const res = await fetch(url, { headers });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch {

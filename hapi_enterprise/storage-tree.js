@@ -19,6 +19,7 @@
     if (parts.length > MAX_DEPTH) return null;
     for (const part of parts) {
       if (!part || part === '.' || part === '..') return null;
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
       if (/[\u0000-\u001f]/.test(part)) return null;
     }
     return parts.join('/');

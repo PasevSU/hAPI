@@ -33,7 +33,7 @@ const policy = async (server, portalId, fileId, mode, listed) => {
     const portal = (await server.api('/admin/api/portals', 'POST', { slug: 'paket', title: 'Пакет' })).data;
     assert.ok(portal && portal.id, 'порталът е създаден');
     assert.equal((await server.api(`/admin/api/portals/${portal.id}`, 'PATCH', { visibility: 'public' })).status, 200);
-    const free = await upload(server, portal.id, 'svoboden.txt', 'свободно съдържание');
+    await upload(server, portal.id, 'svoboden.txt', 'свободно съдържание');
     const keyed = await upload(server, portal.id, 's-klyuch.txt', 'само с ключ');
     const banned = await upload(server, portal.id, 'zabranen.txt', 'забранено');
     const hidden = await upload(server, portal.id, 'skrit.txt', 'скрито');

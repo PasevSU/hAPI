@@ -28,7 +28,7 @@ const pgp = require('../hapi_enterprise/pgp.js');
       },
       body: body ? JSON.stringify(body) : undefined,
     });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch {

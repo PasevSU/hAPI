@@ -92,6 +92,7 @@ function renameWithRetry(from, to, attempts = 8) {
 function writeAtomic(dir, payload) {
   const target = lockPath(dir);
   const tmp = `${target}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+  let failure = null;
   try {
     fs.writeFileSync(tmp, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
     // Windows: антивирусната/индексаторът може да държи новия файл за миг и `rename` да
@@ -99,13 +100,17 @@ function writeAtomic(dir, payload) {
     // матрицата като „EPERM ... .hapi-instance.json.tmp -> .hapi-instance.json“) и add-on-ът
     // отказва старт без причина. Същият похват се ползва в `api-registry.js`.
     renameWithRetry(tmp, target);
-  } finally {
-    try {
-      fs.unlinkSync(tmp);
-    } catch (e) {
-      if (e.code !== 'ENOENT') throw e;
-    }
+  } catch (e) {
+    failure = e;
   }
+  // Почистването НЕ е във `finally`: провален `unlink` не бива да подменя истинската причина,
+  // а изключението от `finally` иначе изяжда първичното (no-unsafe-finally).
+  try {
+    fs.unlinkSync(tmp);
+  } catch (e) {
+    if (e.code !== 'ENOENT' && !failure) failure = e;
+  }
+  if (failure) throw failure;
 }
 
 /**
@@ -210,18 +215,23 @@ const peerName = (id) => `${process.pid}-${String(id || 'instance').replace(/[^A
 
 function writePeer(file, payload) {
   const tmp = `${file}.${Math.random().toString(16).slice(2)}.tmp`;
+  let failure = null;
   try {
     fs.writeFileSync(tmp, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
     // Същият повторен опит като при заключването: в споделен режим файловете се пишат от
     // НЯКОЛКО процеса, тоест задържан файл е по-вероятен, не по-малко.
     renameWithRetry(tmp, file);
-  } finally {
-    try {
-      fs.unlinkSync(tmp);
-    } catch (e) {
-      if (e.code !== 'ENOENT') throw e;
-    }
+  } catch (e) {
+    failure = e;
   }
+  // Почистването НЕ е във `finally`: провален `unlink` не бива да подменя истинската причина,
+  // а изключението от `finally` иначе изяжда първичното (no-unsafe-finally).
+  try {
+    fs.unlinkSync(tmp);
+  } catch (e) {
+    if (e.code !== 'ENOENT' && !failure) failure = e;
+  }
+  if (failure) throw failure;
 }
 
 /** Регистрира този процес като участник върху данните (без изключителност). */
@@ -236,7 +246,7 @@ function joinShared({ dir, id, host = os.hostname(), now = Date.now(), staleMs =
   return { ok: true, file, payload, peers: listShared({ dir, host, now, staleMs }) };
 }
 
-function heartbeatShared({ dir, file, id, now = Date.now() } = {}) {
+function heartbeatShared({ file, id, now = Date.now() } = {}) {
   if (!file || !fs.existsSync(file)) return false;
   let current;
   try {

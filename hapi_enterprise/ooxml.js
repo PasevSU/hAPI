@@ -184,7 +184,7 @@ function xlsxBlocks(buf) {
   for (const rm of xml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)) {
     const cells = [];
     for (const cm of rm[1].matchAll(/<c\b[^>]*>([\s\S]*?)<\/c>/g)) {
-      const t = (/\bt="([^"]*)"/.exec(cm[0]) || [])[1] || ''; let val = '';
+      const t = (/\bt="([^"]*)"/.exec(cm[0]) || [])[1] || ''; let val;
       if (t === 's') { const m = /<v>([\s\S]*?)<\/v>/.exec(cm[1]); val = shared[Number(m ? m[1] : -1)] || '' }
       else if (t === 'inlineStr') { const m = /<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/.exec(cm[1]); val = unesc(m ? m[1] : '') }
       else { const m = /<v>([\s\S]*?)<\/v>/.exec(cm[1]); val = m ? unesc(m[1]) : '' }

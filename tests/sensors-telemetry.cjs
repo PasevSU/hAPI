@@ -48,7 +48,7 @@ async function boot(dir, port) {
         headers: { ...headers, ...(body ? { 'Content-Type': 'application/json' } : {}) },
         body: body ? JSON.stringify(body) : undefined,
       });
-      let value = null;
+      let value;
       const type = res.headers.get('content-type') || '';
       if (type.includes('application/json')) value = await res.json();
       else value = await res.text();

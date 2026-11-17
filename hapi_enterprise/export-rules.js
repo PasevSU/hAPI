@@ -144,6 +144,7 @@
   ];
 
   const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
   const FORBIDDEN = /[\\/:*?"<>|\u0000-\u001f]/g;
 
   function sanitizeSegment(value) {

@@ -118,7 +118,7 @@
     if (!result.ok) return show(result.status === 404 || result.status === 410 ? goneMessage : 'Тайната не може да бъде отворена (' + result.status + ').', 'error');
 
     const envelope = result.body.envelope || {};
-    let inner = envelope;
+    let inner;
     try {
       if (envelope.pwd) {
         if (!passwordKey) return show('Тази тайна иска парола.', 'error');

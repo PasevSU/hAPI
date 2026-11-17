@@ -21,7 +21,7 @@
     try {
       var match = PREFIX.exec(String(location.pathname || ''));
       return match ? match[0] : '';
-    } catch (e) {
+    } catch {
       return '';
     }
   }
@@ -29,7 +29,7 @@
   function stored() {
     try {
       return String(localStorage.getItem('hapi.apiBase') || '').replace(/\/+$/, '');
-    } catch (e) {
+    } catch {
       return ''; // забранен storage (private режим) — тогава се смята от адреса
     }
   }
@@ -41,7 +41,7 @@
     try {
       if (location.protocol === 'file:') return '';
       return (location.origin + ingressPrefix()).replace(/\/+$/, '');
-    } catch (e) {
+    } catch {
       return '';
     }
   }

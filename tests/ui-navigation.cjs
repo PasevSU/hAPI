@@ -42,7 +42,7 @@ const sections = ['general'].concat(
 for (const item of navBlock.matchAll(/id: '([a-z]+)'[^}]*section: '([a-z]+)'/g)) {
   assert.ok(sections.includes(item[2]), `панелът ${item[1]} сочи към липсваща секция ${item[2]}`);
 }
-for (const lang of app.match(/bg: \{[\s\S]*?\n    \},/g)) {
+for (const lang of app.match(/bg: \{[\s\S]*?\n {4}\},/g)) {
   assert.match(lang, /contacts:/);
   assert.match(lang, /cases:/);
   // Заглавията на всички панели са преведени (BG/EN/DE), не са сурови id-та.

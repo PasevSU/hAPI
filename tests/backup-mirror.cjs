@@ -35,7 +35,7 @@ async function waitHealthy(base, attempts = 140) {
 
   const call = async (route, { method = 'GET' } = {}) => {
     const res = await fetch(base + route, { method, headers: { Authorization: 'Bearer ' + token } });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch {

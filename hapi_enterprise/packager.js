@@ -386,7 +386,7 @@ function create({ root }) {
   }
 
   async function list() {
-    let names = [];
+    let names;
     try {
       names = await fsp.readdir(dir);
     } catch (e) {

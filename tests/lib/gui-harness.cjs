@@ -86,7 +86,7 @@ async function startServer({ dataDir, token, port, env, keepData } = {}) {
       headers: bodyValue === undefined ? {} : { 'content-type': 'application/json' },
       body: bodyValue === undefined ? undefined : JSON.stringify(bodyValue),
     });
-    let data = null;
+    let data;
     try {
       data = await res.json();
     } catch {

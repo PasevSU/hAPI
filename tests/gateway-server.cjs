@@ -18,7 +18,7 @@ const assert = require('node:assert/strict');
 
   const req = async (route, method = 'GET', data, headers = {}) => {
     const r = await fetch(base + route, { method, headers, ...(data === undefined ? {} : { body: data }) });
-    let value = null;
+    let value;
     try {
       value = await r.json();
     } catch {

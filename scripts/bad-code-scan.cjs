@@ -113,7 +113,7 @@ function innerHtmlInterpolations(src) {
     if (src[i] !== '`') {
       // конкатенация: .innerHTML = '...' + variable
       const rest = src.slice(i, src.indexOf(';', i) + 1);
-      const concat = /(['"`])\s*\+\s*([a-zA-Z_$][\w$.\[\]()'"]*)/.exec(rest);
+      const concat = /(['"`])\s*\+\s*([a-zA-Z_$][\w$.[\]()'"]*)/.exec(rest);
       if (concat) out.push({ index: i, expr: concat[2], kind: 'raw', concat: true });
       continue;
     }
@@ -199,7 +199,7 @@ let scanned = 0;
 let totalLines = 0;
 const seenFiles = new Set();
 for (const [dir, exts] of DIRS) {
-  let files = [];
+  let files;
   try { files = walk(dir, exts); } catch { continue; }
   for (const rel of files) {
     if (SKIP_FILE.some((re) => re.test(rel))) continue;

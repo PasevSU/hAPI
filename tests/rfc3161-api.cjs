@@ -97,7 +97,7 @@ const rejectedReply = () => seq(seq(int(2), seq(tlv(0x0c, Buffer.from('bad reque
       },
       body: body ? JSON.stringify(body) : undefined,
     });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch {

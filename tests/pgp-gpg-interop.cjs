@@ -74,7 +74,7 @@ const v6Pub = path.join(tmp, 'v6.pub.asc');
 const v6Sig = path.join(tmp, 'v6.sig.asc');
 fs.writeFileSync(v6Pub, v6.publicArmored);
 fs.writeFileSync(v6Sig, pgp.signDetached(data, v6.secretArmored).armored);
-let v6Supported = false;
+let v6Supported;
 try {
   gpgIn(homeV6)(['--import', v6Pub]);
   const out = gpgIn(homeV6)(['--status-fd', '1', '--verify', v6Sig, dataFile]);

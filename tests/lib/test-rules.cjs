@@ -98,6 +98,7 @@ const RULES = [
   { id: "error-log", area: "грешки", title: "Error log", owner: "tests/error-log.cjs" },
   { id: "error-logging", area: "грешки", title: "Error logging", owner: "tests/error-logging.cjs" },
   { id: "eslint-baseline", area: "общо", title: "Eslint baseline", owner: "tests/eslint-baseline.cjs" },
+  { id: "eslint-ratchet", area: "общо", title: "Eslint ratchet", owner: "tests/eslint-ratchet.cjs" },
   { id: "event-stream", area: "общо", title: "Event stream", owner: "tests/event-stream.cjs" },
   { id: "evidence-portal", area: "общо", title: "Evidence portal", owner: "tests/evidence-portal.cjs" },
   { id: "evidence-portal-info-qr", area: "общо", title: "Evidence portal info qr", owner: "tests/evidence-portal-info-qr.cjs" },

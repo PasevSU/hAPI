@@ -5,6 +5,7 @@
 // виртуален път. API-то води точно към тези пътища, а не към диска.
 // Чист JS (UMD) — работи в add-on-а и в GUI-я.
 (function () {
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
   const FORBIDDEN = /[\\/:*?"<>|\u0000-\u001f]/g;
 
   function sanitizeSegment(value) {

@@ -9,8 +9,6 @@
 //   • живият маршрут връща статуса в заглавка, а без токен — 401.
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const fs = require('node:fs');
-const path = require('node:path');
 const { startServer } = require('./lib/gui-harness.cjs');
 const ooxml = require('../hapi_enterprise/ooxml');
 const reportPackage = require('../hapi_enterprise/report-package');

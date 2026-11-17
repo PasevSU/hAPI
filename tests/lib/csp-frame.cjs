@@ -86,8 +86,8 @@ function sourceMatches(source, ancestorUrl, ancestorOrigin, selfOrigin) {
   const withScheme = /^([a-z][a-z0-9+.-]*):\/\/([^/:]+)(?::(\d+|\*))?/i.exec(s);
   const withoutScheme = /^([^/:*]+|\*\.?[^/:]+)(?::(\d+|\*))?$/.exec(s);
   let scheme = null;
-  let host = null;
-  let port = null;
+  let host;
+  let port;
   if (withScheme) {
     scheme = withScheme[1].toLowerCase() + ':';
     host = withScheme[2].toLowerCase();

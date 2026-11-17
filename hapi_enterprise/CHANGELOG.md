@@ -1,30 +1,27 @@
 # Промени в hAPI Enterprise
 
-Тази версия: **0.69.240**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
+Тази версия: **0.69.241**. Пълната история е в [CHANGELOG.md](https://github.com/PasevSU/hAPI/blob/main/CHANGELOG.md).
 
-## 0.69.240
+## 0.69.241
 
-- **Невалидният JSON се решава на ЕДНО място (DEF-67).** Досега всяко четене на външен JSON
-  (`/data/options.json`, редове на одита, метаданни на качване, стойности в SQLite, кеш на
-  геолокация, тяло на webhook) увиваше `JSON.parse` в собствен `try` и връщаше различно —
-  `null`, `[]`, `{}`, текста или 500. Един и същ боклук във входа даваше различен отговор според
-  модула. Сега има глобален `parse-json.js`: `parseJson(text)` → `{ ok: true, value }` или
-  `{ ok: false, error }`, и `parseJsonOr(text, fallback = null)`. През него минават 13 файла:
-  `audit-chain.js`, `retention.js`, `core-store.js`, `secret-links.js`, `packager.js`,
-  `portal-config.js`, `sqlite-store.js`, `visitor-intel.js`, `routes/upload-sessions.js`,
-  `core_module/http.js` и `server.js` (4 места).
-- **Поведението е запазено, не променено.** `parseJson` привежда входа до текст точно както
-  `JSON.parse` (затова `Buffer`, число и `null` се разчитат), а невалидното връща като
-  `{ ok: false }` вместо да хвърля — всяко място решава какво да прави, както досега. Най-осезаемата
-  разлика е в `sqlite-store.js`: повредени метаданни дават **500 `CORRUPT_METADATA`** с причина,
-  а не необяснен `SyntaxError` в лога.
-- **Модулът е критичен.** `parse-json.js` е в `CRITICAL` на `integrity.js` (манифестът се сверява
-  при старт) и в `COPY` списъка на `Dockerfile`; без второто образът пада при старт.
-- **Числата на скенера.** Находките `json-parse-untrusted` паднаха **99 → 78**, а в продукта
-  необяснени четения: **0** — останалите са в `tests/` и `scripts/`, където входът е наш.
-  Изключенията в `scripts/bad-code-allowlist.json` са 29, всички с причина (0 мъртви).
-- **Тестът пази правилото.** `tests/parse-json.cjs` проверява разчитането (`null`, число, `Buffer`,
-  валиден обект), четирите вида повреда, разликата между текст `null` и повреда в `parseJsonOr`,
-  пуска скенера и иска **нула** необяснени находки в `hapi_enterprise/`, и сверява allowlist-а
-  с реалността. Защитата е вписана в `tests/regression-guards.cjs` (котва: „минава през
-  parse-json.js“).
+- **Линтът вече не „минава“ заради потискания (DEF-66).** `npx eslint .` даваше 0, но това беше
+  0 **след** `eslint-suppressions.json`: **216** находки в **135** файла чакаха в базата (9 правила),
+  а никой не виждаше отчета. Днес **всички са поправени**, не преместени — базата е `{}`
+  (0 файла, 0 записа).
+- **По правила, не на парче.** `no-unused-vars` 38 (мъртви параметри и променливи — махани, не
+  потискани), `no-useless-assignment` 52 (първото присвояване преди `return`/презапис — премахнато),
+  `no-control-regex` 16 (контролните символи са НАРОЧНИ в санитизацията, затова получават
+  `eslint-disable-next-line` с обосновка на точния ред), `no-useless-escape` 12 (в `runtime-config.js`
+  character class-ът беше сбъркан — `\[`/`\]` са излишни, `\-` е нужен), `no-empty` 93, плюс
+  `no-redeclare` (`app.js`), `no-unsafe-finally` ×2 в `instance-lock.js` (хвърлянето във `finally`
+  поглъщаше изключението от `try` — сега се събира и хвърля след блока), `preserve-caught-error`
+  в `storage-preflight.js` (`{ cause: e }`) и `no-regex-spaces` ×2.
+- **Празният `catch` е решение, не мълчание.** 93-те места получиха отговор: трите в
+  `scripts/dev-dashboard.cjs` носят обосновка в коментар, а в тестовете (изчакване на `/health`,
+  почистване във `finally`) `no-empty` е с `allowEmptyCatch: true` **само за `tests/**/*.cjs`** —
+  изключението е тясно и е записано в `eslint.config.mjs` с причина.
+- **Ратчетът само пада.** Нов `tests/eslint-ratchet.cjs` пази тавана: иска базата да е празна, с
+  `eslint --print-config` доказва, че продуктът остава под пълното правило (`allowEmptyCatch: false`
+  за `server.js`, `ui/files-manager.js`, `scripts/test-matrix.cjs`), че изключението е scoped само
+  до тестовете и че базата е валиден JSON. Мутационно проверен — добавен запис в базата го събаря.
+  Защитата е вписана в `tests/regression-guards.cjs` (котва: „базата не бива да съдържа потискания“).

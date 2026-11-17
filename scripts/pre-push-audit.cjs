@@ -16,6 +16,7 @@ const globToRegExp = (pattern) => {
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
     .replace(/\*\*/g, '\u0000')
     .replace(/\*/g, '[^/]*')
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
     .replace(/\u0000/g, '.*')
     .replace(/\?/g, '[^/]');
   return new RegExp(`^${anchored ? body : `(?:.*/)?${body}`}(?:/.*)?$`);

@@ -72,9 +72,9 @@ async function boot(dir, port) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hapi-lifecycle-'));
   const port = await freePort();
   let server = await boot(dir, port);
-  let portalId = '';
-  let fileIds = [];
-  let packageId = '';
+  let portalId;
+  let fileIds;
+  let packageId;
   let backupName = '';
 
   try {

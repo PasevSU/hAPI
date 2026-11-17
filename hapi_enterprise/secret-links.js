@@ -148,6 +148,7 @@ function normalizeViews(views) {
 }
 
 function normalizeHint(hint) {
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
   const text = String(hint == null ? '' : hint).replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
   return text.slice(0, MAX_HINT_LENGTH);
 }
@@ -277,7 +278,7 @@ async function remove(root, hash) {
  */
 async function sweep(root, now, onSkip) {
   let removed = 0;
-  let names = [];
+  let names;
   try {
     names = await fsp.readdir(secretsDir(root));
   } catch (e) {
@@ -304,7 +305,7 @@ async function sweep(root, now, onSkip) {
 
 /** Списък за администратора (без плик), най-новите първи. */
 async function list(root, now) {
-  let names = [];
+  let names;
   try {
     names = await fsp.readdir(secretsDir(root));
   } catch (e) {

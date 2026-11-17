@@ -33,7 +33,6 @@
 
 const fs = require('node:fs');
 const os = require('node:os');
-const path = require('node:path');
 
 const DEFAULT_LOCK_TIMEOUT_MS = 15000;
 const DEFAULT_STALE_LOCK_MS = 30000;
@@ -136,7 +135,7 @@ function createLock(lockPath, { timeoutMs, staleMs, pollMs, sleep }) {
       if (e.code === 'ENOENT') return { owner: null, age: Infinity, gone: true };
       throw e;
     }
-    let owner = null;
+    let owner;
     try { owner = JSON.parse(fs.readFileSync(lockPath, 'utf8')); } catch { owner = null; }
     return { owner, age: Date.now() - mtime };
   };

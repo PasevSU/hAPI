@@ -8,12 +8,9 @@
 //   PP-10 портален токен в линковете
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const path = require('node:path');
 const crypto = require('node:crypto');
 const { startServer } = require('./lib/gui-harness.cjs');
 
-const ROOT = path.join(__dirname, '..');
-const ADDON = path.join(ROOT, 'hapi_enterprise');
 const svgFor = (text) => {
   const q = require('../hapi_enterprise/qrcode.js')(0, 'M');
   q.addData(text);

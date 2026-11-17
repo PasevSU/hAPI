@@ -99,7 +99,7 @@ const grantedReply = (digestHex) => {
 
   const call = async (route, { method = 'GET', headers = {} } = {}) => {
     const res = await fetch(base + route, { method, headers: { Authorization: 'Bearer ' + token, ...headers } });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch {

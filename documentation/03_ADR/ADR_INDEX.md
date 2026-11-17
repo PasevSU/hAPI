@@ -1,6 +1,6 @@
 # ADR Index
 
-> **Клас:** исторически · **Замразен към:** 0.69.240
+> **Клас:** исторически · **Замразен към:** 0.69.241
 
 Single authoritative ADR registry for hAPI Enterprise.
 
@@ -15,6 +15,9 @@ Single authoritative ADR registry for hAPI Enterprise.
 - `0027` — Two portals: the dynamic `portal/` (served by the add-on, live data, password
   and policy checks) and the static `evidence-portal/` (published as files into the share,
   metadata and hashes only, works without the add-on).
+- `0028` — One-click reports: the scope comes from the place of the button, every report is
+  minted on demand behind a hard-generated `/statik/` capability link, and Report Studio is
+  removed (supersedes ADR-0025).
 
 | # | Title | Status | Date |
 | - | ----- | ------ | ---- |
@@ -42,6 +45,7 @@ Single authoritative ADR registry for hAPI Enterprise.
 | 0022 | flexibility-checklist | Accepted | 2026-10 |
 | 0023 | phase-4-features | Accepted | 2026-10 |
 | 0024 | unified-project-v6 | Accepted | 2026-10 |
-| 0025 | report-studio | Accepted | 2026-10 |
+| 0025 | report-studio | Superseded by 0028 | 2026-10 |
 | 0026 | public-gateway-and-digital-delivery | Accepted | 2026-10 |
 | 0027 | two-portals | Accepted | 2026-11 |
+| 0028 | one-click-reports | Accepted | 2026-11 |

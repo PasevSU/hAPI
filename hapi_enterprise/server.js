@@ -149,7 +149,7 @@ function addonVersion() {
   if (cachedAddonVersion !== null) return cachedAddonVersion;
   try {
     const text = fs.readFileSync(path.join(__dirname, 'config.yaml'), 'utf8');
-    const match = /^version:\s*"?([0-9][0-9A-Za-z.\-]*)"?\s*$/m.exec(text);
+    const match = /^version:\s*"?([0-9][0-9A-Za-z.-]*)"?\s*$/m.exec(text);
     cachedAddonVersion = match ? match[1] : '';
   } catch {
     cachedAddonVersion = '';
@@ -377,7 +377,7 @@ let backupQueue = Promise.resolve();
 const tsaKeep = () => { const n = Number(process.env.TSA_KEEP || '200'); return Number.isInteger(n) && n >= 1 && n <= 5000 ? n : 200 };
 async function pruneTsaRecords() {
   const dir = path.join(root, 'tsa');
-  let names = [];
+  let names;
   try { names = (await fsp.readdir(dir)).filter(n => n.endsWith('.json')).sort() } catch (e) { if (e.code === 'ENOENT') return 0; throw e }
   const keep = tsaKeep();
   if (names.length <= keep) return 0;
@@ -697,7 +697,7 @@ const resolveSession = (req, url) => { const token = bearerToken(req) || oidcLib
 const signedValid = (url, p, f) => { const expires = Number(url.searchParams.get('expires')), sig = url.searchParams.get('sig') || ''; if (!Number.isSafeInteger(expires) || expires <= Math.floor(Date.now() / 1000) || expires > Math.floor(Date.now() / 1000) + 86400 || !/^[a-f0-9]{64}$/.test(sig)) return false; const expected = crypto.createHmac('sha256', p.signingSecret || adminToken).update(`${p.id}:${f.id}:${expires}`).digest('hex'); return safeEqual(sig, expected) };
 
 const apiRoot = path.join(root, 'api'); const cabinet = require('./cabinet').create({ root, maxBytes: () => runtime.effective().maxUploadBytes, localOpen: process.env.HAPI_LOCAL_OPEN === '1' }); const isLoopback = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress); const fileNameHeader = req => { const v = String(req.headers['x-file-name'] || ''); try { return clean(decodeURIComponent(v)) } catch { return clean(v) } };
-function baseUrl(req) { const env = runtime.effective().publicBaseUrl; if (env) return env; const h = req && (req.headers['x-forwarded-host'] || req.headers.host); if (!h || !/^[A-Za-z0-9.\-:\[\]]{1,255}$/.test(String(h).split(',')[0].trim())) return ''; const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim(); return (proto === 'https' ? 'https' : 'http') + '://' + String(h).split(',')[0].trim() }
+function baseUrl(req) { const env = runtime.effective().publicBaseUrl; if (env) return env; const h = req && (req.headers['x-forwarded-host'] || req.headers.host); if (!h || !/^[A-Za-z0-9.\-:[\]]{1,255}$/.test(String(h).split(',')[0].trim())) return ''; const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim(); return (proto === 'https' ? 'https' : 'http') + '://' + String(h).split(',')[0].trim() }
 function portalApiUrl(p, base) { return links.withBase(base, links.portalApiPath(p)) }
 // Публичната страница се адресира с ИДЕНТИФИКАТОРА на портала (не с името/slug):
 // QR кодът не издава „говорещото“ име, а и връзката остава валидна при смяна на slug.
@@ -999,7 +999,7 @@ async function handler(req, res) {
       const created = metadataStore.getUser(username) || {};
       return json(res, 201, { user: { username: created.username, scopes: created.scopes, active: created.active !== false } });
     }
-    const userMatch = url.pathname.match(/^\/admin\/api\/users\/([^\/]+)$/);
+    const userMatch = url.pathname.match(/^\/admin\/api\/users\/([^/]+)$/);
     if (userMatch) {
       let username; try { username = decodeURIComponent(userMatch[1]) } catch { return fail(res, 400, 'Invalid username') }
       if (method === 'PATCH') {
@@ -1868,7 +1868,7 @@ async function handler(req, res) {
      * не блокира голяма папка. Връща и броячи, за да не се смятат в GUI-я.
      */
     async function collectStorageTree(storageRoot, { maxEntries = 2000, maxDepth = 12 } = {}) {
-      const base = portalAbs(storageRoot); const entries = []; const dirs = []; let truncated = false, exists = false;
+      const base = portalAbs(storageRoot); const entries = []; const dirs = []; let truncated = false, exists;
       try { const stat = await fsp.stat(base); exists = stat.isDirectory() } catch { exists = false }
       async function walk(dir, rel, depth) {
         if (entries.length >= maxEntries) { truncated = true; return }
@@ -2166,7 +2166,7 @@ async function handler(req, res) {
         if (method === 'GET') return json(res, 200, tx());
         const key = k => k === 'category' ? 'categories' : k === 'group' ? 'groups' : null;
         if (method === 'POST') {
-          const b = await parse(req), k = key(b.kind), nm = clean(b.name); if (!k || !nm || nm.length > 80 || /[\u0000-\u001f]/.test(nm)) return fail(res, 400, 'Invalid name');
+          const b = await parse(req), k = key(b.kind), nm = clean(b.name); if (!k || !nm || nm.length > 80 || /[\u0000-\u001f]/.test(nm)) return fail(res, 400, 'Invalid name'); /* eslint-disable-line no-control-regex -- нарочно: санитизация */
           return json(res, 201, await update(() => { db.taxonomy ??= { categories: [], groups: [] }; db.taxonomy[k] ??= []; if (db.taxonomy[k].some(x => x.toLowerCase() === nm.toLowerCase())) throw Object.assign(new Error('Already exists'), { status: 409 }); db.taxonomy[k].push(nm); db.taxonomy[k].sort((a, c) => a.localeCompare(c)); void audit('taxonomy.add', { kind: b.kind, name: nm }); return tx() }))
         }
         if (method === 'DELETE') {
@@ -2236,7 +2236,7 @@ async function handler(req, res) {
           const rel = st.normRel(url.searchParams.get('path') || '');
           if (rel === null || !rel || qrRegistry.tooDeep(rel)) return fail(res, rel === null || !rel ? 400 : 409, rel === null || !rel ? 'Invalid path' : 'MAX_BRANCH_DEPTH_3: максималната дълбочина е 3 подпапки');
           const name = rel.split('/').pop() || '';
-          if (!name || name.startsWith('.') || name.length > 240 || /[\u0000-\u001f]/.test(name)) return fail(res, 400, 'Invalid file name');
+          if (!name || name.startsWith('.') || name.length > 240 || /[\u0000-\u001f]/.test(name)) return fail(res, 400, 'Invalid file name'); /* eslint-disable-line no-control-regex -- нарочно: санитизация */
           const meta = folderMetaOf(p);
           const locked = lockedAncestor(meta, rel);
           if (locked) return fail(res, 409, `Папката ${locked} е заключена`);
@@ -2262,7 +2262,7 @@ async function handler(req, res) {
           const rel = st.normRel(b.path || '');
           if (rel === null) return fail(res, 400, 'Invalid path');
           const text = clean(b.comment).slice(0, 1000);
-          if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text)) return fail(res, 400, 'Invalid comment');
+          if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text)) return fail(res, 400, 'Invalid comment'); /* eslint-disable-line no-control-regex -- нарочно: санитизация */
           const saved = await update(() => {
             p.folderNotes = p.folderNotes && typeof p.folderNotes === 'object' ? p.folderNotes : {};
             if (text) p.folderNotes['/' + rel] = { text, at: new Date().toISOString() };
@@ -2404,7 +2404,7 @@ async function handler(req, res) {
           const attachmentsOf = portal => (Array.isArray(portal.attachments) ? portal.attachments : []);
           if (parts.length === 5 && method === 'GET') return json(res, 200, { attachments: attachmentsOf(p) });
           if (parts.length === 5 && method === 'POST') {
-            const filename = clean(req.headers['x-file-name']); if (!filename || filename.length > 240 || /[\/\r\n\0]/.test(filename)) return fail(res, 400, 'Invalid X-File-Name');
+            const filename = clean(req.headers['x-file-name']); if (!filename || filename.length > 240 || /[/\r\n\0]/.test(filename)) return fail(res, 400, 'Invalid X-File-Name');
             const data = await body(req, runtime.effective().maxUploadBytes); const f = { id: id(), name: filename, size: data.length, sha256: crypto.createHash('sha256').update(data).digest('hex'), uploadedAt: new Date().toISOString() };
             const folder = path.join(internalRoot, p.id); await fsp.mkdir(folder, { recursive: true }); const fp = path.join(folder, f.id);
             await fsp.writeFile(fp, data, { flag: 'wx', mode: 0o600 });
@@ -2457,7 +2457,7 @@ async function handler(req, res) {
         }
         if (parts[4] === 'html' && parts.length === 5 && method === 'POST') {
           const filename = clean(req.headers['x-file-name']);
-          if (!filename || filename.length > 240 || !/^([^\/\r\n\0]+)\.html?$/i.test(filename)) return fail(res, 400, 'An .html or .htm filename is required');
+          if (!filename || filename.length > 240 || !/^([^/\r\n\0]+)\.html?$/i.test(filename)) return fail(res, 400, 'An .html or .htm filename is required');
           const contentType = (req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
           if (contentType !== 'text/html' && contentType !== 'application/octet-stream') return fail(res, 415, 'Expected text/html');
           const data = await body(req, Math.min(runtime.effective().maxUploadBytes, 10 * 1024 * 1024));
@@ -2470,7 +2470,7 @@ async function handler(req, res) {
           }, async f => { await fsp.rm(path.join(filesRoot, p.id, f.id), { force: true }); await removeMirrored(p.id, f.id) });
           return json(res, 201, { ...result, publishStatus: 'stored', security: 'attachment-only', downloadUrl: links.portalApiFilePath(p, 'files/' + result.id + '/download') });
         }
-        if (parts[4] === 'files' && parts.length === 5 && method === 'POST') { const rawName = String(req.headers['x-file-name'] || ''); let decoded; try { decoded = decodeURIComponent(rawName) } catch { decoded = rawName } const filename = clean(decoded); if (!filename || filename.length > 240 || /[\/\r\n\0]/.test(filename)) return fail(res, 400, 'Invalid X-File-Name'); const encHeader = req.headers['x-file-encrypt']; const wantEncrypt = encHeader !== undefined && String(encHeader).trim() !== '' ? String(encHeader) === '1' : cryptoOptions.encryptFiles; const data = await body(req, runtime.effective().maxUploadBytes); return json(res, 201, await update(async () => { const sha = crypto.createHash('sha256').update(data).digest('hex'); const f = { id: id(), name: filename, size: data.length, sha256: sha, contentId: contentIds.of({ portalId: p.id, sha256: sha, size: data.length }), uploadedAt: new Date().toISOString(), category: runtime.settings.data.defaultCategory, group: runtime.settings.data.defaultGroup }; const stored = wantEncrypt ? fileCrypto.encrypt(data, adminToken) : data; if (wantEncrypt) { f.encrypted = true; f.storedSize = stored.length } await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true }); await fsp.writeFile(path.join(filesRoot, p.id, f.id), stored, { flag: 'wx', mode: 0o600 }); p.files.push(f); const placed = wantEncrypt || !portalFolderCopy ? null : await portalFolder.store(p, filename, data).catch(() => null); if (placed) f.storagePath = placed.storagePath; const mirrored = await storeMirrored(p.id, f.id, stored); if (mirrored) f.mirror = mirrored; observer.fileUpload({ bytes: stored.length, encrypted: !!f.encrypted }); if (mirrored === 'failed') observer.mirrorFailed(); await writeApiDir(p, baseUrl(req)); void audit('file.upload', { portalId: p.id, fileId: f.id, encrypted: !!f.encrypted, mirror: mirrored || 'disabled' }); void webhooks.publish('document.finalized', { portalId: p.id, fileId: f.id, bytes: data.length }); return publicFile(f) }, async f => { await fsp.rm(path.join(filesRoot, p.id, f.id), { force: true }); await removeMirrored(p.id, f.id); if (f && f.storagePath) await portalFolder.remove(p, f.storagePath).catch(() => { }) })) }
+        if (parts[4] === 'files' && parts.length === 5 && method === 'POST') { const rawName = String(req.headers['x-file-name'] || ''); let decoded; try { decoded = decodeURIComponent(rawName) } catch { decoded = rawName } const filename = clean(decoded); if (!filename || filename.length > 240 || /[/\r\n\0]/.test(filename)) return fail(res, 400, 'Invalid X-File-Name'); const encHeader = req.headers['x-file-encrypt']; const wantEncrypt = encHeader !== undefined && String(encHeader).trim() !== '' ? String(encHeader) === '1' : cryptoOptions.encryptFiles; const data = await body(req, runtime.effective().maxUploadBytes); return json(res, 201, await update(async () => { const sha = crypto.createHash('sha256').update(data).digest('hex'); const f = { id: id(), name: filename, size: data.length, sha256: sha, contentId: contentIds.of({ portalId: p.id, sha256: sha, size: data.length }), uploadedAt: new Date().toISOString(), category: runtime.settings.data.defaultCategory, group: runtime.settings.data.defaultGroup }; const stored = wantEncrypt ? fileCrypto.encrypt(data, adminToken) : data; if (wantEncrypt) { f.encrypted = true; f.storedSize = stored.length } await fsp.mkdir(path.join(filesRoot, p.id), { recursive: true }); await fsp.writeFile(path.join(filesRoot, p.id, f.id), stored, { flag: 'wx', mode: 0o600 }); p.files.push(f); const placed = wantEncrypt || !portalFolderCopy ? null : await portalFolder.store(p, filename, data).catch(() => null); if (placed) f.storagePath = placed.storagePath; const mirrored = await storeMirrored(p.id, f.id, stored); if (mirrored) f.mirror = mirrored; observer.fileUpload({ bytes: stored.length, encrypted: !!f.encrypted }); if (mirrored === 'failed') observer.mirrorFailed(); await writeApiDir(p, baseUrl(req)); void audit('file.upload', { portalId: p.id, fileId: f.id, encrypted: !!f.encrypted, mirror: mirrored || 'disabled' }); void webhooks.publish('document.finalized', { portalId: p.id, fileId: f.id, bytes: data.length }); return publicFile(f) }, async f => { await fsp.rm(path.join(filesRoot, p.id, f.id), { force: true }); await removeMirrored(p.id, f.id); if (f && f.storagePath) await portalFolder.remove(p, f.storagePath).catch(() => { }) })) }
         if (parts[4] === 'files' && parts[5]) {
           const f = p.files.find(x => x.id === parts[5]);
           if (!f) return fail(res, 404, 'File not found');
@@ -2482,7 +2482,7 @@ async function handler(req, res) {
             return json(res, 200, await update(() => { Object.assign(f, meta); f.modifiedAt = new Date().toISOString(); void audit('file.metadata', { portalId: p.id, fileId: f.id, listed: f.listed !== false }); return publicFile(f) }))
           }
           if (parts.length === 7 && parts[6] === 'lock' && method === 'PATCH') { const b = await parse(req); const locked = !!(b && b.locked); return json(res, 200, await update(() => { f.locked = locked; f.lockedBy = locked ? (clean(b.by) || 'admin') : ''; f.lockedAt = locked ? new Date().toISOString() : ''; void audit(locked ? 'file.lock' : 'file.unlock', { portalId: p.id, fileId: f.id }); return publicFile(f) })) }
-          if (parts.length === 6 && method === 'PATCH') { const b = await parse(req); const name = clean(b.name); if (!name || name.length > 240 || /[\/\r\n\0]/.test(name)) return fail(res, 400, 'Invalid name'); return json(res, 200, await update(() => { f.name = name; Object.assign(f, normalizeTaxonomy(b, f)); void audit('file.rename', { portalId: p.id, fileId: f.id }); return publicFile(f) })) }
+          if (parts.length === 6 && method === 'PATCH') { const b = await parse(req); const name = clean(b.name); if (!name || name.length > 240 || /[/\r\n\0]/.test(name)) return fail(res, 400, 'Invalid name'); return json(res, 200, await update(() => { f.name = name; Object.assign(f, normalizeTaxonomy(b, f)); void audit('file.rename', { portalId: p.id, fileId: f.id }); return publicFile(f) })) }
           if (parts.length === 6 && method === 'DELETE') { const why = retention.protection(p, f); if (why) { void audit('file.delete.refused', { portalId: p.id, fileId: f.id, reason: why }); return fail(res, 409, `Evidence: файлът е част от публикуван манифест (${why}); изтриването е отказано — ползвай „Изключи“ (accessMode DISABLED), за да го скриеш, без да губиш байтовете`) } return json(res, 200, await update(async () => { p.files = p.files.filter(x => x !== f); await worm.unseal(path.join(filesRoot, p.id, f.id)); await fsp.rm(path.join(filesRoot, p.id, f.id), { force: true }); await removeMirrored(p.id, f.id); if (f.storagePath) await portalFolder.remove(p, f.storagePath).catch(() => { }); await writeApiDir(p, baseUrl(req)); observer.fileDelete({ bytes: f.size || 0 }); void audit('file.delete', { portalId: p.id, fileId: f.id }); return { deleted: f.id } })) }
           if (parts.length === 7 && parts[6] === 'sign' && method === 'POST') { const receipt = signer.sign({ fileId: f.id, name: f.name, sha256: f.sha256, size: f.size, secret: p.signingSecret || adminToken }); void audit('file.sign', { portalId: p.id, fileId: f.id }); return json(res, 201, { receipt, note: 'Receipt is HMAC-SHA256 over the file SHA-256 + timestamp. Key rotation revokes verification of prior receipts until PKCS#7 is available.' }) }
           if (parts.length === 7 && parts[6] === 'verify-signature' && method === 'POST') { const b = await parse(req); return json(res, 200, signer.verify(b && b.receipt, p.signingSecret || adminToken)) }
@@ -2591,7 +2591,7 @@ async function bundleRoles(base) {
 }
 async function importKeyBundles() {
   const keysRoot = path.join(root, 'keys'), result = { imported: [], skipped: [] };
-  let entries = [];
+  let entries;
   try { entries = await fsp.readdir(keysRoot, { withFileTypes: true }) } catch (e) { if (e.code === 'ENOENT') return result; throw e }
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;

@@ -1,11 +1,11 @@
 {
-  "version": "0.69.240",
-  "generatedAt": "2026-11-17T12:56:49.519Z",
+  "version": "0.69.241",
+  "generatedAt": "2026-11-17T14:23:09.741Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
-    "server.js": "83c5eb53ea24111c340026f7b70a2e809cd0252d7f8e972f767ffda85beaa076",
+    "server.js": "a1652e46cc0014cdba61f296310351ed9058f3f79aa456a7e07444c807689012",
     "paths.js": "034d9abfe584e90dab516e10e47a344d4dba440c2c7f2a1961e603ab3d88706e",
-    "storage-preflight.js": "7632573dd4c501d41df8c5fbaae90ddb75a4cafb1446da887429065369b96fa7",
+    "storage-preflight.js": "2e51af333c54139a45b7b4bfa1c194fc1c314a06e811850820ebcd882008384f",
     "integrity.js": "95e70dd8cf7e95bbaf9eb0681410e2ddcf1422e48830701f1216041d5ccad805",
     "core.js": "c8027811a86d9d9a1ad758134481dc85dd3944f90895006bba9ee8dee24c6d32",
     "core_module/qr.js": "1e7ec4b8bcb1fb2f7b44bef581df665849e4c2711a430487012414468b1f0b3c",

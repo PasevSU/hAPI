@@ -91,8 +91,6 @@ const decide = (cell, method) => cell === 'all' || (cell === 'read' && method ==
   assert.equal(roleOf({ authorization: 'Bearer a ' }), null, 'токен с интервал НЕ се приема за верен (точно сравнение)');
 
   // ── 3. Жив сървър: решението стига до HTTP, с точните кодове и текстове ────
-  const operatorToken = 'oracle-operator-token-1234567890';
-  const viewerToken = 'oracle-viewer-token-1234567890';
   const server = await startServer();
   try {
     const admin = server.api;
@@ -105,7 +103,7 @@ const decide = (cell, method) => cell === 'all' || (cell === 'read' && method ==
         },
         body: bodyValue === undefined ? undefined : JSON.stringify(bodyValue),
       });
-      let data = null;
+      let data;
       try {
         data = await res.json();
       } catch {

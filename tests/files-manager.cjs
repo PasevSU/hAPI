@@ -722,7 +722,7 @@ assert.equal(/\.fm-folder-files/.test(css), false, 'стиловете за ре
 // ── Компактен режим по подразбиране ─────────────────────────────────────
 // 1. Папките са СВИТИ (open: null), филтрите са ИЗКЛЮЧЕНИ (filters: false).
 assert.match(src, /tree: \{ portalId: '', loaded: false, error: '', data: null, open: null \}/);
-assert.match(src, /\n    filters: false,/);
+assert.match(src, /\n {4}filters: false,/);
 // 2. Празните стойности не се изписват.
 assert.equal(/'<span class="hint">няма бележка<\/span>'/.test(src), false, 'няма плейсхолдър „няма бележка“');
 assert.equal(/без тема и категория/.test(src), false, 'няма плейсхолдър „без тема и категория“');

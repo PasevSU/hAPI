@@ -46,7 +46,7 @@ const MAGIC = Buffer.from('hapiE1', 'ascii');
       headers: { ...(body && !raw ? { 'Content-Type': 'application/json' } : {}), Authorization: 'Bearer ' + token, ...headers },
       body: body === undefined ? undefined : raw ? body : JSON.stringify(body),
     });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch { }

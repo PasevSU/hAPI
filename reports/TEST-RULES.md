@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 467 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 468 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 210 |
+| общо | 211 |
 | портал | 57 |
 | GUI | 42 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (210)
+## общо (211)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -98,6 +98,7 @@
 | `enterprise` | Enterprise | `tests/enterprise.cjs` |
 | `enterprise-lifecycle` | Enterprise lifecycle | `tests/enterprise-lifecycle.cjs` |
 | `eslint-baseline` | Eslint baseline | `tests/eslint-baseline.cjs` |
+| `eslint-ratchet` | Eslint ratchet | `tests/eslint-ratchet.cjs` |
 | `event-stream` | Event stream | `tests/event-stream.cjs` |
 | `evidence-portal` | Evidence portal | `tests/evidence-portal.cjs` |
 | `evidence-portal-info-qr` | Evidence portal info qr | `tests/evidence-portal-info-qr.cjs` |

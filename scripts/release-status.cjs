@@ -41,7 +41,7 @@ const exists = (rel) => fs.existsSync(path.join(root, rel));
 // стар записан отчет. Гейтовете са под секунда, затова е приемливо.
 function runJson(script, extra = []) {
   const res = spawnSync(process.execPath, [path.join(root, script), ...extra], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
-  let data = null;
+  let data;
   try { data = JSON.parse(res.stdout) } catch { data = null }
   return { ok: res.status === 0, status: res.status, data, stderr: String(res.stderr || '').trim() };
 }

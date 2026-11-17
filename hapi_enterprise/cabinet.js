@@ -1,8 +1,9 @@
 'use strict';
 // Filing cabinet: an admin-only document store (folders, subfolders, files) separate from portals.
-const fs = require('node:fs'), fsp = require('node:fs/promises'), path = require('node:path'), { spawn } = require('node:child_process');
+const fsp = require('node:fs/promises'), path = require('node:path'), { spawn } = require('node:child_process');
 const ooxml = require('./ooxml'), pdf = require('./pdf-writer');
 const err = (m, status = 400) => Object.assign(new Error(m), { status });
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
 const BAD = /[\u0000-\u001f<>:"\\|?*^&%!`$;]/;
 const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 const MIME = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', txt: 'text/plain; charset=utf-8', md: 'text/plain; charset=utf-8', csv: 'text/plain; charset=utf-8', json: 'text/plain; charset=utf-8', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };

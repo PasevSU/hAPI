@@ -98,7 +98,7 @@ function config() {
   const rawGateway = readJson('public_gateway.json', FALLBACK.gateway);
   // Домейнът и публикуването могат да дойдат от среда (Docker/тестове) или от
   // опциите на add-on-а (Settings → Add-on configuration).
-  let options = {};
+  let options;
   try {
     options = JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || path.join(paths.LOGICAL_ROOTS.data, 'options.json'), 'utf8')) || {};
   } catch {
@@ -230,8 +230,7 @@ function fileModeFor(portal, file, cfg) {
   return portalMode(portal);
 }
 
-function portalView(portal, cfgInput) {
-  const cfg = cfgInput || config();
+function portalView(portal) {
   return GW.normalizePortal({
     id: portal.id,
     slug: portal.slug,
@@ -282,7 +281,7 @@ function downloadUrlFor(file, cfgInput) {
 function decideFile(input) {
   const src = input && typeof input === 'object' ? input : {};
   const cfg = src.cfg || config();
-  const portal = portalView(src.portal, cfg);
+  const portal = portalView(src.portal);
   const file = fileView(src.portal, src.file, cfg);
   const resolved = GW.resolvePolicy({ portal, file });
 

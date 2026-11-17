@@ -20,7 +20,7 @@ const notify=require('../hapi_enterprise/notify');
  const token='qr-dispatch-admin-secret-2026';const pub = await freePort(),mpub = await freePort();
  const base=`http://127.0.0.1:${pub}`,mockBase=`http://127.0.0.1:${mpub}`;
  // Mock HA notify service endpoint — captures the call.
- let captured=null;
+ let captured;
  const mock=http.createServer((req,res)=>{let data='';req.on('data',c=>data+=c);req.on('end',()=>{captured={url:req.url,headers:req.headers,body:data?JSON.parse(data):null};res.writeHead(200,{'content-type':'application/json'});res.end('{"ok":true}')})});
  await new Promise(r=>mock.listen(mpub,'127.0.0.1',r));
  const child=spawn(process.execPath,[path.join(__dirname,'../hapi_enterprise/server.js')],{env:{...process.env,DATA_DIR:dir,ADMIN_TOKEN:token,PORT:String(pub),SUPERVISOR_TOKEN:'svc-token',HAPI_NOTIFY_ENDPOINT:mockBase},stdio:'pipe'});

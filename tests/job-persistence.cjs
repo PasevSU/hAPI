@@ -9,7 +9,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
  // a `queued` job is rebuilt via resolveHandler and resumed automatically.
  const dir=tmp('portal-jobpersist-');
  let release;const gate=new Promise(r=>release=r);
- const resolver=(type,params)=>type==='slow'?async ctx=>{ctx.setTotal(1);await gate;ctx.advance();return 'slow-done'}
+ const resolver=(type)=>type==='slow'?async ctx=>{ctx.setTotal(1);await gate;ctx.advance();return 'slow-done'}
    :type==='quick'?async()=>'quick-done':(()=>{throw Error('unknown')})();
  try{
   const m1=create({dir,concurrency:1,resolveHandler:resolver});
@@ -29,7 +29,6 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
   // Pause / resume of a queued job.
   const dir2=tmp('portal-jobpause-');
-  let r2;const gate2=new Promise(r=>r2=r);
   const m3=create({dir:dir2,concurrency:1,resolveHandler:resolver});
   const block=m3.submit('slow',{});      // running, blocks
   const q=m3.submit('quick',{});         // queued
@@ -37,7 +36,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
   assert.equal(m3.stats().paused,1);
   assert.equal(m3.resume(q.id).status,'queued');
   assert.equal(m3.get(q.id).status,'queued'); // still queued: one job is running
-  r2();await wait(40);
+  await wait(40);
   assert.equal(m3.get(block.id).status,'succeeded');
   assert.equal(m3.get(q.id).status,'succeeded');
 

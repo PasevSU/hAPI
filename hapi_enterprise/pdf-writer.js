@@ -149,7 +149,7 @@ function columnWidths(maxW, ncol, weights) {
 
 function render(blocks, { title = '', watermark = '', lang = 'bg', attachments = [], createdAt = null } = {}) {
   const stamp = stampOf(createdAt);
-  const used = {}; const fontIds = {}; const faces = {};
+  const faces = {};
   const face = kind => { if (!faces[kind]) { faces[kind] = { f: font(kind), key: 'F' + (Object.keys(faces).length + 1), used: new Map() } } return faces[kind] };
   const measure = (kind, s, size) => { const F = face(kind).f; let w = 0; for (const ch of s) w += F.adv(F.glyph(ch.codePointAt(0))); return w * size / F.upm };
   const encode = (kind, s) => { const fc = face(kind), F = fc.f; let out = ''; for (const ch of s) { const cp = ch.codePointAt(0), g = F.glyph(cp); out += hex(g); if (!fc.used.has(g)) fc.used.set(g, cp) } return out };
@@ -158,6 +158,7 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
   const maxW = A4.w - M.l - M.r;
   function wrap(kind, size, text, width) {
     const lines = [];
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
     for (const para of String(text).replace(/\t/g, '    ').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').split('\n')) {
       if (!para.trim()) { lines.push(''); continue }
       let line = '';
@@ -206,8 +207,8 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
       // рязък при всяко увеличение и не зависи от JPEG/PNG канал. Ако текстът не може
       // да се кодира, НЕ се рисува празен квадрат — пише се защо (без фалшив QR).
       const size = Math.max(48, Math.min(maxW, Number(b.size) || 120));
-      let modules = null;
-      try { modules = qrMatrix(b.text, b.level) } catch (e) { modules = null }
+      let modules;
+      try { modules = qrMatrix(b.text, b.level) } catch { modules = null }
       if (!modules) {
         const lines = wrap('regular', 9, 'QR код: не може да се кодира стойността (' + String(b.text == null ? '' : b.text).length + ' знака).', maxW);
         for (const ln of lines) { if (y - 13 < M.b) newPage(); draw('regular', 9, M.l, y - 9, ln); y -= 13 }
@@ -268,7 +269,7 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
       const xs = []; let acc = M.l;
       for (const w of widths) { xs.push(acc); acc += w }
       const wrapped = rows.map(r => { const cells = []; for (let c = 0; c < ncol; c++)cells.push(wrap(st.font, st.size, r[c] || '', Math.max(10, widths[c] - pad * 2))); return cells });
-      const rowH = wrapped.map((w, ri) => Math.max(1, ...w.map(c => c.length)) * st.lead + pad * 2);
+      const rowH = wrapped.map((w) => Math.max(1, ...w.map(c => c.length)) * st.lead + pad * 2);
       if (y - st.before - Math.min(...rowH) < M.b && y < A4.h - M.t) newPage();
       y -= st.before;
       // Един ред се чертае на едно място — и за данните, и за повтореното заглавие на нов
@@ -298,9 +299,7 @@ function render(blocks, { title = '', watermark = '', lang = 'bg', attachments =
       y -= st.after; continue;
     }
     const st = STYLES[b.type] || STYLES.p;
-    const indent = (st.indent || 0) + (b.type === 'li' ? (b.level || 0) * 16 : 0) + (b.type === 'li' ? 0 : 0);
     const x0 = M.l + (b.type === 'li' ? (b.level || 0) * 16 : 0) + (b.type === 'quote' ? st.indent : 0);
-    const textX = M.l + indent + (b.type === 'quote' ? 0 : 0);
     const width = maxW - (b.type === 'li' ? (st.indent + (b.level || 0) * 16) : 0) - (b.type === 'quote' ? st.indent : 0) - (b.type === 'code' ? st.pad * 2 : 0);
     const lines = wrap(st.font, st.size, b.text || '', width);
     if (y - st.before - st.lead < M.b && y < A4.h - M.t) newPage();

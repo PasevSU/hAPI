@@ -48,6 +48,7 @@ function yamlString(value) {
   return (
     '"' +
     String(value == null ? '' : value)
+// eslint-disable-next-line no-control-regex -- нарочно: regex-ът маха контролни символи (санитизация), не ги допуска
       .replace(/[\u0000-\u001f\u007f]/g, ' ')
       .replace(/\\/g, '\\\\')
       .replace(/"/g, '\\"') +

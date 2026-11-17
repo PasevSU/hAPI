@@ -28,7 +28,7 @@ const assert = require('node:assert/strict');
       },
       body: body ? JSON.stringify(body) : undefined,
     });
-    let value = null;
+    let value;
     try {
       value = await res.json();
     } catch {

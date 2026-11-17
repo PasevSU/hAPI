@@ -49,7 +49,11 @@ const { stopChild } = require('./helpers.cjs');
     const link = created.data.link;
     assert.match(link.url, /^\/x\/[A-Za-z0-9_-]{12}$/, 'адресът е къс и непредвидим: ' + link.url);
     const ttlMs = Date.parse(link.expiresAt) - Date.now();
-    assert.ok(ttlMs > 540_000 && ttlMs <= 600_000, 'срокът е поисканите 10 минути: ' + ttlMs);
+    // Горната граница носи 1 s толеранс: `expiresAt` се строи по часовника на сървъра, а се
+    // мери с часовника на теста — при плътна матрица двата процеса се разминават с няколко
+    // милисекунди и точният таван даваше 600005 (флейк, не дефект). Долната граница е
+    // смислената: тя хваща и „срокът е под 9 минути“, и „срокът е нула“.
+    assert.ok(ttlMs > 540_000 && ttlMs <= 601_000, 'срокът е поисканите 10 минути: ' + ttlMs);
 
     const hop = await open(link.url);
     assert.equal(hop.status, 302, 'връзката пренасочва: ' + hop.status);

@@ -100,7 +100,7 @@
       headers: Object.assign({ 'content-type': 'application/json' }, opt.headers || {}),
       body: JSON.stringify(body),
     });
-    let data = null;
+    let data;
     try {
       data = await res.json();
     } catch {
