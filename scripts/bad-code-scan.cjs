@@ -123,7 +123,9 @@ function innerHtmlInterpolations(src) {
     let depth = 0;
     let buf = '';
     let inExpr = false;
-    const startIdx = i;
+    // Позицията на ПОРЕДНОТО `${`, не на отварящата кавичка: иначе всяка находка от един
+    // шаблон сочи първия му ред и отчетът не може да се провери (средно 3 находки на шаблон).
+    let at = i;
     let nested = 0;
     const flush = () => {
       const expr = buf.trim();
@@ -136,7 +138,7 @@ function innerHtmlInterpolations(src) {
                 : /\?/.test(expr) ? 'component'
                   : /^[a-zA-Z_$][\w$.]*\s*\(/.test(expr) ? 'component'
                     : 'raw';
-      out.push({ index: startIdx, expr, kind, nested: nested > 0 });
+      out.push({ index: at, expr, kind, nested: nested > 0 });
     };
     for (; i < src.length; i++) {
       const ch = src[i];
@@ -147,7 +149,7 @@ function innerHtmlInterpolations(src) {
           continue;
         }
         if (ch === '\\') { i++; continue; }
-        if (ch === '$' && src[i + 1] === '{') { inExpr = true; buf = ''; i++; }
+        if (ch === '$' && src[i + 1] === '{') { inExpr = true; buf = ''; at = i; i++; }
         continue;
       }
       if (ch === '`') { nested++; continue; } // вложен шаблон вътре в израза
@@ -248,6 +250,8 @@ for (const [dir, exts] of DIRS) {
               : 'израз с данни в innerHTML без esc()',
           fix: 'esc() около стойността',
           text: '${' + item.expr.slice(0, 80) + '}',
+          // При конкатенация няма `${}` — редът е на присвояването, не на интерполация.
+          concat: Boolean(item.concat),
         });
       }
     }
@@ -290,7 +294,9 @@ if (ARGS.has('--json')) {
 }
 
 if (ARGS.has('--gate')) {
-  const blocking = active.filter((f) => f.sev === 'critical' || f.sev === 'high');
+  // Средната находка е същата порта като високата, само че за нея е достатъчна обосновка: голият
+  // израз в разметка е или вход, или число от собствения код, и човек трябва да го каже с думи.
+  const blocking = active.filter((f) => f.sev === 'critical' || f.sev === 'high' || f.sev === 'medium');
   const dead = deadAllow;
   if (dead.length) {
     console.error(`\nГЕЙТ: ${dead.length} мъртви записа в allowlist-а (не спасяват нито една находка):`);
@@ -301,9 +307,9 @@ if (ARGS.has('--gate')) {
     process.exitCode = 1;
   }
   if (blocking.length) {
-    console.error(`\nГЕЙТ: ${blocking.length} необяснени находки critical/high`);
+    console.error(`\nГЕЙТ: ${blocking.length} необяснени находки critical/high/medium`);
     process.exitCode = 1;
   } else if (!dead.length) {
-    console.log('\nГЕЙТ: чисто (няма необяснени critical/high, няма мъртви изключения)');
+    console.log('\nГЕЙТ: чисто (няма необяснени critical/high/medium, няма мъртви изключения)');
   }
 }

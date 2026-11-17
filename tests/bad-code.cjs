@@ -34,6 +34,31 @@ const report = JSON.parse(run.stdout);
 assert.ok(report.scanned >= 240, `скенерът обхожда проекта (сканирани ${report.scanned})`);
 assert.equal(report.bySev.critical || 0, 0, 'няма активни critical находки: ' + JSON.stringify(report.findings.filter((f) => f.sev === 'critical').slice(0, 3)));
 assert.equal(report.bySev.high || 0, 0, 'няма активни high находки: ' + JSON.stringify(report.findings.filter((f) => f.sev === 'high').slice(0, 3)));
+// 1б. Нито една средна находка не остава необяснена. `release-status` брои точно тези редове
+// и при medium > 0 пише „има необяснени“, тоест отчетът на изданието не може да е зелен, докато
+// находката е жива: тя се ПОПРАВЯ или влиза в allowlist-а с писмена причина.
+assert.equal(
+  report.bySev.medium || 0,
+  0,
+  'всяка medium находка е поправена или приета с причина: ' +
+  JSON.stringify(report.findings.filter((f) => f.sev === 'medium').slice(0, 3)),
+);
+
+// 1в. Находка html-sink сочи реда на САМАТА интерполация, не началото на шаблона. Иначе един
+// шаблон с три израза дава три находки на един ред (измерено: qr-studio.js — 3 находки на ред
+// 458) и човек не може да провери нито една от тях, без да прочете целия шаблон.
+const srcCache = new Map();
+const linesOf = (file) => {
+  if (!srcCache.has(file)) srcCache.set(file, fs.readFileSync(path.join(ROOT, file), 'utf8').split('\n'));
+  return srcCache.get(file);
+};
+for (const f of [...report.findings, ...report.suppressed].filter((x) => x.rule === 'html-sink' && !x.concat)) {
+  const line = linesOf(f.file)[f.line - 1] || '';
+  assert.ok(
+    line.includes('${'),
+    `находката сочи реда с интерполацията: ${f.file}:${f.line} → ${JSON.stringify(line.trim().slice(0, 60))}`,
+  );
+}
 
 // 2. Всяко изключение е обяснено и сочи съществуващ файл.
 const allow = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts', 'bad-code-allowlist.json'), 'utf8'));
@@ -60,6 +85,6 @@ const byRule = Object.entries(report.findings.reduce((acc, f) => ((acc[f.rule] =
   .map(([rule, n]) => `${rule}=${n}`)
   .join(', ');
 console.log(
-  `PASS bad-code: ${report.scanned} файла · ${report.totalLines} реда · 0 critical/high · ` +
+  `PASS bad-code: ${report.scanned} файла · ${report.totalLines} реда · 0 critical/high/medium · ` +
   `${report.suppressed.length}/${BASE_MAX_SUPPRESSED} приети с причина · остават: ${byRule || 'нищо'}`,
 );

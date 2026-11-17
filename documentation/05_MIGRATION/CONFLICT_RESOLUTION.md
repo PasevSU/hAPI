@@ -1,6 +1,6 @@
 # Conflict Resolution — hAPI Enterprise
 
-> **Клас:** исторически · **Замразен към:** 0.69.237
+> **Клас:** исторически · **Замразен към:** 0.69.238
 
 ## Conflict types & resolution
 
