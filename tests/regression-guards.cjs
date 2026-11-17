@@ -113,6 +113,7 @@ const GUARDS = {
   'DEF-94': ['thunderbird-contract.cjs'], // зареденото add-on се сверява със сорса по хеш и версия
   'DEF-95': ['thunderbird-header-budget.cjs', 'psemp-suites.cjs'], // дълга заглавка се раздробява, а проверяващият я сглобява
   'DEF-96': ['psemp-suites.cjs'], // проверяващият преизчислява крипто-заглавките, не им вярва на формата
+  'DEF-97': ['visitor-sensors.cjs', 'regression-guards.cjs'], // стъпка без `await` прави половината тест куха
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -205,6 +206,7 @@ const ANCHORS = {
   'DEF-94': { file: 'thunderbird-contract.cjs', contains: 'loadedAddonVersion' },
   'DEF-95': { file: 'thunderbird-header-budget.cjs', contains: 'RFC_LIMIT' },
   'DEF-96': { file: 'psemp-suites.cjs', contains: 'a tampered digest row is caught by re-deriving the block' },
+  'DEF-97': { file: 'visitor-sensors.cjs', contains: 'профилът е изтрит' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */
@@ -276,6 +278,24 @@ for (const [id, anchor] of Object.entries(ANCHORS)) {
 // 5. Няма защита за дефект, който не съществува в регистъра.
 const unknown = Object.keys(GUARDS).filter((id) => !rows.has(id));
 assert.deepEqual(unknown, [], 'картата на защитите сочи несъществуващи дефекти: ' + unknown.join(', '));
+
+// 6. Помощникът `stage` в тестовете наистина чака стъпката си (DEF-97).
+// Синхронен `stage` печата ✔ ПРЕДИ работата, пуска всички стъпки едновременно и гаси
+// сървъра под тях: тестът изглежда зелен, а не проверява нищо (така `visitor-sensors` осем
+// живи стъпки не бяха изпълнили нито едно твърдение, а 404-регресия остана невидима).
+const floatingStages = [];
+for (const file of fs.readdirSync(TESTS).filter((f) => f.endsWith('.cjs'))) {
+  const code = fs.readFileSync(path.join(TESTS, file), 'utf8');
+  if (!/const stage\s*=/.test(code)) continue;
+  if (!/const stage\s*=\s*async\b/.test(code) || !/await fn\(\)/.test(code)) {
+    floatingStages.push(file);
+  }
+}
+assert.deepEqual(
+  floatingStages,
+  [],
+  'стъпка, която не се чака — тестът минава, без да провери нищо: ' + floatingStages.join(', '),
+);
 
 // Допълнително: затворен дефект, който сам сочи тест в текста си, трябва да сочи съществуващ файл.
 const danglingRefs = [];
