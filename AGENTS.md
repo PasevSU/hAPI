@@ -108,6 +108,12 @@
   Името остава конвенцията на HA `ghcr.io/pasevsu/{arch}-addon-hapi_enterprise`; единно
   многоархитектурно име би искало manifest list, какъвто workflow-ът не строи.
   Тест: `tests/addon-image-pipeline.cjs` (+ котва в `regression-guards.cjs`, DEF-61).
+  **Тагът се слага в същия завършек, не „после“.** Измерено 2026-11-16: 0.69.237 и 0.69.238
+  бяха в `main` с вдигната версия, но без таг — тоест две издания без образ, открити едва при
+  `git tag --list 'v0.69.23*'`. Проверката във веригата е `node scripts/check-tag-version.cjs
+  vX.Y.Z` (сверява тага с `config.yaml` и `manifest.json`) плюс `git tag --list` за всяка версия
+  от върха на `CHANGELOG.md`; липсващ таг се възстановява на комита, който носи версията
+  (`git show <комит>:hapi_enterprise/config.yaml`).
 - **Базовият образ на Dockerfile е `alpine:major.minor`, без кръпка.** `FROM alpine:3.24.5`
   (опит от 0.69.222) дава 4 червени теста при зелен код — `docker-runtime`, `ha-compatibility`,
   `ha-support-matrix`, `raspberrypi-compat` искат точно `/^alpine:\d+\.\d+$/` — и събаря
