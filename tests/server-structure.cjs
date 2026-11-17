@@ -32,7 +32,8 @@ for (const file of components) {
   const name = 'routes/' + file;
   assert.match(src, /^'use strict';/, name + ': липсва "use strict"');
   assert.match(src, /function create\(deps\)/, name + ': няма create(deps)');
-  assert.match(src, /async function handle\(\{ req, res/, name + ': няма handle({ req, res, … })');
+  // `req` се приема по договора на диспечера; `_req` е същото, когато компонентът не чете от заявката.
+  assert.match(src, /async function handle\(\{ _?req, res/, name + ': няма handle({ req, res, … })');
   assert.match(src, /module\.exports = \{ create \}/, name + ': не изнася create');
   assert.match(src, /return true;/, name + ': handle не връща true при приключена заявка');
   assert.match(src, /return false;/, name + ': handle не връща false за чужда заявка');

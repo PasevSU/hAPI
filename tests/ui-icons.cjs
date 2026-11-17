@@ -19,6 +19,19 @@ for (const required of ['preview', 'download', 'lock', 'unlock', 'eye', 'eyeOff'
   assert.ok(defined.has(required), `липсва задължителната икона ${required}`);
 }
 
+// Йерархията на спрайта v4 (`ui/icons-v4-map.json`) е ВТОРИЯТ източник на икони: `ico4('име')`
+// рисува от `/ui/icons-v4.svg`, а не от вградения обект `P`. Затова име от нея има символ, макар
+// да не е в `icons.js`. Договорът на самите функции (икона от йерархията + резерва от `P`) пази
+// `tests/ui-portal-functions.cjs`.
+const v4 = JSON.parse(fs.readFileSync(path.join(uiDir, 'icons-v4-map.json'), 'utf8'));
+const v4Names = new Set();
+(function walkV4(node) {
+  if (Array.isArray(node)) return node.forEach(walkV4);
+  if (node && typeof node === 'object') return Object.values(node).forEach(walkV4);
+  if (typeof node === 'string') v4Names.add(node);
+})(v4.scopes);
+for (const name of v4.iconsUsed || []) v4Names.add(name);
+
 // Само тези модули ползват SVG спрайта (останалите имат свои типографски глифове).
 const MODULES = ['app.js', 'files-manager.js', 'portal-control.js', 'portal-folders.js', 'portal-files.js'];
 const used = new Map(); // име → къде се ползва
@@ -34,7 +47,7 @@ for (const file of MODULES) {
 }
 assert.ok(used.size > 20, `намерени са само ${used.size} имена на икони`);
 
-const missing = [...used].filter(([name]) => !defined.has(name));
+const missing = [...used].filter(([name]) => !defined.has(name) && !v4Names.has(name));
 assert.deepEqual(missing, [], `икони без символ в спрайта: ${JSON.stringify(missing)}`);
 
 // Всяка икона се ползва някъде (без резервната `dot`, която е при непознато име).

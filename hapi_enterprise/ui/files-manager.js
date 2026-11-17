@@ -2864,6 +2864,9 @@
       T,
       // Една и съща икона навсякъде: модулите викат ico('download') вместо свои глифове.
       ico,
+      // Икона от спрайта v4 (йерархията в `icons-v4-map.json`): контролният панел я ползва за
+      // функциите и за състоянието им. `ico4` пада към вградения набор, ако спрайтът липсва.
+      ico4,
       treePath,
       folderApiUrl,
       apiMenu,
@@ -3847,6 +3850,54 @@
 
   function wire() {
     const q = (sel) => host.querySelector(sel);
+    // ── Обектът на функциите на портала ────────────────────────────────────
+    // Редовете идват от `HapiPortalControl.FUNCTIONS` (portal-control.js), а изпълнението —
+    // оттук: така бутон без обработчик не съществува, а „Изпълни избраните“ минава през
+    // СЪЩИТЕ функции, а не през втори код. Състоянието се маркира с икона от йерархията
+    // (Избор и състояния), не само с цвят.
+    const FN = (window.HapiPortalControl && window.HapiPortalControl.FUNCTIONS) || [];
+    const FN_HANDLERS = {};
+    const FN_STATE_ICON = { ok: 'success', fail: 'failure', busy: 'loading' };
+    // Ключовете стоят ЛИТЕРАЛНО в таблица, а не се сглобяват с `'pc.fn.state.' + state`:
+    // `tests/ui-i18n.cjs` брои кой ключ някой модул ползва и сглобен ключ изглежда неизползван.
+    const FN_STATE_TEXT = { ok: 'pc.fn.state.ok', fail: 'pc.fn.state.fail', busy: 'pc.fn.state.busy' };
+    const fnKinds = {};
+    let fnActive = '';
+    /** Изходът на течащата функция: `say`/`sayToken`/`sayQr` казват какво е станало. */
+    const noteFn = (kind) => {
+      if (fnActive) fnKinds[fnActive] = kind === 'err' ? 'fail' : 'ok';
+    };
+    const markFn = (id, state) => {
+      // Панелът може да е пре-рисуван, докато функцията тече (навигация, опресняване) — тогава
+      // няма къде да се отбележи и това не е грешка.
+      if (!host) return;
+      const cell = q('[data-fn-state="' + id + '"]');
+      if (!cell) return;
+      cell.dataset.state = state || '';
+      cell.innerHTML = state ? ico4(FN_STATE_ICON[state] || 'info', 'standard') : '';
+      cell.title = FN_STATE_TEXT[state] ? T(FN_STATE_TEXT[state]) : '';
+    };
+    const runFn = async (id) => {
+      const handler = FN_HANDLERS[id];
+      if (!handler) return false;
+      fnActive = id;
+      fnKinds[id] = 'ok';
+      markFn(id, 'busy');
+      try {
+        await handler();
+      } catch (e) {
+        fnKinds[id] = 'fail';
+        say(String((e && e.message) || e), 'err');
+      }
+      fnActive = '';
+      markFn(id, fnKinds[id]);
+      return fnKinds[id] === 'ok';
+    };
+    const bindFn = (id, handler) => {
+      FN_HANDLERS[id] = handler;
+      const btn = q('#pf-' + id);
+      if (btn) btn.addEventListener('click', () => void runFn(id));
+    };
     // „Нов портал“ съществува само в списъка (при отворен портал го няма).
     if (q('#pf-new')) {
       q('#pf-new').addEventListener('click', () => {
@@ -3995,7 +4046,7 @@
         void saveConfig(e.target);
       });
     }
-    if (q('#pf-config-verify')) q('#pf-config-verify').addEventListener('click', () => void verifyConfig());
+    if (q('#pf-config-verify')) bindFn('config-verify', () => verifyConfig());
     if (q('#pf-config-show')) q('#pf-config-show').addEventListener('click', () => void showConfigFile());
     // API/QR се създават заедно с портала — няма бутон „Генерирай“. Панелът НЕ изрежда
     // техническите адреси: остава само QR кодът, който отваря портала, и действията по него.
@@ -4010,12 +4061,13 @@
     // маршрути; без тях функциите съществуваха само в API).
     const securityOut = q('#pf-security-out');
     const say = (text, kind) => {
+      noteFn(kind);
       if (!securityOut) return toast(text, kind);
       securityOut.textContent = text;
       securityOut.className = 'pf-security-out ' + (kind || '');
     };
     if (q('#pf-rotate-key')) {
-      q('#pf-rotate-key').addEventListener('click', async () => {
+      bindFn('rotate-key', async () => {
         const p = portal();
         if (!p) return;
         if (!connected()) return say('Демо: смяната на ключа става от add-on-а', 'err');
@@ -4026,20 +4078,22 @@
       });
     }
     if (q('#pf-integrity')) {
-      q('#pf-integrity').addEventListener('click', async () => {
+      bindFn('integrity', async () => {
         if (!connected()) return say('Демо: проверката се изпълнява от add-on-а', 'err');
         say('Проверявам SHA-256 на файловете…', '');
         const r = await api(`${P()}/integrity`);
         if (!r.ok) return say(r.error || `HTTP ${r.status}`, 'err');
-        const summary = r.data.summary || {};
+        // Числата идват от присъдата на сървъра (`verdict`): преди панелът четеше `summary.mismatch`
+        // при ключ `MISMATCH` и показваше „разминават се 0“ точно когато имаше подмяна.
+        const judged = r.data.verdict || {};
         say(
-          `Проверени ${r.data.checked ?? summary.checked ?? 0} файла · съвпадат ${summary.ok ?? 0} · разминават се ${summary.mismatch ?? 0} · липсват ${summary.missing ?? 0}`,
-          (summary.mismatch || summary.missing) ? 'err' : 'ok',
+          `Проверени ${judged.verified ?? 0} файла · проблемни ${judged.failed ?? 0} · предупреждения ${judged.warnings ?? 0}`,
+          judged.ok === false ? 'err' : 'ok',
         );
       });
     }
     if (q('#pf-integrity-job')) {
-      q('#pf-integrity-job').addEventListener('click', async () => {
+      bindFn('integrity-job', async () => {
         if (!connected()) return say('Демо: фоновата проверка се пуска от add-on-а', 'err');
         const r = await api(`${P()}/integrity-jobs`, { method: 'POST', json: {} });
         if (!r.ok) return say(r.error || `HTTP ${r.status}`, 'err');
@@ -4052,6 +4106,7 @@
     // в базата стои само отпечатък, затова няма „покажи отново“.
     const tokenOut = q('#pf-token-out');
     const sayToken = (html, kind) => {
+      noteFn(kind);
       if (!tokenOut) return toast(String(html).replace(/<[^>]+>/g, ' '), kind);
       tokenOut.innerHTML = html;
       tokenOut.className = 'pf-security-out ' + (kind || '');
@@ -4080,7 +4135,7 @@
       );
     };
     if (q('#pf-token-new')) {
-      q('#pf-token-new').addEventListener('click', async () => {
+      bindFn('token-new', async () => {
         const p = portal();
         if (!p) return;
         if (!connected()) return sayToken('Демо: токенът се издава от add-on-а', 'err');
@@ -4113,7 +4168,7 @@
       });
     }
     if (q('#pf-token-list')) {
-      q('#pf-token-list').addEventListener('click', async () => {
+      bindFn('token-list', async () => {
         const p = portal();
         if (!p) return;
         if (!connected()) return sayToken('Демо: списъкът идва от add-on-а', 'err');
@@ -4128,6 +4183,7 @@
 
     // ── QR ревизии и архиви (един портал = един адрес = поредица от QR) ──────
     const sayQr = (html, kind) => {
+      noteFn(kind);
       const out = q('#pf-qr-out');
       if (out) {
         out.innerHTML = html || '';
@@ -4135,7 +4191,7 @@
       }
     };
     if (q('#pf-qr-show')) {
-      q('#pf-qr-show').addEventListener('click', async () => {
+      bindFn('qr-show', async () => {
         const p = portal();
         if (!p) return;
         if (!connected()) return sayQr('Демо: историята идва от add-on-а', 'err');
@@ -4151,7 +4207,7 @@
       });
     }
     if (q('#pf-qr-archive')) {
-      q('#pf-qr-archive').addEventListener('click', async () => {
+      bindFn('qr-archive', async () => {
         const p = portal();
         if (!p) return;
         if (!connected()) return sayQr('Демо: архивът се прави от add-on-а', 'err');
@@ -4163,7 +4219,7 @@
       });
     }
     if (q('#pf-qr-block')) {
-      q('#pf-qr-block').addEventListener('click', async () => {
+      bindFn('qr-block', async () => {
         const p = portal();
         if (!p) return;
         const input = q('#pf-qr-reason');
@@ -4178,7 +4234,7 @@
       });
     }
     if (q('#pf-qr-verify')) {
-      q('#pf-qr-verify').addEventListener('click', async () => {
+      bindFn('qr-verify', async () => {
         if (!portal()) return;
         if (!connected()) return sayQr('Демо: проверката се прави от add-on-а', 'err');
         const r = await api(`${P()}/qr/verify`, { method: 'POST', json: {} });
@@ -4192,7 +4248,7 @@
       });
     }
     if (q('#pf-qr-restore')) {
-      q('#pf-qr-restore').addEventListener('click', async () => {
+      bindFn('qr-restore', async () => {
         if (!portal()) return;
         const input = q('#pf-qr-restore-id');
         const qrId = String((input && input.value) || '').trim().toUpperCase();
@@ -4205,6 +4261,55 @@
         const extra = (data.keptExtra || []).length ? `<p>Останали извън архива (не са изтрити): <strong>${esc(String((data.keptExtra || []).length))}</strong></p>` : '';
         sayQr(`<p><strong>Възстановено от ${esc(String(data.restoredFrom || ''))}.</strong> Записани файлове: <strong>${esc(String(data.files || 0))}</strong> · предпазен архив: <code>${esc(String(data.safetyArchive || '—'))}</code> · активен QR: <strong>${esc(String(data.active || ''))}</strong></p>${extra}`, 'ok');
       });
+    }
+
+    // Договорът между списъка и изпълнението: ред без обработчик не се показва като работещ.
+    // Така „нов ред във визията без код“ се вижда веднага, вместо да е мъртъв бутон.
+    for (const fn of FN) {
+      if (FN_HANDLERS[fn.id]) continue;
+      const btn = q('#pf-' + fn.id);
+      const box = q('[data-fn-check="' + fn.id + '"]');
+      if (btn) btn.disabled = true;
+      if (box) box.disabled = true;
+    }
+
+    // ── Изпълнение по чекбоксове ────────────────────────────────────────────
+    // Един обект, един бутон: отметнатите функции вървят една след друга в реда на екрана.
+    // Грешка в една НЕ спира останалите — иначе общото изпълнение става „всичко или нищо“ и
+    // човек не знае кое от останалите също е сгрешено.
+    const fnRun = q('#pf-fn-run');
+    const fnOut = q('#pf-fn-out');
+    const checkedFns = () =>
+      host
+        ? [...host.querySelectorAll('[data-fn-check]')].filter((box) => box.checked).map((box) => box.dataset.fnCheck)
+        : [];
+    const refreshRun = () => {
+      if (!host || !fnRun) return;
+      const count = checkedFns().length;
+      fnRun.disabled = count === 0;
+      const label = fnRun.querySelector('span');
+      if (label) label.textContent = T('pc.fn.run', { count });
+    };
+    if (fnRun) {
+      host.addEventListener('change', (e) => {
+        const box = e.target;
+        if (box && box.dataset && box.dataset.fnCheck) refreshRun();
+      });
+      fnRun.addEventListener('click', async () => {
+        const ids = checkedFns();
+        if (!ids.length) {
+          if (fnOut) fnOut.textContent = T('pc.fn.nothing');
+          return;
+        }
+        let done = 0;
+        for (const id of ids) if (await runFn(id)) done += 1;
+        if (fnOut) {
+          fnOut.textContent = T('pc.fn.summary', { ok: done, total: ids.length, failed: ids.length - done });
+          fnOut.className = 'pf-security-out ' + (done === ids.length ? 'ok' : 'err');
+        }
+        refreshRun();
+      });
+      refreshRun();
     }
 
     if (q('#fm-search')) {

@@ -13,7 +13,11 @@ const paths = require('../paths');
 // Договор като на останалите компоненти: `handle()` връща `true`, когато заявката е за
 // този компонент (и е приключена). `db()` връща ЖИВИТЕ метаданни, за да няма втора истина.
 function create(deps) {
-  const { json, fail, parse, audit, fsp, path, portalRoot, portalAbs, update, qr, integrity, archiveRoot, adminGate, db, sealFiles, worm } = deps;
+  const { json, fail, parse, audit, fsp, path, portalRoot, portalAbs, update, qr, integrity, archiveRoot, adminGate, db, sealFiles, worm, checks } = deps;
+  const QR = (checks && checks.names && checks.names.qr) || 'qr';
+  // Проверките на QR оставят следа с ЕДНО име за портала (`check.qr`), за да не се търсят
+  // пет различни източника при разследване; `op` казва коя операция е била.
+  const trace = (op, portal, extra) => ({ portalId: portal.id, op, ...(extra || {}) });
 
   const isQr = (parts) => parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'qr';
 
@@ -23,13 +27,23 @@ function create(deps) {
    */
   const verifyOne = async (portal) => {
     const reg = qr.registry(db(), portal.id);
-    const result = await integrity.verifyPortal({
-      portalId: portal.id,
-      dir: path.join(archiveRoot, portal.id),
-      archives: reg.archives,
-      revisions: reg.revisions,
-    });
+    let result;
+    try {
+      result = await integrity.verifyPortal({
+        portalId: portal.id,
+        dir: path.join(archiveRoot, portal.id),
+        archives: reg.archives,
+        revisions: reg.revisions,
+      });
+    } catch (error) {
+      if (checks) checks.crash(QR, error, trace('verify', portal));
+      throw error;
+    }
     await update(async () => integrity.record(db(), portal.id, result));
+    if (checks) {
+      if (result.ok) checks.ok(QR, trace('verify', portal, { archives: (reg.archives || []).length }));
+      else checks.fail(QR, 'ARCHIVE_INTEGRITY', trace('verify', portal, { failed: result.failed.length, reasons: result.failed.map((f) => f.reason) }));
+    }
     if (!result.ok) {
       void audit('integrity.failed', {
         portalId: portal.id, slug: portal.slug, failed: result.failed.length,
@@ -142,7 +156,15 @@ function create(deps) {
     // POST /qr/archive — РЕАЛЕН архивен файл + манифест + следващ QR (старият остава).
     if (parts[5] === 'archive' && parts.length === 6 && method === 'POST') {
       const body = await parse(req).catch(() => ({}));
-      const done = await makeArchive(p, String((body && body.note) || ''));
+      if (checks) checks.start(QR, trace('archive', p));
+      let done;
+      try {
+        done = await makeArchive(p, String((body && body.note) || ''));
+      } catch (error) {
+        if (checks) checks.crash(QR, error, trace('archive', p));
+        throw error;
+      }
+      if (checks) checks.ok(QR, trace('archive', p, { qrId: done && done.archive && done.archive.id, files: done && done.files }));
       return json(res, 201, done);
     }
 
@@ -159,6 +181,7 @@ function create(deps) {
       const revision = reg.revisions.find((r) => r.id === sourceQrId) || null;
       const check = await integrity.verifyArchive({ archive, dir, revision });
       if (!check.ok) {
+        if (checks) checks.fail(QR, 'ARCHIVE_INTEGRITY', trace('restore', p, { qrId: sourceQrId, archiveId: archive.id, reason: check.reason }));
         void audit('qr.restore.refused', { portalId: p.id, qrId: sourceQrId, archiveId: archive.id, reason: check.reason, detail: check.detail || null });
         return fail(res, 409, 'Архивът не мина проверка за цялост (' + check.reason + ') — нищо не е променено');
       }
@@ -204,6 +227,7 @@ function create(deps) {
           active: target ? target.id : null, state: view(live),
         };
       });
+      if (checks) checks.ok(QR, trace('restore', p, { qrId: sourceQrId, archiveId: archive.id, files: written.length, keptExtra: keptExtra.length }));
       return json(res, 200, done);
     }
 
@@ -222,6 +246,7 @@ function create(deps) {
         void audit('qr.blocked', { portalId: p.id, qrId: active.id, reason: active.blockReason });
         return { blocked: active.id, state: view(reg) };
       });
+      if (checks) checks.ok(QR, trace('block', p, { qrId: state.blocked }));
       return json(res, 200, state);
     }
 

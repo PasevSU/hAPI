@@ -2,12 +2,12 @@
 
 > **Клас:** нормативен · **Собственик на факта:** одитни събития
 
-> **Генериран документ.** Версия на кода: **0.69.236**. Пише се от
+> **Генериран документ.** Версия на кода: **0.69.237**. Пише се от
 > `node scripts/audit-events.cjs`, проверява се от `tests/audit-events.cjs`.
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **204** събития, излъчвани от **23** файла.
+Общо: **204** събития, излъчвани от **24** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -105,7 +105,7 @@
 | `idempotency.conflict` | `hapi_enterprise/idempotency.js` |
 | `idempotency.replay` | `hapi_enterprise/idempotency.js` |
 | `integrity.failed` | `hapi_enterprise/routes/portal-qr.js` |
-| `integrity.verify` | `hapi_enterprise/server.js` |
+| `integrity.verify` | `hapi_enterprise/routes/portal-integrity.js` · `hapi_enterprise/server.js` |
 | `link.check` | `hapi_enterprise/routes/link-check.js` |
 | `note.create` | `hapi_enterprise/server.js` |
 | `note.delete` | `hapi_enterprise/server.js` |

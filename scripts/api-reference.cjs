@@ -114,14 +114,27 @@ push('`server.js` има твърд таван от 2722 реда (`tests/server
 push('| Компонент | Отговаря за |', '| --- | --- |');
 const COMPONENT_OWNER = {
   'admin-docs.js': 'Административната документация и описанието на API-то',
+  'events.js': 'Живият поток: еднократен билет и `EventSource` без токен в адреса',
+  'evidence.js': 'Пакетът с доказателства (evidence bundle)',
+  'file-transfer.js': 'Трансфер на файлове: изтегляне, преместване, преименуване',
   'folders.js': 'Папки на портала: нова, флагове (видима/медийна/заключена + основание), изтриване',
+  'forensic.js': 'Криминалистичен преглед на одита',
   'generator.js': 'Генератор на документи',
   'link-check.js': 'Проверка на връзки',
+  'oidc.js': 'Вход през OIDC доставчик',
   'pgp-keyring.js': 'PGP ключове и миграции L1/L2',
+  'portal-archive.js': 'ZIP пакет на цял портал',
+  'portal-config.js': 'Опциите на портала: `configuration.yaml`, проверка, приемане, износ и внос',
+  'portal-integrity.js': 'Цялост на файловете на портала: синхронна проверка и фонова задача',
+  'portal-links.js': 'Договорът за адресите на портала (`page` · `api` · `manifest` · `qr` · `readOnly`)',
+  'portal-page.js': 'Публичната страница на портала',
   'portal-qr.js': 'QR ревизии: архив (физически ZIP), прекратяване, манифести',
   'portal-storage.js': 'Универсалният вход `?order=`, `blok`, изтегляне от папката, публичен QR договор',
   'portal-tokens.js': 'Токени за портал и ACL',
+  'portal-unlock.js': 'Отключване на заключен портал',
   'reports.js': 'Отчети (Report Studio)',
+  'upload-sessions.js': 'Качване на парчета със сверка по хеш и продължаване след прекъсване',
+  'webhooks.js': 'Изходящи webhook известия',
 };
 for (const name of components) push(`| \`routes/${name}\` | ${COMPONENT_OWNER[name] || '—'} |`);
 push('');

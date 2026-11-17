@@ -12,7 +12,10 @@
 // Договор като на останалите компоненти: `handle()` връща `true`, когато заявката е за
 // този компонент (и е приключена), и `false`, когато трябва да я поеме следващият.
 function create(deps) {
-  const { json, fail, parse, audit, adminGate, store, policy, resolvePortal, baseUrl, portalPath, randomToken, publish } = deps;
+  const { json, fail, parse, audit, adminGate, store, policy, resolvePortal, baseUrl, portalPath, randomToken, publish, checks } = deps;
+  // Името на проверката идва от договора в `check-log.js`, не от литерал: така търсенето по
+  // `source=check.token` в журнала не се разминава с кода.
+  const TOKEN = (checks && checks.names && checks.names.token) || 'token';
   // Глобалната функция за QR (`core.api.qr`) — подава я `server.js` като `qrRender`;
   // ЗАДЪЛЖИТЕЛНА е, за да не се рисува с втори построител. Името не е `qrSvg`, защото в
   // отговора на този маршрут има ПОЛЕ `qrSvg` (готовият код) — две значения в едно име се бъркат.
@@ -186,7 +189,9 @@ function create(deps) {
     if (!portal) return fail(res, 404, 'Portal not found'), true;
 
     if (tail.length === 1 && method === 'GET') {
-      return json(res, 200, { tokens: store.listPortalTokens(portal.id), cookie: policy.snapshot().cookie }), true;
+      const list = store.listPortalTokens(portal.id);
+      if (checks) checks.ok(TOKEN, { portalId: portal.id, op: 'list', tokens: (list || []).length });
+      return json(res, 200, { tokens: list, cookie: policy.snapshot().cookie }), true;
     }
     if (tail.length === 1 && method === 'POST') {
       let payload;
@@ -216,12 +221,14 @@ function create(deps) {
       // `qrSvg` кодира СЪЩИЯ адрес, който връщаме в `url`: сканираният код води до него,
       // а не към общия адрес на портала (който за частен портал иска подписан достъп).
       const url = tokenUrl(req, token);
+      if (checks) checks.ok(TOKEN, { portalId: portal.id, op: 'issue', tokenId: id, scopes: scopes.length, expiresAt });
       return json(res, 201, { id, portalId: portal.id, scopes, label, expiresAt, maxUses, token, url, qrSvg: qrFor(url), sessionTtlSeconds: policy.sessionTtlSeconds, cookie: policy.snapshot().cookie }), true;
     }
     if (tail.length === 2 && method === 'DELETE') {
       const revoked = store.revokePortalToken(tail[1]);
       if (!revoked) return fail(res, 404, 'Token not found'), true;
       void audit('portal.token.revoke', { portalId: portal.id, tokenId: tail[1] });
+      if (checks) checks.ok(TOKEN, { portalId: portal.id, op: 'revoke', tokenId: tail[1] });
       return json(res, 200, { revoked: tail[1] }), true;
     }
     return fail(res, 404, 'Not found'), true;

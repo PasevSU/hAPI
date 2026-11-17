@@ -109,6 +109,8 @@ const GUARDS = {
   'DEF-90': ['option-effects.cjs'], // опция „само при първи старт“ не се описва като мъртва
   'DEF-91': ['folder-delete.cjs', 'portal-card-link.cjs'], // кодът на ниво носи подписа, иначе е счупена картинка
   'DEF-92': ['dom-harness.cjs', 'gui-journeys.cjs'], // тестовият DOM: isConnected и твърдения без възли
+  'DEF-93': ['ui-portal-functions.cjs'], // панелът показва броя от присъдата, не от lowercase ключове
+  'DEF-94': ['check-log-integration.cjs', 'verify-verdict.cjs'], // провал на проверка не изчезва от журнала
 };
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
 // Без тях „има тест“ може да значи „има файл с име, което звучи правилно“.
@@ -196,6 +198,8 @@ const ANCHORS = {
   'DEF-90': { file: 'option-effects.cjs', contains: 'не твърди, че кодът не го чете' },
   'DEF-91': { file: 'folder-delete.cjs', contains: 'подписът влиза и в адреса на кода' },
   'DEF-92': { file: 'dom-harness.cjs', contains: 'твърденията не получават възел' },
+  'DEF-93': { file: 'ui-portal-functions.cjs', contains: 'проблемни 1' },
+  'DEF-94': { file: 'check-log-integration.cjs', contains: 'verdict.failed' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

@@ -154,8 +154,12 @@ assert.match(src, /function wireExtras/);
 assert.match(src, /\/admin\/api\/cases/);
 // 7ж. Публичен токен за портал (Stage D) — от панела, не само през API-то.
 // Без него при `require_portal_token` панелът показва адреси, които никой отвън не отваря.
-assert.match(src, /id="pf-token-new"/, 'панелът има бутон за издаване на токен');
-assert.match(src, /id="pf-token-list"/, 'панелът има списък с издадените токени');
+// Бутонът вече се строи от обекта с функции (`portal-control.js`), а не се пише буквално в
+// `files-manager.js`: проверява се ЦЕЛИЯТ договор — ред в обекта, генериран `id` и връзка в панела.
+assert.match(src, /id="pf-\$\{esc\(fn\.id\)\}"/, 'панелът строи по един бутон `pf-<функция>` за всяка функция');
+assert.match(src, /\{ id: 'token-new', area: 'access'/, 'издаването на токен е ред в обекта с функции');
+assert.match(src, /q\('#pf-token-new'\)/, 'панелът има бутон за издаване на токен');
+assert.match(src, /bindFn\('token-list'/, 'панелът има списък с издадените токени');
 assert.match(src, /id="pf-token-ttl"/, 'срокът се избира от панела');  // QR към адреса с токена: показва се СЪЩИЯТ код, който сървърът е построил за този адрес.
   assert.match(src, /r\.data\.qrSvg/, 'панелът взема QR от отговора за токена, не строи свой адрес');
   assert.match(src, /class="pf-token-qr"/, 'QR-ът се показва до адреса с токена');
@@ -171,15 +175,15 @@ assert.match(src, /data-token-revoke/, 'всеки токен може да се
 assert.match(src, /показва само сега|само сега/, 'казва, че токенът не се показва повторно');
 assert.equal(m.normalizeCase({ id: 'k', number: '1', title: 'T', extras: [{ key: 'a', value: 'b' }, { value: 'x' }] }).extras.length, 1);
 // 7з. QR ревизии и физически архиви — компактна секция до токена (плани, §6.4 и §10.2).
-assert.match(src, /id="pf-qr-show"/, 'панелът показва QR историята');
-assert.match(src, /id="pf-qr-archive"/, 'архивирането се стартира от панела');
+assert.match(src, /bindFn\('qr-show'/, 'панелът показва QR историята');
+assert.match(src, /bindFn\('qr-archive'/, 'архивирането се стартира от панела');
 assert.match(src, /id="pf-qr-reason"/, 'прекратяването иска основание в панела');
-assert.match(src, /id="pf-qr-block"/, 'прекратяването е отделно действие');
+assert.match(src, /bindFn\('qr-block'/, 'прекратяването е отделно действие');
 assert.match(src, /\/qr\/archive`/, 'архивът минава през /qr/archive');
 assert.match(src, /\/qr\/block`/, 'прекратяването минава през /qr/block');
-assert.match(src, /id="pf-qr-verify"/, 'целостта на архивите се проверява от панела');
+assert.match(src, /bindFn\('qr-verify'/, 'целостта на архивите се проверява от панела');
 assert.match(src, /\/qr\/verify`/, 'проверката минава през /qr/verify');
-assert.match(src, /id="pf-qr-restore"/, 'възстановяването от архив е отделно действие');
+assert.match(src, /bindFn\('qr-restore'/, 'възстановяването от архив е отделно действие');
 assert.match(src, /\/restore`/, 'възстановяването минава през /qr/<id>/restore');
 assert.match(src, /Проверката се провали/, 'провалът е изписан с причина, не само „грешка“');
 assert.match(src, /QR ревизии и архиви/, 'секцията е названа');
@@ -295,7 +299,11 @@ assert.match(src, /data-pkg-portal/);
 assert.match(src, /includeStorage: true/);
 assert.equal(/class="export-row"[\s\S]{0,80}<button type="button" class="btn/.test(src), false, 'редовете с бутони са u-row, не export-row');
 assert.match(src, /class="u-row u-row-2"/);
-assert.match(src, /class="u-row u-row-3"/);
+// 0.69.237: три-колонният ръчен ред с бутони изчезна, защото бутоните на портала вече се строят
+// от обекта с функции (`FUNCTIONS`). Проверява се общият им контейнер, а `u-row-2`/`u-row-1`
+// остават за двойките и единичните контроли — пак общите редове, не `export-row`.
+assert.match(src, /class="pf-fn-list"/, 'функциите на портала са в общ списък');
+assert.match(src, /class="u-row u-row-1"/, 'единичната контрола е в едноколонен общ ред');
 assert.match(src, /class="fm-ico-row u-grid u-grid-chips"/);
 assert.match(src, /class="u-grid u-grid-fields"/);
 // 7и. Шрифтовете също са в проценти: няма нито един font-size в px, има обща скала.assert.equal(/font-size:\s*[\d.]+px/.test(css), false, 'няма font-size в px');
@@ -659,7 +667,9 @@ assert.match(src, /class="pf-panels"/);
 assert.match(src, /data-block="control"/);
 assert.match(src, /data-block="folders"/);
 assert.match(src, /data-block="files"/);
-assert.match(src, /window\.HapiPortalControl = \{ render \};/);
+// 0.69.237: панелът дава и обекта с функции — от него `files-manager.js` строи редовете и
+// batch изпълнението, вместо да пише бутоните на ръка.
+assert.match(src, /window\.HapiPortalControl = \{ render, FUNCTIONS \};/);
 assert.match(src, /window\.HapiPortalFolders = \{ render, folderMenus, folderMenu \};/);
 assert.match(src, /window\.HapiPortalFiles = \{ render, card, storageCard \};/);
 assert.match(src, /function panelCtx\(p\)/);

@@ -19,7 +19,9 @@ const portalConfig = require('../portal-config');
 const paths = require('../paths');
 
 function create(deps) {
-  const { json, fail, parse, body, audit, fsp, path, portalAbs, portalFolder, update, hash } = deps;
+  const { json, fail, parse, body, audit, fsp, path, portalAbs, portalFolder, update, hash, checks } = deps;
+  // Името на проверката идва от договора в `check-log.js` (търси се с `source=check.config`).
+  const CONFIG = (checks && checks.names && checks.names.config) || 'config';
   const DESCRIPTION = portalFolder.DESCRIPTION;
   const RESERVED = portalConfig.RESERVED;
 
@@ -201,6 +203,11 @@ function create(deps) {
       await walk(where.dir, '');
       const report = portalConfig.verify(read.data, entries);
       void audit('portal.config.verify', { portalId: portal.id, ok: report.ok, missing: report.missing.length, extra: report.extra.length, changed: report.changed.length, unreadable: report.unreadable.length });
+      // „Сверка“ в панела е проверка като всяка друга: успехът отива в дневника, а проблемът — и в
+      // журнала с причина, за да се засича, вместо да остане само в одита.
+      const context = { portalId: portal.id, checked: entries.length, missing: report.missing.length, extra: report.extra.length, changed: report.changed.length, unreadable: report.unreadable.length };
+      if (report.ok) checks.ok(CONFIG, context);
+      else checks.fail(CONFIG, report.missing.length ? 'CONFIG_FILES_MISSING' : report.changed.length ? 'CONFIG_FILES_CHANGED' : report.unreadable.length ? 'CONFIG_FILES_UNREADABLE' : 'CONFIG_FILES_EXTRA', context);
       return json(res, 200, { ...report, hash: read.hash, revision: read.revision, checked: entries.length });
     }
 

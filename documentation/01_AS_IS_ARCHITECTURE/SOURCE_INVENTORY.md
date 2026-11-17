@@ -1,12 +1,12 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.236
+> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.237
 
-> **Генериран документ.** Версия на кода: **0.69.236**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
+> **Генериран документ.** Версия на кода: **0.69.237**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **133** backend модула · **21** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **461** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
+Общо: **135** backend модула · **22** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **465** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Файлове (242)
+### Файлове (245)
 
 | Файл | Вид | Предназначение (първи ред от самия файл) |
 | ---- | --- | ----------------------------------------- |
@@ -27,6 +27,7 @@
 | `hapi_enterprise/cabinet.js` | backend | Filing cabinet: an admin-only document store (folders, subfolders, files) separate from portals. |
 | `hapi_enterprise/case-access.js` | backend | ОГРАНИЧАВАНЕ ПО ДЕЛО (план 17, F7-1, DoD „достъп по дело“). |
 | `hapi_enterprise/cases.js` | backend | Дела (cases): номер, заглавие, категория, „относно“, контакт и полета по желание. |
+| `hapi_enterprise/check-log.js` | backend | ДНЕВНИК НА ПРОВЕРКИТЕ — един вход за „проверих и ето какво излезе“. |
 | `hapi_enterprise/cms-sign.js` | backend | Detached CMS/PKCS#7 подпис (RS-06) — това, което PDF четецът проверява. |
 | `hapi_enterprise/config-profiles.js` | backend | Named configuration profiles. Each profile is a validated, atomically persisted |
 | `hapi_enterprise/container.js` | backend | DI контейнер (Фаза 2.1, P1/P2). Лениво инстанцира сингълтони; поддържа |
@@ -130,6 +131,7 @@
 | `hapi_enterprise/routes/pgp-keyring.js` | routes | PGP ключохранилище — компонент на HTTP слоя. |
 | `hapi_enterprise/routes/portal-archive.js` | routes | ЗАКРИВАНЕ НА ПОРТАЛ (архив за съхранение, 6 месеца преди окончателно изтриване). |
 | `hapi_enterprise/routes/portal-config.js` | routes | ОПЦИИ НА ПОРТАЛА ПРЕЗ HTTP — един вход към `configuration.yaml`. |
+| `hapi_enterprise/routes/portal-integrity.js` | routes | ПРОВЕРКИ НА ЦЯЛОСТТА НА ПОРТАЛА — HTTP договорът, изнесен от `server.js`. |
 | `hapi_enterprise/routes/portal-links.js` | routes | ВРЪЗКИ ЗА QR СТУДИОТО — временна, само за четене и с парола (0.69.229). |
 | `hapi_enterprise/routes/portal-page.js` | routes | Публичната страница на портала — ЕДИН адрес, на адреса на add-on-а (и през Home Assistant). |
 | `hapi_enterprise/routes/portal-qr.js` | routes | Логическите корени (`/share`, `/media`) се разпознават през ЕДИН модул — `paths.js`. |
@@ -194,6 +196,7 @@
 | `hapi_enterprise/ui/settings-panel.js` | ui | Настройки на връзката: админ токен, API адрес и публичен адрес за API/QR. |
 | `hapi_enterprise/ui/upload-progress.js` | ui | Прозорец за качване с РЕАЛЕН напредък, сверка по хеш и възстановяване (0.69.214). |
 | `hapi_enterprise/ui/visitors-panel.js` | ui | Панел „Кой влиза“ — чете сензорите за комуникацията (visitor-intel.js) през |
+| `hapi_enterprise/verify-verdict.js` | backend | ПРИСЪДАТА НА ЕДНА СВЕРКА НА ЦЯЛОСТТА — едно място, защото ключовете на обобщението се знаят |
 | `hapi_enterprise/versioning.js` | backend | Document versioning (Phase 4.3). Dependency-free helpers; physical I/O and |
 | `hapi_enterprise/virtual-storage.js` | backend | Виртуално хранилище на портал (Фаза 8): йерархия topic → category → group → файл. |
 | `hapi_enterprise/visitor-intel.js` | backend | Сензори за комуникацията на портала: кой влиза, какво тегли, колко пъти, от кое IP и — |

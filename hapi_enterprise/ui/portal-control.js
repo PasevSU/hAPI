@@ -4,6 +4,85 @@
 // Отделен модул: рисува САМО този блок. Всичко, което му трябва, идва в `ctx`
 // (състояние и помощни функции), за да не зависи от вътрешностите на files-manager.js.
 (function () {
+  /**
+   * ФУНКЦИИТЕ НА ПОРТАЛА — един обект, а не шест бутона по блокове.
+   *
+   * Всяка функция носи `id` (същият, който беше на бутона без `pf-`), икона от йерархията
+   * (`ui/icons-v4-map.json`, спрайт v4), резервна икона от вградения набор (ако спрайтът не се
+   * зареди) и област. Панелът рисува от ТОЗИ списък, а `files-manager.js` вързва обработчик по
+   * същия `id` — така списък и изпълнение не се разминават.
+   *
+   * Всеки ред е избираем за общото изпълнение по чекбоксове. Ред, за който `files-manager.js`
+   * не е вързал обработчик (`bindFn`), се показва ЗАБРАНЕН, а не мъртъв.
+   */
+  const FUNCTIONS = [
+    // Сигурност: ключ за подпис, проверка на цялостта (синхронна и фонова).
+    { id: 'rotate-key', area: 'security', label: 'pc.rotate', title: 'pc.rotate.title', icon: 'key', fallback: 'lock' },
+    { id: 'integrity', area: 'security', label: 'pc.integrity', title: 'pc.integrity.title', icon: 'hash-verify', fallback: 'hash' },
+    { id: 'integrity-job', area: 'security', label: 'pc.integrityJob', title: 'pc.integrityJob.title', icon: 'audit', fallback: 'shield' },
+    // Достъп: издаване на връзка с токен и списък на издадените.
+    { id: 'token-new', area: 'access', label: 'pc.token.new', icon: 'public', fallback: 'eye' },
+    { id: 'token-list', area: 'access', label: 'pc.token.list', icon: 'history', fallback: 'clock' },
+    // QR: показване, архив, сверка на архивите, прекратяване и връщане на състояние.
+    { id: 'qr-show', area: 'qr', label: 'pc.qr.show', icon: 'qr', fallback: 'qr' },
+    { id: 'qr-archive', area: 'qr', label: 'pc.qr.archive', icon: 'archive', fallback: 'archive' },
+    { id: 'qr-verify', area: 'qr', label: 'pc.qr.verify', icon: 'archive-verify', fallback: 'hash' },
+    { id: 'qr-block', area: 'qr', label: 'pc.qr.block', icon: 'qr-revoke', fallback: 'lock' },
+    { id: 'qr-restore', area: 'qr', label: 'pc.qr.restore', icon: 'restore', fallback: 'refresh' },
+    // Настройки: сверка на `files[]` с диска.
+    { id: 'config-verify', area: 'config', label: 'pc.options.verify', icon: 'manifest', fallback: 'id' },
+  ];
+
+  /**
+   * Един ред от обекта: чекбокс за общо изпълнение · място за състоянието · бутонът на самата
+   * функция (икона + име) · параметър, ако функцията иска такъв.
+   *
+   * Защо и чекбокс, и бутон: бутонът изпълнява точно тази функция (както досега, с клавиатура и
+   * Enter), а чекбоксът я включва в „Изпълни избраните“. Двете не си пречат, защото бутонът НЕ е
+   * вътре в `<label>` — иначе щракването върху него би отметнало чекбокса.
+   */
+  function fnRow(ctx, fn, params) {
+    const { esc, T, ico, ico4 } = ctx;
+    const name = T(fn.label);
+    const title = fn.title ? T(fn.title) : name;
+    // Спрайтът v4 е първият избор (йерархията), вграденият набор е резерва: празно място не се
+    // оставя, ако `/ui/icons-v4.svg` не се е заредил.
+    const glyph = (typeof ico4 === 'function' && ico4(fn.icon, 'standard')) || ico(fn.fallback || 'dot');
+    return `
+      <div class="pf-fn" data-fn-row="${esc(fn.id)}">
+        <input type="checkbox" class="pf-fn-check" data-fn-check="${esc(fn.id)}" aria-label="${esc(
+      T('pc.fn.select', { name }),
+    )}" />
+        <span class="pf-fn-state" data-fn-state="${esc(fn.id)}" role="status" aria-live="polite"></span>
+        <button type="button" class="btn btn-sm pf-fn-btn" id="pf-${esc(fn.id)}" title="${esc(title)}">${glyph}<span>${esc(name)}</span></button>
+        ${params || ''}
+      </div>`;
+  }
+
+  /** Редовете на една област — рисуват се от `FUNCTIONS`, не се пишат на ръка. */
+  function fnRows(ctx, area, params) {
+    return FUNCTIONS.filter((fn) => fn.area === area)
+      .map((fn) => fnRow(ctx, fn, params && params[fn.id]))
+      .join('');
+  }
+
+  /**
+   * Краят на обекта: едно изпълнение за всички отметнати функции и място за обобщението.
+   * Броят в етикета се обновява от `files-manager.js` при отметка.
+   */
+  function fnFooter(ctx) {
+    const { esc, T, ico4, ico } = ctx;
+    const glyph = (typeof ico4 === 'function' && ico4('check-square', 'standard')) || ico('plus');
+    return `
+      <div class="u-row u-row-2 u-mt">
+        <button type="button" class="btn btn-sm" id="pf-fn-run" data-fn-run disabled title="${esc(T('pc.fn.run.title'))}">${glyph}<span>${esc(
+      T('pc.fn.run', { count: 0 }),
+    )}</span></button>
+        <span class="hint">${esc(T('pc.fn.hint'))}</span>
+      </div>
+      <output class="pf-security-out" id="pf-fn-out" aria-live="polite"></output>`;
+  }
+
   /** HTML на блока „Контролен панел на портала: <заглавие>“ + API/QR. */
   function render(ctx) {
     const { esc, state, p, FLAGS, ICON, ico, fmtDate, contactSelect, caseSelect, newContactFields, newCaseFields, T } = ctx;
@@ -68,19 +147,13 @@
               <div class="pf-security">
                 <h6>${ico('lock')} ${esc(T('pc.security.title'))}</h6>
                 <p class="hint">${T('pc.security.hint')}</p>
-                <div class="u-row u-row-2">
-                  <button type="button" class="btn btn-sm" id="pf-rotate-key" title="${esc(T('pc.rotate.title'))}">${esc(T('pc.rotate'))}</button>
-                  <button type="button" class="btn btn-sm" id="pf-integrity" title="${esc(T('pc.integrity.title'))}">${esc(T('pc.integrity'))}</button>
-                </div>
-                <div class="u-row u-row-2 u-mt">
-                  <button type="button" class="btn btn-sm" id="pf-integrity-job" title="${esc(T('pc.integrityJob.title'))}">${esc(T('pc.integrityJob'))}</button>
-                </div>
+                <div class="pf-fn-list">${fnRows(ctx, 'security')}</div>
                 <output class="pf-security-out" id="pf-security-out" aria-live="polite"></output>
               </div>
               <div class="pf-security">
                 <h6>${ico('lock')} ${esc(T('pc.token.title'))}</h6>
                 <p class="hint">${T('pc.token.hint')}</p>
-                <div class="u-row u-row-3">
+                <div class="u-row u-row-2">
                   <select id="pf-token-ttl" title="${esc(T('pc.token.ttl.title'))}">
                     <option value="24">${esc(T('pc.token.ttl.24'))}</option>
                     <option value="168">${esc(T('pc.token.ttl.7d'))}</option>
@@ -92,33 +165,25 @@
                     <option value="3">${esc(T('pc.token.max.3'))}</option>
                     <option value="10">${esc(T('pc.token.max.10'))}</option>
                   </select>
-                  <button type="button" class="btn btn-sm" id="pf-token-new">${esc(T('pc.token.new'))}</button>
                 </div>
-                <div class="u-row u-row-2 u-mt">
-                  <button type="button" class="btn btn-sm" id="pf-token-list">${esc(T('pc.token.list'))}</button>
-                </div>
+                <div class="pf-fn-list">${fnRows(ctx, 'access')}</div>
                 <output class="pf-security-out" id="pf-token-out" aria-live="polite"></output>
               </div>
               <div class="pf-security">
                 <h6>${ico('qr')} ${esc(T('pc.qr.title'))}</h6>
                 <p class="hint">${T('pc.qr.hint')}</p>
-                <div class="u-row u-row-2">
-                  <button type="button" class="btn btn-sm" id="pf-qr-show">${esc(T('pc.qr.show'))}</button>
-                  <button type="button" class="btn btn-sm" id="pf-qr-archive">${esc(T('pc.qr.archive'))}</button>
-                </div>
-                <div class="u-row u-row-2 u-mt">
-                  <input id="pf-qr-reason" type="text" maxlength="500" placeholder="${esc(T('pc.qr.reason'))}">
-                  <button type="button" class="btn btn-sm" id="pf-qr-block">${esc(T('pc.qr.block'))}</button>
-                </div>
-                <div class="u-row u-row-2 u-mt">
-                  <button type="button" class="btn btn-sm" id="pf-qr-verify">${esc(T('pc.qr.verify'))}</button>
-                  <span class="hint">${esc(T('pc.qr.verify.hint'))}</span>
-                </div>
-                <div class="u-row u-row-2 u-mt">
-                  <input id="pf-qr-restore-id" type="text" maxlength="16" placeholder="QR-001">
-                  <button type="button" class="btn btn-sm" id="pf-qr-restore">${esc(T('pc.qr.restore'))}</button>
-                </div>
+                <div class="pf-fn-list">${fnRows(ctx, 'qr', {
+        'qr-block': `<input id="pf-qr-reason" class="pf-fn-param" type="text" maxlength="500" placeholder="${esc(T('pc.qr.reason'))}" aria-label="${esc
+          (T('pc.qr.reason'))}">`,
+        'qr-restore': `<input id="pf-qr-restore-id" class="pf-fn-param" type="text" maxlength="16" placeholder="QR-001" aria-label="${esc(T('pc.qr.restore'))}">`,
+      })}</div>
+                <p class="hint">${esc(T('pc.qr.verify.hint'))}</p>
                 <output class="pf-security-out" id="pf-qr-out" aria-live="polite"></output>
+              </div>
+              <div class="pf-security">
+                <h6>${ico('plus')} ${esc(T('pc.fn.title'))}</h6>
+                <p class="hint">${esc(T('pc.fn.blockHint'))}</p>
+                ${fnFooter(ctx)}
               </div>
               <div class="pf-security">
                 <h6>${ico('lock')} ${esc(T('pc.close.title'))}</h6>
@@ -194,8 +259,8 @@
           </fieldset>
           <div class="u-row u-row-2">
             <button type="submit" class="btn">${esc(T('pc.options.save'))}</button>
-            <button type="button" class="btn btn-sm" id="pf-config-verify">${esc(T('pc.options.verify'))}</button>
           </div>
+          <div class="pf-fn-list">${fnRows(ctx, 'config')}</div>
         </form>
         <div class="u-row u-row-2 u-mt">
           <button type="button" class="btn btn-sm" id="pf-config-show">${esc(T('pc.options.show'))}</button>
@@ -206,5 +271,5 @@
       </div>`;
   }
 
-  window.HapiPortalControl = { render };
+  window.HapiPortalControl = { render, FUNCTIONS };
 })();

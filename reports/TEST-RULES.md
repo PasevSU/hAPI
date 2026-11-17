@@ -3,13 +3,13 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 461 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 465 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 206 |
+| общо | 209 |
 | портал | 57 |
-| GUI | 40 |
+| GUI | 41 |
 | Home Assistant | 18 |
 | отчети | 16 |
 | ядро | 15 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (206)
+## общо (209)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -69,6 +69,8 @@
 | `case-access` | Case access | `tests/case-access.cjs` |
 | `cases` | Cases | `tests/cases.cjs` |
 | `chaos-resilience` | Chaos resilience | `tests/chaos-resilience.cjs` |
+| `check-log` | Check log | `tests/check-log.cjs` |
+| `check-log-integration` | Check log integration | `tests/check-log-integration.cjs` |
 | `cms-panel` | Cms panel | `tests/cms-panel.cjs` |
 | `concurrent-links` | Concurrent links | `tests/concurrent-links.cjs` |
 | `config-profiles` | Config profiles | `tests/config-profiles.cjs` |
@@ -245,6 +247,7 @@
 | `upload-rollback-guard` | Upload rollback guard | `tests/upload-rollback-guard.cjs` |
 | `upload-sessions` | Upload sessions | `tests/upload-sessions.cjs` |
 | `verify-runner` | Verify runner | `tests/verify-runner.cjs` |
+| `verify-verdict` | Verify verdict | `tests/verify-verdict.cjs` |
 | `versioning` | Versioning | `tests/versioning.cjs` |
 | `virtual-storage` | Virtual storage | `tests/virtual-storage.cjs` |
 | `visitors-panel` | Visitors panel | `tests/visitors-panel.cjs` |
@@ -314,7 +317,7 @@
 | `portal-upload-409` | Portal upload 409 | `tests/portal-upload-409.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (40)
+## GUI (41)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -352,6 +355,7 @@
 | `ui-nav-outside-click` | Ui nav outside click | `tests/ui-nav-outside-click.cjs` |
 | `ui-nav-symmetry` | Ui nav symmetry | `tests/ui-nav-symmetry.cjs` |
 | `ui-navigation` | Ui navigation | `tests/ui-navigation.cjs` |
+| `ui-portal-functions` | Ui portal functions | `tests/ui-portal-functions.cjs` |
 | `ui-progress` | Ui progress | `tests/ui-progress.cjs` |
 | `ui-settings-sections` | Ui settings sections | `tests/ui-settings-sections.cjs` |
 | `ui-shell-nav` | Ui shell nav | `tests/ui-shell-nav.cjs` |

@@ -1195,6 +1195,67 @@ input[type="radio"] {
   color: var(--red);
 }
 
+/* Функциите на портала: един обект с редове. Всеки ред = чекбокс за общо изпълнение,
+   място за състоянието, бутонът на функцията (икона + име) и параметър, ако има такъв.
+   Състоянието НЕ е само цвят: иконата се сменя (чака · изпълнява се · успех · грешка),
+   затова редът се чете и без цвят (R9). */
+.pf-fn-list {
+  display: grid;
+  gap: calc(var(--grid-gap) / 2);
+  align-content: start;
+}
+
+.pf-fn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.pf-fn-check {
+  flex: none;
+  width: var(--sp-5);
+  height: var(--sp-5);
+  accent-color: var(--accent);
+}
+
+/* Състоянието заема постоянно място, за да не подскача редът при смяна на иконата. */
+.pf-fn-state {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sp-5);
+  height: var(--sp-5);
+  color: var(--muted);
+}
+
+.pf-fn-state[data-state='ok'] {
+  color: var(--green);
+}
+
+.pf-fn-state[data-state='fail'] {
+  color: var(--red);
+}
+
+.pf-fn-state[data-state='busy'] {
+  color: var(--accent);
+}
+
+.pf-fn-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  text-align: left;
+}
+
+.pf-fn-param {
+  flex: 1 1 10ch;
+  min-width: 0;
+}
+
 /* Издаденият адрес е ИНФОРМАЦИЯ, не връзка: не се подчертава и не прилича на линк —
    вижда се веднъж, избира се и се копира с бутона до него. */
 .pf-security-out code,

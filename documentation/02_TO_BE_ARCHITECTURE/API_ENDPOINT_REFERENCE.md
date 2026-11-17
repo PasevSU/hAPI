@@ -2,9 +2,9 @@
 
 > **Клас:** нормативен · **Собственик на факта:** HTTP договор
 
-**Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 · **генериран от кода на hAPI Enterprise 0.69.236.** Не се редактира на ръка.
+**Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 · **генериран от кода на hAPI Enterprise 0.69.237.** Не се редактира на ръка.
 
-Източници (живи, не копия): `admin-api-spec.js` — 228 административни операции (същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой); `public-route-allowlist.js` — 33 правила за това какво Public Gateway пропуска; `routes/` — 21 компонента на HTTP слоя.
+Източници (живи, не копия): `admin-api-spec.js` — 228 административни операции (същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой); `public-route-allowlist.js` — 33 правила за това какво Public Gateway пропуска; `routes/` — 22 компонента на HTTP слоя.
 
 Записва: `node scripts/api-reference.cjs`; проверява: `--check` (в матрицата). Промяна в маршрут без повторно генериране чупи `tests/api-reference.cjs`.
 
@@ -403,26 +403,27 @@
 | Компонент | Отговаря за |
 | --- | --- |
 | `routes/admin-docs.js` | Административната документация и описанието на API-то |
-| `routes/events.js` | — |
-| `routes/evidence.js` | — |
-| `routes/file-transfer.js` | — |
+| `routes/events.js` | Живият поток: еднократен билет и `EventSource` без токен в адреса |
+| `routes/evidence.js` | Пакетът с доказателства (evidence bundle) |
+| `routes/file-transfer.js` | Трансфер на файлове: изтегляне, преместване, преименуване |
 | `routes/folders.js` | Папки на портала: нова, флагове (видима/медийна/заключена + основание), изтриване |
-| `routes/forensic.js` | — |
+| `routes/forensic.js` | Криминалистичен преглед на одита |
 | `routes/generator.js` | Генератор на документи |
 | `routes/link-check.js` | Проверка на връзки |
-| `routes/oidc.js` | — |
+| `routes/oidc.js` | Вход през OIDC доставчик |
 | `routes/pgp-keyring.js` | PGP ключове и миграции L1/L2 |
-| `routes/portal-archive.js` | — |
-| `routes/portal-config.js` | — |
-| `routes/portal-links.js` | — |
-| `routes/portal-page.js` | — |
+| `routes/portal-archive.js` | ZIP пакет на цял портал |
+| `routes/portal-config.js` | Опциите на портала: `configuration.yaml`, проверка, приемане, износ и внос |
+| `routes/portal-integrity.js` | Цялост на файловете на портала: синхронна проверка и фонова задача |
+| `routes/portal-links.js` | Договорът за адресите на портала (`page` · `api` · `manifest` · `qr` · `readOnly`) |
+| `routes/portal-page.js` | Публичната страница на портала |
 | `routes/portal-qr.js` | QR ревизии: архив (физически ZIP), прекратяване, манифести |
 | `routes/portal-storage.js` | Универсалният вход `?order=`, `blok`, изтегляне от папката, публичен QR договор |
 | `routes/portal-tokens.js` | Токени за портал и ACL |
-| `routes/portal-unlock.js` | — |
+| `routes/portal-unlock.js` | Отключване на заключен портал |
 | `routes/reports.js` | Отчети (Report Studio) |
-| `routes/upload-sessions.js` | — |
-| `routes/webhooks.js` | — |
+| `routes/upload-sessions.js` | Качване на парчета със сверка по хеш и продължаване след прекъсване |
+| `routes/webhooks.js` | Изходящи webhook известия |
 
 ## 4. Кодове за грешка
 

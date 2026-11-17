@@ -1,10 +1,10 @@
 {
   "generatedFor": "hapi_enterprise",
-  "total": 446,
-  "tested": 418,
-  "untested": 28,
-  "fnTotal": 387,
-  "fnTested": 387,
+  "total": 452,
+  "tested": 423,
+  "untested": 29,
+  "fnTotal": 390,
+  "fnTested": 390,
   "modules": [
     {
       "module": "hapi_enterprise/api-registry.js",
@@ -28,6 +28,21 @@
           "name": "remove",
           "kind": "функция",
           "tested": true
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/check-log.js",
+      "functions": [
+        {
+          "name": "create",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "NAMES",
+          "kind": "константа",
+          "tested": false
         }
       ]
     },
@@ -2353,6 +2368,31 @@
           "name": "STATUS_TEXT",
           "kind": "константа",
           "tested": false
+        }
+      ]
+    },
+    {
+      "module": "hapi_enterprise/verify-verdict.js",
+      "functions": [
+        {
+          "name": "describe",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "PROBLEM_KEYS",
+          "kind": "константа",
+          "tested": true
+        },
+        {
+          "name": "verdict",
+          "kind": "функция",
+          "tested": true
+        },
+        {
+          "name": "WARNING_KEYS",
+          "kind": "константа",
+          "tested": true
         }
       ]
     },
