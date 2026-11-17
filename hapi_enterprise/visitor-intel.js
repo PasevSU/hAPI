@@ -16,6 +16,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { parseJson } = require('./parse-json'); // един четец на JSON — без хвърляне (DEF-67)
 
 const FILE = 'visitor-intel.json';
 const MAX_VISITORS = 5000, MAX_IPS = 5000, MAX_FILES = 200, MAX_LIST = 50;
@@ -141,8 +142,9 @@ function createGeo({ file } = {}) {
     if (!file) return;
     let raw;
     try { raw = fs.readFileSync(file, 'utf8') } catch (e) { error = e.code === 'ENOENT' ? 'not found' : e.code || 'unreadable'; return }
-    let data;
-    try { data = JSON.parse(raw) } catch { error = 'invalid json'; return }
+    const geoRaw = parseJson(raw);
+    if (!geoRaw.ok) { error = 'invalid json'; return }
+    const data = geoRaw.value;
     const list = Array.isArray(data && data.ranges) ? data.ranges : [];
     for (const item of list) {
       if (!item || typeof item.cidr !== 'string') continue;
@@ -216,7 +218,11 @@ function create({ dir, salt = '', ipMode = 'hashed', retentionDays = 90, geoFile
   let state = emptyState();
   if (file) {
     try {
-      const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const savedRaw = parseJson(fs.readFileSync(file, 'utf8'));
+      // Повреденият файл се подменя с празно състояние, но се казва В ИЗХОДА — иначе
+      // статистиката „изчезва“ без следа и никой не разбира защо.
+      if (!savedRaw.ok) console.error('VISITOR INTEL LOAD FAILED', 'invalid json');
+      const saved = savedRaw.ok ? savedRaw.value : null;
       if (saved && typeof saved === 'object' && saved.totals && saved.visitors) {
         state = { ...emptyState(), ...saved };
         for (const key of Object.keys(emptyState())) if (state[key] === undefined || state[key] === null) state[key] = emptyState()[key];

@@ -2,7 +2,7 @@
 const http = require('node:http'), fs = require('node:fs'), fsp = require('node:fs/promises'), path = require('node:path'), crypto = require('node:crypto');
 const paths = require('./paths'); // логически корени и имена на променливи — ЕДИН източник
 const pageVersion = require('./page-version'); // версия в адреса на статичните ресурси (DEF-87)
-const staticEtag = require('./static-etag'); // тяло в паметта + ETag/304 за статиката (DEF-88)
+const staticEtag = require('./static-etag'); const { parseJson, parseJsonOr } = require('./parse-json'); // статика в паметта (DEF-88) · един четец на JSON, без хвърляне (DEF-67)
 const root = path.resolve(process.env.DATA_DIR || paths.LOGICAL_ROOTS.data), port = Number(process.env.PORT || 8099), adminToken = process.env.ADMIN_TOKEN;
 // Една жива инстанция на data директория (виж instance-lock.js). Попълва се в start().
 const instanceId = String(process.env.INSTANCE_ID || '').trim() || crypto.randomBytes(6).toString('hex');
@@ -28,7 +28,7 @@ const jobManager = require('./job-manager').create({
   },
   onTerminal: (job) => { if (typeof webhooks !== 'undefined') webhooks.publish('job.completed', { jobId: job.id, type: job.type, status: job.status }) } // job.completed, след записа
 }); const operatorToken = process.env.OPERATOR_TOKEN || null, viewerToken = process.env.VIEWER_TOKEN || null;
-const parseRoles = v => { if (!v) return {}; if (typeof v === 'object' && !Array.isArray(v)) return v; try { const o = JSON.parse(v); if (!o || typeof o !== 'object' || Array.isArray(o)) return {}; return o } catch { return {} } };
+const parseRoles = v => { if (!v) return {}; if (typeof v === 'object' && !Array.isArray(v)) return v; const o = parseJsonOr(v, null); if (!o || typeof o !== 'object' || Array.isArray(o)) return {}; return o };
 // Роли за Ingress потребители: env (USER_ROLES) или опции на add-on-а (user_roles).
 const addonOptions = (() => { try { return JSON.parse(fs.readFileSync(process.env.OPTIONS_PATH || path.join(paths.LOGICAL_ROOTS.data, 'options.json'), 'utf8')) || {} } catch { return {} } })();
 // Крипто опции: env (от start.js) има приоритет, после options.json, после default.
@@ -123,7 +123,7 @@ const sharedData = require('./shared-data').create({ store: metadataStore, bind:
 const id = () => crypto.randomBytes(12).toString('hex');
 // --- DOCFLOW core (Phase 1): hierarchical variable store, additive to legacy metadata ---
 const coreDbId = (() => { const v = String(process.env.DB_ID || '1').trim(); return /^[A-Za-z0-9_-]{1,32}$/.test(v) ? v : '1' })();
-const profilesConfig = (() => { const s = String(process.env.PROFILES || '').trim(); if (!s) return null; try { const o = JSON.parse(s); return o && typeof o === 'object' && !Array.isArray(o) ? o : null } catch { return null } })();
+const profilesConfig = (() => { const s = String(process.env.PROFILES || '').trim(); if (!s) return null; const o = parseJsonOr(s, null); return o && typeof o === 'object' && !Array.isArray(o) ? o : null })();
 let docflowRegistry = null, coreStore = null;
 try { docflowRegistry = require('./registry').create(profilesConfig); coreStore = require('./core-store').create({ path: path.join(root, 'core.sqlite'), dbId: coreDbId, secret: adminToken }); } catch (e) { log.error('docflow.init.failed', { ns: 'core', err: e.message }) }
 const coreReady = () => { if (!docflowRegistry || !coreStore) throw Object.assign(new Error('Core unavailable'), { status: 503 }); return { registry: docflowRegistry, store: coreStore } };
@@ -1426,7 +1426,7 @@ async function handler(req, res) {
       if (until && !Number.isFinite(Date.parse(until))) return fail(res, 400, 'Invalid until');
       const inRange = t => { const d = Date.parse(t); if (!Number.isFinite(d)) return false; if (since && d < Date.parse(since)) return false; if (until && d > Date.parse(until)) return false; return true };
       let lines = []; try { lines = (await fsp.readFile(auditPath, 'utf8')).split('\n').filter(Boolean) } catch (e) { if (e.code !== 'ENOENT') throw e }
-      const events = []; for (const line of lines) { let e; try { e = JSON.parse(line) } catch { continue } if (portalId && e.portalId !== portalId) continue; if (!inRange(e.at)) continue; events.push(e) }
+      const events = []; for (const line of lines) { const decoded = parseJson(line); if (!decoded.ok) continue; const e = decoded.value; if (portalId && e.portalId !== portalId) continue; if (!inRange(e.at)) continue; events.push(e) }
       const byEvent = {}; for (const e of events) byEvent[e.event] = (byEvent[e.event] || 0) + 1;
       if (format === 'csv') {
         const cols = ['at', 'event', 'portalId', 'fileId', 'actor', 'ip', 'details'];
@@ -2689,7 +2689,7 @@ async function start() {
     const rulesStatus = gatewayApi.status();
     if (rulesStatus.missing.length) log.warn('rules.defaults', { ns: 'rules', missing: rulesStatus.missing.join(',') });
     else log.info('rules.loaded', { ns: 'rules', files: Object.keys(rulesStatus.files).length });
-    const lines = (await fsp.readFile(telemetryFile, 'utf8')).split('\n'); for (const line of lines) { if (!line.trim()) continue; try { const e = JSON.parse(line); if (['visit', 'download', 'rating'].includes(e.event)) applyTelemetry(e) } catch { console.error('Invalid telemetry record') } }
+    const lines = (await fsp.readFile(telemetryFile, 'utf8')).split('\n'); for (const line of lines) { if (!line.trim()) continue; const decoded = parseJson(line); if (!decoded.ok) { console.error('Invalid telemetry record'); continue } const e = decoded.value; if (['visit', 'download', 'rating'].includes(e.event)) applyTelemetry(e) }
   } catch (e) { if (e.code !== 'ENOENT') throw e } await fsp.mkdir(htmlProjectsRoot, { recursive: true }); await fsp.mkdir(filesRoot, { recursive: true }); await fsp.mkdir(internalRoot, { recursive: true }); await fsp.mkdir(apiRoot, { recursive: true }); await auditChain.init(); sharedData.refresh(); metadataStore.purgeExpiredSessions(); jobManager.recover(); await firstRunSeed(); try { const seeded = generator.seed(); if (seeded.copied.length) log.info('generator.seed', { ns: 'generator', copied: seeded.copied.length, dir: seeded.dir }) } catch (e) { log.warn('generator.seed.failed', { ns: 'generator', err: e.message }) } await deployEvidencePortal(); await importKeyBundles().catch(e => log.warn('pgp.bundle.failed', { ns: 'pgp', err: e.message })); for (const p of db.portals) if (!fs.existsSync(path.join(apiRoot, p.slug, 'qr.svg'))) await writeApiDir(p, baseUrl(null));
   // Всеки портал има СОБСТВЕНА папка в хранилището. Стари портали сочеха общия /share и
   // експлорерът показваше цялото хранилище; тук се пренасочват към /share/<slug> и папката

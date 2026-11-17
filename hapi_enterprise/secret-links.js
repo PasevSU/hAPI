@@ -24,6 +24,7 @@
 const crypto = require('node:crypto');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
+const { parseJson } = require('./parse-json'); // един четец на JSON — без хвърляне (DEF-67)
 
 const ID_LENGTH = 22;
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -107,11 +108,9 @@ function normalizeEnvelope(envelope) {
   let parsed = envelope;
   if (typeof parsed === 'string') {
     if (!parsed.trim()) return { error: 'envelope е задължителен' };
-    try {
-      parsed = JSON.parse(parsed);
-    } catch {
-      return { error: 'envelope трябва да е JSON' };
-    }
+    const decoded = parseJson(parsed);
+    if (!decoded.ok) return { error: 'envelope трябва да е JSON' };
+    parsed = decoded.value;
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { error: 'envelope трябва да е обект' };
   if (Number(parsed.v) !== 2) return { error: 'envelope трябва да е версия 2' };
@@ -251,12 +250,9 @@ async function readRecord(root, hash) {
   } catch (e) {
     return { rec: null, error: e.code === 'ENOENT' ? 'missing' : (e.code || 'error') };
   }
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return { rec: null, error: 'corrupt' };
-  }
+  const decodedRaw = parseJson(raw);
+  if (!decodedRaw.ok) return { rec: null, error: 'corrupt' };
+  const parsed = decodedRaw.value;
   // Името на файла е `sha256(id)`; запис с друг `idHash` е подменен или объркан.
   if (!parsed || parsed.idHash !== hash) return { rec: null, error: 'corrupt' };
   return { rec: parsed, error: '' };

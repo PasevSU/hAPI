@@ -1,6 +1,6 @@
-# Състояние на изданието — hAPI Enterprise 0.69.239
+# Състояние на изданието — hAPI Enterprise 0.69.240
 
-Версия: **0.69.239** · клон `main`
+Версия: **0.69.240** · клон `main`
 
 Този файл се **генерира**; не се редактира на ръка. Всяко число идва от отчет на инструмент,
 а не от памет. Проверка: `node scripts/release-status.cjs --check`.
@@ -14,49 +14,51 @@
 
 | Проверка | Команда | Резултат |
 | --- | --- | --- |
-| Тестове | `node scripts/test-matrix.cjs` | **466/466** — всички тестове от `tests/` минават |
-| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.239 — отпечатъците се сверяват от `verify-release.cjs` |
+| Тестове | `node scripts/test-matrix.cjs` | **467/467** — всички тестове от `tests/` минават |
+| Издание | `node scripts/build-release.cjs` + `verify-release.cjs` | `dist/RELEASE.json` за 0.69.240 — отпечатъците се сверяват от `verify-release.cjs` |
 | Линт | `npx eslint . --max-warnings=0` | `npx eslint . --max-warnings=0` → 0 · потиснати **216** находки в 135 файла (най-много `no-empty` 93) |
-| Логически одит | `node scripts/logic-audit.cjs --gate` | 737 файла · 133105 реда · **0** отворени · 1 с обосновка |
-| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 730 файла · 130997 реда · critical: 0 · high: 0 · medium: 0 · low: 215 — чисто · изключения: 24/24 (0 мъртви) |
+| Логически одит | `node scripts/logic-audit.cjs --gate` | 739 файла · 133252 реда · **0** отворени · 1 с обосновка |
+| Скенер за лош код | `node scripts/bad-code-scan.cjs --gate` | 732 файла · 131144 реда · critical: 0 · high: 0 · medium: 0 · low: 195 — чисто · изключения: 29/29 (0 мъртви) |
 | Документация | `node tests/docs-consistency.cjs` | ✔ версията е еднаква в документите, няма счупени връзки |
 | Changelog на add-on-а | `node scripts/sync-addon-changelog.cjs --check` | ✔ актуален |
 | Настройки по подразбиране | `node scripts/settings-defaults.cjs --check` | ✔ публикувани в README-тата |
-| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 466 правила (= тестови файлове), 45 маршрута, 27 RBAC способности, 44 опции |
+| Сценарии | `node tests/scenario-matrix.cjs` | ✔ 62 курирани области, 467 правила (= тестови файлове), 45 маршрута, 27 RBAC способности, 44 опции |
 
 ## 2. Артефакти (`dist/`)
 
 | Артефакт | Какво съдържа | Къде е отпечатъкът |
 | --- | --- | --- |
-| `hapi_enterprise-0.69.239.tar.gz` | add-on архив (237 файла) | `dist/RELEASE.json` |
-| `hapi_enterprise-integration-0.69.239.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
-| `hapi-enterprise-gui-0.69.239.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
+| `hapi_enterprise-0.69.240.tar.gz` | add-on архив (238 файла) | `dist/RELEASE.json` |
+| `hapi_enterprise-integration-0.69.240.zip` | интеграция за HACS (27 файла) | `dist/RELEASE.json` |
+| `hapi-enterprise-gui-0.69.240.zip` | GUI без сървър (START_HAPI_GUI.pyw, START_HAPI_GUI.bat) | `dist/RELEASE.json` |
 | `repository.yaml` + `RELEASE.json` + `SHA256SUMS.txt` | 5 артефакта | `SHA256SUMS.txt` |
 
-## 3. Какво влезе във 0.69.239
+## 3. Какво влезе във 0.69.240
 
-- **Адресите на портала идват от ДОГОВОРА, не се строят в панела (DEF-69).** Досега
-  `generateApi` сглобяваше адресите сам през `window.HapiApiSpec.buildReferences()`, а сървърът
-  издаваше същите в `contract` — две истини, които никой не сравняваше. Сега `api-spec.js` има
-  `withContract(contract, built)`: когато договорът е `ready === true`, неговите `page`, `api`,
-  `manifest`, `openapi` и `qr` ЗАМЕНЯТ построените, а `buildReferences` остава само за низовете,
-  които договорът не дава (`filesUrl`, `storageUrl`, `qrJsonUrl`, `pingUrl`). Ключовете на
-  `state.api[id]` не се променят, тоест консуматорите (`.at`, `ctx.api`, `.qrUrl`) не се пипат.
-- **Подписът се слага на ЕДНО място.** `withAccessQuery(url, query)` в `ui/files-manager.js` е
-  единствената функция, която добавя `?expires=…&sig=…` (преди това изразът се повтаряше в
-  `qrStudioLevels` и в `generateApi`). `file.page` вече идва от шаблона на договора
-  (`/file.html:{slug}/{path}`), не от твърд низ в панела.
-- **Създаването на портал не строи формата наново.** `createPortal` презаписваше `state.portals`
-  с ръчно копие на 13 полета, което НЕ носеше `accessQuery` — тоест точно след създаване
-  адресите губеха подписа, а QR студиото показваше адрес без достъп. Сега минава през
-  `portalFromApi`, единственото място за формата на портала от сървъра.
-- **Мъртвият товар е махнат.** `generateApi` вече не пази `refs`, `refsQ`, `landing`, `folderUrl`
-  в `state.api[id]` — никой не ги четеше, а те носеха втори език на истината.
-- **Тестът пази правилото, не низовете.** `tests/gui-contract-single-source.cjs` създава частен
-  портал и иска подписът да е **веднъж** в адреса на страницата и на API-то, след което подменя
-  договора със sentinel и иска екранът да покаже адреса на ДОГОВОРА (котва: „адресът от
-  договора печели“). Затваря и капана, че скритото QR студио остава в документа — тестът чете
-  само отвореното.
+- **Невалидният JSON се решава на ЕДНО място (DEF-67).** Досега всяко четене на външен JSON
+  (`/data/options.json`, редове на одита, метаданни на качване, стойности в SQLite, кеш на
+  геолокация, тяло на webhook) увиваше `JSON.parse` в собствен `try` и връщаше различно —
+  `null`, `[]`, `{}`, текста или 500. Един и същ боклук във входа даваше различен отговор според
+  модула. Сега има глобален `parse-json.js`: `parseJson(text)` → `{ ok: true, value }` или
+  `{ ok: false, error }`, и `parseJsonOr(text, fallback = null)`. През него минават 13 файла:
+  `audit-chain.js`, `retention.js`, `core-store.js`, `secret-links.js`, `packager.js`,
+  `portal-config.js`, `sqlite-store.js`, `visitor-intel.js`, `routes/upload-sessions.js`,
+  `core_module/http.js` и `server.js` (4 места).
+- **Поведението е запазено, не променено.** `parseJson` привежда входа до текст точно както
+  `JSON.parse` (затова `Buffer`, число и `null` се разчитат), а невалидното връща като
+  `{ ok: false }` вместо да хвърля — всяко място решава какво да прави, както досега. Най-осезаемата
+  разлика е в `sqlite-store.js`: повредени метаданни дават **500 `CORRUPT_METADATA`** с причина,
+  а не необяснен `SyntaxError` в лога.
+- **Модулът е критичен.** `parse-json.js` е в `CRITICAL` на `integrity.js` (манифестът се сверява
+  при старт) и в `COPY` списъка на `Dockerfile`; без второто образът пада при старт.
+- **Числата на скенера.** Находките `json-parse-untrusted` паднаха **99 → 78**, а в продукта
+  необяснени четения: **0** — останалите са в `tests/` и `scripts/`, където входът е наш.
+  Изключенията в `scripts/bad-code-allowlist.json` са 29, всички с причина (0 мъртви).
+- **Тестът пази правилото.** `tests/parse-json.cjs` проверява разчитането (`null`, число, `Buffer`,
+  валиден обект), четирите вида повреда, разликата между текст `null` и повреда в `parseJsonOr`,
+  пуска скенера и иска **нула** необяснени находки в `hapi_enterprise/`, и сверява allowlist-а
+  с реалността. Защитата е вписана в `tests/regression-guards.cjs` (котва: „минава през
+  parse-json.js“).
 
 ## 4. Как се проверява наново
 

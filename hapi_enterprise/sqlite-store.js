@@ -3,6 +3,7 @@
 // as a best-effort, human-readable compatibility snapshot, never read once SQLite exists.
 const fs = require('node:fs'), path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
+const { parseJson } = require('./parse-json'); // един четец на JSON — без хвърляне (DEF-67)
 function open(jsonPath) {
   const sqlitePath = jsonPath.replace(/\.json$/i, '') + '.sqlite';
   if (sqlitePath === jsonPath) throw Error('Expected a .json metadata filename');
@@ -114,21 +115,21 @@ function open(jsonPath) {
   const purgeDeliveriesStmt = db.prepare('DELETE FROM webhook_deliveries WHERE exhausted=1 AND created_at<=?');
   // `admin` е валиден скоуп: досега се отрязваше и това правеше невъзможен административен
   // достъп през сесия (напр. OIDC), дори когато потребителят е записан с него.
-  const parseScopes = v => { try { const a = JSON.parse(v); return Array.isArray(a) ? a.filter(s => s === 'read' || s === 'download' || s === 'admin') : ['read', 'download'] } catch { return ['read', 'download'] } };
+  const parseScopes = v => { const a = parseJson(v).value; return Array.isArray(a) ? a.filter(s => s === 'read' || s === 'download' || s === 'admin') : ['read', 'download'] };
   const nowIso = () => new Date().toISOString();
   function validate(v) { if (!v || !Array.isArray(v.portals)) throw Error('Invalid metadata payload'); if (!Array.isArray(v.qrArtifacts)) v.qrArtifacts = []; return v }
   // Повредени метаданни не бива да излизат като гол `SyntaxError` от JSON.parse:
   // операторът трябва да види КОЕ е повредено и какво да направи, иначе add-on-ът просто
   // не стартира с неразбираемо съобщение.
   function parseStored(text, where) {
-    try {
-      return JSON.parse(text);
-    } catch (e) {
+    const parsed = parseJson(text);
+    if (!parsed.ok) {
       throw Object.assign(
-        new Error(`${where}: метаданните не са валиден JSON (${e.message}). Възстанови от архив или изтрий ${where === 'SQLite' ? 'базата' : 'файла'} и качи порталите наново.`),
+        new Error(`${where}: метаданните не са валиден JSON (${parsed.error}). Възстанови от архив или изтрий ${where === 'SQLite' ? 'базата' : 'файла'} и качи порталите наново.`),
         { status: 500, code: 'CORRUPT_METADATA' },
       );
     }
+    return parsed.value;
   }
   function load() { const row = get.get(); if (row) return validate(parseStored(row.payload, 'SQLite')); let initial = { portals: [], qrArtifacts: [] }; if (fs.existsSync(jsonPath)) initial = validate(parseStored(fs.readFileSync(jsonPath, 'utf8'), jsonPath)); db.exec('BEGIN IMMEDIATE'); try { insert.run(JSON.stringify(initial)); reindex(initial); db.exec('COMMIT') } catch (e) { db.exec('ROLLBACK'); throw e } return initial }
   function reindex(v) { db.exec('DELETE FROM file_index; DELETE FROM portal_index'); for (const p of v.portals) { insertPortal.run(p.id, p.slug, p.title); for (const f of p.files || []) insertFile.run(f.id, p.id, f.name, f.size || 0) } }
@@ -214,7 +215,11 @@ function open(jsonPath) {
       if (src.prepare('PRAGMA integrity_check').get()?.integrity_check !== 'ok') throw Error('Backup integrity check failed');
       const row = src.prepare('SELECT payload FROM metadata WHERE id=1').get();
       if (!row) throw Error('Backup contains no metadata payload');
-      payload = validate(JSON.parse(row.payload));
+      const payloadJson = parseJson(row.payload);
+      // Копие с повреден запис не се прилага: по-добре „няма възстановяване“, отколкото
+      // половин метаданни върху живата база.
+      if (!payloadJson.ok) throw Object.assign(new Error(`Backup payload is not valid JSON (${payloadJson.error})`), { status: 500, code: 'CORRUPT_METADATA' });
+      payload = validate(payloadJson.value);
     } finally { src.close() }
     save(payload);
     return { restored: true, portals: payload.portals.length, qrArtifacts: (payload.qrArtifacts || []).length, revision: stats().revision };

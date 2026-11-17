@@ -30,6 +30,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { parseJson } = require('./parse-json'); // един четец на JSON — без хвърляне (DEF-67)
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const MAX_FILES = 5000;
@@ -230,11 +231,9 @@ function scalar(raw) {
   if (text === '') return { ok: true, value: null };
   if (text.startsWith('"')) {
     if (text.length < 2 || !text.endsWith('"')) return { ok: false, error: 'незатворени кавички' };
-    try {
-      return { ok: true, value: JSON.parse(text) };
-    } catch {
-      return { ok: false, error: 'невалидна екранировка в низ в кавички' };
-    }
+    const decoded = parseJson(text);
+    if (!decoded.ok) return { ok: false, error: 'невалидна екранировка в низ в кавички' };
+    return { ok: true, value: decoded.value };
   }
   if (text.startsWith("'")) {
     if (text.length < 2 || !text.endsWith("'")) return { ok: false, error: 'незатворени кавички' };

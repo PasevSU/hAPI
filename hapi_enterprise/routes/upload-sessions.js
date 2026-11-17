@@ -30,6 +30,7 @@
 // Сесиите живеят на диска (`upload-sessions/<portalId>/<sid>/`), за да оцелеят рестарт на
 // add-on-а: това е „възстановяване на процеса“, а не бутон, който започва отначало.
 function create(deps) {
+  const { parseJson, parseJsonOr } = require('../parse-json'); // един четец на JSON — без хвърляне (DEF-67)
   const {
     json, fail, parse, body, audit, fsp, path, crypto,
     portalAbs, workdirIo, qrRegistry, folderMetaOf, lockedAncestor,
@@ -52,7 +53,8 @@ function create(deps) {
 
   async function readMeta(portalId, sid) {
     try {
-      return JSON.parse(await fsp.readFile(metaFile(portalId, sid), 'utf8'));
+      const meta = parseJson(await fsp.readFile(metaFile(portalId, sid), 'utf8'));
+      return meta.ok ? meta.value : null;
     } catch {
       return null;
     }
@@ -161,13 +163,7 @@ function create(deps) {
     try {
       const text = await fsp.readFile(historyFile(portalId), 'utf8');
       const lines = text.split('\n').filter(Boolean);
-      return lines.slice(Math.max(0, lines.length - limit)).map((line) => {
-        try {
-          return JSON.parse(line);
-        } catch {
-          return null;
-        }
-      }).filter(Boolean);
+      return lines.slice(Math.max(0, lines.length - limit)).map((line) => parseJsonOr(line, null)).filter(Boolean);
     } catch {
       return [];
     }

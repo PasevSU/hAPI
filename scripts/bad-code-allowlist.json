@@ -126,5 +126,32 @@
     "file": "hapi_enterprise/ui/qr-studio.js",
     "rule": "html-sink",
     "reason": "Шаблонът на студиото рисува собствени константи (TABS, LEVELS) и числовия индекс на .map(): `${i}` отива само във value= на <option> и в data-атрибут, тоест число от 0 до 3, а не вход от потребител. Единствените текстови стойности минават през esc(), а страницата се сервира с CSP script-src 'self' без unsafe-inline."
+  },
+  {
+    "file": "hapi_enterprise/parse-json.js",
+    "rule": "json-parse-untrusted",
+    "segment": "parseJson",
+    "reason": "Това е САМОТО място, където hAPI вика JSON.parse върху външни данни (DEF-67). Целият модул съществува, за да превърне хвърлянето в резултат {ok,error}; затова извикването е в try/catch два реда по-долу и се проверява от tests/parse-json.cjs. Обвиването му още веднъж би скрило грешката от викащите."
+  },
+  {
+    "file": "hapi_enterprise/generator/app.js",
+    "rule": "json-parse-untrusted",
+    "segment": "request",
+    "reason": "Скрипт на страницата на генератора (браузър): няма require и не може да ползва parse-json.js. Отговорът на собственото си API се парсва в try/catch, а при повреда data остава null и се показва HTTP статусът на мястото на съобщението — страницата не пада."
+  },
+  {
+    "file": "hapi_enterprise/ui/debug-ledger.js",
+    "rule": "json-parse-untrusted",
+    "reason": "Браузърен модул (без require): парсва САМО това, което сам е записал в localStorage, в try/catch — повреден запис дава празен дневник, не счупен панел."
+  },
+  {
+    "file": "hapi_enterprise/ui/files-manager.js",
+    "rule": "json-parse-untrusted",
+    "reason": "Браузърен модул (без require): потребителят поставя разписка в textarea; при невалиден JSON остава низът и сървърът отсъжда (400 с ясно съобщение). Парсването е в try/catch, за да не се губи текстът, който човекът е въвел."
+  },
+  {
+    "file": "hapi_enterprise/ui/monitoring-panel.js",
+    "rule": "json-parse-untrusted",
+    "reason": "Браузърен модул (без require): събитията идват по SSE от собствения сървър; при повреден кадър payload става {event: name} в try/catch и потокът продължава."
   }
 ]

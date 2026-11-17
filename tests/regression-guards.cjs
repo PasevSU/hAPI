@@ -113,6 +113,7 @@ const GUARDS = {
   'DEF-94': ['check-log-integration.cjs', 'verify-verdict.cjs'], // провал на проверка не изчезва от журнала
   'DEF-95': ['bad-code.cjs'], // находка на скенера сочи реда на интерполацията, не началото на шаблона
   'DEF-69': ['gui-contract-single-source.cjs', 'gui-portal-create-contract.cjs'], // адресите идват от договора, не се строят в панела
+  'DEF-67': ['parse-json.cjs'], // невалиден JSON се решава на едно място, не във всяко четене по своему
 };
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
 // Без тях „има тест“ може да значи „има файл с име, което звучи правилно“.
@@ -204,6 +205,7 @@ const ANCHORS = {
   'DEF-94': { file: 'check-log-integration.cjs', contains: 'verdict.failed' },
   'DEF-95': { file: 'bad-code.cjs', contains: 'находката сочи реда с интерполацията' },
   'DEF-69': { file: 'gui-contract-single-source.cjs', contains: 'адресът от договора печели' },
+  'DEF-67': { file: 'parse-json.cjs', contains: 'минава през parse-json.js' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */

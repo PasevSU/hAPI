@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 466 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 467 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 209 |
+| общо | 210 |
 | портал | 57 |
 | GUI | 42 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (209)
+## общо (210)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -176,6 +176,7 @@
 | `panel-registry` | Panel registry | `tests/panel-registry.cjs` |
 | `paptresor` | Paptresor | `tests/paptresor.cjs` |
 | `parallel-transfers` | Parallel transfers | `tests/parallel-transfers.cjs` |
+| `parse-json` | Parse json | `tests/parse-json.cjs` |
 | `pdf-signature` | Pdf signature | `tests/pdf-signature.cjs` |
 | `pgp` | Pgp | `tests/pgp.cjs` |
 | `policy-gui` | Policy gui | `tests/policy-gui.cjs` |

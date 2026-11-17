@@ -4,6 +4,7 @@
 // Orphan-first: records may exist without a group and be associated later (re-keys vars).
 const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
+const { parseJsonOr } = require('./parse-json'); // един четец на JSON — без хвърляне (DEF-67)
 const err = (m, status = 400) => Object.assign(new Error(m), { status });
 
 function hex(n) { return crypto.randomBytes(n).toString('hex') }
@@ -286,7 +287,9 @@ function create(opts = {}) {
   }
   function decodeVar(v) {
     if (v.is_encrypted) return { key: v.key, field: v.field, value: dec(v.value_text), encrypted: true };
-    if (v.value_json != null) { try { return { key: v.key, field: v.field, value: JSON.parse(v.value_json) } } catch { return { key: v.key, field: v.field, value: v.value_text } } }
+    // Повреден `value_json` не е загуба на стойност: остава `value_text` (стар запис от преди
+    // колоната за JSON), вместо редът да изчезне от отговора.
+    if (v.value_json != null) return { key: v.key, field: v.field, value: parseJsonOr(v.value_json, v.value_text) };
     if (v.value_bool != null) return { key: v.key, field: v.field, value: !!v.value_bool };
     if (v.value_number != null) return { key: v.key, field: v.field, value: v.value_number };
     return { key: v.key, field: v.field, value: v.value_text };

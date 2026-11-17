@@ -14,6 +14,8 @@
 //     отговорил отсрещният, без да гадае по текста;
 //   • таймаутът е със СОБСТВЕН код `ETIMEDOUT`, за да не се бърка с чуждо прекъсване.
 
+const { parseJson } = require('../parse-json'); // един четец на JSON — без хвърляне (DEF-67)
+
 const DEFAULT_TIMEOUT = 15000;
 
 function positive(value, fallback, name) {
@@ -62,12 +64,9 @@ function client(options) {
       const text = await response.text();
       let data = null;
       if (text) {
-        try {
-          data = JSON.parse(text);
-        } catch {
-          // Невалиден JSON не е провал на заявката: връща се текстът.
-          data = text;
-        }
+        // Невалиден JSON не е провал на заявката: връща се текстът.
+        const decoded = parseJson(text);
+        data = decoded.ok ? decoded.value : text;
       }
       const result = { status: response.status, ok: Boolean(response.ok), data, headers: response.headers };
       if (!response.ok) {

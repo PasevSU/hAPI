@@ -18,6 +18,7 @@ const ooxml = require('./ooxml');
 const rules = require('./export-rules');
 const pgp = require('./pgp');
 const pkgcrypto = require('./package-crypto');
+const { parseJsonOr } = require('./parse-json'); // един четец на JSON — без хвърляне (DEF-67)
 
 const MAX_FILES = 5000;
 const MAX_TOTAL_BYTES = 256 * 1024 * 1024;
@@ -375,7 +376,7 @@ function create({ root }) {
   async function readMeta(id) {
     try {
       const raw = await fsp.readFile(metaPath(assertId(id)), 'utf8');
-      const meta = JSON.parse(raw);
+      const meta = parseJsonOr(raw, null);
       return meta && meta.id === id ? meta : null;
     } catch (e) {
       if (e.code === 'ENOENT') return null;

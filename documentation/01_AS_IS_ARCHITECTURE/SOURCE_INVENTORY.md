@@ -1,12 +1,12 @@
 # Source Inventory — hAPI Enterprise (As-Is)
 
-> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.239
+> **Клас:** жив · **Собственик на факта:** брой модули и функции · **Проверен към:** 0.69.240
 
-> **Генериран документ.** Версия на кода: **0.69.239**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
+> **Генериран документ.** Версия на кода: **0.69.240**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **135** backend модула · **22** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **466** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
+Общо: **136** backend модула · **22** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **467** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Файлове (245)
+### Файлове (246)
 
 | Файл | Вид | Предназначение (първи ред от самия файл) |
 | ---- | --- | ----------------------------------------- |
@@ -79,6 +79,7 @@
 | `hapi_enterprise/package-crypto.js` | backend | Криптиран контейнер за експортен пакет (hapiPKG1). |
 | `hapi_enterprise/packager.js` | backend | Пакетиране на портал (или избрани файлове) в ZIP с манифест, хешове и |
 | `hapi_enterprise/page-version.js` | backend | ВЕРСИЯ В АДРЕСА НА СТАТИЧНИТЕ РЕСУРСИ НА HTML СТРАНИЦА (DEF-87). |
+| `hapi_enterprise/parse-json.js` | backend | ГЛОБАЛНА ФУНКЦИЯ „parseJson“ — едното място, в което се решава какво значи „невалиден JSON“. |
 | `hapi_enterprise/path-crypto.js` | backend | Ключохранилище на PGP (бач B2 от `PLAN-0.69.67-LINKS-AND-FILES.md`). |
 | `hapi_enterprise/paths.js` | backend | ЛОГИЧЕСКИТЕ КОРЕНИ НА ХРАНИЛИЩЕТО — ЕДНО МЯСТО ЗА ЦЕЛИЯ ПРОЕКТ. |
 | `hapi_enterprise/pdf-writer.js` | backend | Dependency-free PDF writer with embedded TrueType fonts (Unicode incl. Cyrillic). |

@@ -240,6 +240,7 @@ const RULES = [
   { id: "panel-registry", area: "общо", title: "Panel registry", owner: "tests/panel-registry.cjs" },
   { id: "paptresor", area: "общо", title: "Paptresor", owner: "tests/paptresor.cjs" },
   { id: "parallel-transfers", area: "общо", title: "Parallel transfers", owner: "tests/parallel-transfers.cjs" },
+  { id: "parse-json", area: "общо", title: "Parse json", owner: "tests/parse-json.cjs" },
   { id: "pdf-signature", area: "общо", title: "Pdf signature", owner: "tests/pdf-signature.cjs" },
   { id: "pgp", area: "общо", title: "Pgp", owner: "tests/pgp.cjs" },
   { id: "pgp-aead", area: "PGP", title: "Pgp aead", owner: "tests/pgp-aead.cjs" },

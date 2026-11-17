@@ -1,6 +1,7 @@
 'use strict';
 const fsp = require('node:fs/promises'), path = require('node:path');
 const contentId = require('./content-id');
+const { parseJsonOr } = require('./parse-json'); // един четец на JSON — без хвърляне (DEF-67)
 const MS = 86400000;
 // Retention policies: age-based expiry of uploaded files and the human-readable audit
 // log. Files older than fileDays are either disabled (default) or deleted; audit lines
@@ -29,13 +30,11 @@ function create({ filesRoot, auditPath, getSettings, getQrRegistry }) {
    * казваше едно, файлът губеше редове.
    */
   function auditLineAt(line) {
-    try {
-      const at = JSON.parse(line).at;
-      const t = Date.parse(at);
-      return Number.isFinite(t) ? t : null;
-    } catch {
-      return null;
-    }
+    const record = parseJsonOr(line, null);
+    // Разчетен, но не-обектен ред (`5`, `null`) няма `at` — същото „не може да се датира“.
+    if (!record || typeof record !== 'object') return null;
+    const t = Date.parse(record.at);
+    return Number.isFinite(t) ? t : null;
   }
 
   /**

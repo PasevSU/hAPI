@@ -5,6 +5,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { parseJson } = require('./parse-json'); // един четец на JSON — без хвърляне (DEF-67)
 const hash = x => crypto.createHash('sha256').update(x).digest('hex');
 const canonical = e => JSON.stringify({ seq: e.seq, at: e.at, event: e.event, details: e.details, prevHash: e.prevHash });
 function createAuditChain(root) {
@@ -13,7 +14,8 @@ function createAuditChain(root) {
     let rows; try { rows = (await fs.readFile(filename, 'utf8')).split('\n').filter(Boolean) } catch (e) { if (e.code === 'ENOENT') return { valid: true, count: 0, lastHash: '0'.repeat(64) }; throw e }
     let prev = '0'.repeat(64); let seq = 0;
     for (const line of rows) {
-      let e; try { e = JSON.parse(line) } catch { return { valid: false, count: seq, reason: 'INVALID_JSON' } };
+      const parsedLine = parseJson(line); if (!parsedLine.ok) return { valid: false, count: seq, reason: 'INVALID_JSON' };
+      const e = parsedLine.value;
       if (e.seq !== seq + 1 || e.prevHash !== prev || typeof e.hash !== 'string' || e.hash !== hash(canonical(e))) return { valid: false, count: seq, reason: 'CHAIN_MISMATCH' };
       seq++; prev = e.hash;
     } return { valid: true, count: seq, lastHash: prev };
