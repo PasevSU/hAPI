@@ -43,6 +43,11 @@ const USAGE = `PasevSU PSEMP gateway
                                         because anchoring broken evidence would make
                                         a defect look proven. Proofs land in
                                         psemp-gateway/data/pending/ (git-ignored).
+  receipts [--profile dir] [--include-sent]
+                                        pair delivery receipts in the incoming mail with
+                                        the evidence behind the message each one
+                                        acknowledges. An absent receipt is reported as
+                                        unknown, never as non-delivery.
   stamp <file> [--out proof.ots]        OpenTimestamps proof (degrades to pending)
   verify <proof.ots>                    verify an OpenTimestamps proof
   upgrade <proof.ots>                   upgrade a pending proof
@@ -277,6 +282,18 @@ async function main(argv) {
       });
       // A missing OTS tool is reported as "pending", never as a failure — the same
       // contract `stamp` follows.
+      return;
+    }
+
+    case 'receipts': {
+      const tools = require('./tools/check-receipts.cjs');
+      const result = tools.checkReceipts({
+        profile: options.profile && options.profile !== true
+          ? path.resolve(String(options.profile))
+          : undefined,
+        includeSent: options['include-sent'] === true,
+      });
+      emit(result);
       return;
     }
 

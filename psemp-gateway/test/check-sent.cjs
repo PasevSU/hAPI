@@ -59,8 +59,12 @@ const WAR_SUBJECT = appendWarMarker('evidence test');
  * ComposeAttachment.id is an integer in the WebExtension schema, so the ids handed
  * to the extension are integers here too — a string id is not something Thunderbird
  * produces, and the extension skips it.
+ *
+ * `stored` overrides the stored settings for one call, so a test can model a profile
+ * where a setting is on (a receipt address, say) without changing the default fixture
+ * every other suite relies on.
  */
-async function runExtension({ body = 'Forensic body', files = [], subject = 'evidence test' } = {}) {
+async function runExtension({ body = 'Forensic body', files = [], subject = 'evidence test', stored = {} } = {}) {
   const attachments = {};
   files.forEach((file, index) => {
     attachments[index + 1] = { name: file.name, bytes: file.bytes };
@@ -70,7 +74,7 @@ async function runExtension({ body = 'Forensic body', files = [], subject = 'evi
     // A 40-hex fingerprint, because that is the only shape the extension will publish:
     // an 8/16-hex key id is refused outright, so a fixture claiming one would model a
     // message the add-on cannot produce. It matches the signer in lib/openpgp.cjs.
-    stored: { version: '1.1', caseId: 'CASE-1', pgpFingerprint: FINGERPRINT },
+    stored: { version: '1.1', caseId: 'CASE-1', pgpFingerprint: FINGERPRINT, ...stored },
     attachments,
   });
   const details = {

@@ -698,8 +698,14 @@ function isSentName(fileName) {
   return SENT_NAMES.includes(base);
 }
 
-/** Sent mbox files in a Thunderbird profile, newest first. */
-function sentFiles(profile) {
+/**
+ * Every non-empty mbox in a Thunderbird profile, newest first.
+ *
+ * `accept` filters by file name. Receipts are not confined to one folder the way
+ * sent mail is — they land in whatever Inbox the recipient's client picked — so
+ * the walk is shared and each caller supplies its own name rule.
+ */
+function mboxFiles(profile, accept = () => true) {
   const roots = [path.join(profile, 'Mail'), path.join(profile, 'ImapMail')].filter((dir) => fs.existsSync(dir));
   const found = [];
 
@@ -721,7 +727,7 @@ function sentFiles(profile) {
         walk(full, depth + 1);
         continue;
       }
-      if (!isSentName(entry.name)) continue;
+      if (!accept(entry.name)) continue;
       // ".msf" is Thunderbird's MIME summary index and ".wdseml" is a Windows Search
       // sidecar: neither is the message, and both would be reported as mail with no
       // headers at all.
@@ -736,6 +742,11 @@ function sentFiles(profile) {
 
   for (const dir of roots) walk(dir, 0);
   return found.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+}
+
+/** Sent mbox files in a Thunderbird profile, newest first. */
+function sentFiles(profile) {
+  return mboxFiles(profile, isSentName);
 }
 
 /** Bytes [from, to) of a file, decoded once so no character is split. */
@@ -999,6 +1010,7 @@ module.exports = {
   partName,
   headerGet,
   sentFiles,
+  mboxFiles,
   isSentName,
   lastMessages,
   streamMessages,

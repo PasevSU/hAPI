@@ -471,6 +471,32 @@ node psemp-gateway/cli.js stamp-sent
   `--out <dir>` at another output directory. Without `ots` installed the result is
   `"status": "pending"`, never an error.
 
+### Checking whether a receipt came back
+
+The add-on can only *ask* for a receipt; whether one arrives is the recipient's
+decision. This separates the two, so an empty Inbox is never mistaken for a broken
+send:
+
+```console
+node psemp-gateway/tools/check-receipts.cjs
+```
+
+It reads the Sent folder for messages carrying `X-PasevSU-Receipt: requested`, then
+reads the incoming mail for an RFC 8098 `message/disposition-notification` part and
+matches its `Original-Message-ID` to the `Message-ID` we assigned. Output:
+
+| Field | Meaning |
+| --- | --- |
+| `requested` | messages that asked for a receipt |
+| `indexed` | sent messages carrying PasevSU evidence headers |
+| `receipts` | receipt parts found in the incoming mail |
+| `matched` | receipts whose `Original-Message-ID` names a message we sent — with its `evidenceId` and `manifestSha256` |
+| `unmatched` | receipts for other mail, kept rather than dropped |
+
+A receipt is never inferred from a header we wrote ourselves: it is a message that
+actually travelled back. `--profile <dir>` reads another profile, `--include-sent`
+also counts receipts an account sent out.
+
 ## What a recipient can verify
 
 Every claim in the chain was re-checked against the raw source of a real sent
@@ -548,26 +574,33 @@ setting exists independently; if both prompt, that is harmless.
 
 ### Why a receipt may still never arrive
 
-`Disposition-Notification-To` on the wire is a *request*. Measured on a real
-mailbox (2.2 GB Sent folder, 2026‑11), the field is present on every message the
-add-on sent — and no receipt came back, for two reasons that are not defects here:
+`Disposition-Notification-To` on the wire is a *request*. Measured on this mailbox
+(2026‑11‑17, `node psemp-gateway/tools/check-receipts.cjs`): 563 receipts are
+already sitting in the incoming mail, **3 of them matched to a message this add-on
+sent**, each carrying `Original-Message-ID` equal to the `Message-ID` we assigned.
+So receipts do work — but they are not guaranteed, for reasons outside this add-on:
 
-1. **MDN is voluntary.** The recipient's client decides. Gmail does not implement
-   MDN at all, so a message to a `@gmail.com` address can never return a receipt,
-   however the send was configured. This is a property of the recipient, not of
-   the add-on.
+1. **MDN is voluntary.** The recipient's client decides, and some never ask. Gmail's
+   **web** client does not implement MDN, so a recipient who reads mail only in a
+   browser will never return one. The same `@gmail.com` address read in Thunderbird
+   *does* return one — that is exactly where the 3 matched receipts came from. The
+   address is not the deciding factor; the client is.
 2. **DSN — the "it reached the server" proof — is out of reach of a
    MailExtension.** RFC 3461 delivery notifications (`NOTIFY=SUCCESS`) are SMTP
    envelope parameters, not message headers. A WebExtension cannot set envelope
    parameters, the same class of limitation as `.asc` and `.ots`. Only the sending
-   MTA can request them, so for a real delivery proof the SMTP gateway for
+   MTA can request them, so for a server-side delivery proof the SMTP gateway for
    `pasevsu-dev.com` has to add `NOTIFY=SUCCESS,FAILURE,DELAY`.
 
 What the add-on guarantees is therefore the *request* plus the evidence that it
-was made: `returnReceipt`, `X-PasevSU-Receipt: requested`, and — once a receipt
-does arrive — a `message/disposition-notification` part in the Inbox that names
-the original `Message-ID`, so the pair can be tied together. An absent receipt is
-not evidence of non-delivery, and it must never be presented as one.
+was made: `returnReceipt`, `X-PasevSU-Receipt: requested`, and — when a receipt
+does come back — a `message/disposition-notification` part whose
+`Original-Message-ID` ties it to the message we signed and to its `X-PasevSU-Evidence-ID`.
+
+`check-receipts` reports what is actually known and refuses to infer the rest: it
+separates *requested* from *received*, and it treats `disposition: …; deleted`
+without `displayed` as "the client removed it", never as "a person read it". An
+absent receipt is not evidence of non-delivery, and it must never be presented as one.
 
 ### German and Bulgarian
 
