@@ -2,7 +2,7 @@
 //
 // Copy this file into the profile directory of the Thunderbird you send from, e.g.
 //
-//   %APPDATA%\Thunderbird\Profiles\l6o3xe0h.default-esr\user.js
+//   %APPDATA%\Thunderbird\Profiles\xxxxxxxx.default-esr\user.js
 //
 // and restart Thunderbird. `user.js` is re-applied at every startup and takes
 // precedence over `prefs.js`, so this is the durable way to register the names.

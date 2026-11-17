@@ -455,7 +455,7 @@ and answers the question directly:
 
 ```console
 node psemp-gateway/tools/verify-install.cjs
-node psemp-gateway/tools/verify-install.cjs "C:\...\Profiles\l6o3xe0h.default-esr"
+node psemp-gateway/tools/verify-install.cjs "C:\...\Profiles\xxxxxxxx.default-esr"
 ```
 
 It compares three lists that have to agree, in order: the names `background.js`
@@ -500,7 +500,7 @@ node psemp-gateway/tools/check-sent.cjs                    # the newest sent mes
 node psemp-gateway/tools/check-sent.cjs --all              # every message in every Sent mailbox
 node psemp-gateway/tools/check-sent.cjs --only 3           # message 3 of the first mailbox, as numbered
 node psemp-gateway/tools/check-sent.cjs mail.eml           # one file
-node psemp-gateway/tools/check-sent.cjs "C:\...\l6o3xe0h.default-esr"   # a profile directory
+node psemp-gateway/tools/check-sent.cjs "C:\...\xxxxxxxx.default-esr"   # a profile directory
 ```
 
 It reads the Sent mbox, then for the message it parses the MIME tree, decodes

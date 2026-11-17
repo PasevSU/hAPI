@@ -758,7 +758,7 @@ in the `mail.compose.other.header` preference. [`user.js`](user.js) ships that
 preference with **all fourteen** names, in injection order:
 
 1. Copy `thunderbird-extension/user.js` into your profile directory, e.g.
-   `%APPDATA%\Thunderbird\Profiles\l6o3xe0h.default-esr\user.js`.
+   `%APPDATA%\Thunderbird\Profiles\xxxxxxxx.default-esr\user.js`.
    To find it: **Help → Troubleshooting Information → Profile Directory → Open
    Directory**.
 2. Restart Thunderbird.
