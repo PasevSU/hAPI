@@ -79,9 +79,30 @@ const folder = require(path.join(__dirname, '..', 'hapi_enterprise', 'portal-fol
     assert.deepEqual(restored.problems, [], 'възстановеният файл е валиден');
     assert.equal(restored.data.name, 'Име от панела', 'възстановеният файл носи текущото име');
 
+    // ── 5. Нова папка от панела слага описанието в корена на портала ───────
+    // С `portal_folder_copy` ИЗКЛЮЧЕНО (по подразбиране) папката на портала още я няма.
+    // Щом човекът създаде папка, коренът съществува — и в него трябва да стои описанието,
+    // иначе „портал с папка, но без описание“ е състояние без обяснение.
+    const bare = await server.api('/admin/api/portals', 'POST', { title: 'Без папка', slug: 'p-bez-papka', visibility: 'private' });
+    assert.equal(bare.status, 201, 'вторият портал се създава');
+    const barePortal = bare.data.portal || bare.data;
+    const bareLogical = String(barePortal.storage_root || '').replace(/^\/+/, '');
+    const bareDir = path.join(storage.dir, ...bareLogical.split('/').filter(Boolean));
+    const bareFile = path.join(bareDir, 'configuration.yaml');
+    // Папката се маха, за да е същото състояние като при `portal_folder_copy: false` —
+    // порталът съществува, а папката му още не.
+    fs.rmSync(bareDir, { recursive: true, force: true });
+    assert.equal(fs.existsSync(bareDir), false, 'порталът е без папка преди действието');
+    const folderMade = await server.api('/admin/api/portals/' + encodeURIComponent(barePortal.id) + '/tree/folder', 'POST', { name: 'Документи' });
+    assert.equal(folderMade.status, 201, 'папката се създава: ' + JSON.stringify(folderMade.data).slice(0, 200));
+    assert.ok(fs.existsSync(bareFile), 'новата папка носи и описанието на портала');
+    const bareRead = config.read(bareFile, { slug: 'p-bez-papka' });
+    assert.deepEqual(bareRead.problems, [], 'описанието е валидно: ' + JSON.stringify(bareRead.problems));
+    assert.equal(bareRead.data.name, 'Без папка', 'самоличността идва от портала');
+
     console.log(
       'PASS portal-config-template: файл при създаването · всички ' + config.OPTION_KEYS.length + ' опции от един шаблон · ' +
-        'самоличност от портала · PATCH от панела стига до файла · изтрит файл се възстановява',
+        'самоличност от портала · PATCH от панела стига до файла · изтрит файл се възстановява · нова папка носи описанието',
     );
   } finally {
     await server.stop();

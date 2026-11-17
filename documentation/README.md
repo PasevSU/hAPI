@@ -31,7 +31,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **152** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **153** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -121,6 +121,7 @@ _Генериран списък: **152** документа. Пише се от
 | `04_FUNCTION_SPECIFICATIONS/FUNCTION_SPECIFICATION_TEMPLATE.md` | Function Specification Template |
 | `04_FUNCTION_SPECIFICATIONS/MASTER_FUNCTION_INVENTORY.md` | Master Function Inventory — hAPI Enterprise |
 | `04_FUNCTION_SPECIFICATIONS/MODULE_SPECIFICATIONS/README.md` | Module Specifications |
+| `04_FUNCTION_SPECIFICATIONS/PORTAL_CONFIGURATION.md` | Опции на портала — `configuration.yaml` |
 | `04_FUNCTION_SPECIFICATIONS/PORTAL_PAGE_CONTRACT.md` | Договор за изпълнение: публична страница на портала (`/p/<id>`) |
 | `04_FUNCTION_SPECIFICATIONS/REPORT_EVIDENCE_PACKAGE.md` | Пакет с доказателства от отчет — договор |
 | `04_FUNCTION_SPECIFICATIONS/REPORT_OBJECTS.md` | Report Studio — обектна библиотека (договор) |

@@ -2,21 +2,11 @@
 
 > **Клас:** нормативен · **Собственик на факта:** HTTP договор
 
-**Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 (API Architecture & Runtime Logic Specification)
+**Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 · **генериран от кода на hAPI Enterprise 0.69.236.** Не се редактира на ръка.
 
-**Генериран от кода на hAPI Enterprise 0.69.236.** Не се редактира на ръка.
+Източници (живи, не копия): `admin-api-spec.js` — 228 административни операции (същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой); `public-route-allowlist.js` — 33 правила за това какво Public Gateway пропуска; `routes/` — 21 компонента на HTTP слоя.
 
-Източници (живи, не копия):
-
-- `hapi_enterprise/admin-api-spec.js` — 222 административни операции; същият списък се проверява от `tests/admin-api-spec.cjs` срещу реалния HTTP слой.
-- `hapi_enterprise/public-route-allowlist.js` — 33 правила за това какво Public Gateway пропуска.
-- `hapi_enterprise/routes/` — 21 компонента на HTTP слоя.
-
-```bash
-node scripts/api-reference.cjs           # записва документа
-node scripts/api-reference.cjs --check   # проверява, че е актуален (в матрицата)
-```
-> Правило: промяна в маршрут без повторно генериране чупи `tests/api-reference.cjs`.
+Записва: `node scripts/api-reference.cjs`; проверява: `--check` (в матрицата). Промяна в маршрут без повторно генериране чупи `tests/api-reference.cjs`.
 
 ## 1. Административни операции
 
@@ -163,6 +153,12 @@ node scripts/api-reference.cjs --check   # проверява, че е акту�
 | DELETE | `/admin/api/portals/{portalId}/html-projects/{projectId}` | Премахване на HTML проект | `portals` |
 | POST | `/admin/api/portals/{portalId}/html` | Публикуване на HTML към портала | `portals` |
 | GET | `/admin/api/portals/{portalId}/tree` | Дървото на папката на портала | `portals` |
+| GET | `/admin/api/portals/{portalId}/config` | Опции на портала (`configuration.yaml`) + чекпойнт | `portals` |
+| PUT | `/admin/api/portals/{portalId}/config` | Запис на опциите (иска чекпойнт: `expectHash`/`If-Match`) | `portals` |
+| POST | `/admin/api/portals/{portalId}/config/verify` | Сверка на `files[]` с реалните файлове в папката | `portals` |
+| POST | `/admin/api/portals/{portalId}/config/adopt` | Ръчна промяна във файла влиза в записа | `portals` |
+| GET | `/admin/api/portals/{portalId}/config/export.yaml` | Изтегляне на самия `configuration.yaml` | `portals` |
+| POST | `/admin/api/portals/{portalId}/config/import` | Цял YAML заменя описанието (`?dry=1` — само разликата) | `portals` |
 | POST | `/admin/api/portals/{portalId}/tree/folder` | Нова папка в дървото | `portals` |
 | PATCH | `/admin/api/portals/{portalId}/tree/folder` | Флагове на папка (видима, медийна, заключена) | `portals` |
 | POST | `/admin/api/portals/{portalId}/tree/upload` | Качване на файл в дървото на папката | `portals` |

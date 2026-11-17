@@ -77,18 +77,9 @@ const push = (...values) => lines.push(...values);
 
 push('# API Endpoint Reference', '');
 push(require('./docs-class.cjs').lineFor('02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md'), '');
-push('**Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 (API Architecture & Runtime Logic Specification)', '');
-push(`**Генериран от кода на hAPI Enterprise ${pkg.version}.** Не се редактира на ръка.`, '');
-push('Източници (живи, не копия):', '');
-push(`- \`hapi_enterprise/admin-api-spec.js\` — ${rows.length} административни операции; същият списък се проверява от \`tests/admin-api-spec.cjs\` срещу реалния HTTP слой.`);
-push(`- \`hapi_enterprise/public-route-allowlist.js\` — ${allow.RULES.length} правила за това какво Public Gateway пропуска.`);
-push(`- \`hapi_enterprise/routes/\` — ${components.length} компонента на HTTP слоя.`);
-push('');
-push('```bash');
-push('node scripts/api-reference.cjs           # записва документа');
-push('node scripts/api-reference.cjs --check   # проверява, че е актуален (в матрицата)');
-push('```');
-push('> Правило: промяна в маршрут без повторно генериране чупи `tests/api-reference.cjs`.', '');
+push(`**Документ:** HAPI-ARCH-API-002 · **Приложение към** HAPI-ARCH-API-001 · **генериран от кода на hAPI Enterprise ${pkg.version}.** Не се редактира на ръка.`, '');
+push(`Източници (живи, не копия): \`admin-api-spec.js\` — ${rows.length} административни операции (същият списък се проверява от \`tests/admin-api-spec.cjs\` срещу реалния HTTP слой); \`public-route-allowlist.js\` — ${allow.RULES.length} правила за това какво Public Gateway пропуска; \`routes/\` — ${components.length} компонента на HTTP слоя.`, '');
+push('Записва: `node scripts/api-reference.cjs`; проверява: `--check` (в матрицата). Промяна в маршрут без повторно генериране чупи `tests/api-reference.cjs`.', '');
 push('## 1. Административни операции', '');
 push('Всички пътища са под `/admin` и изискват административна идентичност (`Authorization: Bearer <ADMIN_TOKEN>`; през Home Assistant — ingress сесия). Колоната „право“ е RBAC способността, с която `adminGate` решава дали ролята на клиента я има.', '');
 for (const group of groups) {

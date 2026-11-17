@@ -1929,6 +1929,172 @@
           "response": []
         },
         {
+          "name": "Опции на портала (`configuration.yaml`) + чекпойнт",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "config"
+              ]
+            },
+            "description": "Опции на портала (`configuration.yaml`) + чекпойнт\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Запис на опциите (иска чекпойнт: `expectHash`/`If-Match`)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "config"
+              ]
+            },
+            "description": "Запис на опциите (иска чекпойнт: `expectHash`/`If-Match`)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Сверка на `files[]` с реалните файлове в папката",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/config/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "config",
+                "verify"
+              ]
+            },
+            "description": "Сверка на `files[]` с реалните файлове в папката\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Ръчна промяна във файла влиза в записа",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/config/adopt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "config",
+                "adopt"
+              ]
+            },
+            "description": "Ръчна промяна във файла влиза в записа\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Изтегляне на самия `configuration.yaml`",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/config/export.yaml",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "config",
+                "export.yaml"
+              ]
+            },
+            "description": "Изтегляне на самия `configuration.yaml`\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Цял YAML заменя описанието (`?dry=1` — само разликата)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/config/import",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "config",
+                "import"
+              ]
+            },
+            "description": "Цял YAML заменя описанието (`?dry=1` — само разликата)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
           "name": "Нова папка в дървото",
           "request": {
             "method": "POST",

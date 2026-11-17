@@ -6639,6 +6639,292 @@
         ]
       }
     },
+    "/admin/api/portals/{portalId}/config": {
+      "get": {
+        "summary": "Опции на портала (`configuration.yaml`) + чекпойнт",
+        "operationId": "get_portals_portalId_config",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ]
+      },
+      "put": {
+        "summary": "Запис на опциите (иска чекпойнт: `expectHash`/`If-Match`)",
+        "operationId": "put_portals_portalId_config",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ],
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/api/portals/{portalId}/config/verify": {
+      "post": {
+        "summary": "Сверка на `files[]` с реалните файлове в папката",
+        "operationId": "post_portals_portalId_config_verify",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ],
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/api/portals/{portalId}/config/adopt": {
+      "post": {
+        "summary": "Ръчна промяна във файла влиза в записа",
+        "operationId": "post_portals_portalId_config_adopt",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ],
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/api/portals/{portalId}/config/export.yaml": {
+      "get": {
+        "summary": "Изтегляне на самия `configuration.yaml`",
+        "operationId": "get_portals_portalId_config_export_yaml",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ]
+      }
+    },
+    "/admin/api/portals/{portalId}/config/import": {
+      "post": {
+        "summary": "Цял YAML заменя описанието (`?dry=1` — само разликата)",
+        "operationId": "post_portals_portalId_config_import",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ],
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/api/portals/{portalId}/tree/folder": {
       "post": {
         "summary": "Нова папка в дървото",

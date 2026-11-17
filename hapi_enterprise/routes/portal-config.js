@@ -27,11 +27,12 @@ function create(deps) {
     if (parts[0] !== 'admin' || parts[1] !== 'api' || parts[2] !== 'portals' || parts[4] !== 'config') return null;
     if (parts.length === 5) return method === 'GET' || method === 'PUT' ? 'root' : null;
     if (parts.length !== 6) return null;
-    const sub = parts[5];
-    if (sub === 'verify' && method === 'POST') return 'verify';
-    if (sub === 'adopt' && method === 'POST') return 'adopt';
-    if (sub === 'export.yaml' && method === 'GET') return 'export';
-    if (sub === 'import' && method === 'POST') return 'import';
+    // Литералите се сравняват направо с `parts[5]`: така договорът в `admin-api-spec.js` и
+    // проверката за „описан, но липсващ в кода“ виждат СЪЩИЯ сегмент, а не локално копие.
+    if (parts[5] === 'verify' && method === 'POST') return 'verify';
+    if (parts[5] === 'adopt' && method === 'POST') return 'adopt';
+    if (parts[5] === 'export.yaml' && method === 'GET') return 'export';
+    if (parts[5] === 'import' && method === 'POST') return 'import';
     return null;
   }
 

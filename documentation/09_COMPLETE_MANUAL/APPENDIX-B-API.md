@@ -6,12 +6,12 @@
 > **не се редактира на ръка**. Всеки маршрут носи своята способност (виж
 > `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` за пълния договор).
 
-Общо: **223** маршрута в **2** групи.
+Общо: **229** маршрута в **2** групи.
 
 | Група | Маршрути |
 | --- | --- |
 | `/PATCH` | 1 |
-| `/admin/api` | 222 |
+| `/admin/api` | 228 |
 
 ## /PATCH
 
@@ -194,6 +194,12 @@
 | DELETE | `/admin/api/portals/{portalId}/html-projects/{projectId}` | Премахване на HTML проект |
 | POST | `/admin/api/portals/{portalId}/html` | Публикуване на HTML към портала |
 | GET | `/admin/api/portals/{portalId}/tree` | Дървото на папката на портала |
+| GET | `/admin/api/portals/{portalId}/config` | Опции на портала (`configuration.yaml`) + чекпойнт |
+| PUT | `/admin/api/portals/{portalId}/config` | Запис на опциите (иска чекпойнт: `expectHash`/`If-Match`) |
+| POST | `/admin/api/portals/{portalId}/config/verify` | Сверка на `files[]` с реалните файлове в папката |
+| POST | `/admin/api/portals/{portalId}/config/adopt` | Ръчна промяна във файла влиза в записа |
+| GET | `/admin/api/portals/{portalId}/config/export.yaml` | Изтегляне на самия `configuration.yaml` |
+| POST | `/admin/api/portals/{portalId}/config/import` | Цял YAML заменя описанието (`?dry=1` — само разликата) |
 | POST | `/admin/api/portals/{portalId}/tree/folder` | Нова папка в дървото |
 | PATCH | `/admin/api/portals/{portalId}/tree/folder` | Флагове на папка (видима, медийна, заключена) |
 | POST | `/admin/api/portals/{portalId}/tree/upload` | Качване на файл в дървото на папката |

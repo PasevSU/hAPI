@@ -9,7 +9,7 @@
 // Договор: `handle()` връща `true`, когато заявката е за този компонент (и е приключена),
 // и `false`, когато трябва да я поеме следващият компонент.
 function create(deps) {
-  const { json, fail, parse, audit, clean, fsp, path, portalAbs, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr } = deps;
+  const { json, fail, parse, audit, clean, fsp, path, portalAbs, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr, portalFolder } = deps;
 
   function notMatching(parts, method) {
     const target = parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'tree' && parts[5] === 'folder' && parts.length === 6;
@@ -59,6 +59,10 @@ function create(deps) {
         // Междинна липсваща папка остава 404 — там грешката е в пътя, не в корена.
         await fsp.mkdir(rootAbs, { recursive: true });
         await fsp.mkdir(full);
+        // Щом папката на портала вече съществува, в нея стои и описанието
+        // (`configuration.yaml`): „портал с папка, но без описание“ е състояние, което
+        // никой не може да обясни. `ensure` е идемпотентен и не пипа съществуващ файл.
+        if (portalFolder) await portalFolder.ensure(p).catch(() => { });
       } catch (e) {
         if (e.code === 'EEXIST') fail(res, 409, 'Папката вече съществува');
         else if (e.code === 'ENOENT') fail(res, 404, 'Родителската папка липсва');
