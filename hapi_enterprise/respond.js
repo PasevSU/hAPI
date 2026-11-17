@@ -22,8 +22,27 @@
 //   process/error Error [ERR_HTTP_HEADERS_SENT] … at json (server.js) at fail (server.js)
 const CODE = 'SINGLE_RESPONSE';
 
-/** Тялото се строи ПРЕДИ заглавките: сериализация, която се провали, не пипа отговора. */
+/** Непрочетеният остатък от заявката се изхвърля, за да остане връзката използваема. */
+function drain(res) {
+  const req = res && res.req;
+  if (!req || typeof req.resume !== 'function' || req.readableEnded || req.destroyed) return;
+  try {
+    req.resume();
+  } catch {
+    /* мъртва връзка: няма какво да се източи и това не е нова грешка */
+  }
+}
+
+/**
+ * Тялото се строи ПРЕДИ заглавките: сериализация, която се провали, не пипа отговора.
+ *
+ * Остатъкът от заявката се източва ТУК, на границата на отговора: отговор, изпратен преди
+ * тялото да е прочетено (401, 404, 409, 413), оставя непрочетени байтове в keep-alive
+ * връзката и следващата заявка по нея чака вечно. `resume()` ги изхвърля, без да унищожава
+ * сокета — унищожаването е причината 413 да оставя отровена връзка (DEF-92).
+ */
 function json(res, status, obj, headers = {}) {
+  drain(res);
   const body = JSON.stringify(obj);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',

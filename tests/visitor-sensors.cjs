@@ -29,7 +29,7 @@ const fakeReq = ({ ip = '203.0.113.9', ua = EDGE, lang = 'bg-BG,bg;q=0.9,en;q=0.
 });
 
 let current = 'A0';
-const stage = (name, fn) => { current = name; fn(); console.log('  ✔ ' + name); };
+const stage = async (name, fn) => { current = name; await fn(); console.log('  ✔ ' + name); };
 
 (async () => {
   // ── A. Разпознаване на клиента ────────────────────────────────────────────────
@@ -294,7 +294,11 @@ const stage = (name, fn) => { current = name; fn(); console.log('  ✔ ' + name)
 
     await stage('C07 право на изтриване през API · после 404', async () => {
       const list = (await api('/admin/api/sensors/visitors')).data.visitors;
-      const target = list[0];
+      // Целта е ПОСЕТИТЕЛЯТ на портала, не администраторът: всяка администраторска
+      // заявка също се наблюдава (`admin.login`), затова записът на самия администратор
+      // се пресъздава от следващата заявка и изтриването му не би могло да „задържи“.
+      const target = list.find((v) => (v.ips || []).includes('203.0.113.9'));
+      assert.ok(target, 'посетителят на портала е в списъка');
       assert.equal((await api(`/admin/api/sensors/visitors/${target.id}`, 'DELETE')).status, 200);
       assert.equal((await api(`/admin/api/sensors/visitors/${target.id}`)).status, 404, 'профилът е изтрит');
       assert.equal((await api(`/admin/api/sensors/visitors/${target.id}`, 'DELETE')).status, 404);

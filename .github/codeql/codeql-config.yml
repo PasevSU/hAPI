@@ -1,0 +1,19 @@
+name: hAPI CodeQL configuration
+
+# `psemp-gateway/packages/` съдържа ДОСЛОВНИ копия на външни пакети от
+# `PasevSU/js_project_pack/READY_JS_PACKAGES` (openpgpjs, javascript-opentimestamps,
+# email-evidence-js-core, hash/crypto помощни). Те се поддържат и сканират в своето
+# хранилище; поправка тук би създала разклонение, което следващата синхронизация трие —
+# тоест „поправка“, която изчезва, е по-лоша от известен пропуск.
+#
+# ВАЖНО: изключението е САМО за тази папка. Кодът на самия gateway
+# (`psemp-gateway/*.cjs`, включително `api.js` и `evidence-*.cjs`) остава в обхвата на
+# `security-extended`, както и целият `hapi_enterprise/`.
+#
+# Известните находки в изключените копия (за да не се загубят, когато се синхронизира
+# следваща версия на пакета): ReDoS в `05-forensics/email-evidence-js-core`
+# (`eml_parser.js`, `09_darkblue_structured_parsing.js`), TOCTOU в
+# `bin/build-email-json.mjs`, регистрово-чувствителен `<script>` в `07-ots/repair-ots.js`
+# и log injection в `01-core/self-test.js`.
+paths-ignore:
+  - psemp-gateway/packages

@@ -1,0 +1,21 @@
+{
+  "manifest_version": 2,
+  "name": "__MSG_extName__",
+  "version": "1.9",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "pasevsu-forensic-headers@pasev.example",
+      "strict_min_version": "115.0"
+    }
+  },
+  "permissions": ["compose", "storage"],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  }
+}

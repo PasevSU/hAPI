@@ -11,7 +11,12 @@ export default [
       'documentation/**', 'docs/**',
       // Локални среди (Python venv за инструменти, TimescaleDB и т.н.): не са код на
       // проекта и не бива да чупят `eslint .` — venv-ът съдържа чужди JS файлове.
-      '.venv/**', '**/.venv/**', 'venv/**', '**/site-packages/**'
+      '.venv/**', '**/.venv/**', 'venv/**', '**/site-packages/**',
+      // Вендорнатият чужд код (js_project_pack). Нашите правила не важат за него и не бива
+      // да чупят `eslint .`: 07-ots/opentimestamps.min.js е минифициран и сам дава 2033
+      // находки, тоест изданието падаше по причина, която не е наша. Чуждият код се
+      // проверява с неговите си тестове, не с нашия линт.
+      'psemp-gateway/packages/**'
     ]
   },
   js.configs.recommended,
@@ -83,6 +88,23 @@ export default [
     files: ['hapi_enterprise/evidence-portal/assets/qrcode.js'],
     languageOptions: { globals: { ...globals.browser, ...globals.amd, ...globals.node, ...globals.commonjs } },
     rules: { 'no-redeclare': 'off', 'no-control-regex': 'off', 'no-unused-vars': 'off', 'no-useless-assignment': 'off' }
+  },
+  // MailExtension-ите на Thunderbird не са нито Node, нито уеб страница: глобалът е
+  // `browser` (WebExtension API) плюс уеб платформата (`crypto.subtle`, `TextEncoder`,
+  // `File`). Без този блок `thunderbird-extension/background.js` даваше 11 фалшиви
+  // `no-undef` още преди този дефект, тоест папката никога не е била под lint.
+  {
+    files: ['thunderbird-extension/**/*.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: {
+        ...globals.webextensions,
+        ...globals.browser,
+        // `thunderbird-extension/user.js` е prefs файл: функцията я дава Thunderbird,
+        // не ECMAScript. Файлът не се изпълнява от Node, само се чете от профила.
+        user_pref: 'readonly'
+      }
+    }
   },
   prettier
 ];

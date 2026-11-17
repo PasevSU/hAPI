@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title data-i18n="optionsTitle">PasevSU Forensic Mail — Options</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        margin: 1.5rem;
+        max-width: 40rem;
+      }
+      .field {
+        display: grid;
+        grid-template-columns: 12rem 1fr;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+      .field label {
+        font-weight: 600;
+      }
+      .field small {
+        grid-column: 2;
+        color: #555;
+        margin-top: -0.4rem;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 0.3rem 0.4rem;
+      }
+      .checkbox-field {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 1rem 0;
+      }
+      button {
+        padding: 0.4rem 1rem;
+        cursor: pointer;
+      }
+      #status {
+        margin-left: 0.75rem;
+        color: #146c43;
+      }
+      h1 {
+        font-size: 1.75rem;
+      }
+      h2 {
+        font-size: 1.35rem;
+        margin-top: 2rem;
+      }
+      .note {
+        color: #555;
+        font-size: 0.8rem;
+        margin-top: 1.5rem;
+      }
+      #attachHashes {
+        font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+        font-size: 0.75rem;
+        word-break: break-all;
+      }
+      #attachHashes div {
+        margin-left: 1rem;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 data-i18n="optionsTitle">PasevSU Forensic Mail — Options</h1>
+    <p data-i18n-html="optionsIntro">
+      These values are written into every outgoing email as
+      <code>X-PasevSU-*</code> headers. Changes apply from the next message you send.
+    </p>
+
+    <p class="note" id="armed"></p>
+    <p class="note" id="manifest"></p>
+    <p class="note" id="lastSend"></p>
+    <p class="note" id="attachFailures"></p>
+    <p class="note" id="receiptProblem"></p>
+    <div class="note hidden" id="attachHashesWrap">
+      <span data-i18n="attachmentHashes">Attachment hashes of the last message:</span>
+      <div id="attachHashes"></div>
+    </div>
+
+    <div class="field">
+      <label for="version" data-i18n="labelVersion">Version</label>
+      <input type="text" id="version" />
+    </div>
+    <div class="field">
+      <label for="framework" data-i18n="labelFramework">Framework</label>
+      <input type="text" id="framework" />
+    </div>
+    <div class="field">
+      <label for="origin" data-i18n="labelOrigin">Origin</label>
+      <input type="text" id="origin" />
+    </div>
+    <div class="field">
+      <label for="organization" data-i18n="labelOrganization">Organization</label>
+      <input type="text" id="organization" />
+    </div>
+    <div class="field">
+      <label for="caseId" data-i18n="labelCaseId">Case ID</label>
+      <input type="text" id="caseId" />
+      <small data-i18n="caseIdHint">e.g. CASE-2026-001 (leave empty to omit the header)</small>
+    </div>
+    <div class="field">
+      <label for="pgpFingerprint" data-i18n="labelPgp">PGP Fingerprint (Thunderbird key)</label>
+      <input type="text" id="pgpFingerprint" />
+      <small data-i18n="pgpHint">e.g. 3F2A9C… (leave empty to omit the header)</small>
+    </div>
+
+    <div class="checkbox-field">
+      <input type="checkbox" id="enableOts" />
+      <label for="enableOts" data-i18n-html="labelOts"
+        >Mark every message for OpenTimestamps (<code>X-PasevSU-OTS: pending</code>)</label
+      >
+    </div>
+
+    <div class="checkbox-field">
+      <input type="checkbox" id="enableReceipt" />
+      <label for="enableReceipt" data-i18n-html="labelReceipt"
+        >Ask for a delivery receipt on every message
+        (<code>Disposition-Notification-To</code>)</label
+      >
+    </div>
+    <div class="field">
+      <label for="receiptAddress" data-i18n="labelReceiptAddress"
+        >Fallback receipt address</label
+      >
+      <input type="text" id="receiptAddress" />
+      <small data-i18n="receiptAddressHint"
+        >used only when Thunderbird does not report the sending identity</small
+      >
+    </div>
+
+    <button id="save" data-i18n="save">Save</button>
+    <span id="status"></span>
+
+    <h2 data-i18n="sectionShared">Shared settings file</h2>
+    <p data-i18n-html="sharedIntro">
+      The gateway keeps the same keys in
+      <code>psemp-gateway/settings.default.json</code>. Import it here so both halves
+      agree on version, framework, organization and PGP fingerprint, and export the
+      current values back to that file when you change them.
+    </p>
+    <div class="checkbox-field">
+      <input type="file" id="importFile" accept=".json,application/json" />
+      <button id="exportFile" type="button" data-i18n="exportButton">
+        Export settings file
+      </button>
+    </div>
+    <p class="note" data-i18n-html="originNote">
+      <code>origin</code> is not copied from the file: it names the producer, so the
+      extension always writes <code>Thunderbird</code> and the gateway writes
+      <code>PSEMP-Gateway</code>.
+    </p>
+
+    <p class="note" data-i18n-html="receiptNote">
+      The delivery receipt is a standard MDN (RFC 8098): the recipient is
+      <em>asked</em>, not required, and most clients show a dialog.
+    </p>
+
+    <p class="note" data-i18n-html="pgpNote">
+      <strong>OpenPGP already configured in Thunderbird.</strong> Put the fingerprint
+      of the key your account already signs with here.
+    </p>
+
+    <p class="note" data-i18n-html="limitationsNote">
+      Real OpenPGP signatures (<code>.asc</code>) and OpenTimestamps
+      (<code>.ots</code>) cannot be produced inside a Thunderbird MailExtension.
+    </p>
+
+    <script src="options.js"></script>
+  </body>
+</html>

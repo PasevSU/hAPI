@@ -1,0 +1,15 @@
+package:
+  id: 15-openpgpjs
+  runtime: node
+dependencies:
+  enabled: true
+  packageManager: auto
+  includeDevDependencies: true
+  installMode: install
+settings:
+  keyType: ecc
+  curve: ed25519
+  cipherSuite: aes256
+  armor: true
+  requirePassphrase: true
+  minimumPassphraseLength: 12

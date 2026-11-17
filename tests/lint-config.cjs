@@ -12,6 +12,8 @@
 //   • вендорският QR код не се съди по стилови правила;
 //   • има базова линия за наследените находки и тя НЕ покрива новия код;
 //   • `npm run lint` съществува и CI го пуска;
+//   • тестът пуска СЪЩАТА команда като изданието (`.`), а не по-тесен списък;
+//   • вендорнатият чужд код е изключен, защото чупи `eslint .` по чужда причина;
 //   • ако зависимостите са налични — lint наистина минава с код 0.
 // ─────────────────────────────────────────────────────────────────────────────
 const assert = require('node:assert/strict');
@@ -52,11 +54,23 @@ for (const clean of ['hapi_enterprise/secret-lock.js', 'tests/secret-lock.cjs', 
   assert.equal(baseline[clean] !== undefined, false, 'новият файл ' + clean + ' не бива да е в базовата линия — трябва да е чист');
 }
 
-// 6. Ако зависимостите са налични — пускаме истинския lint.
+// 6. Тестът пуска ТОВА, което пуска изданието, иначе гейтът се разминава тихо.
+// Дефектът: този файл проверяваше тесен списък (`hapi_enterprise tests custom_components
+// scripts`), а `safe-release.cjs` пуска `eslint .`. Вендорнатият js_project_pack в
+// `psemp-gateway/packages/` (2033 находки само от минифицирания opentimestamps.min.js)
+// правеше изданието червено, докато тестът за линт оставаше зелен. Обхватът вече е един.
+const release = read('scripts/safe-release.cjs');
+assert.match(release, /\[eslintBin,\s*'\.',\s*'--max-warnings=0'\]/,
+  'изданието трябва да пуска `eslint .` — ако обхватът се смени, смени и §6 по-долу');
+
+// 7. Вендорнатият чужд код не се съди с нашите правила.
+assert.match(config, /psemp-gateway\/packages\/\*\*/, 'вендорнатият js_project_pack трябва да е изключен от линта');
+
+// 8. Ако зависимостите са налични — пускаме истинския lint.
 const eslintInstalled = fs.existsSync(path.join(ROOT, 'node_modules', 'eslint'));
 if (eslintInstalled) {
   const run = spawnSync(process.execPath, [path.join(ROOT, 'node_modules', 'eslint', 'bin', 'eslint.js'),
-    'hapi_enterprise', 'tests', 'custom_components', 'scripts', '--max-warnings=0'], { cwd: ROOT, encoding: 'utf8' });
+    '.', '--max-warnings=0'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   assert.equal(run.status, 0, 'lint не минава:\n' + (run.stdout || '') + (run.stderr || ''));
   console.log('PASS lint-config: конфигурацията е вярна · базова линия ' + Object.keys(baseline).length + ' файла · eslint минава с 0');
 } else {

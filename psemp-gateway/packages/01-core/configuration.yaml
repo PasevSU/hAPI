@@ -1,0 +1,13 @@
+package:
+  id: 01-core
+  runtime: node
+dependencies:
+  enabled: true
+  packageManager: auto
+  includeDevDependencies: true
+  installMode: install
+settings:
+  logLevel: info
+  requestTimeoutMs: 15000
+  cacheTtlSeconds: 60
+  strictValidation: true

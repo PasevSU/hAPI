@@ -1,0 +1,767 @@
+#!/usr/bin/env node
+/*
+ * PSEMP sent-mail checking.
+ *
+ * `tools/check-sent.cjs` is the only thing in the framework that compares the
+ * headers on a message with the bytes of that message. If it is wrong, or if it is
+ * merely lenient, every later claim about "proven evidence" rests on nothing.
+ *
+ * So this builds a message the way the extension produces one — by running the real
+ * `background.js` and taking its headers and the manifest it attaches — assembles a
+ * real MIME message around them, and then breaks it in the ways that matter:
+ *
+ *   - the manifest is missing (the defect that shipped: headers advertising a
+ *     manifest Thunderbird had silently dropped);
+ *   - an attachment was altered after the manifest was built;
+ *   - a message carries no evidence headers at all.
+ *
+ * The checker must fail on each of those, and must still pass when Thunderbird
+ * rewrites the header names into Http-Header-Case.
+ *
+ *   node psemp-gateway/test/check-sent.cjs
+ */
+
+'use strict';
+
+const assert = require('node:assert');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
+const { loadExtension, headerMap, sha256Hex, MANIFEST_FILENAME } = require('./lib/extension.cjs');
+const {
+  inspectMessage,
+  splitMessages,
+  sentFiles,
+  isSentName,
+  lastMessages,
+  streamMessages,
+  newestSent,
+} = require('../tools/check-sent.cjs');
+const { appendWarMarker } = require('../api.js');
+const { FINGERPRINT, signaturePacket } = require('./lib/openpgp.cjs');
+
+const MANIFEST = MANIFEST_FILENAME;
+
+// A real message leaves the compose window with the WAR marker on its Subject, because
+// the extension returns `subject: warSubject` from onBeforeSend. The fixtures carry it
+// too — otherwise they would model a message the add-on cannot produce, and the check
+// that binds Subject to the signed record would never be exercised.
+const WAR_SUBJECT = appendWarMarker('evidence test');
+
+/* --- build a message from the extension's own output ----------------------- */
+
+/**
+ * Run background.js for a compose window and return the headers it injected plus
+ * the manifest file it attached. Nothing here is hand-written: if the extension
+ * changes what it emits, these tests follow it.
+ *
+ * ComposeAttachment.id is an integer in the WebExtension schema, so the ids handed
+ * to the extension are integers here too — a string id is not something Thunderbird
+ * produces, and the extension skips it.
+ *
+ * `stored` overrides the stored settings for one call, so a test can model a profile
+ * where a setting is on (a receipt address, say) without changing the default fixture
+ * every other suite relies on.
+ */
+async function runExtension({ body = 'Forensic body', files = [], subject = 'evidence test', stored = {} } = {}) {
+  const attachments = {};
+  files.forEach((file, index) => {
+    attachments[index + 1] = { name: file.name, bytes: file.bytes };
+  });
+
+  const { listeners, added } = loadExtension({
+    // A 40-hex fingerprint, because that is the only shape the extension will publish:
+    // an 8/16-hex key id is refused outright, so a fixture claiming one would model a
+    // message the add-on cannot produce. It matches the signer in lib/openpgp.cjs.
+    stored: { version: '1.1', caseId: 'CASE-1', pgpFingerprint: FINGERPRINT, ...stored },
+    attachments,
+  });
+  const details = {
+    isPlainText: true,
+    body,
+    subject,
+    attachments: files.map((file, index) => ({ id: index + 1, name: file.name })),
+    customHeaders: [],
+  };
+  const result = await listeners[0]({}, details);
+  assert.ok(result && result.details, 'listener must return { details }');
+
+  assert.strictEqual(added.length, 1, 'the manifest must be attached through addAttachment');
+  const manifestBytes = Buffer.from(await added[0].attachment.file.arrayBuffer());
+
+  return { headers: headerMap(result.details.customHeaders), manifestBytes, details };
+}
+
+/** The fingerprint the fixtures' synthetic signature claims to come from. */
+const SIGNER_FINGERPRINT = FINGERPRINT;
+
+function base64Lines(buffer) {
+  return buffer.toString('base64').replace(/(.{76})/g, '$1\r\n');
+}
+
+/**
+ * Assemble a MIME message. `parts` are extra body parts; the manifest is added
+ * unless `includeManifest` is false, which is how a dropped manifest is simulated.
+ *
+ * The message is PGP/MIME signed by default, because that is what Thunderbird sends
+ * once the account signs mail: an unsigned fixture would model a message the add-on
+ * cannot produce. The signature is hand-built (see `lib/openpgp.cjs`) — this proves
+ * the verifier's structural reasoning, not the crypto.
+ */
+function buildMessage({
+  headers,
+  manifestBytes,
+  body = 'Forensic body',
+  bodyEncoding = '8bit',
+  attachmentParts = [],
+  includeManifest = true,
+  recase = false,
+  subject = WAR_SUBJECT,
+  sign = true,
+  nestInner = false,
+  extraParts = [],
+}) {
+  const boundary = 'psemp-test-boundary';
+  const head = ['From: sender@example.test', 'To: recipient@example.test', `Subject: ${subject}`, 'MIME-Version: 1.0'];
+
+  for (const [name, value] of headers) {
+    // Thunderbird hands custom header names back in Http-Header-Case; the checker
+    // must match case-insensitively (RFC 5322 section 2.2).
+    head.push(`${recase ? recaseHeader(name) : name}: ${value}`);
+  }
+
+  const lines = [];
+  lines.push(`Content-Type: multipart/mixed; boundary="${boundary}"`, '', `--${boundary}`);
+  lines.push('Content-Type: text/plain; charset=utf-8', `Content-Transfer-Encoding: ${bodyEncoding}`, '', body);
+  lines.push(`--${boundary}`);
+
+  for (const part of attachmentParts) {
+    lines.push(`Content-Type: application/octet-stream; name="${part.name}"`);
+    lines.push(`Content-Disposition: attachment; filename="${part.name}"`);
+    lines.push('Content-Transfer-Encoding: base64', '', base64Lines(part.bytes) || '', `--${boundary}`);
+  }
+
+  if (includeManifest) {
+    lines.push(`Content-Type: application/json; name="${MANIFEST}"`);
+    lines.push(`Content-Disposition: attachment; filename="${MANIFEST}"`);
+    lines.push('Content-Transfer-Encoding: base64', '', base64Lines(manifestBytes), `--${boundary}`);
+  }
+
+  for (const part of extraParts) {
+    lines.push(`Content-Type: ${part.contentType || 'application/octet-stream'}; name="${part.name}"`);
+    lines.push(`Content-Disposition: attachment; filename="${part.name}"`);
+    lines.push('Content-Transfer-Encoding: base64', '', base64Lines(part.bytes) || '', `--${boundary}`);
+  }
+
+  lines.push('--', '');
+  const mixed = lines.join('\r\n');
+  if (!sign) return [...head, mixed].join('\r\n');
+
+  return [...head, signedEnvelope({ inner: mixed, nestInner })].join('\r\n');
+}
+
+/**
+ * Wrap an already-assembled MIME entity in a PGP/MIME signature.
+ *
+ * The top-level headers stay outside: in PGP/MIME only the entity below `Content-Type`
+ * is signed, which is why the extension's own headers are not covered by the signature
+ * and why their integrity rests on the manifest instead.
+ *
+ * `nestInner` puts the multipart/signed *inside* an outer multipart/mixed, which is the
+ * shape that carries files outside the signature.
+ */
+function signedEnvelope({ inner, nestInner }) {
+  const outer = 'psemp-signed-boundary';
+  const mixed = 'psemp-mixed-boundary';
+  const preamble = 'This is an OpenPGP/MIME signed message (RFC 4880 and 3156)';
+  const signedPart = [
+    `Content-Type: multipart/signed; micalg=pgp-sha256; protocol="application/pgp-signature"; boundary="${outer}"`,
+    '',
+    preamble,
+    `--${outer}`,
+    inner,
+    `--${outer}`,
+    'Content-Type: application/pgp-signature; name="signature.asc"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    base64Lines(signaturePacket(SIGNER_FINGERPRINT)),
+    `--${outer}--`,
+    '',
+  ].join('\r\n');
+
+  if (!nestInner) return signedPart;
+
+  // The signed message is one part of an outer multipart/mixed — the shape in which
+  // files sit beside the signature and are therefore covered by nothing.
+  return [
+    `Content-Type: multipart/mixed; boundary="${mixed}"`,
+    '',
+    `--${mixed}`,
+    signedPart,
+    `--${mixed}`,
+    'Content-Type: application/octet-stream; name="outside.pdf"',
+    'Content-Disposition: attachment; filename="outside.pdf"',
+    'Content-Transfer-Encoding: base64',
+    '',
+    base64Lines(Buffer.from('outside the signature')),
+    `--${mixed}--`,
+    '',
+  ].join('\r\n');
+}
+
+
+/** X-PasevSU-Body-SHA256 -> X-Pasevsu-Body-Sha256, as Thunderbird normalises it. */
+function recaseHeader(name) {
+  return name
+    .toLowerCase()
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('-');
+}
+
+const failing = (result) => result.checks.filter((check) => !check.ok).map((check) => check.name);
+
+/* --- checks --------------------------------------------------------------- */
+const checks = [];
+function check(name, fn) {
+  checks.push({ name, fn });
+}
+
+check('a message the extension produced passes every check', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({ headers, manifestBytes });
+  const result = inspectMessage(message);
+
+  assert.deepStrictEqual(failing(result), [], `unexpected failures: ${failing(result).join(', ')}`);
+  assert.ok(result.ok);
+  assert.ok(result.manifest, 'the manifest must be recovered from the message');
+  assert.match(result.manifest.merkle_root, /^[0-9a-f]{64}$/);
+  return `${result.checks.length} checks, evidence-id ${result.manifest.evidence_id}`;
+});
+
+check('an attachment listed in the manifest is found and re-hashed', async () => {
+  const pdf = { name: 'document.pdf', bytes: Buffer.from('pretend this is a pdf') };
+  const { headers, manifestBytes } = await runExtension({ files: [pdf] });
+  const message = buildMessage({ headers, manifestBytes, attachmentParts: [pdf] });
+  const result = inspectMessage(message);
+
+  assert.deepStrictEqual(failing(result), [], `unexpected failures: ${failing(result).join(', ')}`);
+  const names = result.checks.map((c) => c.name);
+  assert.ok(names.includes('attachment document.pdf'), 'the attachment must be checked by name');
+  return `attachment verified against manifest sha256 ${sha256Hex(pdf.bytes).slice(0, 12)}…`;
+});
+
+check('an attachment present but missing from the manifest is reported', async () => {
+  // The extension skips an attachment it cannot read, and the manifest then simply
+  // does not list it. The file still travels with the mail, so the evidence chain
+  // has a hole the headers do not mention — the checker must say so.
+  const pdf = { name: 'document.pdf', bytes: Buffer.from('pretend this is a pdf') };
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({ headers, manifestBytes, attachmentParts: [pdf] });
+  const result = inspectMessage(message);
+
+  assert.strictEqual(result.ok, false, 'an unaccounted attachment must not pass');
+  assert.ok(failing(result).includes('attachment document.pdf is in the manifest'));
+  return 'unaccounted attachment caught';
+});
+
+check('a dropped manifest is reported even though the headers look right', async () => {
+  // This is the shipped defect: X-PasevSU-Manifest-SHA256 present, nothing attached.
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({ headers, manifestBytes, includeManifest: false });
+  const result = inspectMessage(message);
+
+  assert.strictEqual(result.ok, false, 'a missing manifest must not pass');
+  assert.ok(failing(result).includes('manifest attached'), 'the failure must name the manifest');
+  assert.match(
+    result.checks.find((c) => c.name === 'manifest attached').detail,
+    /absent although X-PasevSU-Manifest-SHA256 is set/
+  );
+  return 'missing manifest caught by name';
+});
+
+check('an altered attachment breaks the check that names it', async () => {
+  const pdf = { name: 'document.pdf', bytes: Buffer.from('original bytes') };
+  const { headers, manifestBytes } = await runExtension({ files: [pdf] });
+  const tampered = { ...pdf, bytes: Buffer.from('tampered bytes') };
+  const message = buildMessage({ headers, manifestBytes, attachmentParts: [tampered] });
+  const result = inspectMessage(message);
+
+  assert.strictEqual(result.ok, false, 'tampered attachment bytes must not pass');
+  assert.ok(failing(result).includes('attachment document.pdf'));
+  return 'altered bytes caught';
+});
+
+check('a message with no evidence headers fails rather than passing vacuously', async () => {
+  const message = buildMessage({
+    headers: new Map([['X-Other', 'value']]),
+    manifestBytes: Buffer.from('{}'),
+    includeManifest: false,
+  });
+  const result = inspectMessage(message);
+
+  assert.strictEqual(result.ok, false);
+  assert.ok(failing(result).includes('always-on headers present'));
+  return 'absence of evidence is not evidence';
+});
+
+/**
+ * Rewrite one custom header before the message is assembled, the way an attacker with
+ * access to the sending host — or a mail server that rewrites headers — could.
+ */
+function tamper(headers, name, transform) {
+  return Array.from(headers, ([key, value]) =>
+    key.toLowerCase() === name.toLowerCase() ? [key, transform(value)] : [key, value]
+  );
+}
+
+/* --- layer 2: does the signature reach the files? -------------------------- */
+
+check('an unsigned message fails even though every evidence header is right', async () => {
+  // The defect the user reported as "целият мейл не се подписва": the headers can all
+  // verify while nothing on the wire is signed at all.
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({ headers, manifestBytes, sign: false });
+  const result = inspectMessage(message);
+
+  assert.strictEqual(result.ok, false, 'an unsigned message must not pass');
+  assert.ok(
+    failing(result).includes('message is OpenPGP signed'),
+    `expected the signature check to fail, got: ${failing(result).join(', ') || 'nothing failed'}`
+  );
+  return 'unsigned message rejected';
+});
+
+check('a file outside the signed part is reported, not waved through', async () => {
+  // multipart/mixed { multipart/signed { ... }, outside.pdf } — the signature is
+  // real and covers the text, the file beside it is covered by nothing.
+  const pdf = { name: 'document.pdf', bytes: Buffer.from('pretend this is a pdf') };
+  const { headers, manifestBytes } = await runExtension({ files: [pdf] });
+  const message = buildMessage({ headers, manifestBytes, attachmentParts: [pdf], nestInner: true });
+  const result = inspectMessage(message);
+
+  assert.ok(result.ok === false, 'files outside the signature must not pass');
+  const coverage = result.checks.find((check) => check.name === 'signature wraps the whole message (files inside it)');
+  assert.ok(coverage, 'the coverage check must be present');
+  assert.strictEqual(coverage.ok, false, 'coverage must fail when a file sits outside the signed part');
+  // Two shapes are refused, and either wording names the defect: the signed part is
+  // nested so the files are covered by nothing, or it is top-level with a file beside it.
+  assert.match(coverage.detail, /nested inside multipart\/mixed|outside the signed part/);
+  return `nested signature caught: ${coverage.detail}`;
+});
+
+check('a duplicated manifest fails the attach-once check', async () => {
+  // The triple-stamping defect: three passes each attached a manifest, so the header
+  // named one while the message carried three.
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({
+    headers,
+    manifestBytes,
+    extraParts: [{ name: MANIFEST, bytes: manifestBytes }],
+  });
+  const result = inspectMessage(message);
+
+  const once = result.checks.find((check) => check.name === 'each payload part is attached once');
+  assert.ok(once, 'the attach-once check must be present');
+  assert.strictEqual(once.ok, false, 'a second manifest must be reported');
+  assert.match(once.detail, /duplicated: .*PasevSU_Manifest\.json/);
+  return 'duplicate manifest caught';
+});
+
+check('a truncated fingerprint claim is refused as a claim at all', async () => {
+  // 28 hex is what the case label looked like; it was published as a fingerprint once.
+  const { headers, manifestBytes } = await runExtension();
+  const truncated = 'CB506C11850F99BBBBA54D09C6A8';
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-PGP-Fingerprint', () => truncated),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+
+  const shape = result.checks.find((check) => check.name === 'X-PasevSU-PGP-Fingerprint is a fingerprint or key id');
+  assert.ok(shape, 'the shape check must be present when a claim is made');
+  assert.strictEqual(shape.ok, false, '28 hex must not pass as a fingerprint');
+  return 'truncated claim refused';
+});
+
+check('a claim that does not match the signer is reported', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const other = 'FFFFEEEE00001111222233334444555566667777';
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-PGP-Fingerprint', () => other),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+
+  const match = result.checks.find((check) => check.name === 'signer matches the fingerprint claim');
+  assert.ok(match, 'the signer/claim check must be present');
+  assert.strictEqual(match.ok, false, 'a claim naming another key must not pass');
+  assert.match(match.detail, /claim=/, `expected claim and signer in the detail, got: ${match.detail}`);
+  return 'claim/signer mismatch caught';
+});
+
+/* --- layer 1: the crypto headers are re-derived, not trusted ---------------- */
+
+check('a tampered digest row is caught by re-deriving the block', async () => {
+  const files = [{ name: 'notes.txt', bytes: Buffer.from('attachment body') }];
+  const { headers, manifestBytes } = await runExtension({ files });
+  const honest = sha256Hex(files[0].bytes);
+  const forged = 'f'.repeat(64);
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-Sha256', (value) => value.split(honest).join(forged)),
+    manifestBytes,
+    attachmentParts: files,
+  });
+  assert.ok(message.includes(forged), 'the fixture must actually carry the forged row');
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('Sha256 block re-derives from the manifest'),
+    `forged digest row must fail: ${failing(result).join(', ') || 'nothing failed'}`
+  );
+  return 'forged row rejected';
+});
+
+check('a tampered engine code no longer matches the evidence', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-Cripto-Engine', (value) => (value[0] === '0' ? '1' : '0') + value.slice(1)),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('Cripto-Engine is the code this evidence derives'),
+    'one changed digit must break the derivation'
+  );
+  return 'forged engine code rejected';
+});
+
+check('a flipped ciphertext byte fails the GCM tag', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-Cripto-title', (value) => {
+      const segments = value.split('.');
+      const body = segments[3] || '';
+      segments[3] = (body[0] === 'A' ? 'B' : 'A') + body.slice(1);
+      return segments.join('.');
+    }),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('Cripto-title decrypts under the engine'),
+    'the authentication tag must reject the edit'
+  );
+  return 'tampered ciphertext rejected';
+});
+
+check('a tampered Headers-SHA256 does not seal the signed record', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({
+    headers: tamper(headers, 'X-PasevSU-Headers-SHA256', (value) => (value[0] === 'a' ? 'b' : 'a') + value.slice(1)),
+    manifestBytes,
+  });
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('Headers-SHA256 header states the manifest seal'),
+    'the seal on the wire must equal the one the manifest declares'
+  );
+  return 'tampered metadata seal rejected';
+});
+
+check('a tampered Subject is caught by the signed record', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({ headers, manifestBytes, subject: 'a different case {{ PasevSU-WAR }}' });
+  const result = inspectMessage(message);
+  assert.ok(
+    failing(result).includes('signed record binds this Subject'),
+    `a swapped subject must fail: ${failing(result).join(', ') || 'nothing failed'}`
+  );
+  return 'swapped subject rejected';
+});
+
+check('header names are matched case-insensitively', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  // Every name and value rewritten the way Thunderbird returns them.
+  const message = buildMessage({ headers, manifestBytes, recase: true });
+  assert.ok(/(^|\n)X-Pasevsu-Body-Sha256: /m.test(message), 'the fixture must actually be recased');
+  const result = inspectMessage(message);
+  assert.deepStrictEqual(failing(result), [], `case must not matter: ${failing(result).join(', ')}`);
+  return 'X-Pasevsu-Body-Sha256 accepted';
+});
+
+check('a quoted-printable body part is decoded before it is compared', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const message = buildMessage({
+    headers,
+    manifestBytes,
+    body: 'Forensic body=20with=20escapes',
+    bodyEncoding: 'quoted-printable',
+  });
+
+  const result = inspectMessage(message);
+  assert.deepStrictEqual(failing(result), [], `qp decoding failed: ${failing(result).join(', ')}`);
+  return 'quoted-printable decoded';
+});
+
+/** Realistic evidence filenames; 14 of them push the `name=hash` list past the line limit. */
+function manyFiles(count = 14) {
+  return Array.from({ length: count }, (_, index) => ({
+    name: `evidence-2026-11-16-case-0001-document-number-${String(index + 1).padStart(3, '0')}-final.pdf`,
+    bytes: Buffer.from(`forensic payload ${index}`),
+  }));
+}
+
+check('a message with many attachments verifies across its header chunks', async () => {
+  // A 14-attachment list is ~1.7k characters, over RFC 5322 §2.1.1's 998-octet line limit,
+  // so the emitter splits it into `<name>`, `<name>-C2`, ... plus `<name>-Chunks`. Reading
+  // only the first piece would compare one chunk against every manifest entry and report a
+  // header that had "forgotten" most of the files.
+  const files = manyFiles();
+  const { headers, manifestBytes } = await runExtension({ files });
+  assert.ok(headers.has('X-PasevSU-Attachments-SHA256-C2'), 'the fixture must actually be chunked');
+  const chunks = headers.get('X-PasevSU-Attachments-SHA256-Chunks');
+  assert.strictEqual(chunks, '2', `expected 2 chunks, got ${chunks}`);
+
+  const result = inspectMessage(buildMessage({ headers, manifestBytes, attachmentParts: files }));
+  assert.deepStrictEqual(failing(result), [], `chunked message failed: ${failing(result).join(', ')}`);
+  return `${files.length} attachments across ${chunks} chunks`;
+});
+
+check('a message that declares chunks and withholds one does not pass', async () => {
+  // Truncation must be caught, not tolerated: a half-list would otherwise verify against a
+  // manifest that names every file, which is exactly the silent pass this tool exists for.
+  const files = manyFiles();
+  const { headers, manifestBytes } = await runExtension({ files });
+  const broken = new Map(headers);
+  broken.delete('X-PasevSU-Attachments-SHA256-C2');
+
+  const result = inspectMessage(buildMessage({ headers: broken, manifestBytes, attachmentParts: files }));
+  assert.strictEqual(result.ok, false, 'a broken chunk chain must not verify');
+  assert.ok(
+    failing(result).includes('Attachments-SHA256 header reassembles from its chunks'),
+    `expected the chunk check to fail, got: ${failing(result).join(', ')}`
+  );
+  return 'missing chunk caught';
+});
+
+check('an mbox is split into individual messages', async () => {
+  const { headers, manifestBytes } = await runExtension();
+  const one = buildMessage({ headers, manifestBytes });
+  const mbox = `From sender@example.test Mon Jan 01 00:00:00 2026\n${one}From sender@example.test Tue Jan 02 00:00:00 2026\n${one}`;
+  const messages = splitMessages(mbox);
+
+  assert.strictEqual(messages.length, 2, `expected 2 messages, got ${messages.length}`);
+  for (const message of messages) {
+    assert.deepStrictEqual(failing(inspectMessage(message)), [], 'each split message must still verify');
+  }
+  return '2 messages, both intact';
+});
+
+check('a plain .eml is one message', () => {
+  const messages = splitMessages('Subject: x\nFrom: y\n\nbody\n');
+  assert.strictEqual(messages.length, 1);
+  return 'no false split';
+});
+
+check('only the Sent mbox is picked, never its index or cache files', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-sent-'));
+  try {
+    const acct = path.join(profile, 'ImapMail', 'mail.example.test');
+    fs.mkdirSync(acct, { recursive: true });
+    // The real Sent mbox, plus the files that are not mail but sit beside it.
+    fs.writeFileSync(path.join(acct, 'Sent'), 'From a@b Mon Jan 01 00:00:00 2026\nSubject: real\n\nbody\n');
+    fs.writeFileSync(path.join(acct, 'Sent.msf'), 'thunderbird summary index, not mail');
+    fs.writeFileSync(path.join(acct, 'SA5PR19MB9972+abc%40outlook.com.wdseml'), 'windows search sidecar');
+    fs.writeFileSync(path.join(acct, 'Inbox'), 'From a@b Mon Jan 01 00:00:00 2026\nSubject: received\n\nbody\n');
+
+    const [chosen, ...rest] = sentFiles(profile);
+    assert.strictEqual(path.basename(chosen), 'Sent', `picked ${path.basename(chosen)}`);
+    assert.deepStrictEqual(rest, [], `nothing else may be probed, got ${rest.map((f) => path.basename(f)).join(', ')}`);
+    assert.match(fs.readFileSync(chosen, 'utf8'), /Subject: real/, 'the file must be the mbox, not an index');
+    return 'index and cache files rejected';
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+check('an account with Sent.msf but no Sent is not treated as a mailbox', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-sent-'));
+  try {
+    const acct = path.join(profile, 'ImapMail', 'never-synced.example.test');
+    fs.mkdirSync(acct, { recursive: true });
+    fs.writeFileSync(path.join(acct, 'Sent.msf'), 'index only, no local copy');
+    assert.deepStrictEqual(sentFiles(profile), [], 'a summary index alone must not be offered as mail');
+    return 'skipped, so a missing local copy is not reported as a defect';
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+check("the add-on's own nested debug profile is not scanned twice", () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-sent-'));
+  try {
+    const nested = path.join(profile, 'chrome_debugger_profile', 'ImapMail', 'mail.example.test');
+    fs.mkdirSync(nested, { recursive: true });
+    fs.writeFileSync(path.join(nested, 'Sent'), 'From a@b Mon Jan 01 00:00:00 2026\nSubject: copy\n\nbody\n');
+    assert.deepStrictEqual(sentFiles(profile), [], 'the nested profile holds a copy of the same mail');
+    return 'nested profile excluded';
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+check('a localised Sent mailbox is found without any English "Sent"', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-sent-'));
+  try {
+    // Gmail under a Bulgarian UI: the folder is "Изпратени" under "[Gmail].sbd".
+    const acct = path.join(profile, 'ImapMail', 'imap.gmail.com', '[Gmail].sbd');
+    fs.mkdirSync(acct, { recursive: true });
+    fs.writeFileSync(path.join(acct, 'Изпратени'), 'From a@b Mon Jan 01 00:00:00 2026\nSubject: изпратено\n\nbody\n');
+    fs.writeFileSync(path.join(acct, 'Изпратени.msf'), 'summary index');
+    fs.writeFileSync(path.join(acct, 'Чернови'), 'From a@b Mon Jan 01 00:00:00 2026\nSubject: draft\n\nbody\n');
+
+    const found = sentFiles(profile);
+    assert.strictEqual(found.length, 1, `expected one mailbox, got ${found.map((f) => path.basename(f)).join(', ')}`);
+    assert.strictEqual(path.basename(found[0]), 'Изпратени');
+    return 'Изпратени picked, Чернови left alone';
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+check('the most recently written Sent mailbox wins', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-sent-'));
+  try {
+    const stale = path.join(profile, 'ImapMail', 'outlook.example.test');
+    const live = path.join(profile, 'ImapMail', 'imap.gmail.com', '[Gmail].sbd');
+    fs.mkdirSync(stale, { recursive: true });
+    fs.mkdirSync(live, { recursive: true });
+    const body = 'From a@b Mon Jan 01 00:00:00 2026\nSubject: x\n\nbody\n';
+    fs.writeFileSync(path.join(stale, 'Sent'), body);
+    fs.writeFileSync(path.join(live, 'Изпратени'), body);
+    fs.utimesSync(path.join(stale, 'Sent'), new Date('2026-11-05T12:00:00Z'), new Date('2026-11-05T12:00:00Z'));
+
+    const found = sentFiles(profile);
+    assert.strictEqual(found.length, 2, `both boxes are candidates, got ${found.length}`);
+    assert.strictEqual(path.basename(found[0]), 'Изпратени', 'the box written today must be checked first');
+    assert.strictEqual(path.basename(found[1]), 'Sent');
+    return 'newest mailbox first';
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+check('the newest message is read from the tail, not from the whole mailbox', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-mbox-'));
+  try {
+    const file = path.join(dir, 'Изпратени');
+    const messages = [];
+    for (let i = 1; i <= 40; i += 1) {
+      messages.push(`From a@b Mon Jan 01 00:00:00 2026\nSubject: message ${i}\n\nтяло ${i}\n`);
+    }
+    fs.writeFileSync(file, messages.join(''));
+
+    const newest = lastMessages(file, 1);
+    assert.strictEqual(newest.length, 1, `expected one message, got ${newest.length}`);
+    assert.match(newest[0], /Subject: message 40\n/);
+    assert.match(newest[0], /тяло 40/, 'a multi-byte body must survive the tail read');
+
+    // Two boundaries are needed before the tail read can stop, so ask for three.
+    const three = lastMessages(file, 3);
+    assert.strictEqual(three.length, 3, `expected three messages, got ${three.length}`);
+    assert.deepStrictEqual(
+      three.map((message) => /Subject: (.*)/.exec(message)[1]),
+      ['message 38', 'message 39', 'message 40']
+    );
+    return 'tail read returns the last messages intact';
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+check('a mailbox is streamed without holding it in memory', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-mbox-'));
+  try {
+    const file = path.join(dir, 'Sent');
+    const messages = [];
+    for (let i = 1; i <= 12; i += 1) {
+      messages.push(`From a@b Mon Jan 01 00:00:00 2026\nSubject: m${i}\n\nПривет ${i}\n`);
+    }
+    const mbox = messages.join('');
+    fs.writeFileSync(file, mbox);
+
+    // A chunk smaller than one header line forces boundaries inside multi-byte characters.
+    const streamed = [...streamMessages(file, 7)];
+    assert.strictEqual(streamed.length, 12, `streamed ${streamed.length} of 12 messages`);
+    assert.deepStrictEqual(streamed, splitMessages(mbox), 'streaming must agree with the in-memory split');
+    assert.match(streamed[11], /Привет 12/, 'characters split across chunks must be rejoined');
+    return '12 messages, chunk size 7 bytes, nothing mangled';
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+check('English and localised Sent names are recognised, unrelated ones are not', () => {
+  for (const name of ['Sent', 'Sent.msf', 'Изпратени', 'Изпратени.msf', '[Gmail]/Изпратени', 'Gesendet', 'Отправленные']) {
+    assert.ok(isSentName(name), `${name} should be a Sent mailbox`);
+  }
+  for (const name of ['Inbox', 'Чернови', 'Кошче', 'Изходящи.msf.tmp', 'SentX', 'Чернови']) {
+    assert.ok(!isSentName(name), `${name} should not be a Sent mailbox`);
+  }
+  return '7 recognised, 5 rejected';
+});
+
+check('the newest sent message wins on its own Date, not the mailbox mtime', () => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'psemp-sent-'));
+  try {
+    // A freshly touched folder holding one old message, and an untouched folder
+    // holding a newer one — exactly the shape of the real profile that misled the
+    // first end-to-end check.
+    const touched = path.join(profile, 'ImapMail', 'imap.gmail.com');
+    const stale = path.join(profile, 'ImapMail', 'imap.gmail-2.com', '[Gmail].sbd');
+    fs.mkdirSync(touched, { recursive: true });
+    fs.mkdirSync(stale, { recursive: true });
+    fs.writeFileSync(
+      path.join(touched, 'Изпратени'),
+      'From a@b Mon Jan 01 00:00:00 2026\nDate: Sun, 20 Nov 2022 17:06:50 +0100\nSubject: ancient\n\nbody\n'
+    );
+    fs.writeFileSync(
+      path.join(stale, 'Изпратени'),
+      'From a@b Mon Jan 01 00:00:00 2026\nDate: Fri, 6 Nov 2026 10:41:15 +0100\nSubject: latest\n\nbody\n'
+    );
+    fs.utimesSync(path.join(stale, 'Изпратени'), new Date('2026-11-06T09:41:00Z'), new Date('2026-11-06T09:41:00Z'));
+
+    const newest = newestSent(sentFiles(profile));
+    assert.ok(newest, 'a newest message must be found');
+    assert.match(newest.message, /Subject: latest/, 'the Date header decides, not the fresh mtime');
+    return 'newest by Date, not by file mtime';
+  } finally {
+    fs.rmSync(profile, { recursive: true, force: true });
+  }
+});
+
+/* --- runner --------------------------------------------------------------- */
+
+// Guarded so `test/stamp-sent.cjs` can import the fixture builders below without
+// re-running this whole suite.
+if (require.main === module) {
+  (async () => {
+    let failed = 0;
+    console.log(path.basename(__filename));
+    for (const { name, fn } of checks) {
+      try {
+        const detail = await fn();
+        console.log(`  ok   ${name}${typeof detail === 'string' ? ` (${detail})` : ''}`);
+      } catch (err) {
+        failed += 1;
+        console.log(`  FAIL ${name}`);
+        console.log(`       ${String(err.message).split('\n').slice(0, 12).join('\n       ')}`);
+      }
+    }
+    console.log(`\n${checks.length - failed}/${checks.length} checks passed`);
+    if (failed > 0) process.exitCode = 1;
+  })();
+}
+
+module.exports = { runExtension, buildMessage, WAR_SUBJECT, checks };

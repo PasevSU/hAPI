@@ -1,0 +1,175 @@
+{
+  "extName": {
+    "message": "PasevSU Forensic Mail"
+  },
+  "extDescription": {
+    "message": "Versieht jede ausgehende Nachricht mit PasevSU-Forensik-Headern, einer SHA-256-Evidenzkette und PasevSU_Manifest.json."
+  },
+  "optionsTitle": {
+    "message": "PasevSU Forensic Mail — Einstellungen"
+  },
+  "optionsIntro": {
+    "message": "Diese Werte werden als X-PasevSU-*-Header in jede ausgehende E-Mail geschrieben. Änderungen gelten ab der nächsten Nachricht, die Sie senden."
+  },
+  "armedChecking": {
+    "message": "Es wird geprüft, ob das Hintergrundskript aktiv ist…"
+  },
+  "armedOk": {
+    "message": "Aktiv — Hintergrundskript geladen um $time$.",
+    "placeholders": {
+      "time": {
+        "content": "$1"
+      }
+    }
+  },
+  "armedNoReport": {
+    "message": "Nicht aktiv — das Hintergrundskript hat sich noch nicht gemeldet. Thunderbird neu starten."
+  },
+  "armedError": {
+    "message": "Nicht aktiv — $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "manifestError": {
+    "message": "Letzter Versand: das Manifest konnte NICHT angehängt werden — $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "lastSendSummary": {
+    "message": "$count$ Nachricht(en) gestempelt. Zuletzt: $when$, Evidenz-ID $evidence$, $files$ Anhang/Anhänge, $headers$ Header.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "when": {
+        "content": "$2"
+      },
+      "evidence": {
+        "content": "$3"
+      },
+      "files": {
+        "content": "$4"
+      },
+      "headers": {
+        "content": "$5"
+      }
+    }
+  },
+  "lastSendNone": {
+    "message": "0 Nachrichten gestempelt — es wurde noch keine ausgehende Nachricht gestempelt. Senden Sie eine, dann aktualisiert sich diese Zeile."
+  },
+  "attachmentHashes": {
+    "message": "Anhang-Hashes der letzten Nachricht:"
+  },
+  "attachmentFailures": {
+    "message": "Nicht lesbare Anhänge (in X-PasevSU-Attachments-Error genannt): $list$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "receiptError": {
+    "message": "Keine Empfangsadresse: der Header für die Lesebestätigung wird nur geschrieben, wenn die sendende Identität oder die Ausweichadresse unten bekannt ist."
+  },
+  "fingerprintInvalid": {
+    "message": "Der Fingerabdruck wurde nicht gespeichert: Er muss aus 40 oder 64 Hexadezimalzeichen bestehen (ohne Leerzeichen). Kopieren Sie ihn aus den Schlüsseleigenschaften in Thunderbird."
+  },
+  "fingerprintIsKeyId": {
+    "message": "Das ist eine Schlüssel-ID (8 oder 16 Zeichen), kein Fingerabdruck. Öffnen Sie die Schlüsseleigenschaften und kopieren Sie den vollständigen 40-stelligen Fingerabdruck."
+  },
+  "labelVersion": {
+    "message": "Version"
+  },
+  "labelFramework": {
+    "message": "Framework"
+  },
+  "labelOrigin": {
+    "message": "Herkunft"
+  },
+  "labelOrganization": {
+    "message": "Organisation"
+  },
+  "labelCaseId": {
+    "message": "Fallnummer"
+  },
+  "caseIdHint": {
+    "message": "z. B. CASE-2026-001 (leer lassen, um den Header wegzulassen)"
+  },
+  "labelPgp": {
+    "message": "PGP-Fingerabdruck (Thunderbird-Schlüssel)"
+  },
+  "pgpHint": {
+    "message": "z. B. 3F2A9C… (leer lassen, um den Header wegzulassen)"
+  },
+  "labelOts": {
+    "message": "Jede Nachricht für OpenTimestamps markieren (<code>X-PasevSU-OTS: pending</code>)"
+  },
+  "labelReceipt": {
+    "message": "Für jede Nachricht eine Lesebestätigung anfordern (Thunderbird fügt <code>Disposition-Notification-To</code> hinzu)"
+  },
+  "labelReceiptAddress": {
+    "message": "Ausweichadresse für die Lesebestätigung"
+  },
+  "receiptAddressHint": {
+    "message": "wird nur genutzt, wenn Thunderbird die sendende Identität nicht meldet"
+  },
+  "save": {
+    "message": "Speichern"
+  },
+  "saved": {
+    "message": "Gespeichert."
+  },
+  "sectionShared": {
+    "message": "Gemeinsame Einstellungsdatei"
+  },
+  "sharedIntro": {
+    "message": "Das Gateway hält dieselben Schlüssel in <code>psemp-gateway/settings.default.json</code>. Importieren Sie die Datei hier, damit beide Hälften bei Version, Framework, Organisation und PGP-Fingerabdruck übereinstimmen, und exportieren Sie die aktuellen Werte dorthin zurück, wenn Sie sie ändern."
+  },
+  "exportButton": {
+    "message": "Einstellungsdatei exportieren"
+  },
+  "exported": {
+    "message": "settings.default.json exportiert"
+  },
+  "imported": {
+    "message": "$applied$ von $total$ Schlüsseln importiert$extra$",
+    "placeholders": {
+      "applied": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "extra": {
+        "content": "$3"
+      }
+    }
+  },
+  "notSettingsFile": {
+    "message": "Keine Einstellungsdatei: $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "originNote": {
+    "message": "<code>origin</code> wird nicht aus der Datei übernommen: der Wert benennt den Erzeuger, deshalb schreibt die Erweiterung immer <code>Thunderbird</code> und das Gateway <code>PSEMP-Gateway</code>. Das ist der einzige beabsichtigte Unterschied zwischen beiden, und der Paritätstest prüft ihn."
+  },
+  "pgpNote": {
+    "message": "<strong>OpenPGP ist in Thunderbird bereits eingerichtet.</strong> Tragen Sie hier den Fingerabdruck des Schlüssels ein, mit dem Ihr Konto ohnehin signiert (Konten-Einstellungen → Ende-zu-Ende-Verschlüsselung → OpenPGP-Schlüsselverwaltung → Ihr Schlüssel). Eine MailExtension kann den Schlüsselring von Thunderbird nicht lesen, dieser Header ist daher eine <em>Behauptung</em>: der eine Wert, den ein Empfänger gegen die Signatur prüfen muss. <code>psemp-gateway pgp-check</code> vergleicht die Behauptung mit dem Unterzeichner, der tatsächlich in der zugestellten Nachricht steht, und hängt niemals eine zweite Signatur an eine bereits von Thunderbird signierte Nachricht. Thunderbird signiert PGP/MIME mit <code>protected-headers=\"v1\"</code>, die <code>X-PasevSU-*</code>-Header stehen also <em>auch</em> im signierten Teil, und eine Änderung daran bricht die Signatur — bei eingeschalteter Verschlüsselung bleiben die Header jedoch im Klartext, der Text nicht."
+  },
+  "limitationsNote": {
+    "message": "Echte OpenPGP-Signaturen (<code>.asc</code>) und OpenTimestamps (<code>.ots</code>) lassen sich in einer Thunderbird-MailExtension nicht erzeugen; der Header <code>X-PasevSU-OTS</code> ist eine Markierung für das SMTP-Gateway. Mit <code>node psemp-gateway/cli.js seal PasevSU_Manifest.json</code> wird daraus eine echte abgetrennte Signatur samt Zeitnachweis. Die Markierung wird standardmäßig geschrieben, damit keine Nachricht unversiegelt hinausgeht — das Häkchen nur entfernen, wenn das Gateway bewusst nicht versiegeln soll."
+  },
+  "receiptNote": {
+    "message": "Die Lesebestätigung ist Standard-MDN (RFC 8098): der Empfänger wird <em>gefragt</em>, nicht verpflichtet, und die meisten Programme zeigen einen Dialog. Die Thunderbird-eigene Einstellung <em>Lesebestätigungen</em> in den Konten-Einstellungen fragt ebenfalls; wenn beides erscheint, ist das harmlos. Die Adresse ist die Identität, von der die Nachricht gesendet wird."
+  }
+}

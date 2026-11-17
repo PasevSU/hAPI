@@ -108,6 +108,12 @@ const GUARDS = {
   'DEF-89': ['option-secrets.cjs'], // тайните опции се прикриват в лога и по име на променлива
   'DEF-90': ['option-effects.cjs'], // опция „само при първи старт“ не се описва като мъртва
   'DEF-91': ['folder-delete.cjs', 'portal-card-link.cjs'], // кодът на ниво носи подписа, иначе е счупена картинка
+  'DEF-92': ['oversize-body.cjs'], // 413 не оставя отровена keep-alive връзка
+  'DEF-93': ['thunderbird-contract.cjs', 'psemp-suites.cjs'], // разписката е `returnReceipt`, не забранена заглавка
+  'DEF-94': ['thunderbird-contract.cjs'], // зареденото add-on се сверява със сорса по хеш и версия
+  'DEF-95': ['thunderbird-header-budget.cjs', 'psemp-suites.cjs'], // дълга заглавка се раздробява, а проверяващият я сглобява
+  'DEF-96': ['psemp-suites.cjs'], // проверяващият преизчислява крипто-заглавките, не им вярва на формата
+  'DEF-97': ['visitor-sensors.cjs', 'regression-guards.cjs'], // стъпка без `await` прави половината тест куха
 };
 
 // ── Котви: конкретният текст, който би изчезнал при връщане на дефекта ────────
@@ -195,6 +201,12 @@ const ANCHORS = {
   'DEF-89': { file: 'option-secrets.cjs', contains: 'тайна опция не се прикрива в лога' },
   'DEF-90': { file: 'option-effects.cjs', contains: 'не твърди, че кодът не го чете' },
   'DEF-91': { file: 'folder-delete.cjs', contains: 'подписът влиза и в адреса на кода' },
+  'DEF-92': { file: 'oversize-body.cjs', contains: 'следващата заявка по същата връзка' },
+  'DEF-93': { file: 'thunderbird-contract.cjs', contains: 'sanitizeCustomHeaderName' },
+  'DEF-94': { file: 'thunderbird-contract.cjs', contains: 'loadedAddonVersion' },
+  'DEF-95': { file: 'thunderbird-header-budget.cjs', contains: 'RFC_LIMIT' },
+  'DEF-96': { file: 'psemp-suites.cjs', contains: 'a tampered digest row is caught by re-deriving the block' },
+  'DEF-97': { file: 'visitor-sensors.cjs', contains: 'профилът е изтрит' },
 };
 
 /** Редовете на регистъра: `| DEF-xx | област | описание | тежест | състояние |`. */
@@ -266,6 +278,35 @@ for (const [id, anchor] of Object.entries(ANCHORS)) {
 // 5. Няма защита за дефект, който не съществува в регистъра.
 const unknown = Object.keys(GUARDS).filter((id) => !rows.has(id));
 assert.deepEqual(unknown, [], 'картата на защитите сочи несъществуващи дефекти: ' + unknown.join(', '));
+
+// 6. Помощник за последователни стъпки в тестовете наистина чака стъпката си (DEF-97).
+// Синхронен `stage` печата ✔ ПРЕДИ работата, пуска всички стъпки едновременно и гаси
+// сървъра под тях: тестът изглежда зелен, а не проверява нищо (така `visitor-sensors` осем
+// живи стъпки не изпълниха нито едно твърдение, а 404-регресия остана невидима).
+// Обхватът е нарочно тесен: помощник, чието ИМЕ е стъпка (`stage`/`step`/`phase`/`section`)
+// И който приема функция (`fn`/`cb`/`callback`), трябва да е `async` и да я вика с `await`.
+// Помощници, които приемат ДАННИ, не се пипат — `run(args)`, `call(path, body)`,
+// `throws(fn)` (синхронен assert) и `step(name, ms)` в `secret-lock.cjs` (връща
+// асинхронна функция, вместо да я приема) са коректни и синхронни по същност.
+const STEP_NAME = /^(stage|step|phase|section)$/i;
+const CALLBACK_PARAM = /^(fn|cb|callback)$/i;
+const floatingStages = [];
+for (const file of fs.readdirSync(TESTS).filter((f) => f.endsWith('.cjs'))) {
+  const code = fs.readFileSync(path.join(TESTS, file), 'utf8');
+  for (const m of code.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=\s*(async\s*)?\(([^)]*)\)\s*=>/g)) {
+    const [, name, async, params] = m;
+    if (!STEP_NAME.test(name)) continue;
+    const callback = params.split(',').map((p) => p.trim()).find((p) => CALLBACK_PARAM.test(p));
+    if (!callback) continue;
+    const awaited = new RegExp('await\\s+' + callback + '\\s*\\(').test(code);
+    if (!async || !awaited) floatingStages.push(`${file} → ${name}(${callback})`);
+  }
+}
+assert.deepEqual(
+  floatingStages,
+  [],
+  'стъпка, която не се чака — тестът минава, без да провери нищо: ' + floatingStages.join(', '),
+);
 
 // Допълнително: затворен дефект, който сам сочи тест в текста си, трябва да сочи съществуващ файл.
 const danglingRefs = [];

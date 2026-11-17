@@ -15,7 +15,7 @@
 | Един тест | `node tests/<име>.cjs` |
 | Отчет за изданието | `node scripts/release-status.cjs` + `node tests/release-status.cjs` |
 | Изграждане | `node scripts/build-release.cjs` → `node scripts/verify-release.cjs` → `node scripts/build-haoss.cjs` |
-| Линт | `npx eslint hapi_enterprise tests custom_components scripts --max-warnings=0` |
+| Линт | `npx eslint . --max-warnings=0` (цялото дърво — така го пуска `safe-release.cjs`; тесен списък оставя `psemp-gateway/` и `thunderbird-extension/` непроверени) |
 | Документи | `sync-addon-changelog` · `source-inventory` · `gen-test-rules` · `docs-index` · `docs-manual` · `api-reference` · `openapi-admin` · `error-codes` · `audit-events` |
 
 ## Твърди порти (чупят изданието)
@@ -87,6 +87,19 @@
   изключва format on save).
 - Тестовете оставят папки в `%TEMP%`; матрицата вече ги чисти сама след серията.
 - Браузърните инструменти не стигат до `127.0.0.1` → ползвай `gui-harness`, не Playwright.
+- **Windows без право за symlink не значи „тестът се прескача“.** `fs.symlinkSync` дава
+  `EPERM`, но **junction** не иска права и `lstat().isSymbolicLink()` го отчита като връзка —
+  тоест всички guard-ове „това е връзка, откажи“ се задействат. Затова тестовете взимат
+  връзката от `tests/helpers.cjs#link(target, link)`: първо истински symlink, при `EPERM`/
+  `EACCES`/`ENOTSUP` — junction, но САМО към папка. Junction към файл е „скъсана“ връзка
+  (`existsSync` лъже, четенето дава `ENOENT`), затова случаите с файл-цел се преправят на
+  папка-цел. Маха се с `removeLink()` (`unlinkSync` пада с `EPERM` на junction). `needsSymlinks()`
+  остава само за среда, в която и junction не минава.
+- **`pgp-gpg-interop` не бива да се прескача, когато gpg просто не е в PATH.** Git за Windows
+  носи `gpg.exe` в `usr/bin`, но не го слага в PATH — тестът го търси и там. Ако gpg е MSYS
+  сборка, **абсолютен път с буква на диск се разменя погрешно** (`--homedir C:\…` става
+  `<cwd>/C:\…`); затова се вика с относителни пътища и `cwd`. Провал при генериране на ключ
+  (`No agent running`) значи, че homedir папката липсва — gpg не я създава сам.
 - `--only` не пише `reports/test-matrix.json` (пази пълния отчет за `release-status`).
 - **Версия без таг = издание без образ.** Версията в `config.yaml` се вдига преди тага, а
   `addon-image.yml` строи образа по версията от манифеста. Затова този workflow се пуска и на

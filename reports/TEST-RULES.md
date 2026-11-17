@@ -3,11 +3,11 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 442 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 446 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
-| общо | 202 |
+| общо | 206 |
 | портал | 48 |
 | GUI | 36 |
 | Home Assistant | 18 |
@@ -41,7 +41,7 @@
 | сензори | 1 |
 | трансфер | 1 |
 
-## общо (202)
+## общо (206)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -165,6 +165,7 @@
 | `option-secrets` | Option secrets | `tests/option-secrets.cjs` |
 | `option-spec` | Option spec | `tests/option-spec.cjs` |
 | `options-reference` | Options reference | `tests/options-reference.cjs` |
+| `oversize-body` | Oversize body | `tests/oversize-body.cjs` |
 | `packaged-docs` | Packaged docs | `tests/packaged-docs.cjs` |
 | `packager` | Packager | `tests/packager.cjs` |
 | `pagination` | Pagination | `tests/pagination.cjs` |
@@ -180,6 +181,7 @@
 | `preview-unsafe-types` | Preview unsafe types | `tests/preview-unsafe-types.cjs` |
 | `problem` | Problem | `tests/problem.cjs` |
 | `process-guards` | Process guards | `tests/process-guards.cjs` |
+| `psemp-suites` | Psemp suites | `tests/psemp-suites.cjs` |
 | `publish-script` | Publish script | `tests/publish-script.cjs` |
 | `qr-dispatch` | Qr dispatch | `tests/qr-dispatch.cjs` |
 | `qr-leads-to-folder` | Qr leads to folder | `tests/qr-leads-to-folder.cjs` |
@@ -237,6 +239,8 @@
 | `store-migration` | Store migration | `tests/store-migration.cjs` |
 | `tag-version` | Tag version | `tests/tag-version.cjs` |
 | `taxonomy` | Taxonomy | `tests/taxonomy.cjs` |
+| `thunderbird-contract` | Thunderbird contract | `tests/thunderbird-contract.cjs` |
+| `thunderbird-header-budget` | Thunderbird header budget | `tests/thunderbird-header-budget.cjs` |
 | `unfinished-register` | Unfinished register | `tests/unfinished-register.cjs` |
 | `update-repo` | Update repo | `tests/update-repo.cjs` |
 | `upload-rollback-guard` | Upload rollback guard | `tests/upload-rollback-guard.cjs` |

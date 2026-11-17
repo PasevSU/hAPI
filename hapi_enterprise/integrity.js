@@ -27,6 +27,9 @@ const MANIFEST_NAME = 'integrity-manifest.json';
 const CRITICAL = [
   'start.js',
   'server.js',
+  // Четенето на тялото (0.69.230): подменен `body.js` връща други байтове без нито един
+  // паднал тест на инсталацията — затова влиза в сверката.
+  'body.js',
   'paths.js',
   'storage-preflight.js',
   'integrity.js',

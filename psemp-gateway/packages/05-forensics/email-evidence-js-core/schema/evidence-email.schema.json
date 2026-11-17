@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:evidence:email:0.1.0",
+  "title": "Evidence Email Manifest",
+  "type": "object",
+  "required": ["schema_version", "source", "email", "objects", "ocr", "profiles", "hashes", "provenance", "audit"],
+  "properties": {
+    "schema_version": {"type":"string"},
+    "evidence_id": {"type":["string","null"]},
+    "source": {
+      "type":"object",
+      "required":["kind","byte_length","hashes"],
+      "properties": {
+        "kind":{"const":"email/rfc822"},
+        "filename":{"type":["string","null"]},
+        "byte_length":{"type":"integer","minimum":0},
+        "hashes":{"$ref":"#/$defs/hashSet"}
+      }
+    },
+    "email": {
+      "type":"object",
+      "required":["message","thread","transport","authentication","headers","mime","content","attachments"],
+      "properties": {
+        "envelope":{"type":"object"},
+        "message":{"type":"object","required":["message_id","subject","from","to","cc","participants"]},
+        "thread":{"type":"object","required":["in_reply_to","references","quoted"]},
+        "transport":{"type":"object","required":["received","hop_count"]},
+        "authentication":{"type":"object","required":["authentication_results","arc_authentication_results","received_spf","dkim_signatures","arc_seals","arc_message_signatures"]},
+        "headers":{"type":"object","required":["ordered","by_name","raw_sha256"]},
+        "mime":{"type":"object","required":["root","part_count","text_part_count","attachment_count"]},
+        "content":{"type":"object","required":["decoded_text","decoded_text_sha256","raw_body_sha256"]},
+        "attachments":{"type":"array"}
+      }
+    },
+    "rendering":{"type":"object"},
+    "geometry":{"type":"object"},
+    "objects":{"type":"array"},
+    "ocr":{"type":"object"},
+    "profiles":{"type":"object"},
+    "hash_selection":{"type":"object"},
+    "hashes":{"type":"object"},
+    "anonymization":{"type":"object"},
+    "provenance":{"type":"object"},
+    "audit":{"type":"object"}
+  },
+  "$defs": {
+    "hashSet": {
+      "type":"object",
+      "required":["crc32","md5","sha1","sha256","sha512"],
+      "properties": {
+        "crc32":{"type":"string","pattern":"^[0-9a-f]{8}$"},
+        "md5":{"type":"string","pattern":"^[0-9a-f]{32}$"},
+        "sha1":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+        "sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+        "sha512":{"type":"string","pattern":"^[0-9a-f]{128}$"}
+      }
+    }
+  }
+}

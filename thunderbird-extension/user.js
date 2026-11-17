@@ -1,0 +1,66 @@
+// PasevSU Forensic Mail — Thunderbird preference registration.
+//
+// Copy this file into the profile directory of the Thunderbird you send from, e.g.
+//
+//   %APPDATA%\Thunderbird\Profiles\xxxxxxxx.default-esr\user.js
+//
+// and restart Thunderbird. `user.js` is re-applied at every startup and takes
+// precedence over `prefs.js`, so this is the durable way to register the names.
+// Deleting the file and restarting removes the preference again (Thunderbird
+// keeps the value in `prefs.js` once written, so also reset it in the Config
+// Editor if you want the old behaviour back).
+//
+// Why it is needed: Thunderbird will not compose or display an arbitrary
+// custom header unless its name is listed in `mail.compose.other.header`.
+// The extension sets all of these through the Compose API regardless, but
+// registering them keeps the names recognised when a message is opened,
+// forwarded, shown in the compose window, or inspected by other tools.
+//
+// Keep this list in sync with HEADER_NAMES in `../psemp-gateway/api.js`.
+// `psemp-gateway/test/settings-parity.cjs` fails if a header is added to the
+// code and not registered here.
+
+user_pref(
+  "mail.compose.other.header",
+  [
+    "X-PasevSU-Version",
+    "X-PasevSU-Build",
+    "X-PasevSU-Framework",
+    "X-PasevSU-Origin",
+    "X-PasevSU-Organization",
+    "X-PasevSU-WAR",
+    "X-PasevSU-Evidence-ID",
+    "X-PasevSU-Case-ID",
+    "X-PasevSU-Body-SHA256",
+    "X-PasevSU-Attachments-Count",
+    "X-PasevSU-Attachments-SHA256",
+    "X-PasevSU-Attachments-Error",
+    "X-PasevSU-Manifest-SHA256",
+    "X-PasevSU-Merkle-Root",
+    "X-PasevSU-PGP-Fingerprint",
+    "X-PasevSU-OTS",
+    "X-PasevSU-Receipt",
+    "X-PasevSU-Message-ID",
+    "X-PasevSU-Sha256",
+    "X-PasevSU-Cripto-Engine",
+    "X-PasevSU-Cripto-title",
+    "X-PasevSU-Created",
+    "X-PasevSU-Expires",
+    "X-PasevSU-Nonce",
+    "X-PasevSU-Sequence",
+    "X-PasevSU-Canary",
+    "X-PasevSU-Headers-SHA256",
+  ].join(","),
+);
+
+// A profile side-load (an .xpi placed in <profile>\extensions\) is disabled by
+// default: Thunderbird writes the record with userDisabled: true, so the add-on
+// looks installed and does nothing. Zero removes that default for hand-placed
+// add-ons, so PSEMP stays armed across restarts with no manual re-enable in the
+// Add-ons Manager. Loading through "Debug Add-ons" does not need it.
+user_pref("extensions.autoDisableScopes", 0);
+
+// Thunderbird's factory value is already false (greprefs.js), but a profile that
+// started life as a Firefox one can carry true, and then the hand-built unsigned
+// .xpi is refused before any of the code below runs.
+user_pref("xpinstall.signatures.required", false);

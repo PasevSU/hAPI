@@ -68,3 +68,10 @@ create link/
 
 # Local VS Code dev tooling (token router extension, not shipped)
 dev/
+
+# Proofs and extracted evidence from `psemp-gateway/cli.js stamp-sent`.
+# Anchored with a leading slash so only this directory is ignored.
+/psemp-gateway/data/
+
+# Кеш на локалния инструмент за преглед (не е код на add-on-а).
+.impeccable/

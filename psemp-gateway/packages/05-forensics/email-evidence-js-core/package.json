@@ -1,0 +1,19 @@
+{
+  "name": "evidence-object-email-core",
+  "version": "0.1.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic evidence-object/profile/EML metadata core. External OCR/PDF/image engines are explicit adapters and are never simulated.",
+  "exports": {
+    ".": "./src/pipeline.js",
+    "./config": "./src/core/config.js"
+  },
+  "dependencies": {
+    "yaml": "^2.8.1"
+  },
+  "scripts": {
+    "test": "node --test",
+    "audit": "node bin/audit.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,14 @@
+package:
+  id: 07-ots
+  runtime: node
+dependencies:
+  enabled: true
+  packageManager: auto
+  includeDevDependencies: true
+  installMode: install
+settings:
+  hashAlgorithm: sha256
+  verifyOnline: false
+  requestTimeoutMs: 10000
+  backupBeforeUpgrade: true
+  calendarUrls: https://a.pool.opentimestamps.org,https://b.pool.opentimestamps.org

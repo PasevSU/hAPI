@@ -1,0 +1,111 @@
+{
+  "package": "PasevSU_Evidence_Package",
+  "standard": "PSEMP",
+  "version": "1.1",
+  "generated_at": "2026-11-16T14:17:45.853Z",
+  "algorithms": {
+    "body": "SHA-256",
+    "extra": [
+      "SHA3-512",
+      "BLAKE3"
+    ],
+    "merkle": "SHA-256",
+    "engine": "AES-256-GCM",
+    "signature": "OpenPGP",
+    "timestamp": "OpenTimestamps"
+  },
+  "evidence": {
+    "evidence_id": "ev-8f14e45fceea167a",
+    "message_sha256": "4121f576ba8a59fd288be2a6f7872784c04176e7be24b299534cb0ae885d5955",
+    "message_sha3_512": "8b8f894198af5f63256c77a4e415b15720e9aede72ea9cdefb1e3d1d178091fd66c93d6e13d176b95cd5e1aa679c04a34b681a561576b7106100386c2ecce6ef",
+    "merkle_root": "95a9269aa514923c2e56ccc24c0d3ff1493e4f01ce08ea709aec7c83eabd9ea2",
+    "canary": "PASEVSU-2026-11-16-38F47C99",
+    "sequence": 42,
+    "nonce": "f47ac10b58cc43728e19d1b7f3c5a2e6",
+    "recipient": "recipient@example.com",
+    "issued_at": "2026-11-16T14:00:00.000Z",
+    "expires_at": "2026-11-16T15:00:00.000Z",
+    "single_use": true
+  },
+  "provenance": {
+    "framework": "PasevSU",
+    "standard": "PSEMP",
+    "organization": "PasevSU",
+    "evidence_id": "ev-8f14e45fceea167a",
+    "recipient": "recipient@example.com",
+    "message_id": "<PasevSU.20261116140000.ev-8f14e45fceea167a+37ccbb_1d87f3~cc0a5d.b3e7e4@forensic.evidence.pasevsu>",
+    "issued_at": "2026-11-16T14:00:00.000Z"
+  },
+  "signed_headers": {
+    "subject": "Case 2026-001 [34AEF2]",
+    "from": "sender@example.com",
+    "to": [
+      "recipient@example.com"
+    ],
+    "date": "2026-11-16T13:59:58.000Z",
+    "message_id": "<PasevSU.20261116140000.ev-8f14e45fceea167a+37ccbb_1d87f3~cc0a5d.b3e7e4@forensic.evidence.pasevsu>",
+    "attachments_sha256": "cb9dd61910e508564fe0bb67f713564010bc54790d0eee17e870b32854e38d5b",
+    "headers_sha256": "617cef0d7d341ec9aff350f1f81800dada558fb91b0535f86f68ba8fd288c7ff"
+  },
+  "files": [
+    {
+      "role": "manifest",
+      "filename": "PasevSU_Manifest.json",
+      "sha256": "49ba81a1c0b73823731ee69684e35a1075edf8441daf5c5a6c6b69def397e287",
+      "sha3_512": null,
+      "note": "hashes and links every other file listed here"
+    },
+    {
+      "role": "body",
+      "filename": "message.txt",
+      "sha256": "4121f576ba8a59fd288be2a6f7872784c04176e7be24b299534cb0ae885d5955",
+      "sha3_512": "8b8f894198af5f63256c77a4e415b15720e9aede72ea9cdefb1e3d1d178091fd66c93d6e13d176b95cd5e1aa679c04a34b681a561576b7106100386c2ecce6ef"
+    },
+    {
+      "role": "attachment",
+      "filename": "evidence-report.pdf",
+      "sha256": "4de6b94fe955a6b6a691e79eef12dc39f7efc76d18099e8e864f5e1b42130b6e",
+      "sha3_512": "d27f9233941a89f281f96b9eabd8d8c9000777a6474f011886c107a7d384988d3c86424884412d740c30f8138d0a5b987b7c9f65616fb7233d39d907c9aa1acb",
+      "blake3": null
+    },
+    {
+      "role": "attachment",
+      "filename": "witness-statement.txt",
+      "sha256": "066167e69833f8e0a9e38d1ef474627dc7d919138339d15c656c6e59aaeed169",
+      "sha3_512": "2ed12a5ec950c9aa6d7f46884ca6880c01b1dc092e843237d2596e688c8ebc5af1056628cefa4cc73ee735b16b1c989f4a437d18fe56bb3d2ae30af10257df69",
+      "blake3": null
+    }
+  ],
+  "signature": {
+    "algorithm": "OpenPGP",
+    "fingerprint": "A1B2C3D4E5F60718293A4B5C6D7E8F9012345678",
+    "detached": {
+      "role": "signature",
+      "filename": "PasevSU_Manifest.json.asc",
+      "sha256": null,
+      "bytes": 0,
+      "present": false
+    },
+    "note": "A MailExtension cannot run gpg. The signature is written by psemp-gateway seal."
+  },
+  "timestamp": {
+    "algorithm": "OpenTimestamps",
+    "proof": {
+      "role": "timestamp",
+      "filename": "PasevSU_Manifest.json.ots",
+      "sha256": null,
+      "bytes": 0,
+      "present": false
+    },
+    "note": "A MailExtension cannot run ots. The proof is written by psemp-gateway stamp/seal."
+  },
+  "verify": [
+    "sha256(PasevSU_Manifest.json) must equal files[role=manifest].sha256",
+    "recompute SHA-256 of the body and of every attachment; each must equal its file entry",
+    "sort the hex leaves (body first, then attachments) and rebuild the Merkle root; it must equal evidence.merkle_root",
+    "gpg --verify PasevSU_Manifest.json.asc PasevSU_Manifest.json",
+    "ots verify PasevSU_Manifest.json.ots",
+    "refuse the message again if evidence.nonce was already accepted (replay defence)",
+    "compare evidence.recipient and signed_headers.to with the envelope the message arrived in"
+  ]
+}

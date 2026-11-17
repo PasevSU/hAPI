@@ -1,0 +1,13 @@
+package:
+  id: 06-hash-crypto
+  runtime: node
+dependencies:
+  enabled: true
+  packageManager: auto
+  includeDevDependencies: true
+  installMode: install
+settings:
+  defaultHashAlgorithm: sha256
+  outputEncoding: hex
+  chunkSizeBytes: 1048576
+  verifyAfterWrite: true
