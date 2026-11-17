@@ -24,147 +24,204 @@
   <button type="button" class="skip" id="skip" data-i18n="nav.skip.content">Към съдържанието</button>
 
   <header class="hero">
-    <div class="wrap">
-      <!-- Името на хранилището: едно и също на трите езика (марка, не описание). -->
-      <p class="brand" data-i18n="brand.name">ПАП БОКС</p>
-      <p class="eyebrow">
-        <span class="dot" aria-hidden="true"></span>
-        <span id="visibility" data-i18n="visibility.public">Портал за документи</span>
-      </p>
-      <h1 id="title" data-i18n="doc.loading">Зареждане…</h1>
-      <p id="description" class="lead" hidden></p>
-      <ul id="badges" class="badges" data-i18n-aria="header.categories" aria-label="Категории"></ul>
-      <!-- Криптографската защита се казва ЯВНО на всеки език: SHA-256 на всеки файл,
-           подписан достъп и AES-256-GCM при шифроване. -->
-      <p class="crypto" data-i18n="crypto.line">Криптографска защита: SHA-256 за всеки файл,
-        подписан достъп и AES-256-GCM при шифроване.</p>
-      <p id="contact" class="contact" hidden></p>
-      <!-- PP-01: идентификаторът на портала. Адресът се мени със slug-а, id-то не. -->
-      <p class="ident">
-        <span class="ident-label" data-i18n="header.portalId">Идентификатор на портала</span>
-        <code id="portal-id" class="mono">…</code>
-        <button type="button" id="copy-id" class="btn btn-ghost btn-sm" data-i18n="header.copyId"
-          data-i18n-title="header.copyId.title" title="Копирай идентификатора">Копирай</button>
-      </p>
-      <div class="hero-actions">
-        <button type="button" id="copy-link" class="btn btn-ghost" data-i18n="header.copyLink">Копирай адреса</button>
-        <button type="button" id="folder-open" class="btn btn-ghost" data-i18n="header.folder" hidden>Отвори
-          папката</button>
-        <!-- PP-04: „API“ и „Манифест“ НЕ водят навън. Това са бутони, които разгъват
-             информацията в самата страница — посетителят не получава адрес за копиране
-             и не попада на суров JSON в нов таб. -->
-        <button type="button" id="api-open" class="btn btn-ghost" aria-controls="doc-info" aria-expanded="false"
-          data-i18n="header.api">API</button>
-        <button type="button" id="manifest-open" class="btn btn-ghost" aria-controls="doc-info" aria-expanded="false"
-          data-i18n="header.manifest">Манифест</button>
-        <!-- PP-14: езикът на страницата е избор на посетителя, не на издателя. -->
-        <label class="lang">
-          <span class="sr-only" data-i18n="lang.label">Език</span>
-          <select id="lang" class="lang-select" aria-label="Език">
-            <option value="bg">Български</option>
-            <option value="en">English</option>
-            <option value="de">Deutsch</option>
-          </select>
-        </label>
+    <div class="wrap hero-inner">
+      <!-- Голямото лого е ВГРАДЕНО (inline SVG): без допълнителна заявка и без счупена
+           картинка, когато страницата се сервира от папката на самия портал. -->
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="88" height="88" focusable="false">
+          <rect x="5" y="16" width="54" height="42" rx="7" fill="none" stroke="currentColor" stroke-width="3" />
+          <path d="M24 16V10h16v6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+          <path d="M5 24h54" stroke="currentColor" stroke-width="3" />
+          <path d="M15 35h16v9H15z" fill="currentColor" opacity="0.22" />
+          <path d="M15 35h16v9H15z" fill="none" stroke="currentColor" stroke-width="2.5" />
+        </svg>
+      </span>
+      <div class="hero-text">
+        <!-- Името на хранилището: едно и също на трите езика (марка, не описание). -->
+        <p class="brand" data-i18n="brand.name">ПАП БОКС</p>
+        <p class="eyebrow">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="visibility" data-i18n="visibility.public">Портал за документи</span>
+        </p>
+        <h1 id="title" data-i18n="doc.loading">Зареждане…</h1>
       </div>
+    </div>
+    <!-- Заглавната част има ТРИ действия: информация, достъп и език. Всичко останало
+         (описание, табелки, идентификатор, копиране, API, манифест, числа) живее в
+         прозореца „Информация“ — на екрана не се рови страница. -->
+    <div class="wrap hero-actions">
+      <button type="button" id="info-open" class="btn btn-ghost" aria-controls="info-sheet" aria-expanded="false"
+        data-i18n="header.info">Информация</button>
+      <button type="button" id="access-open" class="btn btn-ghost" aria-controls="access-sheet" aria-expanded="false"
+        data-i18n="header.access">Достъп</button>
+      <!-- PP-14: езикът на страницата е избор на посетителя, не на издателя. -->
+      <label class="lang">
+        <span class="sr-only" data-i18n="lang.label">Език</span>
+        <select id="lang" class="lang-select" aria-label="Език">
+          <option value="bg">Български</option>
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+        </select>
+      </label>
     </div>
   </header>
 
   <main class="wrap" id="main">
-    <!-- МОБИЛНА КОРА (PP-15): числата на портала се виждат преди списъка. Всяко число тук
-         е ИЗЧИСЛЕНО от данните на портала — на страницата няма нито едно написано число. -->
-    <section class="stats" id="stats" data-i18n-aria="stats.aria" aria-label="Порталът в числа">
-      <div class="stat">
-        <span class="stat-n" id="stat-files">0</span>
-        <span class="stat-l" id="stat-files-label" data-i18n="stats.files">Файлове</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n" id="stat-folders">0</span>
-        <span class="stat-l" id="stat-folders-label" data-i18n="stats.folders">Папки</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n" id="stat-hash">0</span>
-        <span class="stat-l" id="stat-hash-label" data-i18n="stats.hash">С отпечатък</span>
-      </div>
-      <div class="stat">
-        <span class="stat-n" id="stat-key">0</span>
-        <span class="stat-l" id="stat-key-label" data-i18n="stats.key">С ключ</span>
+    <!-- ДВЕТЕ СЕКЦИИ (изискване на собственика): посетителят вижда САМО структурата на
+         портала (папки) и файловете. Всичко останало — числата, резюмето, данните за портала,
+         статусът на достъпа, паролата и подробностите за файл — се отваря в прозорец. -->
+    <div class="portal-grid">
+      <!-- Дървото на папките: клик върху папка сменя текущия път на списъка. Появява се само
+           когато порталът има собствена папка (иначе няма дърво за показване). -->
+      <section class="panel tree-panel" id="tree-panel" aria-labelledby="tree-title" hidden>
+        <div class="panel-head">
+          <h2 id="tree-title" data-i18n="tree.panel">Структура на портала</h2>
+          <button type="button" id="tree-refresh" class="btn btn-ghost btn-sm" data-i18n="tree.reload">Обнови</button>
+        </div>
+        <p id="tree-status" class="status" role="status" aria-live="polite" hidden></p>
+        <ul id="tree-list" class="ptree"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="files-title">
+        <div class="panel-head">
+          <h2 id="files-title" data-i18n="files.title">Файлове</h2>
+          <span id="count" class="count" aria-live="polite"></span>
+          <!-- ЦЯЛОТО дърво с едно натискане: името на бутона се мени, когато погледът е върху
+               цялото дърво („само тази папка“). Появява се само при портал със собствена папка. -->
+          <button type="button" id="tree-all" class="btn btn-ghost btn-sm" data-i18n="tree.all" hidden>Покажи
+            всичко</button>
+        </div>
+        <div class="toolbar" id="toolbar">
+          <label class="search">
+            <span class="sr-only" id="q-label">Търси по име</span>
+            <input id="q" type="search" placeholder="Търси по име" autocomplete="off" />
+          </label>
+        </div>
+        <p id="status" class="status" role="status" aria-live="polite" data-i18n="doc.loading">Зареждане…</p>
+        <ul id="files" class="files"></ul>
+        <p id="empty" class="empty" data-i18n="files.empty.public" hidden>Няма достъпни файлове за показване.</p>
+        <p id="more" class="more" hidden></p>
+      </section>
+    </div>
+
+    <!-- ПРОЗОРЕЦ „ИНФОРМАЦИЯ“: какво представлява порталът, какво съдържа, идентификаторът
+         и двата бутона към API/манифест. Възлите пазят старите си `id` — пълнят се от същия
+         код, само контейнерът е друг. -->
+    <section class="sheet" id="info-sheet" role="dialog" aria-modal="true" aria-labelledby="info-sheet-title"
+      hidden>
+      <div class="sheet-card">
+        <div class="panel-head">
+          <h2 id="info-sheet-title" data-i18n="info.sheet.title">Информация за портала</h2>
+          <button type="button" id="info-sheet-close" class="btn btn-ghost btn-sm" data-i18n="info.close">Затвори</button>
+        </div>
+        <p id="description" class="lead" hidden></p>
+        <ul id="badges" class="badges" data-i18n-aria="header.categories" aria-label="Категории"></ul>
+        <!-- Криптографската защита се казва ЯВНО на всеки език: SHA-256 на всеки файл,
+             подписан достъп и AES-256-GCM при шифроване. -->
+        <p class="crypto" data-i18n="crypto.line">Криптографска защита: SHA-256 за всеки файл,
+          подписан достъп и AES-256-GCM при шифроване.</p>
+        <p id="contact" class="contact" hidden></p>
+        <!-- PP-01: идентификаторът на портала. Адресът се мени със slug-а, id-то не. -->
+        <p class="ident">
+          <span class="ident-label" data-i18n="header.portalId">Идентификатор на портала</span>
+          <code id="portal-id" class="mono">…</code>
+          <button type="button" id="copy-id" class="btn btn-ghost btn-sm" data-i18n="header.copyId"
+            data-i18n-title="header.copyId.title" title="Копирай идентификатора">Копирай</button>
+        </p>
+        <!-- PP-04: „API“ и „Манифест“ НЕ водят навън. Това са бутони, които разгъват
+             информацията в същия прозорец — посетителят не получава адрес за копиране
+             и не попада на суров JSON в нов таб. -->
+        <div class="hero-actions">
+          <button type="button" id="copy-link" class="btn btn-ghost" data-i18n="header.copyLink">Копирай адреса</button>
+          <button type="button" id="folder-open" class="btn btn-ghost" data-i18n="header.folder" hidden>Отвори
+            папката</button>
+          <button type="button" id="api-open" class="btn btn-ghost" aria-controls="doc-info" aria-expanded="false"
+            data-i18n="header.api">API</button>
+          <button type="button" id="manifest-open" class="btn btn-ghost" aria-controls="doc-info" aria-expanded="false"
+            data-i18n="header.manifest">Манифест</button>
+        </div>
+        <!-- МОБИЛНА КОРА (PP-15): числата на портала. Всяко число е ИЗЧИСЛЕНО от данните на
+             портала — на страницата няма нито едно написано число. -->
+        <section class="stats" id="stats" data-i18n-aria="stats.aria" aria-label="Порталът в числа">
+          <div class="stat">
+            <span class="stat-n" id="stat-files">0</span>
+            <span class="stat-l" id="stat-files-label" data-i18n="stats.files">Файлове</span>
+          </div>
+          <div class="stat">
+            <span class="stat-n" id="stat-folders">0</span>
+            <span class="stat-l" id="stat-folders-label" data-i18n="stats.folders">Папки</span>
+          </div>
+          <div class="stat">
+            <span class="stat-n" id="stat-hash">0</span>
+            <span class="stat-l" id="stat-hash-label" data-i18n="stats.hash">С отпечатък</span>
+          </div>
+          <div class="stat">
+            <span class="stat-n" id="stat-key">0</span>
+            <span class="stat-l" id="stat-key-label" data-i18n="stats.key">С ключ</span>
+          </div>
+        </section>
+
+        <!-- PP-03/PP-06: какво представлява порталът и какво съдържа (брой файлове, обем, вид). -->
+        <section class="panel summary-panel" aria-labelledby="summary-title">
+          <h2 id="summary-title" data-i18n="summary.title">Какво съдържа този портал</h2>
+          <p id="summary" class="summary-text" data-i18n="doc.loading">Зареждане…</p>
+          <ul id="summary-list" class="summary-list"></ul>
+          <!-- PP-12: целият портал с едно натискане. Показва се само когато има файлове,
+               които могат да се свалят без ключ. -->
+          <div class="package-bar" id="package-bar">
+            <button id="package-btn" class="btn btn-primary" type="button" data-i18n="package.button" hidden>Изтегли
+              всички (ZIP)</button>
+            <p id="package-note" class="more" role="status" aria-live="polite" hidden></p>
+          </div>
+        </section>
+
+        <!-- PP-04: информацията, която дотук се даваше като линк към суров JSON, се
+             показва ТУК — в същия прозорец, с четими етикети. -->
+        <section class="panel doc-info" id="doc-info" aria-labelledby="doc-info-title" hidden>
+          <div class="panel-head">
+            <h2 id="doc-info-title"></h2>
+            <button type="button" id="doc-info-close" class="btn btn-ghost btn-sm" data-i18n="info.close">Затвори</button>
+          </div>
+          <p id="doc-info-note" class="hint"></p>
+          <p id="doc-info-status" class="status" role="status" aria-live="polite" hidden></p>
+          <dl id="doc-info-body" class="info-list"></dl>
+        </section>
       </div>
     </section>
 
-    <!-- Статус на достъпа: какво може посетителят БЕЗ да гадае. Стойността и списъкът се
-         смятат от режимите на файловете, затова картата не обещава нещо, което я няма. -->
-    <section class="panel access-card" id="access-card" aria-labelledby="access-title">
-      <div class="panel-head">
-        <h2 id="access-title" data-i18n="access.title">Статус на достъпа</h2>
-        <span id="access-state" class="chip chip-ok" data-i18n="access.public">Публичен достъп</span>
-      </div>
-      <ul id="access-list" class="summary-list"></ul>
-    </section>
-
-    <!-- PP-03/PP-06: какво представлява порталът и какво съдържа (брой файлове, обем, вид). -->
-    <section class="panel summary-panel" aria-labelledby="summary-title">
-      <h2 id="summary-title" data-i18n="summary.title">Какво съдържа този портал</h2>
-      <p id="summary" class="summary-text" data-i18n="doc.loading">Зареждане…</p>
-      <ul id="summary-list" class="summary-list"></ul>
-      <!-- PP-12: целият портал с едно натискане. Показва се само когато има файлове,
-           които могат да се свалят без ключ. -->
-      <div class="package-bar" id="package-bar">
-        <button id="package-btn" class="btn btn-primary" type="button" data-i18n="package.button" hidden>Изтегли всички
-          (ZIP)</button>
-        <p id="package-note" class="more" role="status" aria-live="polite" hidden></p>
-      </div>
-    </section>
-
-    <!-- PP-04: информацията, която дотук се даваше като линк към суров JSON, се
-         показва ТУК — в същата страница, с четими етикети. -->
-    <section class="panel doc-info" id="doc-info" aria-labelledby="doc-info-title" hidden>
-      <div class="panel-head">
-        <h2 id="doc-info-title"></h2>
-        <button type="button" id="doc-info-close" class="btn btn-ghost btn-sm" data-i18n="info.close">Затвори</button>
-      </div>
-      <p id="doc-info-note" class="hint"></p>
-      <p id="doc-info-status" class="status" role="status" aria-live="polite" hidden></p>
-      <dl id="doc-info-body" class="info-list"></dl>
-    </section>
-
-    <section class="panel" aria-labelledby="files-title">
-      <div class="panel-head">
-        <h2 id="files-title" data-i18n="files.title">Файлове</h2>
-        <span id="count" class="count" aria-live="polite"></span>
-        <!-- Дървото на портала: текущото ниво по подразбиране, но с ЕДНО натискане се виждат
-             ВСИЧКИ папки и файлове — без да се рови папка по папка. Появява се само когато
-             порталът има собствена папка (иначе няма дърво за показване). -->
-        <button type="button" id="tree-all" class="btn btn-ghost btn-sm" data-i18n="tree.all" hidden>Покажи
-          всичко</button>
-      </div>
-      <div class="toolbar" id="toolbar">
-        <label class="search">
-          <span class="sr-only" id="q-label">Търси по име</span>
-          <input id="q" type="search" placeholder="Търси по име" autocomplete="off" />
-        </label>
-      </div>
-      <p id="status" class="status" role="status" aria-live="polite" data-i18n="doc.loading">Зареждане…</p>
-      <ul id="files" class="files"></ul>
-      <p id="empty" class="empty" data-i18n="files.empty.public" hidden>Няма достъпни файлове за показване.</p>
-      <p id="more" class="more" hidden></p>
-    </section>
-
-    <!-- ЗАКЛЮЧЕН ПОРТАЛ (0.69.210): паролата се пита ТУК, а не на отделен адрес.
+    <!-- ПРОЗОРЕЦ „ДОСТЪП“: какво може посетителят БЕЗ да гадае, и паролата за заключен портал.
          Паролата отива само в тялото на POST `/unlock` — не в адреса, не в историята. -->
-    <section class="panel" id="locked" hidden aria-labelledby="locked-title">
-      <div class="panel-head">
-        <h2 id="locked-title" data-i18n="unlock.title">Порталът е заключен</h2>
+    <section class="sheet" id="access-sheet" role="dialog" aria-modal="true" aria-labelledby="access-sheet-title"
+      hidden>
+      <div class="sheet-card">
+        <div class="panel-head">
+          <h2 id="access-sheet-title" data-i18n="access.sheet.title">Достъп</h2>
+          <button type="button" id="access-sheet-close" class="btn btn-ghost btn-sm"
+            data-i18n="info.close">Затвори</button>
+        </div>
+        <section class="panel access-card" id="access-card" aria-labelledby="access-title">
+          <div class="panel-head">
+            <h2 id="access-title" data-i18n="access.title">Статус на достъпа</h2>
+            <span id="access-state" class="chip chip-ok" data-i18n="access.public">Публичен достъп</span>
+          </div>
+          <ul id="access-list" class="summary-list"></ul>
+        </section>
+
+        <section class="panel" id="locked" hidden aria-labelledby="locked-title">
+          <div class="panel-head">
+            <h2 id="locked-title" data-i18n="unlock.title">Порталът е заключен</h2>
+          </div>
+          <p class="hint" data-i18n="unlock.note">За да видиш файловете, въведи паролата, която издателят ти е дал.</p>
+          <div class="unlock-field">
+            <label for="unlock-pw" data-i18n="unlock.label">Парола</label>
+            <input id="unlock-pw" type="password" autocomplete="current-password" maxlength="200" />
+          </div>
+          <div class="unlock-row">
+            <button type="button" id="unlock-go" class="btn btn-primary" data-i18n="unlock.button">Отключи</button>
+          </div>
+          <p id="unlock-status" class="status" role="status" aria-live="polite" hidden></p>
+        </section>
       </div>
-      <p class="hint" data-i18n="unlock.note">За да видиш файловете, въведи паролата, която издателят ти е дал.</p>
-      <div class="unlock-field">
-        <label for="unlock-pw" data-i18n="unlock.label">Парола</label>
-        <input id="unlock-pw" type="password" autocomplete="current-password" maxlength="200" />
-      </div>
-      <div class="unlock-row">
-        <button type="button" id="unlock-go" class="btn btn-primary" data-i18n="unlock.button">Отключи</button>
-      </div>
-      <p id="unlock-status" class="status" role="status" aria-live="polite" hidden></p>
     </section>
 
     <!-- Лист с информацията за ЕДИН файл (мобилен изглед). Показва се на място, като лист,

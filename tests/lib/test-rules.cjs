@@ -315,6 +315,7 @@ const RULES = [
   { id: "portal-term", area: "портал", title: "Portal term", owner: "tests/portal-term.cjs" },
   { id: "portal-tokens", area: "портал", title: "Portal tokens", owner: "tests/portal-tokens.cjs" },
   { id: "portal-tree-all", area: "портал", title: "Portal tree all", owner: "tests/portal-tree-all.cjs" },
+  { id: "portal-two-panels", area: "портал", title: "Portal two panels", owner: "tests/portal-two-panels.cjs" },
   { id: "portal-unlock-page", area: "портал", title: "Portal unlock page", owner: "tests/portal-unlock-page.cjs" },
   { id: "portal-upload-409", area: "портал", title: "Portal upload 409", owner: "tests/portal-upload-409.cjs" },
   { id: "portal-variants", area: "портал", title: "Portal variants", owner: "tests/portal-variants.cjs" },

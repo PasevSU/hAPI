@@ -101,6 +101,7 @@ let folderSubs = [];
 // Цялото дърво на портала (от `/tree`) и дали посетителят иска да го види наведнъж.
 // Текущото ниво остава по подразбиране: така страницата не се разгъва на хиляди редове сама.
 let treeRoot = null;
+let treeCurrent = "";
 let showAll = false;
 // Отвореният лист с информация за един файл (за преизвеждане при смяна на езика).
 let currentFile = null;
@@ -289,6 +290,7 @@ function icon(name) {
     copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 5.5h-9a2 2 0 0 0-2 2v9"/>',
     lock: '<rect x="4.6" y="10.6" width="14.8" height="9.4" rx="2"/><path d="M8.2 10.6V7.6a3.8 3.8 0 0 1 7.6 0v3"/>',
     file: '<path d="M6 3.4h8.2l3.8 3.8v13.4H6z"/><path d="M14 3.6v3.8h3.8"/>',
+    folder: '<path d="M3.6 7.2a2 2 0 0 1 2-2h3.8l2 2.4h7a2 2 0 0 1 2 2v8.6a2 2 0 0 1-2 2H5.6a2 2 0 0 1-2-2z"/>',
     shield: '<path d="M12 3.2l7.4 3v6.1c0 4-3 7.4-7.4 8.5-4.4-1.1-7.4-4.5-7.4-8.5V6.2z"/><path d="M8.8 12.2l2.4 2.4 4-4"/>',
   };
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -491,7 +493,59 @@ function closeInfo() {
   }
 }
 
-/** Разгъва информацията за портала или за манифеста — в самата страница. */
+// ── Прозорци: страницата показва ДВЕТЕ секции, всичко останало се отваря като лист ────
+// Същият модел като листа за един файл (`#file-info`): `role="dialog"`, `aria-modal`,
+// затваряне с бутон, с Escape и с клик извън картата. Нов прозорец не въвежда втори начин.
+/** Отваря лист по id и вдига `aria-expanded` на бутона, който го е отворил. */
+function openSheet(id, opener) {
+  const sheet = $(id);
+  if (!sheet) return;
+  sheet.hidden = false;
+  if (opener) opener.setAttribute("aria-expanded", "true");
+  const first = typeof sheet.querySelector === "function" ? sheet.querySelector("button, input, select") : null;
+  if (first && typeof first.focus === "function") first.focus();
+}
+
+/** Затваря лист по id и връща всички негови отварящи бутони в спокойно състояние. */
+function closeSheet(id) {
+  const sheet = $(id);
+  if (!sheet || sheet.hidden) return;
+  sheet.hidden = true;
+  if (typeof document.querySelectorAll !== "function") return;
+  for (const opener of document.querySelectorAll('[aria-controls="' + id + '"]')) {
+    opener.setAttribute("aria-expanded", "false");
+  }
+}
+
+/** Има ли отворен прозорец (за Escape и за задръжка на скрола). */
+function anySheetOpen() {
+  return ["info-sheet", "access-sheet"].some((id) => {
+    const sheet = $(id);
+    return Boolean(sheet) && !sheet.hidden;
+  });
+}
+
+/** Връзва прозорците: бутоните в заглавната част, затварянето и кликът извън картата. */
+function wireSheets() {
+  const bind = (btnId, act) => {
+    const btn = $(btnId);
+    if (btn) btn.addEventListener("click", act);
+  };
+  bind("info-open", () => openSheet("info-sheet", $("info-open")));
+  bind("access-open", () => openSheet("access-sheet", $("access-open")));
+  bind("info-sheet-close", () => closeSheet("info-sheet"));
+  bind("access-sheet-close", () => closeSheet("access-sheet"));
+  for (const id of ["info-sheet", "access-sheet"]) {
+    const sheet = $(id);
+    if (!sheet) continue;
+    // Клик върху тъмния фон (не върху картата) затваря — същото като при листа за файл.
+    sheet.addEventListener("click", (e) => {
+      if (e.target === sheet) closeSheet(id);
+    });
+  }
+}
+
+/** Разгъва информацията за портала или за манифеста — в прозореца „Информация“. */
 async function openInfo(kind) {
   const box = $("doc-info");
   if (!box) return;
@@ -499,6 +553,7 @@ async function openInfo(kind) {
     closeInfo();
     return;
   }
+  openSheet("info-sheet", $("info-open"));
   infoKind = kind;
   box.hidden = false;
   const isApi = kind === "api";
@@ -730,6 +785,7 @@ async function verifyFile(file) {
 function wireQuickBar() {
   if (barWired) return;
   barWired = true;
+  wireSheets();
   const top = $("bar-top");
   if (top) top.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   const search = $("bar-search");
@@ -746,6 +802,9 @@ function wireQuickBar() {
   if (manifest) manifest.addEventListener("click", () => void openInfo("manifest"));
   const close = $("file-info-close");
   if (close) close.addEventListener("click", closeFileInfo);
+  // „Обнови“ в секцията „Структура на портала“: презарежда дървото (папките се менят).
+  const refresh = $("tree-refresh");
+  if (refresh) refresh.addEventListener("click", () => void ensureTree());
   // „Покажи всичко“ / „Само тази папка“: един бутон, който сменя обхвата на списъка.
   const all = $("tree-all");
   if (all)
@@ -757,7 +816,14 @@ function wireQuickBar() {
       })();
     });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeFileInfo();
+    if (e.key === "Escape") {
+      // Първо се затваря прозорецът (ако има отворен), иначе листът за файл.
+      if (anySheetOpen()) {
+        for (const id of ["info-sheet", "access-sheet"]) closeSheet(id);
+      } else {
+        closeFileInfo();
+      }
+    }
   });
 }
 
@@ -796,7 +862,7 @@ function fileCard(file) {
     hash.title = T("file.sha.title", { full: file.sha256 });
     const label = document.createElement("span");
     label.className = "mono";
-    label.textContent = T("file.sha.label", { short: short(file.sha256, 16) });
+    label.textContent = T("file.sha.label", { short: short(file.sha256, 8) });
     const copyBtn = document.createElement("button");
     copyBtn.type = "button";
     copyBtn.className = "icon-btn";
@@ -957,9 +1023,11 @@ async function loadFolder(rel) {
   treeRoot = null;
   folderFiles = data.files.map((f) => ({ name: f.name, path: f.path, size: f.size, modifiedAt: f.modifiedAt }));
   folderSubs = Array.isArray(data.folders) ? data.folders.map((f) => ({ name: f.name, path: f.path })) : [];
+  treeCurrent = rel || "";
   const allBtn = $("tree-all");
   if (allBtn) allBtn.hidden = false;
   paint("");
+  paintTree();
   const head = $("files-title");
   if (head) head.textContent = rel ? T("folder.title", { path: "/" + rel }) : (portal && portal.title) || T("files.title.other");
   return true;
@@ -1009,6 +1077,67 @@ function treeFilesAll(node) {
   };
   walk(root);
   return out;
+}
+
+/**
+ * Дървото на портала (секция „Структура на портала“): един ред на папка, с броя файлове
+ * в нея. Клик върху папка сменя текущия път на списъка вдясно — без отделна страница.
+ */
+function paintTree() {
+  const list = $("tree-list");
+  const panel = $("tree-panel");
+  if (!list || !panel || !treeRoot) return;
+  panel.hidden = false;
+  list.replaceChildren();
+  const active = treeCurrent;
+  const row = (node, depth, isRoot) => {
+    const li = document.createElement("li");
+    li.className = "ptree-row";
+    li.dataset.depth = String(depth);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-ghost ptree-btn";
+    const name = isRoot ? (portal && portal.title ? portal.title : T("tree.root")) : node.name;
+    btn.title = node.path ? "/" + node.path : T("tree.root");
+    btn.append(icon("folder"), document.createTextNode(name));
+    const count = (node.files || []).length;
+    if (count) {
+      const badge = document.createElement("span");
+      badge.className = "count";
+      badge.textContent = String(count);
+      btn.append(badge);
+    }
+    if (active === node.path) btn.classList.add("is-current");
+    btn.addEventListener("click", () => void openTreeFolder(node.path));
+    li.append(btn);
+    list.append(li);
+    for (const child of node.folders || []) row(child, depth + 1, false);
+  };
+  row(treeRoot, 0, true);
+}
+
+/** Зарежда цялото дърво (веднъж) и го рисува в секцията. */
+async function ensureTree() {
+  const panel = $("tree-panel");
+  if (!panel) return null;
+  const status = $("tree-status");
+  if (status) {
+    status.hidden = false;
+    status.textContent = T("tree.loading");
+  }
+  const root = await loadWholeTree();
+  if (status) status.hidden = true;
+  if (!root) return null;
+  paintTree();
+  return root;
+}
+
+/** Клик върху папка в дървото: показва съдържанието ѝ в секцията „Файлове“. */
+async function openTreeFolder(rel) {
+  const ok = await loadFolder(rel);
+  if (!ok) return;
+  const head = $("files-title");
+  if (head && typeof head.scrollIntoView === "function") head.scrollIntoView({ block: "start" });
 }
 
 /**
@@ -1396,7 +1525,11 @@ async function loadQrInfo() {
     paint("");
     // Порталите с СОБСТВЕНА папка се отварят направо в нея — файловете са на диска, не в
     // регистъра. `?folder=` (от QR или от подпапка) сочи папка ВЪТРЕ в нея.
-    if (boot.folders === "1" || boot.folder) await loadFolder(boot.folder);
+    if (boot.folders === "1" || boot.folder) {
+      await loadFolder(boot.folder);
+      // Секцията „Структура на портала“ се пълни СЛЕД списъка: тя е ориентация, не данните.
+      await ensureTree();
+    }
     await loadQrInfo();
     if (listing.hasMore) {
       const more = $("more");
@@ -1427,6 +1560,8 @@ function wireUnlock() {
   const box = $("locked");
   if (!box || !boot.locked) return;
   box.hidden = false;
+  // Заключеният портал отваря направо прозореца „Достъп“ — там е полето за парола.
+  openSheet("access-sheet", $("access-open"));
   const panel = $("files") && $("files").closest ? $("files").closest("section") : null;
   if (panel) panel.hidden = true;
   const out = $("unlock-status");
