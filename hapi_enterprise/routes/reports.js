@@ -35,6 +35,7 @@ function create(deps) {
     filesRoot,
     statik,
     hash: hashApi,
+    packager,
   } = deps;
   const crypto = require('node:crypto');
   const fsp = require('node:fs/promises');
@@ -155,8 +156,9 @@ function create(deps) {
         const createdAt = new Date().toISOString();
         const oneclick = require('../report-oneclick');
         // Порталът има РЕГИСТЪР на файловете (`files/<portalId>/<fileId>`), а папката — дърво.
-        // Затова отчетът за портал описва регистъра, а за папка/файл — дървото: двете са
-        // различни източници и отчетът казва кой от тях е ползвал (`scope`).
+        // Затова отчетът за портал описва регистъра, за папка/файл — дървото, а за ИЗБРАНИТЕ
+        // (панелът „Дърво“) — точно подадените пътища: двете са различни източници и отчетът
+        // казва кой е ползвал (`scope`).
         const built = type === 'portal'
           ? await oneclick.build({
             type,
@@ -165,7 +167,9 @@ function create(deps) {
             hash: hashApi,
             sources: (Array.isArray(portal.files) ? portal.files : []).filter((f) => f && f.id).map((f) => ({ abs: path.join(filesRoot, portal.id, f.id), name: f.name || f.id })),
           })
-          : await oneclick.build({ type, dir: portalAbs(storageRoot), rel: String(payload.path || ''), portal, createdAt, hash: hashApi });
+          : type === 'selection'
+            ? await oneclick.build({ type, dir: portalAbs(storageRoot), paths: Array.isArray(payload.paths) ? payload.paths.map(String) : [], portal, createdAt, hash: hashApi })
+            : await oneclick.build({ type, dir: portalAbs(storageRoot), rel: String(payload.path || ''), portal, createdAt, hash: hashApi });
         const reportRender = require('../report-render');
         const pdf = reportRender.renderPdf(built.manifest, {
           data: built.data,
@@ -204,6 +208,56 @@ function create(deps) {
         if (e && e.status) return fail(res, e.status, (e.code ? e.code + ': ' : '') + (e.message || 'Report failed'));
         throw e;
       }
+    }
+    // ZIP на ИЗБРАНИТЕ файлове от дървото на портала (панел „Дърво“, ADR-0028 §7.1).
+    // Ползва СЪЩИЯ пакетар като експортните пакети (`packager`), за да няма втори начин за
+    // правене на ZIP: манифест, хешове и (по избор) подпис идват оттам.
+    if (parts[3] === 'reports' && parts[4] === 'archive' && parts.length === 5) {
+      if (!adminGate(req, res, 'reports', method)) return;
+      if (method !== 'POST') return fail(res, 405, 'Method not allowed');
+      const rda = await readJson(req, 256 * 1024); if (rda.error) return fail(res, rda.status, rda.error);
+      const payload = rda.value;
+      const portal = resolvePortal(String(payload.portal || ''));
+      if (!portal) return fail(res, 404, 'Unknown portal');
+      const storageRoot = portal.storage_root || '/share';
+      const logical = portalRoot(storageRoot);
+      if (logical === '/share' || logical === '/media') return fail(res, 400, 'PORTAL_WITHOUT_FOLDER: архивът иска портал със собствена папка');
+      const wanted = Array.isArray(payload.paths) ? payload.paths.map(String).filter(Boolean) : [];
+      if (!wanted.length) return fail(res, 400, 'EMPTY_SCOPE: няма избрани файлове');
+      if (wanted.length > 500) return fail(res, 413, 'TOO_MANY_FILES: до 500 файла в един архив');
+      const rootAbs = path.resolve(portalAbs(storageRoot));
+      const files = [];
+      for (const rel of wanted) {
+        const abs = path.resolve(rootAbs, rel);
+        const relCheck = path.relative(rootAbs, abs);
+        // Същата проверка като при отчета: списъкът идва от екрана, тоест не е доверен.
+        if (!relCheck || relCheck.startsWith('..') || path.isAbsolute(relCheck)) return fail(res, 400, 'PATH_OUTSIDE_PORTAL: ' + rel);
+        let data;
+        try {
+          const stat = await fsp.lstat(abs);
+          if (!stat.isFile()) return fail(res, 400, 'NOT_A_FILE: ' + rel);
+          data = await fsp.readFile(abs);
+        } catch (e) {
+          if (e.code === 'ENOENT') return fail(res, 404, 'Избран файл липсва: ' + rel);
+          throw e;
+        }
+        files.push({ name: path.basename(abs), data, path: 'originals/' + rel.split(path.sep).join('/'), source: 'portal' });
+      }
+      const meta = await packager.build({ portal, files, sign: null, ttlHours: 1 });
+      await packager.prune({ maxAgeHours: 1, maxCount: 50 }).catch(() => { });
+      const zip = await packager.payload(meta.id);
+      if (!zip) return fail(res, 500, 'Архивът не може да бъде прочетен');
+      void audit('report.archive', { portalId: portal.id, packageId: meta.id, files: files.length, bytes: zip.length, sha256: meta.sha256 });
+      const outName = 'report-archive-' + String(portal.slug || 'portal').replace(/[^A-Za-z0-9._-]/g, '_') + '-' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z') + '.zip';
+      res.writeHead(200, {
+        'Content-Type': 'application/zip',
+        'Content-Length': zip.length,
+        'Content-Disposition': 'attachment; filename="' + outName + '"',
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Package-SHA256': String(meta.sha256 || ''),
+      });
+      return res.end(zip);
     }
     // Листът с линковете (D4): кога · какво · път · линк · изтегляния.
     if (parts[3] === 'reports' && parts[4] === 'links' && parts.length === 5) {

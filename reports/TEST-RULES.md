@@ -3,13 +3,13 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 470 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 471 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 213 |
 | портал | 57 |
-| GUI | 42 |
+| GUI | 43 |
 | Home Assistant | 18 |
 | отчети | 16 |
 | ядро | 15 |
@@ -321,7 +321,7 @@
 | `portal-upload-409` | Portal upload 409 | `tests/portal-upload-409.cjs` |
 | `portal-variants` | Portal variants | `tests/portal-variants.cjs` |
 
-## GUI (42)
+## GUI (43)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -361,6 +361,7 @@
 | `ui-nav-symmetry` | Ui nav symmetry | `tests/ui-nav-symmetry.cjs` |
 | `ui-navigation` | Ui navigation | `tests/ui-navigation.cjs` |
 | `ui-portal-functions` | Ui portal functions | `tests/ui-portal-functions.cjs` |
+| `ui-portal-tree` | Ui portal tree | `tests/ui-portal-tree.cjs` |
 | `ui-progress` | Ui progress | `tests/ui-progress.cjs` |
 | `ui-settings-sections` | Ui settings sections | `tests/ui-settings-sections.cjs` |
 | `ui-shell-nav` | Ui shell nav | `tests/ui-shell-nav.cjs` |

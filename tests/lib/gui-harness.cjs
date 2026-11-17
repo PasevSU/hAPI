@@ -304,11 +304,13 @@ function clickAll(host, selector) {
   return nodes.length;
 }
 
-/** Заглавията на трите блока на портала: същите бутони, които човек натиска. */
+/** Заглавията на блоковете на портала: същите бутони, които човек натиска. */
 const PORTAL_BLOCK_TOGGLES = {
   control: '[data-pf-control-tog]',
   folders: '[data-pf-folders-tog]',
   files: '[data-pf-files-tog]',
+  // Панелът „Дърво и избор“ (ADR-0028): цялото дърво с маркиране — четвъртият блок.
+  tree: '[data-pf-tree-tog]',
 };
 
 /**

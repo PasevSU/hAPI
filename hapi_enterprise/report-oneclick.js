@@ -20,7 +20,7 @@ const path = require('node:path');
 // извикване (тестове) се ползва СЪЩИЯТ модул, а не втори `createHash`.
 const hashFn = () => require('./core_module/hash').create().fn;
 
-const TYPES = new Set(['portal', 'folder', 'file']);
+const TYPES = new Set(['portal', 'folder', 'file', 'selection']);
 const MAX_FILES = 10000;
 // Името влиза в адреса на линка (`/statik/<id>/<име>`), затова се ограничава до безопасни знаци.
 const SAFE = /[^A-Za-z0-9._-]+/g;
@@ -85,9 +85,9 @@ async function collect(absDir, { hash }) {
  *   е подаден, обхождането на папка не се прави — порталът има регистър, а папката има дърво.
  * @returns {Promise<{manifest: object, data: object, hashes: object, entries: Array, totals: object, scope: string, path: string, name: string}>}
  */
-async function build({ type, dir = null, rel = '', portal = {}, createdAt = new Date().toISOString(), hash = null, sources = null }) {
+async function build({ type, dir = null, rel = '', portal = {}, createdAt = new Date().toISOString(), hash = null, sources = null, paths = null }) {
   const scope = String(type || '');
-  if (!TYPES.has(scope)) throw new OneClickError('BAD_SCOPE', 400, 'Обхватът е portal, folder или file');
+  if (!TYPES.has(scope)) throw new OneClickError('BAD_SCOPE', 400, 'Обхватът е portal, folder, file или selection');
 
   const hasher = hash && typeof hash.file === 'function' && typeof hash.basis === 'function' ? hash : hashFn();
   let entries = [];
@@ -95,7 +95,28 @@ async function build({ type, dir = null, rel = '', portal = {}, createdAt = new 
   let target = null;
   let inside = '';
 
-  if (Array.isArray(sources)) {
+  if (Array.isArray(paths)) {
+    // ИЗБРАНИ файлове (панелът „Дърво“): пътищата са относителни в портала и всяко едно
+    // минава през същата проверка за изход — списъкът не е „доверен“, защото идва от екрана.
+    if (!dir) throw new OneClickError('BAD_SCOPE', 400, 'Липсва папка на портала');
+    const root = path.resolve(dir);
+    if (!paths.length) throw new OneClickError('EMPTY_SCOPE', 400, 'Няма избрани файлове');
+    for (const one of paths) {
+      const abs = path.resolve(root, String(one || ''));
+      const relInside = insideOf(root, abs);
+      if (relInside === null || !relInside) throw new OneClickError('PATH_OUTSIDE_PORTAL', 400, 'Пътят излиза извън портала');
+      const stat = await fsp.lstat(abs).catch((e) => {
+        if (e.code === 'ENOENT') throw new OneClickError('NOT_FOUND', 404, 'Избран файл липсва: ' + relInside);
+        throw e;
+      });
+      if (stat.isSymbolicLink() || !stat.isFile()) throw new OneClickError('NOT_A_FILE', 400, 'Избраният път не е файл: ' + relInside);
+      const hashed = await hasher.file(abs);
+      entries.push({ name: relInside, bytes: hashed.bytes, sha256: hashed.hex });
+      if (entries.length > MAX_FILES) {
+        throw new OneClickError('TOO_MANY_FILES', 413, `Обхватът е над ${MAX_FILES} файла — отчетът не се строи`);
+      }
+    }
+  } else if (Array.isArray(sources)) {
     // Портал: описани са файловете от РЕГИСТЪРА, всеки премерен наново от диска — отчетът не
     // бива да повтаря стар хеш от записа, ако файлът е сменен или изчезнал.
     for (const source of sources) {
@@ -142,9 +163,15 @@ async function build({ type, dir = null, rel = '', portal = {}, createdAt = new 
 
   const baseName = scope === 'portal'
     ? safeBase(portal.slug, 'portal')
-    : safeBase(path.basename(target), scope);
+    : scope === 'selection'
+      ? 'selected'
+      : safeBase(path.basename(target), scope);
   const name = 'report-' + scope + '-' + baseName + '-' + stamp(createdAt) + '.pdf';
-  const where = scope === 'portal' ? (portal.title || portal.slug || '') : inside || path.basename(target);
+  const where = scope === 'portal'
+    ? portal.title || portal.slug || ''
+    : scope === 'selection'
+      ? 'избрани файлове: ' + entries.length
+      : inside || path.basename(target);
 
   const manifest = {
     schemaVersion: 1,
@@ -157,7 +184,7 @@ async function build({ type, dir = null, rel = '', portal = {}, createdAt = new 
       {
         id: 'b-title',
         type: 'title',
-        value: scope === 'portal' ? 'ОТЧЕТ ЗА ПОРТАЛ' : scope === 'folder' ? 'ОТЧЕТ ЗА ПАПКА' : 'ОТЧЕТ ЗА ФАЙЛ',
+        value: scope === 'portal' ? 'ОТЧЕТ ЗА ПОРТАЛ' : scope === 'folder' ? 'ОТЧЕТ ЗА ПАПКА' : scope === 'file' ? 'ОТЧЕТ ЗА ФАЙЛ' : 'ОТЧЕТ ЗА ИЗБРАНИ ФАЙЛОВЕ',
         subtitle: where,
       },
       {

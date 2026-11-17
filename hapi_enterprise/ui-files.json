@@ -107,6 +107,14 @@
     "ui/portal-files.js",
     "text/javascript; charset=utf-8"
   ],
+  "/ui/selection.js": [
+    "ui/selection.js",
+    "text/javascript; charset=utf-8"
+  ],
+  "/ui/portal-tree.js": [
+    "ui/portal-tree.js",
+    "text/javascript; charset=utf-8"
+  ],
   "/ui/qr-studio.js": [
     "ui/qr-studio.js",
     "text/javascript; charset=utf-8"

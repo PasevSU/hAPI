@@ -19,9 +19,9 @@ const { startServer, mountUi, waitFor, expandPortalBlocks, PORTAL_BLOCK_TOGGLES 
 
 const PANEL_MODULES = [
   'data.js', 'icons.js', 'report-studio.js', 'portals.js', 'portal-control.js',
-  'portal-folders.js', 'portal-files.js', 'files-manager.js', 'directory-panel.js',
-  'dashboard-panel.js', 'settings-panel.js', 'export-center.js', 'public-gateway.js',
-  'visitors-panel.js', 'secret-share.js', 'report-sign.js',
+  'portal-folders.js', 'portal-files.js', 'selection.js', 'portal-tree.js', 'files-manager.js',
+  'directory-panel.js', 'dashboard-panel.js', 'settings-panel.js', 'export-center.js',
+  'public-gateway.js', 'visitors-panel.js', 'secret-share.js', 'report-sign.js',
 ];
 
 (async () => {

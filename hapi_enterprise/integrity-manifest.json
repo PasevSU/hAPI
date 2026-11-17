@@ -1,9 +1,9 @@
 {
   "version": "0.69.241",
-  "generatedAt": "2026-11-17T15:50:30.489Z",
+  "generatedAt": "2026-11-17T16:23:51.450Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
-    "server.js": "fa88a3a57fa4502a9bac6e067cd22b69fea6823155f14bf97e9eebeba9f190d3",
+    "server.js": "44493e1c7d9785baec33759c520ebba4d17c16e958f2392e3c4d8dac859704ba",
     "paths.js": "034d9abfe584e90dab516e10e47a344d4dba440c2c7f2a1961e603ab3d88706e",
     "storage-preflight.js": "2e51af333c54139a45b7b4bfa1c194fc1c314a06e811850820ebcd882008384f",
     "integrity.js": "31faa40f9dedfdf46c9a3cd3cb9537ab73aafda72ea32f74bee1f7b93207a8ba",
@@ -15,15 +15,15 @@
     "core_module/http.js": "926d1a8a606cf39290c6ac0899a54fe2b47955f1a9a89cf5e2c46c90b5868eab",
     "parse-json.js": "abe7390025da266167ada290f9c4282e14b9e2e685bf278b5a9d279bdd20b46f",
     "portal-config.js": "c382388933a304219f79e704d7c95fe38f96da4927f27955b1081e461d830d63",
-    "ui-files.json": "a21089504068e29803d3c856361b2822c37a046ab1f0ccf8bcef9ff0ccac36e5",
+    "ui-files.json": "c514bea8461936ccfc315b382230929b6d1e6f809c3833fdc71ad0629d06da92",
     "statik-index.js": "54608945f2bdddb28b8fdcfe22e9bff8cdd2833d00fdf404db3d28b0da012e80",
     "server_module/statik.js": "9c1f1bf0ac4cb6b1edd859698b5cec755bcaddbfbfa0efc21a8697dc363f5c40",
-    "ui/index.html": "2b57cde5cbb2d4f3adee6bd7ea7294adafd6bd1309f9b5883cf36a09feaf5073",
+    "ui/index.html": "7df38848616144a206d4a22cf831f4392511629c149a7658b20ea0ce760a7057",
     "ui/app.js": "f17a9569b53c80dc0edf971052ce2adbaa9748b913995c412fd60d6c3d2e8354",
     "ui/settings-panel.js": "5c717a4c7c8f1dd467e962ad7866f60cb4d20f74eba928f56474d840b2d0ae19",
     "ui/field-labels.js": "efd27ab8208417f711fc1a9c36180639f5096b5baa75edcb061793971dadb43d",
     "ui/debug-objects.js": "5b5089867c0fd97d46a932f3a51cd7e6f0d0e40b3ef823cef5ec31ff87a75735",
     "ui/debug-ledger.js": "8aba4c478b3543c4a34cbc769c9a69c02f4a1936813f8eac22f7375f258967e5",
-    "ui/i18n.js": "e4539fb34ec11ca3ac31fb24ee8e26fd9aa3fad564f28fe9fd1f1c3399285f9f"
+    "ui/i18n.js": "0723439a39cb9ad4e7239f473a9d958c03631f34cf14db827a1fe47cab90bb61"
   }
 }

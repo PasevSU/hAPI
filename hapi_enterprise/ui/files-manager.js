@@ -289,6 +289,7 @@
     controlOpen: false,
     foldersOpen: false,
     filesOpen: false,
+  treeBlockOpen: false,
     newFolder: false,
     busy: false,
     error: '',
@@ -911,7 +912,17 @@
         data = null;
       }
     }
-    return { ok: res.ok, status: res.status, error: res.ok ? '' : (data && data.error) || `HTTP ${res.status}`, data };
+    // Двоичен отговор (ZIP на избраните, ADR-0028): панелът го сваля като файл, а не го
+    // парсва — затова `raw` връща `blob` и текстът за грешка остава в `error`.
+    let blob = null;
+    if (o.raw && res.ok) {
+      try {
+        blob = await res.blob();
+      } catch {
+        blob = null;
+      }
+    }
+    return { ok: res.ok, status: res.status, error: res.ok ? '' : (data && data.error) || `HTTP ${res.status}`, data, blob };
   }
   /**
    * Проверява дали даден публичен адрес наистина се отваря (сървърът го вика DNS + HTTP).
@@ -2904,6 +2915,10 @@
       newContactFields,
       newCaseFields,
       uploadForm,
+      // Отчети и архиви от панела „Дърво“ (ADR-0028): модулите не бива да строят свой fetch
+      // с токен — подава се СЪЩИЯТ `api()`, който панелът ползва (`raw` за двоичен отговор).
+      request: api,
+      revokeLater,
     };
   }
 
@@ -2928,6 +2943,7 @@
         ${panel(window.HapiPortalControl, ctx)}
         ${panel(window.HapiPortalFolders, ctx)}
         ${panel(window.HapiPortalFiles, ctx)}
+        ${panel(window.HapiPortalTree, ctx)}
       </div>`;
   }
 
@@ -4010,6 +4026,7 @@
       ['[data-pf-control-tog]', 'controlOpen'],
       ['[data-pf-folders-tog]', 'foldersOpen'],
       ['[data-pf-files-tog]', 'filesOpen'],
+      ['[data-pf-tree-tog]', 'treeBlockOpen'],
     ];
     for (const [selector, flag] of BLOCK_FLAGS) {
       host.querySelectorAll(selector).forEach((el) => {

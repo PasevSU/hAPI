@@ -7,7 +7,7 @@
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
 
-Общо: **85** кода, излъчвани от `hapi_enterprise/`. От тях **65** носят
+Общо: **87** кода, излъчвани от `hapi_enterprise/`. От тях **66** носят
 собствено обяснение в кода; останалите се разпознават по кода и файла.
 
 ## Кодове по азбучен ред
@@ -27,6 +27,7 @@
 | `CHECKSUM_MISMATCH` | CRC24 на armor не съвпада | `hapi_enterprise/pgp.js` |
 | `DATA_TOO_LONG` | Данните не се побират в един RSA блок | `hapi_enterprise/pgp.js` |
 | `DECRYPT_FAILED` | Съобщението не може да бъде декриптирано | `hapi_enterprise/pgp.js` |
+| `EMPTY_SCOPE` | няма избрани файлове | `hapi_enterprise/routes/reports.js` |
 | `ETIMEDOUT` | таймаут след | `hapi_enterprise/core_module/http.js` |
 | `HASH_BAD_CHUNK` | размерът на парчето е извън позволените граници | `hapi_enterprise/core_module/hash.js` |
 | `HASH_BAD_ENTRIES` | очаква се списък от записи | `hapi_enterprise/core_module/hash.js` |
@@ -51,7 +52,7 @@
 | `NO_PATHS` | — | `hapi_enterprise/path-crypto.js` |
 | `NO_SECRET_KEY` | Няма секретен ключ за подписване | `hapi_enterprise/pgp.js` |
 | `NO_SIGNING_KEY` | няма ключ за подписване — задай pgp_path_secret или прикачи ключ | `hapi_enterprise/pgp-sign.js` |
-| `NOT_A_FILE` | в списъка с файлове има папка | `hapi_enterprise/pgp-sign.js` |
+| `NOT_A_FILE` | в списъка с файлове има папка | `hapi_enterprise/pgp-sign.js` · `hapi_enterprise/routes/reports.js` |
 | `NOT_A_FOLDER` | подай папка, а не файл | `hapi_enterprise/pgp-sign.js` |
 | `NOT_ENCRYPTED` | Съобщението няма PKESK пакет (криптирано е само с парола) | `hapi_enterprise/pgp.js` |
 | `NOT_FOUND` | пътят не съществува | `hapi_enterprise/pgp-sign.js` |
@@ -59,6 +60,7 @@
 | `OPTION_SECRET_NOT_EXPANDED` | тези опции съдържат "!secret" без замяна → | `hapi_enterprise/start.js` |
 | `PASSPHRASE_REQUIRED` | Секретният ключ е защитен с парола (AEAD) — нужна е паролата (опция `pgp_key_pass` или `PGP_KEY_PASS`) | `hapi_enterprise/pgp.js` |
 | `PASSPHRASE_WRONG` | Паролата на секретния ключ не е вярна (AEAD тагът не се провери; опити: | `hapi_enterprise/pgp.js` |
+| `PATH_OUTSIDE_PORTAL` | — | `hapi_enterprise/routes/reports.js` |
 | `PATH_OUTSIDE_STORAGE` | пътят сочи извън /share и /media (вкл. през „..“ или симв. връзка) | `hapi_enterprise/pgp-sign.js` |
 | `PGP_SECRET_KEY_REQUIRED` | — | `hapi_enterprise/path-crypto.js` |
 | `PORTAL_CONFIG_CONFLICT` | файлът е променен между четенето и записа | `hapi_enterprise/portal-config.js` · `hapi_enterprise/routes/portal-config.js` |
@@ -79,7 +81,7 @@
 | `SECRET_UNREADABLE` | — | `hapi_enterprise/path-crypto.js` |
 | `STORAGE_LEGACY_LOCATION` | намерени са данни в | `hapi_enterprise/storage-preflight.js` |
 | `TOO_LARGE` | над 128 MB наведнъж — подпиши подпапка | `hapi_enterprise/pgp-sign.js` |
-| `TOO_MANY_FILES` | над 500 файла — подпиши подпапка | `hapi_enterprise/pgp-sign.js` |
+| `TOO_MANY_FILES` | над 500 файла — подпиши подпапка | `hapi_enterprise/pgp-sign.js` · `hapi_enterprise/routes/reports.js` |
 | `TSA_INSECURE_TRANSPORT` | — | `hapi_enterprise/crypto-options.js` |
 | `UNSUPPORTED_AEAD` | Този режим не е наличен за заключване | `hapi_enterprise/pgp.js` |
 | `UNSUPPORTED_ALGO` | — | `hapi_enterprise/pgp.js` |

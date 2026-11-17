@@ -209,6 +209,12 @@ const order = ['app.js', 'i18n.js', 'settings-panel.js'].map((f) => index.indexO
 assert.ok(order.every((i) => i > -1), 'index.html зарежда трите скрипта');
 assert.ok(order[2] > order[1], 'settings-panel.js се зарежда след i18n.js');
 const server = fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'server.js'), 'utf8');
-assert.ok(server.includes("'i18n.js'"), 'сървърът сервира /ui/i18n.js');
+// От 0.69.242 allowlist-ът е данни (`ui-files.json`, D12) — `server.js` само го зарежда.
+assert.match(server, /require\(['"]\.\/ui-files\.json['"]\)/, 'server.js чете allowlist-а от ui-files.json');
+const uiAllowlist = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'hapi_enterprise', 'ui-files.json'), 'utf8'));
+assert.ok(
+  Object.values(uiAllowlist).some(([rel]) => rel === 'ui/i18n.js'),
+  'сървърът сервира /ui/i18n.js',
+);
 
 console.log(`PASS ui-i18n: ${keys.length} ключа × ${langs.length} езика · ${used.size} ключа в панела · DE/EN без кирилица · смяна на езика работи`);

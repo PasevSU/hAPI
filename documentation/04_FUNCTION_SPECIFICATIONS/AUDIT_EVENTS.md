@@ -7,7 +7,7 @@
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **207** събития, излъчвани от **25** файла.
+Общо: **208** събития, излъчвани от **25** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -177,6 +177,7 @@
 | `qr.blocked.view` | `hapi_enterprise/routes/portal-storage.js` |
 | `qr.restore.refused` | `hapi_enterprise/routes/portal-qr.js` |
 | `qr.restored` | `hapi_enterprise/routes/portal-qr.js` |
+| `report.archive` | `hapi_enterprise/routes/reports.js` |
 | `report.oneclick` | `hapi_enterprise/routes/reports.js` |
 | `report.package` | `hapi_enterprise/routes/reports.js` |
 | `report.render` | `hapi_enterprise/routes/reports.js` |

@@ -210,7 +210,8 @@ const ROUTES = [
   ['POST', '/admin/api/v2/reports/render', 'Рендер на отчет (PDF) от манифест', 'reports', 'core'],
   // Отчет с едно натискане (ADR-0028): обхватът идва от мястото на бутона, а всеки отчет
   // получава запис в листа и адрес `/statik/<id>/<име>` (само за изтегляне).
-  ['POST', '/admin/api/v2/reports/oneclick', 'Отчет за портал, папка или файл в едно натискане', 'reports', 'core'],
+  ['POST', '/admin/api/v2/reports/oneclick', 'Отчет за портал, папка, файл или избрани файлове в едно натискане', 'reports', 'core'],
+  ['POST', '/admin/api/v2/reports/archive', 'ZIP на избраните файлове от дървото на портала', 'reports', 'core'],
   ['GET', '/admin/api/v2/reports/links', 'Лист с генерираните отчети и техните адреси', 'reports', 'core'],
   ['DELETE', '/admin/api/v2/reports/links/{id}', 'Изтриване на отчет и неговия адрес', 'reports', 'core'],
   ['POST', '/admin/api/v2/reports/package', 'Пакет с доказателства (PDF + манифест + токени)', 'reports', 'core'],

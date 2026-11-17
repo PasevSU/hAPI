@@ -4,9 +4,9 @@
 
 > **Генериран документ.** Версия на кода: **0.69.241**. Пише се от `node scripts/source-inventory.cjs`, проверява се от `tests/source-inventory.cjs`. Ръчните редакции се губят при следващото генериране — затова „предназначението“ идва от първия коментар в самия файл: документът не може да твърди нещо, което кодът не казва.
 
-Общо: **139** backend модула · **22** HTTP компонента · **30** UI модула · **9** Python модула · **49** инструмента · **470** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
+Общо: **139** backend модула · **22** HTTP компонента · **32** UI модула · **9** Python модула · **49** инструмента · **471** теста. Архитектурните описания са в [`MODULE_CATALOG.md`](MODULE_CATALOG.md), маршрутите — в [`API_ENDPOINT_REFERENCE.md`](../02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md).
 
-### Файлове (249)
+### Файлове (251)
 
 | Файл | Вид | Предназначение (първи ред от самия файл) |
 | ---- | --- | ----------------------------------------- |
@@ -189,6 +189,7 @@
 | `hapi_enterprise/ui/portal-control.js` | ui | Контейнер „Контролен панел на портала“ — настройки на портала и API/QR. |
 | `hapi_enterprise/ui/portal-files.js` | ui | Контейнер „Файлове в портала (N) · /път“ — филтри, карти на файловете и качване. |
 | `hapi_enterprise/ui/portal-folders.js` | ui | Контейнер „Папки на портала“ — експлорер на storage_root: скриващи се менюта. |
+| `hapi_enterprise/ui/portal-tree.js` | ui | ДЪРВО-ПАНЕЛ НА ПОРТАЛА (ADR-0028, §7.1): цялото дърво на едно място, с маркиране. |
 | `hapi_enterprise/ui/portals.js` | ui | Панел „Портали & API“ (Фаза 8 / API-01…03): генериране на публично API, |
 | `hapi_enterprise/ui/public-gateway.js` | ui | Public Gateway & Access (PG-2) — два канала, портални политики и Public Access Test. |
 | `hapi_enterprise/ui/qr-studio.js` | ui | QR СТУДИО — ЕДНО ГЛОБАЛНО МЯСТО ЗА ВСЯКА QR ОПЕРАЦИЯ (0.69.229). |
@@ -197,6 +198,7 @@
 | `hapi_enterprise/ui/report-sign.js` | ui | Клиент за detached CMS (PKCS#7) подпис на отчет — това, което панелът вика. |
 | `hapi_enterprise/ui/report-studio.js` | ui | Report Studio (Фаза 11 / RS-02): библиотека → документ → свойства → A4 preview. |
 | `hapi_enterprise/ui/secret-share.js` | ui | Генериране на тайни връзки в БРАУЗЪРА — моделът на scrt.link v2 (MIT), собствен код. |
+| `hapi_enterprise/ui/selection.js` | ui | ГЛОБАЛНО МАРКИРАНЕ НА ФАЙЛОВЕ (ADR-0028, D8). |
 | `hapi_enterprise/ui/settings-panel.js` | ui | Настройки на връзката: админ токен, API адрес и публичен адрес за API/QR. |
 | `hapi_enterprise/ui/upload-progress.js` | ui | Прозорец за качване с РЕАЛЕН напредък, сверка по хеш и възстановяване (0.69.214). |
 | `hapi_enterprise/ui/visitors-panel.js` | ui | Панел „Кой влиза“ — чете сензорите за комуникацията (visitor-intel.js) през |

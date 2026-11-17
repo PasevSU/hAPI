@@ -84,6 +84,9 @@ const CEILING = {
   'paptresor.js': 0,
   'portal-control.js': 0,
   'portal-files.js': 0,
+  // Панелът „Дърво“ и глобалното маркиране (ADR-0028): целият текст минава през `T()`.
+  'portal-tree.js': 0,
+  'selection.js': 0,
   'portal-folders.js': 53,
   'portals.js': 0,
   'qr-studio.js': 909, // целият текст минава през `T()`, а резервните низове са на български

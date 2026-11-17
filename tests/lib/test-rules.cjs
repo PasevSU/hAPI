@@ -457,6 +457,7 @@ const RULES = [
   { id: "ui-nav-symmetry", area: "GUI", title: "Ui nav symmetry", owner: "tests/ui-nav-symmetry.cjs" },
   { id: "ui-navigation", area: "GUI", title: "Ui navigation", owner: "tests/ui-navigation.cjs" },
   { id: "ui-portal-functions", area: "GUI", title: "Ui portal functions", owner: "tests/ui-portal-functions.cjs" },
+  { id: "ui-portal-tree", area: "GUI", title: "Ui portal tree", owner: "tests/ui-portal-tree.cjs" },
   { id: "ui-progress", area: "GUI", title: "Ui progress", owner: "tests/ui-progress.cjs" },
   { id: "ui-settings-sections", area: "GUI", title: "Ui settings sections", owner: "tests/ui-settings-sections.cjs" },
   { id: "ui-shell-nav", area: "GUI", title: "Ui shell nav", owner: "tests/ui-shell-nav.cjs" },
