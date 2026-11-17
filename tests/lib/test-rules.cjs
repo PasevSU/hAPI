@@ -264,6 +264,7 @@ const RULES = [
   { id: "portal-config-format", area: "портал", title: "Portal config format", owner: "tests/portal-config-format.cjs" },
   { id: "portal-config-registry", area: "портал", title: "Portal config registry", owner: "tests/portal-config-registry.cjs" },
   { id: "portal-config-seed", area: "портал", title: "Portal config seed", owner: "tests/portal-config-seed.cjs" },
+  { id: "portal-config-sync", area: "портал", title: "Portal config sync", owner: "tests/portal-config-sync.cjs" },
   { id: "portal-create-qr", area: "портал", title: "Portal create qr", owner: "tests/portal-create-qr.cjs" },
   { id: "portal-creation-contract", area: "портал", title: "Portal creation contract", owner: "tests/portal-creation-contract.cjs" },
   { id: "portal-file-page", area: "портал", title: "Portal file page", owner: "tests/portal-file-page.cjs" },

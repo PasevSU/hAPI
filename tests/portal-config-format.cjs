@@ -88,6 +88,25 @@ assert.equal(parsed.data.folders.items['/Договори'].locked, true, 'фл�
 assert.equal(parsed.data.files.length, 1, 'файлът е запис в списъка');
 assert.equal(parsed.data.files[0].path, '/Договори/a.pdf', 'пътят е запазен точно');
 
+// ── 1б. Списък от ОБЕКТИ с няколко елемента ────────────────────────────────────
+// Пази точно един дефект: полетата на първия елемент затваряха списъка и вторият `- ` ставаше
+// „елемент на списък без списък“ (хванато, когато порталът получи ВТОРИ файл — `files[]` е
+// точно такъв списък). Затова тук се проверява не един, а два елемента, и обратен прочит.
+{
+  const two = SAMPLE.replace(
+    '  - id: file-000001\n',
+    '  - id: file-000002\n    path: /Договори/b.pdf\n    size: 20\n    sha256: "' + '2'.repeat(64) + '"\n    access: key\n    listed: false\n  - id: file-000001\n',
+  );
+  const read = config.parse(two);
+  assert.deepEqual(read.problems, [], 'два елемента в списъка се четат: ' + JSON.stringify(read.problems));
+  assert.equal(read.data.files.length, 2, 'и двата елемента са в списъка');
+  assert.equal(read.data.files[0].id, 'file-000002', 'редът е този от файла (после `emit` го подрежда по път)');
+  assert.equal(read.data.files[1].id, 'file-000001', 'вторият елемент не се слива с първия');
+  const text = config.emit(read.data);
+  assert.deepEqual(config.parse(text).problems, [], 'записаното се чете отново');
+  assert.equal(config.parse(text).data.files.length, 2, 'броят не се губи при запис');
+}
+
 // ── 2. Откази вместо догадки ───────────────────────────────────────────────────
 const refuses = (text, expected, why) => {
   const result = config.parse(text);

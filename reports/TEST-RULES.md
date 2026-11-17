@@ -3,12 +3,12 @@
 > Генериран от `scripts/gen-test-rules.cjs`; **не се редактира на ръка**. Проверява се от
 > `tests/scenario-matrix.cjs` (съвпадение в двете посоки) и от `--check` на генератора.
 
-**Общо: 456 правила · 33 области · 100% от `tests/*.cjs`.**
+**Общо: 457 правила · 33 области · 100% от `tests/*.cjs`.**
 
 | Област | Правила |
 | --- | --- |
 | общо | 206 |
-| портал | 52 |
+| портал | 53 |
 | GUI | 40 |
 | Home Assistant | 18 |
 | отчети | 16 |
@@ -252,7 +252,7 @@
 | `webhooks` | Webhooks | `tests/webhooks.cjs` |
 | `worm` | Worm | `tests/worm.cjs` |
 
-## портал (52)
+## портал (53)
 
 | Правило | Заглавие | Файл |
 | --- | --- | --- |
@@ -265,6 +265,7 @@
 | `portal-config-format` | Portal config format | `tests/portal-config-format.cjs` |
 | `portal-config-registry` | Portal config registry | `tests/portal-config-registry.cjs` |
 | `portal-config-seed` | Portal config seed | `tests/portal-config-seed.cjs` |
+| `portal-config-sync` | Portal config sync | `tests/portal-config-sync.cjs` |
 | `portal-create-qr` | Portal create qr | `tests/portal-create-qr.cjs` |
 | `portal-creation-contract` | Portal creation contract | `tests/portal-creation-contract.cjs` |
 | `portal-file-page` | Portal file page | `tests/portal-file-page.cjs` |

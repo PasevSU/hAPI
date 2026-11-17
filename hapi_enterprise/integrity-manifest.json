@@ -1,6 +1,6 @@
 {
-  "version": "0.69.234",
-  "generatedAt": "2026-11-17T02:55:51.438Z",
+  "version": "0.69.235",
+  "generatedAt": "2026-11-17T03:56:16.767Z",
   "files": {
     "start.js": "023bc3dca8352b1269fdf532c7667514c0184e2b3bc622e0c4994f70ef4ad671",
     "server.js": "da68db559eb83e2fa531825b2271d6f0d67f3287403dbf46c9df9f6fbcb8b559",
@@ -13,7 +13,7 @@
     "core_module/api-docs.js": "a44f90d61bfa18d15579aefd833b29f434c157c4df6e4254e4dee6fe8c66f50b",
     "core_module/hash.js": "4a34de45a7f8f93bdace6d7e29478d273451629867d0ef69d27f414aac02ac8e",
     "core_module/http.js": "bf762535761222d18f2710ae13d1fc51d61eec37184123ae74cb580ca24a3290",
-    "portal-config.js": "bb7cfd08e6e46c6856e41bb5f7ec66c9858029387a4470cfa34ba2b3aacfecc1",
+    "portal-config.js": "f86e398b354afb4485a4da830c288eae8151c08647517138db1a321d0317762d",
     "ui/index.html": "2b57cde5cbb2d4f3adee6bd7ea7294adafd6bd1309f9b5883cf36a09feaf5073",
     "ui/app.js": "f17a9569b53c80dc0edf971052ce2adbaa9748b913995c412fd60d6c3d2e8354",
     "ui/settings-panel.js": "5c717a4c7c8f1dd467e962ad7866f60cb4d20f74eba928f56474d840b2d0ae19",

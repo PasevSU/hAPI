@@ -353,6 +353,11 @@ async function writeArtifacts(portal, base, artifacts = {}) {
   // Страницата изрежда ИСТИНСКОТО съдържание на папката, а не само регистрираните файлове.
   // `listTree` очаква ЛОГИЧЕСКИЯ корен (`/share/...`) — тои самият превежда до host път.
   const tree = await listTree(portal && portal.storage_root);
+  // Описанието се обновява ЗАЕДНО с артефактите: и двете са „състоянието на портала на диска“.
+  // Така всяко място, което вече вика `writeArtifacts` (създаване, качване, триене, местене,
+  // възстановяване), получава синхронизиран `configuration.yaml`, без да има втори списък с
+  // извиквания, който да се разминава (точно това е DEF-63 по вид).
+  await syncConfig(portal);
   const jobs = [['portal.html', page(portal, base, tree)]];
   if (artifacts && artifacts.record) jobs.push(['api.json', JSON.stringify(artifacts.record, null, 2)]);
   if (artifacts && artifacts.openapiText) jobs.push(['openapi.json', String(artifacts.openapiText)]);
@@ -393,4 +398,141 @@ async function removeArtifacts(root) {
   return removed;
 }
 
-module.exports = { folderPath, safeName, ensure, store, remove, page, rootPage, listTree, writeArtifacts, folderReady, removeArtifacts, isGenerated, GENERATED, ARTIFACTS, DESCRIPTION };
+// ── Описание от записа (файл → база) ─────────────────────────────────────────
+// `configuration.yaml` е и „настройки на портала“, и „какво има в портала“. Настройките се
+// пишат от човек (или от панела); съдържанието (`files[]`) и самоличността (`portal.*`) идват
+// от ЗАПИСА — тоест от базата, която е истината за това кои файлове съществуват. Затова при
+// всяка промяна на портала описанието се сглобява наново: настройките се ЗАПАЗВАТ както са,
+// а `portal.*` и `files[]` се обновяват. Ръчна промяна на САМИТЕ настройки оцелява.
+
+/** Режимът на достъп в базата (`FREE`/`KEY_REQUIRED`/`DISABLED`) → езикът на описанието. */
+const FILE_ACCESS_BY_MODE = Object.freeze({ FREE: 'free', KEY_REQUIRED: 'key', DISABLED: 'disabled' });
+const PORTAL_VISIBILITY = new Set(['public', 'private']);
+const IDENT = /^[A-Za-z0-9_-]{0,64}$/;
+const SHA256 = /^[0-9a-f]{64}$/;
+const CONTENT_ID = /^CT-[0-9a-f]{32}$/;
+const FILE_ID = /^[A-Za-z0-9_-]{6,64}$/;
+/** Фиксиран печат за сравнение: ревизията и датата се пишат при записа, не влизат в „променено ли е“. */
+const STABLE_STAMP = '1970-01-01T00:00:00Z';
+
+/** ISO 8601 (UTC) или празен низ — така в описанието не влиза „Invalid Date“. */
+function iso(value) {
+  const t = typeof value === 'string' ? Date.parse(value) : Number.NaN;
+  return Number.isFinite(t) ? new Date(t).toISOString() : '';
+}
+
+/** Разделът `portal` — това, което базата знае за портала (и което проверката приема). */
+function describePortal(portal) {
+  const slug = String((portal && portal.slug) || '');
+  const title = String((portal && portal.title) || '').trim() || slug || 'portal';
+  const out = {
+    slug: slug || 'portal',
+    title: title.slice(0, 160),
+    visibility: PORTAL_VISIBILITY.has(portal && portal.visibility) ? portal.visibility : 'private',
+    flag: String((portal && portal.flag) || 'none'),
+    category: String((portal && portal.category) || '').slice(0, 120),
+    subject: String((portal && portal.subject) || '').slice(0, 200),
+    notes: String((portal && (portal.notesText || portal.notes)) || '').slice(0, 2000),
+  };
+  // Идентификаторите се слагат само ако минават проверката — иначе цялото описание би паднало
+  // заради едно чуждо поле, а то не е причина порталът да остане без описание.
+  for (const [key, value] of [['contact_id', portal && portal.contactId], ['case_id', portal && portal.caseId], ['parent_id', portal && portal.parentId]]) {
+    const text = String(value || '');
+    if (text && IDENT.test(text)) out[key] = text;
+  }
+  if (portal && portal.readonly === true) out.readonly = true;
+  return out;
+}
+
+/**
+ * Разделът `files[]` — ГЕОГРАФИЯТА на портала: кой файл къде се намира.
+ *
+ * Пътят е този в папката на портала (`storagePath`), а когато файлът НЕ е в папката (шифрован
+ * е, или копието е изключено) — виртуалният `/<име>`, защото там човекът го търси. Две
+ * едноименни записи не могат да имат един път (проверката е без значение от регистъра),
+ * затова вторият получава `-2`, `-3`… — същото правило, което `store()` прилага на диска.
+ */
+function describeFiles(portal) {
+  const seen = new Set();
+  const out = [];
+  for (const file of Array.isArray(portal && portal.files) ? portal.files : []) {
+    if (!file || typeof file.id !== 'string' || !FILE_ID.test(file.id)) continue;
+    const sha = typeof file.sha256 === 'string' && SHA256.test(file.sha256.toLowerCase()) ? file.sha256.toLowerCase() : '';
+    // Файл без валиден sha256 не може да се опише (описанието е и доказателство) — прескача се
+    // мълчаливо само той, а не целият файл на портала.
+    if (!sha) continue;
+    const wanted = '/' + String(file.storagePath || '').replace(/^\/+/, '') || '/' + safeName(file.name);
+    const base = wanted === '/' ? '/' + safeName(file.name) : wanted;
+    let rel = base;
+    for (let n = 2; seen.has(rel.toLowerCase()); n += 1) {
+      const ext = path.posix.extname(base);
+      rel = base.slice(0, base.length - ext.length) + '-' + n + ext;
+    }
+    seen.add(rel.toLowerCase());
+    const entry = {
+      id: file.id,
+      path: rel,
+      size: Number.isInteger(file.size) && file.size >= 0 ? file.size : 0,
+      sha256: sha,
+      access: FILE_ACCESS_BY_MODE[file.accessMode || 'FREE'] || 'free',
+      listed: file.listed !== false,
+    };
+    const added = iso(file.uploadedAt);
+    if (added) entry.added = added;
+    const modified = iso(file.modifiedAt);
+    if (modified) entry.modified = modified;
+    if (typeof file.contentId === 'string' && CONTENT_ID.test(file.contentId)) entry.content_id = file.contentId;
+    out.push(entry);
+  }
+  return out;
+}
+
+/**
+ * Обновява `configuration.yaml` в папката на портала от ЗАПИСА — без да пипа настройките.
+ *
+ * Защо връща обект, а не „готово“: викащият (и тестът) трябва да види ДАЛИ е пипано, за да не
+ * се вдига `revision` при всяка заявка. Затова запис има само когато съдържанието наистина се е
+ * променило — иначе файлът и броячът на промените щяха да станат безсмислени.
+ *
+ * Никога не се презаписва файл, който НЕ СЕ РАЗБИРА (ръчна редакция по средата, чуждо съдържание,
+ * счупен YAML): там отказът е единственият начин да не се загуби чужда работа. Отговорът тогава
+ * е `{skipped:'invalid'}` с причините.
+ *
+ * @param {object} portal записът на портала от базата
+ * @returns {Promise<{changed:boolean, revision?:number, skipped?:string, problems?:object[], issues?:object[]}>}
+ */
+async function syncConfig(portal) {
+  const root = portal && portal.storage_root;
+  // Общ корен не е папка на портала — там няма описание (както няма и артефакти).
+  if (paths.isLogicalRoot(root)) return { changed: false, skipped: 'shared-root' };
+  const dir = folderPath(root);
+  const stat = await fsp.stat(dir).catch(() => null);
+  if (!stat || !stat.isDirectory()) return { changed: false, skipped: 'no-folder' };
+  const file = path.join(dir, DESCRIPTION);
+  let current = null;
+  if (await exists(file)) {
+    let read;
+    try {
+      read = portalConfig.read(file, { slug: portal && portal.slug });
+    } catch (error) {
+      return { changed: false, skipped: 'unreadable', problems: [{ path: '', line: 0, message: error.message }] };
+    }
+    if (read.problems.length) return { changed: false, skipped: 'invalid', problems: read.problems };
+    current = read;
+  }
+  const base = current ? current.data : portalConfig.initial({ slug: portal && portal.slug, title: portal && portal.title });
+  const next = { ...base, portal: { ...(base.portal || {}), ...describePortal(portal) }, files: describeFiles(portal) };
+  const stable = (data) => portalConfig.emit({ ...data, revision: 1, updated_at: STABLE_STAMP });
+  if (current && stable(next) === stable(current.data)) return { changed: false, revision: current.revision };
+  try {
+    const written = portalConfig.write(file, next, { slug: portal && portal.slug });
+    return { changed: true, revision: written.revision };
+  } catch (error) {
+    // Записът от запис в базата не бива да събаря качването: невалидно описание се отчита
+    // като „прескочено“ с причините, а не като изключение насред заявката.
+    if (error.code === 'PORTAL_CONFIG_INVALID') return { changed: false, skipped: 'invalid-record', issues: error.issues };
+    throw error;
+  }
+}
+
+module.exports = { folderPath, safeName, ensure, store, remove, page, rootPage, listTree, writeArtifacts, folderReady, removeArtifacts, syncConfig, isGenerated, GENERATED, ARTIFACTS, DESCRIPTION };

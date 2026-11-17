@@ -11,17 +11,18 @@
 | Модулът е в пакета и в сверката за цялост | `Dockerfile`, `integrity.js` (19 критични файла) | `docker-runtime`, `integrity-startup` |
 | Място за новите модули в инвентара (272 → 253 реда) | `scripts/source-inventory.cjs` | `source-inventory`, `docs-size` |
 | Пътища: домашна папка `<корен>/hAPI` (`paths.hapiHome`), портали в `<корен>/hAPI/portals/<slug>` (`paths.portalsRoot`/`portalRootFor`), вътрешни данни в `hAPI/data`; две стари места в preflight-а с `STORAGE_LEGACY_LOCATION` | `hapi_enterprise/paths.js`, `storage-preflight.js` | `storage-roots` §5д, `storage-default-location`, `portal-storage-fixed`, `oracle-lifecycle`, `layout` |
+| Синхронизация файл → база: `portal.*` и `files[]` се сглобяват от записа при всяко `writeArtifacts` (качване, триене, местене, възстановяване); настройките от човек оцеляват; ревизия само при истинска промяна; счупен файл не се презаписва | `portal-folder.js` (`syncConfig`, `describePortal`, `describeFiles`) | `portal-config-sync`, `portal-config-seed`, `portal-config-format` §1б |
 
 ## Остава (в този ред)
 
-1. **Синхронизация файл → база**: качване/триене/преместване обновяват `files[]` и вдигат
-   `revision`; ръчна промяна на файла се вдига при следващия прочит (mtime + sha256).
-2. **Маршрутите** (`routes/portal-config.js`): `GET/PUT …/config`, `…/config/verify`,
+1. **Маршрутите** (`routes/portal-config.js`): `GET/PUT …/config`, `…/config/verify`,
    `…/config/adopt`, `…/config/export.yaml`, `…/config/import`; `configHash` във всяка мутация.
-3. **Панелът** (`ui/portal-control.js`): блок „Опции“ с четирите раздела + жива разпечатка на
+2. **Панелът** (`ui/portal-control.js`): блок „Опции“ с четирите раздела + жива разпечатка на
    файла; дървото и списъкът да идват от описанието.
-4. **Пълен `files[]`**: днес описанието се създава с празен списък — файловете още се броят в
-   базата; запълването е стъпка 1.
+3. **`config/adopt`**: ръчна промяна на файла (напр. `ui.columns`) да влиза в базата по изрично
+   действие на човек, а не мълчаливо — днес такава промяна само оцелява във файла.
+4. **`files[]` за файлове, добавени НАПРАВО в папката** (без качване през панела): те не са в
+   базата и описанието още не ги знае — при `config/verify` излизат като „излишни“.
 
 ## Правило, което не се разхлабва
 

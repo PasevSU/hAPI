@@ -132,6 +132,10 @@ function parse(text) {
   // Стек от {indent, node} — обектите се строят по отстъп, както ги вижда човек.
   const stack = [{ indent: -1, node: data }];
   let listTarget = null; // списък, в който влизат `- ` редовете
+  // Отстъпът на самите `- ` редове. Без него вторият елемент на списък от ОБЕКТИ се губеше:
+  // полетата на първия елемент затваряха списъка и следващото `- ` оставаше „без списък“
+  // (хванато от `portal-config-seed`, когато порталът получи ВТОРИ файл).
+  let listIndent = -1;
 
   for (let index = 0; index < lines.length; index += 1) {
     const raw = lines[index].replace(/\r$/, '');
@@ -166,6 +170,8 @@ function parse(text) {
         }
         const entry = {};
         entry[key.value] = value.value;
+        // Новият елемент стои на нивото на списъка, а не на предходния елемент.
+        while (stack.length > 1 && stack[stack.length - 1].indent >= indent) stack.pop();
         listTarget.push(entry);
         stack.push({ indent, node: entry });
       } else {
@@ -184,7 +190,12 @@ function parse(text) {
       problems.push({ path: '', line: lineNo, message: 'ред без „:“ — очаква се „ключ: стойност“' });
       continue;
     }
-    listTarget = null;
+    // Ключът е ИЗВЪН списъка само ако е на неговото ниво или по-нагоре; ключовете на самия
+    // елемент (по-дълбок отстъп) не затварят списъка.
+    if (listIndent >= 0 && indent <= listIndent) {
+      listTarget = null;
+      listIndent = -1;
+    }
     while (stack.length && stack[stack.length - 1].indent >= indent) stack.pop();
     const parent = stack.length ? stack[stack.length - 1].node : data;
     const key = keyOf(body.slice(0, colon));
@@ -208,6 +219,7 @@ function parse(text) {
         parent[key.value] = arr;
         stack[stack.length - 1] = { indent, node: arr };
         listTarget = arr;
+        listIndent = indentOf(next);
         // Обектът вече не е нужен: списъкът заема мястото си.
         stack[stack.length - 1].node = arr;
       }

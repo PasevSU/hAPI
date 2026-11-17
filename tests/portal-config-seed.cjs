@@ -1,10 +1,11 @@
 'use strict';
-// ВСЕКИ ПОРТАЛ НОСИ СВОЕТО `configuration.yaml` (план 23, фаза 1 — първа стъпка).
+// ВСЕКИ ПОРТАЛ НОСИ СВОЕТО `configuration.yaml` (план 23, фаза 1).
 //
 // Какво пази този тест: описанието се създава в САМАТА папка на портала, с пълните
-// подразбирания, чете се обратно без проблеми и НЕ се презаписва при второ докосване — иначе
-// първата ръчна промяна на човек би изчезнала при следващия старт. Проверява се и че файлът не
-// се брои за съдържание (не се показва в дървото на портала).
+// подразбирания, чете се обратно без проблеми, а при следващо докосване НАСТРОЙКИТЕ, писани от
+// човек, оцеляват, докато съдържанието (`files[]`) идва от базата — тя е истината за това кои
+// файлове съществуват. Проверява се и че файлът не се брои за съдържание (не се показва в
+// дървото на портала).
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -59,16 +60,25 @@ const portalConfig = require(path.join(__dirname, '..', 'hapi_enterprise', 'port
       assert.ok(eff[key] && typeof eff[key] === 'object', 'в описанието стои и разделът „' + key + '“');
     }
 
-    // ── Ръчна промяна не се губи при повторно докосване ────────────────────
+    // ── Ръчна промяна на НАСТРОЙКА не се губи при следващо докосване ─────────
     const before = fs.readFileSync(file, 'utf8');
-    const edited = before.replace('portal:', 'portal:').replace('notes: ""', 'notes: "ръчна бележка"');
+    assert.match(before, /columns: 3/, 'подразбирането за колони е в файла');
+    const edited = before.replace('columns: 3', 'columns: 4');
     fs.writeFileSync(file, edited, 'utf8');
     assert.equal(fs.readFileSync(file, 'utf8'), edited, 'файлът е променен на ръка');
 
-    // Второ качване минава през същата папка — описанието трябва да остане ръчното.
+    // Второ качване минава през същата папка: настройката остава, а `files[]` се обновява.
     const second = await upload('vtori.txt', 'второ');
     assert.ok([200, 201].includes(second.status), 'вторият файл се качва: ' + second.status);
-    assert.match(fs.readFileSync(file, 'utf8'), /ръчна бележка/, 'ръчната промяна е запазена (описанието не се презаписва)');
+    const afterText = fs.readFileSync(file, 'utf8');
+    assert.match(afterText, /columns: 4/, 'ръчната промяна на настройка е запазена');
+    const after = portalConfig.read(file, { slug: 's-opisanie' });
+    assert.deepEqual(after.problems, [], 'описанието остава валидно: ' + JSON.stringify(after.problems));
+    assert.ok(after.revision > read.data.revision, 'ревизията е вдигната след промяната: ' + after.revision);
+    assert.equal(after.data.files.length, 2, 'и двата файла са в описанието: ' + after.data.files.map((f) => f.path).join(', '));
+    const paths = after.data.files.map((f) => f.path).sort();
+    assert.deepEqual(paths, ['/dokument.txt', '/vtori.txt'], 'пътищата са тези в папката на портала');
+    assert.equal(after.data.files.every((f) => f.sha256 && f.size > 0 && f.access === 'free'), true, 'всеки запис носи sha256, размер и достъп');
 
     // ── Не е съдържание: дървото на портала не го показва ──────────────
     const tree = await server.api('/admin/api/portals/' + encodeURIComponent(portal.id) + '/tree');
