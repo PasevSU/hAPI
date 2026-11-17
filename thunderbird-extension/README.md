@@ -348,7 +348,7 @@ enough if the archiver writes Windows separators. `Compress-Archive` and
 each entry itself with `ZipArchive.CreateEntry`, replacing `\` with `/`, and refuses
 to build at all when `default_locale` names a tree that is not in the stage folder.
 
-[`psemp-gateway/tools/verify-install.cjs`](../../psemp-gateway/tools/verify-install.cjs)
+[`psemp-gateway/tools/verify-install.cjs`](../psemp-gateway/tools/verify-install.cjs)
 guards this from outside: it walks the installed archive's central directory and
 fails on an unreadable file list, on any backslashed entry, on a missing required
 file, and on a missing `default_locale` tree. It also inflates every entry and
