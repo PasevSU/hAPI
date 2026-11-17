@@ -279,16 +279,27 @@ for (const [id, anchor] of Object.entries(ANCHORS)) {
 const unknown = Object.keys(GUARDS).filter((id) => !rows.has(id));
 assert.deepEqual(unknown, [], 'картата на защитите сочи несъществуващи дефекти: ' + unknown.join(', '));
 
-// 6. Помощникът `stage` в тестовете наистина чака стъпката си (DEF-97).
+// 6. Помощник за последователни стъпки в тестовете наистина чака стъпката си (DEF-97).
 // Синхронен `stage` печата ✔ ПРЕДИ работата, пуска всички стъпки едновременно и гаси
 // сървъра под тях: тестът изглежда зелен, а не проверява нищо (така `visitor-sensors` осем
-// живи стъпки не бяха изпълнили нито едно твърдение, а 404-регресия остана невидима).
+// живи стъпки не изпълниха нито едно твърдение, а 404-регресия остана невидима).
+// Обхватът е нарочно тесен: помощник, чието ИМЕ е стъпка (`stage`/`step`/`phase`/`section`)
+// И който приема функция (`fn`/`cb`/`callback`), трябва да е `async` и да я вика с `await`.
+// Помощници, които приемат ДАННИ, не се пипат — `run(args)`, `call(path, body)`,
+// `throws(fn)` (синхронен assert) и `step(name, ms)` в `secret-lock.cjs` (връща
+// асинхронна функция, вместо да я приема) са коректни и синхронни по същност.
+const STEP_NAME = /^(stage|step|phase|section)$/i;
+const CALLBACK_PARAM = /^(fn|cb|callback)$/i;
 const floatingStages = [];
 for (const file of fs.readdirSync(TESTS).filter((f) => f.endsWith('.cjs'))) {
   const code = fs.readFileSync(path.join(TESTS, file), 'utf8');
-  if (!/const stage\s*=/.test(code)) continue;
-  if (!/const stage\s*=\s*async\b/.test(code) || !/await fn\(\)/.test(code)) {
-    floatingStages.push(file);
+  for (const m of code.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=\s*(async\s*)?\(([^)]*)\)\s*=>/g)) {
+    const [, name, async, params] = m;
+    if (!STEP_NAME.test(name)) continue;
+    const callback = params.split(',').map((p) => p.trim()).find((p) => CALLBACK_PARAM.test(p));
+    if (!callback) continue;
+    const awaited = new RegExp('await\\s+' + callback + '\\s*\\(').test(code);
+    if (!async || !awaited) floatingStages.push(`${file} → ${name}(${callback})`);
   }
 }
 assert.deepEqual(

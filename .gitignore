@@ -68,3 +68,6 @@ create link/
 
 # Local VS Code dev tooling (token router extension, not shipped)
 dev/
+
+# Кеш на локалния инструмент за преглед (не е код на add-on-а).
+.impeccable/
