@@ -45,6 +45,9 @@
     { id: 'encrypt', label: 'Шифровай', icon: 'encrypt', info: 'Шифроването се избира при качване.' },
     { id: 'package', label: 'Пакет (ZIP)', icon: 'package' },
     { id: 'note', label: 'Бележка', icon: 'note' },
+    // Метаданни и анализ по съдържание: маршрутите съществуваха, но нямаше бутон (G-42).
+    { id: 'exif', label: 'EXIF', icon: 'metadata' },
+    { id: 'forensic', label: 'Криминалистика', icon: 'shield' },
     // Отчетът за ТОЗИ файл стои в опциите му — обхватите „всичко“ са на таблото.
     { id: 'report', label: 'Отчет', icon: 'note' },
   ];
@@ -1649,8 +1652,26 @@
     // Отчетът вече е с ЕДНО натискане (ADR-0028): обхватът е файлът, а резултатът е линк.
     if (id === 'report') return oneClickReport({ type: 'selection', fileIds: [f.id] });
     if (id === 'move' || id === 'copy') return startTransfer(f, id);
+    if (id === 'exif') return showExif(f);
+    if (id === 'forensic') return showForensic(f);
     if (id === 'encrypt') return toast('Шифроването се избира при качване на нов файл или версия', '');
     return undefined;
+  }
+
+  /** Панел с това, което сървърът връща за файла (EXIF или анализ по съдържание). */
+  async function showJsonPanel(title, path, f) {
+    const r = await api(path);
+    if (!r.ok) return toast(r.error || 'HTTP ' + r.status, 'err');
+    const body = r.data && typeof r.data === 'object' ? r.data : { value: r.data };
+    return showModal(title + ' · ' + f.name, { html: `<pre>${esc(JSON.stringify(body, null, 2))}</pre>` });
+  }
+
+  function showExif(f) {
+    return showJsonPanel('EXIF', `${FP(f)}/exif?gps=1`, f);
+  }
+
+  function showForensic(f) {
+    return showJsonPanel('FORENSIC', `${FP(f)}/forensic`, f);
   }
 
   // ── Пакет с файловете на портала ────────────────────────────────────────

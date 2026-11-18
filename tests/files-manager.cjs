@@ -8,12 +8,14 @@ const m = require('../hapi_enterprise/ui/files-manager.js');
 
 // 1. Действията: 11 по план 17 §3.1 + Пакет (ZIP) + Бележка + трите за подпис
 //    (подписан URL, разписка, проверка на разписка) + Отчет + Премести + Копирай — всичките
-//    с реален backend (`POST …/files/{fileId}/transfer` за последните две).
-assert.equal(m.ACTIONS.length, 17);
+//    с реален backend (`POST …/files/{fileId}/transfer` за последните две) + EXIF и
+//    Криминалистика (0.69.243: `files/{id}/exif` и `files/{id}/forensic` имаха сървър, но
+//    нямаха бутон — вж. BUTTON_HIERARCHY.md).
+assert.equal(m.ACTIONS.length, 19);
 const ids = m.ACTIONS.map((a) => a.id);
 assert.deepEqual(
   [...ids].sort(),
-  ['access', 'copy', 'delete', 'download', 'encrypt', 'metadata', 'move', 'note', 'package', 'preview', 'receipt', 'rename', 'report', 'share', 'signedUrl', 'verifyReceipt', 'versions'].sort(),
+  ['access', 'copy', 'delete', 'download', 'encrypt', 'exif', 'forensic', 'metadata', 'move', 'note', 'package', 'preview', 'receipt', 'rename', 'report', 'share', 'signedUrl', 'verifyReceipt', 'versions'].sort(),
 );
 assert.equal(new Set(ids).size, ids.length);
 
