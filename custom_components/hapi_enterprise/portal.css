@@ -440,3 +440,25 @@ main { padding: 20px 0 8px; display: grid; gap: 16px; }
 .sheet-card .stats {
   margin-top: 16px;
 }
+/* ════════════════════════════════════════════════════════════════════════════
+   НАДПИС НА ПОЛЕТАТА В СПИСЪКА (0.69.243)
+   Трите полета на файла — размер, промяна, хеш — се надписват ВЕДНЪЖ над списъка.
+   На телефон редът се скрива: там всяко поле носи етикета си в реда и няма колони.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.files-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 4px 14px;
+  padding: 6px 12px 6px 44px;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+@media (max-width: 620px) {
+  .files-head {
+    display: none;
+  }
+}

@@ -84,6 +84,13 @@
           </label>
         </div>
         <p id="status" class="status" role="status" aria-live="polite" data-i18n="doc.loading">Зареждане…</p>
+        <!-- Надписът на полетата — същият като в add-on портала (име · размер · промяна · хеш). -->
+        <div class="files-head" id="files-head" aria-hidden="true">
+          <span data-i18n="files.col.name">Име</span>
+          <span data-i18n="files.col.size">Размер</span>
+          <span data-i18n="files.col.changed">Промяна</span>
+          <span data-i18n="files.col.hash">Хеш (SHA-256)</span>
+        </div>
         <ul id="files" class="files"></ul>
         <p id="empty" class="empty" hidden>Няма достъпни файлове за показване.</p>
         <p id="more" class="more" hidden></p>

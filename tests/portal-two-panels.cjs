@@ -123,10 +123,37 @@ for (const [source, label] of [[js, 'add-on'], [intJs, 'интеграцията
   assert.ok(/tree-list/.test(source), `${label}: дървото не се пълни в #tree-list`);
 }
 
-// ── 6. Оформлението съществува в двете копия ────────────────────────────────
-for (const cls of ['.logo', '.portal-grid', '.ptree', '.ptree-btn']) {
+// ── 6. Оформлението и надписите съществуват в двете копия ───────────────────
+for (const cls of ['.logo', '.portal-grid', '.ptree', '.ptree-btn', '.files-head']) {
   assert.ok(css.includes(cls), `portal.css съдържа ${cls}`);
   assert.ok(intCss.includes(cls), `интеграционният portal.css съдържа ${cls}`);
+}
+
+// ── 6б. Трите полета на файла са НАДПИСАНИ ──────────────────────────────────
+// Надписът стои веднъж над списъка, а в реда всяко поле носи етикета си — така числото не
+// се гадае нито на широк екран, нито на телефон.
+const COL_KEYS = ['files.col.name', 'files.col.size', 'files.col.changed', 'files.col.hash'];
+const headOf = (source) => {
+  const at = source.indexOf('id="files-head"');
+  assert.ok(at > 0, 'липсва надписът на полетата (#files-head)');
+  return source.slice(at, source.indexOf('</div>', at));
+};
+for (const [source, label] of [[html, 'add-on'], [intHtml, 'интеграцията']]) {
+  const head = headOf(source);
+  for (const key of COL_KEYS) assert.ok(head.includes(`data-i18n="${key}"`), `${label}: надписът няма ${key}`);
+  assert.ok(/aria-hidden="true"/.test(head), `${label}: надписът е декоративен (aria-hidden)`);
+}
+const dictOf = require(path.join(PORTAL, 'portal-i18n.js')).dictionary;
+for (const lang of ['bg', 'en', 'de']) {
+  const dict = dictOf(lang);
+  for (const key of COL_KEYS) {
+    assert.ok(dict[key] && String(dict[key]).trim().length > 0, `${lang}: липсва надпис за ${key}`);
+  }
+}
+// Стойностите в реда получават същите етикети, тоест редът се чете без заглавната лента.
+for (const [source, label] of [[js, 'add-on'], [intJs, 'интеграцията']]) {
+  assert.ok(source.includes('T("files.col.size")'), `${label}: размерът е без етикет`);
+  assert.ok(source.includes('T("files.col.changed")'), `${label}: датата е без етикет`);
 }
 
 // ── 7. Планът съществува — оформлението не се сменя пак без документ ────────
@@ -268,10 +295,29 @@ const waitFor = async (check, label) => {
   assert.equal(byId('access-sheet').hidden, true, 'бутонът затваря прозореца');
   assert.equal(byId('access-open').getAttribute('aria-expanded'), 'false', 'бутонът на достъпа се връща в спокойно състояние');
 
+  // (д) СТАБИЛНОСТ: повторни действия не дублират нищо и не губят дървото
+  // Повторно отваряне на същия прозорец: остава ЕДИН лист и aria-expanded е „true“.
+  byId('info-open').click();
+  byId('info-open').click();
+  assert.equal(doc.querySelectorAll('#info-sheet').length, 1, 'прозорецът не се дублира');
+  assert.equal(byId('info-open').getAttribute('aria-expanded'), 'true', 'повторното отваряне не чупи състоянието');
+  byId('info-sheet-close').click();
+  // „Обнови“ два пъти: редовете на дървото не се удвояват, а текущата папка остава маркирана.
+  const rowCount = doc.querySelectorAll('#tree-list button').length;
+  byId('tree-refresh').click();
+  byId('tree-refresh').click();
+  await waitFor(() => doc.querySelectorAll('#tree-list button').length > 0, 'дървото след обновяване');
+  assert.equal(doc.querySelectorAll('#tree-list button').length, rowCount, 'дървото не се дублира при обновяване');
+  assert.ok(byId('tree-panel').hidden === false, 'секцията „Структура на портала“ остава видима');
+  const current = Array.from(doc.querySelectorAll('#tree-list button')).filter((el) => el.className.includes('is-current'));
+  assert.equal(current.length, 1, 'текущата папка е маркирана точно веднъж');
+  assert.ok(current[0].textContent.includes('Документи'), 'маркирана е папката, в която сме влезли');
+
   console.log(
     'PASS portal-two-panels: две секции (дърво и файлове) · ' +
       `${SHEETED.length} блока в прозорци · голямо лого (inline SVG) · три действия · Escape · ` +
-      'двете копия · живата страница: дърво → клик → списък · прозорците се отварят и затварят',
+      'двете копия · надписани полета (име/размер/промяна/хеш) · ' +
+      'живата страница: дърво → клик → списък · прозорците се отварят и затварят · без дублиране',
   );
 })();
 
