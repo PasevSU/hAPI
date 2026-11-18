@@ -31,7 +31,7 @@ Enterprise governance and methodology layer. Complements the implementation-leve
 препратка (документ, който не се намира, е също толкова проблемен, колкото липсващ).
 
 <!-- doc-index:begin -->
-_Генериран списък: **158** документа. Пише се от `node scripts/docs-index.cjs`,
+_Генериран списък: **159** документа. Пише се от `node scripts/docs-index.cjs`,
 проверява се от `tests/docs-index.cjs`. Ръчна редакция се губи при следващото генериране._
 
 | Документ | Заглавие (първи ред от самия файл) |
@@ -163,6 +163,7 @@ _Генериран списък: **158** документа. Пише се от
 | `07_RELEASE/AUDIT-PROTOCOL.md` | Протокол от одита и изданието |
 | `07_RELEASE/FEATURE_PARITY.md` | Паритет на функциите: `PasevSU/hAPI` ↔ това хранилище |
 | `07_RELEASE/GAP_REGISTER.md` | Регистър на пропуските: планирано ↔ изпълнено |
+| `07_RELEASE/GUI_REACHABILITY.md` | Достижимост на ГУИ кода: какво има в кода, но няма клавиатура |
 | `07_RELEASE/PLAN_ONE_CLICK_REPORTS_UI.md` | План, част 2: интерфейс, премахване на Report Studio и ред на изпълнение (0.69.242) |
 | `07_RELEASE/PLAN_ONE_CLICK_REPORTS.md` | План: отчети с едно натискане, дърво-панел и `/statik/` линкове (0.69.242) |
 | `07_RELEASE/PLAN_PORTAL_TWO_PANELS.md` | План: порталът е ДВЕ секции и голямо лого, останалото в прозорци |
