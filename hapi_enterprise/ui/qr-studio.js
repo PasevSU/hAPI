@@ -41,6 +41,7 @@
     tab: 'plain',
     temp: { readOnly: false, password: false, ttl: 3600, passwordValue: '' },
     result: null,
+    extra: 0,
     links: [],
     busy: false,
     error: '',
@@ -48,18 +49,53 @@
     returnFocus: null,
   };
 
+  // Четири НОМЕРИРАНИ типа; първите три са задължителни за всеки портал (искане на
+  // собственика), четвъртият е списък на нивата. Номерът е част от етикета, за да се
+  // разбира кой код липсва, без да се гадае по име.
   const TABS = [
-    ['plain', 'qr.tab.plain', 'Обикновен'],
-    ['readonly', 'qr.tab.readonly', 'Само за четене'],
-    ['temp', 'qr.tab.temp', 'Временен'],
-    ['levels', 'qr.tab.levels', 'Папки и файлове'],
+    ['plain', 'qr.tab.plain', 'Обикновен', 'QR-1', true],
+    ['readonly', 'qr.tab.readonly', 'Само за четене', 'QR-2', true],
+    ['temp', 'qr.tab.temp', 'Временен', 'QR-3', true],
+    ['levels', 'qr.tab.levels', 'Папки и файлове', 'QR-4', false],
   ];
+  // Опции на кода: какво влиза в прозореца и в изтегленото изображение. Пази се в
+  // състоянието, за да важи за ВСЕКИ от четирите раздела (искане 4).
+  const show = { download: true, api: false, readonly: false, zip: false };
 
   const TTL_CHOICES = [
     [3600, 'qr.ttl.1h', '1 час'],
     [21600, 'qr.ttl.6h', '6 часа'],
     [86400, 'qr.ttl.24h', '24 часа'],
   ];
+
+  /**
+   * Задължителният комплект: QR-1 (обикновен), QR-2 (само за четене) и QR-3 (временен).
+   * Четвъртият раздел е списък на нивата, не отделен код. Допълнителните кодове са
+   * „още“ и се броят от 5 нататък — виждат се в същия списък.
+   */
+  function mandatoryList() {
+    const rows = TABS.filter(([, , , , must]) => must).map(([id, key, fallback, no]) => {
+      const ready = id === 'readonly' ? Boolean(level() && level().readOnly) : Boolean(level());
+      return `<li class="qs-mand ${ready ? 'is-ok' : 'is-missing'}">
+          <span class="qs-mand-no">${esc(no)}</span>
+          <span class="qs-mand-name">${esc(T(key, fallback))}</span>
+          <span class="qs-mand-state">${esc(ready ? T('qr.mand.ready') : T('qr.mand.missing'))}</span>
+        </li>`;
+    });
+    const extra = Array.from({ length: state.extra }, (_, i) => {
+      const no = 'QR-' + (5 + i);
+      return `<li class="qs-mand is-ok">
+          <span class="qs-mand-no">${esc(no)}</span>
+          <span class="qs-mand-name">${esc(T('qr.mand.extra'))}</span>
+          <span class="qs-mand-state">${esc(T('qr.mand.ready'))}</span>
+        </li>`;
+    });
+    return `<div class="qs-mandatory">
+        <p class="qs-mand-title">${esc(T('qr.mand.title'))}</p>
+        <ul class="qs-mand-list">${rows.join('')}${extra.join('')}</ul>
+        <button type="button" class="btn btn-sm" data-qs-add-qr>${esc(T('qr.mand.add'))}</button>
+      </div>`;
+  }
 
   const level = () => {
     const levels = (state.spec && state.spec.levels) || [];
@@ -291,16 +327,32 @@
       </div>`;
   }
 
+  /** Опциите на кода: едни и същи във всеки от четирите раздела. */
+  function optionsBlock() {
+    const row = (key) =>
+      `<label class="qs-check"><input type="checkbox" data-qs-show="${key}" ${show[key] ? 'checked' : ''} /> <span>${esc(
+        T('qr.opts.' + key),
+      )}</span></label>`;
+    return `<fieldset class="qs-opts">
+        <legend>${esc(T('qr.opts.legend'))}</legend>
+        ${row('download')}
+        ${row('api')}
+        ${row('readonly')}
+        ${row('zip')}
+      </fieldset>`;
+  }
+
   function tabPlain(lv) {
     if (!lv || !lv.page) return emptyTab();
     return `<div class="qs-panel">
         ${figure(lv.page, lv.label)}
         ${toolbar(lv, lv.page)}
+        ${optionsBlock()}
         <div class="qs-links">
           ${linkRow(T('qr.link.page', 'Публичен портал'), lv.page)}
-          ${linkRow(T('qr.link.download', 'Изтегляне'), lv.download || lv.page, 'download')}
-          ${lv.api ? linkRow(T('qr.link.api', 'API на портала'), lv.api) : ''}
-          ${lv.readOnly ? linkRow(T('qr.link.readOnly', 'Само за преглед'), lv.readOnly) : ''}
+          ${show.download ? linkRow(T('qr.link.download', 'Изтегляне'), lv.download || lv.page, 'download') : ''}
+          ${show.api && lv.api ? linkRow(T('qr.link.api', 'API на портала'), lv.api) : ''}
+          ${show.readonly && lv.readOnly ? linkRow(T('qr.link.readOnly', 'Само за преглед'), lv.readOnly) : ''}
         </div>
         <p class="hint">${esc(T('qr.plainHint', 'Сканирането отваря публичната страница на това ниво.'))}</p>
       </div>`;
@@ -315,8 +367,10 @@
     return `<div class="qs-panel">
         ${figure(lv.readOnly, lv.label + ' · ' + T('qr.readOnlyShort', 'само за преглед'))}
         ${toolbar(lv, lv.readOnly)}
+        ${optionsBlock()}
         <div class="qs-links">
           ${linkRow(T('qr.link.readOnly', 'Само за преглед'), lv.readOnly)}
+          ${show.download ? linkRow(T('qr.link.download', 'Изтегляне'), lv.download || lv.page, 'download') : ''}
         </div>
         <p class="hint">${esc(T('qr.readOnlyHint', 'Този код води до портала без изтегляне на файлове.'))}</p>
       </div>`;
@@ -467,12 +521,15 @@
     )}">✕</button>
           </div>
         </div>
+        ${mandatoryList()}
         <div class="qs-tabs" role="tablist">
           ${TABS.map(
-      ([id, key, fallback]) =>
-        `<button type="button" class="qs-tab" role="tab" id="qs-tab-${id}" data-qs-tab="${id}" aria-controls="qs-body">${esc(
-          T(key, fallback),
-        )}</button>`,
+      ([id, key, fallback, no, mandatory]) =>
+        `<button type="button" class="qs-tab" role="tab" id="qs-tab-${id}" data-qs-tab="${id}" aria-controls="qs-body">
+             <span class="qs-tab-no">${esc(no)}</span>
+             <span class="qs-tab-name">${esc(T(key, fallback))}</span>
+             ${mandatory ? `<span class="qs-tab-req" title="${esc(T('qr.mandatory', 'Задължителен'))}">•</span>` : ''}
+           </button>`,
     ).join('')}
         </div>
         <div class="qs-body" id="qs-body" role="tabpanel">
@@ -485,6 +542,18 @@
       if (e.target === box) close();
     });
     box.querySelector('#qs-close').addEventListener('click', () => close());
+    box.addEventListener('change', (e) => {
+      const opt = e.target && e.target.dataset ? e.target.dataset.qsShow : '';
+      if (!opt) return;
+      show[opt] = Boolean(e.target.checked);
+      paint();
+    });
+    box.addEventListener('click', (e) => {
+      const add = e.target && e.target.closest ? e.target.closest('[data-qs-add-qr]') : null;
+      if (!add) return;
+      state.extra += 1;
+      paint();
+    });
     box.querySelector('.qs-tabs').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-qs-tab]');
       if (!btn) return;
@@ -563,6 +632,7 @@
     for (const btn of box.querySelectorAll('[data-qs-revoke]')) {
       btn.addEventListener('click', () => void revokeLink(btn.dataset.qsRevoke));
     }
+
     const form = box.querySelector('[data-qs-temp]');
     if (form) {
       form.addEventListener('submit', submitTemp);

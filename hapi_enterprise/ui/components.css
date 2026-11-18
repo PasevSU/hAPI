@@ -1951,6 +1951,43 @@ input[type="radio"] {
   cursor: pointer;
 }
 
+/* Номерът на типа (QR-1…QR-4) и знакът за задължителен тип стоят в самия раздел. */
+.qs-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  justify-content: center;
+}
+
+.qs-tab-no {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.qs-tab-req {
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Опции на кода: един и същ блок във всеки раздел. */
+.qs-opts {
+  margin: var(--sp-3) 0 var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+}
+
+.qs-opts legend {
+  padding: 0 var(--sp-1);
+  font-size: var(--fs-12-5);
+  color: var(--muted);
+}
+
 .qs-tab-on,
 .qs-tab[aria-selected='true'] {
   border-color: var(--line);
@@ -4315,4 +4352,141 @@ body.up-locked {
   .skel {
     background: var(--panel-2);
   }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   РАЗДЕЛИТЕ НА ПОРТАЛА СА ИЗСКАЧАЩИ ПРОЗОРЦИ (0.69.244)
+   Дотук отвореният блок избутваше страницата надолу — „папките“ и „файловете“ се
+   разминаваха с портала, който гледаш. Днес отвореният блок е прозорец: тъмен фон,
+   карта с ширина и височина в ПРОЦЕНТИ от екрана, съдържанието скролва вътре.
+   Затваря се от заглавието си (същият бутон), с Escape и с клик върху фона.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.pf-block:not(.pf-collapsed) {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4vh 4vw;
+  margin: 0;
+  border: 0;
+  background: rgba(3, 8, 16, 0.72);
+  border-radius: 0;
+  overflow: auto;
+}
+
+.pf-block:not(.pf-collapsed) .pf-block-head {
+  width: 88%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--sp-3) var(--sp-5);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.pf-block:not(.pf-collapsed) .pf-block-body,
+.pf-block:not(.pf-collapsed) .pf-block-foot {
+  width: 88%;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-top: 0;
+  padding: var(--sp-4) var(--sp-5);
+  max-height: 78vh;
+  overflow: auto;
+}
+
+.pf-block:not(.pf-collapsed) .pf-block-foot {
+  border-radius: 0 0 var(--radius) var(--radius);
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pf-block-foot {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  padding: var(--sp-2) 0;
+}
+
+/* Йерархия в панела „Дърво и избор“: икона + отстъп по ниво. */
+.pt-ico {
+  display: inline-flex;
+  width: 1.05em;
+  height: 1.05em;
+  opacity: 0.8;
+}
+
+.pt-ico .ico {
+  width: 100%;
+  height: 100%;
+}
+
+.pt-row[data-depth="1"] .pt-path {
+  padding-left: var(--sp-3);
+}
+
+.pt-row[data-depth="2"] .pt-path {
+  padding-left: var(--sp-6);
+}
+
+.pt-row[data-depth="3"] .pt-path {
+  padding-left: var(--sp-8);
+}
+
+.pt-folder-row {
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Задължителният комплект QR кодове: номер · име · състояние, после „добави още“. */
+.qs-mandatory {
+  padding: var(--sp-2) var(--sp-4) 0;
+}
+
+.qs-mand-title {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-12-5);
+  color: var(--muted);
+}
+
+.qs-mand-list {
+  list-style: none;
+  margin: 0 0 var(--sp-2);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+}
+
+.qs-mand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-12-5);
+}
+
+.qs-mand.is-missing {
+  border-color: var(--line-strong);
+}
+
+.qs-mand-no {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.qs-mand-state {
+  color: var(--muted);
 }

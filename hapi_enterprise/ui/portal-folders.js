@@ -229,7 +229,12 @@
               .join('')
         }</div>
           </div>
-        </div>` : ''}
+        </div>
+        ${open ? `<div class="pf-block-foot">
+          <button type="button" class="btn btn-sm" data-import-folder>${ico('attachFolder')} ${esc(T('pf.import.short'))}</button>
+          <button type="button" class="btn btn-sm" data-new-folder-foot>${ico('plus')} ${esc(T('pf.newFolder.short'))}</button>
+          <button type="button" class="btn btn-sm" data-refresh-foot>${ico('refresh')} ${esc(T('pf.refresh.short'))}</button>
+        </div>` : ''}` : ''}
       </section>`;
   }
 

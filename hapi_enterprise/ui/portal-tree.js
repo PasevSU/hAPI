@@ -53,6 +53,16 @@
     return map;
   }
 
+  /** Всички папки от дървото — за йерархията в списъка (без файловете). */
+  function folderRows(node, out) {
+    const acc = out || [];
+    for (const child of (node && node.folders) || []) {
+      acc.push({ path: child.path || '' });
+      folderRows(child, acc);
+    }
+    return acc;
+  }
+
   function bodyHtml(ctx) {
     const connected = ctx.connected();
     if (!connected) return `<p class="hint">${esc(T('pt.demo'))}</p>`;
@@ -60,15 +70,29 @@
     if (state.error) return `<p class="hint u-err">${esc(state.error)}</p>`;
     if (!state.data) return `<p class="hint">${esc(T('pt.notLoaded'))}</p>`;
     const files = flatten(state.data.tree);
+    const folders = folderRows(state.data.tree);
     if (!files.length) return `<p class="hint">${esc(T('pt.empty'))}</p>`;
     const selection = sel();
     const picked = selection ? selection.count() : 0;
+    const folderList = folders
+      .map(
+        (f) => `<li class="pt-row pt-folder" data-depth="${String(f.path || '').split('/').length - 1}">
+            <span class="pt-file pt-folder-row">
+              <span class="pt-ico" aria-hidden="true">${ico('folder')}</span>
+              <span class="pt-path">${esc(f.path || '/')}</span>
+            </span>
+          </li>`,
+      )
+      .join('');
     const rows = files
       .map((file) => {
         const checked = selection && selection.has(file.path);
-        return `<li class="pt-row">
+        // Йерархия: отстъп по дълбочина на пътя и икона — папка за възела, файл за листа.
+        const depth = String(file.path || '').split('/').length - 1;
+        return `<li class="pt-row" data-depth="${depth}">
             <label class="pt-file">
               <input type="checkbox" data-pt-file="${esc(file.path)}" data-pt-name="${esc(file.name)}" ${checked ? 'checked' : ''} aria-label="${esc(T('pt.mark', { name: file.path }))}" />
+              <span class="pt-ico" aria-hidden="true">${ico('file')}</span>
               <span class="pt-path">${esc(file.path)}</span>
               <span class="pt-size">${esc(fmtSize(file.size))}</span>
             </label>
@@ -82,7 +106,7 @@
         <button type="button" class="btn btn-sm" data-pt-all>${esc(T('pt.all'))}</button>
         <button type="button" class="btn btn-sm" data-pt-clear>${esc(T('pt.clear'))}</button>
       </div>
-      <ul class="pt-list">${rows}</ul>
+      <ul class="pt-list">${folderList}${rows}</ul>
       ${warn}
       <div class="u-row u-row-2 u-mb">
         <button type="button" class="btn btn-sm btn-primary" data-pt-report>${esc(T('pt.report'))}</button>

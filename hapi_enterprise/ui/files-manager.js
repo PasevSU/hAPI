@@ -169,13 +169,16 @@
   function fileGlyph(f) {
     const name = String((f && f.name) || '').toLowerCase();
     const type = String((f && f.type) || '');
-    if (type === 'pdf' || name.endsWith('.pdf')) return ico('filePdf');
-    if (['xlsx', 'xls', 'csv'].some((e) => name.endsWith(`.${e}`))) return ico('fileSheet');
-    if (['docx', 'doc', 'odt', 'rtf'].some((e) => name.endsWith(`.${e}`))) return ico('fileDoc');
-    if (['zip', '7z', 'tar', 'gz', 'rar'].some((e) => name.endsWith(`.${e}`))) return ico('fileArchive');
-    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].some((e) => name.endsWith(`.${e}`))) return ico('fileImage');
-    if (type === 'text' || ['txt', 'md', 'json', 'xml', 'log'].some((e) => name.endsWith(`.${e}`))) return ico('fileText');
-    return ico('file');
+    // ЕДИН стил за всички икони: спрайтът v4 (`standard`), вграденият набор е резерва.
+    const pick = (spriteName, legacy) =>
+      (typeof ico4 === 'function' && ico4(spriteName, 'standard')) || ico(legacy);
+    if (type === 'pdf' || name.endsWith('.pdf')) return pick('file-pdf', 'filePdf');
+    if (['xlsx', 'xls', 'csv'].some((e) => name.endsWith(`.${e}`))) return pick('file-json', 'fileSheet');
+    if (['docx', 'doc', 'odt', 'rtf'].some((e) => name.endsWith(`.${e}`))) return pick('file-unknown', 'fileDoc');
+    if (['zip', '7z', 'tar', 'gz', 'rar'].some((e) => name.endsWith(`.${e}`))) return pick('file-unknown', 'fileArchive');
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].some((e) => name.endsWith(`.${e}`))) return pick('file-image', 'fileImage');
+    if (type === 'text' || ['txt', 'md', 'json', 'xml', 'log'].some((e) => name.endsWith(`.${e}`))) return pick('file-json', 'fileText');
+    return pick('file', 'file');
   }
   /**
    * Бадж „QR vN · N арх.“ в реда на портала. Данните идват със списъка (`p.qr`), за да няма
@@ -2263,8 +2266,11 @@
           </div>`
       }
           <div class="pf-portals u-mt">
-            ${list.length
-        ? list.map((x) => portalCard(x, state.portals.indexOf(x), Boolean(openP))).join('')
+            ${list.filter((x) => x.readonly !== true).length
+        ? list
+          .filter((x) => x.readonly !== true)
+          .map((x) => portalCard(x, state.portals.indexOf(x), Boolean(openP)))
+          .join('')
         : '<p class="hint">Няма портал по това търсене.</p>'
       }
           </div>
@@ -2283,6 +2289,13 @@
   }
 
   /** Една карта на портал: в списъка се разгъва, а в самостоятелен изглед е „страница“. */
+  /** Спътник „само за преглед“ на портала: същият slug с наставка `-view`. */
+  function companionOf(x) {
+    if (!x || x.readonly === true) return null;
+    const want = String(x.slug || '').replace(/-view$/, '') + '-view';
+    return state.portals.find((y) => y.readonly === true && String(y.slug || '') === want) || null;
+  }
+
   function portalCard(x, i, single) {
     const api = state.api[x.id];
     const ctc = contactOf(x.contactId);
@@ -2301,7 +2314,9 @@
                       <span class="chip ${x.visibility === 'public' ? 'ok' : ''}" title="Видимост">${esc(x.visibility)}</span>
                       ${x.readonly === true
         ? `<span class="chip ok pf-ro-badge" data-readonly="1" title="${esc(T('pc.ro.badge.title'))}">${ico('eye')} ${esc(T('pc.ro.badge'))}</span>`
-        : ''
+        : companionOf(x)
+          ? `<button type="button" class="chip ok pf-ro-badge" data-open-companion="${state.portals.indexOf(companionOf(x))}" title="${esc(T('pc.ro.badge.title'))}">${ico('eye')} ${esc(T('pc.ro.badge'))}</button>`
+          : ''
       }
                       <code class="fm-code" title="Политика за достъп">${esc(x.access)}</code>
                       ${api
@@ -4094,10 +4109,42 @@
         });
       });
     }
+    // Отвореният раздел е ПРОЗОРЕЦ: затваря се и с Escape, и с клик върху тъмния фон.
+    // Селекторът е по КЛАС, а състоянието се проверява в JS: тестовият DOM не разбира `:not()`.
+    host.querySelectorAll('.pf-block').forEach((opened) => {
+      if (opened.classList.contains('pf-collapsed')) return;
+      opened.addEventListener('click', (e) => {
+        if (e.target !== opened) return;
+        for (const [, other] of BLOCK_FLAGS) state[other] = false;
+        render();
+      });
+    });
+    if (!state.blockEscWired) {
+      state.blockEscWired = true;
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (!BLOCK_FLAGS.some(([, flag]) => state[flag] === true)) return;
+        for (const [, other] of BLOCK_FLAGS) state[other] = false;
+        render();
+      });
+    }
     // QR кодът е БУТОН в главата на картата (горе вдясно, до другите брошки) и отваря
     // ГЛОБАЛНОТО QR студио: един прозорец с четири раздела, който важи за всяко ниво —
     // портала, всяка папка и всеки файл. Дотук тук имаше поповер с един код и отделна
     // мрежа „QR за всяко ниво“ в блока с папките; двете казваха едно и също по два начина.
+    // Брошката „комплект“ отваря СПЪТНИКА по същия път като „Отвори портала“ (един код).
+    host.querySelectorAll('[data-open-companion]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        const target = state.portals[Number(btn.dataset.openCompanion)];
+        if (!target) return;
+        state.portalIndex = state.portals.indexOf(target);
+        state.openPortal = target.id;
+        state.selected = null;
+        state.panel = 'actions';
+        render();
+      });
+    });
     host.querySelectorAll('[data-qr-portal]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const i = Number(btn.dataset.qrPortal);
@@ -4551,6 +4598,18 @@
       input.click();
     };
     host.querySelectorAll('[data-attach-file]').forEach((el) => el.addEventListener('click', () => pickFiles()));
+    host.querySelectorAll('[data-new-folder-foot]').forEach((el) =>
+      el.addEventListener('click', () => {
+        state.newFolder = true;
+        render();
+      }),
+    );
+    host.querySelectorAll('[data-refresh-foot]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        await loadTree(true);
+        render();
+      }),
+    );
     host.querySelectorAll('[data-import-folder]').forEach((el) => el.addEventListener('click', () => pickDir()));
     host.querySelectorAll('[data-folder-upload]').forEach((el) =>
       el.addEventListener('click', () => pickFiles(el.dataset.folderUpload || '')),
