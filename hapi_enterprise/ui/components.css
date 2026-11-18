@@ -1973,7 +1973,8 @@ input[type="radio"] {
 
 /* Опции на кода: един и същ блок във всеки раздел. */
 .qs-opts {
-  margin: var(--sp-3) 0 var(--sp-2);
+  margin-top: var(--sp-3);
+  margin-bottom: var(--sp-2);
   padding: var(--sp-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -1983,7 +1984,7 @@ input[type="radio"] {
 }
 
 .qs-opts legend {
-  padding: 0 var(--sp-1);
+  padding-inline: var(--sp-1);
   font-size: var(--fs-12-5);
   color: var(--muted);
 }
@@ -4370,18 +4371,16 @@ body.up-locked {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4vh 4vw;
-  margin: 0;
+  padding: var(--sp-9) var(--sp-8);
   border: 0;
   background: rgba(3, 8, 16, 0.72);
-  border-radius: 0;
+  border-radius: var(--radius-sm);
   overflow: auto;
 }
 
 .pf-block:not(.pf-collapsed) .pf-block-head {
   width: 88%;
   max-width: 1400px;
-  margin: 0 auto;
   padding: var(--sp-3) var(--sp-5);
   background: var(--panel);
   border: 1px solid var(--line-strong);
@@ -4393,12 +4392,11 @@ body.up-locked {
 .pf-block:not(.pf-collapsed) .pf-block-foot {
   width: 88%;
   max-width: 1400px;
-  margin: 0 auto;
   background: var(--panel);
   border: 1px solid var(--line-strong);
   border-top: 0;
   padding: var(--sp-4) var(--sp-5);
-  max-height: 78vh;
+  max-height: 76vh;
   overflow: auto;
 }
 
@@ -4454,25 +4452,24 @@ body.up-locked {
 }
 
 .qs-mand-title {
-  margin: 0 0 var(--sp-1);
+  margin-bottom: var(--sp-1);
   font-size: var(--fs-12-5);
   color: var(--muted);
 }
 
 .qs-mand-list {
   list-style: none;
-  margin: 0 0 var(--sp-2);
-  padding: 0;
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-1) var(--sp-3);
+  margin-bottom: var(--sp-2);
 }
 
 .qs-mand {
   display: inline-flex;
   align-items: baseline;
   gap: var(--sp-1);
-  padding: 2px var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   font-size: var(--fs-12-5);

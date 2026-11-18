@@ -51,7 +51,10 @@ const missing = [...used].filter(([name]) => !defined.has(name) && !v4Names.has(
 assert.deepEqual(missing, [], `икони без символ в спрайта: ${JSON.stringify(missing)}`);
 
 // Всяка икона се ползва някъде (без резервната `dot`, която е при непознато име).
-const unused = [...defined].filter((name) => name !== 'dot' && !used.has(name));
+// Резервните файлови икони (`filePdf` …) се викат от `fileGlyph()` през `ico(name)` с
+// променлива, не с литерал — затова се обявяват тук, вместо да минат за мъртъв код.
+const FALLBACK_ICONS = ['filePdf', 'fileSheet', 'fileDoc', 'fileArchive', 'fileImage', 'fileText'];
+const unused = [...defined].filter((name) => name !== 'dot' && !FALLBACK_ICONS.includes(name) && !used.has(name));
 assert.deepEqual(unused, [], `неизползвани икони (мъртъв код в спрайта): ${unused.join(', ')}`);
 
 // Спрайтът е изцяло локален (xmlns е само име на пространство, не адрес за сваляне),

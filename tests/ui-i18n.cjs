@@ -70,7 +70,7 @@ assert.ok(i18n.DICT.de['portal.qr.button'] && i18n.DICT.en['portal.qr.button'], 
 // („използван ключ съществува“). Сега ключ, който не се среща в нито един модул на `ui/`, е
 // грешка. Изключение са само ключовете, които се строят динамично (шаблон или конкатенация),
 // и те се изреждат тук с причина — иначе тестът ще лъже.
-const DYNAMIC_KEY_PREFIXES = ['state.', 'action.'];
+const DYNAMIC_KEY_PREFIXES = ['state.', 'action.', 'qr.opts.'];
 const modules = fs
   .readdirSync(uiDir)
   .filter((f) => f.endsWith('.js') && f !== 'i18n.js')
