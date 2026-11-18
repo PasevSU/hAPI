@@ -60,7 +60,7 @@
   ];
   // Опции на кода: какво влиза в прозореца и в изтегленото изображение. Пази се в
   // състоянието, за да важи за ВСЕКИ от четирите раздела (искане 4).
-  const show = { download: true, api: false, readonly: false, zip: false };
+  const show = { download: true, api: true, readonly: true, zip: false };
 
   const TTL_CHOICES = [
     [3600, 'qr.ttl.1h', '1 час'],
