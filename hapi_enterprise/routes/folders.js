@@ -11,7 +11,15 @@
 function create(deps) {
   const { json, fail, parse, audit, clean, fsp, path, portalAbs, folderMetaOf, lockedAncestor, filesRoot, internalRoot, update, keyring, qr, portalFolder } = deps;
 
+  /** `move` / `copy` за файл в дървото — иначе празен низ. */
+  function transferMode(parts, method) {
+    const hit = parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'tree'
+      && (parts[5] === 'move' || parts[5] === 'copy') && parts.length === 6 && method === 'POST';
+    return hit ? parts[5] : '';
+  }
+
   function notMatching(parts, method) {
+    if (transferMode(parts, method)) return false;
     const target = parts[0] === 'admin' && parts[1] === 'api' && parts[2] === 'portals' && parts[4] === 'tree' && parts[5] === 'folder' && parts.length === 6;
     return !target || !['POST', 'PATCH', 'DELETE'].includes(method);
   }
@@ -28,6 +36,97 @@ function create(deps) {
     const st = require('../storage-tree');
     const p = portal;
     const rootAbs = portalAbs(p.storage_root || '/share');
+
+    const mode = transferMode(parts, method);
+    if (mode) {
+      // ФАЙЛ в друга папка на СЪЩИЯ портал. Регистриран файл НЕ се мести по диска: записът в
+      // регистъра сочи пътя му (`portal.files[].storagePath`), затова преместването минава
+      // през трансфера между портали — иначе регистърът остава да сочи липсващ файл.
+      const b = await parse(req);
+      const from = st.normRel(b.from || '');
+      const toDir = st.normRel(b.to == null ? '' : b.to);
+      if (!from || from === null || toDir === null) {
+        fail(res, 400, 'Invalid path');
+        return true;
+      }
+      if (qr.tooDeep(toDir ? `${toDir}/x` : 'x')) {
+        fail(res, 409, 'MAX_BRANCH_DEPTH_3: максималната дълбочина е 3 подпапки под корена');
+        return true;
+      }
+      const meta = folderMetaOf(p);
+      for (const rel of [from, toDir]) {
+        if (!rel) continue;
+        const locked = lockedAncestor(meta, rel) || (meta['/' + rel] && meta['/' + rel].locked ? '/' + rel : '');
+        if (locked) {
+          fail(res, 409, `Папката ${locked} е заключена`);
+          return true;
+        }
+      }
+      const srcAbs = path.resolve(rootAbs, ...from.split('/'));
+      const dirAbs = toDir ? path.resolve(rootAbs, ...toDir.split('/')) : rootAbs;
+      if (!srcAbs.startsWith(rootAbs + path.sep) || (toDir && !dirAbs.startsWith(rootAbs + path.sep))) {
+        fail(res, 400, 'Invalid path');
+        return true;
+      }
+      const name = from.split('/').pop();
+      const dstAbs = path.join(dirAbs, name);
+      const dstRel = st.normRel(toDir ? `${toDir}/${name}` : name);
+      if (dstRel === null) {
+        fail(res, 400, 'Invalid path');
+        return true;
+      }
+      if (dstRel === from) {
+        fail(res, 409, 'Файлът вече е в тази папка');
+        return true;
+      }
+      let srcStat;
+      try {
+        srcStat = await fsp.lstat(srcAbs);
+      } catch {
+        fail(res, 404, 'Файлът не е намерен');
+        return true;
+      }
+      if (!srcStat.isFile()) {
+        fail(res, 400, 'Пътят не е файл (папките се местят с PATCH)');
+        return true;
+      }
+      let dirStat;
+      try {
+        dirStat = await fsp.lstat(dirAbs);
+      } catch {
+        fail(res, 404, 'Целевата папка липсва');
+        return true;
+      }
+      if (!dirStat.isDirectory()) {
+        fail(res, 400, 'Целта не е папка');
+        return true;
+      }
+      const owners = p.files.filter((f) => String(keyring.pathOf(f) || '') === '/' + from);
+      if (mode === 'move' && owners.length) {
+        fail(res, 409, 'REGISTERED_FILE: регистриран файл не се мести по диска — ползвай трансфера между портали');
+        return true;
+      }
+      try {
+        await fsp.access(dstAbs);
+        fail(res, 409, 'Файл с това име вече съществува в целевата папка');
+        return true;
+      } catch { /* липсва — това искаме */ }
+      try {
+        if (mode === 'move') await fsp.rename(srcAbs, dstAbs);
+        else await fsp.copyFile(srcAbs, dstAbs, require('node:fs').constants.COPYFILE_EXCL);
+      } catch (e) {
+        fail(res, e.code === 'EEXIST' ? 409 : 500, `Файлът не може да бъде ${mode === 'move' ? 'преместен' : 'копиран'}: ${e.code || 'error'}`);
+        return true;
+      }
+      void audit(mode === 'move' ? 'portal.tree.move' : 'portal.tree.copy', {
+        portalId: p.id,
+        from: '/' + from,
+        to: '/' + dstRel,
+        bytes: srcStat.size,
+      });
+      json(res, 200, { from: '/' + from, to: '/' + dstRel, mode, moved: mode === 'move', copied: mode === 'copy', bytes: srcStat.size });
+      return true;
+    }
 
     if (method === 'POST') {
       const b = await parse(req);

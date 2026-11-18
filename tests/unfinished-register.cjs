@@ -43,12 +43,13 @@ for (const id of open) {
 }
 
 // ── 2. Твърденията, които днес са верни ────────────────────────────────────
-// Липсващ превод на интеграцията (DEF-49 в частта си за HACS).
-assert.equal(
+// Преводът на интеграцията на немски СЪЩЕСТВУВА от 0.69.243 (затворен ред в анализа).
+assert.ok(
   fs.existsSync(path.join(root, 'custom_components', 'hapi_enterprise', 'translations', 'de.json')),
-  false,
-  'translations/de.json вече съществува — махни реда за него от анализа',
+  'translations/de.json липсва — редът в AUDIT_TASKS го обявява за готов',
 );
+const deDict = JSON.parse(fs.readFileSync(path.join(root, 'custom_components', 'hapi_enterprise', 'translations', 'de.json'), 'utf8'));
+assert.ok(deDict.entity && deDict.entity.sensor && Object.keys(deDict.entity.sensor).length > 20, 'de.json изглежда празен');
 
 // Прилепеният план (DEF-01) стои в дървото.
 const plan = path.join(root, 'docs', 'plan', '07-security-v4.3.md');
@@ -116,5 +117,5 @@ assert.ok(
 );
 
 console.log(
-  `PASS unfinished-register: ${open.length} отворени дефекта (${open.join(', ')}) · липсващ de.json · DEF-01 план 120 KB · WORM без Object Lock · ${oddPx} нечетни px · ${radiusLiterals} радиуси без токен · езиков дълг цитира таван ${spaced(totalCeiling)} от ратчето (${ceilingRows} модула)`,
+  `PASS unfinished-register: ${open.length} отворени дефекта (${open.join(', ')}) · de.json наличен · DEF-01 план 120 KB · WORM без Object Lock · ${oddPx} нечетни px · ${radiusLiterals} радиуси без токен · езиков дълг цитира таван ${spaced(totalCeiling)} от ратчето (${ceilingRows} модула)`,
 );

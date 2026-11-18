@@ -7,7 +7,7 @@
 > Списъкът се чете от самите извиквания на `audit(...)` в `hapi_enterprise/` — ръчна
 > редакция се губи при следващото генериране.
 
-Общо: **208** събития, излъчвани от **25** файла.
+Общо: **210** събития, излъчвани от **25** файла.
 От тях **9** не спазват конвенцията „малки букви с точки“ (наследство — виж §3).
 
 ## 1. Събития по име
@@ -154,10 +154,12 @@
 | `portal.tree` | `hapi_enterprise/server.js` |
 | `portal.tree.api` | `hapi_enterprise/server.js` |
 | `portal.tree.comment` | `hapi_enterprise/server.js` |
+| `portal.tree.copy` | `hapi_enterprise/routes/folders.js` |
 | `portal.tree.file.download` | `hapi_enterprise/routes/portal-storage.js` |
 | `portal.tree.folder` | `hapi_enterprise/routes/folders.js` |
 | `portal.tree.folder.delete` | `hapi_enterprise/routes/folders.js` |
 | `portal.tree.folder.meta` | `hapi_enterprise/routes/folders.js` |
+| `portal.tree.move` | `hapi_enterprise/routes/folders.js` |
 | `portal.tree.upload` | `hapi_enterprise/server.js` |
 | `portal.unlock.denied` | `hapi_enterprise/routes/portal-unlock.js` |
 | `portal.unlock.ok` | `hapi_enterprise/routes/portal-unlock.js` |

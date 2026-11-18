@@ -264,6 +264,8 @@ const ROUTES = [
   ['GET', '/admin/api/portals/{portalId}/config/export.yaml', 'Изтегляне на самия `configuration.yaml`', 'portals', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/config/import', 'Цял YAML заменя описанието (`?dry=1` — само разликата)', 'portals', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/tree/folder', 'Нова папка в дървото', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/tree/move', 'Файл в друга папка на портала (регистриран файл се отказва)', 'portals', 'portals'],
+  ['POST', '/admin/api/portals/{portalId}/tree/copy', 'Копие на файл в друга папка на портала', 'portals', 'portals'],
   ['PATCH', '/admin/api/portals/{portalId}/tree/folder', 'Флагове на папка (видима, медийна, заключена)', 'portals', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/tree/upload', 'Качване на файл в дървото на папката', 'portals', 'portals'],
   ['POST', '/admin/api/portals/{portalId}/tree/comment', 'Коментар към възел от дървото', 'portals', 'portals'],

@@ -2151,6 +2151,62 @@
           "response": []
         },
         {
+          "name": "Файл в друга папка на портала (регистриран файл се отказва)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/tree/move",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "tree",
+                "move"
+              ]
+            },
+            "description": "Файл в друга папка на портала (регистриран файл се отказва)\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
+          "name": "Копие на файл в друга папка на портала",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api/portals/{portalId}/tree/copy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "api",
+                "portals",
+                "{{portalId}}",
+                "tree",
+                "copy"
+              ]
+            },
+            "description": "Копие на файл в друга папка на портала\n\nПраво (RBAC): `portals`"
+          },
+          "response": []
+        },
+        {
           "name": "Качване на файл в дървото на папката",
           "request": {
             "method": "POST",

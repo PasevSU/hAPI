@@ -7178,6 +7178,110 @@
         }
       }
     },
+    "/admin/api/portals/{portalId}/tree/move": {
+      "post": {
+        "summary": "Файл в друга папка на портала (регистриран файл се отказва)",
+        "operationId": "post_portals_portalId_tree_move",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ],
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/api/portals/{portalId}/tree/copy": {
+      "post": {
+        "summary": "Копие на файл в друга папка на портала",
+        "operationId": "post_portals_portalId_tree_copy",
+        "tags": [
+          "portals"
+        ],
+        "security": [
+          {
+            "adminToken": []
+          }
+        ],
+        "x-hapi-capability": "portals",
+        "responses": {
+          "200": {
+            "description": "Успех (тялото зависи от маршрута)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        },
+        "parameters": [
+          {
+            "name": "portalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Идентификатор: portalId"
+          }
+        ],
+        "requestBody": {
+          "description": "JSON тяло според документацията на маршрута (виж `documentation/` и `ui/`)",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/api/portals/{portalId}/tree/upload": {
       "post": {
         "summary": "Качване на файл в дървото на папката",

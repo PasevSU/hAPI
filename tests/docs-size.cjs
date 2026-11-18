@@ -27,7 +27,7 @@ const CEILING = {
   '01_AS_IS_ARCHITECTURE/SOURCE_INVENTORY.md': 272, // генериран: един ред на файл (+1 за `ui/qr-studio.js`) · `routes/portal-links.js`
   '01_AS_IS_ARCHITECTURE/SYSTEM_STATE.md': 216, // живият отчет за състоянието
   '02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md': 866, // нормативен, чака разделяне по договор
-  '02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md': 454, // генериран: един ред на операция (+1 за `reports/archive` в 0.69.242, +3 за връзките на QR студиото)
+  '02_TO_BE_ARCHITECTURE/API_ENDPOINT_REFERENCE.md': 456, // генериран: един ред на операция (+1 за `reports/archive` в 0.69.242, +3 за връзките на QR студиото, +2 за `tree/move|copy` в 0.69.243)
   '02_TO_BE_ARCHITECTURE/INTEGRATION_CONTRACTS.md': 402, // нормативен, на ръба
   '08_USER_GUIDES/install-hacs.md': 223,
   '08_USER_GUIDES/installation-layout.md': 236,

@@ -6,12 +6,12 @@
 > **не се редактира на ръка**. Всеки маршрут носи своята способност (виж
 > `02_TO_BE_ARCHITECTURE/API_ARCHITECTURE_SPEC.md` за пълния договор).
 
-Общо: **233** маршрута в **2** групи.
+Общо: **235** маршрута в **2** групи.
 
 | Група | Маршрути |
 | --- | --- |
 | `/PATCH` | 1 |
-| `/admin/api` | 232 |
+| `/admin/api` | 234 |
 
 ## /PATCH
 
@@ -205,6 +205,8 @@
 | GET | `/admin/api/portals/{portalId}/config/export.yaml` | Изтегляне на самия `configuration.yaml` |
 | POST | `/admin/api/portals/{portalId}/config/import` | Цял YAML заменя описанието (`?dry=1` — само разликата) |
 | POST | `/admin/api/portals/{portalId}/tree/folder` | Нова папка в дървото |
+| POST | `/admin/api/portals/{portalId}/tree/move` | Файл в друга папка на портала (регистриран файл се отказва) |
+| POST | `/admin/api/portals/{portalId}/tree/copy` | Копие на файл в друга папка на портала |
 | PATCH | `/admin/api/portals/{portalId}/tree/folder` | Флагове на папка (видима, медийна, заключена) |
 | POST | `/admin/api/portals/{portalId}/tree/upload` | Качване на файл в дървото на папката |
 | POST | `/admin/api/portals/{portalId}/tree/comment` | Коментар към възел от дървото |

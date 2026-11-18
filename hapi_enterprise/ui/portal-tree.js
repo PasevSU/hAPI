@@ -21,7 +21,7 @@
 
   // Състоянието е на МОДУЛА, не в `files-manager`: презареждането на панела не бива да губи
   // вече изтегленото дърво (иначе всяко действие тегли отново целия списък).
-  const state = { portalId: '', loading: false, error: '', data: null, note: '', noteKind: '', newFolder: false, bound: false };
+  const state = { portalId: '', loading: false, error: '', data: null, note: '', noteKind: '', newFolder: false, transfer: '', bound: false };
 
   const fmtSize = (bytes) => {
     const n = Number(bytes) || 0;
@@ -88,6 +88,19 @@
         <button type="button" class="btn btn-sm btn-primary" data-pt-report>${esc(T('pt.report'))}</button>
         <button type="button" class="btn btn-sm" data-pt-zip>${esc(T('pt.zip'))}</button>
       </div>
+      <div class="u-row u-row-2 u-mb">
+        <button type="button" class="btn btn-sm" data-pt-move>${esc(T('pt.move'))}</button>
+        <button type="button" class="btn btn-sm" data-pt-copy>${esc(T('pt.copy'))}</button>
+      </div>
+      ${state.transfer
+        ? `<form class="pf-form u-mb" id="pt-transfer-form">
+             <input id="pt-transfer-target" class="pf-fn-param" maxlength="200" autocomplete="off" placeholder="${esc(T('pt.target'))}" aria-label="${esc(T('pt.target'))}" />
+             <div class="u-row u-row-2">
+               <button type="submit" class="btn btn-sm btn-primary">${esc(state.transfer === 'move' ? T('pt.move') : T('pt.copy'))}</button>
+               <button type="button" class="btn btn-sm" data-pt-transfer-cancel>${esc(T('pt.cancel'))}</button>
+             </div>
+           </form>`
+        : ''}
       ${state.newFolder
         ? `<form class="pf-form u-mb" id="pt-folder-form">
              <input id="pt-folder-name" class="pf-fn-param" maxlength="100" autocomplete="off" placeholder="${esc(T('pt.folderName'))}" aria-label="${esc(T('pt.folderName'))}" />
@@ -186,6 +199,27 @@
     setNote(esc(T('pt.folderDone', { name: value })), 'ok');
   }
 
+  /** Мести/копира маркираните файлове в целевата папка (празно = корена на портала). */
+  async function runTransfer(mode, target) {
+    const paths = pickedPaths();
+    if (!paths.length) return setNote(esc(T('pt.needSelection')), 'err');
+    const to = String(target || '').trim();
+    let done = 0;
+    const failed = [];
+    for (const from of paths) {
+      const res = await ctxRef.request(`/admin/api/portals/${encodeURIComponent(ctxRef.p.id)}/tree/${mode}`, {
+        method: 'POST',
+        json: { from: String(from).replace(/^\/+/, ''), to: to.replace(/^\/+/, '') },
+      });
+      if (res.ok) done += 1;
+      else failed.push(String(from) + ': ' + (res.error || 'HTTP ' + res.status));
+    }
+    state.transfer = '';
+    await load();
+    if (failed.length) return setNote(esc(T('pt.transferFail', { n: failed.length, why: failed[0] })), 'err');
+    setNote(esc(T('pt.transferDone', { n: done, mode: mode === 'move' ? T('pt.move') : T('pt.copy') })), 'ok');
+  }
+
   function bindOnce() {
     if (typeof document === 'undefined' || state.bound) return;
     state.bound = true;
@@ -211,6 +245,18 @@
       }
       if (target.closest('[data-pt-report]')) return void runReport();
       if (target.closest('[data-pt-zip]')) return void runZip();
+      if (target.closest('[data-pt-move]')) {
+        state.transfer = 'move';
+        return paint();
+      }
+      if (target.closest('[data-pt-copy]')) {
+        state.transfer = 'copy';
+        return paint();
+      }
+      if (target.closest('[data-pt-transfer-cancel]')) {
+        state.transfer = '';
+        return paint();
+      }
       if (target.closest('[data-pt-newfolder]')) {
         state.newFolder = true;
         return paint();
@@ -234,10 +280,17 @@
       paint();
     });
     document.addEventListener('submit', (event) => {
-      const form = event.target && event.target.id === 'pt-folder-form' ? event.target : null;
-      if (!form) return;
+      const form = event.target || {};
+      if (form.id === 'pt-transfer-form') {
+        event.preventDefault();
+        const input = form.querySelector ? form.querySelector('#pt-transfer-target') : null;
+        void runTransfer(state.transfer || 'move', input ? input.value : '');
+        return;
+      }
+      const folderForm = form.id === 'pt-folder-form' ? form : null;
+      if (!folderForm) return;
       event.preventDefault();
-      const input = form.querySelector('#pt-folder-name');
+      const input = folderForm.querySelector('#pt-folder-name');
       void createFolder(input ? input.value : '');
     });
   }

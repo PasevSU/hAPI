@@ -17,15 +17,15 @@ hAPI Enterprise е Home Assistant add-on (Node ≥ 22.13, **нула runtime з�
 
 | Показател | Стойност (измерено) |
 | --- | --- |
-| Версия | **0.69.241** (`hapi_enterprise/config.yaml`, огледала в 12 файла) |
-| Модули в add-on-а | **119** `.js` в корена + по папки: `routes/` **22** · `server_module/` **2** · `core_module/` **5** · `ui/` **30** · `portal/` **2** · `plugins/` **3** · `generator/` **1** |
+| Версия | **0.69.243** (`hapi_enterprise/config.yaml`, огледала в 12 файла) |
+| Модули в add-on-а | **122** `.js` в корена + по папки: `routes/` **22** · `server_module/` **3** · `core_module/` **5** · `ui/` **30** · `portal/` **2** · `plugins/` **3** · `generator/` **1** |
 | Изнесени HTTP компонента | **22** файла в `hapi_enterprise/routes/` |
 | Модули на панела | **30** `.js` файла в `hapi_enterprise/ui/` (студиото го няма; добавени са `selection.js`, `portal-tree.js`, `reports-panel.js`) |
-| Обявени операции | **228** в `API_ENDPOINT_REFERENCE.md` (+ 33 публични правила = 261 HTTP реда) |
-| `server.js` | **2712** реда (пор **2722**); allowlist-ът на статиката е данни в `ui-files.json`, затова нов UI файл не иска ред тук |
-| Кеш на статиката | `/ui/*`, `/portal.css`, `/portal.js`, `/portal-i18n.js` — `private, max-age=31536000, immutable` **с `?v=<версия>`**, иначе `no-cache` + `ETag` и `304` без тяло; входната страница и HTML-ът на портала са `no-cache`; миниатюрите са `private, max-age=3600` (DEF-87, DEF-88) |
+| Обявени операции | **234** в `API_ENDPOINT_REFERENCE.md` (+ 33 публични правила = 267 HTTP реда) |
+| `server.js` | **2715** реда (пор **2722**); allowlist-ът на статиката е данни в `ui-files.json`, затова нов UI файл не иска ред тук |
+| Кеш на статиката | `/ui/*`, `/portal.css`, `/portal.js`, `/portal-i18n.js`, `/statik/<id>/<име>` — `private, max-age=31536000, immutable` **с `?v=<версия>`**, иначе `no-cache` + `ETag` и `304` без тяло; входната страница и HTML-ът на портала са `no-cache`; миниатюрите са `private, max-age=3600` (DEF-87, DEF-88) |
 | Изнесени функции | **390** функции (452 символа) в **57** модула, **0** непокрити функции; 29 непокрити са константи/обекти (`NAMES`, `RULES`), не функции |
-| Тестове в дървото | **467** файла в `tests/` = **466** правила (`helpers.cjs` не е тест); матриксът пуска **465**, а `release-status.cjs` върви след него |
+| Тестове в дървото | **468** файла в `tests/` = **467** правила (`helpers.cjs` не е тест); матриксът пуска **466**, а `release-status.cjs` върви след него |
 | Артефакт | `dist/` — точно **6** файла, `verify-release` **22/22** |
 
 ## 2. Какво се промени

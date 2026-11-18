@@ -185,7 +185,7 @@
                 <output class="pf-security-out" id="pf-qr-out" aria-live="polite"></output>
               </div>
               <div class="pf-security">
-                <h6>${ico('download')} ${esc(T('pc.report.title'))}</h6>
+                <h6>${ico('note')} ${esc(T('pc.report.title'))}</h6>
                 <p class="hint">${esc(T('pc.report.hint'))}</p>
                 <div class="pf-fn-list">${fnRows(ctx, 'report')}</div>
               </div>

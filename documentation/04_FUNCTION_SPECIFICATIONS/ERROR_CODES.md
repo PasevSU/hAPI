@@ -7,7 +7,7 @@
 > Значението идва от текста на самото изключение — ръчна редакция се губи при следващото
 > генериране и не може да измисли поведение, което кодът не изпълнява.
 
-Общо: **87** кода, излъчвани от `hapi_enterprise/`. От тях **66** носят
+Общо: **88** кода, излъчвани от `hapi_enterprise/`. От тях **67** носят
 собствено обяснение в кода; останалите се разпознават по кода и файла.
 
 ## Кодове по азбучен ред
@@ -71,6 +71,7 @@
 | `PORTAL_CONFIG_UNREADABLE` | — | `hapi_enterprise/routes/portal-config.js` |
 | `PORTAL_WITHOUT_FOLDER` | отчетът за папка/файл иска портал със собствена папка | `hapi_enterprise/routes/reports.js` |
 | `PUBLIC_UNREADABLE` | — | `hapi_enterprise/path-crypto.js` |
+| `REGISTERED_FILE` | регистриран файл не се мести по диска — ползвай трансфера между портали | `hapi_enterprise/routes/folders.js` |
 | `RESPONSE_ALREADY_SENT` | втори отговор е отказан (първият вече е изпратен), код | `hapi_enterprise/respond.js` |
 | `S2K_AEAD_UNSUPPORTED` | Платформата няма поддръжка на AEAD режима на този ключ ( | `hapi_enterprise/pgp.js` |
 | `S2K_ARGON2_UNSUPPORTED` | Секретният ключ е защитен с Argon2 (S2K тип 4) — hAPI поддържа iterated-salted (тип 3). Експортирай ключа с `--s2k-mode 3` или без парола. | `hapi_enterprise/pgp.js` |

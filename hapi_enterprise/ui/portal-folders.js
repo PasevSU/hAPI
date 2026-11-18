@@ -76,7 +76,7 @@
         key,
       )}" title="${esc(T('pc.report.folder.title', { path }))}" aria-label="${esc(
         T('pc.report.folder.title', { path }),
-      )}">${ico('download')}</button>
+      )}">${ico('note')}</button>
           <button type="button" class="fm-ico-btn ${gear ? 'on' : ''}" data-folder-gear="${esc(key)}" aria-expanded="${gear}" title="${esc(
         T('pf.gear'),
       )}">${ico('gear')}</button>

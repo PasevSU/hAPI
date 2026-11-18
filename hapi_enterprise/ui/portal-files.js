@@ -81,7 +81,7 @@
                                   линкът е готов за изпращане. */ ''}
                              <button type="button" class="fm-ico-btn" data-report-file="${esc(x.id)}" title="${esc(
         T('pc.report.file.title', { name: x.name }),
-      )}" aria-label="${esc(T('pc.report.file.title', { name: x.name }))}">${ico('download')}</button>
+      )}" aria-label="${esc(T('pc.report.file.title', { name: x.name }))}">${ico('note')}</button>
                              ${/* QR за ТОЗИ файл: отваря глобалното студио направо на неговото ниво.
                                   Без записан път кодът за файл не съществува — тогава бутонът липсва. */ ''}
                              ${x.storagePath

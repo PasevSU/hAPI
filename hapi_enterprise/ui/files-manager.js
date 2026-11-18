@@ -2278,6 +2278,10 @@
                       <span class="flag-badge ${flagOf(x.flag).cls}" title="Флаг: ${esc(flagOf(x.flag).label)}">${flagOf(x.flag).icon
       } ${esc(flagOf(x.flag).label)}</span>
                       <span class="chip ${x.visibility === 'public' ? 'ok' : ''}" title="Видимост">${esc(x.visibility)}</span>
+                      ${x.readonly === true
+        ? `<span class="chip ok pf-ro-badge" data-readonly="1" title="${esc(T('pc.ro.badge.title'))}">${ico('eye')} ${esc(T('pc.ro.badge'))}</span>`
+        : ''
+      }
                       <code class="fm-code" title="Политика за достъп">${esc(x.access)}</code>
                       ${api
         ? `<span class="state-chip ok">API/QR</span><span class="chip">${esc(
@@ -2944,6 +2948,10 @@
           clip.writeText(url).then(() => toast(T('pc.report.copied'), 'ok')).catch(() => toast(T('pc.report.copyManual'), ''));
         });
       }
+      // Линкът се показва ТАМ, КЪДЕТО Е ПОГЛЕДЪТ: изходът стои в корена на панела и иначе
+      // остава под сгъвката, тоест отчетът „изчезва“, след като е готов.
+      if (typeof out.scrollIntoView === 'function') out.scrollIntoView({ block: 'nearest' });
+      if (copy && typeof copy.focus === 'function') copy.focus();
     }
     toast(T('pc.report.toast'), 'ok');
   }
